@@ -5,7 +5,20 @@
 
 namespace sig {
 
-ffi_type *sig_objc_ffi_type(apr_pool_t *pool, struct Type *type) {
+void sig_ffi_types(
+    apr_pool_t *pool,
+    ffi_type *(*sig_ffi_type)(apr_pool_t *, struct Type *),
+    struct Signature *signature,
+    ffi_type **types,
+    size_t skip = 0,
+    size_t offset = 0
+) {
+    _assert(signature->count >= skip);
+    for (size_t index = skip; index != signature->count; ++index)
+        types[index - skip + offset] = (*sig_ffi_type)(pool, signature->elements[index].type);
+}
+
+ffi_type *ObjectiveC(apr_pool_t *pool, struct Type *type) {
     switch (type->primitive) {
         case typename_P: return &ffi_type_pointer;
 
@@ -53,7 +66,7 @@ ffi_type *sig_objc_ffi_type(apr_pool_t *pool, struct Type *type) {
             aggregate->type = FFI_TYPE_STRUCT;
 
             aggregate->elements = reinterpret_cast<ffi_type **>(apr_palloc(pool, (type->data.signature.count + 1) * sizeof(ffi_type *)));
-            sig_ffi_types(pool, &sig_objc_ffi_type, &type->data.signature, aggregate->elements, 0, 0);
+            sig_ffi_types(pool, &ObjectiveC, &type->data.signature, aggregate->elements);
             aggregate->elements[type->data.signature.count] = NULL;
 
             return aggregate;
@@ -65,7 +78,7 @@ ffi_type *sig_objc_ffi_type(apr_pool_t *pool, struct Type *type) {
     }
 }
 
-ffi_type *sig_java_ffi_type(apr_pool_t *pool, struct Type *type) {
+ffi_type *Java(apr_pool_t *pool, struct Type *type) {
     switch (type->primitive) {
         case typename_P: return &ffi_type_pointer;
         case union_P: return &ffi_type_pointer;
@@ -100,24 +113,11 @@ ffi_type *sig_java_ffi_type(apr_pool_t *pool, struct Type *type) {
     }
 }
 
-void sig_ffi_types(
-    apr_pool_t *pool,
-    ffi_type *(*sig_ffi_type)(apr_pool_t *, struct Type *),
-    struct Signature *signature,
-    ffi_type **ffi_types,
-    size_t skip,
-    size_t offset
-) {
-    _assert(signature->count >= skip);
-    for (size_t index = skip; index != signature->count; ++index)
-        ffi_types[index - skip + offset] = (*sig_ffi_type)(pool, signature->elements[index].type);
-}
-
 void sig_ffi_cif(
     apr_pool_t *pool,
     ffi_type *(*sig_ffi_type)(apr_pool_t *, struct Type *),
     struct Signature *signature,
-    ffi_cif *ffi_cif,
+    ffi_cif *cif,
     size_t skip,
     ffi_type **types,
     size_t offset
@@ -126,7 +126,7 @@ void sig_ffi_cif(
         types = reinterpret_cast<ffi_type **>(apr_palloc(pool, (signature->count - 1) * sizeof(ffi_type *)));
     ffi_type *type = (*sig_ffi_type)(pool, signature->elements[0].type);
     sig_ffi_types(pool, sig_ffi_type, signature, types, 1 + skip, offset);
-    ffi_status status = ffi_prep_cif(ffi_cif, FFI_DEFAULT_ABI, signature->count - 1 - skip + offset, type, types);
+    ffi_status status = ffi_prep_cif(cif, FFI_DEFAULT_ABI, signature->count - 1 - skip + offset, type, types);
     _assert(status == FFI_OK);
 }
 

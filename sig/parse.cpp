@@ -14,6 +14,10 @@ namespace sig {
 
 void (*sig_aggregate)(apr_pool_t *pool, enum Primitive primitive, const char *name, struct Signature *signature, const char *types) = NULL;
 
+void Parse_(apr_pool_t *pool, struct Signature *signature, const char **name, char eos);
+struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named);
+
+
 /* XXX: I really screwed up this time */
 void *prealloc_(apr_pool_t *pool, void *odata, size_t osize, size_t nsize) {
     void *ndata = apr_palloc(pool, nsize);
@@ -21,7 +25,7 @@ void *prealloc_(apr_pool_t *pool, void *odata, size_t osize, size_t nsize) {
     return ndata;
 }
 
-void sig_parse_signature(apr_pool_t *pool, struct Signature *signature, const char **name, char eos) {
+void Parse_(apr_pool_t *pool, struct Signature *signature, const char **name, char eos) {
     _assert(*name != NULL);
 
     bool named = **name == '"';
@@ -48,7 +52,7 @@ void sig_parse_signature(apr_pool_t *pool, struct Signature *signature, const ch
             *name = quote + 1;
         }
 
-        element->type = sig_parse_type(pool, name, eos, named);
+        element->type = Parse_(pool, name, eos, named);
 
         if (**name < '0' || **name > '9')
             element->offset = _not(size_t);
@@ -62,7 +66,7 @@ void sig_parse_signature(apr_pool_t *pool, struct Signature *signature, const ch
     }
 }
 
-struct Type *sig_parse_type(apr_pool_t *pool, const char **name, char eos, bool named) {
+struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named) {
     char next = *(*name)++;
     if (next == '?')
         return NULL;
@@ -105,7 +109,7 @@ struct Type *sig_parse_type(apr_pool_t *pool, const char **name, char eos, bool 
         case '[':
             type->primitive = array_P;
             type->data.data.size = strtoul(*name, (char **) name, 10);
-            type->data.data.type = sig_parse_type(pool, name, eos, false);
+            type->data.data.type = Parse_(pool, name, eos, false);
             if (**name != ']') {
                 printf("']' != \"%s\"\n", *name);
                 _assert(false);
@@ -121,7 +125,7 @@ struct Type *sig_parse_type(apr_pool_t *pool, const char **name, char eos, bool 
             } else if (**name == '"') {
                 type->data.data.type = NULL;
             } else {
-                type->data.data.type = sig_parse_type(pool, name, eos, named);
+                type->data.data.type = Parse_(pool, name, eos, named);
             }
         break;
 
@@ -163,7 +167,7 @@ struct Type *sig_parse_type(apr_pool_t *pool, const char **name, char eos, bool 
                 types = NULL;
             else {
                 const char *temp = *name;
-                sig_parse_signature(pool, &type->data.signature, name, end);
+                Parse_(pool, &type->data.signature, name, end);
                 types = (char *) apr_pstrmemdup(pool, temp, *name - temp - 1);
             }
 
@@ -201,28 +205,28 @@ struct Type *sig_parse_type(apr_pool_t *pool, const char **name, char eos, bool 
 
 void Parse(apr_pool_t *pool, struct Signature *signature, const char *name) {
     const char *temp = name;
-    sig_parse_signature(pool, signature, &temp, '\0');
+    Parse_(pool, signature, &temp, '\0');
     _assert(temp[-1] == '\0');
 }
 
-const char *sig_unparse_signature(apr_pool_t *pool, struct Signature *signature) {
+const char *Unparse(apr_pool_t *pool, struct Signature *signature) {
     const char *value = "";
     size_t offset;
 
     for (offset = 0; offset != signature->count; ++offset) {
-        const char *type = sig_unparse_type(pool, signature->elements[offset].type);
+        const char *type = Unparse(pool, signature->elements[offset].type);
         value = apr_pstrcat(pool, value, type, NULL);
     }
 
     return value;
 }
 
-const char *sig_unparse_type(apr_pool_t *pool, struct Type *type) {
+const char *Unparse(apr_pool_t *pool, struct Type *type) {
     if (type == NULL)
         return "?";
     else switch (type->primitive) {
         case typename_P: return "#";
-        case union_P: return apr_psprintf(pool, "(%s)", sig_unparse_signature(pool, &type->data.signature));
+        case union_P: return apr_psprintf(pool, "(%s)", Unparse(pool, &type->data.signature));
         case string_P: return "*";
         case selector_P: return ":";
         case object_P: return type->name == NULL ? "@" : apr_psprintf(pool, "@\"%s\"", type->name);
@@ -234,11 +238,11 @@ const char *sig_unparse_type(apr_pool_t *pool, struct Type *type) {
         case ushort_P: return "S";
 
         case array_P: {
-            const char *value = sig_unparse_type(pool, type->data.data.type);
+            const char *value = Unparse(pool, type->data.data.type);
             return apr_psprintf(pool, "[%lu%s]", type->data.data.size, value);
         } break;
 
-        case pointer_P: return apr_psprintf(pool, "^%s", type->data.data.type == NULL ? "" : sig_unparse_type(pool, type->data.data.type));
+        case pointer_P: return apr_psprintf(pool, "^%s", type->data.data.type == NULL ? "" : Unparse(pool, type->data.data.type));
         case bit_P: return apr_psprintf(pool, "b%zu", type->data.data.size);
         case char_P: return "c";
         case double_P: return "d";
@@ -248,7 +252,7 @@ const char *sig_unparse_type(apr_pool_t *pool, struct Type *type) {
         case longlong_P: return "q";
         case short_P: return "s";
         case void_P: return "v";
-        case struct_P: return apr_psprintf(pool, "{%s=%s}", type->name == NULL ? "?" : type->name, sig_unparse_signature(pool, &type->data.signature));
+        case struct_P: return apr_psprintf(pool, "{%s=%s}", type->name == NULL ? "?" : type->name, Unparse(pool, &type->data.signature));
     }
 
     _assert(false);

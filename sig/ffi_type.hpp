@@ -8,23 +8,14 @@
 
 namespace sig {
 
-ffi_type *sig_objc_ffi_type(apr_pool_t *pool, struct Type *type);
-ffi_type *sig_java_ffi_type(apr_pool_t *pool, struct Type *type);
-
-void sig_ffi_types(
-    apr_pool_t *pool,
-    ffi_type *(*sig_ffi_type)(apr_pool_t *, struct Type *),
-    struct Signature *signature,
-    ffi_type **ffi_types,
-    size_t skip,
-    size_t offset
-);
+ffi_type *ObjectiveC(apr_pool_t *pool, struct Type *type);
+ffi_type *Java(apr_pool_t *pool, struct Type *type);
 
 void sig_ffi_cif(
     apr_pool_t *pool,
     ffi_type *(*sig_ffi_type)(apr_pool_t *, struct Type *),
     struct Signature *signature,
-    ffi_cif *ffi_cif,
+    ffi_cif *cif,
     size_t skip = 0,
     ffi_type **types = NULL,
     size_t offset = 0
