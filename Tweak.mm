@@ -782,6 +782,9 @@ class CYPool {
 
 static JSValueRef CYCallFunction(JSContextRef context, size_t count, const JSValueRef *arguments, JSValueRef *exception, sig::Signature *signature, ffi_cif *cif, void (*function)()) {
     @try {
+        if (count != signature->count - 1)
+            [NSException raise:NSInvalidArgumentException format:@"incorrect number of arguments to ffi function"];
+
         CYPool pool;
         void *values[count];
 
@@ -802,20 +805,20 @@ static JSValueRef CYCallFunction(JSContextRef context, size_t count, const JSVal
 }
 
 static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { _pooled
-    if (count < 2)
-        _assert(false);
-
     const char *type;
 
     @try {
+        if (count < 2)
+            [NSException raise:NSInvalidArgumentException format:@"too few arguments to objc_msgSend"];
+
         id self(CYCastNSObject(context, arguments[0]));
         if (self == nil)
             return JSValueMakeNull(context);
-        SEL _cmd(CYCastSEL(context, arguments[1]));
 
-        // XXX: what happens if you pass a NULL SEL?
+        SEL _cmd(CYCastSEL(context, arguments[1]));
         NSMethodSignature *method([self methodSignatureForSelector:_cmd]);
-        // XXX: if the selector doesn't exist, throw an exception
+        if (method == nil)
+            [NSException raise:NSInvalidArgumentException format:@"unrecognized selector %s sent to object %p", sel_getName(_cmd), self];
 
         type = [[method _typeString] UTF8String];
     } @catch (id error) {
@@ -838,8 +841,6 @@ static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObje
 
 static JSValueRef ffi_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     ffiData *data(reinterpret_cast<ffiData *>(JSObjectGetPrivate(object)));
-    if (count != data->signature_.count - 1)
-        _assert(false);
     return CYCallFunction(context, count, arguments, exception, &data->signature_, &data->cif_, data->function_);
 }
 
@@ -954,7 +955,7 @@ MSInitialize { _pooled
     CYSetProperty(context, global, "objc_msgSend", JSObjectMakeFunctionWithCallback(context, CYString("objc_msgSend"), &$objc_msgSend));
 
     CYSetProperty(context, global, "YES", JSValueMakeBoolean(context, true));
-    CYSetProperty(context, global, "NO", JSValueMakeBoolean(context, true));
+    CYSetProperty(context, global, "NO", JSValueMakeBoolean(context, false));
     CYSetProperty(context, global, "nil", JSValueMakeNull(context));
 
     name_ = JSStringCreateWithUTF8CString("name");
