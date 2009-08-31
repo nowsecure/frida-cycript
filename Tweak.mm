@@ -38,6 +38,7 @@
 /* }}} */
 
 #include <substrate.h>
+#include "Struct.hpp"
 
 #include "sig/parse.hpp"
 #include "sig/ffi_type.hpp"
@@ -577,6 +578,15 @@ static JSValueRef joc_getProperty(JSContextRef context, JSObjectRef object, JSSt
 
 typedef id jocData;
 
+struct ptrData {
+    void *value_;
+};
+
+static void ptr_finalize(JSObjectRef object) {
+    ptrData *data(reinterpret_cast<ptrData *>(JSObjectGetPrivate(object)));
+    free(data);
+}
+
 static void joc_finalize(JSObjectRef object) {
     id data(reinterpret_cast<jocData>(JSObjectGetPrivate(object)));
     [data release];
@@ -668,9 +678,10 @@ void CYPoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, void *da
             void *&pointer(*reinterpret_cast<void **>(data));
             if (JSValueIsNull(context, value))
                 pointer = NULL;
-            else if (JSValueIsObjectOfClass(context, value, ptr_))
-                pointer = JSObjectGetPrivate((JSObjectRef) value);
-            else {
+            else if (JSValueIsObjectOfClass(context, value, ptr_)) {
+                ptrData *data(reinterpret_cast<ptrData *>(JSObjectGetPrivate((JSObjectRef) value)));
+                pointer = data->value_;
+            } else {
                 JSValueRef exception(NULL);
                 double number(JSValueToNumber(context, value, &exception));
                 CYThrow(context, exception);
@@ -738,8 +749,11 @@ JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, void *data) {
         } break;
 
         case sig::pointer_P: {
-            void *pointer(*reinterpret_cast<void **>(data));
-            value = pointer == NULL ? JSValueMakeNull(context) : JSObjectMake(context, ptr_, pointer);
+            if (void *pointer = *reinterpret_cast<void **>(data)) {
+                ptrData *data(reinterpret_cast<ptrData *>(malloc(sizeof(ptrData))));
+                data->value_ = pointer;
+                value = JSObjectMake(context, ptr_, data);
+            } else value = JSValueMakeNull(context);
         } break;
 
         case sig::string_P: {
@@ -804,6 +818,13 @@ static JSValueRef CYCallFunction(JSContextRef context, size_t count, const JSVal
     }
 }
 
+bool stret(ffi_type *ffi_type) {
+    return ffi_type->type == FFI_TYPE_STRUCT && (
+        ffi_type->size > OBJC_MAX_STRUCT_BY_VALUE ||
+        struct_forward_array[ffi_type->size] != 0
+    );
+}
+
 static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { _pooled
     const char *type;
 
@@ -831,11 +852,10 @@ static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObje
     sig::Signature signature;
     sig::Parse(pool, &signature, type);
 
-    void (*function)() = reinterpret_cast<void (*)()>(&objc_msgSend);
-
     ffi_cif cif;
     sig::sig_ffi_cif(pool, &sig::sig_objc_ffi_type, &signature, &cif);
 
+    void (*function)() = stret(cif.rtype) ? reinterpret_cast<void (*)()>(&objc_msgSend_stret) : reinterpret_cast<void (*)()>(&objc_msgSend);
     return CYCallFunction(context, count, arguments, exception, &signature, &cif, function);
 }
 
@@ -865,6 +885,16 @@ void CYSetFunction(JSContextRef context, JSObjectRef object, const char *name, v
     JSObjectRef value(JSObjectMake(context, ffi_, data));
     CYSetProperty(context, object, name, value);
 }
+
+JSValueRef ptr_getProperty_value(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef *exception) {
+    ptrData *data(reinterpret_cast<ptrData *>(JSObjectGetPrivate(object)));
+    return JSValueMakeNumber(context, reinterpret_cast<uintptr_t>(data->value_));
+}
+
+static JSStaticValue ptr_staticValues[2] = {
+    {"value", &ptr_getProperty_value, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete},
+    {NULL, NULL, NULL, 0}
+};
 
 MSInitialize { _pooled
     apr_initialize();
@@ -904,6 +934,8 @@ MSInitialize { _pooled
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "ptr";
+    definition.staticValues = ptr_staticValues;
+    definition.finalize = &ptr_finalize;
     ptr_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
@@ -924,20 +956,56 @@ MSInitialize { _pooled
 #define CYSetFunction_(name, type) \
     CYSetFunction(context, global, #name, reinterpret_cast<void (*)()>(&name), type)
 
+    CYSetFunction_(class_addIvar, "B#*LC*");
+    CYSetFunction_(class_addMethod, "B#:^?*");
+    CYSetFunction_(class_addProtocol, "B#@");
+    CYSetFunction_(class_conformsToProtocol, "B#@");
+    CYSetFunction_(class_copyIvarList, "^^{objc_ivar=}#^I");
+    CYSetFunction_(class_copyMethodList, "^^{objc_method=}#^I");
+    CYSetFunction_(class_copyPropertyList, "^^{objc_property=}#^I");
+    CYSetFunction_(class_copyProtocolList, "^@#^I");
     CYSetFunction_(class_createInstance, "@#L");
+    CYSetFunction_(class_getClassMethod, "^{objc_method=}#:");
+    CYSetFunction_(class_getClassVariable, "^{objc_ivar=}#*");
+    CYSetFunction_(class_getInstanceMethod, "^{objc_method=}#:");
     CYSetFunction_(class_getInstanceSize, "L#");
+    CYSetFunction_(class_getInstanceVariable, "^{objc_ivar=}#*");
     CYSetFunction_(class_getIvarLayout, "*#");
+    CYSetFunction_(class_getMethodImplementation, "^?#:");
+    CYSetFunction_(class_getMethodImplementation_stret, "^?#:");
     CYSetFunction_(class_getName, "*#");
+    CYSetFunction_(class_getProperty, "^{objc_property=}#*");
     CYSetFunction_(class_getSuperclass, "##");
     CYSetFunction_(class_getVersion, "i#");
+    CYSetFunction_(class_getWeakIvarLayout, "*#");
     CYSetFunction_(class_isMetaClass, "B#");
+    CYSetFunction_(class_replaceMethod, "^?#:^?*");
     CYSetFunction_(class_respondsToSelector, "B#:");
+    CYSetFunction_(class_setIvarLayout, "v#*");
     CYSetFunction_(class_setSuperclass, "###");
     CYSetFunction_(class_setVersion, "v#i");
+    CYSetFunction_(class_setWeakIvarLayout, "v#*");
+    CYSetFunction_(ivar_getName, "*^{objc_ivar=}");
+    CYSetFunction_(ivar_getOffset, "i^{objc_ivar=}");
+    CYSetFunction_(ivar_getTypeEncoding, "*^{objc_ivar=}");
+    CYSetFunction_(method_copyArgumentType, "^c^{objc_method=}I");
+    CYSetFunction_(method_copyReturnType, "^c^{objc_method=}");
+    CYSetFunction_(method_exchangeImplementations, "v^{objc_method=}^{objc_method=}");
+    CYSetFunction_(method_getArgumentType, "v^{objc_method=}I^cL");
+    CYSetFunction_(method_getImplementation, "^?^{objc_method=}");
+    CYSetFunction_(method_getName, ":^{objc_method=}");
+    CYSetFunction_(method_getNumberOfArguments, "I^{objc_method=}");
+    CYSetFunction_(method_getReturnType, "v^{objc_method=}^cL");
+    CYSetFunction_(method_getTypeEncoding, "*^{objc_method=}");
+    CYSetFunction_(method_setImplementation, "^?^{objc_method=}^?");
     CYSetFunction_(objc_allocateClassPair, "##*L");
+    CYSetFunction_(objc_copyProtocolList, "^@^I");
+    CYSetFunction_(objc_duplicateClass, "##*L");
     CYSetFunction_(objc_getClass, "#*");
+    CYSetFunction_(objc_getClassList, "i^#i");
     CYSetFunction_(objc_getFutureClass, "#*");
     CYSetFunction_(objc_getMetaClass, "@*");
+    CYSetFunction_(objc_getProtocol, "@*");
     CYSetFunction_(objc_getRequiredClass, "@*");
     CYSetFunction_(objc_lookUpClass, "@*");
     CYSetFunction_(objc_registerClassPair, "v#");
@@ -946,7 +1014,22 @@ MSInitialize { _pooled
     CYSetFunction_(object_dispose, "@@");
     CYSetFunction_(object_getClass, "#@");
     CYSetFunction_(object_getClassName, "*@");
+    CYSetFunction_(object_getIndexedIvars, "^v@");
+    CYSetFunction_(object_getInstanceVariable, "^{objc_ivar=}@*^^v");
+    CYSetFunction_(object_getIvar, "@@^{objc_ivar=}");
     CYSetFunction_(object_setClass, "#@#");
+    CYSetFunction_(object_setInstanceVariable, "^{objc_ivar=}@*^v");
+    CYSetFunction_(object_setIvar, "v@^{objc_ivar=}@");
+    CYSetFunction_(property_getAttributes, "*^{objc_property=}");
+    CYSetFunction_(property_getName, "*^{objc_property=}");
+    CYSetFunction_(protocol_conformsToProtocol, "B@@");
+    CYSetFunction_(protocol_copyMethodDescriptionList, "^{objc_method_description=:*}@BB^I");
+    CYSetFunction_(protocol_copyPropertyList, "^{objc_property=}@^I");
+    CYSetFunction_(protocol_copyProtocolList, "^@@^I");
+    CYSetFunction_(protocol_getMethodDescription, "{objc_method_description=:*}@:BB");
+    CYSetFunction_(protocol_getName, "*@");
+    CYSetFunction_(protocol_getProperty, "^{objc_property=}@*BB");
+    CYSetFunction_(protocol_isEqual, "B@@");
     CYSetFunction_(sel_getName, "*:");
     CYSetFunction_(sel_getUid, ":*");
     CYSetFunction_(sel_isEqual, "B::");

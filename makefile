@@ -17,7 +17,10 @@ all: $(name).dylib $(control)
 clean:
 	rm -f $(name).dylib
 
-$(name).dylib: Tweak.mm makefile $(menes)/mobilesubstrate/substrate.h sig/*.[ch]pp
+Struct.hpp:
+	$$($(target)gcc -print-prog-name=cc1obj) -print-objc-runtime-info </dev/null >$@
+
+$(name).dylib: Tweak.mm makefile $(menes)/mobilesubstrate/substrate.h sig/*.[ch]pp Struct.hpp
 	$(target)g++ -save-temps -dynamiclib -mthumb -g0 -O2 -Wall -Werror -o $@ $(filter %.cpp,$^) $(filter %.mm,$^) -lobjc -I$(menes)/mobilesubstrate $(link) $(flags)
 	ldid -S $@
 
