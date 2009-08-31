@@ -162,6 +162,10 @@ struct Client {
     CFSocketRef socket_;
 };
 
+JSObjectRef CYMakeObject(JSContextRef context, id object) {
+    return JSObjectMake(context, joc_, [object retain]);
+}
+
 @interface NSMethodSignature (Cyrver)
 - (NSString *) _typeString;
 @end
@@ -178,7 +182,7 @@ struct Client {
 }
 
 - (JSValueRef) cy$JSValueInContext:(JSContextRef)context {
-    return JSObjectMake(context, joc_, [self retain]);
+    return CYMakeObject(context, self);
 }
 
 @end
@@ -303,6 +307,12 @@ JSContextRef JSGetContext() {
     return Context_;
 }
 
+#define CYCatch \
+    @catch (id error) { \
+        CYThrow(context, error, exception); \
+        return NULL; \
+    }
+
 void CYThrow(JSContextRef context, JSValueRef value);
 
 id CYCastNSObject(JSContextRef context, JSObjectRef object) {
@@ -329,44 +339,33 @@ CFStringRef CYCopyCFString(JSContextRef context, JSValueRef value) {
     return object;
 }
 
+CFNumberRef CYCopyCFNumber(JSContextRef context, JSValueRef value) {
+    JSValueRef exception(NULL);
+    double number(JSValueToNumber(context, value, &exception));
+    CYThrow(context, exception);
+    return CFNumberCreate(kCFAllocatorDefault, kCFNumberDoubleType, &number);
+}
+
 NSString *CYCastNSString(JSStringRef value) {
     return [reinterpret_cast<const NSString *>(CYCopyCFString(value)) autorelease];
 }
 
 CFTypeRef CYCopyCFType(JSContextRef context, JSValueRef value) {
-    JSType type(JSValueGetType(context, value));
-
-    switch (type) {
+    switch (JSValueGetType(context, value)) {
         case kJSTypeUndefined:
             return CFRetain([WebUndefined undefined]);
-        break;
-
         case kJSTypeNull:
             return nil;
-        break;
-
         case kJSTypeBoolean:
             return CFRetain(JSValueToBoolean(context, value) ? kCFBooleanTrue : kCFBooleanFalse);
-        break;
-
-        case kJSTypeNumber: {
-            JSValueRef exception(NULL);
-            double number(JSValueToNumber(context, value, &exception));
-            CYThrow(context, exception);
-            return CFNumberCreate(kCFAllocatorDefault, kCFNumberDoubleType, &number);
-        } break;
-
+        case kJSTypeNumber:
+            return CYCopyCFNumber(context, value);
         case kJSTypeString:
             return CYCopyCFString(context, value);
-        break;
-
         case kJSTypeObject:
             return CFRetain((CFTypeRef) CYCastNSObject(context, (JSObjectRef) value));
-        break;
-
         default:
             _assert(false);
-        break;
     }
 }
 
@@ -586,6 +585,13 @@ static JSValueRef joc_getProperty(JSContextRef context, JSObjectRef object, JSSt
 
 typedef id jocData;
 
+static JSObjectRef joc_callAsConstructor(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { _pooled
+    @try {
+        id data(reinterpret_cast<jocData>(JSObjectGetPrivate(object)));
+        return CYMakeObject(context, [[data alloc] autorelease]);
+    } CYCatch
+}
+
 struct ptrData {
     apr_pool_t *pool_;
     void *value_;
@@ -602,10 +608,10 @@ static void joc_finalize(JSObjectRef object) {
     [data release];
 }
 
-static JSValueRef obc_getProperty(JSContextRef context, JSObjectRef object, JSStringRef propertyName, JSValueRef *exception) {
+static JSValueRef obc_getProperty(JSContextRef context, JSObjectRef object, JSStringRef propertyName, JSValueRef *exception) { _pooled
     NSString *name([(NSString *) JSStringCopyCFString(kCFAllocatorDefault, propertyName) autorelease]);
     if (Class _class = NSClassFromString(name))
-        return JSObjectMake(context, joc_, [_class retain]);
+        return CYMakeObject(context, _class);
     return NULL;
 }
 
@@ -656,12 +662,8 @@ void *CYCastPointer(JSContextRef context, JSValueRef value) {
     switch (JSValueGetType(context, value)) {
         case kJSTypeNull:
             return NULL;
-        break;
-
         case kJSTypeString:
             return dlsym(RTLD_DEFAULT, CYCastCString(context, value));
-        break;
-
         case kJSTypeObject:
             if (JSValueIsObjectOfClass(context, value, ptr_)) {
                 ptrData *data(reinterpret_cast<ptrData *>(JSObjectGetPrivate((JSObjectRef) value)));
@@ -672,7 +674,6 @@ void *CYCastPointer(JSContextRef context, JSValueRef value) {
             double number(JSValueToNumber(context, value, &exception));
             CYThrow(context, exception);
             return reinterpret_cast<void *>(static_cast<uintptr_t>(number));
-        break;
     }
 }
 
@@ -824,7 +825,7 @@ class CYPool {
     }
 };
 
-static JSValueRef CYCallFunction(JSContextRef context, size_t count, const JSValueRef *arguments, JSValueRef *exception, sig::Signature *signature, ffi_cif *cif, void (*function)()) {
+static JSValueRef CYCallFunction(JSContextRef context, size_t count, const JSValueRef *arguments, JSValueRef *exception, sig::Signature *signature, ffi_cif *cif, void (*function)()) { _pooled
     @try {
         if (count != signature->count - 1)
             [NSException raise:NSInvalidArgumentException format:@"incorrect number of arguments to ffi function"];
@@ -842,10 +843,7 @@ static JSValueRef CYCallFunction(JSContextRef context, size_t count, const JSVal
         ffi_call(cif, function, value, values);
 
         return CYFromFFI(context, signature->elements[0].type, value);
-    } @catch (id error) {
-        CYThrow(context, error, exception);
-        return NULL;
-    }
+    } CYCatch
 }
 
 bool stret(ffi_type *ffi_type) {
@@ -872,10 +870,7 @@ static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObje
             [NSException raise:NSInvalidArgumentException format:@"unrecognized selector %s sent to object %p", sel_getName(_cmd), self];
 
         type = [[method _typeString] UTF8String];
-    } @catch (id error) {
-        CYThrow(context, error, exception);
-        return NULL;
-    }
+    } CYCatch
 
     CYPool pool;
 
@@ -922,10 +917,7 @@ JSObjectRef ffi(JSContextRef context, JSObjectRef object, size_t count, const JS
         void (*function)() = reinterpret_cast<void (*)()>(CYCastPointer(context, arguments[0]));
         const char *type(CYCastCString(context, arguments[1]));
         return CYMakeFunction(context, function, type);
-    } @catch (id error) {
-        CYThrow(context, error, exception);
-        return NULL;
-    }
+    } CYCatch
 }
 
 JSValueRef ptr_getProperty_value(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef *exception) {
@@ -987,6 +979,7 @@ MSInitialize { _pooled
     definition = kJSClassDefinitionEmpty;
     definition.className = "joc";
     definition.getProperty = &joc_getProperty;
+    definition.callAsConstructor = &joc_callAsConstructor;
     definition.finalize = &joc_finalize;
     joc_ = JSClassCreate(&definition);
 
@@ -996,6 +989,7 @@ MSInitialize { _pooled
     JSObjectRef global(JSContextGetGlobalObject(context));
 
     CYSetProperty(context, global, "ffi", JSObjectMakeConstructor(context, ffi_, &ffi));
+    CYSetProperty(context, global, "obc", JSObjectMake(context, obc, NULL));
 
 #define CYSetFunction_(name, type) \
     CYSetProperty(context, global, #name, CYMakeFunction(context, reinterpret_cast<void (*)()>(&name), type))

@@ -18,7 +18,8 @@
 } while (false)
 
 JSContextRef JSGetContext(void);
-CFStringRef JSValueToJSONCopy(JSContextRef ctx, JSValueRef value);
+void CYThrow(JSContextRef context, id error, JSValueRef *exception);
+CFStringRef JSValueToJSONCopy(JSContextRef context, JSValueRef value);
 
 int main() {
     for (;;) {
@@ -32,14 +33,25 @@ int main() {
 
         JSStringRef script(JSStringCreateWithUTF8CString(line.c_str()));
 
-        JSValueRef exception;
-        JSValueRef result(JSEvaluateScript(JSGetContext(), script, NULL, NULL, 0, &exception));
-        if (result == NULL)
-            result = exception;
+        JSContextRef context(JSGetContext());
+
+        JSValueRef exception(NULL);
+        JSValueRef result(JSEvaluateScript(context, script, NULL, NULL, 0, &exception));
         JSStringRelease(script);
 
-        if (!JSValueIsUndefined(JSGetContext(), result)) {
-            CFStringRef json(JSValueToJSONCopy(JSGetContext(), result));
+        if (exception != NULL)
+            result = exception;
+
+        if (!JSValueIsUndefined(context, result)) {
+            CFStringRef json;
+
+            @try { json:
+                json = JSValueToJSONCopy(context, result);
+            } @catch (id error) {
+                CYThrow(context, error, &result);
+                goto json;
+            }
+
             std::cout << [reinterpret_cast<const NSString *>(json) UTF8String] << std::endl;
             CFRelease(json);
         }
