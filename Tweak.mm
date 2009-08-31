@@ -628,13 +628,13 @@ SEL CYCastSEL(JSContextRef context, JSValueRef value) {
     }
 }
 
-void CYToFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, void *data, JSValueRef value) {
+void CYPoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, void *data, JSValueRef value) {
     switch (type->primitive) {
         case sig::boolean_P:
             *reinterpret_cast<bool *>(data) = JSValueToBoolean(context, value);
         break;
 
-#define CYToFFI_(primitive, native) \
+#define CYPoolFFI_(primitive, native) \
         case sig::primitive ## _P: { \
             JSValueRef exception(NULL); \
             double number(JSValueToNumber(context, value, &exception)); \
@@ -642,18 +642,18 @@ void CYToFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, void *data
             *reinterpret_cast<native *>(data) = number; \
         } break;
 
-        CYToFFI_(uchar, unsigned char)
-        CYToFFI_(char, char)
-        CYToFFI_(ushort, unsigned short)
-        CYToFFI_(short, short)
-        CYToFFI_(ulong, unsigned long)
-        CYToFFI_(long, long)
-        CYToFFI_(uint, unsigned int)
-        CYToFFI_(int, int)
-        CYToFFI_(ulonglong, unsigned long long)
-        CYToFFI_(longlong, long long)
-        CYToFFI_(float, float)
-        CYToFFI_(double, double)
+        CYPoolFFI_(uchar, unsigned char)
+        CYPoolFFI_(char, char)
+        CYPoolFFI_(ushort, unsigned short)
+        CYPoolFFI_(short, short)
+        CYPoolFFI_(ulong, unsigned long)
+        CYPoolFFI_(long, long)
+        CYPoolFFI_(uint, unsigned int)
+        CYPoolFFI_(int, int)
+        CYPoolFFI_(ulonglong, unsigned long long)
+        CYPoolFFI_(longlong, long long)
+        CYPoolFFI_(float, float)
+        CYPoolFFI_(double, double)
 
         case sig::object_P:
         case sig::typename_P:
@@ -696,12 +696,12 @@ void CYToFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, void *data
         break;
 
         default: fail:
-            NSLog(@"CYToFFI(%c)\n", type->primitive);
+            NSLog(@"CYPoolFFI(%c)\n", type->primitive);
             _assert(false);
     }
 }
 
-JSValueRef CYFromFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, void *data) {
+JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, void *data) {
     JSValueRef value;
 
     switch (type->primitive) {
@@ -791,13 +791,13 @@ static JSValueRef CYCallFunction(JSContextRef context, size_t count, const JSVal
         for (unsigned index(0); index != count; ++index) {
             sig::Element *element(&signature->elements[index + 1]);
             values[index] = apr_palloc(pool, cif->arg_types[index]->size);
-            CYToFFI(pool, context, element->type, values[index], arguments[index]);
+            CYPoolFFI(pool, context, element->type, values[index], arguments[index]);
         }
 
         uint8_t value[cif->rtype->size];
         ffi_call(cif, function, value, values);
 
-        return CYFromFFI(pool, context, signature->elements[0].type, value);
+        return CYFromFFI(context, signature->elements[0].type, value);
     } @catch (id error) {
         CYThrow(context, error, exception);
         return NULL;
