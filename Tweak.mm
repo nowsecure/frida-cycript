@@ -1,7 +1,8 @@
-/* Cyrker - Remove Execution Server and  Disassembler
+/* Cyrker - Remove Execution Server and Disassembler
  * Copyright (C) 2009  Jay Freeman (saurik)
 */
 
+/* Modified BSD License {{{ */
 /*
  *        Redistribution and use in source and binary
  * forms, with or without modification, are permitted
@@ -34,6 +35,7 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+/* }}} */
 
 #include <substrate.h>
 
@@ -61,16 +63,19 @@
 /* XXX: bad _assert */
 #define _assert(test) do { \
     if ((test)) break; \
-    CFLog(kCFLogLevelNotice, CFSTR("_assert(%u)"), __LINE__); \
+    CFLog(kCFLogLevelNotice, CFSTR("_assert(%s):%u"), #test, __LINE__); \
+    throw; \
 } while (false)
 
 #define _trace() do { \
-    CFLog(kCFLogLevelNotice, CFSTR("_trace(%u)"), __LINE__); \
+    CFLog(kCFLogLevelNotice, CFSTR("_trace():%u"), __LINE__); \
 } while (false)
 
-static JSContextRef Context_;
+static JSContextRef context_;
 static JSClassRef joc_;
 static JSObjectRef Array_;
+static JSStringRef name_;
+static JSStringRef message_;
 static JSStringRef length_;
 static Class NSCFBoolean_;
 
@@ -81,25 +86,37 @@ struct Client {
 
 @interface NSObject (Cyrver)
 - (NSString *) cy$toJSON;
+// XXX: - (JSValueRef) cy$JSValueInContext:(JSContextRef)context;
 @end
 
 @implementation NSObject (Cyrver)
+
 - (NSString *) cy$toJSON {
-    return [NSString stringWithFormat:@"<%@>", [self description]];
-} @end
+    return [self description];
+}
+
+@end
 
 @implementation WebUndefined (Cyrver)
+
 - (NSString *) cy$toJSON {
     return @"undefined";
-} @end
+}
+
+- (JSValueRef) cy$JSValueInContext:(JSContextRef)context {
+    return JSValueMakeUndefined(context);
+}
+
+@end
 
 @implementation NSArray (Cyrver)
+
 - (NSString *) cy$toJSON {
     NSMutableString *json([[[NSMutableString alloc] init] autorelease]);
     [json appendString:@"["];
 
     bool comma(false);
-    for (NSObject *object in self) {
+    for (id object in self) {
         if (comma)
             [json appendString:@","];
         else
@@ -109,18 +126,51 @@ struct Client {
 
     [json appendString:@"]"];
     return json;
-} @end
+}
+
+@end
+
+@implementation NSDictionary (Cyrver)
+
+- (NSString *) cy$toJSON {
+    NSMutableString *json([[[NSMutableString alloc] init] autorelease]);
+    [json appendString:@"({"];
+
+    bool comma(false);
+    for (id key in self) {
+        if (comma)
+            [json appendString:@","];
+        else
+            comma = true;
+        [json appendString:[key cy$toJSON]];
+        [json appendString:@":"];
+        NSObject *object([self objectForKey:key]);
+        [json appendString:[object cy$toJSON]];
+    }
+
+    [json appendString:@"})"];
+    return json;
+}
+
+@end
 
 @implementation NSNumber (Cyrver)
+
 - (NSString *) cy$toJSON {
     return [self class] != NSCFBoolean_ ? [self stringValue] : [self boolValue] ? @"true" : @"false";
-} @end
+}
+
+- (JSValueRef) cy$JSValueInContext:(JSContextRef)context {
+    return [self class] != NSCFBoolean_ ? JSValueMakeNumber(context, [self doubleValue]) : JSValueMakeBoolean(context, [self boolValue]);
+}
+
+@end
 
 @implementation NSString (Cyrver)
+
 - (NSString *) cy$toJSON {
     CFMutableStringRef json(CFStringCreateMutableCopy(kCFAllocatorDefault, 0, (CFStringRef) self));
 
-    /* XXX: I can't believe there isn't a safe helper function for this... */
     CFStringFindAndReplace(json, CFSTR("\\"), CFSTR("\\\\"), CFRangeMake(0, CFStringGetLength(json)), 0);
     CFStringFindAndReplace(json, CFSTR("\""), CFSTR("\\\""), CFRangeMake(0, CFStringGetLength(json)), 0);
     CFStringFindAndReplace(json, CFSTR("\t"), CFSTR("\\t"), CFRangeMake(0, CFStringGetLength(json)), 0);
@@ -130,8 +180,25 @@ struct Client {
     CFStringInsert(json, 0, CFSTR("\""));
     CFStringAppend(json, CFSTR("\""));
 
-    return (NSString *) json;
-} @end
+    return [reinterpret_cast<const NSString *>(json) autorelease];
+}
+
+@end
+
+@interface CY$JSObject : NSDictionary {
+    JSObjectRef object_;
+    JSContextRef context_;
+}
+
+- (id) initWithJSObject:(JSObjectRef)object inContext:(JSContextRef)context;
+
+- (NSUInteger) count;
+- (id) objectForKey:(id)key;
+- (NSEnumerator *) keyEnumerator;
+- (void) setObject:(id)object forKey:(id)key;
+- (void) removeObjectForKey:(id)key;
+
+@end
 
 @interface CY$JSArray : NSArray {
     JSObjectRef object_;
@@ -145,22 +212,45 @@ struct Client {
 
 @end
 
-static id JSObjectToNSObject(JSContextRef ctx, JSObjectRef object) {
+JSContextRef JSGetContext() {
+    return context_;
+}
+
+id JSObjectToNSObject(JSContextRef ctx, JSObjectRef object) {
     if (JSValueIsObjectOfClass(ctx, object, joc_))
         return reinterpret_cast<id>(JSObjectGetPrivate(object));
+    // XXX: exception
     else if (JSValueIsInstanceOfConstructor(ctx, object, Array_, NULL))
         return [[[CY$JSArray alloc] initWithJSObject:object inContext:ctx] autorelease];
     else
-        return @"Hello";
-        //return [[[CY$JSObject alloc] initWithJSObject:object inContext:ctx] autorelease];
+        return [[[CY$JSObject alloc] initWithJSObject:object inContext:ctx] autorelease];
 }
 
-static CFTypeRef JSValueToCFTypeCopy(JSContextRef ctx, JSValueRef value) {
+CFStringRef CYCopyCFString(JSStringRef value) {
+    return JSStringCopyCFString(kCFAllocatorDefault, value);
+}
+
+void CYThrow(JSContextRef ctx, JSValueRef value);
+
+CFStringRef CYCopyCFString(JSContextRef ctx, JSValueRef value) {
+    JSValueRef exception(NULL);
+    JSStringRef string(JSValueToStringCopy(ctx, value, &exception));
+    CYThrow(context_, exception);
+    CFStringRef object(CYCopyCFString(string));
+    JSStringRelease(string);
+    return object;
+}
+
+NSString *CYCastNSString(JSStringRef value) {
+    return [reinterpret_cast<const NSString *>(CYCopyCFString(value)) autorelease];
+}
+
+CFTypeRef CYCopyCFType(JSContextRef ctx, JSValueRef value) {
     JSType type(JSValueGetType(ctx, value));
 
     switch (type) {
         case kJSTypeUndefined:
-            return [WebUndefined undefined];
+            return CFRetain([WebUndefined undefined]);
         break;
 
         case kJSTypeNull:
@@ -172,16 +262,15 @@ static CFTypeRef JSValueToCFTypeCopy(JSContextRef ctx, JSValueRef value) {
         break;
 
         case kJSTypeNumber: {
-            double number(JSValueToNumber(ctx, value, NULL));
+            JSValueRef exception(NULL);
+            double number(JSValueToNumber(ctx, value, &exception));
+            CYThrow(context_, exception);
             return CFNumberCreate(kCFAllocatorDefault, kCFNumberDoubleType, &number);
         } break;
 
-        case kJSTypeString: {
-            JSStringRef string(JSValueToStringCopy(ctx, value, NULL));
-            CFStringRef object(JSStringCopyCFString(kCFAllocatorDefault, string));
-            JSStringRelease(string);
-            return object;
-        } break;
+        case kJSTypeString:
+            return CYCopyCFString(context_, value);
+        break;
 
         case kJSTypeObject:
             return CFRetain((CFTypeRef) JSObjectToNSObject(ctx, (JSObjectRef) value));
@@ -189,15 +278,87 @@ static CFTypeRef JSValueToCFTypeCopy(JSContextRef ctx, JSValueRef value) {
 
         default:
             _assert(false);
-            return NULL;
         break;
     }
 }
 
-static id JSValueToNSObject(JSContextRef ctx, JSValueRef value) {
-    id object((id) JSValueToCFTypeCopy(ctx, value));
+NSArray *CYCastNSArray(JSPropertyNameArrayRef names) {
+    size_t size(JSPropertyNameArrayGetCount(names));
+    NSMutableArray *array([NSMutableArray arrayWithCapacity:size]);
+    for (size_t index(0); index != size; ++index)
+        [array addObject:CYCastNSString(JSPropertyNameArrayGetNameAtIndex(names, index))];
+    return array;
+}
+
+id CYCastNSObject(JSContextRef ctx, JSValueRef value) {
+    const NSObject *object(reinterpret_cast<const NSObject *>(CYCopyCFType(ctx, value)));
     return object == nil ? nil : [object autorelease];
 }
+
+void CYThrow(JSContextRef ctx, JSValueRef value) {
+    if (value == NULL)
+        return;
+    @throw CYCastNSObject(ctx, value);
+}
+
+JSValueRef CYCastJSValue(JSContextRef ctx, id value) {
+    return [value cy$JSValueInContext:ctx];
+}
+
+JSStringRef CYCopyJSString(JSContextRef ctx, id value) {
+    return JSStringCreateWithCFString(reinterpret_cast<CFStringRef>([value description]));
+}
+
+@implementation CY$JSObject
+
+- (id) initWithJSObject:(JSObjectRef)object inContext:(JSContextRef)context {
+    if ((self = [super init]) != nil) {
+        object_ = object;
+        context_ = context;
+    } return self;
+}
+
+- (NSUInteger) count {
+    JSPropertyNameArrayRef names(JSObjectCopyPropertyNames(context_, object_));
+    size_t size(JSPropertyNameArrayGetCount(names));
+    JSPropertyNameArrayRelease(names);
+    return size;
+}
+
+- (id) objectForKey:(id)key {
+    JSValueRef exception(NULL);
+    JSStringRef string(CYCopyJSString(context_, key));
+    JSValueRef value(JSObjectGetProperty(context_, object_, string, &exception));
+    JSStringRelease(string);
+    CYThrow(context_, exception);
+    return CYCastNSObject(context_, value);
+}
+
+- (NSEnumerator *) keyEnumerator {
+    JSPropertyNameArrayRef names(JSObjectCopyPropertyNames(context_, object_));
+    NSEnumerator *enumerator([CYCastNSArray(names) objectEnumerator]);
+    JSPropertyNameArrayRelease(names);
+    return enumerator;
+}
+
+- (void) setObject:(id)object forKey:(id)key {
+    JSValueRef exception(NULL);
+    JSStringRef string(CYCopyJSString(context_, key));
+    JSObjectSetProperty(context_, object_, string, CYCastJSValue(context_, object), kJSPropertyAttributeNone, &exception);
+    JSStringRelease(string);
+    CYThrow(context_, exception);
+}
+
+- (void) removeObjectForKey:(id)key {
+    JSValueRef exception(NULL);
+    JSStringRef string(CYCopyJSString(context_, key));
+    // XXX: this returns a bool
+    JSObjectDeleteProperty(context_, object_, string, &exception);
+    JSStringRelease(string);
+    CYThrow(context_, exception);
+}
+
+@end
 
 @implementation CY$JSArray
 
@@ -209,20 +370,27 @@ static id JSValueToNSObject(JSContextRef ctx, JSValueRef value) {
 }
 
 - (NSUInteger) count {
-    return JSValueToNumber(context_, JSObjectGetProperty(context_, object_, length_, NULL), NULL);
+    JSValueRef exception(NULL);
+    JSValueRef value(JSObjectGetProperty(context_, object_, length_, &exception));
+    CYThrow(context_, exception);
+    double number(JSValueToNumber(context_, value, &exception));
+    CYThrow(context_, exception);
+    return number;
 }
 
 - (id) objectAtIndex:(NSUInteger)index {
-    JSValueRef value(JSObjectGetPropertyAtIndex(context_, object_, index, NULL));
-    id object(JSValueToNSObject(context_, value));
+    JSValueRef exception(NULL);
+    JSValueRef value(JSObjectGetPropertyAtIndex(context_, object_, index, &exception));
+    CYThrow(context_, exception);
+    id object(CYCastNSObject(context_, value));
     return object == nil ? [NSNull null] : object;
 }
 
 @end
 
-static CFStringRef JSValueToJSONCopy(JSContextRef ctx, JSValueRef value) {
-    id object(JSValueToNSObject(ctx, value));
-    return (CFStringRef) [(object == nil ? @"null" : [object cy$toJSON]) retain];
+CFStringRef JSValueToJSONCopy(JSContextRef ctx, JSValueRef value) {
+    id object(CYCastNSObject(ctx, value));
+    return reinterpret_cast<CFStringRef>([(object == nil ? @"null" : [object cy$toJSON]) retain]);
 }
 
 static void OnData(CFSocketRef socket, CFSocketCallBackType type, CFDataRef address, const void *value, void *info) {
@@ -248,13 +416,13 @@ static void OnData(CFSocketRef socket, CFSocketCallBackType type, CFDataRef addr
                 JSStringRef script(JSStringCreateWithCFString(code));
                 CFRelease(code);
 
-                JSValueRef result(JSEvaluateScript(Context_, script, NULL, NULL, 0, NULL));
+                JSValueRef result(JSEvaluateScript(JSGetContext(), script, NULL, NULL, 0, NULL));
                 JSStringRelease(script);
 
                 CFHTTPMessageRef response(CFHTTPMessageCreateResponse(kCFAllocatorDefault, 200, NULL, kCFHTTPVersion1_1));
                 CFHTTPMessageSetHeaderFieldValue(response, CFSTR("Content-Type"), CFSTR("application/json; charset=utf-8"));
 
-                CFStringRef json(JSValueToJSONCopy(Context_, result));
+                CFStringRef json(JSValueToJSONCopy(JSGetContext(), result));
                 CFDataRef body(CFStringCreateExternalRepresentation(kCFAllocatorDefault, json, kCFStringEncodingUTF8, NULL));
                 CFRelease(json);
 
@@ -309,7 +477,7 @@ static JSValueRef obc_getProperty(JSContextRef ctx, JSObjectRef object, JSString
     return NULL;
 }
 
-extern "C" void TweakInitialize() {
+MSInitialize {
     NSAutoreleasePool *pool([[NSAutoreleasePool alloc] init]);
 
     NSCFBoolean_ = objc_getClass("NSCFBoolean");
@@ -343,15 +511,21 @@ extern "C" void TweakInitialize() {
     definition.getProperty = &joc_getProperty;
     joc_ = JSClassCreate(&definition);
 
-    Context_ = JSGlobalContextCreate(obc);
+    context_ = JSGlobalContextCreate(obc);
 
-    JSObjectRef global(JSContextGetGlobalObject(Context_));
+    JSObjectRef global(JSContextGetGlobalObject(JSGetContext()));
 
+    name_ = JSStringCreateWithUTF8CString("name");
+    message_ = JSStringCreateWithUTF8CString("message");
     length_ = JSStringCreateWithUTF8CString("length");
 
     JSStringRef name(JSStringCreateWithUTF8CString("Array"));
-    Array_ = JSValueToObject(Context_, JSObjectGetProperty(Context_, global, name, NULL), NULL);
+    JSValueRef exception(NULL);
+    JSValueRef value(JSObjectGetProperty(JSGetContext(), global, name, &exception));
+    CYThrow(context_, exception);
     JSStringRelease(name);
+    Array_ = JSValueToObject(JSGetContext(), value, &exception);
+    CYThrow(context_, exception);
 
     [pool release];
 }

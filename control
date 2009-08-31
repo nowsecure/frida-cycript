@@ -3,10 +3,10 @@ Priority: optional
 Section: Development
 Maintainer: Jay Freeman (saurik) <saurik@saurik.com>
 Architecture: iphoneos-arm
-Version: 0.9.2765-1
+Version: 0.9.3-1
 Description: runtime execution server and disassembler
 Name: Cyrver
-Depends: mobilesubstrate (>= 0.9.2587-1)
+Depends: mobilesubstrate (>= 0.9.3005-1), readline
 Author: Jay Freeman (saurik) <saurik@saurik.com>
 Depiction: http://cydia.saurik.com/info/cyrver/
 Tag: purpose::daemon, role::developer
