@@ -39,6 +39,12 @@
 
 #include <substrate.h>
 
+#include "sig/parse.hpp"
+#include "sig/ffi_type.hpp"
+
+#include <apr-1/apr_pools.h>
+#include <apr-1/apr_strings.h>
+
 #include <unistd.h>
 
 #include <CoreFoundation/CoreFoundation.h>
@@ -60,6 +66,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#undef _assert
+#undef _trace
+
 /* XXX: bad _assert */
 #define _assert(test) do { \
     if ((test)) break; \
@@ -71,12 +80,17 @@
     CFLog(kCFLogLevelNotice, CFSTR("_trace():%u"), __LINE__); \
 } while (false)
 
-static JSContextRef context_;
+static JSContextRef Context_;
+
+static JSClassRef ffi_;
 static JSClassRef joc_;
+
 static JSObjectRef Array_;
+
 static JSStringRef name_;
 static JSStringRef message_;
 static JSStringRef length_;
+
 static Class NSCFBoolean_;
 
 struct Client {
@@ -86,13 +100,17 @@ struct Client {
 
 @interface NSObject (Cyrver)
 - (NSString *) cy$toJSON;
-// XXX: - (JSValueRef) cy$JSValueInContext:(JSContextRef)context;
+- (JSValueRef) cy$JSValueInContext:(JSContextRef)context;
 @end
 
 @implementation NSObject (Cyrver)
 
 - (NSString *) cy$toJSON {
     return [self description];
+}
+
+- (JSValueRef) cy$JSValueInContext:(JSContextRef)context {
+    return JSObjectMake(context, joc_, [self retain]);
 }
 
 @end
@@ -213,29 +231,30 @@ struct Client {
 @end
 
 JSContextRef JSGetContext() {
-    return context_;
+    return Context_;
 }
 
-id JSObjectToNSObject(JSContextRef ctx, JSObjectRef object) {
-    if (JSValueIsObjectOfClass(ctx, object, joc_))
+void CYThrow(JSContextRef context, JSValueRef value);
+
+id JSObjectToNSObject(JSContextRef context, JSObjectRef object) {
+    if (JSValueIsObjectOfClass(context, object, joc_))
         return reinterpret_cast<id>(JSObjectGetPrivate(object));
-    // XXX: exception
-    else if (JSValueIsInstanceOfConstructor(ctx, object, Array_, NULL))
-        return [[[CY$JSArray alloc] initWithJSObject:object inContext:ctx] autorelease];
-    else
-        return [[[CY$JSObject alloc] initWithJSObject:object inContext:ctx] autorelease];
+    JSValueRef exception(NULL);
+    bool array(JSValueIsInstanceOfConstructor(context, object, Array_, &exception));
+    CYThrow(context, exception);
+    if (array)
+        return [[[CY$JSArray alloc] initWithJSObject:object inContext:context] autorelease];
+    return [[[CY$JSObject alloc] initWithJSObject:object inContext:context] autorelease];
 }
 
 CFStringRef CYCopyCFString(JSStringRef value) {
     return JSStringCopyCFString(kCFAllocatorDefault, value);
 }
 
-void CYThrow(JSContextRef ctx, JSValueRef value);
-
-CFStringRef CYCopyCFString(JSContextRef ctx, JSValueRef value) {
+CFStringRef CYCopyCFString(JSContextRef context, JSValueRef value) {
     JSValueRef exception(NULL);
-    JSStringRef string(JSValueToStringCopy(ctx, value, &exception));
-    CYThrow(context_, exception);
+    JSStringRef string(JSValueToStringCopy(context, value, &exception));
+    CYThrow(context, exception);
     CFStringRef object(CYCopyCFString(string));
     JSStringRelease(string);
     return object;
@@ -245,8 +264,8 @@ NSString *CYCastNSString(JSStringRef value) {
     return [reinterpret_cast<const NSString *>(CYCopyCFString(value)) autorelease];
 }
 
-CFTypeRef CYCopyCFType(JSContextRef ctx, JSValueRef value) {
-    JSType type(JSValueGetType(ctx, value));
+CFTypeRef CYCopyCFType(JSContextRef context, JSValueRef value) {
+    JSType type(JSValueGetType(context, value));
 
     switch (type) {
         case kJSTypeUndefined:
@@ -258,22 +277,22 @@ CFTypeRef CYCopyCFType(JSContextRef ctx, JSValueRef value) {
         break;
 
         case kJSTypeBoolean:
-            return CFRetain(JSValueToBoolean(ctx, value) ? kCFBooleanTrue : kCFBooleanFalse);
+            return CFRetain(JSValueToBoolean(context, value) ? kCFBooleanTrue : kCFBooleanFalse);
         break;
 
         case kJSTypeNumber: {
             JSValueRef exception(NULL);
-            double number(JSValueToNumber(ctx, value, &exception));
-            CYThrow(context_, exception);
+            double number(JSValueToNumber(context, value, &exception));
+            CYThrow(context, exception);
             return CFNumberCreate(kCFAllocatorDefault, kCFNumberDoubleType, &number);
         } break;
 
         case kJSTypeString:
-            return CYCopyCFString(context_, value);
+            return CYCopyCFString(context, value);
         break;
 
         case kJSTypeObject:
-            return CFRetain((CFTypeRef) JSObjectToNSObject(ctx, (JSObjectRef) value));
+            return CFRetain((CFTypeRef) JSObjectToNSObject(context, (JSObjectRef) value));
         break;
 
         default:
@@ -290,23 +309,27 @@ NSArray *CYCastNSArray(JSPropertyNameArrayRef names) {
     return array;
 }
 
-id CYCastNSObject(JSContextRef ctx, JSValueRef value) {
-    const NSObject *object(reinterpret_cast<const NSObject *>(CYCopyCFType(ctx, value)));
+id CYCastNSObject(JSContextRef context, JSValueRef value) {
+    const NSObject *object(reinterpret_cast<const NSObject *>(CYCopyCFType(context, value)));
     return object == nil ? nil : [object autorelease];
 }
 
-void CYThrow(JSContextRef ctx, JSValueRef value) {
+void CYThrow(JSContextRef context, JSValueRef value) {
     if (value == NULL)
         return;
-    @throw CYCastNSObject(ctx, value);
+    @throw CYCastNSObject(context, value);
 }
 
-JSValueRef CYCastJSValue(JSContextRef ctx, id value) {
-    return [value cy$JSValueInContext:ctx];
+JSValueRef CYCastJSValue(JSContextRef context, id value) {
+    return value == nil ? JSValueMakeNull(context) : [value cy$JSValueInContext:context];
 }
 
-JSStringRef CYCopyJSString(JSContextRef ctx, id value) {
+JSStringRef CYCopyJSString(id value) {
     return JSStringCreateWithCFString(reinterpret_cast<CFStringRef>([value description]));
+}
+
+JSStringRef CYCopyJSString(const char *value) {
+    return JSStringCreateWithUTF8CString(value);
 }
 
 @implementation CY$JSObject
@@ -327,7 +350,7 @@ JSStringRef CYCopyJSString(JSContextRef ctx, id value) {
 
 - (id) objectForKey:(id)key {
     JSValueRef exception(NULL);
-    JSStringRef string(CYCopyJSString(context_, key));
+    JSStringRef string(CYCopyJSString(key));
     JSValueRef value(JSObjectGetProperty(context_, object_, string, &exception));
     JSStringRelease(string);
     CYThrow(context_, exception);
@@ -343,7 +366,7 @@ JSStringRef CYCopyJSString(JSContextRef ctx, id value) {
 
 - (void) setObject:(id)object forKey:(id)key {
     JSValueRef exception(NULL);
-    JSStringRef string(CYCopyJSString(context_, key));
+    JSStringRef string(CYCopyJSString(key));
     JSObjectSetProperty(context_, object_, string, CYCastJSValue(context_, object), kJSPropertyAttributeNone, &exception);
     JSStringRelease(string);
     CYThrow(context_, exception);
@@ -351,7 +374,7 @@ JSStringRef CYCopyJSString(JSContextRef ctx, id value) {
 
 - (void) removeObjectForKey:(id)key {
     JSValueRef exception(NULL);
-    JSStringRef string(CYCopyJSString(context_, key));
+    JSStringRef string(CYCopyJSString(key));
     // XXX: this returns a bool
     JSObjectDeleteProperty(context_, object_, string, &exception);
     JSStringRelease(string);
@@ -388,8 +411,8 @@ JSStringRef CYCopyJSString(JSContextRef ctx, id value) {
 
 @end
 
-CFStringRef JSValueToJSONCopy(JSContextRef ctx, JSValueRef value) {
-    id object(CYCastNSObject(ctx, value));
+CFStringRef JSValueToJSONCopy(JSContextRef context, JSValueRef value) {
+    id object(CYCastNSObject(context, value));
     return reinterpret_cast<CFStringRef>([(object == nil ? @"null" : [object cy$toJSON]) retain]);
 }
 
@@ -466,18 +489,213 @@ static void OnAccept(CFSocketRef socket, CFSocketCallBackType type, CFDataRef ad
     }
 }
 
-static JSValueRef joc_getProperty(JSContextRef ctx, JSObjectRef object, JSStringRef propertyName, JSValueRef *exception) {
+static JSValueRef joc_getProperty(JSContextRef context, JSObjectRef object, JSStringRef propertyName, JSValueRef *exception) {
     return NULL;
 }
 
-static JSValueRef obc_getProperty(JSContextRef ctx, JSObjectRef object, JSStringRef propertyName, JSValueRef *exception) {
+typedef id jocData;
+
+static void joc_finalize(JSObjectRef object) {
+    id data(reinterpret_cast<jocData>(JSObjectGetPrivate(object)));
+    [data release];
+}
+
+static JSValueRef obc_getProperty(JSContextRef context, JSObjectRef object, JSStringRef propertyName, JSValueRef *exception) {
     NSString *name([(NSString *) JSStringCopyCFString(kCFAllocatorDefault, propertyName) autorelease]);
     if (Class _class = NSClassFromString(name))
-        return JSObjectMake(ctx, joc_, _class);
+        return JSObjectMake(context, joc_, [_class retain]);
     return NULL;
+}
+
+void CYSetProperty(JSContextRef context, JSObjectRef object, const char *name, JSValueRef value) {
+    JSValueRef exception(NULL);
+    JSStringRef string(CYCopyJSString(name));
+    JSObjectSetProperty(context, object, string, value, kJSPropertyAttributeNone, &exception);
+    JSStringRelease(string);
+    CYThrow(context, exception);
+}
+
+struct ffiData {
+    apr_pool_t *pool_;
+    void (*function_)();
+    const char *type_;
+    sig::Signature signature_;
+    ffi_cif cif_;
+};
+
+void CYToFFI(apr_pool_t *pool, JSContextRef context, JSValueRef *exception, sig::Type *type, void *data, JSValueRef value) {
+    switch (type->primitive) {
+        case sig::boolean_P:
+            *reinterpret_cast<bool *>(data) = JSValueToBoolean(context, value);
+        break;
+
+#define CYToFFI_(primitive, native) \
+        case sig::primitive ## _P: { \
+            double number(JSValueToNumber(context, value, exception)); \
+            if (exception == NULL) \
+                *reinterpret_cast<native *>(data) = number; \
+        } break;
+
+        CYToFFI_(uchar, unsigned char)
+        CYToFFI_(char, char)
+        CYToFFI_(ushort, unsigned short)
+        CYToFFI_(short, short)
+        CYToFFI_(ulong, unsigned long)
+        CYToFFI_(long, long)
+        CYToFFI_(uint, unsigned int)
+        CYToFFI_(int, int)
+        CYToFFI_(ulonglong, unsigned long long)
+        CYToFFI_(longlong, long long)
+        CYToFFI_(float, float)
+        CYToFFI_(double, double)
+
+        case sig::object_P:
+        case sig::typename_P:
+        case sig::selector_P:
+        case sig::pointer_P:
+            goto fail;
+
+        case sig::string_P: {
+            JSStringRef string(JSValueToStringCopy(context, value, exception));
+            if (exception != NULL) {
+                size_t size(JSStringGetMaximumUTF8CStringSize(string));
+                char *utf8(reinterpret_cast<char *>(apr_palloc(pool, size)));
+                JSStringGetUTF8CString(string, utf8, size);
+                JSStringRelease(string);
+                *reinterpret_cast<char **>(data) = utf8;
+            }
+        } break;
+
+        case sig::struct_P:
+            goto fail;
+
+        case sig::void_P:
+        break;
+
+        default: fail:
+            NSLog(@"CYToFFI(%c)\n", type->primitive);
+            _assert(false);
+    }
+}
+
+JSValueRef CYFromFFI(apr_pool_t *pool, JSContextRef context, JSValueRef *exception, sig::Type *type, void *data) {
+    JSValueRef value;
+
+    switch (type->primitive) {
+        case sig::boolean_P:
+            value = JSValueMakeBoolean(context, *reinterpret_cast<bool *>(data));
+        break;
+
+#define CYFromFFI_(primitive, native) \
+        case sig::primitive ## _P: \
+            value = JSValueMakeNumber(context, *reinterpret_cast<native *>(data)); \
+        break;
+
+        CYFromFFI_(uchar, unsigned char)
+        CYFromFFI_(char, char)
+        CYFromFFI_(ushort, unsigned short)
+        CYFromFFI_(short, short)
+        CYFromFFI_(ulong, unsigned long)
+        CYFromFFI_(long, long)
+        CYFromFFI_(uint, unsigned int)
+        CYFromFFI_(int, int)
+        CYFromFFI_(ulonglong, unsigned long long)
+        CYFromFFI_(longlong, long long)
+        CYFromFFI_(float, float)
+        CYFromFFI_(double, double)
+
+        case sig::object_P:
+        case sig::typename_P: {
+            value = CYCastJSValue(context, *reinterpret_cast<id *>(data));
+        } break;
+
+        case sig::selector_P:
+        case sig::pointer_P:
+            goto fail;
+
+        case sig::string_P: {
+            char *utf8(*reinterpret_cast<char **>(data));
+            JSStringRef string(JSStringCreateWithUTF8CString(utf8));
+            value = JSValueMakeString(context, string);
+            JSStringRelease(string);
+        } break;
+
+        case sig::struct_P:
+            goto fail;
+
+        case sig::void_P:
+            value = NULL;
+        break;
+
+        default: fail:
+            NSLog(@"CYFromFFI(%c)\n", type->primitive);
+            _assert(false);
+    }
+
+    return value;
+}
+
+static JSValueRef ffi_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    ffiData *data(reinterpret_cast<ffiData *>(JSObjectGetPrivate(object)));
+
+    if (count != data->signature_.count - 1)
+        _assert(false);
+
+    JSValueRef result(NULL);
+
+    apr_pool_t *pool;
+    apr_pool_create(&pool, NULL);
+
+    void *values[count];
+
+    for (unsigned index(0); index != count; ++index) {
+        sig::Element *element(&data->signature_.elements[index + 1]);
+        values[index] = apr_palloc(pool, data->cif_.arg_types[index]->size);
+        CYToFFI(pool, context, exception, element->type, values[index], arguments[index]);
+        if (*exception != NULL)
+            goto error;
+    }
+
+    uint8_t value[data->cif_.rtype->size];
+
+    @try {
+        ffi_call(&data->cif_, data->function_, value, values);
+    } @catch (id error) {
+        _assert(false);
+    }
+
+    result = CYFromFFI(pool, context, exception, data->signature_.elements[0].type, value);
+
+  error:
+    apr_pool_destroy(pool);
+    return result;
+}
+
+static void ffi_finalize(JSObjectRef object) {
+    ffiData *data(reinterpret_cast<ffiData *>(JSObjectGetPrivate(object)));
+    apr_pool_destroy(data->pool_);
+}
+
+void CYSetFunction(JSContextRef context, JSObjectRef object, const char *name, void (*function)(), const char *type) {
+    apr_pool_t *pool;
+    apr_pool_create(&pool, NULL);
+
+    ffiData *data(reinterpret_cast<ffiData *>(apr_palloc(pool, sizeof(ffiData))));
+
+    data->pool_ = pool;
+    data->function_ = function;
+    data->type_ = apr_pstrdup(pool, type);
+
+    sig::Parse(pool, &data->signature_, type);
+    sig::sig_ffi_cif(pool, &sig::sig_objc_ffi_type,  &data->signature_, &data->cif_);
+
+    JSObjectRef value(JSObjectMake(context, ffi_, data));
+    CYSetProperty(context, object, name, value);
 }
 
 MSInitialize {
+    apr_initialize();
+
     NSAutoreleasePool *pool([[NSAutoreleasePool alloc] init]);
 
     NSCFBoolean_ = objc_getClass("NSCFBoolean");
@@ -508,12 +726,21 @@ MSInitialize {
     JSClassRef obc(JSClassCreate(&definition));
 
     definition = kJSClassDefinitionEmpty;
+    definition.callAsFunction = &ffi_callAsFunction;
+    definition.finalize = &ffi_finalize;
+    ffi_ = JSClassCreate(&definition);
+
+    definition = kJSClassDefinitionEmpty;
     definition.getProperty = &joc_getProperty;
+    definition.finalize = &joc_finalize;
     joc_ = JSClassCreate(&definition);
 
-    context_ = JSGlobalContextCreate(obc);
+    JSContextRef context(JSGlobalContextCreate(obc));
+    Context_ = context;
 
-    JSObjectRef global(JSContextGetGlobalObject(JSGetContext()));
+    JSObjectRef global(JSContextGetGlobalObject(context));
+
+    CYSetFunction(context, global, "objc_getClass", reinterpret_cast<void (*)()>(&objc_getClass), "#*");
 
     name_ = JSStringCreateWithUTF8CString("name");
     message_ = JSStringCreateWithUTF8CString("message");
@@ -522,10 +749,10 @@ MSInitialize {
     JSStringRef name(JSStringCreateWithUTF8CString("Array"));
     JSValueRef exception(NULL);
     JSValueRef value(JSObjectGetProperty(JSGetContext(), global, name, &exception));
-    CYThrow(context_, exception);
+    CYThrow(context, exception);
     JSStringRelease(name);
     Array_ = JSValueToObject(JSGetContext(), value, &exception);
-    CYThrow(context_, exception);
+    CYThrow(context, exception);
 
     [pool release];
 }
