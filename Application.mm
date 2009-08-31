@@ -38,9 +38,11 @@ int main() {
             result = exception;
         JSStringRelease(script);
 
-        CFStringRef json(JSValueToJSONCopy(JSGetContext(), result));
-        std::cout << [reinterpret_cast<const NSString *>(json) UTF8String] << std::endl;
-        CFRelease(json);
+        if (!JSValueIsUndefined(JSGetContext(), result)) {
+            CFStringRef json(JSValueToJSONCopy(JSGetContext(), result));
+            std::cout << [reinterpret_cast<const NSString *>(json) UTF8String] << std::endl;
+            CFRelease(json);
+        }
 
         [pool release];
     }
