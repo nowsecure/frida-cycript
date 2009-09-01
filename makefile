@@ -15,7 +15,7 @@ link := -framework CoreFoundation -framework Foundation -F${PKG_ROOT}/System/Lib
 all: cycript $(name).dylib libcycript.plist
 
 clean:
-	rm -f $(name).dylib
+	rm -f $(name).dylib cycript libcycript.plist Struct.hpp
 
 libcycript.plist: Bridge.def makefile
 	sed -e 's/^C/0/;s/^F/1/;s/^V/2/' Bridge.def | while read -r line; do \
