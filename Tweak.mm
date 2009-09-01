@@ -70,7 +70,6 @@
 #undef _assert
 #undef _trace
 
-/* XXX: bad _assert */
 #define _assert(test) do { \
     if (!(test)) \
         @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:[NSString stringWithFormat:@"_assert(%s):%s(%u):%s", #test, __FILE__, __LINE__, __FUNCTION__] userInfo:nil]; \
@@ -414,10 +413,15 @@ CFStringRef CYCopyCFString(JSContextRef context, JSValueRef value) {
     return CYCopyCFString(CYString(context, value));
 }
 
-CFNumberRef CYCopyCFNumber(JSContextRef context, JSValueRef value) {
+double CYCastDouble(JSContextRef context, JSValueRef value) {
     JSValueRef exception(NULL);
     double number(JSValueToNumber(context, value, &exception));
     CYThrow(context, exception);
+    return number;
+}
+
+CFNumberRef CYCopyCFNumber(JSContextRef context, JSValueRef value) {
+    double number(CYCastDouble(context, value));
     return CFNumberCreate(kCFAllocatorDefault, kCFNumberDoubleType, &number);
 }
 
@@ -426,8 +430,7 @@ NSString *CYCastNSString(JSStringRef value) {
 }
 
 CFTypeRef CYCopyCFType(JSContextRef context, JSValueRef value) {
-    JSType type(JSValueGetType(context, value));
-    switch (type) {
+    switch (JSType type = JSValueGetType(context, value)) {
         case kJSTypeUndefined:
             return CFRetain([WebUndefined undefined]);
         case kJSTypeNull:
@@ -510,7 +513,7 @@ void CYThrow(JSContextRef context, id error, JSValueRef *exception) {
 
 - (void) removeObjectForKey:(id)key {
     JSValueRef exception(NULL);
-    // XXX: this returns a bool
+    // XXX: this returns a bool... throw exception, or ignore?
     JSObjectDeleteProperty(context_, object_, CYString(key), &exception);
     CYThrow(context_, exception);
 }
@@ -530,9 +533,7 @@ void CYThrow(JSContextRef context, id error, JSValueRef *exception) {
     JSValueRef exception(NULL);
     JSValueRef value(JSObjectGetProperty(context_, object_, length_, &exception));
     CYThrow(context_, exception);
-    double number(JSValueToNumber(context_, value, &exception));
-    CYThrow(context_, exception);
-    return number;
+    return CYCastDouble(context_, value);
 }
 
 - (id) objectAtIndex:(NSUInteger)index {
@@ -623,8 +624,12 @@ static void OnAccept(CFSocketRef socket, CFSocketCallBackType type, CFDataRef ad
     }
 }
 
-static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object, JSStringRef propertyName, JSValueRef *exception) {
-    return NULL;
+static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { _pooled
+    @try {
+        NSString *name(CYCastNSString(property));
+        NSLog(@"%@", name);
+        return NULL;
+    } CYCatch
 }
 
 typedef id jocData;
@@ -712,7 +717,7 @@ char *CYPoolCString(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
     return CYPoolCString(pool, CYString(context, value));
 }
 
-// XXX: this macro is dangerous
+// XXX: this macro is unhygenic
 #define CYCastCString(context, value) ({ \
     JSValueRef exception(NULL); \
     JSStringRef string(JSValueToStringCopy(context, value, &exception)); \
@@ -741,16 +746,12 @@ void *CYCastPointer(JSContextRef context, JSValueRef value) {
         case kJSTypeString:
             return dlsym(RTLD_DEFAULT, CYCastCString(context, value));
         case kJSTypeObject:
-            // XXX: maybe support more than just pointers, like ffis and sels
             if (JSValueIsObjectOfClass(context, value, Pointer_)) {
                 ptrData *data(reinterpret_cast<ptrData *>(JSObjectGetPrivate((JSObjectRef) value)));
                 return data->value_;
             }
         default:
-            JSValueRef exception(NULL);
-            double number(JSValueToNumber(context, value, &exception));
-            CYThrow(context, exception);
-            return reinterpret_cast<void *>(static_cast<uintptr_t>(number));
+            return reinterpret_cast<void *>(static_cast<uintptr_t>(CYCastDouble(context, value)));
     }
 }
 
@@ -761,12 +762,9 @@ void CYPoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, void *da
         break;
 
 #define CYPoolFFI_(primitive, native) \
-        case sig::primitive ## _P: { \
-            JSValueRef exception(NULL); \
-            double number(JSValueToNumber(context, value, &exception)); \
-            CYThrow(context, exception); \
-            *reinterpret_cast<native *>(data) = number; \
-        } break;
+        case sig::primitive ## _P: \
+            *reinterpret_cast<native *>(data) = CYCastDouble(context, value); \
+        break;
 
         CYPoolFFI_(uchar, unsigned char)
         CYPoolFFI_(char, char)
@@ -845,26 +843,31 @@ JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, void *data) {
             if (SEL sel = *reinterpret_cast<SEL *>(data)) {
                 selData *data(new selData(sel));
                 value = JSObjectMake(context, Selector_, data);
-            } else value = JSValueMakeNull(context);
+            } else goto null;
         } break;
 
         case sig::pointer_P: {
             if (void *pointer = *reinterpret_cast<void **>(data)) {
                 ptrData *data(new ptrData(pointer));
                 value = JSObjectMake(context, Pointer_, data);
-            } else value = JSValueMakeNull(context);
+            } else goto null;
         } break;
 
         case sig::string_P: {
-            char *utf8(*reinterpret_cast<char **>(data));
-            value = utf8 == NULL ? JSValueMakeNull(context) : JSValueMakeString(context, CYString(utf8));
+            if (char *utf8 = *reinterpret_cast<char **>(data))
+                value = JSValueMakeString(context, CYString(utf8));
+            else goto null;
         } break;
 
         case sig::struct_P:
             goto fail;
 
         case sig::void_P:
-            value = NULL;
+            value = JSValueMakeUndefined(context);
+        break;
+
+        null:
+            value = JSValueMakeNull(context);
         break;
 
         default: fail:
@@ -897,22 +900,22 @@ static JSValueRef CYCallFunction(JSContextRef context, size_t count, const JSVal
     } CYCatch
 }
 
-static JSValueRef Global_getProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef *exception) { _pooled
+static JSValueRef Global_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { _pooled
     @try {
-        NSString *string(CYCastNSString(name));
-        if (Class _class = NSClassFromString(string))
+        NSString *name(CYCastNSString(property));
+        if (Class _class = NSClassFromString(name))
             return CYMakeObject(context, _class);
-        if (NSMutableArray *entry = [Bridge_ objectForKey:string])
+        if (NSMutableArray *entry = [Bridge_ objectForKey:name])
             switch ([[entry objectAtIndex:0] intValue]) {
                 case 0:
                     return JSEvaluateScript(JSGetContext(), CYString([entry objectAtIndex:1]), NULL, NULL, 0, NULL);
                 case 1:
-                    return CYMakeFunction(context, [string cy$symbol], [[entry objectAtIndex:1] UTF8String]);
+                    return CYMakeFunction(context, [name cy$symbol], [[entry objectAtIndex:1] UTF8String]);
                 case 2:
                     CYPool pool;
                     sig::Signature signature;
                     sig::Parse(pool, &signature, [[entry objectAtIndex:1] UTF8String]);
-                    return CYFromFFI(context, signature.elements[0].type, [string cy$symbol]);
+                    return CYFromFFI(context, signature.elements[0].type, [name cy$symbol]);
             }
         return NULL;
     } CYCatch
@@ -971,7 +974,7 @@ JSObjectRef ffi(JSContextRef context, JSObjectRef object, size_t count, const JS
     } CYCatch
 }
 
-JSValueRef Pointer_getProperty_value(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef *exception) {
+JSValueRef Pointer_getProperty_value(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
     ptrData *data(reinterpret_cast<ptrData *>(JSObjectGetPrivate(object)));
     return JSValueMakeNumber(context, reinterpret_cast<uintptr_t>(data->value_));
 }
