@@ -72,9 +72,9 @@
 
 /* XXX: bad _assert */
 #define _assert(test) do { \
-    if ((test)) break; \
-    CFLog(kCFLogLevelNotice, CFSTR("_assert(%s):%u"), #test, __LINE__); \
-    throw; \
+    if (!(test)) \
+        @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:[NSString stringWithFormat:@"_assert(%s):%s(%u):%s", #test, __FILE__, __LINE__, __FUNCTION__] userInfo:nil]; \
+    @throw [NSNumber class]; \
 } while (false)
 
 #define _trace() do { \
@@ -427,7 +427,8 @@ NSString *CYCastNSString(JSStringRef value) {
 }
 
 CFTypeRef CYCopyCFType(JSContextRef context, JSValueRef value) {
-    switch (JSValueGetType(context, value)) {
+    JSType type(JSValueGetType(context, value));
+    switch (type) {
         case kJSTypeUndefined:
             return CFRetain([WebUndefined undefined]);
         case kJSTypeNull:
@@ -441,7 +442,7 @@ CFTypeRef CYCopyCFType(JSContextRef context, JSValueRef value) {
         case kJSTypeObject:
             return CFRetain((CFTypeRef) CYCastNSObject(context, (JSObjectRef) value));
         default:
-            _assert(false);
+            @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:[NSString stringWithFormat:@"JSValueGetType() == 0x%x", type] userInfo:nil];
     }
 }
 
@@ -878,7 +879,7 @@ JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, void *data) {
 static JSValueRef CYCallFunction(JSContextRef context, size_t count, const JSValueRef *arguments, JSValueRef *exception, sig::Signature *signature, ffi_cif *cif, void (*function)()) { _pooled
     @try {
         if (count != signature->count - 1)
-            [NSException raise:NSInvalidArgumentException format:@"incorrect number of arguments to ffi function"];
+            @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"incorrect number of arguments to ffi function" userInfo:nil];
 
         CYPool pool;
         void *values[count];
@@ -930,7 +931,7 @@ static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObje
 
     @try {
         if (count < 2)
-            [NSException raise:NSInvalidArgumentException format:@"too few arguments to objc_msgSend"];
+            @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"too few arguments to objc_msgSend" userInfo:nil];
 
         id self(CYCastNSObject(context, arguments[0]));
         if (self == nil)
@@ -939,7 +940,7 @@ static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObje
         SEL _cmd(CYCastSEL(context, arguments[1]));
         NSMethodSignature *method([self methodSignatureForSelector:_cmd]);
         if (method == nil)
-            [NSException raise:NSInvalidArgumentException format:@"unrecognized selector %s sent to object %p", sel_getName(_cmd), self];
+            @throw [NSException exceptionWithName:NSInvalidArgumentException reason:[NSString stringWithFormat:@"unrecognized selector %s sent to object %p", sel_getName(_cmd), self] userInfo:nil];
 
         type = [[method _typeString] UTF8String];
     } CYCatch
@@ -964,7 +965,7 @@ static JSValueRef ffi_callAsFunction(JSContextRef context, JSObjectRef object, J
 JSObjectRef ffi(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     @try {
         if (count != 2)
-            [NSException raise:NSInvalidArgumentException format:@"incorrect number of arguments to ffi constructor"];
+            @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"incorrect number of arguments to ffi constructor" userInfo:nil];
         void *function(CYCastPointer(context, arguments[0]));
         const char *type(CYCastCString(context, arguments[1]));
         return CYMakeFunction(context, function, type);
