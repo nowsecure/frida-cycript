@@ -131,9 +131,7 @@ class _H {
     }
 };
 /* }}} */
-
-#define _pooled _H<NSAutoreleasePool> _pool([[NSAutoreleasePool alloc] init], true);
-
+/* APR Pool Helpers {{{ */
 void *operator new(size_t size, apr_pool_t *pool) {
     return apr_palloc(pool, size);
 }
@@ -141,6 +139,27 @@ void *operator new(size_t size, apr_pool_t *pool) {
 void *operator new [](size_t size, apr_pool_t *pool) {
     return apr_palloc(pool, size);
 }
+
+class CYPool {
+  private:
+    apr_pool_t *pool_;
+
+  public:
+    CYPool() {
+        apr_pool_create(&pool_, NULL);
+    }
+
+    ~CYPool() {
+        apr_pool_destroy(pool_);
+    }
+
+    operator apr_pool_t *() const {
+        return pool_;
+    }
+};
+/* }}} */
+
+#define _pooled _H<NSAutoreleasePool> _pool([[NSAutoreleasePool alloc] init], true);
 
 static JSContextRef Context_;
 
@@ -675,24 +694,6 @@ JSObjectRef CYMakeFunction(JSContextRef context, void *function, const char *typ
     return CYMakeFunction(context, reinterpret_cast<void (*)()>(function), type);
 }
 
-static JSValueRef Global_getProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef *exception) { _pooled
-    @try {
-        NSString *string(CYCastNSString(name));
-        if (Class _class = NSClassFromString(string))
-            return CYMakeObject(context, _class);
-        if (NSMutableArray *entry = [Bridge_ objectForKey:string])
-            switch ([[entry objectAtIndex:0] intValue]) {
-                case 0:
-                    return CYMakeFunction(context, [string cy$symbol], [[entry objectAtIndex:1] UTF8String]);
-                case 1:
-                    _assert(false);
-                case 2:
-                    return JSEvaluateScript(JSGetContext(), CYString([entry objectAtIndex:1]), NULL, NULL, 0, NULL);
-            }
-        return NULL;
-    } CYCatch
-}
-
 void CYSetProperty(JSContextRef context, JSObjectRef object, const char *name, JSValueRef value) {
     JSValueRef exception(NULL);
     JSObjectSetProperty(context, object, CYString(name), value, kJSPropertyAttributeNone, &exception);
@@ -874,24 +875,6 @@ JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, void *data) {
     return value;
 }
 
-class CYPool {
-  private:
-    apr_pool_t *pool_;
-
-  public:
-    CYPool() {
-        apr_pool_create(&pool_, NULL);
-    }
-
-    ~CYPool() {
-        apr_pool_destroy(pool_);
-    }
-
-    operator apr_pool_t *() const {
-        return pool_;
-    }
-};
-
 static JSValueRef CYCallFunction(JSContextRef context, size_t count, const JSValueRef *arguments, JSValueRef *exception, sig::Signature *signature, ffi_cif *cif, void (*function)()) { _pooled
     @try {
         if (count != signature->count - 1)
@@ -911,6 +894,27 @@ static JSValueRef CYCallFunction(JSContextRef context, size_t count, const JSVal
         ffi_call(cif, function, value, values);
 
         return CYFromFFI(context, signature->elements[0].type, value);
+    } CYCatch
+}
+
+static JSValueRef Global_getProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef *exception) { _pooled
+    @try {
+        NSString *string(CYCastNSString(name));
+        if (Class _class = NSClassFromString(string))
+            return CYMakeObject(context, _class);
+        if (NSMutableArray *entry = [Bridge_ objectForKey:string])
+            switch ([[entry objectAtIndex:0] intValue]) {
+                case 0:
+                    return JSEvaluateScript(JSGetContext(), CYString([entry objectAtIndex:1]), NULL, NULL, 0, NULL);
+                case 1:
+                    return CYMakeFunction(context, [string cy$symbol], [[entry objectAtIndex:1] UTF8String]);
+                case 2:
+                    CYPool pool;
+                    sig::Signature signature;
+                    sig::Parse(pool, &signature, [[entry objectAtIndex:1] UTF8String]);
+                    return CYFromFFI(context, signature.elements[0].type, [string cy$symbol]);
+            }
+        return NULL;
     } CYCatch
 }
 

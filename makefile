@@ -18,7 +18,7 @@ clean:
 	rm -f $(name).dylib
 
 libcyrver.plist: Bridge.def makefile
-	sed -e 's/^F/0/;s/^V/1/;s/^C/2/' Bridge.def | while read -r line; do \
+	sed -e 's/^C/0/;s/^F/1/;s/^V/2/' Bridge.def | while read -r line; do \
 	    if [[ $$line == '' ]]; then \
 	        continue; \
 	    fi; \
