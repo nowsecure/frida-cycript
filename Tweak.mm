@@ -185,24 +185,24 @@ JSObjectRef CYMakeObject(JSContextRef context, id object) {
     return JSObjectMake(context, Instance_, [object retain]);
 }
 
-@interface NSMethodSignature (Cyrver)
+@interface NSMethodSignature (Cycript)
 - (NSString *) _typeString;
 @end
 
-@interface NSObject (Cyrver)
+@interface NSObject (Cycript)
 - (NSString *) cy$toJSON;
 - (JSValueRef) cy$JSValueInContext:(JSContextRef)context;
 @end
 
-@interface NSString (Cyrver)
+@interface NSString (Cycript)
 - (void *) cy$symbol;
 @end
 
-@interface NSNumber (Cyrver)
+@interface NSNumber (Cycript)
 - (void *) cy$symbol;
 @end
 
-@implementation NSObject (Cyrver)
+@implementation NSObject (Cycript)
 
 - (NSString *) cy$toJSON {
     return [self description];
@@ -214,7 +214,7 @@ JSObjectRef CYMakeObject(JSContextRef context, id object) {
 
 @end
 
-@implementation WebUndefined (Cyrver)
+@implementation WebUndefined (Cycript)
 
 - (NSString *) cy$toJSON {
     return @"undefined";
@@ -226,7 +226,7 @@ JSObjectRef CYMakeObject(JSContextRef context, id object) {
 
 @end
 
-@implementation NSArray (Cyrver)
+@implementation NSArray (Cycript)
 
 - (NSString *) cy$toJSON {
     NSMutableString *json([[[NSMutableString alloc] init] autorelease]);
@@ -247,7 +247,7 @@ JSObjectRef CYMakeObject(JSContextRef context, id object) {
 
 @end
 
-@implementation NSDictionary (Cyrver)
+@implementation NSDictionary (Cycript)
 
 - (NSString *) cy$toJSON {
     NSMutableString *json([[[NSMutableString alloc] init] autorelease]);
@@ -272,7 +272,7 @@ JSObjectRef CYMakeObject(JSContextRef context, id object) {
 
 @end
 
-@implementation NSNumber (Cyrver)
+@implementation NSNumber (Cycript)
 
 - (NSString *) cy$toJSON {
     return [self class] != NSCFBoolean_ ? [self stringValue] : [self boolValue] ? @"true" : @"false";
@@ -288,7 +288,7 @@ JSObjectRef CYMakeObject(JSContextRef context, id object) {
 
 @end
 
-@implementation NSString (Cyrver)
+@implementation NSString (Cycript)
 
 - (NSString *) cy$toJSON {
     CFMutableStringRef json(CFStringCreateMutableCopy(kCFAllocatorDefault, 0, (CFStringRef) self));
@@ -1047,7 +1047,7 @@ MSInitialize { _pooled
 
     CYSetProperty(context, global, "objc_msgSend", JSObjectMakeFunctionWithCallback(context, CYString("objc_msgSend"), &$objc_msgSend));
 
-    Bridge_ = [[NSMutableDictionary dictionaryWithContentsOfFile:@"/usr/lib/libcyrver.plist"] retain];
+    Bridge_ = [[NSMutableDictionary dictionaryWithContentsOfFile:@"/usr/lib/libcycript.plist"] retain];
 
     name_ = JSStringCreateWithUTF8CString("name");
     message_ = JSStringCreateWithUTF8CString("message");
