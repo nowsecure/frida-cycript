@@ -31,12 +31,12 @@ libcycript.plist: Bridge.def makefile
 Struct.hpp:
 	$$($(target)gcc -print-prog-name=cc1obj) -print-objc-runtime-info </dev/null >$@
 
-libcycript.dylib: Tweak.mm makefile $(menes)/mobilesubstrate/substrate.h sig/*.[ch]pp Struct.hpp
-	$(target)g++ -save-temps -dynamiclib -mthumb -g0 -O2 -Wall -Werror -o $@ $(filter %.cpp,$^) $(filter %.mm,$^) -lobjc -I$(menes)/mobilesubstrate $(link) $(flags)
+libcycript.dylib: Library.mm makefile $(menes)/mobilesubstrate/substrate.h sig/*.[ch]pp Struct.hpp
+	$(target)g++ -dynamiclib -mthumb -g0 -O2 -Wall -Werror -o $@ $(filter %.cpp,$^) $(filter %.mm,$^) -lobjc -I$(menes)/mobilesubstrate $(link) $(flags)
 	ldid -S $@
 
 cycript: Application.mm libcycript.dylib
-	$(target)g++ -g0 -O2 -Wall -Werror -o $@ $(filter %.mm,$^) -framework UIKit -framework Foundation -framework CoreFoundation -lobjc libcycript.dylib -framework JavaScriptCore -F${PKG_ROOT}/System/Library/PrivateFrameworks
+	$(target)g++ -g0 -O2 -Wall -Werror -o $@ $(filter %.mm,$^) -framework UIKit -framework Foundation -framework CoreFoundation -lobjc libcycript.dylib
 	ldid -S cycript
 
 package: all

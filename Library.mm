@@ -37,6 +37,8 @@
 */
 /* }}} */
 
+#define _GNU_SOURCE
+
 #include <substrate.h>
 #include "Struct.hpp"
 
@@ -66,6 +68,9 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+
+#include <iostream>
+#include <ext/stdio_filebuf.h>
 
 #undef _assert
 #undef _trace
@@ -983,6 +988,53 @@ static JSStaticValue Pointer_staticValues[2] = {
     {"value", &Pointer_getProperty_value, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete},
     {NULL, NULL, NULL, 0}
 };
+
+void CYConsole(FILE *fin, FILE *fout, FILE *ferr) {
+    std::string line;
+
+    __gnu_cxx::stdio_filebuf<char> bin(fin, std::ios::in);
+    std::istream sin(&bin);
+
+    for (;;) {
+        NSAutoreleasePool *pool([[NSAutoreleasePool alloc] init]);
+
+        fputs(">>> ", fout);
+        fflush(fout);
+
+        if (!std::getline(sin, line))
+            break;
+
+        JSStringRef script(JSStringCreateWithUTF8CString(line.c_str()));
+
+        JSContextRef context(JSGetContext());
+
+        JSValueRef exception(NULL);
+        JSValueRef result(JSEvaluateScript(context, script, NULL, NULL, 0, &exception));
+        JSStringRelease(script);
+
+        if (exception != NULL)
+            result = exception;
+
+        if (!JSValueIsUndefined(context, result)) {
+            CFStringRef json;
+
+            @try { json:
+                json = JSValueToJSONCopy(context, result);
+            } @catch (id error) {
+                CYThrow(context, error, &result);
+                goto json;
+            }
+
+            fputs([reinterpret_cast<const NSString *>(json) UTF8String], fout);
+            CFRelease(json);
+
+            fputs("\n", fout);
+            fflush(fout);
+        }
+
+        [pool release];
+    }
+}
 
 MSInitialize { _pooled
     apr_initialize();
