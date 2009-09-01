@@ -989,6 +989,159 @@ static JSStaticValue Pointer_staticValues[2] = {
     {NULL, NULL, NULL, 0}
 };
 
+enum CYTokenType {
+    /*CYTokenBreak,    CYTokenCase,   CYTokenCatch, CYTokenContinue,   CYTokenDefault,
+    CYTokenDelete,   CYTokenDo,     CYTokenElse,  CYTokenFinally,    CYTokenFor,
+    CYTokenFunction, CYTokenIf,     CYTokenIn,    CYTokenInstanceOf, CYTokenNew,
+    CYTokenReturn,   CYTokenSwitch, CYTokenThis,  CYTokenThrow,      CYTokenTry,
+    CYTokenTypeOf,   CYTokenVar,    CYTokenVoid,  CYTokenWhile,      CYTokenWith,*/
+
+    CYTokenWord, CYTokenPunctuation, CYTokenLiteral,
+    CYTokenSemiColon, CYTokenOpen, CYTokenClose,
+};
+
+struct CYToken {
+    enum CYTokenType type_;
+    char *value_;
+};
+
+struct CYExpression {
+};
+
+struct CYRange {
+    uint64_t lo_;
+    uint64_t hi_;
+
+    CYRange(uint64_t lo, uint64_t hi) :
+        lo_(lo), hi_(hi)
+    {
+    }
+
+    bool operator [](uint8_t value) const {
+        return (value >> 7) && (value >> 6 ? hi_ : lo_) >> (value & 0x3f) & 0x1;
+    }
+
+    void operator()(uint8_t value) {
+        if (value >> 7)
+            return;
+        (value >> 6 ? hi_ : lo_) |= uint64_t(0x1) << (value & 0x3f);
+    }
+};
+
+CYRange WordStartRange_(0x1000000000LLU,0x7fffffe87fffffeLLU); // A-Za-z_$
+CYRange WordEndRange_(0x3ff001000000000LLU,0x7fffffe87fffffeLLU); // A-Za-z_$0-9
+CYRange NumberRange_(0x3ff400000000000LLU,0x100007e0100007eLLU); // 0-9.eExXA-Fa-f
+CYRange PunctuationRange_(0xfc00fc6200000001LLU,0x5000000040000000LLU); // -.,;<>=!+*/%&|^~?:
+
+struct CYParser {
+    FILE *file_;
+
+    size_t capacity_;
+    char *data_;
+
+    size_t offset_;
+    size_t size_;
+
+    CYParser(FILE *file) :
+        file_(file),
+        capacity_(1024),
+        data_(reinterpret_cast<char *>(malloc(capacity_))),
+        offset_(0),
+        size_(0)
+    {
+    }
+
+    ~CYParser() {
+        // XXX: this will not deconstruct in constructor failures
+        free(data_);
+    }
+
+    bool ReadLine() {
+        offset_ = 0;
+        data_[capacity_ - 1] = ~'\0';
+
+      start:
+        if (fgets(data_, capacity_, file_) == NULL)
+            return false;
+
+      check:
+        if (data_[capacity_ - 1] != '\0') {
+            size_ = strlen(data_);
+            if (size_ == 0)
+                goto start;
+        } else if (data_[capacity_ - 2] == '\n')
+            size_ = capacity_ - 2;
+        else {
+            size_t capacity(capacity_ * 2);
+            char *data(reinterpret_cast<char *>(realloc(data_, capacity)));
+            _assert(data != NULL);
+            data_ = data;
+            size_ = capacity_ - 1;
+            capacity_ = capacity;
+            fgets(data_ + size_, capacity_ - size_, file_);
+            goto check;
+        }
+
+        return true;
+    }
+
+    _finline void ScanRange(const CYRange &range) {
+        while (range[data_[++offset_]]);
+    }
+
+    CYToken *CYParseToken(apr_pool_t *pool, bool expecting) {
+        char next;
+
+        for (;;) {
+            if (offset_ == size_ && (!expecting || !ReadLine()))
+                return false;
+            next = data_[offset_];
+            if (next != ' ' && next != '\t')
+                break;
+            ++offset_;
+        }
+
+        CYTokenType type;
+        size_t index(offset_);
+
+        if (WordStartRange_[next]) {
+            ScanRange(WordEndRange_);
+            type = CYTokenWord;
+        } else if (next == '"' || next == '\'') {
+            _assert(false);
+        } else if (next == '.') {
+            char after(data_[offset_ + 1]);
+            if (after >= '0' && next <= '9')
+                goto number;
+            goto punctuation;
+        } else if (next >= '0' && next <= '9') {
+          number:
+            ScanRange(NumberRange_);
+            type = CYTokenLiteral;
+        } else if (PunctuationRange_[next]) {
+          punctuation:
+            ScanRange(PunctuationRange_);
+            type = CYTokenPunctuation;
+        } else if (next == '(' || next == '{' || next == '[') {
+            ++offset_;
+            type = CYTokenOpen;
+        } else if (next == ')' || next == '}' || next == ']') {
+            ++offset_;
+            type = CYTokenClose;
+        } else if (next == ';') {
+            ++offset_;
+            type = CYTokenSemiColon;
+        } else {
+            _assert(false);
+        }
+
+        CYToken *token(new(pool) CYToken());
+        token->type_ = type;
+        token->value_ = apr_pstrndup(pool, data_ + index, offset_ - index);
+        return token;
+    }
+};
+
 void CYConsole(FILE *fin, FILE *fout, FILE *ferr) {
     std::string line;
 
