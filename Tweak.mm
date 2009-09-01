@@ -74,7 +74,6 @@
 #define _assert(test) do { \
     if (!(test)) \
         @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:[NSString stringWithFormat:@"_assert(%s):%s(%u):%s", #test, __FILE__, __LINE__, __FUNCTION__] userInfo:nil]; \
-    @throw [NSNumber class]; \
 } while (false)
 
 #define _trace() do { \
