@@ -6,16 +6,15 @@ endif
 
 package:
 
-name := Cycript
 flags := -framework CFNetwork -framework JavaScriptCore -framework WebCore -install_name /usr/lib/libcycript.dylib -I.
 menes := $(shell cd ~; pwd)/menes
 
 link := -framework CoreFoundation -framework Foundation -F${PKG_ROOT}/System/Library/PrivateFrameworks -L$(menes)/mobilesubstrate -lsubstrate -lapr-1 -lffi
 
-all: cycript $(name).dylib libcycript.plist
+all: cycript libcycript.dylib libcycript.plist
 
 clean:
-	rm -f $(name).dylib cycript libcycript.plist Struct.hpp
+	rm -f libcycript.dylib cycript libcycript.plist Struct.hpp
 
 libcycript.plist: Bridge.def makefile
 	sed -e 's/^C/0/;s/^F/1/;s/^V/2/' Bridge.def | while read -r line; do \
@@ -32,9 +31,13 @@ libcycript.plist: Bridge.def makefile
 Struct.hpp:
 	$$($(target)gcc -print-prog-name=cc1obj) -print-objc-runtime-info </dev/null >$@
 
-$(name).dylib: Tweak.mm makefile $(menes)/mobilesubstrate/substrate.h sig/*.[ch]pp Struct.hpp
+libcycript.dylib: Tweak.mm makefile $(menes)/mobilesubstrate/substrate.h sig/*.[ch]pp Struct.hpp
 	$(target)g++ -save-temps -dynamiclib -mthumb -g0 -O2 -Wall -Werror -o $@ $(filter %.cpp,$^) $(filter %.mm,$^) -lobjc -I$(menes)/mobilesubstrate $(link) $(flags)
 	ldid -S $@
+
+cycript: Application.mm libcycript.dylib
+	$(target)g++ -g0 -O2 -Wall -Werror -o $@ $(filter %.mm,$^) -framework UIKit -framework Foundation -framework CoreFoundation -lobjc libcycript.dylib -framework JavaScriptCore -F${PKG_ROOT}/System/Library/PrivateFrameworks
+	ldid -S cycript
 
 package: all
 	rm -rf package
@@ -43,20 +46,16 @@ package: all
 	mkdir -p package/Library/MobileSubstrate/DynamicLibraries
 	if [[ -e Settings.plist ]]; then \
 	    mkdir -p package/Library/PreferenceLoader/Preferences; \
-	    cp -a Settings.png package/Library/PreferenceLoader/Preferences/$(name)Icon.png; \
-	    cp -a Settings.plist package/Library/PreferenceLoader/Preferences/$(name).plist; \
+	    cp -a Settings.png package/Library/PreferenceLoader/Preferences/CycriptIcon.png; \
+	    cp -a Settings.plist package/Library/PreferenceLoader/Preferences/Cycript.plist; \
 	fi
-	if [[ -e Tweak.plist ]]; then cp -a Tweak.plist package/Library/MobileSubstrate/DynamicLibraries/$(name).plist; fi
-	cp -a $(name).dylib package/Library/MobileSubstrate/DynamicLibraries
+	if [[ -e Tweak.plist ]]; then cp -a Tweak.plist package/Library/MobileSubstrate/DynamicLibraries/Cycript.plist; fi
+	#cp -a Cycript.dylib package/Library/MobileSubstrate/DynamicLibraries
 	mkdir -p package/usr/{bin,lib}
-	mv package/Library/MobileSubstrate/DynamicLibraries/Cycript.dylib package/usr/lib/libcycript.dylib
+	cp -a libcycript.dylib package/usr/lib
 	ln -s /usr/lib/libcycript.dylib package/Library/MobileSubstrate/DynamicLibraries/Cycript.dylib
 	cp -a cycript package/usr/bin
 	cp -a libcycript.plist package/usr/lib
 	dpkg-deb -b package $(shell grep ^Package: control | cut -d ' ' -f 2-)_$(shell grep ^Version: control | cut -d ' ' -f 2)_iphoneos-arm.deb
 
 .PHONY: all clean extra package
-
-cycript: Application.mm Cycript.dylib
-	$(target)g++ -g0 -O2 -Wall -Werror -o $@ $(filter %.mm,$^) -framework UIKit -framework Foundation -framework CoreFoundation -lobjc Cycript.dylib -framework JavaScriptCore -F${PKG_ROOT}/System/Library/PrivateFrameworks
-	ldid -S cycript
