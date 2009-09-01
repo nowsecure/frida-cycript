@@ -1,0 +1,506 @@
+C YES true
+C NO false
+C nil null
+
+l objc
+
+F class_addIvar B#*LC*
+F class_addMethod B#:^?*
+F class_addProtocol B#@
+F class_conformsToProtocol B#@
+F class_copyIvarList ^^{objc_ivar=}#^I
+F class_copyMethodList ^^{objc_method=}#^I
+F class_copyPropertyList ^^{objc_property=}#^I
+F class_copyProtocolList ^@#^I
+F class_createInstance @#L
+F class_getClassMethod ^{objc_method=}#:
+F class_getClassVariable ^{objc_ivar=}#*
+F class_getInstanceMethod ^{objc_method=}#:
+F class_getInstanceSize L#
+F class_getInstanceVariable ^{objc_ivar=}#*
+F class_getIvarLayout *#
+F class_getMethodImplementation ^?#:
+F class_getMethodImplementation_stret ^?#:
+F class_getName *#
+F class_getProperty ^{objc_property=}#*
+F class_getSuperclass ##
+F class_getVersion i#
+F class_getWeakIvarLayout *#
+F class_isMetaClass B#
+F class_replaceMethod ^?#:^?*
+F class_respondsToSelector B#:
+F class_setIvarLayout v#*
+F class_setSuperclass ###
+F class_setVersion v#i
+F class_setWeakIvarLayout v#*
+
+F ivar_getName *^{objc_ivar=}
+F ivar_getOffset i^{objc_ivar=}
+F ivar_getTypeEncoding *^{objc_ivar=}
+
+F method_copyArgumentType ^c^{objc_method=}I
+F method_copyReturnType ^c^{objc_method=}
+F method_exchangeImplementations v^{objc_method=}^{objc_method=}
+F method_getArgumentType v^{objc_method=}I^cL
+F method_getImplementation ^?^{objc_method=}
+F method_getName :^{objc_method=}
+F method_getNumberOfArguments I^{objc_method=}
+F method_getReturnType v^{objc_method=}^cL
+F method_getTypeEncoding *^{objc_method=}
+F method_setImplementation ^?^{objc_method=}^?
+
+F objc_allocateClassPair ##*L
+F objc_copyProtocolList ^@^I
+F objc_duplicateClass ##*L
+F objc_getClass #*
+F objc_getClassList i^#i
+F objc_getFutureClass #*
+F objc_getMetaClass @*
+F objc_getProtocol @*
+F objc_getRequiredClass @*
+F objc_lookUpClass @*
+F objc_registerClassPair v#
+F objc_setFutureClass v#*
+
+F object_copy @@L
+F object_dispose @@
+F object_getClass #@
+F object_getClassName *@
+F object_getIndexedIvars ^v@
+F object_getInstanceVariable ^{objc_ivar=}@*^^v
+F object_getIvar @@^{objc_ivar=}
+F object_setClass #@#
+F object_setInstanceVariable ^{objc_ivar=}@*^v
+F object_setIvar v@^{objc_ivar=}@
+
+F property_getAttributes *^{objc_property=}
+F property_getName *^{objc_property=}
+
+F protocol_conformsToProtocol B@@
+F protocol_copyMethodDescriptionList ^{objc_method_description=:*}@BB^I
+F protocol_copyPropertyList ^{objc_property=}@^I
+F protocol_copyProtocolList ^@@^I
+F protocol_getMethodDescription {objc_method_description=:*}@:BB
+F protocol_getName *@
+F protocol_getProperty ^{objc_property=}@*BB
+F protocol_isEqual B@@
+
+F sel_getName *:
+F sel_getUid :*
+F sel_isEqual B::
+F sel_registerName :*
+
+f UIKit
+
+F UIApplicationUseLegacyEvents vB
+
+F UIAccessibilityPostNotification vI@
+F UIApplicationMain ii^^c@@
+F UIGraphicsEndImageContext v
+F UIGraphicsGetCurrentContext @
+F UIGraphicsGetImageFromCurrentImageContext @
+F UIGraphicsPopContext v
+F UIGraphicsPushContext v@
+F UIImageJPEGRepresentation @@
+F UIImagePNGRepresentation @@
+F UIImageWriteToSavedPhotosAlbum v@@:^v
+
+F UIKeyboardDisableAutomaticAppearance v
+F UIKeyboardEnableAutomaticAppearance v
+F UIKeyboardInputModeUsesKBStar B@
+
+F _UIImageWithName @@
+
+F UIUnformattedPhoneNumberFromString @@
+
+V UIApp @
+
+V kUIButtonBarButtonAction @
+V kUIButtonBarButtonInfo @
+V kUIButtonBarButtonInfoOffset @
+V kUIButtonBarButtonSelectedInfo @
+V kUIButtonBarButtonSizeToFit @
+V kUIButtonBarButtonStyle @
+V kUIButtonBarButtonTag @
+V kUIButtonBarButtonTarget @
+V kUIButtonBarButtonTitle @
+V kUIButtonBarButtonTitleVerticalHeight @
+V kUIButtonBarButtonTitleWidth @
+V kUIButtonBarButtonType @
+
+V UIKeyboardAnimationCurveUserInfoKey @
+V UIKeyboardAnimationDurationUserInfoKey @
+V UIKeyboardBoundsUserInfoKey @
+V UIKeyboardCenterBeginUserInfoKey @
+V UIKeyboardCenterEndUserInfoKey @
+V UIKeyboardRequiresInternationalKey @
+
+V UIKeyboardCandidateCorrectionDidChangeNotification @
+V UIKeyboardCurrentInputModeDidChangeNotification @
+V UIKeyboardDefaultsDidChangeNotification @
+V UIKeyboardDidHideNotification @
+V UIKeyboardDidShowNotification @
+V UIKeyboardEmptyDelegateNotification @
+V UIKeyboardWillHideNotification @
+V UIKeyboardWillShowNotification @
+
+V UIWebViewDidReceiveMessageNotification @
+V UIWebViewDidClearMessagesNotification @
+V UIWebViewGrowsAndShrinksToFitHeight f
+V UIWebViewGrowsAndShrinksToFitWidth f
+V UIWebViewScalesToFitScale f
+
+f AddressBook
+
+F ABAddressBookAddRecord B@@^@
+F ABAddressBookCopyArrayOfAllGroups @@
+F ABAddressBookCopyArrayOfAllPeople @@
+F ABAddressBookCopyLocalizedLabel @@
+F ABAddressBookCreate @
+F ABAddressBookGetGroupCount l@
+F ABAddressBookGetPersonCount l@
+F ABAddressBookHasUnsavedChanges B@
+F ABAddressBookRegisterExternalChangeCallback v@^?^v
+F ABAddressBookRemoveRecord B@@^@
+F ABAddressBookRevert v@
+F ABAddressBookSave B@^@
+F ABAddressBookUnregisterExternalChangeCallback v@^?^v
+
+V ABAddressBookErrorDomain @
+C kABOperationNotPermittedByStoreError 0
+
+F ABMultiValueCopyArrayOfAllValues @@
+F ABMultiValueCopyLabelAtIndex @@l
+F ABMultiValueCopyValueAtIndex @@l
+F ABMultiValueGetCount l@
+F ABMultiValueGetFirstIndexOfValue l@@
+F ABMultiValueGetIdentifierAtIndex i@l
+F ABMultiValueGetIndexForIdentifier l@i
+F ABMultiValueGetPropertyType S@
+
+C kABMultiValueInvalidIdentifier -1
+
+F ABMultiValueAddValueAndLabel @@@^i
+F ABMultiValueCreateMutable @S
+F ABMultiValueCreateMutableCopy @@
+F ABMultiValueInsertValueAndLabelAtIndex B@@@l^i
+F ABMultiValueRemoveValueAndLabelAtIndex B@l
+F ABMultiValueReplaceLabelAtIndex B@@l
+F ABMultiValueReplaceValueAtIndex B@@l
+
+F ABRecordCopyCompositeName @@
+F ABRecordCopyValue @@i
+F ABRecordGetRecordID i@
+F ABRecordGetRecordType I@
+F ABRecordRemoveValue B@i^@
+F ABRecordSetValue B@i@^@
+
+C kABPersonType 0
+C kABGroupType 1
+
+# this was (1<<8)
+C kABMultiValueMask 0x100
+
+C kABInvalidPropertyType 0x0
+C kABStringPropertyType 0x1
+C kABIntegerPropertyType 0x2
+C kABRealPropertyType 0x3
+C kABDateTimePropertyType 0x4
+C kABDictionaryPropertyType 0x5
+C kABMultiStringPropertyType 0x101
+C kABMultiIntegerPropertyType 0x102
+C kABMultiRealPropertyType 0x103
+C kABMultiDateTimePropertyType 0x104
+C kABMultiDictionaryPropertyType 0x105
+
+C kABRecordInvalidID -1
+C kABPropertyInvalidID -1
+
+F ABAddressBookGetGroupWithRecordID @@i
+F ABGroupAddMember B@@^@
+F ABGroupCopyArrayOfAllMembers @@
+F ABGroupCopyArrayOfAllMembersWithSortOrdering @@I
+F ABGroupCreate @
+F ABGroupRemoveMember B@@^@
+
+V kABGroupNameProperty i
+
+F ABAddressBookCopyPeopleWithName @@@
+F ABAddressBookGetPersonWithRecordID @@i
+F ABPersonComparePeopleByName i@@I
+F ABPersonCopyImageData @@
+F ABPersonCopyLocalizedPropertyName @i
+F ABPersonCreate @
+F ABPersonGetCompositeNameFormat I
+F ABPersonGetSortOrdering I
+F ABPersonGetTypeOfProperty SI
+F ABPersonHasImageData B@
+F ABPersonRemoveImageData B@^@
+F ABPersonSetImageData B@@^@
+
+C kABPersonSortByFirstName 0
+C kABPersonSortByLastName 1
+
+C kABPersonCompositeNameFormatFirstNameFirst 0
+C kABPersonCompositeNameFormatLastNameFirst 1
+
+V kABPersonFirstNameProperty i
+V kABPersonLastNameProperty i
+V kABPersonMiddleNameProperty i
+V kABPersonPrefixProperty i
+V kABPersonSuffixProperty i
+V kABPersonNicknameProperty i
+V kABPersonFirstNamePhoneticProperty i
+V kABPersonLastNamePhoneticProperty i
+V kABPersonMiddleNamePhoneticProperty i
+V kABPersonOrganizationProperty i
+V kABPersonJobTitleProperty i
+V kABPersonDepartmentProperty i
+V kABPersonEmailProperty i
+V kABPersonBirthdayProperty i
+V kABPersonNoteProperty i
+V kABPersonCreationDateProperty i
+V kABPersonModificationDateProperty i
+
+V kABPersonAddressProperty i
+V kABPersonAddressStreetKey @
+V kABPersonAddressCityKey @
+V kABPersonAddressStateKey @
+V kABPersonAddressZIPKey @
+V kABPersonAddressCountryKey @
+V kABPersonAddressCountryCodeKey @
+
+V kABPersonDateProperty i
+V kABPersonAnniversaryLabel @
+
+V kABPersonKindProperty i
+V kABPersonKindPerson @
+V kABPersonKindOrganization @
+
+V kABPersonPhoneProperty i
+V kABPersonPhoneMobileLabel @
+V kABPersonPhoneIPhoneLabel @
+V kABPersonPhoneMainLabel @
+V kABPersonPhoneHomeFAXLabel @
+V kABPersonPhoneWorkFAXLabel @
+V kABPersonPhonePagerLabel @
+
+V kABPersonInstantMessageProperty i
+V kABPersonInstantMessageServiceKey @
+V kABPersonInstantMessageServiceYahoo @
+V kABPersonInstantMessageServiceJabber @
+V kABPersonInstantMessageServiceMSN @
+V kABPersonInstantMessageServiceICQ @
+V kABPersonInstantMessageServiceAIM @
+V kABPersonInstantMessageUsernameKey @
+
+V kABPersonURLProperty i
+V kABPersonHomePageLabel @
+
+V kABPersonRelatedNamesProperty i
+V kABPersonMotherLabel @
+V kABPersonFatherLabel @
+V kABPersonParentLabel @
+V kABPersonSisterLabel @
+V kABPersonBrotherLabel @
+V kABPersonChildLabel @
+V kABPersonFriendLabel @
+V kABPersonSpouseLabel @
+V kABPersonPartnerLabel @
+V kABPersonManagerLabel @
+V kABPersonAssistantLabel @
+
+V kABWorkLabel @
+V kABHomeLabel @
+V kABOtherLabel @
+
+f CoreLocation
+
+V kCLLocationAccuracyBest d
+V kCLLocationAccuracyNearestTenMeters d
+V kCLLocationAccuracyHundredMeters d
+V kCLLocationAccuracyKilometer d
+V kCLLocationAccuracyThreeKilometers d
+
+V kCLDistanceFilterNone d
+V kCLHeadingFilterNone d
+
+C kCLErrorLocationUnknown 0
+C kCLErrorDenied 1
+C kCLErrorNetwork 2
+C kCLErrorHeadingFailure 3
+
+V kCLErrorDomain @
+
+f CoreData
+
+C NSUndefinedAttributeType 0
+C NSInteger16AttributeType 100
+C NSInteger32AttributeType 200
+C NSInteger64AttributeType 300
+C NSDecimalAttributeType 400
+C NSDoubleAttributeType 500
+C NSFloatAttributeType 600
+C NSStringAttributeType 700
+C NSBooleanAttributeType 800
+C NSDateAttributeType 900
+C NSBinaryDataAttributeType 1000
+C NSTransformableAttributeType 1800
+C NSObjectIDAttributeType 2000
+
+C NSUndefinedEntityMappingType 0x00
+C NSCustomEntityMappingType 0x01
+C NSAddEntityMappingType 0x02
+C NSRemoveEntityMappingType 0x03
+C NSCopyEntityMappingType 0x04
+C NSTransformEntityMappingType 0x05
+
+V NSMigrationManagerKey @
+V NSMigrationSourceObjectKey @
+V NSMigrationDestinationObjectKey @
+V NSMigrationEntityMappingKey @
+V NSMigrationPropertyMappingKey @
+V NSMigrationPropertyMappingKey @
+
+C NSManagedObjectResultType 0x00
+C NSManagedObjectIDResultType 0x01
+C NSDictionaryResultType 0x02
+
+C NSFetchRequestExpressionType 50
+
+C NSSnapshotEventUndoInsertion 1<<1
+C NSSnapshotEventUndoDeletion 1<<2
+C NSSnapshotEventUndoUpdate 1<<3
+C NSSnapshotEventRollback 1<<4
+C NSSnapshotEventRefresh 1<<5
+C NSSnapshotEventMergePolicy 1<<6
+
+V NSInsertedObjectsKey @
+V NSUpdatedObjectsKey @
+V NSDeletedObjectsKey @
+V NSRefreshedObjectsKey @
+V NSInvalidatedObjectsKey @
+V NSInvalidatedAllObjectsKey @
+
+V NSErrorMergePolicy @
+V NSMergeByPropertyStoreTrumpMergePolicy @
+V NSMergeByPropertyObjectTrumpMergePolicy @
+V NSOverwriteMergePolicy @
+V NSRollbackMergePolicy @
+
+V NSSQLiteStoreType @
+V NSBinaryStoreType @
+V NSInMemoryStoreType @
+
+V NSStoreTypeKey @
+V NSStoreUUIDKey @
+
+V NSAddedPersistentStoresKey @
+V NSRemovedPersistentStoresKey @
+V NSUUIDChangedPersistentStoresKey @
+
+V NSReadOnlyPersistentStoreOption @
+V NSPersistentStoreTimeoutOption @
+V NSSQLitePragmasOption @
+V NSSQLiteAnalyzeOption @
+V NSSQLiteManualVacuumOption @
+
+V NSIgnorePersistentStoreVersioningOption @
+V NSMigratePersistentStoresAutomaticallyOption @
+V NSInferMappingModelAutomaticallyOption @
+
+V NSStoreModelVersionHashesKey @
+V NSStoreModelVersionIdentifiersKey @
+V NSPersistentStoreOSCompatibility @
+
+C NSNoActionDeleteRule 0
+C NSNullifyDeleteRule 1
+C NSCascadeDeleteRule 2
+C NSDenyDeleteRule 3
+
+C NSFetchedResultsChangeInsert 1
+C NSFetchedResultsChangeDelete 2
+C NSFetchedResultsChangeMove 3
+C NSFetchedResultsChangeUpdate 4
+
+V NSDetailedErrorsKey @
+V NSValidationObjectErrorKey @
+V NSValidationKeyErrorKey @
+V NSValidationPredicateErrorKey @
+V NSValidationValueErrorKey @
+V NSAffectedStoresErrorKey @
+V NSAffectedObjectsErrorKey @
+
+V NSSQLiteErrorDomain @
+
+C NSManagedObjectValidationError 1550
+C NSValidationMultipleErrorsError 1560
+C NSValidationMissingMandatoryPropertyError 1570
+C NSValidationRelationshipLacksMinimumCountError 1580
+C NSValidationRelationshipExceedsMaximumCountError 1590
+C NSValidationRelationshipDeniedDeleteError 1600
+C NSValidationNumberTooLargeError 1610
+C NSValidationNumberTooSmallError 1620
+C NSValidationDateTooLateError 1630
+C NSValidationDateTooSoonError 1640
+C NSValidationInvalidDateError 1650
+C NSValidationStringTooLongError 1660
+C NSValidationStringTooShortError 1670
+C NSValidationStringPatternMatchingError 1680
+
+C NSManagedObjectContextLockingError 132000
+C NSPersistentStoreCoordinatorLockingError 132010
+C NSManagedObjectReferentialIntegrityError 133000
+C NSManagedObjectExternalRelationshipError 133010
+C NSManagedObjectMergeError 133020
+
+C NSPersistentStoreInvalidTypeError 134000
+C NSPersistentStoreTypeMismatchError 134010
+C NSPersistentStoreIncompatibleSchemaError 134020
+C NSPersistentStoreSaveError 134030
+C NSPersistentStoreIncompleteSaveError 134040
+C NSPersistentStoreOperationError 134070
+C NSPersistentStoreOpenError 134080
+C NSPersistentStoreTimeoutError 134090
+C NSPersistentStoreIncompatibleVersionHashError 134100
+
+C NSMigrationError 134110
+C NSMigrationCancelledError 134120
+C NSMigrationMissingSourceModelError 134130
+C NSMigrationMissingMappingModelError 134140
+C NSMigrationManagerSourceStoreError 134150
+C NSMigrationManagerDestinationStoreError 134160
+C NSEntityMigrationPolicyError 134170
+C NSInferredMappingModelError 134190
+C NSExternalRecordImportError 134200
+
+C NSCoreDataError 134060
+C NSSQLiteError 134180
+
+V NSCoreDataVersionNumber d
+
+C NSCoreDataVersionNumber10_4 46.0
+C NSCoreDataVersionNumber10_4_3 77.0
+C NSCoreDataVersionNumber10_5 185.0
+C NSCoreDataVersionNumber10_5_3 186.0
+
+f MapKit
+
+C MKMapTypeStandard 0
+C MKMapTypeSatellite 1
+C MKMapTypeHybrid 2
+
+V MKErrorDomain @
+
+C MKErrorUnknown 1
+C MKErrorServerFailure 2
+C MKErrorLoadingThrottled 3
+C MKErrorPlacemarkNotFound 4
+
+C MKPinAnnotationColorRed 0
+C MKPinAnnotationColorGreen 1
+C MKPinAnnotationColorPurple 2
+
+# MKCoordinateRegionMake
+# MKCoordinateRegionMakeWithDistance
+# MKCoordinateSpanMake

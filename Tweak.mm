@@ -144,10 +144,10 @@ void *operator new [](size_t size, apr_pool_t *pool) {
 
 static JSContextRef Context_;
 
-static JSClassRef ffi_;
-static JSClassRef joc_;
-static JSClassRef ptr_;
-static JSClassRef sel_;
+static JSClassRef Functor_;
+static JSClassRef Instance_;
+static JSClassRef Pointer_;
+static JSClassRef Selector_;
 
 static JSObjectRef Array_;
 
@@ -157,13 +157,15 @@ static JSStringRef length_;
 
 static Class NSCFBoolean_;
 
+static NSMutableDictionary *Bridge_;
+
 struct Client {
     CFHTTPMessageRef message_;
     CFSocketRef socket_;
 };
 
 JSObjectRef CYMakeObject(JSContextRef context, id object) {
-    return JSObjectMake(context, joc_, [object retain]);
+    return JSObjectMake(context, Instance_, [object retain]);
 }
 
 @interface NSMethodSignature (Cyrver)
@@ -173,6 +175,14 @@ JSObjectRef CYMakeObject(JSContextRef context, id object) {
 @interface NSObject (Cyrver)
 - (NSString *) cy$toJSON;
 - (JSValueRef) cy$JSValueInContext:(JSContextRef)context;
+@end
+
+@interface NSString (Cyrver)
+- (void *) cy$symbol;
+@end
+
+@interface NSNumber (Cyrver)
+- (void *) cy$symbol;
 @end
 
 @implementation NSObject (Cyrver)
@@ -255,6 +265,10 @@ JSObjectRef CYMakeObject(JSContextRef context, id object) {
     return [self class] != NSCFBoolean_ ? JSValueMakeNumber(context, [self doubleValue]) : JSValueMakeBoolean(context, [self boolValue]);
 }
 
+- (void *) cy$symbol {
+    return [self pointerValue];
+}
+
 @end
 
 @implementation NSString (Cyrver)
@@ -272,6 +286,10 @@ JSObjectRef CYMakeObject(JSContextRef context, id object) {
     CFStringAppend(json, CFSTR("\""));
 
     return [reinterpret_cast<const NSString *>(json) autorelease];
+}
+
+- (void *) cy$symbol {
+    return dlsym(RTLD_DEFAULT, [self UTF8String]);
 }
 
 @end
@@ -316,7 +334,7 @@ JSContextRef JSGetContext() {
 void CYThrow(JSContextRef context, JSValueRef value);
 
 id CYCastNSObject(JSContextRef context, JSObjectRef object) {
-    if (JSValueIsObjectOfClass(context, object, joc_))
+    if (JSValueIsObjectOfClass(context, object, Instance_))
         return reinterpret_cast<id>(JSObjectGetPrivate(object));
     JSValueRef exception(NULL);
     bool array(JSValueIsInstanceOfConstructor(context, object, Array_, &exception));
@@ -586,13 +604,13 @@ static void OnAccept(CFSocketRef socket, CFSocketCallBackType type, CFDataRef ad
     }
 }
 
-static JSValueRef joc_getProperty(JSContextRef context, JSObjectRef object, JSStringRef propertyName, JSValueRef *exception) {
+static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object, JSStringRef propertyName, JSValueRef *exception) {
     return NULL;
 }
 
 typedef id jocData;
 
-static JSObjectRef joc_callAsConstructor(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { _pooled
+static JSObjectRef Instance_callAsConstructor(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { _pooled
     @try {
         id data(reinterpret_cast<jocData>(JSObjectGetPrivate(object)));
         return CYMakeObject(context, [[data alloc] autorelease]);
@@ -637,21 +655,42 @@ struct selData : ptrData {
     }
 };
 
-static void ptr_finalize(JSObjectRef object) {
+static void Pointer_finalize(JSObjectRef object) {
     ptrData *data(reinterpret_cast<ptrData *>(JSObjectGetPrivate(object)));
     apr_pool_destroy(data->pool_);
 }
 
-static void joc_finalize(JSObjectRef object) {
+static void Instance_finalize(JSObjectRef object) {
     id data(reinterpret_cast<jocData>(JSObjectGetPrivate(object)));
     [data release];
 }
 
-static JSValueRef obc_getProperty(JSContextRef context, JSObjectRef object, JSStringRef propertyName, JSValueRef *exception) { _pooled
-    NSString *name([(NSString *) JSStringCopyCFString(kCFAllocatorDefault, propertyName) autorelease]);
-    if (Class _class = NSClassFromString(name))
-        return CYMakeObject(context, _class);
-    return NULL;
+JSObjectRef CYMakeFunction(JSContextRef context, void (*function)(), const char *type) {
+    ffiData *data(new ffiData(function, type));
+    return JSObjectMake(context, Functor_, data);
+}
+
+
+JSObjectRef CYMakeFunction(JSContextRef context, void *function, const char *type) {
+    return CYMakeFunction(context, reinterpret_cast<void (*)()>(function), type);
+}
+
+static JSValueRef Global_getProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef *exception) { _pooled
+    @try {
+        NSString *string(CYCastNSString(name));
+        if (Class _class = NSClassFromString(string))
+            return CYMakeObject(context, _class);
+        if (NSMutableArray *entry = [Bridge_ objectForKey:string])
+            switch ([[entry objectAtIndex:0] intValue]) {
+                case 0:
+                    return CYMakeFunction(context, [string cy$symbol], [[entry objectAtIndex:1] UTF8String]);
+                case 1:
+                    _assert(false);
+                case 2:
+                    return JSEvaluateScript(JSGetContext(), CYString([entry objectAtIndex:1]), NULL, NULL, 0, NULL);
+            }
+        return NULL;
+    } CYCatch
 }
 
 void CYSetProperty(JSContextRef context, JSObjectRef object, const char *name, JSValueRef value) {
@@ -687,7 +726,7 @@ char *CYPoolCString(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
 SEL CYCastSEL(JSContextRef context, JSValueRef value) {
     if (JSValueIsNull(context, value))
         return NULL;
-    else if (JSValueIsObjectOfClass(context, value, sel_)) {
+    else if (JSValueIsObjectOfClass(context, value, Selector_)) {
         selData *data(reinterpret_cast<selData *>(JSObjectGetPrivate((JSObjectRef) value)));
         return reinterpret_cast<SEL>(data->value_);
     } else
@@ -702,7 +741,7 @@ void *CYCastPointer(JSContextRef context, JSValueRef value) {
             return dlsym(RTLD_DEFAULT, CYCastCString(context, value));
         case kJSTypeObject:
             // XXX: maybe support more than just pointers, like ffis and sels
-            if (JSValueIsObjectOfClass(context, value, ptr_)) {
+            if (JSValueIsObjectOfClass(context, value, Pointer_)) {
                 ptrData *data(reinterpret_cast<ptrData *>(JSObjectGetPrivate((JSObjectRef) value)));
                 return data->value_;
             }
@@ -804,14 +843,14 @@ JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, void *data) {
         case sig::selector_P: {
             if (SEL sel = *reinterpret_cast<SEL *>(data)) {
                 selData *data(new selData(sel));
-                value = JSObjectMake(context, sel_, data);
+                value = JSObjectMake(context, Selector_, data);
             } else value = JSValueMakeNull(context);
         } break;
 
         case sig::pointer_P: {
             if (void *pointer = *reinterpret_cast<void **>(data)) {
                 ptrData *data(new ptrData(pointer));
-                value = JSObjectMake(context, ptr_, data);
+                value = JSObjectMake(context, Pointer_, data);
             } else value = JSValueMakeNull(context);
         } break;
 
@@ -918,28 +957,23 @@ static JSValueRef ffi_callAsFunction(JSContextRef context, JSObjectRef object, J
     return CYCallFunction(context, count, arguments, exception, &data->signature_, &data->cif_, reinterpret_cast<void (*)()>(data->value_));
 }
 
-JSObjectRef CYMakeFunction(JSContextRef context, void (*function)(), const char *type) {
-    ffiData *data(new ffiData(function, type));
-    return JSObjectMake(context, ffi_, data);
-}
-
 JSObjectRef ffi(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     @try {
         if (count != 2)
             [NSException raise:NSInvalidArgumentException format:@"incorrect number of arguments to ffi constructor"];
-        void (*function)() = reinterpret_cast<void (*)()>(CYCastPointer(context, arguments[0]));
+        void *function(CYCastPointer(context, arguments[0]));
         const char *type(CYCastCString(context, arguments[1]));
         return CYMakeFunction(context, function, type);
     } CYCatch
 }
 
-JSValueRef ptr_getProperty_value(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef *exception) {
+JSValueRef Pointer_getProperty_value(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef *exception) {
     ptrData *data(reinterpret_cast<ptrData *>(JSObjectGetPrivate(object)));
     return JSValueMakeNumber(context, reinterpret_cast<uintptr_t>(data->value_));
 }
 
-static JSStaticValue ptr_staticValues[2] = {
-    {"value", &ptr_getProperty_value, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete},
+static JSStaticValue Pointer_staticValues[2] = {
+    {"value", &Pointer_getProperty_value, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete},
     {NULL, NULL, NULL, 0}
 };
 
@@ -970,128 +1004,43 @@ MSInitialize { _pooled
     JSClassDefinition definition;
 
     definition = kJSClassDefinitionEmpty;
-    definition.getProperty = &obc_getProperty;
-    JSClassRef obc(JSClassCreate(&definition));
+    definition.className = "Pointer";
+    definition.staticValues = Pointer_staticValues;
+    definition.finalize = &Pointer_finalize;
+    Pointer_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
-    definition.className = "ptr";
-    definition.staticValues = ptr_staticValues;
-    definition.finalize = &ptr_finalize;
-    ptr_ = JSClassCreate(&definition);
-
-    definition = kJSClassDefinitionEmpty;
-    definition.className = "ffi";
-    definition.parentClass = ptr_;
+    definition.className = "Functor";
+    definition.parentClass = Pointer_;
     definition.callAsFunction = &ffi_callAsFunction;
-    ffi_ = JSClassCreate(&definition);
+    Functor_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
-    definition.className = "sel";
-    definition.parentClass = ptr_;
-    sel_ = JSClassCreate(&definition);
+    definition.className = "Selector";
+    definition.parentClass = Pointer_;
+    Selector_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
-    definition.className = "joc";
-    definition.getProperty = &joc_getProperty;
-    definition.callAsConstructor = &joc_callAsConstructor;
-    definition.finalize = &joc_finalize;
-    joc_ = JSClassCreate(&definition);
+    definition.className = "Instance_";
+    definition.getProperty = &Instance_getProperty;
+    definition.callAsConstructor = &Instance_callAsConstructor;
+    definition.finalize = &Instance_finalize;
+    Instance_ = JSClassCreate(&definition);
 
-    JSContextRef context(JSGlobalContextCreate(obc));
+    definition = kJSClassDefinitionEmpty;
+    definition.getProperty = &Global_getProperty;
+    JSClassRef Global(JSClassCreate(&definition));
+
+    JSContextRef context(JSGlobalContextCreate(Global));
     Context_ = context;
 
     JSObjectRef global(JSContextGetGlobalObject(context));
 
-    CYSetProperty(context, global, "ffi", JSObjectMakeConstructor(context, ffi_, &ffi));
-    CYSetProperty(context, global, "obc", JSObjectMake(context, obc, NULL));
-
-#define CYSetFunction_(name, type) \
-    CYSetProperty(context, global, #name, CYMakeFunction(context, reinterpret_cast<void (*)()>(&name), type))
-
-    CYSetFunction_(class_addIvar, "B#*LC*");
-    CYSetFunction_(class_addMethod, "B#:^?*");
-    CYSetFunction_(class_addProtocol, "B#@");
-    CYSetFunction_(class_conformsToProtocol, "B#@");
-    CYSetFunction_(class_copyIvarList, "^^{objc_ivar=}#^I");
-    CYSetFunction_(class_copyMethodList, "^^{objc_method=}#^I");
-    CYSetFunction_(class_copyPropertyList, "^^{objc_property=}#^I");
-    CYSetFunction_(class_copyProtocolList, "^@#^I");
-    CYSetFunction_(class_createInstance, "@#L");
-    CYSetFunction_(class_getClassMethod, "^{objc_method=}#:");
-    CYSetFunction_(class_getClassVariable, "^{objc_ivar=}#*");
-    CYSetFunction_(class_getInstanceMethod, "^{objc_method=}#:");
-    CYSetFunction_(class_getInstanceSize, "L#");
-    CYSetFunction_(class_getInstanceVariable, "^{objc_ivar=}#*");
-    CYSetFunction_(class_getIvarLayout, "*#");
-    CYSetFunction_(class_getMethodImplementation, "^?#:");
-    CYSetFunction_(class_getMethodImplementation_stret, "^?#:");
-    CYSetFunction_(class_getName, "*#");
-    CYSetFunction_(class_getProperty, "^{objc_property=}#*");
-    CYSetFunction_(class_getSuperclass, "##");
-    CYSetFunction_(class_getVersion, "i#");
-    CYSetFunction_(class_getWeakIvarLayout, "*#");
-    CYSetFunction_(class_isMetaClass, "B#");
-    CYSetFunction_(class_replaceMethod, "^?#:^?*");
-    CYSetFunction_(class_respondsToSelector, "B#:");
-    CYSetFunction_(class_setIvarLayout, "v#*");
-    CYSetFunction_(class_setSuperclass, "###");
-    CYSetFunction_(class_setVersion, "v#i");
-    CYSetFunction_(class_setWeakIvarLayout, "v#*");
-    CYSetFunction_(ivar_getName, "*^{objc_ivar=}");
-    CYSetFunction_(ivar_getOffset, "i^{objc_ivar=}");
-    CYSetFunction_(ivar_getTypeEncoding, "*^{objc_ivar=}");
-    CYSetFunction_(method_copyArgumentType, "^c^{objc_method=}I");
-    CYSetFunction_(method_copyReturnType, "^c^{objc_method=}");
-    CYSetFunction_(method_exchangeImplementations, "v^{objc_method=}^{objc_method=}");
-    CYSetFunction_(method_getArgumentType, "v^{objc_method=}I^cL");
-    CYSetFunction_(method_getImplementation, "^?^{objc_method=}");
-    CYSetFunction_(method_getName, ":^{objc_method=}");
-    CYSetFunction_(method_getNumberOfArguments, "I^{objc_method=}");
-    CYSetFunction_(method_getReturnType, "v^{objc_method=}^cL");
-    CYSetFunction_(method_getTypeEncoding, "*^{objc_method=}");
-    CYSetFunction_(method_setImplementation, "^?^{objc_method=}^?");
-    CYSetFunction_(objc_allocateClassPair, "##*L");
-    CYSetFunction_(objc_copyProtocolList, "^@^I");
-    CYSetFunction_(objc_duplicateClass, "##*L");
-    CYSetFunction_(objc_getClass, "#*");
-    CYSetFunction_(objc_getClassList, "i^#i");
-    CYSetFunction_(objc_getFutureClass, "#*");
-    CYSetFunction_(objc_getMetaClass, "@*");
-    CYSetFunction_(objc_getProtocol, "@*");
-    CYSetFunction_(objc_getRequiredClass, "@*");
-    CYSetFunction_(objc_lookUpClass, "@*");
-    CYSetFunction_(objc_registerClassPair, "v#");
-    CYSetFunction_(objc_setFutureClass, "v#*");
-    CYSetFunction_(object_copy, "@@L");
-    CYSetFunction_(object_dispose, "@@");
-    CYSetFunction_(object_getClass, "#@");
-    CYSetFunction_(object_getClassName, "*@");
-    CYSetFunction_(object_getIndexedIvars, "^v@");
-    CYSetFunction_(object_getInstanceVariable, "^{objc_ivar=}@*^^v");
-    CYSetFunction_(object_getIvar, "@@^{objc_ivar=}");
-    CYSetFunction_(object_setClass, "#@#");
-    CYSetFunction_(object_setInstanceVariable, "^{objc_ivar=}@*^v");
-    CYSetFunction_(object_setIvar, "v@^{objc_ivar=}@");
-    CYSetFunction_(property_getAttributes, "*^{objc_property=}");
-    CYSetFunction_(property_getName, "*^{objc_property=}");
-    CYSetFunction_(protocol_conformsToProtocol, "B@@");
-    CYSetFunction_(protocol_copyMethodDescriptionList, "^{objc_method_description=:*}@BB^I");
-    CYSetFunction_(protocol_copyPropertyList, "^{objc_property=}@^I");
-    CYSetFunction_(protocol_copyProtocolList, "^@@^I");
-    CYSetFunction_(protocol_getMethodDescription, "{objc_method_description=:*}@:BB");
-    CYSetFunction_(protocol_getName, "*@");
-    CYSetFunction_(protocol_getProperty, "^{objc_property=}@*BB");
-    CYSetFunction_(protocol_isEqual, "B@@");
-    CYSetFunction_(sel_getName, "*:");
-    CYSetFunction_(sel_getUid, ":*");
-    CYSetFunction_(sel_isEqual, "B::");
-    CYSetFunction_(sel_registerName, ":*");
+    CYSetProperty(context, global, "ffi", JSObjectMakeConstructor(context, Functor_, &ffi));
 
     CYSetProperty(context, global, "objc_msgSend", JSObjectMakeFunctionWithCallback(context, CYString("objc_msgSend"), &$objc_msgSend));
 
-    CYSetProperty(context, global, "YES", JSValueMakeBoolean(context, true));
-    CYSetProperty(context, global, "NO", JSValueMakeBoolean(context, false));
-    CYSetProperty(context, global, "nil", JSValueMakeNull(context));
+    Bridge_ = [[NSMutableDictionary dictionaryWithContentsOfFile:@"/usr/lib/libcyrver.plist"] retain];
 
     name_ = JSStringCreateWithUTF8CString("name");
     message_ = JSStringCreateWithUTF8CString("message");
