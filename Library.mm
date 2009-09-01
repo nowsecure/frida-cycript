@@ -995,9 +995,7 @@ void CYConsole(FILE *fin, FILE *fout, FILE *ferr) {
     __gnu_cxx::stdio_filebuf<char> bin(fin, std::ios::in);
     std::istream sin(&bin);
 
-    for (;;) {
-        NSAutoreleasePool *pool([[NSAutoreleasePool alloc] init]);
-
+    for (;;) { _pooled
         fputs(">>> ", fout);
         fflush(fout);
 
@@ -1031,8 +1029,6 @@ void CYConsole(FILE *fin, FILE *fout, FILE *ferr) {
             fputs("\n", fout);
             fflush(fout);
         }
-
-        [pool release];
     }
 }
 
