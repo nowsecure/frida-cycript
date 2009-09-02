@@ -71,6 +71,8 @@
 
 #include <iostream>
 #include <ext/stdio_filebuf.h>
+#include <set>
+#include <map>
 
 #undef _assert
 #undef _trace
@@ -990,19 +992,37 @@ static JSStaticValue Pointer_staticValues[2] = {
 };
 
 enum CYTokenType {
-    /*CYTokenBreak,    CYTokenCase,   CYTokenCatch, CYTokenContinue,   CYTokenDefault,
+    CYTokenBreak,    CYTokenCase,   CYTokenCatch, CYTokenContinue,   CYTokenDefault,
     CYTokenDelete,   CYTokenDo,     CYTokenElse,  CYTokenFinally,    CYTokenFor,
     CYTokenFunction, CYTokenIf,     CYTokenIn,    CYTokenInstanceOf, CYTokenNew,
     CYTokenReturn,   CYTokenSwitch, CYTokenThis,  CYTokenThrow,      CYTokenTry,
-    CYTokenTypeOf,   CYTokenVar,    CYTokenVoid,  CYTokenWhile,      CYTokenWith,*/
+    CYTokenTypeOf,   CYTokenVar,    CYTokenVoid,  CYTokenWhile,      CYTokenWith,
 
-    CYTokenWord, CYTokenPunctuation, CYTokenLiteral,
-    CYTokenSemiColon, CYTokenOpen, CYTokenClose,
+    CYTokenOpenBrace, CYTokenOpenParen, CYTokenOpenBracket,
+    CYTokenCloseBrace, CYTokenCloseParen, CYTokenCloseBracket,
+
+    CYTokenPeriod, CYTokenSemiColon, CYTokenComma, CYTokenLeft, CYTokenRight,
+    CYTokenLeftEqual, CYTokenRightEqual, CYTokenEqualEqual, CYTokenExclamationEqual,
+    CYTokenEqualEqualEqual, CYTokenExclamationEqualEqual, CYTokenPlus, CYTokenHyphen,
+    CYTokenStar, CYTokenPercent, CYTokenPlusPlus, CYTokenHyphenHyphen, CYTokenLeftLeft,
+    CYTokenRightRight, CYTokenRightRightRight, CYTokenAmpersand, CYTokenPipe,
+    CYTokenCarrot, CYTokenExclamation, CYTokenTilde, CYTokenAmpersandAmpersand,
+    CYTokenPipePipe, CYTokenQuestion, CYTokenColon, CYTokenEqual, CYTokenPlusEqual,
+    CYTokenHyphenEqual, CYTokenStarEqual, CYTokenPercentEqual, CYTokenLeftLeftEqual,
+    CYTokenRightRightEqual, CYTokenRightRightRightEqual, CYTokenAmpersandEqual,
+    CYTokenPipeEqual, CYTokenCarrotEqual, CYTokenSlash, CYTokenSlashEqual,
+
+    CYTokenIdentifier, CYTokenLiteral
 };
+
+typedef std::map<const char *, CYTokenType> TokenMap;
+TokenMap Tokens_;
 
 struct CYToken {
     enum CYTokenType type_;
     char *value_;
+    CYToken *next_;
+    CYToken **prev_;
 };
 
 struct CYExpression {
@@ -1018,7 +1038,7 @@ struct CYRange {
     }
 
     bool operator [](uint8_t value) const {
-        return (value >> 7) && (value >> 6 ? hi_ : lo_) >> (value & 0x3f) & 0x1;
+        return !(value >> 7) && (value >> 6 ? hi_ : lo_) >> (value & 0x3f) & 0x1;
     }
 
     void operator()(uint8_t value) {
@@ -1031,10 +1051,21 @@ struct CYRange {
 CYRange WordStartRange_(0x1000000000LLU,0x7fffffe87fffffeLLU); // A-Za-z_$
 CYRange WordEndRange_(0x3ff001000000000LLU,0x7fffffe87fffffeLLU); // A-Za-z_$0-9
 CYRange NumberRange_(0x3ff400000000000LLU,0x100007e0100007eLLU); // 0-9.eExXA-Fa-f
-CYRange PunctuationRange_(0xfc00fc6200000001LLU,0x5000000040000000LLU); // -.,;<>=!+*/%&|^~?:
+CYRange PunctuationRange_(0xfc00fc6200000000LLU,0x5000000040000000LLU); // -.,;<>=!+*/%&|^~?:
+
+struct CStringMapLess :
+    std::binary_function<const char *, const char *, bool>
+{
+    _finline bool operator ()(const char *lhs, const char *rhs) const {
+        return strcmp(lhs, rhs) < 0;
+    }
+};
+
+std::set<const char *, CStringMapLess> OperatorWords_;
 
 struct CYParser {
-    FILE *file_;
+    FILE *fin_;
+    FILE *fout_;
 
     size_t capacity_;
     char *data_;
@@ -1042,8 +1073,9 @@ struct CYParser {
     size_t offset_;
     size_t size_;
 
-    CYParser(FILE *file) :
-        file_(file),
+    CYParser(FILE *fin, FILE *fout) :
+        fin_(fin),
+        fout_(fout),
         capacity_(1024),
         data_(reinterpret_cast<char *>(malloc(capacity_))),
         offset_(0),
@@ -1056,12 +1088,18 @@ struct CYParser {
         free(data_);
     }
 
-    bool ReadLine() {
+    bool ReadLine(const char *prompt) {
         offset_ = 0;
         data_[capacity_ - 1] = ~'\0';
 
       start:
-        if (fgets(data_, capacity_, file_) == NULL)
+        if (fout_ != NULL) {
+            fputs(prompt, fout_);
+            fputs(" ", fout_);
+            fflush(fout_);
+        }
+
+        if (fgets(data_, capacity_, fin_) == NULL)
             return false;
 
       check:
@@ -1069,16 +1107,22 @@ struct CYParser {
             size_ = strlen(data_);
             if (size_ == 0)
                 goto start;
-        } else if (data_[capacity_ - 2] == '\n')
+            if (data_[size_ - 1] == '\n') {
+                --size_;
+                goto newline;
+            }
+        } else if (data_[capacity_ - 2] == '\n') {
             size_ = capacity_ - 2;
-        else {
+          newline:
+            data_[size_] = '\0';
+        } else {
             size_t capacity(capacity_ * 2);
             char *data(reinterpret_cast<char *>(realloc(data_, capacity)));
             _assert(data != NULL);
             data_ = data;
             size_ = capacity_ - 1;
             capacity_ = capacity;
-            fgets(data_ + size_, capacity_ - size_, file_);
+            fgets(data_ + size_, capacity_ - size_, fin_);
             goto check;
         }
 
@@ -1089,11 +1133,11 @@ struct CYParser {
         while (range[data_[++offset_]]);
     }
 
-    CYToken *CYParseToken(apr_pool_t *pool, bool expecting) {
+    CYToken *ParseToken(apr_pool_t *pool, const char *prompt) {
         char next;
 
         for (;;) {
-            if (offset_ == size_ && (!expecting || !ReadLine()))
+            if (offset_ == size_ && (prompt == NULL || !ReadLine(prompt)))
                 return false;
             next = data_[offset_];
             if (next != ' ' && next != '\t')
@@ -1107,8 +1151,6 @@ struct CYParser {
         if (WordStartRange_[next]) {
             ScanRange(WordEndRange_);
             type = CYTokenWord;
-        } else if (next == '"' || next == '\'') {
-            _assert(false);
         } else if (next == '.') {
             char after(data_[offset_ + 1]);
             if (after >= '0' && next <= '9')
@@ -1122,6 +1164,22 @@ struct CYParser {
           punctuation:
             ScanRange(PunctuationRange_);
             type = CYTokenPunctuation;
+        } else if (next == '"' || next == '\'') {
+            for (;;) {
+                char after(data_[++offset_]);
+                if (after == '\\') {
+                    after = data_[offset_];
+                    _assert(after != '\0');
+                    if (after == 'u') {
+                        offset_ += 4;
+                        _assert(offset_ < size_);
+                    }
+                } else if (after == next)
+                    break;
+            }
+
+            ++offset_;
+            type = CYTokenLiteral;
         } else if (next == '(' || next == '{' || next == '[') {
             ++offset_;
             type = CYTokenOpen;
@@ -1132,29 +1190,46 @@ struct CYParser {
             ++offset_;
             type = CYTokenSemiColon;
         } else {
+            printf(":( %u\n", next);
             _assert(false);
         }
 
+        char *value(apr_pstrndup(pool, data_ + index, offset_ - index));
+
+        if (type == CYTokenWord && OperatorWords_.find(value) != OperatorWords_.end())
+            type = CYTokenPunctuation;
+
         CYToken *token(new(pool) CYToken());
         token->type_ = type;
-        token->value_ = apr_pstrndup(pool, data_ + index, offset_ - index);
+        token->value_ = value;
+        token->next_ = token;
+        token->prev_ = &token->next_;
+        return token;
+    }
+
+    CYToken *ParseExpression(apr_pool_t *pool, const char *prompt) {
+        CYToken *token(ParseToken(pool, prompt));
         return token;
     }
 };
 
 void CYConsole(FILE *fin, FILE *fout, FILE *ferr) {
-    std::string line;
-
-    __gnu_cxx::stdio_filebuf<char> bin(fin, std::ios::in);
-    std::istream sin(&bin);
+    CYParser parser(fin, fout);
 
     for (;;) { _pooled
-        fputs(">>> ", fout);
-        fflush(fout);
-
-        if (!std::getline(sin, line))
-            break;
-
+        CYPool pool;
+        CYToken *token(parser.ParseExpression(pool, ">>>"));
+        if (token == NULL)
+            return;
+        fputs("<", fout);
+        CYToken *next(token);
+        do {
+            fputs(next->value_, fout);
+            next = next->next_;
+            fputs("|", fout);
+        } while (next != token);
+        fputs(">\n", fout);
+#if 0
         JSStringRef script(JSStringCreateWithUTF8CString(line.c_str()));
 
         JSContextRef context(JSGetContext());
@@ -1182,6 +1257,7 @@ void CYConsole(FILE *fin, FILE *fout, FILE *ferr) {
             fputs("\n", fout);
             fflush(fout);
         }
+#endif
     }
 }
 
@@ -1249,6 +1325,75 @@ MSInitialize { _pooled
     CYSetProperty(context, global, "objc_msgSend", JSObjectMakeFunctionWithCallback(context, CYString("objc_msgSend"), &$objc_msgSend));
 
     Bridge_ = [[NSMutableDictionary dictionaryWithContentsOfFile:@"/usr/lib/libcycript.plist"] retain];
+
+    Tokens_.insert(TokenMap::value_type("break", CYTokenBreak));
+    Tokens_.insert(TokenMap::value_type("case", CYTokenCase));
+    Tokens_.insert(TokenMap::value_type("catch", CYTokenCatch));
+    Tokens_.insert(TokenMap::value_type("continue", CYTokenContinue));
+    Tokens_.insert(TokenMap::value_type("default", CYTokenDefault));
+    Tokens_.insert(TokenMap::value_type("delete", CYTokenDelete));
+    Tokens_.insert(TokenMap::value_type("do", CYTokenDo));
+    Tokens_.insert(TokenMap::value_type("else", CYTokenElse));
+    Tokens_.insert(TokenMap::value_type("finally", CYTokenFinally));
+    Tokens_.insert(TokenMap::value_type("for", CYTokenFor));
+    Tokens_.insert(TokenMap::value_type("function", CYTokenFunction));
+    Tokens_.insert(TokenMap::value_type("if", CYTokenIf));
+    Tokens_.insert(TokenMap::value_type("in", CYTokenIn));
+    Tokens_.insert(TokenMap::value_type("instanceof", CYTokenInstanceOf));
+    Tokens_.insert(TokenMap::value_type("new", CYTokenNew));
+    Tokens_.insert(TokenMap::value_type("return", CYTokenReturn));
+    Tokens_.insert(TokenMap::value_type("switch", CYTokenSwitch));
+    Tokens_.insert(TokenMap::value_type("this", CYTokenThis));
+    Tokens_.insert(TokenMap::value_type("throw", CYTokenThrow));
+    Tokens_.insert(TokenMap::value_type("try", CYTokenTry));
+    Tokens_.insert(TokenMap::value_type("typeof", CYTokenTypeOf));
+    Tokens_.insert(TokenMap::value_type("var", CYTokenVar));
+    Tokens_.insert(TokenMap::value_type("void", CYTokenVoid));
+    Tokens_.insert(TokenMap::value_type("while", CYTokenWhile));
+    Tokens_.insert(TokenMap::value_type("with", CYTokenWith));
+
+    Tokens_.insert(TokenMap::value_type("&", CYTokenAmpersand));
+    Tokens_.insert(TokenMap::value_type("&&", CYTokenAmpersandAmpersand));
+    Tokens_.insert(TokenMap::value_type("&=", CYTokenAmpersandEqual));
+    Tokens_.insert(TokenMap::value_type("^", CYTokenCarrot));
+    Tokens_.insert(TokenMap::value_type("^=", CYTokenCarrotEqual));
+    Tokens_.insert(TokenMap::value_type(":", CYTokenColon));
+    Tokens_.insert(TokenMap::value_type(",", CYTokenComma));
+    Tokens_.insert(TokenMap::value_type("=", CYTokenEqual));
+    Tokens_.insert(TokenMap::value_type("==", CYTokenEqualEqual));
+    Tokens_.insert(TokenMap::value_type("===", CYTokenEqualEqualEqual));
+    Tokens_.insert(TokenMap::value_type("!", CYTokenExclamation));
+    Tokens_.insert(TokenMap::value_type("!=", CYTokenExclamationEqual));
+    Tokens_.insert(TokenMap::value_type("!==", CYTokenExclamationEqualEqual));
+    Tokens_.insert(TokenMap::value_type("-", CYTokenHyphen));
+    Tokens_.insert(TokenMap::value_type("-=", CYTokenHyphenEqual));
+    Tokens_.insert(TokenMap::value_type("--", CYTokenHyphenHyphen));
+    Tokens_.insert(TokenMap::value_type("<", CYTokenLeft));
+    Tokens_.insert(TokenMap::value_type("<=", CYTokenLeftEqual));
+    Tokens_.insert(TokenMap::value_type("<<", CYTokenLeftLeft));
+    Tokens_.insert(TokenMap::value_type("<<=", CYTokenLeftLeftEqual));
+    Tokens_.insert(TokenMap::value_type("%", CYTokenPercent));
+    Tokens_.insert(TokenMap::value_type("%=", CYTokenPercentEqual));
+    Tokens_.insert(TokenMap::value_type(".", CYTokenPeriod));
+    Tokens_.insert(TokenMap::value_type("|", CYTokenPipe));
+    Tokens_.insert(TokenMap::value_type("|=", CYTokenPipeEqual));
+    Tokens_.insert(TokenMap::value_type("||", CYTokenPipePipe));
+    Tokens_.insert(TokenMap::value_type("+", CYTokenPlus));
+    Tokens_.insert(TokenMap::value_type("+=", CYTokenPlusEqual));
+    Tokens_.insert(TokenMap::value_type("++", CYTokenPlusPlus));
+    Tokens_.insert(TokenMap::value_type("?", CYTokenQuestion));
+    Tokens_.insert(TokenMap::value_type(">", CYTokenRight));
+    Tokens_.insert(TokenMap::value_type(">=", CYTokenRightEqual));
+    Tokens_.insert(TokenMap::value_type(">>", CYTokenRightRight));
+    Tokens_.insert(TokenMap::value_type(">>=", CYTokenRightRightEqual));
+    Tokens_.insert(TokenMap::value_type(">>>", CYTokenRightRightRight));
+    Tokens_.insert(TokenMap::value_type(">>>=", CYTokenRightRightRightEqual));
+    Tokens_.insert(TokenMap::value_type(";", CYTokenSemiColon));
+    Tokens_.insert(TokenMap::value_type("/", CYTokenSlash));
+    Tokens_.insert(TokenMap::value_type("/=", CYTokenSlashEqual));
+    Tokens_.insert(TokenMap::value_type("*", CYTokenStar));
+    Tokens_.insert(TokenMap::value_type("*=", CYTokenStarEqual));
+    Tokens_.insert(TokenMap::value_type("~", CYTokenTilde));
 
     name_ = JSStringCreateWithUTF8CString("name");
     message_ = JSStringCreateWithUTF8CString("message");
