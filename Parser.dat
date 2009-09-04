@@ -1,0 +1,67 @@
+&    AddressOf R BitwiseAnd 5
+&&   - R LogicalAnd 8
+&=   - A BitwiseAnd
+^    - R BitwiseXor 6
+^=   - A BitwiseXor
+=    - A
+==   - R Equal 4
+===  - R Identical 4
+!    LogicalNot
+!=   - R NotEqual 4
+!==  - R NotIdentical 4
+-    Negate R Subtract 1
+-=   - A Subtract
+--   PreDecrement R PostDecrement
+->   - U Indirect
+<    - R LessThan 3
+<=   - R LessThanOrEqual 3
+<<   - R LeftShift 2
+<<=  - A LeftShift
+%    - R Modulus 0
+%=   - A Modulus
+.    - U Direct
+|    - R BitwiseOr 7
+|=   - A BitwiseOr
+||   - R LogicalOr 9
++    Affirm R Add 1
++=   - A Add
+++   PreIncrement R PostIncrement
+>    - R GreaterThan 3
+>=   - R GreaterThanOrEqual 3
+>>   - R SignedRightShift 2
+>>=  - A SignedRightShift
+>>>  - R UnsignedRightShift 2
+>>>= - A UnsignedRightShift
+/    - R Divide 0
+/=   - A Divide
+*    Indirect R Multiply 0
+*=   - A Multiply
+~    BitwiseNot
+Break -
+Case -
+Catch -
+Continue -
+Default -
+Delete Delete
+Do -
+Else -
+False - L
+Finally -
+For -
+Function -
+If -
+In - R In 3
+InstanceOf - R InstanceOf 3
+New -
+Null - L
+Return -
+Switch -
+This - V
+Throw -
+True - L
+Try -
+TypeOf TypeOf
+Var -
+Void Void
+While -
+With -
