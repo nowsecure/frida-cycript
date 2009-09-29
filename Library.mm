@@ -88,56 +88,6 @@
     CFLog(kCFLogLevelNotice, CFSTR("_trace():%u"), __LINE__); \
 } while (false)
 
-/* Objective-C Handle<> {{{ */
-template <typename Type_>
-class _H {
-    typedef _H<Type_> This_;
-
-  private:
-    Type_ *value_;
-
-    _finline void Retain_() {
-        if (value_ != nil)
-            [value_ retain];
-    }
-
-    _finline void Clear_() {
-        if (value_ != nil)
-            [value_ release];
-    }
-
-  public:
-    _finline _H(const This_ &rhs) :
-        value_(rhs.value_ == nil ? nil : [rhs.value_ retain])
-    {
-    }
-
-    _finline _H(Type_ *value = NULL, bool mended = false) :
-        value_(value)
-    {
-        if (!mended)
-            Retain_();
-    }
-
-    _finline ~_H() {
-        Clear_();
-    }
-
-    _finline operator Type_ *() const {
-        return value_;
-    }
-
-    _finline This_ &operator =(Type_ *value) {
-        if (value_ != value) {
-            Type_ *old(value_);
-            value_ = value;
-            Retain_();
-            if (old != nil)
-                [old release];
-        } return *this;
-    }
-};
-/* }}} */
 /* APR Pool Helpers {{{ */
 void *operator new(size_t size, apr_pool_t *pool) {
     return apr_palloc(pool, size);

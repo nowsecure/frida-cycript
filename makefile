@@ -28,8 +28,8 @@ libcycript.plist: Bridge.def makefile
 	    echo "$$2 = ($$1, \"$$3\");";  \
 	done >$@
 
-Cycript.tab.c Cycript.tab.h: Cycript.y
-	bison $<
+Cycript.tab.c Cycript.tab.h: Cycript.y makefile
+	bison -v $<
 
 lex.cy.c: Cycript.l
 	flex $<
@@ -66,5 +66,9 @@ package: all
 	cp -a cycript package/usr/bin
 	cp -a libcycript.plist package/usr/lib
 	dpkg-deb -b package $(shell grep ^Package: control | cut -d ' ' -f 2-)_$(shell grep ^Version: control | cut -d ' ' -f 2)_iphoneos-arm.deb
+
+test: package
+	dpkg -i $(shell grep ^Package: control | cut -d ' ' -f 2-)_$(shell grep ^Version: control | cut -d ' ' -f 2)_iphoneos-arm.deb
+	cycript
 
 .PHONY: all clean extra package

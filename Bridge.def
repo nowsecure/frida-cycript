@@ -111,6 +111,7 @@ F UIKeyboardInputModeUsesKBStar B@
 
 F _UIImageWithName @@
 
+F UIFormattedPhoneNumberFromString @@
 F UIUnformattedPhoneNumberFromString @@
 
 V UIApp @
