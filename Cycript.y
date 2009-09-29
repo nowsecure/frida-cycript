@@ -120,6 +120,43 @@ int cylex(YYSTYPE *lvalp, YYLTYPE *llocp, void *scanner);
 
 %start Program;
 
+WordOpt
+    : Word
+    |
+    ;
+
+Word
+    : Identifier
+    | "break"
+    | "case"
+    | "catch"
+    | "continue"
+    | "default"
+    | "delete"
+    | "do"
+    | "else"
+    | "false"
+    | "finally"
+    | "for"
+    | "function"
+    | "if"
+    | "in"
+    | "instanceof"
+    | "new"
+    | "null"
+    | "return"
+    | "switch"
+    | "this"
+    | "throw"
+    | "true"
+    | "try"
+    | "typeof"
+    | "var"
+    | "void"
+    | "while"
+    | "with"
+    ;
+
 IdentifierOpt
     : Identifier
     |
@@ -153,12 +190,12 @@ SelectorCall_
     ;
 
 SelectorCall
-    : IdentifierOpt ":" AssignmentExpression SelectorCall_
+    : WordOpt ":" AssignmentExpression SelectorCall_
     ;
 
 SelectorList
     : SelectorCall
-    | Identifier
+    | Word
     ;
 
 ObjectiveCall

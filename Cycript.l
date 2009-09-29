@@ -13,10 +13,8 @@ typedef cy::parser::token tk;
 %option interactive
 %option reentrant
 
-delim         [ \t]
-whitesp       {delim}+
-digit         [0-9]
-number        [-]?{digit}*[.]?{digit}+
+Exponent [eE][+-]?[0-9]+
+Escape   \\['"\\bfnrtv]|\\0|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}
 
 %%
 
@@ -104,7 +102,14 @@ number        [-]?{digit}*[.]?{digit}+
 "with"       return tk::With;
 
 [a-zA-Z$_][a-zA-Z$_0-9]* return tk::Identifier;
-[0-9]+                   return tk::NumericLiteral;
+
+(\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?){Exponent}? return tk::NumericLiteral;
+
+0[xX][0-9a-fA-F]+        return tk::NumericLiteral;
+0[bB][0-1]+              return tk::NumericLiteral;
+
+\"([^"\\\n]|{Escape})*\" return tk::StringLiteral;
+'([^'\\\n]|{Escape})*'   return tk::StringLiteral;
 
 [ \t\n]                  ;
 
