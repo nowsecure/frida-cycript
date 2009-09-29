@@ -1,6 +1,7 @@
 %code top {
 #include "Cycript.tab.hh"
-int cylex(YYSTYPE *lvalp, YYLTYPE *llocp);
+int cylex(YYSTYPE *lvalp, YYLTYPE *llocp, void *scanner);
+#define scanner driver->scanner_
 }
 
 %code requires {
@@ -25,7 +26,8 @@ int cylex(YYSTYPE *lvalp, YYLTYPE *llocp);
 %debug
 %error-verbose
 
-%parse-param { CYParser *context }
+%parse-param { CYParser *driver }
+%lex-param { void *scanner }
 
 %token Ampersand "&"
 %token AmpersandAmpersand "&&"
@@ -74,8 +76,10 @@ int cylex(YYSTYPE *lvalp, YYLTYPE *llocp);
 
 %token OpenParen "("
 %token CloseParen ")"
+
 %token OpenBrace "{"
 %token CloseBrace "}"
+
 %token OpenBracket "["
 %token CloseBracket "]"
 

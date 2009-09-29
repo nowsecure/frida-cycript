@@ -1,6 +1,7 @@
 %{
 #include "Cycript.tab.hh"
 typedef cy::parser::token tk;
+#define YY_EXTRA_TYPE CYParser *
 %}
 
 %option prefix="cy"
@@ -10,6 +11,7 @@ typedef cy::parser::token tk;
 %option yylineno
 %option nounput
 %option interactive
+%option reentrant
 
 delim         [ \t]
 whitesp       {delim}+
@@ -65,8 +67,10 @@ number        [-]?{digit}*[.]?{digit}+
 
 "("    return tk::OpenParen;
 ")"    return tk::CloseParen;
+
 "{"    return tk::OpenBrace;
 "}"    return tk::CloseBrace;
+
 "["    return tk::OpenBracket;
 "]"    return tk::CloseBracket;
 
@@ -103,3 +107,14 @@ number        [-]?{digit}*[.]?{digit}+
 [0-9]+                   return tk::NumericLiteral;
 
 [ \t\n]                  ;
+
+%%
+
+void CYParser::ScannerInit() {
+    cylex_init(&scanner_);
+    cyset_extra(this, scanner_);
+}
+
+void CYParser::ScannerDestroy() {
+    cylex_destroy(scanner_);
+}

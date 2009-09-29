@@ -2,6 +2,16 @@
 #define CYPARSER_HPP
 
 class CYParser {
+  public:
+    void *scanner_;
+
+  private:
+    void ScannerInit();
+    void ScannerDestroy();
+
+  public:
+    CYParser();
+    ~CYParser();
 };
 
 struct CYExpression {

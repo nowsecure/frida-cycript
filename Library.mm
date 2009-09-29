@@ -952,6 +952,14 @@ static JSStaticValue Pointer_staticValues[2] = {
     {NULL, NULL, NULL, 0}
 };
 
+CYParser::CYParser() {
+    ScannerInit();
+}
+
+CYParser::~CYParser() {
+    ScannerDestroy();
+}
+
 extern int cydebug;
 
 void cy::parser::error(const cy::parser::location_type &loc, const std::string &msg) {
@@ -960,8 +968,8 @@ void cy::parser::error(const cy::parser::location_type &loc, const std::string &
 
 void CYConsole(FILE *fin, FILE *fout, FILE *ferr) {
     cydebug = 1;
-    CYParser context;
-    cy::parser parser(&context);
+    CYParser driver;
+    cy::parser parser(&driver);
     parser.parse();
 }
 
