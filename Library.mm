@@ -75,6 +75,7 @@
 #include <map>
 
 #include "Parser.hpp"
+#include "Cycript.tab.hh"
 
 #undef _assert
 #undef _trace
@@ -951,13 +952,17 @@ static JSStaticValue Pointer_staticValues[2] = {
     {NULL, NULL, NULL, 0}
 };
 
-void cyparse(CYParser *parser);
 extern int cydebug;
+
+void cy::parser::error(const cy::parser::location_type &loc, const std::string &msg) {
+    std::cerr << loc << ": " << msg << std::endl;
+}
 
 void CYConsole(FILE *fin, FILE *fout, FILE *ferr) {
     cydebug = 1;
-    CYParser parser;
-    cyparse(&parser);
+    CYParser context;
+    cy::parser parser(&context);
+    parser.parse();
 }
 
 MSInitialize { _pooled

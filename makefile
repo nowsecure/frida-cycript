@@ -14,7 +14,7 @@ link := -framework CoreFoundation -framework Foundation -F${PKG_ROOT}/System/Lib
 all: cycript libcycript.dylib libcycript.plist
 
 clean:
-	rm -f libcycript.dylib cycript libcycript.plist Struct.hpp lex.cy.c Cycript.tab.c Cycript.tab.h
+	rm -f libcycript.dylib cycript libcycript.plist Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh
 
 libcycript.plist: Bridge.def makefile
 	sed -e 's/^C/0/;s/^F/1/;s/^V/2/' Bridge.def | while read -r line; do \
@@ -28,7 +28,7 @@ libcycript.plist: Bridge.def makefile
 	    echo "$$2 = ($$1, \"$$3\");";  \
 	done >$@
 
-Cycript.tab.c Cycript.tab.h: Cycript.y makefile
+Cycript.tab.cc Cycript.tab.hh: Cycript.y makefile
 	bison -v $<
 
 lex.cy.c: Cycript.l
@@ -40,8 +40,8 @@ Struct.hpp:
 #Parser.hpp: Parser.py Parser.dat
 #	./Parser.py <Parser.dat >$@
 
-libcycript.dylib: Library.mm makefile $(menes)/mobilesubstrate/substrate.h sig/*.[ch]pp Struct.hpp Parser.hpp lex.cy.c Cycript.tab.c Cycript.tab.h
-	$(target)g++ -dynamiclib -mthumb -g0 -O2 -Wall -Werror -o $@ $(filter %.cpp,$^) $(filter %.c,$^) $(filter %.mm,$^) -lobjc -I$(menes)/mobilesubstrate $(link) $(flags) -DYYDEBUG=1
+libcycript.dylib: Library.mm makefile $(menes)/mobilesubstrate/substrate.h sig/*.[ch]pp Struct.hpp Parser.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh
+	$(target)g++ -dynamiclib -mthumb -g0 -O2 -Wall -Werror -o $@ $(filter %.cpp,$^) $(filter %.cc,$^) $(filter %.c,$^) $(filter %.mm,$^) -lobjc -I$(menes)/mobilesubstrate $(link) $(flags) #-DYYDEBUG=1
 	ldid -S $@
 
 cycript: Application.mm libcycript.dylib

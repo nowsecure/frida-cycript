@@ -1,14 +1,23 @@
 %code top {
-#include "Parser.hpp"
-#include "Cycript.tab.h"
-void cyerror(YYLTYPE *locp, CYParser *context, const char *msg);
+#include "Cycript.tab.hh"
 int cylex(YYSTYPE *lvalp, YYLTYPE *llocp);
+}
+
+%code requires {
+#include "Parser.hpp"
+}
+
+%union {
+    CYExpression *expression_;
+    CYTokenIdentifier *identifier_;
+    CYTokenNumber *number_;
+    CYTokenString *string_;
 }
 
 %name-prefix "cy"
 
+%language "C++"
 %locations
-%define api.pure
 %glr-parser
 
 %defines
@@ -18,104 +27,98 @@ int cylex(YYSTYPE *lvalp, YYLTYPE *llocp);
 
 %parse-param { CYParser *context }
 
-%token CYTokenAmpersand "&"
-%token CYTokenAmpersandAmpersand "&&"
-%token CYTokenAmpersandEqual "&="
-%token CYTokenCarrot "^"
-%token CYTokenCarrotEqual "^="
-%token CYTokenEqual "="
-%token CYTokenEqualEqual "=="
-%token CYTokenEqualEqualEqual "==="
-%token CYTokenExclamation "!"
-%token CYTokenExclamationEqual "!="
-%token CYTokenExclamationEqualEqual "!=="
-%token CYTokenHyphen "-"
-%token CYTokenHyphenEqual "-="
-%token CYTokenHyphenHyphen "--"
-%token CYTokenHyphenRight "->"
-%token CYTokenLeft "<"
-%token CYTokenLeftEqual "<="
-%token CYTokenLeftLeft "<<"
-%token CYTokenLeftLeftEqual "<<="
-%token CYTokenPercent "%"
-%token CYTokenPercentEqual "%="
-%token CYTokenPeriod "."
-%token CYTokenPipe "|"
-%token CYTokenPipeEqual "|="
-%token CYTokenPipePipe "||"
-%token CYTokenPlus "+"
-%token CYTokenPlusEqual "+="
-%token CYTokenPlusPlus "++"
-%token CYTokenRight ">"
-%token CYTokenRightEqual ">="
-%token CYTokenRightRight ">>"
-%token CYTokenRightRightEqual ">>="
-%token CYTokenRightRightRight ">>>"
-%token CYTokenRightRightRightEqual ">>>="
-%token CYTokenSlash "/"
-%token CYTokenSlashEqual "/="
-%token CYTokenStar "*"
-%token CYTokenStarEqual "*="
-%token CYTokenTilde "~"
+%token Ampersand "&"
+%token AmpersandAmpersand "&&"
+%token AmpersandEqual "&="
+%token Carrot "^"
+%token CarrotEqual "^="
+%token Equal "="
+%token EqualEqual "=="
+%token EqualEqualEqual "==="
+%token Exclamation "!"
+%token ExclamationEqual "!="
+%token ExclamationEqualEqual "!=="
+%token Hyphen "-"
+%token HyphenEqual "-="
+%token HyphenHyphen "--"
+%token HyphenRight "->"
+%token Left "<"
+%token LeftEqual "<="
+%token LeftLeft "<<"
+%token LeftLeftEqual "<<="
+%token Percent "%"
+%token PercentEqual "%="
+%token Period "."
+%token Pipe "|"
+%token PipeEqual "|="
+%token PipePipe "||"
+%token Plus "+"
+%token PlusEqual "+="
+%token PlusPlus "++"
+%token Right ">"
+%token RightEqual ">="
+%token RightRight ">>"
+%token RightRightEqual ">>="
+%token RightRightRight ">>>"
+%token RightRightRightEqual ">>>="
+%token Slash "/"
+%token SlashEqual "/="
+%token Star "*"
+%token StarEqual "*="
+%token Tilde "~"
 
-%token CYTokenColon ":"
-%token CYTokenComma ","
-%token CYTokenQuestion "?"
-%token CYTokenSemiColon ";"
+%token Colon ":"
+%token Comma ","
+%token Question "?"
+%token SemiColon ";"
 
-%token CYTokenOpenParen "("
-%token CYTokenCloseParen ")"
-%token CYTokenOpenBrace "{"
-%token CYTokenCloseBrace "}"
-%token CYTokenOpenBracket "["
-%token CYTokenCloseBracket "]"
+%token OpenParen "("
+%token CloseParen ")"
+%token OpenBrace "{"
+%token CloseBrace "}"
+%token OpenBracket "["
+%token CloseBracket "]"
 
-%token CYTokenBreak "break"
-%token CYTokenCase "case"
-%token CYTokenCatch "catch"
-%token CYTokenContinue "continue"
-%token CYTokenDefault "default"
-%token CYTokenDelete "delete"
-%token CYTokenDo "do"
-%token CYTokenElse "else"
-%token CYTokenFalse "false"
-%token CYTokenFinally "finally"
-%token CYTokenFor "for"
-%token CYTokenFunction "function"
-%token CYTokenIf "if"
-%token CYTokenIn "in"
-%token CYTokenInstanceOf "instanceof"
-%token CYTokenNew "new"
-%token CYTokenNull "null"
-%token CYTokenReturn "return"
-%token CYTokenSwitch "switch"
-%token CYTokenThis "this"
-%token CYTokenThrow "throw"
-%token CYTokenTrue "true"
-%token CYTokenTry "try"
-%token CYTokenTypeOf "typeof"
-%token CYTokenVar "var"
-%token CYTokenVoid "void"
-%token CYTokenWhile "while"
-%token CYTokenWith "with"
+%token Break "break"
+%token Case "case"
+%token Catch "catch"
+%token Continue "continue"
+%token Default "default"
+%token Delete "delete"
+%token Do "do"
+%token Else "else"
+%token False "false"
+%token Finally "finally"
+%token For "for"
+%token Function "function"
+%token If "if"
+%token In "in"
+%token InstanceOf "instanceof"
+%token New "new"
+%token Null "null"
+%token Return "return"
+%token Switch "switch"
+%token This "this"
+%token Throw "throw"
+%token True "true"
+%token Try "try"
+%token TypeOf "typeof"
+%token Var "var"
+%token Void "void"
+%token While "while"
+%token With "with"
 
-%token CYTokenIdentifier
-%token CYTokenNumber
-%token CYTokenString
+%token <identifier_> Identifier
+%token <number_> NumericLiteral
+%token <string_> StringLiteral
 
 %%
 
-Start
-    : Program
-    ;
+%start Program;
 
 IdentifierOpt
     : Identifier
     |
-    ;
-
-Identifier
-    : CYTokenIdentifier
     ;
 
 Literal
@@ -132,14 +135,6 @@ NullLiteral
 BooleanLiteral
     : "true"
     | "false"
-    ;
-
-NumericLiteral
-    : CYTokenNumber
-    ;
-
-StringLiteral
-    : CYTokenString
     ;
 
 /* Objective-C Extensions {{{ */
@@ -588,9 +583,3 @@ SourceElement
     ;
 
 %%
-
-#include <stdio.h>
-
-void cyerror(YYLTYPE *locp, CYParser *context, const char *msg) {
-    fprintf(stderr, "err:%s\n", msg);
-}
