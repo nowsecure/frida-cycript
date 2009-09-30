@@ -26,7 +26,7 @@ libcycript.plist: Bridge.def
 	done >$@
 
 Cycript.tab.cc Cycript.tab.hh location.hh position.hh: Cycript.y
-	bison -v $<
+	bison --report=state $<
 
 lex.cy.c: Cycript.l
 	flex $<

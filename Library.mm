@@ -918,6 +918,8 @@ static JSStaticValue Pointer_staticValues[2] = {
 };
 
 CYDriver::CYDriver(const std::string &filename) :
+    newline_(false),
+    restricted_(false),
     filename_(filename),
     source_(NULL)
 {
@@ -929,7 +931,9 @@ CYDriver::~CYDriver() {
 }
 
 void CYDriver::Clear() {
-    source_ = NULL;
+    newline_ = false;
+    restricted_ = false;
+    source_.clear();
     pool_.Clear();
 }
 
@@ -940,9 +944,9 @@ void cy::parser::error(const cy::parser::location_type &loc, const std::string &
 }
 
 void CYConsole(FILE *fin, FILE *fout, FILE *ferr) {
-    //cydebug = 1;
+    cydebug = 1;
 
-    CYDriver driver("<stdin>");
+    CYDriver driver("");
 
     while (!feof(fin)) { _pooled
         driver.Clear();
@@ -951,43 +955,42 @@ void CYConsole(FILE *fin, FILE *fout, FILE *ferr) {
         if (parser.parse() != 0)
             continue;
 
-        if (driver.source_ == NULL) {
-            fputs("driver.source == NULL\n", fout);
-            break;
-        }
+        for (std::vector<CYSource *>::const_iterator i(driver.source_.begin()); i != driver.source_.end(); ++i) {
+            CYSource *source(*i);
 
-        std::ostringstream str;
-        driver.source_->Show(str);
+            std::ostringstream str;
+            source->Show(str);
 
-        std::string code(str.str());
-        std::cout << code << std::endl;
+            std::string code(str.str());
+            std::cout << code << std::endl;
 
-        JSStringRef script(JSStringCreateWithUTF8CString(code.c_str()));
+            JSStringRef script(JSStringCreateWithUTF8CString(code.c_str()));
 
-        JSContextRef context(JSGetContext());
+            JSContextRef context(JSGetContext());
 
-        JSValueRef exception(NULL);
-        JSValueRef result(JSEvaluateScript(context, script, NULL, NULL, 0, &exception));
-        JSStringRelease(script);
+            JSValueRef exception(NULL);
+            JSValueRef result(JSEvaluateScript(context, script, NULL, NULL, 0, &exception));
+            JSStringRelease(script);
 
-        if (exception != NULL)
-            result = exception;
+            if (exception != NULL)
+                result = exception;
 
-        if (!JSValueIsUndefined(context, result)) {
-            CFStringRef json;
+            if (!JSValueIsUndefined(context, result)) {
+                CFStringRef json;
 
-            @try { json:
-                json = JSValueToJSONCopy(context, result);
-            } @catch (id error) {
-                CYThrow(context, error, &result);
-                goto json;
+                @try { json:
+                    json = JSValueToJSONCopy(context, result);
+                } @catch (id error) {
+                    CYThrow(context, error, &result);
+                    goto json;
+                }
+
+                fputs([reinterpret_cast<const NSString *>(json) UTF8String], fout);
+                CFRelease(json);
+
+                fputs("\n", fout);
+                fflush(fout);
             }
-
-            fputs([reinterpret_cast<const NSString *>(json) UTF8String], fout);
-            CFRelease(json);
-
-            fputs("\n", fout);
-            fflush(fout);
         }
     }
 }

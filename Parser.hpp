@@ -3,6 +3,7 @@
 
 #include <cstdlib>
 #include <string>
+#include <vector>
 
 #include "Pooling.hpp"
 
@@ -101,8 +102,10 @@ struct CYStatement :
 class CYDriver {
   public:
     CYPool pool_;
+    bool newline_;
+    bool restricted_;
     std::string filename_;
-    CYSource *source_;
+    std::vector<CYSource *> source_;
     void *scanner_;
 
   private:
