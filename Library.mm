@@ -944,7 +944,7 @@ void cy::parser::error(const cy::parser::location_type &loc, const std::string &
 }
 
 void CYConsole(FILE *fin, FILE *fout, FILE *ferr) {
-    cydebug = 1;
+    //cydebug = 1;
 
     CYDriver driver("");
 
