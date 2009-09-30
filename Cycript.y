@@ -1,7 +1,7 @@
 %code top {
 #include "Cycript.tab.hh"
 int cylex(YYSTYPE *lvalp, YYLTYPE *llocp, void *scanner);
-#define scanner driver->scanner_
+#define scanner driver.scanner_
 }
 
 %code requires {
@@ -41,12 +41,16 @@ int cylex(YYSTYPE *lvalp, YYLTYPE *llocp, void *scanner);
 %locations
 %glr-parser
 
+%initial-action {
+    @$.begin.filename = @$.end.filename = &driver.filename_;
+};
+
 %defines
 
 %debug
 %error-verbose
 
-%parse-param { CYParser *driver }
+%parse-param { CYDriver &driver }
 %lex-param { void *scanner }
 
 %token Ampersand "&"
@@ -409,6 +413,7 @@ Arguments
 LeftHandSideExpression
     : NewExpression { $$ = $1; }
     | CallExpression { $$ = $1; }
+    | "*" LeftHandSideExpression { $$ = new CYIndirect($2); }
     ;
 
 PostfixExpression
@@ -428,7 +433,6 @@ UnaryExpression
     | "-" UnaryExpression { $$ = new CYNegate($2); }
     | "~" UnaryExpression { $$ = new CYBitwiseNot($2); }
     | "!" UnaryExpression { $$ = new CYLogicalNot($2); }
-    | "*" UnaryExpression { $$ = new CYIndirect($2); }
     | "&" UnaryExpression { $$ = new CYAddressOf($2); }
     ;
 
@@ -527,7 +531,7 @@ ExpressionOpt
     ;
 
 Expression
-    : AssignmentExpression Expression_ { $1->SetNext($2); $$ = $1; }
+    : AssignmentExpression Expression_ { if ($1 == NULL) $$ = $2; else { $1->SetNext($2); $$ = $1; } }
     ;
 
 Statement
@@ -587,7 +591,7 @@ EmptyStatement
     ;
 
 ExpressionStatement
-    : Expression ";" { $$ = $1; }
+    : Expression ";" { $$ = new CYExpress($1); }
     ;
 
 ElseStatementOpt
@@ -715,7 +719,7 @@ FunctionBody
     ;
 
 Program
-    : SourceElements { $$ = $1; }
+    : SourceElements { driver.source_ = $1; $$ = $1; }
     ;
 
 SourceElements

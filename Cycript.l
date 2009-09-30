@@ -1,7 +1,7 @@
 %{
 #include "Cycript.tab.hh"
 typedef cy::parser::token tk;
-#define YY_EXTRA_TYPE CYParser *
+#define YY_EXTRA_TYPE CYDriver *
 %}
 
 %option prefix="cy"
@@ -72,54 +72,55 @@ Escape   \\['"\\bfnrtv]|\\0|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}
 "["    return tk::OpenBracket;
 "]"    return tk::CloseBracket;
 
-"break"      return tk::Break;
-"case"       return tk::Case;
-"catch"      return tk::Catch;
-"continue"   return tk::Continue;
-"default"    return tk::Default;
-"delete"     return tk::Delete;
-"do"         return tk::Do;
-"else"       return tk::Else;
-"false"      return tk::False;
-"finally"    return tk::Finally;
-"for"        return tk::For;
-"function"   return tk::Function;
-"if"         return tk::If;
-"in"         return tk::In;
-"instanceof" return tk::InstanceOf;
-"new"        return tk::New;
-"null"       return tk::Null;
-"return"     return tk::Return;
-"switch"     return tk::Switch;
-"this"       return tk::This;
-"throw"      return tk::Throw;
-"true"       return tk::True;
-"try"        return tk::Try;
-"typeof"     return tk::TypeOf;
-"var"        return tk::Var;
-"void"       return tk::Void;
-"while"      return tk::While;
-"with"       return tk::With;
+"break"      yylval->word_ = new CYWord("break"); return tk::Break;
+"case"       yylval->word_ = new CYWord("case"); return tk::Case;
+"catch"      yylval->word_ = new CYWord("catch"); return tk::Catch;
+"continue"   yylval->word_ = new CYWord("continue"); return tk::Continue;
+"default"    yylval->word_ = new CYWord("default"); return tk::Default;
+"delete"     yylval->word_ = new CYWord("delete"); return tk::Delete;
+"do"         yylval->word_ = new CYWord("do"); return tk::Do;
+"else"       yylval->word_ = new CYWord("else"); return tk::Else;
+"false"      yylval->false_ = new CYFalse(); return tk::False;
+"finally"    yylval->word_ = new CYWord("finally"); return tk::Finally;
+"for"        yylval->word_ = new CYWord("for"); return tk::For;
+"function"   yylval->word_ = new CYWord("function"); return tk::Function;
+"if"         yylval->word_ = new CYWord("if"); return tk::If;
+"in"         yylval->word_ = new CYWord("in"); return tk::In;
+"instanceof" yylval->word_ = new CYWord("instanceof"); return tk::InstanceOf;
+"new"        yylval->word_ = new CYWord("new"); return tk::New;
+"null"       yylval->null_ = new CYNull(); return tk::Null;
+"return"     yylval->word_ = new CYWord("return"); return tk::Return;
+"switch"     yylval->word_ = new CYWord("switch"); return tk::Switch;
+"this"       yylval->this_ = new CYThis(); return tk::This;
+"throw"      yylval->word_ = new CYWord("throw"); return tk::Throw;
+"true"       yylval->true_ = new CYTrue(); return tk::True;
+"try"        yylval->word_ = new CYWord("try"); return tk::Try;
+"typeof"     yylval->word_ = new CYWord("typeof"); return tk::TypeOf;
+"var"        yylval->word_ = new CYWord("var"); return tk::Var;
+"void"       yylval->word_ = new CYWord("void"); return tk::Void;
+"while"      yylval->word_ = new CYWord("while"); return tk::While;
+"with"       yylval->word_ = new CYWord("with"); return tk::With;
 
-[a-zA-Z$_][a-zA-Z$_0-9]* return tk::Identifier;
+[a-zA-Z$_][a-zA-Z$_0-9]* yylval->identifier_ = new CYIdentifier(apr_pstrmemdup(yyextra->pool_, yytext, yyleng)); return tk::Identifier;
 
-(\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?){Exponent}? return tk::NumericLiteral;
+(\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?){Exponent}? yylval->number_ = new CYNumber(strtod(yytext, NULL)); return tk::NumericLiteral;
 
-0[xX][0-9a-fA-F]+        return tk::NumericLiteral;
-0[bB][0-1]+              return tk::NumericLiteral;
+0[xX][0-9a-fA-F]+ yylval->number_ = new CYNumber(strtoull(yytext + 2, NULL, 16)); return tk::NumericLiteral;
+
+0[bB][0-1]+ yylval->number_ = new CYNumber(strtoull(yytext + 2, NULL, 2)); return tk::NumericLiteral;
 
 \"([^"\\\n]|{Escape})*\" return tk::StringLiteral;
-'([^'\\\n]|{Escape})*'   return tk::StringLiteral;
+'([^'\\\n]|{Escape})*' return tk::StringLiteral;
 
-[ \t\n]                  ;
+[ \t\n] ;
 
 %%
 
-void CYParser::ScannerInit() {
+void CYDriver::ScannerInit() {
     cylex_init(&scanner_);
     cyset_extra(this, scanner_);
 }
 
-void CYParser::ScannerDestroy() {
+void CYDriver::ScannerDestroy() {
     cylex_destroy(scanner_);
 }

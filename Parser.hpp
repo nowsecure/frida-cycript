@@ -2,38 +2,53 @@
 #define CYPARSER_HPP
 
 #include <cstdlib>
+#include <string>
 
-class CYParser {
-  public:
-    void *scanner_;
+#include "Pooling.hpp"
 
-  private:
-    void ScannerInit();
-    void ScannerDestroy();
+template <typename Type_>
+struct CYNext {
+    Type_ *next_;
 
-  public:
-    CYParser();
-    ~CYParser();
-};
+    CYNext() :
+        next_(NULL)
+    {
+    }
 
-struct CYSource {
-    CYSource *next_;
-
-    void SetNext(CYSource *next) {
+    void SetNext(Type_ *next) {
         next_ = next;
     }
 };
 
-struct CYName {
+struct CYThing {
+    virtual void Output(std::ostream &out) const = 0;
+};
+
+_finline std::ostream &operator <<(std::ostream &out, const CYThing &rhs) {
+    rhs.Output(out);
+    return out;
+}
+
+struct CYPart {
+    virtual void Part(std::ostream &out) const = 0;
+};
+
+struct CYSource :
+    CYNext<CYSource>,
+    CYPart
+{
+    virtual void Part(std::ostream &out) const;
+    virtual void Output(std::ostream &out) const = 0;
+    virtual void Output(std::ostream &out, bool block) const;
+};
+
+struct CYName :
+    CYThing
+{
     virtual const char *Name() const = 0;
 };
 
-struct CYToken {
-    virtual const char *Text() const = 0;
-};
-
 struct CYWord :
-    virtual CYToken,
     CYName
 {
     const char *word_;
@@ -43,22 +58,23 @@ struct CYWord :
     {
     }
 
-    virtual const char *Text() const {
+    const char *Value() const {
         return word_;
     }
 
     virtual const char *Name() const {
-        return Text();
+        return Value();
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYIdentifier :
     CYWord
 {
-    const char *word_;
-
-    virtual const char *Text() const {
-        return word_;
+    CYIdentifier(const char *word) :
+        CYWord(word)
+    {
     }
 };
 
@@ -83,18 +99,46 @@ struct CYStatement :
     }
 };
 
-struct CYForInitialiser {
+class CYDriver {
+  public:
+    CYPool pool_;
+    std::string filename_;
+    CYSource *source_;
+    void *scanner_;
+
+  private:
+    void ScannerInit();
+    void ScannerDestroy();
+
+  public:
+    CYDriver(const std::string &filename);
+    ~CYDriver();
 };
 
-struct CYForInInitialiser {
+struct CYForInitialiser :
+    CYPart
+{
+};
+
+struct CYForInInitialiser :
+    CYPart
+{
 };
 
 struct CYExpression :
-    CYStatement,
+    CYNext<CYExpression>,
     CYForInitialiser,
     CYForInInitialiser
 {
+    virtual void Part(std::ostream &out) const;
+    virtual void Output(std::ostream &out) const = 0;
+    void Output(std::ostream &out, bool raw) const;
 };
+
+_finline std::ostream &operator <<(std::ostream &out, const CYExpression &rhs) {
+    rhs.Output(out, false);
+    return out;
+}
 
 struct CYLiteral :
     CYExpression
@@ -106,38 +150,51 @@ struct CYString :
     CYName
 {
     const char *value_;
+    size_t size_;
 
-    CYString(const char *value) :
-        value_(value)
+    CYString(const char *value, size_t size) :
+        value_(value),
+        size_(size)
     {
     }
 
     CYString(const CYIdentifier *identifier) :
-        value_(identifier->Text())
+        value_(identifier->Value()),
+        size_(strlen(value_))
     {
     }
 
-    const char *String() const {
+    const char *Value() const {
         return value_;
     }
 
     virtual const char *Name() const {
-        return String();
+        return Value();
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYNumber :
-    virtual CYToken,
     CYLiteral,
     CYName
 {
-    double Number() const {
-        throw;
+    double value_;
+
+    CYNumber(double value) :
+        value_(value)
+    {
+    }
+
+    double Value() const {
+        return value_;
     }
 
     virtual const char *Name() const {
         throw;
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYNull :
@@ -148,6 +205,8 @@ struct CYNull :
         CYWord("null")
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYThis :
@@ -158,11 +217,15 @@ struct CYThis :
         CYWord("this")
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYBoolean :
     CYLiteral
 {
+    virtual bool Value() const = 0;
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYFalse :
@@ -173,6 +236,10 @@ struct CYFalse :
         CYWord("false")
     {
     }
+
+    virtual bool Value() const {
+        return false;
+    }
 };
 
 struct CYTrue :
@@ -182,6 +249,10 @@ struct CYTrue :
     CYTrue() :
         CYWord("true")
     {
+    }
+
+    virtual bool Value() const {
+        return true;
     }
 };
 
@@ -194,6 +265,8 @@ struct CYVariable :
         name_(name)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYPrefix :
@@ -205,6 +278,10 @@ struct CYPrefix :
         rhs_(rhs)
     {
     }
+
+    virtual const char *Operator() const = 0;
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYInfix :
@@ -218,6 +295,10 @@ struct CYInfix :
         rhs_(rhs)
     {
     }
+
+    virtual const char *Operator() const = 0;
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYPostfix :
@@ -229,6 +310,10 @@ struct CYPostfix :
         lhs_(lhs)
     {
     }
+
+    virtual const char *Operator() const = 0;
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYAssignment :
@@ -238,6 +323,8 @@ struct CYAssignment :
         CYInfix(lhs, rhs)
     {
     }
+
+    virtual const char *Operator() const = 0;
 };
 
 struct CYArgument {
@@ -251,6 +338,8 @@ struct CYArgument {
         next_(next)
     {
     }
+
+    void Output(std::ostream &out, bool send) const;
 };
 
 struct CYBlank :
@@ -262,10 +351,12 @@ struct CYBlank :
     }
 };
 
-struct CYClause {
+struct CYClause :
+    CYThing,
+    CYNext<CYClause>
+{
     CYExpression *case_;
     CYStatement *code_;
-    CYClause *next_;
 
     CYClause(CYExpression *_case, CYStatement *code) :
         case_(_case),
@@ -273,9 +364,7 @@ struct CYClause {
     {
     }
 
-    void SetNext(CYClause *next) {
-        next_ = next;
-    }
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYElement :
@@ -289,9 +378,13 @@ struct CYElement :
         next_(next)
     {
     }
+
+    void Output(std::ostream &out, bool raw) const;
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYDeclaration :
+    CYThing,
     CYForInInitialiser
 {
     CYIdentifier *identifier_;
@@ -302,6 +395,9 @@ struct CYDeclaration :
         initialiser_(initialiser)
     {
     }
+
+    virtual void Part(std::ostream &out) const;
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYDeclarations :
@@ -316,9 +412,14 @@ struct CYDeclarations :
         next_(next)
     {
     }
+
+    virtual void Part(std::ostream &out) const;
+    virtual void Output(std::ostream &out) const;
 };
 
-struct CYParameter {
+struct CYParameter :
+    CYThing
+{
     CYIdentifier *name_;
     CYParameter *next_;
 
@@ -327,6 +428,8 @@ struct CYParameter {
         next_(next)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYFor :
@@ -344,6 +447,8 @@ struct CYFor :
         code_(code)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYForIn :
@@ -359,6 +464,8 @@ struct CYForIn :
         code_(code)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYProperty :
@@ -374,9 +481,14 @@ struct CYProperty :
         next_(next)
     {
     }
+
+    void Output(std::ostream &out, bool raw) const;
+    virtual void Output(std::ostream &out) const;
 };
 
-struct CYCatch {
+struct CYCatch :
+    CYThing
+{
     CYIdentifier *name_;
     CYStatement *code_;
 
@@ -385,6 +497,8 @@ struct CYCatch {
         code_(code)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYMessage :
@@ -398,6 +512,8 @@ struct CYMessage :
         arguments_(arguments)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYMember :
@@ -411,6 +527,8 @@ struct CYMember :
         property_(property)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYNew :
@@ -424,6 +542,8 @@ struct CYNew :
         arguments_(arguments)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYCall :
@@ -437,6 +557,8 @@ struct CYCall :
         arguments_(arguments)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYIf :
@@ -452,6 +574,8 @@ struct CYIf :
         false_(_false)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYDoWhile :
@@ -465,6 +589,8 @@ struct CYDoWhile :
         code_(code)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYWhile :
@@ -478,6 +604,8 @@ struct CYWhile :
         code_(code)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYLambda :
@@ -493,15 +621,33 @@ struct CYLambda :
         body_(body)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYFunction :
-    CYLambda
+    CYLambda,
+    CYSource
 {
     CYFunction(CYIdentifier *name, CYParameter *parameters, CYSource *body) :
         CYLambda(name, parameters, body)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
+};
+
+struct CYExpress :
+    CYStatement
+{
+    CYExpression *expression_;
+
+    CYExpress(CYExpression *expression) :
+        expression_(expression)
+    {
+    }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYContinue :
@@ -513,6 +659,8 @@ struct CYContinue :
         label_(label)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYBreak :
@@ -524,6 +672,8 @@ struct CYBreak :
         label_(label)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYReturn :
@@ -535,11 +685,15 @@ struct CYReturn :
         value_(value)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYEmpty :
     CYStatement
 {
+    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out, bool block) const;
 };
 
 struct CYTry :
@@ -555,6 +709,8 @@ struct CYTry :
         finally_(finally)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYThrow :
@@ -566,6 +722,8 @@ struct CYThrow :
         value_(value)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYWith :
@@ -579,6 +737,8 @@ struct CYWith :
         code_(code)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYSwitch :
@@ -592,6 +752,8 @@ struct CYSwitch :
         clauses_(clauses)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYCondition :
@@ -606,6 +768,38 @@ struct CYCondition :
         false_(_false)
     {
     }
+
+    virtual void Output(std::ostream &out) const;
+};
+
+struct CYAddressOf :
+    CYPrefix
+{
+    CYAddressOf(CYExpression *rhs) :
+        CYPrefix(rhs)
+    {
+    }
+
+    virtual const char *Operator() const {
+        return "&";
+    }
+
+    virtual void Output(std::ostream &out) const;
+};
+
+struct CYIndirect :
+    CYPrefix
+{
+    CYIndirect(CYExpression *rhs) :
+        CYPrefix(rhs)
+    {
+    }
+
+    virtual const char *Operator() const {
+        return "*";
+    }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 #define CYPostfix_(op, name) \
@@ -615,6 +809,10 @@ struct CYCondition :
         CY ## name(CYExpression *lhs) : \
             CYPostfix(lhs) \
         { \
+        } \
+    \
+        virtual const char *Operator() const { \
+            return op; \
         } \
     };
 
@@ -626,6 +824,10 @@ struct CYCondition :
             CYPrefix(rhs) \
         { \
         } \
+    \
+        virtual const char *Operator() const { \
+            return op; \
+        } \
     };
 
 #define CYInfix_(op, name) \
@@ -636,6 +838,10 @@ struct CYCondition :
             CYInfix(lhs, rhs) \
         { \
         } \
+    \
+        virtual const char *Operator() const { \
+            return op; \
+        } \
     };
 
 #define CYAssignment_(op, name) \
@@ -645,6 +851,10 @@ struct CYCondition :
         CY ## name ## Assign(CYExpression *lhs, CYExpression *rhs) : \
             CYAssignment(lhs, rhs) \
         { \
+        } \
+    \
+        virtual const char *Operator() const { \
+            return op; \
         } \
     };
 
@@ -659,8 +869,6 @@ CYPrefix_("--", PreDecrement)
 CYPrefix_("-", Negate)
 CYPrefix_("~", BitwiseNot)
 CYPrefix_("!", LogicalNot)
-CYPrefix_("*", Indirect)
-CYPrefix_("&", AddressOf)
 
 CYInfix_("*", Multiply)
 CYInfix_("/", Divide)

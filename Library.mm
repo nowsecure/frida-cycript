@@ -45,8 +45,7 @@
 #include "sig/parse.hpp"
 #include "sig/ffi_type.hpp"
 
-#include <apr-1/apr_pools.h>
-#include <apr-1/apr_strings.h>
+#include "Pooling.hpp"
 
 #include <unistd.h>
 
@@ -89,41 +88,6 @@
     CFLog(kCFLogLevelNotice, CFSTR("_trace():%u"), __LINE__); \
 } while (false)
 
-/* APR Pool Helpers {{{ */
-void *operator new(size_t size, apr_pool_t *pool) {
-    return apr_palloc(pool, size);
-}
-
-void *operator new [](size_t size, apr_pool_t *pool) {
-    return apr_palloc(pool, size);
-}
-
-class CYPool {
-  private:
-    apr_pool_t *pool_;
-
-  public:
-    CYPool() {
-        apr_pool_create(&pool_, NULL);
-    }
-
-    ~CYPool() {
-        apr_pool_destroy(pool_);
-    }
-
-    operator apr_pool_t *() const {
-        return pool_;
-    }
-
-    char *operator ()(const char *data) const {
-        return apr_pstrdup(pool_, data);
-    }
-
-    char *operator ()(const char *data, size_t size) const {
-        return apr_pstrndup(pool_, data, size);
-    }
-};
-/* }}} */
 
 #define _pooled _H<NSAutoreleasePool> _pool([[NSAutoreleasePool alloc] init], true);
 
@@ -952,11 +916,14 @@ static JSStaticValue Pointer_staticValues[2] = {
     {NULL, NULL, NULL, 0}
 };
 
-CYParser::CYParser() {
+CYDriver::CYDriver(const std::string &filename) :
+    filename_(filename),
+    source_(NULL)
+{
     ScannerInit();
 }
 
-CYParser::~CYParser() {
+CYDriver::~CYDriver() {
     ScannerDestroy();
 }
 
@@ -968,9 +935,10 @@ void cy::parser::error(const cy::parser::location_type &loc, const std::string &
 
 void CYConsole(FILE *fin, FILE *fout, FILE *ferr) {
     cydebug = 1;
-    CYParser driver;
-    cy::parser parser(&driver);
-    parser.parse();
+    CYDriver driver("<stdin>");
+    cy::parser parser(driver);
+    if (parser.parse() == 0)
+        driver.source_->Part(std::cout);
 }
 
 MSInitialize { _pooled
