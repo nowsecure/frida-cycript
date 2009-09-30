@@ -349,22 +349,22 @@ JSStringRef CYCopyJSString(JSContextRef context, JSValueRef value) {
 }
 
 // XXX: this is not a safe handle
-class CYString {
+class CYJSString {
   private:
     JSStringRef string_;
 
   public:
     template <typename Arg0_>
-    CYString(Arg0_ arg0) {
+    CYJSString(Arg0_ arg0) {
         string_ = CYCopyJSString(arg0);
     }
 
     template <typename Arg0_, typename Arg1_>
-    CYString(Arg0_ arg0, Arg1_ arg1) {
+    CYJSString(Arg0_ arg0, Arg1_ arg1) {
         string_ = CYCopyJSString(arg0, arg1);
     }
 
-    ~CYString() {
+    ~CYJSString() {
         JSStringRelease(string_);
     }
 
@@ -378,7 +378,7 @@ CFStringRef CYCopyCFString(JSStringRef value) {
 }
 
 CFStringRef CYCopyCFString(JSContextRef context, JSValueRef value) {
-    return CYCopyCFString(CYString(context, value));
+    return CYCopyCFString(CYJSString(context, value));
 }
 
 double CYCastDouble(JSContextRef context, JSValueRef value) {
@@ -461,7 +461,7 @@ void CYThrow(JSContextRef context, id error, JSValueRef *exception) {
 
 - (id) objectForKey:(id)key {
     JSValueRef exception(NULL);
-    JSValueRef value(JSObjectGetProperty(context_, object_, CYString(key), &exception));
+    JSValueRef value(JSObjectGetProperty(context_, object_, CYJSString(key), &exception));
     CYThrow(context_, exception);
     return CYCastNSObject(context_, value);
 }
@@ -475,14 +475,14 @@ void CYThrow(JSContextRef context, id error, JSValueRef *exception) {
 
 - (void) setObject:(id)object forKey:(id)key {
     JSValueRef exception(NULL);
-    JSObjectSetProperty(context_, object_, CYString(key), CYCastJSValue(context_, object), kJSPropertyAttributeNone, &exception);
+    JSObjectSetProperty(context_, object_, CYJSString(key), CYCastJSValue(context_, object), kJSPropertyAttributeNone, &exception);
     CYThrow(context_, exception);
 }
 
 - (void) removeObjectForKey:(id)key {
     JSValueRef exception(NULL);
     // XXX: this returns a bool... throw exception, or ignore?
-    JSObjectDeleteProperty(context_, object_, CYString(key), &exception);
+    JSObjectDeleteProperty(context_, object_, CYJSString(key), &exception);
     CYThrow(context_, exception);
 }
 
@@ -669,7 +669,7 @@ JSObjectRef CYMakeFunction(JSContextRef context, void *function, const char *typ
 
 void CYSetProperty(JSContextRef context, JSObjectRef object, const char *name, JSValueRef value) {
     JSValueRef exception(NULL);
-    JSObjectSetProperty(context, object, CYString(name), value, kJSPropertyAttributeNone, &exception);
+    JSObjectSetProperty(context, object, CYJSString(name), value, kJSPropertyAttributeNone, &exception);
     CYThrow(context, exception);
 }
 
@@ -682,7 +682,7 @@ char *CYPoolCString(apr_pool_t *pool, JSStringRef value) {
 }
 
 char *CYPoolCString(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
-    return CYPoolCString(pool, CYString(context, value));
+    return CYPoolCString(pool, CYJSString(context, value));
 }
 
 // XXX: this macro is unhygenic
@@ -823,7 +823,7 @@ JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, void *data) {
 
         case sig::string_P: {
             if (char *utf8 = *reinterpret_cast<char **>(data))
-                value = JSValueMakeString(context, CYString(utf8));
+                value = JSValueMakeString(context, CYJSString(utf8));
             else goto null;
         } break;
 
@@ -876,7 +876,7 @@ static JSValueRef Global_getProperty(JSContextRef context, JSObjectRef object, J
         if (NSMutableArray *entry = [Bridge_ objectForKey:name])
             switch ([[entry objectAtIndex:0] intValue]) {
                 case 0:
-                    return JSEvaluateScript(JSGetContext(), CYString([entry objectAtIndex:1]), NULL, NULL, 0, NULL);
+                    return JSEvaluateScript(JSGetContext(), CYJSString([entry objectAtIndex:1]), NULL, NULL, 0, NULL);
                 case 1:
                     return CYMakeFunction(context, [name cy$symbol], [[entry objectAtIndex:1] UTF8String]);
                 case 2:
@@ -1034,7 +1034,7 @@ MSInitialize { _pooled
 
     CYSetProperty(context, global, "ffi", JSObjectMakeConstructor(context, Functor_, &ffi));
 
-    CYSetProperty(context, global, "objc_msgSend", JSObjectMakeFunctionWithCallback(context, CYString("objc_msgSend"), &$objc_msgSend));
+    CYSetProperty(context, global, "objc_msgSend", JSObjectMakeFunctionWithCallback(context, CYJSString("objc_msgSend"), &$objc_msgSend));
 
     Bridge_ = [[NSMutableDictionary dictionaryWithContentsOfFile:@"/usr/lib/libcycript.plist"] retain];
 
@@ -1043,7 +1043,7 @@ MSInitialize { _pooled
     length_ = JSStringCreateWithUTF8CString("length");
 
     JSValueRef exception(NULL);
-    JSValueRef value(JSObjectGetProperty(JSGetContext(), global, CYString("Array"), &exception));
+    JSValueRef value(JSObjectGetProperty(JSGetContext(), global, CYJSString("Array"), &exception));
     CYThrow(context, exception);
     Array_ = JSValueToObject(JSGetContext(), value, &exception);
     CYThrow(context, exception);
