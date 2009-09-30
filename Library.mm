@@ -72,6 +72,7 @@
 #include <ext/stdio_filebuf.h>
 #include <set>
 #include <map>
+#include <sstream>
 
 #include "Parser.hpp"
 #include "Cycript.tab.hh"
@@ -934,11 +935,50 @@ void cy::parser::error(const cy::parser::location_type &loc, const std::string &
 }
 
 void CYConsole(FILE *fin, FILE *fout, FILE *ferr) {
-    cydebug = 1;
-    CYDriver driver("<stdin>");
-    cy::parser parser(driver);
-    if (parser.parse() == 0)
-        driver.source_->Part(std::cout);
+    //cydebug = 1;
+
+    for (;;) { _pooled
+        CYDriver driver("<stdin>");
+        cy::parser parser(driver);
+        if (parser.parse() != 0)
+            continue;
+
+        if (driver.source_ == NULL) {
+            fputs("driver.source == NULL\n", fout);
+            break;
+        }
+
+        std::ostringstream str;
+        driver.source_->Part(str);
+
+        JSStringRef script(JSStringCreateWithUTF8CString(str.str().c_str()));
+
+        JSContextRef context(JSGetContext());
+
+        JSValueRef exception(NULL);
+        JSValueRef result(JSEvaluateScript(context, script, NULL, NULL, 0, &exception));
+        JSStringRelease(script);
+
+        if (exception != NULL)
+            result = exception;
+
+        if (!JSValueIsUndefined(context, result)) {
+            CFStringRef json;
+
+            @try { json:
+                json = JSValueToJSONCopy(context, result);
+            } @catch (id error) {
+                CYThrow(context, error, &result);
+                goto json;
+            }
+
+            fputs([reinterpret_cast<const NSString *>(json) UTF8String], fout);
+            CFRelease(json);
+
+            fputs("\n", fout);
+            fflush(fout);
+        }
+    }
 }
 
 MSInitialize { _pooled
