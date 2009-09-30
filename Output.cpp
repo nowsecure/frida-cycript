@@ -288,7 +288,7 @@ void CYReturn::Output(std::ostream &out) const {
     out << ';';
 }
 
-void CYSource::Part(std::ostream &out) const {
+void CYSource::Show(std::ostream &out) const {
     for (const CYSource *next(this); next != NULL; next = next->next_)
         next->Output(out);
 }
@@ -298,7 +298,7 @@ void CYSource::Output(std::ostream &out, bool block) const {
         Output(out);
     else {
         out << '{';
-        Part(out);
+        Show(out);
         out << '}';
     }
 }

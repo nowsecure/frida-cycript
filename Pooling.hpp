@@ -27,6 +27,10 @@ class CYPool {
         apr_pool_destroy(pool_);
     }
 
+    void Clear() {
+        apr_pool_clear(pool_);
+    }
+
     operator apr_pool_t *() const {
         return pool_;
     }

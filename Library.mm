@@ -928,6 +928,11 @@ CYDriver::~CYDriver() {
     ScannerDestroy();
 }
 
+void CYDriver::Clear() {
+    source_ = NULL;
+    pool_.Clear();
+}
+
 extern int cydebug;
 
 void cy::parser::error(const cy::parser::location_type &loc, const std::string &msg) {
@@ -937,8 +942,11 @@ void cy::parser::error(const cy::parser::location_type &loc, const std::string &
 void CYConsole(FILE *fin, FILE *fout, FILE *ferr) {
     //cydebug = 1;
 
-    for (;;) { _pooled
-        CYDriver driver("<stdin>");
+    CYDriver driver("<stdin>");
+
+    while (!feof(fin)) { _pooled
+        driver.Clear();
+
         cy::parser parser(driver);
         if (parser.parse() != 0)
             continue;
@@ -949,9 +957,12 @@ void CYConsole(FILE *fin, FILE *fout, FILE *ferr) {
         }
 
         std::ostringstream str;
-        driver.source_->Part(str);
+        driver.source_->Show(str);
 
-        JSStringRef script(JSStringCreateWithUTF8CString(str.str().c_str()));
+        std::string code(str.str());
+        std::cout << code << std::endl;
+
+        JSStringRef script(JSStringCreateWithUTF8CString(code.c_str()));
 
         JSContextRef context(JSGetContext());
 

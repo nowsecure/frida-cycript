@@ -34,10 +34,9 @@ struct CYPart {
 };
 
 struct CYSource :
-    CYNext<CYSource>,
-    CYPart
+    CYNext<CYSource>
 {
-    virtual void Part(std::ostream &out) const;
+    virtual void Show(std::ostream &out) const;
     virtual void Output(std::ostream &out) const = 0;
     virtual void Output(std::ostream &out, bool block) const;
 };
@@ -113,6 +112,8 @@ class CYDriver {
   public:
     CYDriver(const std::string &filename);
     ~CYDriver();
+
+    void Clear();
 };
 
 struct CYForInitialiser :
