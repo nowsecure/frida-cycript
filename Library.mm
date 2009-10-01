@@ -40,12 +40,13 @@
 #define _GNU_SOURCE
 
 #include <substrate.h>
-#include "Struct.hpp"
+#include "cycript.h"
 
 #include "sig/parse.hpp"
 #include "sig/ffi_type.hpp"
 
 #include "Pooling.hpp"
+#include "Struct.hpp"
 
 #include <unistd.h>
 
@@ -53,14 +54,6 @@
 #include <CoreFoundation/CFLogUtilities.h>
 
 #include <CFNetwork/CFNetwork.h>
-#include <Foundation/Foundation.h>
-
-#include <JavaScriptCore/JSBase.h>
-#include <JavaScriptCore/JSValueRef.h>
-#include <JavaScriptCore/JSObjectRef.h>
-#include <JavaScriptCore/JSContextRef.h>
-#include <JavaScriptCore/JSStringRef.h>
-#include <JavaScriptCore/JSStringRefCF.h>
 
 #include <WebKit/WebScriptObject.h>
 
@@ -72,7 +65,6 @@
 #include <ext/stdio_filebuf.h>
 #include <set>
 #include <map>
-#include <sstream>
 
 #include "Parser.hpp"
 #include "Cycript.tab.hh"
@@ -89,8 +81,6 @@
     CFLog(kCFLogLevelNotice, CFSTR("_trace():%u"), __LINE__); \
 } while (false)
 
-
-#define _pooled _H<NSAutoreleasePool> _pool([[NSAutoreleasePool alloc] init], true);
 
 static JSContextRef Context_;
 
@@ -271,7 +261,7 @@ JSObjectRef CYMakeObject(JSContextRef context, id object) {
 
 @end
 
-JSContextRef JSGetContext() {
+extern "C" JSContextRef CYGetJSContext() {
     return Context_;
 }
 
@@ -404,7 +394,7 @@ JSValueRef CYCastJSValue(JSContextRef context, id value) {
     return value == nil ? JSValueMakeNull(context) : [value cy$JSValueInContext:context];
 }
 
-void CYThrow(JSContextRef context, id error, JSValueRef *exception) {
+extern "C" void CYThrowNSError(JSContextRef context, id error, JSValueRef *exception) {
     *exception = CYCastJSValue(context, error);
 }
 
@@ -479,7 +469,7 @@ void CYThrow(JSContextRef context, id error, JSValueRef *exception) {
 
 @end
 
-CFStringRef JSValueToJSONCopy(JSContextRef context, JSValueRef value) {
+extern "C" CFStringRef CYCopyJSONString(JSContextRef context, JSValueRef value) {
     id object(CYCastNSObject(context, value));
     return reinterpret_cast<CFStringRef>([(object == nil ? @"null" : [object cy$toJSON]) retain]);
 }
@@ -507,13 +497,13 @@ static void OnData(CFSocketRef socket, CFSocketCallBackType type, CFDataRef addr
                 JSStringRef script(JSStringCreateWithCFString(code));
                 CFRelease(code);
 
-                JSValueRef result(JSEvaluateScript(JSGetContext(), script, NULL, NULL, 0, NULL));
+                JSValueRef result(JSEvaluateScript(CYGetJSContext(), script, NULL, NULL, 0, NULL));
                 JSStringRelease(script);
 
                 CFHTTPMessageRef response(CFHTTPMessageCreateResponse(kCFAllocatorDefault, 200, NULL, kCFHTTPVersion1_1));
                 CFHTTPMessageSetHeaderFieldValue(response, CFSTR("Content-Type"), CFSTR("application/json; charset=utf-8"));
 
-                CFStringRef json(JSValueToJSONCopy(JSGetContext(), result));
+                CFStringRef json(CYCopyJSONString(CYGetJSContext(), result));
                 CFDataRef body(CFStringCreateExternalRepresentation(kCFAllocatorDefault, json, kCFStringEncodingUTF8, NULL));
                 CFRelease(json);
 
@@ -841,7 +831,7 @@ static JSValueRef Global_getProperty(JSContextRef context, JSObjectRef object, J
         if (NSMutableArray *entry = [Bridge_ objectForKey:name])
             switch ([[entry objectAtIndex:0] intValue]) {
                 case 0:
-                    return JSEvaluateScript(JSGetContext(), CYJSString([entry objectAtIndex:1]), NULL, NULL, 0, NULL);
+                    return JSEvaluateScript(CYGetJSContext(), CYJSString([entry objectAtIndex:1]), NULL, NULL, 0, NULL);
                 case 1:
                     return CYMakeFunction(context, [name cy$symbol], [[entry objectAtIndex:1] UTF8String]);
                 case 2:
@@ -938,93 +928,6 @@ void cy::parser::error(const cy::parser::location_type &location, const std::str
     driver.errors_.push_back(error);
 }
 
-void CYConsole(FILE *fin, FILE *fout, FILE *ferr) {
-    std::string line;
-
-    __gnu_cxx::stdio_filebuf<char> bin(fin, std::ios::in);
-    std::istream sin(&bin);
-
-    restart: while (!feof(fin)) { _pooled
-        fputs("cy# ", fout);
-        fflush(fout);
-
-        std::string command;
-        std::vector<std::string> lines;
-
-      read:
-        if (!std::getline(sin, line))
-            break;
-
-        lines.push_back(line);
-        command += line;
-
-        CYDriver driver("");
-        cy::parser parser(driver);
-
-        driver.data_ = command.c_str();
-        driver.size_ = command.size();
-
-        if (parser.parse() != 0) {
-            for (CYDriver::Errors::const_iterator i(driver.errors_.begin()); i != driver.errors_.end(); ++i) {
-                cy::position begin(i->location_.begin);
-                if (begin.line != lines.size() || begin.column - 1 != lines.back().size()) {
-                    std::cerr << i->message_ << std::endl;
-                    goto restart;
-                }
-            }
-
-            driver.errors_.clear();
-
-            fputs("cy> ", fout);
-            fflush(fout);
-
-            command += '\n';
-            goto read;
-        }
-
-        if (driver.source_ == NULL)
-            goto restart;
-
-        std::ostringstream str;
-        driver.source_->Show(str);
-
-        std::string code(str.str());
-        std::cout << code << std::endl;
-
-        JSStringRef script(JSStringCreateWithUTF8CString(code.c_str()));
-
-        JSContextRef context(JSGetContext());
-
-        JSValueRef exception(NULL);
-        JSValueRef result(JSEvaluateScript(context, script, NULL, NULL, 0, &exception));
-        JSStringRelease(script);
-
-        if (exception != NULL)
-            result = exception;
-
-        if (JSValueIsUndefined(context, result))
-            goto restart;
-
-        CFStringRef json;
-
-        @try { json:
-            json = JSValueToJSONCopy(context, result);
-        } @catch (id error) {
-            CYThrow(context, error, &result);
-            goto json;
-        }
-
-        fputs([reinterpret_cast<const NSString *>(json) UTF8String], fout);
-        CFRelease(json);
-
-        fputs("\n", fout);
-        fflush(fout);
-    }
-
-    fputs("\n", fout);
-    fflush(fout);
-}
-
 MSInitialize { _pooled
     apr_initialize();
 
@@ -1095,8 +998,8 @@ MSInitialize { _pooled
     length_ = JSStringCreateWithUTF8CString("length");
 
     JSValueRef exception(NULL);
-    JSValueRef value(JSObjectGetProperty(JSGetContext(), global, CYJSString("Array"), &exception));
+    JSValueRef value(JSObjectGetProperty(CYGetJSContext(), global, CYJSString("Array"), &exception));
     CYThrow(context, exception);
-    Array_ = JSValueToObject(JSGetContext(), value, &exception);
+    Array_ = JSValueToObject(CYGetJSContext(), value, &exception);
     CYThrow(context, exception);
 }

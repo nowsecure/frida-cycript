@@ -6,7 +6,8 @@ endif
 
 package:
 
-flags := -mthumb -g3 -O0 -Wall -Werror -I.
+flags := -mthumb -g3 -O0 -Wall -Werror -I. -fno-common
+flags += -F${PKG_ROOT}/System/Library/PrivateFrameworks
 
 all: cycript libcycript.dylib libcycript.plist
 
@@ -49,15 +50,18 @@ lex.cy.o: lex.cy.c Cycript.tab.hh Parser.hpp Pooling.hpp
 Output.o: Output.cpp Parser.hpp Pooling.hpp
 	$(target)g++ $(flags) -c -o $@ $<
 
-Library.o: Library.mm Cycript.tab.hh Parser.hpp Pooling.hpp Struct.hpp
+Library.o: Library.mm Cycript.tab.hh Parser.hpp Pooling.hpp Struct.hpp cycript.h
+	$(target)g++ $(flags) -c -o $@ $<
+
+Application.o: Application.mm Cycript.tab.hh Parser.hpp Pooling.hpp cycript.h
 	$(target)g++ $(flags) -c -o $@ $<
 
 libcycript.dylib: ffi_type.o parse.o Output.o Cycript.tab.o lex.cy.o Library.o
-	$(target)g++ $(flags) -dynamiclib -o $@ $(filter %.o,$^) -lobjc -framework CFNetwork -framework JavaScriptCore -framework WebCore -install_name /usr/lib/libcycript.dylib -framework CoreFoundation -framework Foundation -F${PKG_ROOT}/System/Library/PrivateFrameworks -L$(menes)/mobilesubstrate -lsubstrate -lapr-1 -lffi
+	$(target)g++ $(flags) -dynamiclib -o $@ $(filter %.o,$^) -lobjc -framework CFNetwork -framework JavaScriptCore -framework WebCore -install_name /usr/lib/libcycript.dylib -framework CoreFoundation -framework Foundation -L$(menes)/mobilesubstrate -lsubstrate -lapr-1 -lffi
 	ldid -S $@
 
-cycript: Application.mm libcycript.dylib
-	$(target)g++ $(flags) -o $@ $(filter %.mm,$^) -framework UIKit -framework Foundation -framework CoreFoundation -lobjc libcycript.dylib
+cycript: Application.o libcycript.dylib
+	$(target)g++ $(flags) -o $@ $(filter %.o,$^) -framework UIKit -framework Foundation -framework CoreFoundation -lobjc libcycript.dylib -lreadline -framework JavaScriptCore
 	ldid -S cycript
 
 package: all
