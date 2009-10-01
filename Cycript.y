@@ -253,7 +253,7 @@ TerminatorOpt
 Terminator
     : ";"
     | NewLine
-    | error { yyerrok; }
+    | error { if (yychar != 0 && yychar != cy::parser::token::CloseBrace && !yylval.newline_) YYABORT; else yyerrok; }
     ;
 
 NewLineOpt
