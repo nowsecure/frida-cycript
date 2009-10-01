@@ -29,7 +29,7 @@ typedef struct {
         CYNumber *number_;
         CYParameter *parameter_;
         CYProperty *property_;
-        CYSelector *selector_;
+        CYSelectorPart *selector_;
         CYSource *source_;
         CYStatement *statement_;
         CYString *string_;
@@ -1076,17 +1076,17 @@ SelectorExpressionOpt
     ;
 
 SelectorExpression_
-    : WordOpt ":" SelectorExpressionOpt { $$ = new(driver.pool_) CYSelector($1, true, $3); }
+    : WordOpt ":" SelectorExpressionOpt { $$ = new(driver.pool_) CYSelectorPart($1, true, $3); }
     ;
 
 SelectorExpression
     : SelectorExpression_ { $$ = $1; }
-    | Word { $$ = new(driver.pool_) CYSelector($1, false, NULL); }
+    | Word { $$ = new(driver.pool_) CYSelectorPart($1, false, NULL); }
     ;
 
 PrimaryExpression_
     : MessageExpression { $$ = $1; }
-    | "@selector" "(" SelectorExpression ")" { $$ = $3; }
+    | "@selector" "(" SelectorExpression ")" { $$ = new CYSelector($3); }
     ;
 /* }}} */
 

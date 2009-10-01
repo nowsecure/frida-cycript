@@ -17,6 +17,11 @@ struct CYNext {
     {
     }
 
+    CYNext(Type_ *next) :
+        next_(next)
+    {
+    }
+
     void SetNext(Type_ *next) {
         next_ = next;
     }
@@ -79,13 +84,14 @@ struct CYIdentifier :
     }
 };
 
-struct CYLabel {
+struct CYLabel :
+    CYNext<CYLabel>
+{
     CYIdentifier *identifier_;
-    CYLabel *next_;
 
     CYLabel(CYIdentifier *identifier, CYLabel *next) :
-        identifier_(identifier),
-        next_(next)
+        CYNext<CYLabel>(next),
+        identifier_(identifier)
     {
     }
 };
@@ -167,17 +173,29 @@ struct CYLiteral :
 {
 };
 
-struct CYSelector :
-    CYLiteral
+struct CYSelectorPart :
+    CYNext<CYSelectorPart>
 {
     CYWord *name_;
     bool value_;
-    CYSelector *after_;
 
-    CYSelector(CYWord *name, bool value, CYSelector *after) :
+    CYSelectorPart(CYWord *name, bool value, CYSelectorPart *next) :
+        CYNext<CYSelectorPart>(next),
         name_(name),
-        value_(value),
-        after_(after)
+        value_(value)
+    {
+    }
+
+    virtual void Output(std::ostream &out) const;
+};
+
+struct CYSelector :
+    CYLiteral
+{
+    CYSelectorPart *name_;
+
+    CYSelector(CYSelectorPart *name) :
+        name_(name)
     {
     }
 
@@ -366,15 +384,16 @@ struct CYAssignment :
     virtual const char *Operator() const = 0;
 };
 
-struct CYArgument {
+struct CYArgument :
+    CYNext<CYArgument>
+{
     CYWord *name_;
     CYExpression *value_;
-    CYArgument *next_;
 
     CYArgument(CYWord *name, CYExpression *value, CYArgument *next = NULL) :
+        CYNext<CYArgument>(next),
         name_(name),
-        value_(value),
-        next_(next)
+        value_(value)
     {
     }
 
@@ -406,13 +425,14 @@ struct CYClause :
     virtual void Output(std::ostream &out) const;
 };
 
-struct CYElement {
+struct CYElement :
+    CYNext<CYElement>
+{
     CYExpression *value_;
-    CYElement *next_;
 
     CYElement(CYExpression *value, CYElement *next) :
-        value_(value),
-        next_(next)
+        CYNext<CYElement>(next),
+        value_(value)
     {
     }
 
@@ -467,14 +487,14 @@ struct CYDeclarations :
 };
 
 struct CYParameter :
+    CYNext<CYParameter>,
     CYThing
 {
     CYIdentifier *name_;
-    CYParameter *next_;
 
     CYParameter(CYIdentifier *name, CYParameter *next) :
-        name_(name),
-        next_(next)
+        CYNext<CYParameter>(next),
+        name_(name)
     {
     }
 
@@ -517,15 +537,16 @@ struct CYForIn :
     virtual void Output(std::ostream &out) const;
 };
 
-struct CYProperty {
+struct CYProperty :
+    CYNext<CYProperty>
+{
     CYName *name_;
     CYExpression *value_;
-    CYProperty *next_;
 
     CYProperty(CYName *name, CYExpression *value, CYProperty *next) :
+        CYNext<CYProperty>(next),
         name_(name),
-        value_(value),
-        next_(next)
+        value_(value)
     {
     }
 

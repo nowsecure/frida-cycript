@@ -288,8 +288,18 @@ void CYReturn::Output(std::ostream &out) const {
 
 void CYSelector::Output(std::ostream &out) const {
     out << '"';
-    out << "<unimplemented>";
+    if (name_ != NULL)
+        name_->Output(out);
     out << '"';
+}
+
+void CYSelectorPart::Output(std::ostream &out) const {
+    if (name_ != NULL)
+        out << *name_;
+    if (value_)
+        out << ':';
+    if (next_ != NULL)
+        next_->Output(out);
 }
 
 void CYSource::Show(std::ostream &out) const {
