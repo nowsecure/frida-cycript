@@ -6,12 +6,12 @@ endif
 
 package:
 
-flags := -mthumb -g3 -O0 -Wall -Werror -I.
+flags := -mthumb -g0 -O3 -Wall -Werror -I.
 
 all: cycript libcycript.dylib libcycript.plist
 
 clean:
-	rm -f *.o libcycript.dylib cycript libcycript.plist Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh
+	rm -f *.o libcycript.dylib cycript libcycript.plist Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh
 
 libcycript.plist: Bridge.def
 	sed -e 's/^C/0/;s/^F/1/;s/^V/2/' Bridge.def | while read -r line; do \
@@ -38,26 +38,26 @@ Struct.hpp:
 #	./Parser.py <Parser.dat >$@
 
 %.o: sig/%.cpp
-	$(target)g++ -c -o $@ $< $(flags)
+	$(target)g++ $(flags) -c -o $@ $<
 
 Cycript.tab.o: Cycript.tab.cc Cycript.tab.hh Parser.hpp Pooling.hpp
-	$(target)g++ -c -o $@ $< $(flags)
+	$(target)g++ $(flags) -c -o $@ $<
 
 lex.cy.o: lex.cy.c Cycript.tab.hh Parser.hpp Pooling.hpp
-	$(target)g++ -c -o $@ $< $(flags)
+	$(target)g++ $(flags) -c -o $@ $<
 
 Output.o: Output.cpp Parser.hpp Pooling.hpp
-	$(target)g++ -c -o $@ $< $(flags)
+	$(target)g++ $(flags) -c -o $@ $<
 
 Library.o: Library.mm Cycript.tab.hh Parser.hpp Pooling.hpp Struct.hpp
-	$(target)g++ -c -o $@ $< $(flags)
+	$(target)g++ $(flags) -c -o $@ $<
 
 libcycript.dylib: ffi_type.o parse.o Output.o Cycript.tab.o lex.cy.o Library.o
-	$(target)g++ -I. -dynamiclib -mthumb -g3 -O0 -Wall -Werror -o $@ $(filter %.o,$^) -lobjc -framework CFNetwork -framework JavaScriptCore -framework WebCore -install_name /usr/lib/libcycript.dylib -framework CoreFoundation -framework Foundation -F${PKG_ROOT}/System/Library/PrivateFrameworks -L$(menes)/mobilesubstrate -lsubstrate -lapr-1 -lffi
+	$(target)g++ $(flags) -dynamiclib -o $@ $(filter %.o,$^) -lobjc -framework CFNetwork -framework JavaScriptCore -framework WebCore -install_name /usr/lib/libcycript.dylib -framework CoreFoundation -framework Foundation -F${PKG_ROOT}/System/Library/PrivateFrameworks -L$(menes)/mobilesubstrate -lsubstrate -lapr-1 -lffi
 	ldid -S $@
 
 cycript: Application.mm libcycript.dylib
-	$(target)g++ -g0 -O2 -Wall -Werror -o $@ $(filter %.mm,$^) -framework UIKit -framework Foundation -framework CoreFoundation -lobjc libcycript.dylib
+	$(target)g++ $(flags) -o $@ $(filter %.mm,$^) -framework UIKit -framework Foundation -framework CoreFoundation -lobjc libcycript.dylib
 	ldid -S cycript
 
 package: all

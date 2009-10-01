@@ -1063,7 +1063,7 @@ MessageExpression
     : "[" AssignmentExpression SelectorList "]" { $$ = new(driver.pool_) CYMessage($2, $3); }
     ;
 
-PrimaryExpression
+PrimaryExpression_
     : MessageExpression { $$ = $1; }
     ;
 /* }}} */
