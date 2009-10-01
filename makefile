@@ -6,7 +6,7 @@ endif
 
 package:
 
-flags := -mthumb -g0 -O3 -Wall -Werror -I.
+flags := -mthumb -g3 -O0 -Wall -Werror -I.
 
 all: cycript libcycript.dylib libcycript.plist
 
@@ -26,7 +26,7 @@ libcycript.plist: Bridge.def
 	done >$@
 
 Cycript.tab.cc Cycript.tab.hh location.hh position.hh: Cycript.y
-	bison --report=state $<
+	bison -v --report=state $<
 
 lex.cy.c: Cycript.l
 	flex $<

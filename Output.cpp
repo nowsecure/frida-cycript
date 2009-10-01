@@ -287,6 +287,12 @@ void CYReturn::Output(std::ostream &out) const {
     out << ';';
 }
 
+void CYSelector::Output(std::ostream &out) const {
+    out << '"';
+    out << "<unimplemented>";
+    out << '"';
+}
+
 void CYSource::Show(std::ostream &out) const {
     for (const CYSource *next(this); next != NULL; next = next->next_)
         next->Output(out);

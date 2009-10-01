@@ -29,6 +29,7 @@ typedef struct {
         CYNumber *number_;
         CYParameter *parameter_;
         CYProperty *property_;
+        CYSelector *selector_;
         CYSource *source_;
         CYStatement *statement_;
         CYString *string_;
@@ -117,6 +118,8 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 
 %token OpenBracket "["
 %token CloseBracket "]"
+
+%token AtSelector "@selector"
 
 %token <word_> Break "break"
 %token <word_> Case "case"
@@ -253,6 +256,9 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> RelationalExpressionNoBF
 %type <expression_> RelationalExpressionNoIn
 %type <statement_> ReturnStatement
+%type <selector_> SelectorExpression
+%type <selector_> SelectorExpression_
+%type <selector_> SelectorExpressionOpt
 %type <expression_> ShiftExpression
 %type <expression_> ShiftExpressionNoBF
 %type <source_> SourceElement
@@ -1063,8 +1069,23 @@ MessageExpression
     : "[" AssignmentExpression SelectorList "]" { $$ = new(driver.pool_) CYMessage($2, $3); }
     ;
 
+SelectorExpressionOpt
+    : SelectorExpression_ { $$ = $1; }
+    | { $$ = NULL; }
+    ;
+
+SelectorExpression_
+    : WordOpt ":" SelectorExpressionOpt { $$ = new CYSelector($1, true, $3); }
+    ;
+
+SelectorExpression
+    : SelectorExpression_ { $$ = $1; }
+    | Word { $$ = new CYSelector($1, false, NULL); }
+    ;
+
 PrimaryExpression_
     : MessageExpression { $$ = $1; }
+    | "@selector" "(" SelectorExpression ")" { $$ = $3; }
     ;
 /* }}} */
 

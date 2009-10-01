@@ -919,6 +919,8 @@ static JSStaticValue Pointer_staticValues[2] = {
 
 CYDriver::CYDriver(const std::string &filename) :
     state_(CYClear),
+    data_(NULL),
+    size_(0),
     filename_(filename),
     source_(NULL)
 {
@@ -930,9 +932,11 @@ CYDriver::~CYDriver() {
 }
 
 void CYDriver::Clear() {
-    state_ = CYClear;
-    source_.clear();
     pool_.Clear();
+    state_ = CYClear;
+    data_ = NULL;
+    size_ = 0;
+    source_.clear();
 }
 
 void cy::parser::error(const cy::parser::location_type &loc, const std::string &msg) {
@@ -940,14 +944,33 @@ void cy::parser::error(const cy::parser::location_type &loc, const std::string &
 }
 
 void CYConsole(FILE *fin, FILE *fout, FILE *ferr) {
+    std::string line;
+
+    __gnu_cxx::stdio_filebuf<char> bin(fin, std::ios::in);
+    std::istream sin(&bin);
+
     CYDriver driver("");
 
     while (!feof(fin)) { _pooled
         driver.Clear();
 
+        fputs("cy# ", fout);
+        fflush(fout);
+
         cy::parser parser(driver);
-        if (parser.parse() != 0)
-            continue;
+        std::string command;
+
+        for (;;) {
+            if (!std::getline(sin, line))
+                return;
+            command += line;
+            driver.data_ = command.c_str();
+            driver.size_ = command.size();
+            if (parser.parse() == 0)
+                break;
+            fputs("cy> ", fout);
+            fflush(fout);
+        }
 
         for (std::vector<CYSource *>::const_iterator i(driver.source_.begin()); i != driver.source_.end(); ++i) {
             CYSource *source(*i);

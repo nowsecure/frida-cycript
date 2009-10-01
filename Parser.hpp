@@ -108,10 +108,16 @@ enum CYState {
 class CYDriver {
   public:
     CYPool pool_;
+
     CYState state_;
-    std::string filename_;
-    std::vector<CYSource *> source_;
     void *scanner_;
+
+    const char *data_;
+    size_t size_;
+
+    std::string filename_;
+
+    std::vector<CYSource *> source_;
 
   private:
     void ScannerInit();
@@ -152,6 +158,23 @@ _finline std::ostream &operator <<(std::ostream &out, const CYExpression &rhs) {
 struct CYLiteral :
     CYExpression
 {
+};
+
+struct CYSelector :
+    CYLiteral
+{
+    CYWord *name_;
+    bool value_;
+    CYSelector *after_;
+
+    CYSelector(CYWord *name, bool value, CYSelector *after) :
+        name_(name),
+        value_(value),
+        after_(after)
+    {
+    }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 struct CYString :

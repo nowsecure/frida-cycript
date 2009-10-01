@@ -9,6 +9,19 @@ typedef cy::parser::token tk;
 #define C T yyextra->state_ = CYClear;
 #define R T yyextra->state_ = CYRestricted;
 #define N if (yyextra->state_ != CYNewLine) { bool restricted(yyextra->state_ == CYRestricted); if (restricted) { yyextra->state_ = CYClear; return tk::NewLine; } else yyextra->state_ = CYNewLine; }
+
+#define YY_INPUT(data, value, size) { \
+    if (yyextra->size_ == 0) \
+        value = YY_NULL; \
+    else { \
+        size_t copy(std::min(size, yyextra->size_)); \
+        memcpy(data, yyextra->data_, copy); \
+        yyextra->data_ += copy; \
+        yyextra->size_ -= copy; \
+        value = copy; \
+    } \
+}
+
 %}
 
 %option prefix="cy"
@@ -81,6 +94,8 @@ Escape   \\['"\\bfnrtv]|\\0|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}
 
 "["    C return tk::OpenBracket;
 "]"    C return tk::CloseBracket;
+
+"@selector"  C return tk::AtSelector;
 
 "break"      R yylval->word_ = new CYWord("break"); return tk::Break;
 "case"       C yylval->word_ = new CYWord("case"); return tk::Case;
