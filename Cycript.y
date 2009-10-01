@@ -1,7 +1,7 @@
 %code top {
 #include "Cycript.tab.hh"
-int cylex(YYSTYPE *lvalp, YYLTYPE *llocp, void *scanner);
 #define scanner driver.scanner_
+#define YYSTACKEXPANDABLE 1
 }
 
 %code requires {
@@ -40,11 +40,14 @@ typedef struct {
 
 }
 
+%code provides {
+int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
+}
+
 %name-prefix "cy"
 
 %language "C++"
 %locations
-%glr-parser
 
 %initial-action {
     @$.begin.filename = @$.end.filename = &driver.filename_;
@@ -149,24 +152,36 @@ typedef struct {
 %token <string_> StringLiteral
 
 %type <expression_> AdditiveExpression
+%type <expression_> AdditiveExpressionNoBF
 %type <argument_> ArgumentList
 %type <argument_> ArgumentList_
 %type <argument_> ArgumentListOpt
 %type <argument_> Arguments
 %type <literal_> ArrayLiteral
 %type <expression_> AssignmentExpression
+%type <expression_> AssignmentExpressionNoBF
+%type <expression_> AssignmentExpressionNoIn
 %type <expression_> BitwiseANDExpression
+%type <expression_> BitwiseANDExpressionNoBF
+%type <expression_> BitwiseANDExpressionNoIn
 %type <statement_> Block
 %type <boolean_> BooleanLiteral
 %type <expression_> BitwiseORExpression
+%type <expression_> BitwiseORExpressionNoBF
+%type <expression_> BitwiseORExpressionNoIn
 %type <expression_> BitwiseXORExpression
+%type <expression_> BitwiseXORExpressionNoBF
+%type <expression_> BitwiseXORExpressionNoIn
 %type <statement_> BreakStatement
 %type <expression_> CallExpression
+%type <expression_> CallExpressionNoBF
 %type <clause_> CaseBlock
 %type <clause_> CaseClause
 %type <clause_> CaseClausesOpt
 %type <catch_> CatchOpt
 %type <expression_> ConditionalExpression
+%type <expression_> ConditionalExpressionNoBF
+%type <expression_> ConditionalExpressionNoIn
 %type <statement_> ContinueStatement
 %type <clause_> DefaultClause
 %type <statement_> DoWhileStatement
@@ -176,9 +191,15 @@ typedef struct {
 %type <statement_> ElseStatementOpt
 %type <statement_> EmptyStatement
 %type <expression_> EqualityExpression
+%type <expression_> EqualityExpressionNoBF
+%type <expression_> EqualityExpressionNoIn
 %type <expression_> Expression
-%type <expression_> Expression_
 %type <expression_> ExpressionOpt
+%type <expression_> Expression_
+%type <expression_> ExpressionNoBF
+%type <expression_> ExpressionNoIn
+%type <expression_> ExpressionNoIn_
+%type <expression_> ExpressionNoInOpt
 %type <statement_> ExpressionStatement
 %type <statement_> FinallyOpt
 %type <statement_> ForStatement
@@ -194,70 +215,101 @@ typedef struct {
 %type <statement_> IfStatement
 %type <expression_> Initialiser
 %type <expression_> InitialiserOpt
+%type <expression_> InitialiserNoIn
+%type <expression_> InitialiserNoInOpt
 %type <statement_> IterationStatement
 %type <statement_> LabelledStatement
 %type <expression_> LeftHandSideExpression
+%type <expression_> LeftHandSideExpression_
+%type <expression_> LeftHandSideExpressionNoBF
 %type <literal_> Literal
 %type <expression_> LogicalANDExpression
+%type <expression_> LogicalANDExpressionNoBF
+%type <expression_> LogicalANDExpressionNoIn
 %type <expression_> LogicalORExpression
+%type <expression_> LogicalORExpressionNoBF
+%type <expression_> LogicalORExpressionNoIn
 %type <expression_> MemberExpression
+%type <expression_> MemberExpression_
+%type <expression_> MemberExpressionNoBF
 %type <expression_> MultiplicativeExpression
+%type <expression_> MultiplicativeExpressionNoBF
 %type <expression_> NewExpression
+%type <expression_> NewExpression_
+%type <expression_> NewExpressionNoBF
 %type <null_> NullLiteral
 %type <literal_> ObjectLiteral
-%type <expression_> MessageExpression
 %type <expression_> PostfixExpression
+%type <expression_> PostfixExpressionNoBF
 %type <expression_> PrimaryExpression
+%type <expression_> PrimaryExpression_
+%type <expression_> PrimaryExpressionNoBF
 %type <source_> Program
 %type <name_> PropertyName
 %type <property_> PropertyNameAndValueList
 %type <property_> PropertyNameAndValueList_
 %type <property_> PropertyNameAndValueListOpt
 %type <expression_> RelationalExpression
+%type <expression_> RelationalExpressionNoBF
+%type <expression_> RelationalExpressionNoIn
 %type <statement_> ReturnStatement
-%type <argument_> SelectorCall
-%type <argument_> SelectorCall_
-%type <argument_> SelectorList
 %type <expression_> ShiftExpression
+%type <expression_> ShiftExpressionNoBF
 %type <source_> SourceElement
 %type <source_> SourceElements
 %type <statement_> Statement
+%type <statement_> StatementList
 %type <statement_> StatementListOpt
 %type <statement_> SwitchStatement
 %type <statement_> ThrowStatement
 %type <statement_> TryStatement
 %type <expression_> UnaryExpression
+%type <expression_> UnaryExpression_
+%type <expression_> UnaryExpressionNoBF
 %type <declaration_> VariableDeclaration
+%type <declaration_> VariableDeclarationNoIn
 %type <declarations_> VariableDeclarationList
 %type <declarations_> VariableDeclarationList_
+%type <declarations_> VariableDeclarationListNoIn
+%type <declarations_> VariableDeclarationListNoIn_
 %type <statement_> VariableStatement
-%type <argument_> VariadicCall
 %type <statement_> WhileStatement
 %type <statement_> WithStatement
 %type <word_> Word
 %type <word_> WordOpt
 
+%type <expression_> MessageExpression
+%type <argument_> SelectorCall
+%type <argument_> SelectorCall_
+%type <argument_> SelectorList
+%type <argument_> VariadicCall
+
 %nonassoc "if"
 %nonassoc "else"
 
-%%
+%start Program
 
-%start Program;
+%%
 
 TerminatorOpt
     : ";"
-    | NewLine
-    |
+    | "\n"
+    | error { yyerrok; }
     ;
 
 Terminator
     : ";"
-    | NewLine
+    | "\n"
     | error { if (yychar != 0 && yychar != cy::parser::token::CloseBrace && !yylval.newline_) YYABORT; else yyerrok; }
     ;
 
+CommaOpt
+    : ","
+    |
+    ;
+
 NewLineOpt
-    : NewLine
+    : "\n"
     |
     ;
 
@@ -281,8 +333,8 @@ Word
     | "for" { $$ = $1; }
     | "function" { $$ = $1; }
     | "if" { $$ = $1; }
-    | "in" { $$ = $1; }
-    | "instanceof" { $$ = $1; }
+    /* XXX: | "in" { $$ = $1; } */
+    /* XXX: | "instanceof" { $$ = $1; } */
     | "new" { $$ = $1; }
     | "null" { $$ = $1; }
     | "return" NewLineOpt { $$ = $1; }
@@ -319,40 +371,22 @@ BooleanLiteral
     | "false" { $$ = $1; }
     ;
 
-/* Objective-C Extensions {{{ */
-VariadicCall
-    : "," AssignmentExpression VariadicCall { $$ = new(driver.pool_) CYArgument(NULL, $2, $3); }
-    | { $$ = NULL; }
-    ;
-
-SelectorCall_
-    : SelectorCall { $$ = $1; }
-    | VariadicCall { $$ = $1; }
-    ;
-
-SelectorCall
-    : WordOpt ":" AssignmentExpression SelectorCall_ { $$ = new(driver.pool_) CYArgument($1 ?: new(driver.pool_) CYBlank(), $3, $4); }
-    ;
-
-SelectorList
-    : SelectorCall { $$ = $1; }
-    | Word { $$ = new(driver.pool_) CYArgument($1, NULL); }
-    ;
-
-MessageExpression
-    : "[" AssignmentExpression SelectorList "]" { $$ = new(driver.pool_) CYMessage($2, $3); }
-    ;
-/* }}} */
-
 /* 11.1 Primary Expressions {{{ */
-PrimaryExpression
+PrimaryExpression_
     : "this" { $$ = $1; }
     | Identifier { $$ = new(driver.pool_) CYVariable($1); }
     | Literal { $$ = $1; }
     | ArrayLiteral { $$ = $1; }
-    | ObjectLiteral { $$ = $1; }
     | "(" Expression ")" { $$ = $2; }
-    | MessageExpression { $$ = $1; }
+    ;
+
+PrimaryExpression
+    : ObjectLiteral { $$ = $1; }
+    | PrimaryExpression_ { $$ = $1; }
+    ;
+
+PrimaryExpressionNoBF
+    : PrimaryExpression_ { $$ = $1; }
     ;
 /* }}} */
 /* 11.1.4 Array Initialiser {{{ */
@@ -376,12 +410,12 @@ ElementList
 /* }}} */
 /* 11.1.5 Object Initialiser {{{ */
 ObjectLiteral
-    : "{" PropertyNameAndValueListOpt "}" { $$ = $2; }
+    : "{" PropertyNameAndValueListOpt "}" { $$ = new CYObject($2); }
     ;
 
 PropertyNameAndValueList_
     : "," PropertyNameAndValueList { $$ = $2; }
-    | { $$ = NULL; }
+    | CommaOpt { $$ = NULL; }
     ;
 
 PropertyNameAndValueListOpt
@@ -400,17 +434,37 @@ PropertyName
     ;
 /* }}} */
 
+MemberExpression_
+    : "new" MemberExpression Arguments { $$ = new(driver.pool_) CYNew($2, $3); }
+    ;
+
 MemberExpression
     : PrimaryExpression { $$ = $1; }
     | FunctionExpression { $$ = $1; }
     | MemberExpression "[" Expression "]" { $$ = new(driver.pool_) CYMember($1, $3); }
     | MemberExpression "." Identifier { $$ = new(driver.pool_) CYMember($1, new(driver.pool_) CYString($3)); }
-    | "new" MemberExpression Arguments { $$ = new(driver.pool_) CYNew($2, $3); }
+    | MemberExpression_ { $$ = $1; }
+    ;
+
+MemberExpressionNoBF
+    : PrimaryExpressionNoBF { $$ = $1; }
+    | MemberExpressionNoBF "[" Expression "]" { $$ = new(driver.pool_) CYMember($1, $3); }
+    | MemberExpressionNoBF "." Identifier { $$ = new(driver.pool_) CYMember($1, new(driver.pool_) CYString($3)); }
+    | MemberExpression_ { $$ = $1; }
+    ;
+
+NewExpression_
+    : "new" NewExpression { $$ = new(driver.pool_) CYNew($2, NULL); }
     ;
 
 NewExpression
     : MemberExpression { $$ = $1; }
-    | "new" NewExpression { $$ = new(driver.pool_) CYNew($2, NULL); }
+    | NewExpression_ { $$ = $1; }
+    ;
+
+NewExpressionNoBF
+    : MemberExpressionNoBF { $$ = $1; }
+    | NewExpression_ { $$ = $1; }
     ;
 
 CallExpression
@@ -418,6 +472,13 @@ CallExpression
     | CallExpression Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
     | CallExpression "[" Expression "]" { $$ = new(driver.pool_) CYMember($1, $3); }
     | CallExpression "." Identifier { $$ = new(driver.pool_) CYMember($1, new(driver.pool_) CYString($3)); }
+    ;
+
+CallExpressionNoBF
+    : MemberExpressionNoBF Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
+    | CallExpressionNoBF Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
+    | CallExpressionNoBF "[" Expression "]" { $$ = new(driver.pool_) CYMember($1, $3); }
+    | CallExpressionNoBF "." Identifier { $$ = new(driver.pool_) CYMember($1, new(driver.pool_) CYString($3)); }
     ;
 
 ArgumentList_
@@ -441,7 +502,13 @@ Arguments
 LeftHandSideExpression
     : NewExpression { $$ = $1; }
     | CallExpression { $$ = $1; }
-    | "*" LeftHandSideExpression { $$ = new(driver.pool_) CYIndirect($2); }
+    | LeftHandSideExpression_ { $$ = $1; }
+    ;
+
+LeftHandSideExpressionNoBF
+    : NewExpressionNoBF { $$ = $1; }
+    | CallExpressionNoBF { $$ = $1; }
+    | LeftHandSideExpression_ { $$ = $1; }
     ;
 
 PostfixExpression
@@ -450,9 +517,14 @@ PostfixExpression
     | LeftHandSideExpression "--" { $$ = new(driver.pool_) CYPostDecrement($1); }
     ;
 
-UnaryExpression
-    : PostfixExpression { $$ = $1; }
-    | "delete" UnaryExpression { $$ = new(driver.pool_) CYDelete($2); }
+PostfixExpressionNoBF
+    : LeftHandSideExpressionNoBF { $$ = $1; }
+    | LeftHandSideExpressionNoBF "++" { $$ = new(driver.pool_) CYPostIncrement($1); }
+    | LeftHandSideExpressionNoBF "--" { $$ = new(driver.pool_) CYPostDecrement($1); }
+    ;
+
+UnaryExpression_
+    : "delete" UnaryExpression { $$ = new(driver.pool_) CYDelete($2); }
     | "void" UnaryExpression { $$ = new(driver.pool_) CYVoid($2); }
     | "typeof" UnaryExpression { $$ = new(driver.pool_) CYTypeOf($2); }
     | "++" UnaryExpression { $$ = new(driver.pool_) CYPreIncrement($2); }
@@ -463,7 +535,16 @@ UnaryExpression
     | "-" UnaryExpression { $$ = new(driver.pool_) CYNegate($2); }
     | "~" UnaryExpression { $$ = new(driver.pool_) CYBitwiseNot($2); }
     | "!" UnaryExpression { $$ = new(driver.pool_) CYLogicalNot($2); }
-    | "&" UnaryExpression { $$ = new(driver.pool_) CYAddressOf($2); }
+    ;
+
+UnaryExpression
+    : PostfixExpression { $$ = $1; }
+    | UnaryExpression_ { $$ = $1; }
+    ;
+
+UnaryExpressionNoBF
+    : PostfixExpressionNoBF { $$ = $1; }
+    | UnaryExpression_ { $$ = $1; }
     ;
 
 MultiplicativeExpression
@@ -473,10 +554,23 @@ MultiplicativeExpression
     | MultiplicativeExpression "%" UnaryExpression { $$ = new(driver.pool_) CYModulus($1, $3); }
     ;
 
+MultiplicativeExpressionNoBF
+    : UnaryExpressionNoBF { $$ = $1; }
+    | MultiplicativeExpressionNoBF "*" UnaryExpression { $$ = new(driver.pool_) CYMultiply($1, $3); }
+    | MultiplicativeExpressionNoBF "/" UnaryExpression { $$ = new(driver.pool_) CYDivide($1, $3); }
+    | MultiplicativeExpressionNoBF "%" UnaryExpression { $$ = new(driver.pool_) CYModulus($1, $3); }
+    ;
+
 AdditiveExpression
     : MultiplicativeExpression { $$ = $1; }
     | AdditiveExpression "+" MultiplicativeExpression { $$ = new(driver.pool_) CYAdd($1, $3); }
     | AdditiveExpression "-" MultiplicativeExpression { $$ = new(driver.pool_) CYSubtract($1, $3); }
+    ;
+
+AdditiveExpressionNoBF
+    : MultiplicativeExpressionNoBF { $$ = $1; }
+    | AdditiveExpressionNoBF "+" MultiplicativeExpression { $$ = new(driver.pool_) CYAdd($1, $3); }
+    | AdditiveExpressionNoBF "-" MultiplicativeExpression { $$ = new(driver.pool_) CYSubtract($1, $3); }
     ;
 
 ShiftExpression
@@ -484,6 +578,13 @@ ShiftExpression
     | ShiftExpression "<<" AdditiveExpression { $$ = new(driver.pool_) CYShiftLeft($1, $3); }
     | ShiftExpression ">>" AdditiveExpression { $$ = new(driver.pool_) CYShiftRightSigned($1, $3); }
     | ShiftExpression ">>>" AdditiveExpression { $$ = new(driver.pool_) CYShiftRightUnsigned($1, $3); }
+    ;
+
+ShiftExpressionNoBF
+    : AdditiveExpressionNoBF { $$ = $1; }
+    | ShiftExpressionNoBF "<<" AdditiveExpression { $$ = new(driver.pool_) CYShiftLeft($1, $3); }
+    | ShiftExpressionNoBF ">>" AdditiveExpression { $$ = new(driver.pool_) CYShiftRightSigned($1, $3); }
+    | ShiftExpressionNoBF ">>>" AdditiveExpression { $$ = new(driver.pool_) CYShiftRightUnsigned($1, $3); }
     ;
 
 RelationalExpression
@@ -496,6 +597,25 @@ RelationalExpression
     | RelationalExpression "in" ShiftExpression { $$ = new(driver.pool_) CYIn($1, $3); }
     ;
 
+RelationalExpressionNoIn
+    : ShiftExpression { $$ = $1; }
+    | RelationalExpressionNoIn "<" ShiftExpression { $$ = new(driver.pool_) CYLess($1, $3); }
+    | RelationalExpressionNoIn ">" ShiftExpression { $$ = new(driver.pool_) CYGreater($1, $3); }
+    | RelationalExpressionNoIn "<=" ShiftExpression { $$ = new(driver.pool_) CYLessOrEqual($1, $3); }
+    | RelationalExpressionNoIn ">=" ShiftExpression { $$ = new(driver.pool_) CYGreaterOrEqual($1, $3); }
+    | RelationalExpressionNoIn "instanceof" ShiftExpression { $$ = new(driver.pool_) CYInstanceOf($1, $3); }
+    ;
+
+RelationalExpressionNoBF
+    : ShiftExpressionNoBF { $$ = $1; }
+    | RelationalExpressionNoBF "<" ShiftExpression { $$ = new(driver.pool_) CYLess($1, $3); }
+    | RelationalExpressionNoBF ">" ShiftExpression { $$ = new(driver.pool_) CYGreater($1, $3); }
+    | RelationalExpressionNoBF "<=" ShiftExpression { $$ = new(driver.pool_) CYLessOrEqual($1, $3); }
+    | RelationalExpressionNoBF ">=" ShiftExpression { $$ = new(driver.pool_) CYGreaterOrEqual($1, $3); }
+    | RelationalExpressionNoBF "instanceof" ShiftExpression { $$ = new(driver.pool_) CYInstanceOf($1, $3); }
+    | RelationalExpressionNoBF "in" ShiftExpression { $$ = new(driver.pool_) CYIn($1, $3); }
+    ;
+
 EqualityExpression
     : RelationalExpression { $$ = $1; }
     | EqualityExpression "==" RelationalExpression { $$ = new(driver.pool_) CYEqual($1, $3); }
@@ -504,9 +624,35 @@ EqualityExpression
     | EqualityExpression "!==" RelationalExpression { $$ = new(driver.pool_) CYNotIdentical($1, $3); }
     ;
 
+EqualityExpressionNoIn
+    : RelationalExpressionNoIn { $$ = $1; }
+    | EqualityExpressionNoIn "==" RelationalExpressionNoIn { $$ = new(driver.pool_) CYEqual($1, $3); }
+    | EqualityExpressionNoIn "!=" RelationalExpressionNoIn { $$ = new(driver.pool_) CYNotEqual($1, $3); }
+    | EqualityExpressionNoIn "===" RelationalExpressionNoIn { $$ = new(driver.pool_) CYIdentical($1, $3); }
+    | EqualityExpressionNoIn "!==" RelationalExpressionNoIn { $$ = new(driver.pool_) CYNotIdentical($1, $3); }
+    ;
+
+EqualityExpressionNoBF
+    : RelationalExpressionNoBF { $$ = $1; }
+    | EqualityExpressionNoBF "==" RelationalExpression { $$ = new(driver.pool_) CYEqual($1, $3); }
+    | EqualityExpressionNoBF "!=" RelationalExpression { $$ = new(driver.pool_) CYNotEqual($1, $3); }
+    | EqualityExpressionNoBF "===" RelationalExpression { $$ = new(driver.pool_) CYIdentical($1, $3); }
+    | EqualityExpressionNoBF "!==" RelationalExpression { $$ = new(driver.pool_) CYNotIdentical($1, $3); }
+    ;
+
 BitwiseANDExpression
     : EqualityExpression { $$ = $1; }
     | BitwiseANDExpression "&" EqualityExpression { $$ = new(driver.pool_) CYBitwiseAnd($1, $3); }
+    ;
+
+BitwiseANDExpressionNoIn
+    : EqualityExpressionNoIn { $$ = $1; }
+    | BitwiseANDExpressionNoIn "&" EqualityExpressionNoIn { $$ = new(driver.pool_) CYBitwiseAnd($1, $3); }
+    ;
+
+BitwiseANDExpressionNoBF
+    : EqualityExpressionNoBF { $$ = $1; }
+    | BitwiseANDExpressionNoBF "&" EqualityExpression { $$ = new(driver.pool_) CYBitwiseAnd($1, $3); }
     ;
 
 BitwiseXORExpression
@@ -514,9 +660,29 @@ BitwiseXORExpression
     | BitwiseXORExpression "^" BitwiseANDExpression { $$ = new(driver.pool_) CYBitwiseXOr($1, $3); }
     ;
 
+BitwiseXORExpressionNoIn
+    : BitwiseANDExpressionNoIn { $$ = $1; }
+    | BitwiseXORExpressionNoIn "^" BitwiseANDExpressionNoIn { $$ = new(driver.pool_) CYBitwiseXOr($1, $3); }
+    ;
+
+BitwiseXORExpressionNoBF
+    : BitwiseANDExpressionNoBF { $$ = $1; }
+    | BitwiseXORExpressionNoBF "^" BitwiseANDExpression { $$ = new(driver.pool_) CYBitwiseXOr($1, $3); }
+    ;
+
 BitwiseORExpression
     : BitwiseXORExpression { $$ = $1; }
     | BitwiseORExpression "|" BitwiseXORExpression { $$ = new(driver.pool_) CYBitwiseOr($1, $3); }
+    ;
+
+BitwiseORExpressionNoIn
+    : BitwiseXORExpressionNoIn { $$ = $1; }
+    | BitwiseORExpressionNoIn "|" BitwiseXORExpressionNoIn { $$ = new(driver.pool_) CYBitwiseOr($1, $3); }
+    ;
+
+BitwiseORExpressionNoBF
+    : BitwiseXORExpressionNoBF { $$ = $1; }
+    | BitwiseORExpressionNoBF "|" BitwiseXORExpression { $$ = new(driver.pool_) CYBitwiseOr($1, $3); }
     ;
 
 LogicalANDExpression
@@ -524,14 +690,44 @@ LogicalANDExpression
     | LogicalANDExpression "&&" BitwiseORExpression { $$ = new(driver.pool_) CYLogicalAnd($1, $3); }
     ;
 
+LogicalANDExpressionNoIn
+    : BitwiseORExpressionNoIn { $$ = $1; }
+    | LogicalANDExpressionNoIn "&&" BitwiseORExpressionNoIn { $$ = new(driver.pool_) CYLogicalAnd($1, $3); }
+    ;
+
+LogicalANDExpressionNoBF
+    : BitwiseORExpressionNoBF { $$ = $1; }
+    | LogicalANDExpressionNoBF "&&" BitwiseORExpression { $$ = new(driver.pool_) CYLogicalAnd($1, $3); }
+    ;
+
 LogicalORExpression
     : LogicalANDExpression { $$ = $1; }
     | LogicalORExpression "||" LogicalANDExpression { $$ = new(driver.pool_) CYLogicalOr($1, $3); }
     ;
 
+LogicalORExpressionNoIn
+    : LogicalANDExpressionNoIn { $$ = $1; }
+    | LogicalORExpressionNoIn "||" LogicalANDExpressionNoIn { $$ = new(driver.pool_) CYLogicalOr($1, $3); }
+    ;
+
+LogicalORExpressionNoBF
+    : LogicalANDExpressionNoBF { $$ = $1; }
+    | LogicalORExpressionNoBF "||" LogicalANDExpression { $$ = new(driver.pool_) CYLogicalOr($1, $3); }
+    ;
+
 ConditionalExpression
     : LogicalORExpression { $$ = $1; }
     | LogicalORExpression "?" AssignmentExpression ":" AssignmentExpression { $$ = new(driver.pool_) CYCondition($1, $3, $5); }
+    ;
+
+ConditionalExpressionNoIn
+    : LogicalORExpressionNoIn { $$ = $1; }
+    | LogicalORExpressionNoIn "?" AssignmentExpression ":" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYCondition($1, $3, $5); }
+    ;
+
+ConditionalExpressionNoBF
+    : LogicalORExpressionNoBF { $$ = $1; }
+    | LogicalORExpressionNoBF "?" AssignmentExpression ":" AssignmentExpression { $$ = new(driver.pool_) CYCondition($1, $3, $5); }
     ;
 
 AssignmentExpression
@@ -550,8 +746,45 @@ AssignmentExpression
     | LeftHandSideExpression "|=" AssignmentExpression { $$ = new(driver.pool_) CYBitwiseOrAssign($1, $3); }
     ;
 
+AssignmentExpressionNoIn
+    : ConditionalExpressionNoIn { $$ = $1; }
+    | LeftHandSideExpression "=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYAssign($1, $3); }
+    | LeftHandSideExpression "*=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYMultiplyAssign($1, $3); }
+    | LeftHandSideExpression "/=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYDivideAssign($1, $3); }
+    | LeftHandSideExpression "%=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYModulusAssign($1, $3); }
+    | LeftHandSideExpression "+=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYAddAssign($1, $3); }
+    | LeftHandSideExpression "-=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYSubtractAssign($1, $3); }
+    | LeftHandSideExpression "<<=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYShiftLeftAssign($1, $3); }
+    | LeftHandSideExpression ">>=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYShiftRightSignedAssign($1, $3); }
+    | LeftHandSideExpression ">>>=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYShiftRightUnsignedAssign($1, $3); }
+    | LeftHandSideExpression "&=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYBitwiseAndAssign($1, $3); }
+    | LeftHandSideExpression "^=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYBitwiseXOrAssign($1, $3); }
+    | LeftHandSideExpression "|=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYBitwiseOrAssign($1, $3); }
+    ;
+
+AssignmentExpressionNoBF
+    : ConditionalExpressionNoBF { $$ = $1; }
+    | LeftHandSideExpressionNoBF "=" AssignmentExpression { $$ = new(driver.pool_) CYAssign($1, $3); }
+    | LeftHandSideExpressionNoBF "*=" AssignmentExpression { $$ = new(driver.pool_) CYMultiplyAssign($1, $3); }
+    | LeftHandSideExpressionNoBF "/=" AssignmentExpression { $$ = new(driver.pool_) CYDivideAssign($1, $3); }
+    | LeftHandSideExpressionNoBF "%=" AssignmentExpression { $$ = new(driver.pool_) CYModulusAssign($1, $3); }
+    | LeftHandSideExpressionNoBF "+=" AssignmentExpression { $$ = new(driver.pool_) CYAddAssign($1, $3); }
+    | LeftHandSideExpressionNoBF "-=" AssignmentExpression { $$ = new(driver.pool_) CYSubtractAssign($1, $3); }
+    | LeftHandSideExpressionNoBF "<<=" AssignmentExpression { $$ = new(driver.pool_) CYShiftLeftAssign($1, $3); }
+    | LeftHandSideExpressionNoBF ">>=" AssignmentExpression { $$ = new(driver.pool_) CYShiftRightSignedAssign($1, $3); }
+    | LeftHandSideExpressionNoBF ">>>=" AssignmentExpression { $$ = new(driver.pool_) CYShiftRightUnsignedAssign($1, $3); }
+    | LeftHandSideExpressionNoBF "&=" AssignmentExpression { $$ = new(driver.pool_) CYBitwiseAndAssign($1, $3); }
+    | LeftHandSideExpressionNoBF "^=" AssignmentExpression { $$ = new(driver.pool_) CYBitwiseXOrAssign($1, $3); }
+    | LeftHandSideExpressionNoBF "|=" AssignmentExpression { $$ = new(driver.pool_) CYBitwiseOrAssign($1, $3); }
+    ;
+
 Expression_
     : "," Expression { $$ = $2; }
+    | { $$ = NULL; }
+    ;
+
+ExpressionNoIn_
+    : "," ExpressionNoIn { $$ = $2; }
     | { $$ = NULL; }
     ;
 
@@ -560,8 +793,21 @@ ExpressionOpt
     | { $$ = NULL; }
     ;
 
+ExpressionNoInOpt
+    : ExpressionNoIn { $$ = $1; }
+    | { $$ = NULL; }
+    ;
+
 Expression
     : AssignmentExpression Expression_ { if ($1) { $1->SetNext($2); $$ = $1; } else $$ = $2; }
+    ;
+
+ExpressionNoIn
+    : AssignmentExpressionNoIn ExpressionNoIn_ { if ($1) { $1->SetNext($2); $$ = $1; } else $$ = $2; }
+    ;
+
+ExpressionNoBF
+    : AssignmentExpressionNoBF Expression_ { if ($1) { $1->SetNext($2); $$ = $1; } else $$ = $2; }
     ;
 
 Statement
@@ -582,11 +828,16 @@ Statement
     ;
 
 Block
-    : "{" StatementListOpt "}" { $$ = $2 ?: new(driver.pool_) CYEmpty(); }
+    : "{" "}" { $$ = new(driver.pool_) CYEmpty(); }
+    | "{" StatementList "}" { $$ = $2; }
+    ;
+
+StatementList
+    : Statement StatementListOpt { $1->SetNext($2); $$ = $1; }
     ;
 
 StatementListOpt
-    : Statement StatementListOpt { $1->SetNext($2); $$ = $1; }
+    : StatementList { $$ = $1; }
     | { $$ = NULL; }
     ;
 
@@ -599,12 +850,25 @@ VariableDeclarationList_
     | { $$ = NULL; }
     ;
 
+VariableDeclarationListNoIn_
+    : "," VariableDeclarationListNoIn { $$ = $2; }
+    | { $$ = NULL; }
+    ;
+
 VariableDeclarationList
     : VariableDeclaration VariableDeclarationList_ { $$ = new(driver.pool_) CYDeclarations($1, $2); }
     ;
 
+VariableDeclarationListNoIn
+    : VariableDeclarationNoIn VariableDeclarationListNoIn_ { $$ = new(driver.pool_) CYDeclarations($1, $2); }
+    ;
+
 VariableDeclaration
     : Identifier InitialiserOpt { $$ = new(driver.pool_) CYDeclaration($1, $2); }
+    ;
+
+VariableDeclarationNoIn
+    : Identifier InitialiserNoInOpt { $$ = new(driver.pool_) CYDeclaration($1, $2); }
     ;
 
 InitialiserOpt
@@ -612,8 +876,17 @@ InitialiserOpt
     | { $$ = NULL; }
     ;
 
+InitialiserNoInOpt
+    : InitialiserNoIn { $$ = $1; }
+    | { $$ = NULL; }
+    ;
+
 Initialiser
     : "=" AssignmentExpression { $$ = $2; }
+    ;
+
+InitialiserNoIn
+    : "=" AssignmentExpressionNoIn { $$ = $2; }
     ;
 
 EmptyStatement
@@ -621,7 +894,7 @@ EmptyStatement
     ;
 
 ExpressionStatement
-    : Expression Terminator { $$ = new(driver.pool_) CYExpress($1); }
+    : ExpressionNoBF Terminator { $$ = new(driver.pool_) CYExpress($1); }
     ;
 
 ElseStatementOpt
@@ -653,8 +926,8 @@ ForStatement
     ;
 
 ForStatementInitialiser
-    : ExpressionOpt { $$ = $1; }
-    | "var" VariableDeclarationList { $$ = $2; }
+    : ExpressionNoInOpt { $$ = $1; }
+    | "var" VariableDeclarationListNoIn { $$ = $2; }
     ;
 
 ForInStatement
@@ -663,7 +936,7 @@ ForInStatement
 
 ForInStatementInitialiser
     : LeftHandSideExpression { $$ = $1; }
-    | "var" VariableDeclaration { $$ = $2; }
+    | "var" VariableDeclarationNoIn { $$ = $2; }
     ;
 
 ContinueStatement
@@ -764,6 +1037,43 @@ SourceElements
 SourceElement
     : Statement { $$ = $1; }
     | FunctionDeclaration { $$ = $1; }
+    ;
+
+/* Objective-C Extensions {{{ */
+VariadicCall
+    : "," AssignmentExpression VariadicCall { $$ = new(driver.pool_) CYArgument(NULL, $2, $3); }
+    | { $$ = NULL; }
+    ;
+
+SelectorCall_
+    : SelectorCall { $$ = $1; }
+    | VariadicCall { $$ = $1; }
+    ;
+
+SelectorCall
+    : WordOpt ":" AssignmentExpression SelectorCall_ { $$ = new(driver.pool_) CYArgument($1 ?: new(driver.pool_) CYBlank(), $3, $4); }
+    ;
+
+SelectorList
+    : SelectorCall { $$ = $1; }
+    | Word { $$ = new(driver.pool_) CYArgument($1, NULL); }
+    ;
+
+MessageExpression
+    : "[" AssignmentExpression SelectorList "]" { $$ = new(driver.pool_) CYMessage($2, $3); }
+    ;
+
+PrimaryExpression
+    : MessageExpression { $$ = $1; }
+    ;
+/* }}} */
+
+LeftHandSideExpression_
+    : "*" LeftHandSideExpression { $$ = new(driver.pool_) CYIndirect($2); }
+    ;
+
+UnaryExpression_
+    : "&" UnaryExpression { $$ = new(driver.pool_) CYAddressOf($2); }
     ;
 
 %%

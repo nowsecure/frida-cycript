@@ -249,6 +249,13 @@ void CYNumber::Output(std::ostream &out) const {
     out << Value();
 }
 
+void CYObject::Output(std::ostream &out) const {
+    out << '{';
+    if (property_ != NULL)
+        property_->Output(out);
+    out << '}';
+}
+
 void CYParameter::Output(std::ostream &out) const {
     out << *name_;
     if (next_ != NULL) {
@@ -265,20 +272,12 @@ void CYPrefix::Output(std::ostream &out) const {
     out << Operator() << *rhs_;
 }
 
-void CYProperty::Output(std::ostream &out, bool raw) const {
-    if (!raw)
-        out << '{';
+void CYProperty::Output(std::ostream &out) const {
     out << *name_ << ':' << *value_;
     if (next_ != NULL) {
         out << ',';
-        next_->Output(out, true);
+        next_->Output(out);
     }
-    if (!raw)
-        out << '}';
-}
-
-void CYProperty::Output(std::ostream &out) const {
-    Output(out, false);
 }
 
 void CYReturn::Output(std::ostream &out) const {

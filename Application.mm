@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <substrate.h>
 
 int CYConsole(FILE *in, FILE *out, FILE *err);
 

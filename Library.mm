@@ -935,15 +935,11 @@ void CYDriver::Clear() {
     pool_.Clear();
 }
 
-extern int cydebug;
-
 void cy::parser::error(const cy::parser::location_type &loc, const std::string &msg) {
     std::cerr << loc << ": " << msg << std::endl;
 }
 
 void CYConsole(FILE *fin, FILE *fout, FILE *ferr) {
-    //cydebug = 1;
-
     CYDriver driver("");
 
     while (!feof(fin)) { _pooled

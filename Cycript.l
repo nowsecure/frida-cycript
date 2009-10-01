@@ -1,12 +1,14 @@
 %{
 #include "Cycript.tab.hh"
 typedef cy::parser::token tk;
+
 #define YY_EXTRA_TYPE CYDriver *
+#define YYLTYPE cy::location
 
 #define T yylval->newline_ = yyextra->state_ == CYNewLine;
 #define C T yyextra->state_ = CYClear;
 #define R T yyextra->state_ = CYRestricted;
-#define N { bool restricted(yyextra->state_ == CYRestricted); if (restricted) { yyextra->state_ = CYClear; return tk::NewLine; } else yyextra->state_ = CYNewLine; }
+#define N if (yyextra->state_ != CYNewLine) { bool restricted(yyextra->state_ == CYRestricted); if (restricted) { yyextra->state_ = CYClear; return tk::NewLine; } else yyextra->state_ = CYNewLine; }
 %}
 
 %option prefix="cy"

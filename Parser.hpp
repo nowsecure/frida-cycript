@@ -477,9 +477,7 @@ struct CYForIn :
     virtual void Output(std::ostream &out) const;
 };
 
-struct CYProperty :
-    CYLiteral
-{
+struct CYProperty {
     CYName *name_;
     CYExpression *value_;
     CYProperty *next_;
@@ -491,8 +489,20 @@ struct CYProperty :
     {
     }
 
-    void Output(std::ostream &out, bool raw) const;
     virtual void Output(std::ostream &out) const;
+};
+
+struct CYObject :
+    CYLiteral
+{
+    CYProperty *property_;
+
+    CYObject(CYProperty *property) :
+        property_(property)
+    {
+    }
+
+    void Output(std::ostream &out) const;
 };
 
 struct CYCatch :
