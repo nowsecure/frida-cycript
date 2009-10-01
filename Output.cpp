@@ -20,7 +20,7 @@ void CYArgument::Output(std::ostream &out, bool send) const {
     }
     if (next_ != NULL) {
         if (!send)
-            if (next_->name_ != NULL)
+            if (next_->name_ == NULL)
                 out << ',';
             else
                 out << ' ';
