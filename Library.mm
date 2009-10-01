@@ -113,6 +113,7 @@ JSObjectRef CYMakeObject(JSContextRef context, id object) {
 @end
 
 @interface NSObject (Cycript)
+- (bool) cy$isUndefined;
 - (NSString *) cy$toJSON;
 - (JSValueRef) cy$JSValueInContext:(JSContextRef)context;
 @end
@@ -127,6 +128,10 @@ JSObjectRef CYMakeObject(JSContextRef context, id object) {
 
 @implementation NSObject (Cycript)
 
+- (bool) cy$isUndefined {
+    return false;
+}
+
 - (NSString *) cy$toJSON {
     return [self description];
 }
@@ -138,6 +143,10 @@ JSObjectRef CYMakeObject(JSContextRef context, id object) {
 @end
 
 @implementation WebUndefined (Cycript)
+
+- (bool) cy$isUndefined {
+    return true;
+}
 
 - (NSString *) cy$toJSON {
     return @"undefined";
@@ -161,7 +170,12 @@ JSObjectRef CYMakeObject(JSContextRef context, id object) {
             [json appendString:@","];
         else
             comma = true;
-        [json appendString:[object cy$toJSON]];
+        if (![object cy$isUndefined])
+            [json appendString:[object cy$toJSON]];
+        else {
+            [json appendString:@","];
+            comma = false;
+        }
     }
 
     [json appendString:@"]"];
