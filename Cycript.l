@@ -196,7 +196,14 @@ Escape   \\[\\'"bfnrtv]|\\0|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}
 
 [ \t] L
 <<EOF>> L yyterminate();
-. yyterminate();
+
+. {
+    CYDriver::Error error;
+    error.location_ = *yylloc;
+    error.message_ = "syntax error, unknown token";
+    yyextra->errors_.push_back(error);
+    yyterminate();
+}
 
 %%
 

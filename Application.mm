@@ -65,7 +65,7 @@ int main(int argc, const char *argv[]) {
         driver.data_ = command.c_str();
         driver.size_ = command.size();
 
-        if (parser.parse() != 0) {
+        if (parser.parse() != 0 || !driver.errors_.empty()) {
             for (CYDriver::Errors::const_iterator i(driver.errors_.begin()); i != driver.errors_.end(); ++i) {
                 cy::position begin(i->location_.begin);
                 if (begin.line != lines.size() || begin.column - 1 != lines.back().size()) {
