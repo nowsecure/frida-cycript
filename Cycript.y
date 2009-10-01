@@ -189,8 +189,9 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <clause_> DefaultClause
 %type <statement_> DoWhileStatement
 %type <expression_> Element
+%type <expression_> ElementOpt
 %type <element_> ElementList
-%type <element_> ElementList_
+%type <element_> ElementListOpt
 %type <statement_> ElseStatementOpt
 %type <statement_> EmptyStatement
 %type <expression_> EqualityExpression
@@ -300,13 +301,13 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 TerminatorOpt
     : ";"
     | "\n"
-    | error { yyerrok; }
+    | error { yyerrok; driver.errors_.pop_back(); }
     ;
 
 Terminator
     : ";"
     | "\n"
-    | error { if (yychar != 0 && yychar != cy::parser::token::CloseBrace && !yylval.newline_) YYABORT; else yyerrok; }
+    | error { if (yychar != 0 && yychar != cy::parser::token::CloseBrace && !yylval.newline_) YYABORT; else { yyerrok; driver.errors_.pop_back(); } }
     ;
 
 CommaOpt
@@ -397,26 +398,31 @@ PrimaryExpressionNoBF
 /* }}} */
 /* 11.1.4 Array Initialiser {{{ */
 ArrayLiteral
-    : "[" ElementList "]" { $$ = $2; }
+    : "[" ElementList "]" { $$ = new(driver.pool_) CYArray($2); }
     ;
 
 Element
     : AssignmentExpression { $$ = $1; }
+    ;
+
+ElementOpt
+    : Element { $$ = $1; }
     | { $$ = NULL; }
     ;
 
-ElementList_
-    : "," ElementList { $$ = $2; }
+ElementListOpt
+    : ElementList { $$ = $1; }
     | { $$ = NULL; }
     ;
 
 ElementList
-    : Element ElementList_ { $$ = new(driver.pool_) CYElement($1, $2); }
+    : ElementOpt "," ElementListOpt { $$ = new(driver.pool_) CYElement($1, $3); }
+    | Element { $$ = new(driver.pool_) CYElement($1, NULL); }
     ;
 /* }}} */
 /* 11.1.5 Object Initialiser {{{ */
 ObjectLiteral
-    : "{" PropertyNameAndValueListOpt "}" { $$ = new CYObject($2); }
+    : "{" PropertyNameAndValueListOpt "}" { $$ = new(driver.pool_) CYObject($2); }
     ;
 
 PropertyNameAndValueList_
@@ -834,8 +840,7 @@ Statement
     ;
 
 Block
-    : "{" "}" { $$ = new(driver.pool_) CYEmpty(); }
-    | "{" StatementList "}" { $$ = $2; }
+    : "{" StatementListOpt "}" { $$ = $2 ?: new(driver.pool_) CYEmpty(); }
     ;
 
 StatementList
@@ -1028,17 +1033,13 @@ FunctionBody
     ;
 
 Program
-    : SourceElements { driver.source_.push_back($1); $$ = $1; }
+    : SourceElements { driver.source_ = $1; }
     ;
 
 SourceElements
     : SourceElement SourceElements { $1->SetNext($2); $$ = $1; }
     | { $$ = NULL; }
     ;
-
-/*Command
-    : SourceElement { driver.source_.push_back($2); if (driver.filename_.empty() && false) YYACCEPT; $2->Show(std::cout); }
-    ;*/
 
 SourceElement
     : Statement { $$ = $1; }
@@ -1075,12 +1076,12 @@ SelectorExpressionOpt
     ;
 
 SelectorExpression_
-    : WordOpt ":" SelectorExpressionOpt { $$ = new CYSelector($1, true, $3); }
+    : WordOpt ":" SelectorExpressionOpt { $$ = new(driver.pool_) CYSelector($1, true, $3); }
     ;
 
 SelectorExpression
     : SelectorExpression_ { $$ = $1; }
-    | Word { $$ = new CYSelector($1, false, NULL); }
+    | Word { $$ = new(driver.pool_) CYSelector($1, false, NULL); }
     ;
 
 PrimaryExpression_

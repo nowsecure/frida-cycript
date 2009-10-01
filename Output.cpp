@@ -28,6 +28,13 @@ void CYArgument::Output(std::ostream &out, bool send) const {
     }
 }
 
+void CYArray::Output(std::ostream &out) const {
+    out << '[';
+    if (elements_ != NULL)
+        elements_->Output(out);
+    out << ']';
+}
+
 void CYBoolean::Output(std::ostream &out) const {
     out << (Value() ? "true" : "false");
 }
@@ -107,21 +114,13 @@ void CYDoWhile::Output(std::ostream &out) const {
     out << "while" << *test_ << ';';
 }
 
-void CYElement::Output(std::ostream &out, bool raw) const {
-    if (!raw)
-        out << '[';
+void CYElement::Output(std::ostream &out) const {
     if (value_ != NULL)
         value_->Output(out, true);
-    if (next_ != NULL) {
+    if (next_ != NULL || value_ == NULL)
         out << ',';
-        next_->Output(out, true);
-    }
-    if (!raw)
-        out << ']';
-}
-
-void CYElement::Output(std::ostream &out) const {
-    Output(out, false);
+    if (next_ != NULL)
+        next_->Output(out);
 }
 
 void CYEmpty::Output(std::ostream &out) const {

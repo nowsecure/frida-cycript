@@ -931,16 +931,11 @@ CYDriver::~CYDriver() {
     ScannerDestroy();
 }
 
-void CYDriver::Clear() {
-    pool_.Clear();
-    state_ = CYClear;
-    data_ = NULL;
-    size_ = 0;
-    source_.clear();
-}
-
-void cy::parser::error(const cy::parser::location_type &loc, const std::string &msg) {
-    std::cerr << loc << ": " << msg << std::endl;
+void cy::parser::error(const cy::parser::location_type &location, const std::string &message) {
+    CYDriver::Error error;
+    error.location_ = location;
+    error.message_ = message;
+    driver.errors_.push_back(error);
 }
 
 void CYConsole(FILE *fin, FILE *fout, FILE *ferr) {
@@ -949,67 +944,85 @@ void CYConsole(FILE *fin, FILE *fout, FILE *ferr) {
     __gnu_cxx::stdio_filebuf<char> bin(fin, std::ios::in);
     std::istream sin(&bin);
 
-    CYDriver driver("");
-
-    while (!feof(fin)) { _pooled
-        driver.Clear();
-
+    restart: while (!feof(fin)) { _pooled
         fputs("cy# ", fout);
         fflush(fout);
 
-        cy::parser parser(driver);
         std::string command;
+        std::vector<std::string> lines;
 
-        for (;;) {
-            if (!std::getline(sin, line))
-                return;
-            command += line;
-            driver.data_ = command.c_str();
-            driver.size_ = command.size();
-            if (parser.parse() == 0)
-                break;
+      read:
+        if (!std::getline(sin, line))
+            break;
+
+        lines.push_back(line);
+        command += line;
+
+        CYDriver driver("");
+        cy::parser parser(driver);
+
+        driver.data_ = command.c_str();
+        driver.size_ = command.size();
+
+        if (parser.parse() != 0) {
+            for (CYDriver::Errors::const_iterator i(driver.errors_.begin()); i != driver.errors_.end(); ++i) {
+                cy::position begin(i->location_.begin);
+                if (begin.line != lines.size() || begin.column - 1 != lines.back().size()) {
+                    std::cerr << i->message_ << std::endl;
+                    goto restart;
+                }
+            }
+
+            driver.errors_.clear();
+
             fputs("cy> ", fout);
             fflush(fout);
+
+            command += '\n';
+            goto read;
         }
 
-        for (std::vector<CYSource *>::const_iterator i(driver.source_.begin()); i != driver.source_.end(); ++i) {
-            CYSource *source(*i);
+        if (driver.source_ == NULL)
+            goto restart;
 
-            std::ostringstream str;
-            source->Show(str);
+        std::ostringstream str;
+        driver.source_->Show(str);
 
-            std::string code(str.str());
-            std::cout << code << std::endl;
+        std::string code(str.str());
+        std::cout << code << std::endl;
 
-            JSStringRef script(JSStringCreateWithUTF8CString(code.c_str()));
+        JSStringRef script(JSStringCreateWithUTF8CString(code.c_str()));
 
-            JSContextRef context(JSGetContext());
+        JSContextRef context(JSGetContext());
 
-            JSValueRef exception(NULL);
-            JSValueRef result(JSEvaluateScript(context, script, NULL, NULL, 0, &exception));
-            JSStringRelease(script);
+        JSValueRef exception(NULL);
+        JSValueRef result(JSEvaluateScript(context, script, NULL, NULL, 0, &exception));
+        JSStringRelease(script);
 
-            if (exception != NULL)
-                result = exception;
+        if (exception != NULL)
+            result = exception;
 
-            if (!JSValueIsUndefined(context, result)) {
-                CFStringRef json;
+        if (JSValueIsUndefined(context, result))
+            goto restart;
 
-                @try { json:
-                    json = JSValueToJSONCopy(context, result);
-                } @catch (id error) {
-                    CYThrow(context, error, &result);
-                    goto json;
-                }
+        CFStringRef json;
 
-                fputs([reinterpret_cast<const NSString *>(json) UTF8String], fout);
-                CFRelease(json);
-
-                fputs("\n", fout);
-                fflush(fout);
-            }
+        @try { json:
+            json = JSValueToJSONCopy(context, result);
+        } @catch (id error) {
+            CYThrow(context, error, &result);
+            goto json;
         }
+
+        fputs([reinterpret_cast<const NSString *>(json) UTF8String], fout);
+        CFRelease(json);
+
+        fputs("\n", fout);
+        fflush(fout);
     }
+
+    fputs("\n", fout);
+    fflush(fout);
 }
 
 MSInitialize { _pooled

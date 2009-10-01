@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "location.hh"
 #include "Pooling.hpp"
 
 template <typename Type_>
@@ -117,7 +118,15 @@ class CYDriver {
 
     std::string filename_;
 
-    std::vector<CYSource *> source_;
+    struct Error {
+        cy::location location_;
+        std::string message_;
+    };
+
+    typedef std::vector<Error> Errors;
+
+    CYSource *source_;
+    Errors errors_;
 
   private:
     void ScannerInit();
@@ -126,8 +135,6 @@ class CYDriver {
   public:
     CYDriver(const std::string &filename);
     ~CYDriver();
-
-    void Clear();
 };
 
 struct CYForInitialiser :
@@ -399,9 +406,7 @@ struct CYClause :
     virtual void Output(std::ostream &out) const;
 };
 
-struct CYElement :
-    CYLiteral
-{
+struct CYElement {
     CYExpression *value_;
     CYElement *next_;
 
@@ -411,7 +416,19 @@ struct CYElement :
     {
     }
 
-    void Output(std::ostream &out, bool raw) const;
+    void Output(std::ostream &out) const;
+};
+
+struct CYArray :
+    CYLiteral
+{
+    CYElement *elements_;
+
+    CYArray(CYElement *elements) :
+        elements_(elements)
+    {
+    }
+
     virtual void Output(std::ostream &out) const;
 };
 
