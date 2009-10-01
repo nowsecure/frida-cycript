@@ -294,7 +294,7 @@ void CYSelector::Output(std::ostream &out) const {
 
 void CYSource::Show(std::ostream &out) const {
     for (const CYSource *next(this); next != NULL; next = next->next_)
-        next->Output(out);
+        next->Output(out, false);
 }
 
 void CYSource::Output(std::ostream &out, bool block) const {

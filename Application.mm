@@ -34,17 +34,27 @@ int main(int argc, const char *argv[]) {
         std::string command;
         std::vector<std::string> lines;
 
+        bool extra(false);
+        const char *prompt("cy# ");
+
         if (setjmp(ctrlc_) != 0) {
             fputs("\n", fout);
             fflush(fout);
             goto restart;
         }
 
-        const char *prompt("cy# ");
       read:
         char *line(readline(prompt));
         if (line == NULL)
             break;
+
+        if (!extra) {
+            extra = true;
+            if (line[0] == '\\') {
+                goto restart;
+            }
+        }
+
         lines.push_back(line);
         command += line;
         free(line);

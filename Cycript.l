@@ -24,6 +24,16 @@ typedef cy::parser::token tk;
     yylloc->columns(yyleng); \
 }
 
+int H(char c) {
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'a' && c <= 'f')
+        return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F')
+        return c - 'A' + 10;
+    return -1;
+}
+
 #define YY_INPUT(data, value, size) { \
     if (yyextra->size_ == 0) \
         value = YY_NULL; \
@@ -48,7 +58,7 @@ typedef cy::parser::token tk;
 %option reentrant
 
 Exponent [eE][+-]?[0-9]+
-Escape   \\['"\\bfnrtv]|\\0|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}
+Escape   \\[\\'"bfnrtv]|\\0|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}
 
 %%
 
@@ -148,13 +158,45 @@ Escape   \\['"\\bfnrtv]|\\0|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}
 
 0[bB][0-1]+ L C yylval->number_ = new CYNumber(strtoull(yytext + 2, NULL, 2)); return tk::NumericLiteral;
 
-\"([^"\\\n]|{Escape})*\" L C return tk::StringLiteral;
-'([^'\\\n]|{Escape})*' L C return tk::StringLiteral;
+\"([^"\\\n]|{Escape})*\"|'([^'\\\n]|{Escape})*' L C {
+    char *value(reinterpret_cast<char *>(apr_palloc(yyextra->pool_, yyleng)));
+    char *local(value);
+
+    for (int i(1); i != yyleng - 1; ++i) {
+        char next(yytext[i]);
+
+        if (yytext[i] == '\\')
+            switch (next = yytext[++i]) {
+                case '\\': next = '\\'; break;
+                case '\'': next = '\''; break;
+                case '"': next = '"'; break;
+                case 'b': next = '\b'; break;
+                case 'f': next = '\f'; break;
+                case 'n': next = '\n'; break;
+                case 'r': next = '\r'; break;
+                case 't': next = '\t'; break;
+                case 'v': next = '\v'; break;
+                case '0': next = '\0'; break;
+
+                case 'x':
+                    next = H(yytext[i + 1]) << 4 | H(yytext[i + 2]);
+                    i += 2;
+                break;
+            }
+
+        *local++ = next;
+    }
+
+    *local = '\0';
+    yylval->string_ = new CYString(value, local - value);
+    return tk::StringLiteral;
+}
 
 \n yylloc->end.lines(); yylloc->step(); N
 
 [ \t] L
 <<EOF>> L yyterminate();
+. yyterminate();
 
 %%
 
