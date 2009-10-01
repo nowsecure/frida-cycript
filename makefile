@@ -50,10 +50,10 @@ lex.cy.o: lex.cy.c Cycript.tab.hh Parser.hpp Pooling.hpp
 Output.o: Output.cpp Parser.hpp Pooling.hpp
 	$(target)g++ $(flags) -c -o $@ $<
 
-Library.o: Library.mm Cycript.tab.hh Parser.hpp Pooling.hpp Struct.hpp cycript.h
+Library.o: Library.mm Cycript.tab.hh Parser.hpp Pooling.hpp Struct.hpp cycript.hpp
 	$(target)g++ $(flags) -c -o $@ $<
 
-Application.o: Application.mm Cycript.tab.hh Parser.hpp Pooling.hpp cycript.h
+Application.o: Application.mm Cycript.tab.hh Parser.hpp Pooling.hpp cycript.hpp
 	$(target)g++ $(flags) -c -o $@ $<
 
 libcycript.dylib: ffi_type.o parse.o Output.o Cycript.tab.o lex.cy.o Library.o

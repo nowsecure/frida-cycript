@@ -40,7 +40,7 @@
 #define _GNU_SOURCE
 
 #include <substrate.h>
-#include "cycript.h"
+#include "cycript.hpp"
 
 #include "sig/parse.hpp"
 #include "sig/ffi_type.hpp"
@@ -261,7 +261,7 @@ JSObjectRef CYMakeObject(JSContextRef context, id object) {
 
 @end
 
-extern "C" JSContextRef CYGetJSContext() {
+JSContextRef CYGetJSContext() {
     return Context_;
 }
 
@@ -394,7 +394,7 @@ JSValueRef CYCastJSValue(JSContextRef context, id value) {
     return value == nil ? JSValueMakeNull(context) : [value cy$JSValueInContext:context];
 }
 
-extern "C" void CYThrowNSError(JSContextRef context, id error, JSValueRef *exception) {
+void CYThrow(JSContextRef context, id error, JSValueRef *exception) {
     *exception = CYCastJSValue(context, error);
 }
 
@@ -469,7 +469,7 @@ extern "C" void CYThrowNSError(JSContextRef context, id error, JSValueRef *excep
 
 @end
 
-extern "C" CFStringRef CYCopyJSONString(JSContextRef context, JSValueRef value) {
+CFStringRef CYCopyJSONString(JSContextRef context, JSValueRef value) {
     id object(CYCastNSObject(context, value));
     return reinterpret_cast<CFStringRef>([(object == nil ? @"null" : [object cy$toJSON]) retain]);
 }

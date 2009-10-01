@@ -1,7 +1,7 @@
 #define _GNU_SOURCE
 
 #include <substrate.h>
-#include "cycript.h"
+#include "cycript.hpp"
 
 #include <cstdio>
 #include <sstream>

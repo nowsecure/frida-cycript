@@ -12,25 +12,11 @@
 #include <JavaScriptCore/JSStringRef.h>
 #include <JavaScriptCore/JSStringRefCF.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 JSContextRef CYGetJSContext();
 CFStringRef CYCopyJSONString(JSContextRef context, JSValueRef value);
 
 #ifdef __OBJC__
-void CYThrowNSError(JSContextRef context, id error, JSValueRef *exception);
-#endif
-
-#ifdef __cplusplus
-}
-#endif
-
-#ifdef __cplusplus
-inline void CYThrow(JSContextRef context, id error, JSValueRef *exception) {
-    return CYThrowNSError(context, error, exception);
-}
+void CYThrow(JSContextRef context, id error, JSValueRef *exception);
 #endif
 
 #endif/*CYCRIPT_H*/
