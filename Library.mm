@@ -918,8 +918,7 @@ static JSStaticValue Pointer_staticValues[2] = {
 };
 
 CYDriver::CYDriver(const std::string &filename) :
-    newline_(false),
-    restricted_(false),
+    state_(CYClear),
     filename_(filename),
     source_(NULL)
 {
@@ -931,8 +930,7 @@ CYDriver::~CYDriver() {
 }
 
 void CYDriver::Clear() {
-    newline_ = false;
-    restricted_ = false;
+    state_ = CYClear;
     source_.clear();
     pool_.Clear();
 }

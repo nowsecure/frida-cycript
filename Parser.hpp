@@ -99,11 +99,16 @@ struct CYStatement :
     }
 };
 
+enum CYState {
+    CYClear,
+    CYRestricted,
+    CYNewLine
+};
+
 class CYDriver {
   public:
     CYPool pool_;
-    bool newline_;
-    bool restricted_;
+    CYState state_;
     std::string filename_;
     std::vector<CYSource *> source_;
     void *scanner_;
