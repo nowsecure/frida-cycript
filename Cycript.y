@@ -326,6 +326,19 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <argument_> SelectorList
 %type <argument_> VariadicCall
 
+%left "*" "/" "%"
+%left "+" "-"
+%left "<<" ">>" ">>>"
+%left "<" ">" "<=" ">=" "instanceof" "in"
+%left "==" "!=" "===" "!=="
+%left "&"
+%left "^"
+%left "|"
+%left "&&"
+%left "||"
+
+%right "=" "*=" "/=" "%=" "+=" "-=" "<<=" ">>=" ">>>=" "&=" "^=" "|="
+
 %nonassoc "if"
 %nonassoc "else"
 
