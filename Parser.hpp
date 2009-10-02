@@ -36,10 +36,6 @@ _finline std::ostream &operator <<(std::ostream &out, const CYThing &rhs) {
     return out;
 }
 
-struct CYPart {
-    virtual void Part(std::ostream &out) const = 0;
-};
-
 struct CYSource :
     CYNext<CYSource>
 {
@@ -143,6 +139,10 @@ class CYDriver {
     ~CYDriver();
 };
 
+struct CYPart {
+    virtual void Part(std::ostream &out) const = 0;
+};
+
 struct CYForInitialiser :
     CYPart
 {
@@ -162,6 +162,10 @@ struct CYExpression :
     virtual void Part(std::ostream &out) const;
     virtual void Output(std::ostream &out) const = 0;
     void Output(std::ostream &out, unsigned precedence) const;
+
+    virtual const char *Word() const {
+        return NULL;
+    }
 };
 
 #define CYPrecedence(value) \
@@ -224,8 +228,33 @@ struct CYSelector :
     {
     }
 
+    CYPrecedence(1)
+
     virtual void Output(std::ostream &out) const;
 };
+
+struct CYRange {
+    uint64_t lo_;
+    uint64_t hi_;
+
+    CYRange(uint64_t lo, uint64_t hi) :
+        lo_(lo), hi_(hi)
+    {
+    }
+
+    bool operator [](uint8_t value) const {
+        return !(value >> 7) && (value >> 6 ? hi_ : lo_) >> (value & 0x3f) & 0x1;
+    }
+
+    void operator()(uint8_t value) {
+        if (value >> 7)
+            return;
+        (value >> 6 ? hi_ : lo_) |= uint64_t(0x1) << (value & 0x3f);
+    }
+};
+
+extern CYRange WordStartRange_;
+extern CYRange WordEndRange_;
 
 struct CYString :
     CYLiteral,
@@ -251,6 +280,15 @@ struct CYString :
     }
 
     virtual const char *Name() const {
+        return Value();
+    }
+
+    virtual const char *Word() const {
+        if (size_ == 0 || !WordStartRange_[value_[0]])
+            return NULL;
+        for (size_t i(1); i != size_; ++i)
+            if (!WordEndRange_[value_[i]])
+                return NULL;
         return Value();
     }
 

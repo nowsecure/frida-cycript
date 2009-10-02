@@ -90,6 +90,7 @@ static JSClassRef Pointer_;
 static JSClassRef Selector_;
 
 static JSObjectRef Array_;
+static JSObjectRef Function_;
 
 static JSStringRef name_;
 static JSStringRef message_;
@@ -274,6 +275,9 @@ JSObjectRef CYMakeObject(JSContextRef context, id object) {
 
 @end
 
+CYRange WordStartRange_(0x1000000000LLU,0x7fffffe87fffffeLLU); // A-Za-z_$
+CYRange WordEndRange_(0x3ff001000000000LLU,0x7fffffe87fffffeLLU); // A-Za-z_$0-9
+
 JSContextRef CYGetJSContext() {
     return Context_;
 }
@@ -407,6 +411,26 @@ JSValueRef CYCastJSValue(JSContextRef context, id value) {
     return value == nil ? JSValueMakeNull(context) : [value cy$JSValueInContext:context];
 }
 
+JSObjectRef CYCastJSObject(JSContextRef context, JSValueRef value) {
+    JSValueRef exception(NULL);
+    JSObjectRef object(JSValueToObject(context, value, &exception));
+    CYThrow(context, exception);
+    return object;
+}
+
+JSValueRef CYGetProperty(JSContextRef context, JSObjectRef object, JSStringRef name) {
+    JSValueRef exception(NULL);
+    JSValueRef value(JSObjectGetProperty(context, object, name, &exception));
+    CYThrow(context, exception);
+    return value;
+}
+
+void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef value) {
+    JSValueRef exception(NULL);
+    JSObjectSetProperty(context, object, name, value, kJSPropertyAttributeNone, &exception);
+    CYThrow(context, exception);
+}
+
 void CYThrow(JSContextRef context, id error, JSValueRef *exception) {
     *exception = CYCastJSValue(context, error);
 }
@@ -428,10 +452,7 @@ void CYThrow(JSContextRef context, id error, JSValueRef *exception) {
 }
 
 - (id) objectForKey:(id)key {
-    JSValueRef exception(NULL);
-    JSValueRef value(JSObjectGetProperty(context_, object_, CYJSString(key), &exception));
-    CYThrow(context_, exception);
-    return CYCastNSObject(context_, value);
+    return CYCastNSObject(context_, CYGetProperty(context_, object_, CYJSString(key)));
 }
 
 - (NSEnumerator *) keyEnumerator {
@@ -442,9 +463,7 @@ void CYThrow(JSContextRef context, id error, JSValueRef *exception) {
 }
 
 - (void) setObject:(id)object forKey:(id)key {
-    JSValueRef exception(NULL);
-    JSObjectSetProperty(context_, object_, CYJSString(key), CYCastJSValue(context_, object), kJSPropertyAttributeNone, &exception);
-    CYThrow(context_, exception);
+    CYSetProperty(context_, object_, CYJSString(key), CYCastJSValue(context_, object));
 }
 
 - (void) removeObjectForKey:(id)key {
@@ -466,10 +485,7 @@ void CYThrow(JSContextRef context, id error, JSValueRef *exception) {
 }
 
 - (NSUInteger) count {
-    JSValueRef exception(NULL);
-    JSValueRef value(JSObjectGetProperty(context_, object_, length_, &exception));
-    CYThrow(context_, exception);
-    return CYCastDouble(context_, value);
+    return CYCastDouble(context_, CYGetProperty(context_, object_, length_));
 }
 
 - (id) objectAtIndex:(NSUInteger)index {
@@ -615,6 +631,16 @@ struct selData : ptrData {
     }
 };
 
+JSObjectRef CYMakeSelector(JSContextRef context, SEL sel) {
+    selData *data(new selData(sel));
+    return JSObjectMake(context, Selector_, data);
+}
+
+JSObjectRef CYMakePointer(JSContextRef context, void *pointer) {
+    ptrData *data(new ptrData(pointer));
+    return JSObjectMake(context, Pointer_, data);
+}
+
 static void Pointer_finalize(JSObjectRef object) {
     ptrData *data(reinterpret_cast<ptrData *>(JSObjectGetPrivate(object)));
     apr_pool_destroy(data->pool_);
@@ -630,15 +656,8 @@ JSObjectRef CYMakeFunction(JSContextRef context, void (*function)(), const char 
     return JSObjectMake(context, Functor_, data);
 }
 
-
 JSObjectRef CYMakeFunction(JSContextRef context, void *function, const char *type) {
     return CYMakeFunction(context, reinterpret_cast<void (*)()>(function), type);
-}
-
-void CYSetProperty(JSContextRef context, JSObjectRef object, const char *name, JSValueRef value) {
-    JSValueRef exception(NULL);
-    JSObjectSetProperty(context, object, CYJSString(name), value, kJSPropertyAttributeNone, &exception);
-    CYThrow(context, exception);
 }
 
 char *CYPoolCString(apr_pool_t *pool, JSStringRef value) {
@@ -655,9 +674,7 @@ char *CYPoolCString(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
 
 // XXX: this macro is unhygenic
 #define CYCastCString(context, value) ({ \
-    JSValueRef exception(NULL); \
-    JSStringRef string(JSValueToStringCopy(context, value, &exception)); \
-    CYThrow(context, exception); \
+    JSStringRef string(CYCopyJSString(context, value)); \
     size_t size(JSStringGetMaximumUTF8CStringSize(string)); \
     char *utf8(reinterpret_cast<char *>(alloca(size))); \
     JSStringGetUTF8CString(string, utf8, size); \
@@ -771,29 +788,27 @@ JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, void *data) {
         CYFromFFI_(double, double)
 
         case sig::object_P:
-        case sig::typename_P: {
+        case sig::typename_P:
             value = CYCastJSValue(context, *reinterpret_cast<id *>(data));
-        } break;
+        break;
 
-        case sig::selector_P: {
-            if (SEL sel = *reinterpret_cast<SEL *>(data)) {
-                selData *data(new selData(sel));
-                value = JSObjectMake(context, Selector_, data);
-            } else goto null;
-        } break;
+        case sig::selector_P:
+            if (SEL sel = *reinterpret_cast<SEL *>(data))
+                value = CYMakeSelector(context, sel);
+            else goto null;
+        break;
 
-        case sig::pointer_P: {
-            if (void *pointer = *reinterpret_cast<void **>(data)) {
-                ptrData *data(new ptrData(pointer));
-                value = JSObjectMake(context, Pointer_, data);
-            } else goto null;
-        } break;
+        case sig::pointer_P:
+            if (void *pointer = *reinterpret_cast<void **>(data))
+                value = CYMakePointer(context, pointer);
+            else goto null;
+        break;
 
-        case sig::string_P: {
+        case sig::string_P:
             if (char *utf8 = *reinterpret_cast<char **>(data))
                 value = JSValueMakeString(context, CYJSString(utf8));
             else goto null;
-        } break;
+        break;
 
         case sig::struct_P:
             goto fail;
@@ -895,15 +910,32 @@ static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObje
     return CYCallFunction(context, count, arguments, exception, &signature, &cif, function);
 }
 
-static JSValueRef ffi_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+static JSValueRef Selector_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    JSValueRef setup[count + 2];
+    setup[0] = _this;
+    setup[1] = object;
+    memmove(setup + 2, arguments, sizeof(JSValueRef) * count);
+    return $objc_msgSend(context, NULL, NULL, count + 2, setup, exception);
+}
+
+static JSValueRef Functor_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     ffiData *data(reinterpret_cast<ffiData *>(JSObjectGetPrivate(object)));
     return CYCallFunction(context, count, arguments, exception, &data->signature_, &data->cif_, reinterpret_cast<void (*)()>(data->value_));
+}
+
+JSObjectRef sel(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    @try {
+        if (count != 1)
+            @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"incorrect number of arguments to Selector constructor" userInfo:nil];
+        const char *name(CYCastCString(context, arguments[0]));
+        return CYMakeSelector(context, sel_registerName(name));
+    } CYCatch
 }
 
 JSObjectRef ffi(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     @try {
         if (count != 2)
-            @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"incorrect number of arguments to ffi constructor" userInfo:nil];
+            @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"incorrect number of arguments to Functor constructor" userInfo:nil];
         void *function(CYCastPointer(context, arguments[0]));
         const char *type(CYCastCString(context, arguments[1]));
         return CYMakeFunction(context, function, type);
@@ -915,10 +947,19 @@ JSValueRef Pointer_getProperty_value(JSContextRef context, JSObjectRef object, J
     return JSValueMakeNumber(context, reinterpret_cast<uintptr_t>(data->value_));
 }
 
+JSValueRef Selector_getProperty_prototype(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
+    return Function_;
+}
+
 static JSStaticValue Pointer_staticValues[2] = {
     {"value", &Pointer_getProperty_value, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete},
     {NULL, NULL, NULL, 0}
 };
+
+/*static JSStaticValue Selector_staticValues[2] = {
+    {"prototype", &Selector_getProperty_prototype, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete},
+    {NULL, NULL, NULL, 0}
+};*/
 
 CYDriver::CYDriver(const std::string &filename) :
     state_(CYClear),
@@ -976,12 +1017,14 @@ MSInitialize { _pooled
     definition = kJSClassDefinitionEmpty;
     definition.className = "Functor";
     definition.parentClass = Pointer_;
-    definition.callAsFunction = &ffi_callAsFunction;
+    definition.callAsFunction = &Functor_callAsFunction;
     Functor_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "Selector";
     definition.parentClass = Pointer_;
+    //definition.staticValues = Selector_staticValues;
+    definition.callAsFunction = &Selector_callAsFunction;
     Selector_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
@@ -1000,9 +1043,10 @@ MSInitialize { _pooled
 
     JSObjectRef global(JSContextGetGlobalObject(context));
 
-    CYSetProperty(context, global, "ffi", JSObjectMakeConstructor(context, Functor_, &ffi));
+    CYSetProperty(context, global, CYJSString("SEL"), JSObjectMakeConstructor(context, Selector_, &sel));
+    CYSetProperty(context, global, CYJSString("ffi"), JSObjectMakeConstructor(context, Functor_, &ffi));
 
-    CYSetProperty(context, global, "objc_msgSend", JSObjectMakeFunctionWithCallback(context, CYJSString("objc_msgSend"), &$objc_msgSend));
+    CYSetProperty(context, global, CYJSString("objc_msgSend"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_msgSend"), &$objc_msgSend));
 
     Bridge_ = [[NSMutableDictionary dictionaryWithContentsOfFile:@"/usr/lib/libcycript.plist"] retain];
 
@@ -1010,9 +1054,6 @@ MSInitialize { _pooled
     message_ = JSStringCreateWithUTF8CString("message");
     length_ = JSStringCreateWithUTF8CString("length");
 
-    JSValueRef exception(NULL);
-    JSValueRef value(JSObjectGetProperty(CYGetJSContext(), global, CYJSString("Array"), &exception));
-    CYThrow(context, exception);
-    Array_ = JSValueToObject(CYGetJSContext(), value, &exception);
-    CYThrow(context, exception);
+    Array_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Array")));
+    Function_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Function")));
 }

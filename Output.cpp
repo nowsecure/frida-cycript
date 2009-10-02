@@ -52,7 +52,7 @@ void CYBreak::Output(std::ostream &out) const {
 }
 
 void CYCall::Output(std::ostream &out) const {
-    function_->Output(out, 2);
+    function_->Output(out, Precedence());
     out << '(';
     if (arguments_ != NULL)
         arguments_->Output(out);
@@ -245,9 +245,13 @@ void CYLambda::Output(std::ostream &out) const {
 
 void CYMember::Output(std::ostream &out) const {
     object_->Output(out, Precedence());
-    out << '[';
-    property_->Output(out);
-    out << ']';
+    if (const char *word = property_->Word())
+        out << '.' << word;
+    else {
+        out << '[';
+        property_->Output(out);
+        out << ']';
+    }
 }
 
 void CYMessage::Output(std::ostream &out) const {
@@ -333,10 +337,10 @@ void CYReturn::Output(std::ostream &out) const {
 }
 
 void CYSelector::Output(std::ostream &out) const {
-    out << '"';
+    out << "new SEL(\"";
     if (name_ != NULL)
         name_->Output(out);
-    out << '"';
+    out << "\")";
 }
 
 void CYSelectorPart::Output(std::ostream &out) const {
