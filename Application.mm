@@ -20,6 +20,9 @@ void sigint(int) {
 }
 
 int main(int argc, const char *argv[]) {
+    bool bypass(false);
+    bool debug(false);
+
     FILE *fout(stdout);
 
     rl_bind_key('\t', rl_insert);
@@ -51,6 +54,16 @@ int main(int argc, const char *argv[]) {
         if (!extra) {
             extra = true;
             if (line[0] == '\\') {
+                std::string data(line + 1);
+                if (data == "bypass") {
+                    bypass = !bypass;
+                    fprintf(fout, "bypass == %s\n", bypass ? "true" : "false");
+                    fflush(fout);
+                } else if (data == "debug") {
+                    debug = !debug;
+                    fprintf(fout, "debug == %s\n", debug ? "true" : "false");
+                    fflush(fout);
+                }
                 add_history(line);
                 goto restart;
             }
@@ -60,39 +73,46 @@ int main(int argc, const char *argv[]) {
         command += line;
         free(line);
 
-        CYDriver driver("");
-        cy::parser parser(driver);
+        std::string code;
 
-        driver.data_ = command.c_str();
-        driver.size_ = command.size();
+        if (bypass)
+            code = command;
+        else {
+            CYDriver driver("");
+            cy::parser parser(driver);
 
-        if (parser.parse() != 0 || !driver.errors_.empty()) {
-            for (CYDriver::Errors::const_iterator i(driver.errors_.begin()); i != driver.errors_.end(); ++i) {
-                cy::position begin(i->location_.begin);
-                if (begin.line != lines.size() || begin.column - 1 != lines.back().size()) {
-                    std::cerr << i->message_ << std::endl;
-                    add_history(command.c_str());
-                    goto restart;
+            driver.data_ = command.c_str();
+            driver.size_ = command.size();
+
+            if (parser.parse() != 0 || !driver.errors_.empty()) {
+                for (CYDriver::Errors::const_iterator i(driver.errors_.begin()); i != driver.errors_.end(); ++i) {
+                    cy::position begin(i->location_.begin);
+                    if (begin.line != lines.size() || begin.column - 1 != lines.back().size()) {
+                        std::cerr << i->message_ << std::endl;
+                        add_history(command.c_str());
+                        goto restart;
+                    }
                 }
+
+                driver.errors_.clear();
+
+                command += '\n';
+                prompt = "cy> ";
+                goto read;
             }
 
-            driver.errors_.clear();
+            if (driver.source_ == NULL)
+                goto restart;
 
-            command += '\n';
-            prompt = "cy> ";
-            goto read;
+            std::ostringstream str;
+            driver.source_->Show(str);
+            code = str.str();
         }
-
-        if (driver.source_ == NULL)
-            goto restart;
 
         add_history(command.c_str());
 
-        std::ostringstream str;
-        driver.source_->Show(str);
-
-        std::string code(str.str());
-        std::cout << code << std::endl;
+        if (debug)
+            std::cout << code << std::endl;
 
         _pooled
 
