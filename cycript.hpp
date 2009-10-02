@@ -1,5 +1,5 @@
-#ifndef CYCRIPT_H
-#define CYCRIPT_H
+#ifndef CYCRIPT_HPP
+#define CYCRIPT_HPP
 
 #ifdef __OBJC__
 #include <Foundation/Foundation.h>
@@ -19,4 +19,4 @@ CFStringRef CYCopyJSONString(JSContextRef context, JSValueRef value);
 void CYThrow(JSContextRef context, id error, JSValueRef *exception);
 #endif
 
-#endif/*CYCRIPT_H*/
+#endif/*CYCRIPT_HPP*/

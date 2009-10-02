@@ -51,6 +51,7 @@ int main(int argc, const char *argv[]) {
         if (!extra) {
             extra = true;
             if (line[0] == '\\') {
+                add_history(line);
                 goto restart;
             }
         }
@@ -70,6 +71,7 @@ int main(int argc, const char *argv[]) {
                 cy::position begin(i->location_.begin);
                 if (begin.line != lines.size() || begin.column - 1 != lines.back().size()) {
                     std::cerr << i->message_ << std::endl;
+                    add_history(command.c_str());
                     goto restart;
                 }
             }

@@ -3,28 +3,27 @@
 #include <iostream>
 #include <iomanip>
 
+#define CYPA 16
+
 void CYAddressOf::Output(std::ostream &out) const {
-    out << *rhs_ << ".$()";
+    rhs_->Output(out, 1);
+    out << ".$()";
 }
 
-void CYArgument::Output(std::ostream &out, bool send) const {
-    if (!send && name_ != NULL) {
+void CYArgument::Output(std::ostream &out) const {
+    if (name_ != NULL) {
         out << *name_;
         if (value_ != NULL)
             out << ":";
     }
-    if (value_ != NULL) {
-        if (send)
-            out << ',';
-        value_->Output(out, true);
-    }
+    if (value_ != NULL)
+        value_->Output(out, false);
     if (next_ != NULL) {
-        if (!send)
-            if (next_->name_ == NULL)
-                out << ',';
-            else
-                out << ' ';
-        next_->Output(out, send);
+        if (next_->name_ == NULL)
+            out << ',';
+        else
+            out << ' ';
+        next_->Output(out);
     }
 }
 
@@ -33,6 +32,12 @@ void CYArray::Output(std::ostream &out) const {
     if (elements_ != NULL)
         elements_->Output(out);
     out << ']';
+}
+
+void CYAssignment::Output(std::ostream &out) const {
+    lhs_->Output(out, Precedence() - 1);
+    out << Operator();
+    rhs_->Output(out, Precedence());
 }
 
 void CYBoolean::Output(std::ostream &out) const {
@@ -47,9 +52,10 @@ void CYBreak::Output(std::ostream &out) const {
 }
 
 void CYCall::Output(std::ostream &out) const {
-    out << *function_ << '(';
+    function_->Output(out, 2);
+    out << '(';
     if (arguments_ != NULL)
-        arguments_->Output(out, false);
+        arguments_->Output(out);
     out << ')';
 }
 
@@ -59,10 +65,12 @@ void CYCatch::Output(std::ostream &out) const {
 }
 
 void CYCondition::Output(std::ostream &out) const {
-    out << *test_ << '?';
+    test_->Output(out, Precedence() - 1);
+    out << '?';
     if (true_ != NULL)
-        out << *true_;
-    out << ':' << *false_;
+        true_->Output(out, CYPA);
+    out << ':';
+    false_->Output(out, CYPA);
 }
 
 void CYContinue::Output(std::ostream &out) const {
@@ -73,9 +81,10 @@ void CYContinue::Output(std::ostream &out) const {
 }
 
 void CYClause::Output(std::ostream &out) const {
-    if (case_ != NULL)
-        out << "case" << *case_;
-    else
+    if (case_ != NULL) {
+        out << "case";
+        case_->Output(out);
+    } else
         out << "default";
     out << ':';
     if (code_ != NULL)
@@ -90,17 +99,24 @@ void CYDeclaration::Part(std::ostream &out) const {
 
 void CYDeclaration::Output(std::ostream &out) const {
     out << *identifier_;
-    if (initialiser_ != NULL)
-        out << '=' << *initialiser_;
+    if (initialiser_ != NULL) {
+        out << '=';
+        initialiser_->Output(out, CYPA);
+    }
 }
 
 void CYDeclarations::Part(std::ostream &out) const {
     out << "var ";
+
     const CYDeclarations *declaration(this);
-    do {
-        out << *declaration->declaration_;
-        declaration = declaration->next_;
-    } while (declaration != NULL);
+  output:
+    out << *declaration->declaration_;
+    declaration = declaration->next_;
+
+    if (declaration != NULL) {
+        out << ',';
+        goto output;
+    }
 }
 
 void CYDeclarations::Output(std::ostream &out) const {
@@ -111,12 +127,14 @@ void CYDeclarations::Output(std::ostream &out) const {
 void CYDoWhile::Output(std::ostream &out) const {
     out << "do ";
     code_->Output(out, false);
-    out << "while" << *test_ << ';';
+    out << "while(";
+    test_->Output(out);
+    out << ';';
 }
 
 void CYElement::Output(std::ostream &out) const {
     if (value_ != NULL)
-        value_->Output(out, true);
+        value_->Output(out, CYPA);
     if (next_ != NULL || value_ == NULL)
         out << ',';
     if (next_ != NULL)
@@ -135,23 +153,33 @@ void CYEmpty::Output(std::ostream &out, bool block) const {
 }
 
 void CYExpress::Output(std::ostream &out) const {
-    expression_->Output(out, true);
+    expression_->Output(out);
     out << ';';
 }
 
 void CYExpression::Part(std::ostream &out) const {
-    Output(out, true);
+    // XXX: this should notice "in" expressions
+    // XXX: this should handle LeftHandSideExpression
+    Output(out);
 }
 
-void CYExpression::Output(std::ostream &out, bool raw) const {
-    if (!raw)
+void CYCompound::Output(std::ostream &out) const {
+    if (CYExpression *expression = expressions_)
+        for (;;) {
+            expression->Output(out);
+            expression = expression->next_;
+            if (expression == NULL)
+                break;
+            out << ',';
+        }
+}
+
+void CYExpression::Output(std::ostream &out, unsigned precedence) const {
+    bool protect(precedence < Precedence());
+    if (protect)
         out << '(';
     Output(out);
-    if (next_ != NULL) {
-        out << ',';
-        next_->Output(out, true);
-    }
-    if (!raw)
+    if (protect)
         out << ')';
 }
 
@@ -161,10 +189,10 @@ void CYFor::Output(std::ostream &out) const {
         initialiser_->Part(out);
     out << ';';
     if (test_ != NULL)
-        test_->Output(out, true);
+        test_->Output(out);
     out << ';';
     if (increment_ != NULL)
-        increment_->Output(out, true);
+        increment_->Output(out);
     out << ')';
     code_->Output(out, false);
 }
@@ -173,7 +201,7 @@ void CYForIn::Output(std::ostream &out) const {
     out << "for(";
     initialiser_->Part(out);
     out << " in ";
-    set_->Output(out, true);
+    set_->Output(out);
     out << ')';
     code_->Output(out, false);
 }
@@ -183,7 +211,9 @@ void CYFunction::Output(std::ostream &out) const {
 }
 
 void CYIf::Output(std::ostream &out) const {
-    out << "if" << *test_;
+    out << "if(";
+    test_->Output(out);
+    out << ')';
     true_->Output(out, true);
     if (false_ != NULL) {
         out << "else ";
@@ -192,11 +222,14 @@ void CYIf::Output(std::ostream &out) const {
 }
 
 void CYIndirect::Output(std::ostream &out) const {
-    out << *rhs_ << "[0]";
+    rhs_->Output(out, 1);
+    out << "[0]";
 }
 
 void CYInfix::Output(std::ostream &out) const {
-    out << *lhs_ << Operator() << *rhs_;
+    lhs_->Output(out, Precedence());
+    out << Operator();
+    rhs_->Output(out, Precedence() - 1);
 }
 
 void CYLambda::Output(std::ostream &out) const {
@@ -211,14 +244,15 @@ void CYLambda::Output(std::ostream &out) const {
 }
 
 void CYMember::Output(std::ostream &out) const {
-    out << *object_ << '[';
-    property_->Output(out, true);
+    object_->Output(out, Precedence());
+    out << '[';
+    property_->Output(out);
     out << ']';
 }
 
 void CYMessage::Output(std::ostream &out) const {
     out << "objc_msgSend(";
-    self_->Output(out, true);
+    self_->Output(out, CYPA);
     out << ",\"";
     for (CYArgument *argument(arguments_); argument != NULL; argument = argument->next_)
         if (argument->name_ != NULL) {
@@ -227,15 +261,22 @@ void CYMessage::Output(std::ostream &out) const {
                 out << ':';
         }
     out << "\"";
-    if (arguments_ != NULL)
-        arguments_->Output(out, true);
+    for (CYArgument *argument(arguments_); argument != NULL; argument = argument->next_)
+        if (argument->value_ != NULL) {
+            out << ",";
+            argument->value_->Output(out, CYPA);
+        }
     out << ')';
 }
 
 void CYNew::Output(std::ostream &out) const {
-    out << "new " << *constructor_ << '(';
+    out << "new";
+    // XXX: I don't /always/ need this character
+    out << ' ';
+    constructor_->Output(out, Precedence());
+    out << '(';
     if (arguments_ != NULL)
-        arguments_->Output(out, false);
+        arguments_->Output(out);
     out << ')';
 }
 
@@ -264,15 +305,18 @@ void CYParameter::Output(std::ostream &out) const {
 }
 
 void CYPostfix::Output(std::ostream &out) const {
-    out << *lhs_ << Operator();
+    lhs_->Output(out, Precedence());
+    out << Operator();
 }
 
 void CYPrefix::Output(std::ostream &out) const {
-    out << Operator() << *rhs_;
+    out << Operator();
+    rhs_->Output(out, Precedence());
 }
 
 void CYProperty::Output(std::ostream &out) const {
-    out << *name_ << ':' << *value_;
+    out << *name_ << ':';
+    value_->Output(out, CYPA);
     if (next_ != NULL) {
         out << ',';
         next_->Output(out);
@@ -281,8 +325,10 @@ void CYProperty::Output(std::ostream &out) const {
 
 void CYReturn::Output(std::ostream &out) const {
     out << "return";
-    if (value_ != NULL)
-        out << ' ' << *value_;
+    if (value_ != NULL) {
+        out << ' ';
+        value_->Output(out);
+    }
     out << ';';
 }
 
@@ -340,7 +386,9 @@ void CYString::Output(std::ostream &out) const {
 }
 
 void CYSwitch::Output(std::ostream &out) const {
-    out << "switch" << *value_ << '{';
+    out << "switch(";
+    value_->Output(out);
+    out << "){";
     if (clauses_ != NULL)
         out << *clauses_;
     out << '}';
@@ -351,9 +399,11 @@ void CYThis::Output(std::ostream &out) const {
 }
 
 void CYThrow::Output(std::ostream &out) const {
-    out << "return";
-    if (value_ != NULL)
-        out << ' ' << *value_;
+    out << "throw";
+    if (value_ != NULL) {
+        out << ' ';
+        value_->Output(out);
+    }
     out << ';';
 }
 
@@ -373,12 +423,16 @@ void CYVariable::Output(std::ostream &out) const {
 }
 
 void CYWhile::Output(std::ostream &out) const {
-    out << "while" << *test_;
+    out << "while(";
+    test_->Output(out);
+    out << ')';
     code_->Output(out, false);
 }
 
 void CYWith::Output(std::ostream &out) const {
-    out << "with" << *scope_;
+    out << "with(";
+    scope_->Output(out);
+    out << ')';
     code_->Output(out, false);
 }
 

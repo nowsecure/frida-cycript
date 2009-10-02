@@ -188,8 +188,7 @@ JSObjectRef CYMakeObject(JSContextRef context, id object) {
 
 - (NSString *) cy$toJSON {
     NSMutableString *json([[[NSMutableString alloc] init] autorelease]);
-    [json appendString:@"("];
-    [json appendString:@"{"];
+    [json appendString:@"({"];
 
     bool comma(false);
     for (id key in self) {

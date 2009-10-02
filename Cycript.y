@@ -15,6 +15,7 @@ typedef struct {
         CYBoolean *boolean_;
         CYClause *clause_;
         CYCatch *catch_;
+        CYCompound *compound_;
         CYDeclaration *declaration_;
         CYDeclarations *declarations_;
         CYElement *element_;
@@ -120,6 +121,8 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %token CloseBracket "]"
 
 %token AtSelector "@selector"
+%token AtImplementation "@implementation"
+%token AtEnd "@end"
 
 %token <word_> Break "break"
 %token <word_> Case "case"
@@ -149,6 +152,38 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %token <word_> Void "void"
 %token <word_> While "while"
 %token <word_> With "with"
+
+%token <word_> Abstract "abstract"
+%token <word_> Boolean "boolean"
+%token <word_> Byte "byte"
+%token <word_> Char "char"
+%token <word_> Class "class"
+%token <word_> Const "const"
+%token <word_> Debugger "debugger"
+%token <word_> Double "double"
+%token <word_> Enum "enum"
+%token <word_> Export "export"
+%token <word_> Extends "extends"
+%token <word_> Final "final"
+%token <word_> Float "float"
+%token <word_> Goto "goto"
+%token <word_> Implements "implements"
+%token <word_> Import "import"
+%token <word_> Int "int"
+%token <word_> Interface "interface"
+%token <word_> Long "long"
+%token <word_> Native "native"
+%token <word_> Package "package"
+%token <word_> Private "private"
+%token <word_> Protected "protected"
+%token <word_> Public "public"
+%token <word_> Short "short"
+%token <word_> Static "static"
+%token <word_> Super "super"
+%token <word_> Synchronized "synchronized"
+%token <word_> Throws "throws"
+%token <word_> Transient "transient"
+%token <word_> Volatile "volatile"
 
 %token <identifier_> Identifier
 %token <number_> NumericLiteral
@@ -199,10 +234,10 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> EqualityExpressionNoIn
 %type <expression_> Expression
 %type <expression_> ExpressionOpt
-%type <expression_> Expression_
+%type <compound_> Expression_
 %type <expression_> ExpressionNoBF
 %type <expression_> ExpressionNoIn
-%type <expression_> ExpressionNoIn_
+%type <compound_> ExpressionNoIn_
 %type <expression_> ExpressionNoInOpt
 %type <statement_> ExpressionStatement
 %type <statement_> FinallyOpt
@@ -327,32 +362,63 @@ WordOpt
 
 Word
     : Identifier { $$ = $1; }
+    | "abstract" { $$ = $1; }
+    | "boolean" { $$ = $1; }
     | "break" NewLineOpt { $$ = $1; }
+    | "byte" { $$ = $1; }
     | "case" { $$ = $1; }
     | "catch" { $$ = $1; }
+    | "char" { $$ = $1; }
+    | "class" { $$ = $1; }
+    | "const" { $$ = $1; }
     | "continue" NewLineOpt { $$ = $1; }
+    | "debugger" { $$ = $1; }
     | "default" { $$ = $1; }
     | "delete" { $$ = $1; }
     | "do" { $$ = $1; }
+    | "double" { $$ = $1; }
     | "else" { $$ = $1; }
+    | "enum" { $$ = $1; }
+    | "export" { $$ = $1; }
+    | "extends" { $$ = $1; }
     | "false" { $$ = $1; }
+    | "final" { $$ = $1; }
     | "finally" { $$ = $1; }
+    | "float" { $$ = $1; }
     | "for" { $$ = $1; }
     | "function" { $$ = $1; }
+    | "goto" { $$ = $1; }
     | "if" { $$ = $1; }
+    | "implements" { $$ = $1; }
+    | "import" { $$ = $1; }
     /* XXX: | "in" { $$ = $1; } */
     /* XXX: | "instanceof" { $$ = $1; } */
+    | "int" { $$ = $1; }
+    | "interface" { $$ = $1; }
+    | "long" { $$ = $1; }
+    | "native" { $$ = $1; }
     | "new" { $$ = $1; }
     | "null" { $$ = $1; }
+    | "package" { $$ = $1; }
+    | "private" { $$ = $1; }
+    | "protected" { $$ = $1; }
+    | "public" { $$ = $1; }
     | "return" NewLineOpt { $$ = $1; }
+    | "short" { $$ = $1; }
+    | "static" { $$ = $1; }
+    | "super" { $$ = $1; }
     | "switch" { $$ = $1; }
+    | "synchronized" { $$ = $1; }
     | "this" { $$ = $1; }
     | "throw" NewLineOpt { $$ = $1; }
+    | "throws" { $$ = $1; }
+    | "transient" { $$ = $1; }
     | "true" { $$ = $1; }
     | "try" { $$ = $1; }
     | "typeof" { $$ = $1; }
     | "var" { $$ = $1; }
     | "void" { $$ = $1; }
+    | "volatile" { $$ = $1; }
     | "while" { $$ = $1; }
     | "with" { $$ = $1; }
     ;
@@ -398,7 +464,7 @@ PrimaryExpressionNoBF
 /* }}} */
 /* 11.1.4 Array Initialiser {{{ */
 ArrayLiteral
-    : "[" ElementList "]" { $$ = new(driver.pool_) CYArray($2); }
+    : "[" ElementListOpt "]" { $$ = new(driver.pool_) CYArray($2); }
     ;
 
 Element
@@ -791,12 +857,12 @@ AssignmentExpressionNoBF
     ;
 
 Expression_
-    : "," Expression { $$ = $2; }
+    : "," Expression { $$ = new(driver.pool_) CYCompound($2); }
     | { $$ = NULL; }
     ;
 
 ExpressionNoIn_
-    : "," ExpressionNoIn { $$ = $2; }
+    : "," ExpressionNoIn { $$ = new(driver.pool_) CYCompound($2); }
     | { $$ = NULL; }
     ;
 
@@ -811,15 +877,15 @@ ExpressionNoInOpt
     ;
 
 Expression
-    : AssignmentExpression Expression_ { if ($1) { $1->SetNext($2); $$ = $1; } else $$ = $2; }
+    : AssignmentExpression Expression_ { if ($2) { $2->AddPrev($1); $$ = $2; } else $$ = $1; }
     ;
 
 ExpressionNoIn
-    : AssignmentExpressionNoIn ExpressionNoIn_ { if ($1) { $1->SetNext($2); $$ = $1; } else $$ = $2; }
+    : AssignmentExpressionNoIn ExpressionNoIn_ { if ($2) { $2->AddPrev($1); $$ = $2; } else $$ = $1; }
     ;
 
 ExpressionNoBF
-    : AssignmentExpressionNoBF Expression_ { if ($1) { $1->SetNext($2); $$ = $1; } else $$ = $2; }
+    : AssignmentExpressionNoBF Expression_ { if ($2) { $2->AddPrev($1); $$ = $2; } else $$ = $1; }
     ;
 
 Statement
