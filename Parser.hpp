@@ -889,6 +889,7 @@ struct CYCondition :
     CYExpression *false_;
 
     CYCondition(CYExpression *test, CYExpression *_true, CYExpression *_false) :
+        test_(test),
         true_(_true),
         false_(_false)
     {
