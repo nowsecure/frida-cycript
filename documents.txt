@@ -1,3 +1,6 @@
 http://developer.apple.com/mac/library/DOCUMENTATION/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtPropertyIntrospection.html
- http://developer.apple.com/mac/library/DOCUMENTATION/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtTypeEncodings.html
- http://www.webweavertech.com/ovidiu/Objective-C/objc-features_3.html
+http://developer.apple.com/mac/library/DOCUMENTATION/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtTypeEncodings.html
+http://www.webweavertech.com/ovidiu/Objective-C/objc-features_3.html
+
+http://www.mail-archive.com/es-discuss@mozilla.org/msg00999.html
+http://www.mail-archive.com/es-discuss@mozilla.org/msg01025.html

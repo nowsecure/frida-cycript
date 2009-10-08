@@ -119,6 +119,8 @@ Escape   \\[\\'"bfnrtv]|\\0|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}
 "["    L C return tk::OpenBracket;
 "]"    L C return tk::CloseBracket;
 
+"@class"       L C return tk::AtClass;
+"@end"         L C return tk::AtEnd;
 "@selector"    L C return tk::AtSelector;
 
 "break"        L R yylval->word_ = new CYWord("break"); return tk::Break;

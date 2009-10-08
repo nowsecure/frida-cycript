@@ -49,6 +49,7 @@ F method_getReturnType v^{objc_method=}^cL
 F method_getTypeEncoding *^{objc_method=}
 F method_setImplementation ^?^{objc_method=}^?
 
+# this should return # or ^v ?
 F objc_allocateClassPair ##*L
 F objc_copyProtocolList ^@^I
 F objc_duplicateClass ##*L
@@ -505,3 +506,5 @@ C MKPinAnnotationColorPurple 2
 # MKCoordinateRegionMake
 # MKCoordinateRegionMakeWithDistance
 # MKCoordinateSpanMake
+
+: applicationDidFinishLaunching: v@

@@ -15,16 +15,19 @@ clean:
 	rm -f *.o libcycript.dylib cycript libcycript.plist Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh
 
 libcycript.plist: Bridge.def
-	sed -e 's/^C/0/;s/^F/1/;s/^V/2/' Bridge.def | while read -r line; do \
-	    if [[ $$line == '' ]]; then \
-	        continue; \
-	    fi; \
-	    set $$line; \
-	    if [[ $$1 =~ [#fl] ]]; then \
-	        continue; \
-	    fi; \
-	    echo "$$2 = ($$1, \"$$3\");";  \
-	done >$@
+	{ \
+	    sed -e 's/^C/0/;s/^F/1/;s/^V/2/' Bridge.def | while read -r line; do \
+	        if [[ $$line == '' ]]; then \
+	            continue; \
+	        fi; \
+	        set $$line; \
+	        if [[ $$1 =~ [#fl:] ]]; then \
+	            continue; \
+	        fi; \
+	        echo "$$2 = ($$1, \"$$3\");";  \
+	    done; \
+	    grep ^: Bridge.def | sed -e 's/^: \([^ ]*\) \(.*\)/":\1" = "\2";/'; \
+	} >$@
 
 Cycript.tab.cc Cycript.tab.hh location.hh position.hh: Cycript.y
 	bison -v --report=state $<
@@ -57,7 +60,7 @@ Application.o: Application.mm Cycript.tab.hh Parser.hpp Pooling.hpp cycript.hpp
 	$(target)g++ $(flags) -c -o $@ $<
 
 libcycript.dylib: ffi_type.o parse.o Output.o Cycript.tab.o lex.cy.o Library.o
-	$(target)g++ $(flags) -dynamiclib -o $@ $(filter %.o,$^) -lobjc -framework CFNetwork -framework JavaScriptCore -framework WebCore -install_name /usr/lib/libcycript.dylib -framework CoreFoundation -framework Foundation -L$(menes)/mobilesubstrate -lsubstrate -lapr-1 -lffi
+	$(target)g++ $(flags) -dynamiclib -o $@ $(filter %.o,$^) -lobjc -framework CFNetwork -framework JavaScriptCore -framework WebCore -install_name /usr/lib/libcycript.dylib -framework CoreFoundation -framework Foundation -L$(menes)/mobilesubstrate -lsubstrate -lapr-1 -lffi -framework UIKit
 	ldid -S $@
 
 cycript: Application.o libcycript.dylib
@@ -85,6 +88,6 @@ package: all
 
 test: package
 	dpkg -i $(shell grep ^Package: control | cut -d ' ' -f 2-)_$(shell grep ^Version: control | cut -d ' ' -f 2)_iphoneos-arm.deb
-	cycript
+	cycript /Applications/HelloCycript.app/HelloCycript
 
 .PHONY: all clean extra package

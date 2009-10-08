@@ -153,6 +153,15 @@ struct CYForInInitialiser :
 {
 };
 
+enum CYFlags {
+    CYNoFlags,
+    CYNoBrace,
+    CYNoFunction,
+    CYNoLeader,
+    CYNoTrailer,
+    CYNoIn
+};
+
 struct CYExpression :
     CYNext<CYExpression>,
     CYForInitialiser,
@@ -160,13 +169,18 @@ struct CYExpression :
 {
     virtual unsigned Precedence() const = 0;
     virtual void Part(std::ostream &out) const;
-    virtual void Output(std::ostream &out) const = 0;
-    void Output(std::ostream &out, unsigned precedence) const;
+    virtual void Output(std::ostream &out, CYFlags flags) const = 0;
+    void Output(std::ostream &out, unsigned precedence, CYFlags flags) const;
 
     virtual const char *Word() const {
         return NULL;
     }
 };
+
+#define CYAlphabetic(value) \
+    virtual bool Alphabetic() const { \
+        return value; \
+    }
 
 #define CYPrecedence(value) \
     virtual unsigned Precedence() const { \
@@ -193,7 +207,7 @@ struct CYCompound :
 
     CYPrecedence(17)
 
-    void Output(std::ostream &out) const;
+    void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYLiteral :
@@ -230,7 +244,7 @@ struct CYSelector :
 
     CYPrecedence(1)
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYRange {
@@ -292,7 +306,11 @@ struct CYString :
         return Value();
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out) const {
+        return Output(out, CYNoFlags);
+    }
+
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYNumber :
@@ -314,7 +332,11 @@ struct CYNumber :
         throw;
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out) const {
+        return Output(out, CYNoFlags);
+    }
+
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYNull :
@@ -326,7 +348,7 @@ struct CYNull :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYThis :
@@ -340,14 +362,14 @@ struct CYThis :
 
     CYPrecedence(0)
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYBoolean :
     CYLiteral
 {
     virtual bool Value() const = 0;
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYFalse :
@@ -359,9 +381,7 @@ struct CYFalse :
     {
     }
 
-    virtual bool Value() const {
-        return false;
-    }
+    virtual bool Value() const;
 };
 
 struct CYTrue :
@@ -373,9 +393,7 @@ struct CYTrue :
     {
     }
 
-    virtual bool Value() const {
-        return true;
-    }
+    virtual bool Value() const;
 };
 
 struct CYVariable :
@@ -390,7 +408,7 @@ struct CYVariable :
 
     CYPrecedence(0)
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYPrefix :
@@ -403,9 +421,10 @@ struct CYPrefix :
     {
     }
 
+    virtual bool Alphabetic() const = 0;
     virtual const char *Operator() const = 0;
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYInfix :
@@ -420,9 +439,10 @@ struct CYInfix :
     {
     }
 
+    virtual bool Alphabetic() const = 0;
     virtual const char *Operator() const = 0;
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYPostfix :
@@ -437,7 +457,7 @@ struct CYPostfix :
 
     virtual const char *Operator() const = 0;
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYAssignment :
@@ -454,7 +474,7 @@ struct CYAssignment :
 
     virtual const char *Operator() const = 0;
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYArgument :
@@ -522,7 +542,7 @@ struct CYArray :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYDeclaration :
@@ -559,14 +579,73 @@ struct CYDeclarations :
     virtual void Output(std::ostream &out) const;
 };
 
-struct CYParameter :
-    CYNext<CYParameter>,
+struct CYField :
+    CYNext<CYField>
+{
+    virtual void Output(std::ostream &out) const;
+};
+
+struct CYMessageParameter :
+    CYNext<CYMessageParameter>
+{
+    CYWord *tag_;
+    CYExpression *type_;
+    CYIdentifier *name_;
+
+    CYMessageParameter(CYWord *tag, CYExpression *type, CYIdentifier *name) :
+        tag_(tag),
+        type_(type),
+        name_(name)
+    {
+    }
+};
+
+struct CYMessage :
+    CYSource
+{
+    bool instance_;
+    CYExpression *type_;
+    CYMessageParameter *parameter_;
+    CYSource *body_;
+
+    CYMessage(bool instance, CYExpression *type, CYMessageParameter *parameter, CYSource *body) :
+        instance_(instance),
+        type_(type),
+        parameter_(parameter),
+        body_(body)
+    {
+    }
+
+    virtual void Output(std::ostream &out) const;
+};
+
+struct CYClass :
+    CYSource
+{
+    CYIdentifier *name_;
+    CYExpression *super_;
+    CYField *fields_;
+    CYMessage *messages_;
+
+    CYClass(CYIdentifier *name, CYExpression *super, CYField *fields, CYMessage *messages) :
+        name_(name),
+        super_(super),
+        fields_(fields),
+        messages_(messages)
+    {
+    }
+
+    virtual void Output(std::ostream &out) const;
+};
+
+struct CYFunctionParameter :
+    CYNext<CYFunctionParameter>,
     CYThing
 {
     CYIdentifier *name_;
 
-    CYParameter(CYIdentifier *name, CYParameter *next) :
-        CYNext<CYParameter>(next),
+    CYFunctionParameter(CYIdentifier *name, CYFunctionParameter *next) :
+        CYNext<CYFunctionParameter>(next),
         name_(name)
     {
     }
@@ -636,7 +715,7 @@ struct CYObject :
     {
     }
 
-    void Output(std::ostream &out) const;
+    void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYCatch :
@@ -654,13 +733,13 @@ struct CYCatch :
     virtual void Output(std::ostream &out) const;
 };
 
-struct CYMessage :
+struct CYSend :
     CYExpression
 {
     CYExpression *self_;
     CYArgument *arguments_;
 
-    CYMessage(CYExpression *self, CYArgument *arguments) :
+    CYSend(CYExpression *self, CYArgument *arguments) :
         self_(self),
         arguments_(arguments)
     {
@@ -668,7 +747,7 @@ struct CYMessage :
 
     CYPrecedence(0)
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYMember :
@@ -685,7 +764,7 @@ struct CYMember :
 
     CYPrecedence(1)
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYNew :
@@ -702,7 +781,7 @@ struct CYNew :
 
     CYPrecedence(1)
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYCall :
@@ -719,7 +798,7 @@ struct CYCall :
 
     CYPrecedence(2)
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYIf :
@@ -773,10 +852,10 @@ struct CYLambda :
     CYExpression
 {
     CYIdentifier *name_;
-    CYParameter *parameters_;
+    CYFunctionParameter *parameters_;
     CYSource *body_;
 
-    CYLambda(CYIdentifier *name, CYParameter *parameters, CYSource *body) :
+    CYLambda(CYIdentifier *name, CYFunctionParameter *parameters, CYSource *body) :
         name_(name),
         parameters_(parameters),
         body_(body)
@@ -785,14 +864,14 @@ struct CYLambda :
 
     CYPrecedence(0)
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYFunction :
     CYLambda,
     CYSource
 {
-    CYFunction(CYIdentifier *name, CYParameter *parameters, CYSource *body) :
+    CYFunction(CYIdentifier *name, CYFunctionParameter *parameters, CYSource *body) :
         CYLambda(name, parameters, body)
     {
     }
@@ -935,7 +1014,7 @@ struct CYCondition :
 
     CYPrecedence(15)
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYAddressOf :
@@ -950,9 +1029,10 @@ struct CYAddressOf :
         return "&";
     }
 
+    CYAlphabetic(false)
     CYPrecedence(2)
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYIndirect :
@@ -967,9 +1047,10 @@ struct CYIndirect :
         return "*";
     }
 
+    CYAlphabetic(false)
     CYPrecedence(1)
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 #define CYPostfix_(op, name) \
@@ -988,7 +1069,7 @@ struct CYIndirect :
         } \
     };
 
-#define CYPrefix_(op, name) \
+#define CYPrefix_(alphabetic, op, name) \
     struct CY ## name : \
         CYPrefix \
     { \
@@ -997,6 +1078,7 @@ struct CYIndirect :
         { \
         } \
     \
+        CYAlphabetic(alphabetic) \
         CYPrecedence(4) \
     \
         virtual const char *Operator() const { \
@@ -1004,7 +1086,7 @@ struct CYIndirect :
         } \
     };
 
-#define CYInfix_(precedence, op, name) \
+#define CYInfix_(alphabetic, precedence, op, name) \
     struct CY ## name : \
         CYInfix \
     { \
@@ -1013,6 +1095,7 @@ struct CYIndirect :
         { \
         } \
     \
+        CYAlphabetic(alphabetic) \
         CYPrecedence(precedence) \
     \
         virtual const char *Operator() const { \
@@ -1039,38 +1122,38 @@ struct CYIndirect :
 CYPostfix_("++", PostIncrement)
 CYPostfix_("--", PostDecrement)
 
-CYPrefix_("delete", Delete)
-CYPrefix_("void", Void)
-CYPrefix_("typeof", TypeOf)
-CYPrefix_("++", PreIncrement)
-CYPrefix_("--", PreDecrement)
-CYPrefix_("-", Negate)
-CYPrefix_("~", BitwiseNot)
-CYPrefix_("!", LogicalNot)
+CYPrefix_(true, "delete", Delete)
+CYPrefix_(true, "void", Void)
+CYPrefix_(true, "typeof", TypeOf)
+CYPrefix_(false, "++", PreIncrement)
+CYPrefix_(false, "--", PreDecrement)
+CYPrefix_(false, "-", Negate)
+CYPrefix_(false, "~", BitwiseNot)
+CYPrefix_(false, "!", LogicalNot)
 
-CYInfix_(5, "*", Multiply)
-CYInfix_(5, "/", Divide)
-CYInfix_(5, "%", Modulus)
-CYInfix_(6, "+", Add)
-CYInfix_(6, "-", Subtract)
-CYInfix_(7, "<<", ShiftLeft)
-CYInfix_(7, ">>", ShiftRightSigned)
-CYInfix_(7, ">>>", ShiftRightUnsigned)
-CYInfix_(8, "<", Less)
-CYInfix_(8, ">", Greater)
-CYInfix_(8, "<=", LessOrEqual)
-CYInfix_(8, ">=", GreaterOrEqual)
-CYInfix_(8, "instanceof", InstanceOf)
-CYInfix_(8, "in", In)
-CYInfix_(9, "==", Equal)
-CYInfix_(9, "!=", NotEqual)
-CYInfix_(9, "===", Identical)
-CYInfix_(9, "!==", NotIdentical)
-CYInfix_(10, "&", BitwiseAnd)
-CYInfix_(11, "^", BitwiseXOr)
-CYInfix_(12, "|", BitwiseOr)
-CYInfix_(13, "&&", LogicalAnd)
-CYInfix_(14, "||", LogicalOr)
+CYInfix_(false, 5, "*", Multiply)
+CYInfix_(false, 5, "/", Divide)
+CYInfix_(false, 5, "%", Modulus)
+CYInfix_(false, 6, "+", Add)
+CYInfix_(false, 6, "-", Subtract)
+CYInfix_(false, 7, "<<", ShiftLeft)
+CYInfix_(false, 7, ">>", ShiftRightSigned)
+CYInfix_(false, 7, ">>>", ShiftRightUnsigned)
+CYInfix_(false, 8, "<", Less)
+CYInfix_(false, 8, ">", Greater)
+CYInfix_(false, 8, "<=", LessOrEqual)
+CYInfix_(false, 8, ">=", GreaterOrEqual)
+CYInfix_(true, 8, "instanceof", InstanceOf)
+CYInfix_(true, 8, "in", In)
+CYInfix_(false, 9, "==", Equal)
+CYInfix_(false, 9, "!=", NotEqual)
+CYInfix_(false, 9, "===", Identical)
+CYInfix_(false, 9, "!==", NotIdentical)
+CYInfix_(false, 10, "&", BitwiseAnd)
+CYInfix_(false, 11, "^", BitwiseXOr)
+CYInfix_(false, 12, "|", BitwiseOr)
+CYInfix_(false, 13, "&&", LogicalAnd)
+CYInfix_(false, 14, "||", LogicalOr)
 
 CYAssignment_("=", )
 CYAssignment_("*=", Multiply)

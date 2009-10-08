@@ -11,6 +11,15 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+#include <sys/mman.h>
+
+#include <errno.h>
+#include <unistd.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include "Cycript.tab.hh"
 
 static jmp_buf ctrlc_;
@@ -19,7 +28,39 @@ void sigint(int) {
     longjmp(ctrlc_, 1);
 }
 
-int main(int argc, const char *argv[]) {
+void Run(const char *code, FILE *fout) { _pooled
+    JSStringRef script(JSStringCreateWithUTF8CString(code));
+
+    JSContextRef context(CYGetJSContext());
+
+    JSValueRef exception(NULL);
+    JSValueRef result(JSEvaluateScript(context, script, NULL, NULL, 0, &exception));
+    JSStringRelease(script);
+
+    if (exception != NULL)
+        result = exception;
+
+    if (!JSValueIsUndefined(context, result)) {
+        CFStringRef json;
+
+        @try { json:
+            json = CYCopyJSONString(context, result);
+        } @catch (id error) {
+            CYThrow(context, error, &result);
+            goto json;
+        }
+
+        if (fout != NULL) {
+            fputs([reinterpret_cast<const NSString *>(json) UTF8String], fout);
+            fputs("\n", fout);
+            fflush(fout);
+        }
+
+        CFRelease(json);
+    }
+}
+
+void Console() {
     bool bypass(false);
     bool debug(false);
 
@@ -114,40 +155,69 @@ int main(int argc, const char *argv[]) {
         if (debug)
             std::cout << code << std::endl;
 
-        _pooled
-
-        JSStringRef script(JSStringCreateWithUTF8CString(code.c_str()));
-
-        JSContextRef context(CYGetJSContext());
-
-        JSValueRef exception(NULL);
-        JSValueRef result(JSEvaluateScript(context, script, NULL, NULL, 0, &exception));
-        JSStringRelease(script);
-
-        if (exception != NULL)
-            result = exception;
-
-        if (JSValueIsUndefined(context, result))
-            goto restart;
-
-        CFStringRef json;
-
-        @try { json:
-            json = CYCopyJSONString(context, result);
-        } @catch (id error) {
-            CYThrow(context, error, &result);
-            goto json;
-        }
-
-        fputs([reinterpret_cast<const NSString *>(json) UTF8String], fout);
-        CFRelease(json);
-
-        fputs("\n", fout);
-        fflush(fout);
+        Run(code.c_str(), fout);
     }
 
     fputs("\n", fout);
     fflush(fout);
+}
+
+void *Map(const char *path, size_t *psize) {
+    int fd;
+    _syscall(fd = open(path, O_RDONLY));
+
+    struct stat stat;
+    _syscall(fstat(fd, &stat));
+    size_t size(stat.st_size);
+
+    *psize = size;
+
+    void *base;
+    _syscall(base = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0));
+
+    _syscall(close(fd));
+    return base;
+}
+
+int main(int argc, const char *argv[]) {
+    const char *script;
+
+    if (argc == 1)
+        script = NULL;
+    else {
+        CYSetArgs(argc - 1, argv + 1);
+        script = argv[1];
+    }
+
+    if (script == NULL || strcmp(script, "-") == 0)
+        Console();
+    else {
+        CYDriver driver(script);
+        cy::parser parser(driver);
+
+        size_t size;
+        char *start(reinterpret_cast<char *>(Map(script, &size)));
+        char *end(start + size);
+
+        if (size >= 2 && start[0] == '#' && start[1] == '!') {
+            start += 2;
+            while (start != end && *start++ != '\n');
+        }
+
+        driver.data_ = start;
+        driver.size_ = end - start;
+
+        if (parser.parse() != 0 || !driver.errors_.empty()) {
+            for (CYDriver::Errors::const_iterator i(driver.errors_.begin()); i != driver.errors_.end(); ++i)
+                std::cerr << i->location_.begin << ": " << i->message_ << std::endl;
+        } else if (driver.source_ != NULL) {
+            std::ostringstream str;
+            driver.source_->Show(str);
+            std::string code(str.str());
+            std::cout << code << std::endl;
+            Run(code.c_str(), stdout);
+        }
+    }
 
     return 0;
 }

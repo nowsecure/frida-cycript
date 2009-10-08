@@ -11,6 +11,8 @@ typedef struct {
     bool newline_;
 
     union {
+        bool bool_;
+
         CYArgument *argument_;
         CYBoolean *boolean_;
         CYClause *clause_;
@@ -21,14 +23,17 @@ typedef struct {
         CYElement *element_;
         CYExpression *expression_;
         CYFalse *false_;
+        CYField *field_;
         CYForInitialiser *for_;
         CYForInInitialiser *forin_;
+        CYFunctionParameter *functionParameter_;
         CYIdentifier *identifier_;
         CYLiteral *literal_;
+        CYMessage *message_;
+        CYMessageParameter *messageParameter_;
         CYName *name_;
         CYNull *null_;
         CYNumber *number_;
-        CYParameter *parameter_;
         CYProperty *property_;
         CYSelectorPart *selector_;
         CYSource *source_;
@@ -120,8 +125,8 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %token OpenBracket "["
 %token CloseBracket "]"
 
+%token AtClass "@class"
 %token AtSelector "@selector"
-%token AtImplementation "@implementation"
 %token AtEnd "@end"
 
 %token <word_> Break "break"
@@ -217,6 +222,11 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <clause_> CaseClause
 %type <clause_> CaseClausesOpt
 %type <catch_> CatchOpt
+%type <source_> ClassDeclaration
+%type <message_> ClassMessageDeclaration
+%type <message_> ClassMessageDeclarationListOpt
+%type <expression_> ClassSuperOpt
+%type <field_> ClassFieldList
 %type <expression_> ConditionalExpression
 %type <expression_> ConditionalExpressionNoBF
 %type <expression_> ConditionalExpressionNoIn
@@ -245,8 +255,8 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <for_> ForStatementInitialiser
 %type <statement_> ForInStatement
 %type <forin_> ForInStatementInitialiser
-%type <parameter_> FormalParameterList
-%type <parameter_> FormalParameterList_
+%type <functionParameter_> FormalParameterList
+%type <functionParameter_> FormalParameterList_
 %type <source_> FunctionBody
 %type <source_> FunctionDeclaration
 %type <expression_> FunctionExpression
@@ -271,6 +281,11 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> MemberExpression
 %type <expression_> MemberExpression_
 %type <expression_> MemberExpressionNoBF
+%type <messageParameter_> MessageParameter
+%type <messageParameter_> MessageParameters
+%type <messageParameter_> MessageParameterList
+%type <messageParameter_> MessageParameterListOpt
+%type <bool_> MessageScope
 %type <expression_> MultiplicativeExpression
 %type <expression_> MultiplicativeExpressionNoBF
 %type <expression_> NewExpression
@@ -305,6 +320,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <statement_> SwitchStatement
 %type <statement_> ThrowStatement
 %type <statement_> TryStatement
+%type <expression_> TypeOpt
 %type <expression_> UnaryExpression
 %type <expression_> UnaryExpression_
 %type <expression_> UnaryExpressionNoBF
@@ -1103,7 +1119,7 @@ FormalParameterList_
     ;
 
 FormalParameterList
-    : Identifier FormalParameterList_ { $$ = new(driver.pool_) CYParameter($1, $2); }
+    : Identifier FormalParameterList_ { $$ = new(driver.pool_) CYFunctionParameter($1, $2); }
     | { $$ = NULL; }
     ;
 
@@ -1126,6 +1142,60 @@ SourceElement
     ;
 
 /* Objective-C Extensions {{{ */
+ClassSuperOpt
+    : ":" MemberExpressionNoBF { $$ = $2; }
+    | { $$ = NULL; }
+    ;
+
+ClassFieldList
+    : "{" "}" { $$ = NULL; }
+    ;
+
+MessageScope
+    : "+" { $$ = false; }
+    | "-" { $$ = true; }
+    ;
+
+TypeOpt
+    : "(" Expression ")" { $$ = $2; }
+    | { $$ = NULL; }
+    ;
+
+MessageParameter
+    : Word ":" TypeOpt Identifier { $$ = new CYMessageParameter($1, $3, $4); }
+    ;
+
+MessageParameterListOpt
+    : MessageParameterList { $$ = $1; }
+    | { $$ = NULL; }
+    ;
+
+MessageParameterList
+    : MessageParameter MessageParameterListOpt { $1->SetNext($2); $$ = $1; }
+    ;
+
+MessageParameters
+    : MessageParameterList { $$ = $1; }
+    | Word { $$ = new CYMessageParameter($1, NULL, NULL); }
+    ;
+
+ClassMessageDeclaration
+    : MessageScope TypeOpt MessageParameters "{" FunctionBody "}" { $$ = new CYMessage($1, $2, $3, $5); }
+    ;
+
+ClassMessageDeclarationListOpt
+    : ClassMessageDeclarationListOpt ClassMessageDeclaration { if ($1) { $1->SetNext($2); $$ = $1; } else $$ = $2; }
+    | { $$ = NULL; }
+    ;
+
+ClassDeclaration
+    : "@class" Identifier ClassSuperOpt ClassFieldList ClassMessageDeclarationListOpt "@end" { $$ = new CYClass($2, $3, $4, $5); }
+    ;
+
+SourceElement
+    : ClassDeclaration { $$ = $1; }
+    ;
+
 VariadicCall
     : "," AssignmentExpression VariadicCall { $$ = new(driver.pool_) CYArgument(NULL, $2, $3); }
     | { $$ = NULL; }
@@ -1146,7 +1216,7 @@ SelectorList
     ;
 
 MessageExpression
-    : "[" AssignmentExpression SelectorList "]" { $$ = new(driver.pool_) CYMessage($2, $3); }
+    : "[" AssignmentExpression SelectorList "]" { $$ = new(driver.pool_) CYSend($2, $3); }
     ;
 
 SelectorExpressionOpt
