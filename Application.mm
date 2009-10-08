@@ -28,7 +28,7 @@ void sigint(int) {
     longjmp(ctrlc_, 1);
 }
 
-void Run(const char *code, FILE *fout) {
+void Run(const char *code, FILE *fout) { _pooled
     JSStringRef script(JSStringCreateWithUTF8CString(code));
 
     JSContextRef context(CYGetJSContext());
@@ -37,14 +37,18 @@ void Run(const char *code, FILE *fout) {
     JSValueRef result(JSEvaluateScript(context, script, NULL, NULL, 0, &exception));
     JSStringRelease(script);
 
-    if (exception != NULL)
+    if (exception != NULL) { error:
         result = exception;
+        exception = NULL;
+    }
 
     if (!JSValueIsUndefined(context, result)) {
         CYPool pool;
         const char *json;
 
-        json = CYPoolJSONString(pool, context, result);
+        json = CYPoolJSONString(pool, context, result, &exception);
+        if (exception != NULL)
+            goto error;
 
         if (fout != NULL) {
             fputs(json, fout);
