@@ -28,7 +28,7 @@ void sigint(int) {
     longjmp(ctrlc_, 1);
 }
 
-void Run(const char *code, FILE *fout) { _pooled
+void Run(const char *code, FILE *fout) {
     JSStringRef script(JSStringCreateWithUTF8CString(code));
 
     JSContextRef context(CYGetJSContext());
@@ -41,22 +41,16 @@ void Run(const char *code, FILE *fout) { _pooled
         result = exception;
 
     if (!JSValueIsUndefined(context, result)) {
-        CFStringRef json;
+        CYPool pool;
+        const char *json;
 
-        @try { json:
-            json = CYCopyJSONString(context, result);
-        } @catch (id error) {
-            CYThrow(context, error, &result);
-            goto json;
-        }
+        json = CYPoolJSONString(pool, context, result);
 
         if (fout != NULL) {
-            fputs([reinterpret_cast<const NSString *>(json) UTF8String], fout);
+            fputs(json, fout);
             fputs("\n", fout);
             fflush(fout);
         }
-
-        CFRelease(json);
     }
 }
 

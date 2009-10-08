@@ -224,18 +224,18 @@ void CYExpression::Part(std::ostream &out) const {
 
 void CYCompound::Output(std::ostream &out, CYFlags flags) const {
     if (CYExpression *expression = expressions_)
-        if (CYExpression *next = expression->next_)
-            expression->Output(out, flags);
-        else {
+        if (CYExpression *next = expression->next_) {
             expression->Output(out, CYLeft(flags));
             CYFlags center(CYCenter(flags));
             while (next != NULL) {
+                expression = next;
                 out << ',';
                 next = expression->next_;
                 CYFlags right(next != NULL ? center : CYRight(flags));
                 expression->Output(out, right);
             }
-        }
+        } else
+            expression->Output(out, flags);
 }
 
 void CYExpression::Output(std::ostream &out, unsigned precedence, CYFlags flags) const {
@@ -363,20 +363,14 @@ void CYMessage::Output(std::ostream &out) const {
     out << "\");";
     out << "$cyt=$cyn.type($cys," << (instance_ ? "true" : "false") << ");";
     out << "class_addMethod($cy" << (instance_ ? 'c' : 'm') << ",$cyn,";
-    out << "new Functor(function(";
-    bool comma(false);
+    out << "new Functor(function(self,_cmd";
     for (CYMessageParameter *parameter(parameter_); parameter != NULL; parameter = parameter->next_)
-        if (parameter->name_ != NULL) {
-            if (comma)
-                out << ',';
-            else
-                comma = true;
-            out << *parameter->name_;
-        }
-    out << "){";
+        if (parameter->name_ != NULL)
+            out << ',' << *parameter->name_;
+    out << "){return function(){";
     if (body_ != NULL)
         body_->Show(out);
-    out << "},$cyt),$cyt);";
+    out << "}.call(self);},$cyt),$cyt);";
 }
 
 void CYNew::Output(std::ostream &out, CYFlags flags) const {
@@ -555,12 +549,11 @@ void CYTry::Output(std::ostream &out) const {
 }
 
 void CYVariable::Output(std::ostream &out, CYFlags flags) const {
-    bool protect((flags & CYNoLeader) != 0);
-    if (protect)
-        out << '(';
+    if ((flags & CYNoLeader) != 0)
+        out << ' ';
     out << *name_;
-    if (protect)
-        out << ')';
+    if ((flags & CYNoTrailer) != 0)
+        out << ' ';
 }
 
 void CYWhile::Output(std::ostream &out) const {

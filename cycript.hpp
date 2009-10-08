@@ -8,12 +8,10 @@
 #include <JavaScriptCore/JavaScript.h>
 #include <JavaScriptCore/JSStringRefCF.h>
 
-JSContextRef CYGetJSContext();
-CFStringRef CYCopyJSONString(JSContextRef context, JSValueRef value);
-void CYSetArgs(int argc, const char *argv[]);
+#include <apr-1/apr_pools.h>
 
-#ifdef __OBJC__
-void CYThrow(JSContextRef context, id error, JSValueRef *exception);
-#endif
+JSGlobalContextRef CYGetJSContext();
+const char *CYPoolJSONString(apr_pool_t *pool, JSContextRef context, JSValueRef value);
+void CYSetArgs(int argc, const char *argv[]);
 
 #endif/*CYCRIPT_HPP*/

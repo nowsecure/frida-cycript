@@ -154,12 +154,12 @@ struct CYForInInitialiser :
 };
 
 enum CYFlags {
-    CYNoFlags,
-    CYNoBrace,
-    CYNoFunction,
-    CYNoLeader,
-    CYNoTrailer,
-    CYNoIn
+    CYNoFlags =    0,
+    CYNoBrace =    (1 << 0),
+    CYNoFunction = (1 << 1),
+    CYNoLeader =   (1 << 2),
+    CYNoTrailer =  (1 << 3),
+    CYNoIn =       (1 << 4),
 };
 
 struct CYExpression :
@@ -211,6 +211,12 @@ struct CYCompound :
 };
 
 struct CYLiteral :
+    CYExpression
+{
+    CYPrecedence(0)
+};
+
+struct CYMagic :
     CYExpression
 {
     CYPrecedence(0)
@@ -353,14 +359,12 @@ struct CYNull :
 
 struct CYThis :
     CYWord,
-    CYExpression
+    CYMagic
 {
     CYThis() :
         CYWord("this")
     {
     }
-
-    CYPrecedence(0)
 
     virtual void Output(std::ostream &out, CYFlags flags) const;
 };
