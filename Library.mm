@@ -355,7 +355,7 @@ JSValueRef CYJSUndefined(JSContextRef context) {
     if (index < 0 || index >= static_cast<int>([self count]))
         return [super cy$setProperty:name to:value];
     else {
-        [self replaceObjectAtIndex:index withObject:value];
+        [self replaceObjectAtIndex:index withObject:(value ?: [NSNull null])];
         return true;
     }
 }
@@ -403,7 +403,7 @@ JSValueRef CYJSUndefined(JSContextRef context) {
 @implementation NSMutableDictionary (Cycript)
 
 - (bool) cy$setProperty:(NSString *)name to:(NSObject *)value {
-    [self setObject:value forKey:name];
+    [self setObject:(value ?: [NSNull null]) forKey:name];
     return true;
 }
 
