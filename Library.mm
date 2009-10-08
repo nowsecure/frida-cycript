@@ -246,6 +246,9 @@ JSValueRef CYJSUndefined(JSContextRef context) {
 - (bool) cy$isUndefined;
 - (NSString *) cy$toJSON;
 - (JSValueRef) cy$JSValueInContext:(JSContextRef)context transient:(bool)transient;
+- (NSObject *) cy$getProperty:(NSString *)name;
+- (bool) cy$setProperty:(NSString *)name to:(NSObject *)value;
+- (bool) cy$deleteProperty:(NSString *)name;
 @end
 
 @interface NSString (Cycript)
@@ -268,6 +271,21 @@ JSValueRef CYJSUndefined(JSContextRef context) {
 
 - (JSValueRef) cy$JSValueInContext:(JSContextRef)context transient:(bool)transient {
     return CYMakeInstance(context, self, transient);
+}
+
+- (NSObject *) cy$getProperty:(NSString *)name {
+    NSLog(@"get:%@", name);
+    return nil;
+}
+
+- (bool) cy$setProperty:(NSString *)name to:(NSObject *)value {
+    NSLog(@"set:%@", name);
+    return false;
+}
+
+- (bool) cy$deleteProperty:(NSString *)name {
+    NSLog(@"delete:%@", name);
+    return false;
 }
 
 @end
@@ -320,6 +338,38 @@ JSValueRef CYJSUndefined(JSContextRef context) {
     return json;
 }
 
+- (NSObject *) cy$getProperty:(NSString *)name {
+    int index([name intValue]);
+    if (index < 0 || index >= static_cast<int>([self count]))
+        return [super cy$getProperty:name];
+    else
+        return [self objectAtIndex:index];
+}
+
+@end
+
+@implementation NSMutableArray (Cycript)
+
+- (bool) cy$setProperty:(NSString *)name to:(NSObject *)value {
+    int index([name intValue]);
+    if (index < 0 || index >= static_cast<int>([self count]))
+        return [super cy$setProperty:name to:value];
+    else {
+        [self replaceObjectAtIndex:index withObject:value];
+        return true;
+    }
+}
+
+- (bool) cy$deleteProperty:(NSString *)name {
+    int index([name intValue]);
+    if (index < 0 || index >= static_cast<int>([self count]))
+        return [super cy$deleteProperty:name];
+    else {
+        [self removeObjectAtIndex:index];
+        return true;
+    }
+}
+
 @end
 
 @implementation NSDictionary (Cycript)
@@ -342,6 +392,28 @@ JSValueRef CYJSUndefined(JSContextRef context) {
 
     [json appendString:@"})"];
     return json;
+}
+
+- (NSObject *) cy$getProperty:(NSString *)name {
+    return [self objectForKey:name];
+}
+
+@end
+
+@implementation NSMutableDictionary (Cycript)
+
+- (bool) cy$setProperty:(NSString *)name to:(NSObject *)value {
+    [self setObject:value forKey:name];
+    return true;
+}
+
+- (bool) cy$deleteProperty:(NSString *)name {
+    if ([self objectForKey:name] == nil)
+        return false;
+    else {
+        [self removeObjectForKey:name];
+        return true;
+    }
 }
 
 @end
@@ -826,27 +898,29 @@ static void OnAccept(CFSocketRef socket, CFSocketCallBackType type, CFDataRef ad
 static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
     CYTry {
         CYPool pool;
+        NSString *self(CYCastNSObject(pool, context, object));
         NSString *name(CYCastNSString(pool, property));
-        NSLog(@"get:%@", name);
-        return NULL;
+        NSObject *data([self cy$getProperty:name]);
+        return data == nil ? NULL : CYCastJSValue(context, data);
     } CYCatch
 }
 
 static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) {
     CYTry {
         CYPool pool;
+        NSString *self(CYCastNSObject(pool, context, object));
         NSString *name(CYCastNSString(pool, property));
-        NSLog(@"set:%@", name);
-        return false;
+        NSString *data(CYCastNSObject(pool, context, value));
+        return [self cy$setProperty:name to:data];
     } CYCatch
 }
 
 static bool Instance_deleteProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
     CYTry {
         CYPool pool;
+        NSString *self(CYCastNSObject(pool, context, object));
         NSString *name(CYCastNSString(pool, property));
-        NSLog(@"delete:%@", name);
-        return false;
+        return [self cy$deleteProperty:name];
     } CYCatch
 }
 
