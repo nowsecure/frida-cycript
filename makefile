@@ -25,7 +25,7 @@ libcycript.plist: Bridge.def
 	        if [[ $$1 =~ [#fl:] ]]; then \
 	            continue; \
 	        fi; \
-	        echo "$$2 = ($$1, \"$$3\");";  \
+	        echo "$$2 = ($$1, \"$${3//\"/\\\"}\");";  \
 	    done; \
 	    echo '},{'; \
 	    grep ^: Bridge.def | sed -e 's/^: \([^ ]*\) \(.*\)/"\1" = "\2";/'; \

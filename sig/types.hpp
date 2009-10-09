@@ -62,12 +62,15 @@ struct Type {
         } data;
 
         struct Signature signature;
-        char *extra;
     } data;
 };
 
 struct Type *joc_parse_type(char **name, char eos, bool variable, bool signature);
 void joc_parse_signature(struct Signature *signature, char **name, char eos, bool variable);
+
+_finline bool IsAggregate(Primitive primitive) {
+    return primitive == struct_P || primitive == union_P;
+}
 
 }
 

@@ -1,3 +1,4 @@
 labelled statements don't get labelled
 blocks and empty statements are poorly factored
 functors use both ffiData and ffoData...
+rename "data" variables to "internal"

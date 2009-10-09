@@ -4,6 +4,10 @@ C nil null
 
 : applicationDidFinishLaunching: v@:@
 
+S CGPoint "x"f"y"f
+S CGRect "origin"{CGPoint}"size"{CGSize}
+S CGSize "width"f"height"f
+
 l objc
 
 F class_addIvar B#*LC*
