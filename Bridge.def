@@ -437,24 +437,6 @@ V kABWorkLabel @
 V kABHomeLabel @
 V kABOtherLabel @
 
-f CoreLocation
-
-V kCLLocationAccuracyBest d
-V kCLLocationAccuracyNearestTenMeters d
-V kCLLocationAccuracyHundredMeters d
-V kCLLocationAccuracyKilometer d
-V kCLLocationAccuracyThreeKilometers d
-
-V kCLDistanceFilterNone d
-V kCLHeadingFilterNone d
-
-C kCLErrorLocationUnknown 0
-C kCLErrorDenied 1
-C kCLErrorNetwork 2
-C kCLErrorHeadingFailure 3
-
-V kCLErrorDomain @
-
 f CoreData
 
 C NSUndefinedAttributeType 0
@@ -606,6 +588,31 @@ C NSCoreDataVersionNumber10_4 46.0
 C NSCoreDataVersionNumber10_4_3 77.0
 C NSCoreDataVersionNumber10_5 185.0
 C NSCoreDataVersionNumber10_5_3 186.0
+
+f CoreFoundation
+
+# XXX: incomplete by any stretch of the imagination
+
+F CFShow v@
+F CFShowStr v@
+
+f CoreLocation
+
+V kCLLocationAccuracyBest d
+V kCLLocationAccuracyNearestTenMeters d
+V kCLLocationAccuracyHundredMeters d
+V kCLLocationAccuracyKilometer d
+V kCLLocationAccuracyThreeKilometers d
+
+V kCLDistanceFilterNone d
+V kCLHeadingFilterNone d
+
+C kCLErrorLocationUnknown 0
+C kCLErrorDenied 1
+C kCLErrorNetwork 2
+C kCLErrorHeadingFailure 3
+
+V kCLErrorDomain @
 
 f MapKit
 
