@@ -2,7 +2,7 @@ C YES true
 C NO false
 C nil null
 
-: applicationDidFinishLaunching: v@:@
+: applicationDidFinishLaunching: v12@0:4@8
 
 S CGPoint "x"f"y"f
 S CGRect "origin"{CGPoint}"size"{CGSize}
@@ -98,6 +98,121 @@ F sel_isEqual B::
 F sel_registerName :*
 
 f UIKit
+
+# UITableView
+
+C UITableViewStylePlain 0
+C UITableViewStyleGrouped 1
+
+C UITableViewScrollPositionNone 0
+C UITableViewScrollPositionTop 1
+C UITableViewScrollPositionMiddle 2
+C UITableViewScrollPositionBottom 3
+
+C UITableViewRowAnimationFade 0
+C UITableViewRowAnimationRight 1
+C UITableViewRowAnimationLeft 2
+C UITableViewRowAnimationTop 3
+C UITableViewRowAnimationTop 4
+C UITableViewRowAnimationNone 5
+
+V UITableViewIndexSearch @
+
+# UITableViewCell
+
+C UITableViewCellStyleDefault 0
+C UITableViewCellStyleValue1 1
+C UITableViewCellStyleValue2 2
+C UITableViewCellStyleSubtitle 3
+
+C UITableViewCellStateDefaultMask 0
+C UITableViewCellStateEditingMask (1<<0)
+C UITableViewCellStateShowingDeleteConfirmationMask (1<<1)
+
+C UITableViewCellSelectionStyleNone 0
+C UITableViewCellSelectionStyleBlue 1
+C UITableViewCellSelectionStyleGray 2
+
+C UITableViewCellEditingStyleNone 0
+C UITableViewCellEditingStyleDelete 1
+C UITableViewCellEditingStyleInsert 2
+
+C UITableViewCellAccessoryNone 0
+C UITableViewCellAccessoryDisclosureIndicator 1
+C UITableViewCellAccessoryDetailDisclosureButton 2
+C UITableViewCellAccessoryCheckmark 3
+
+C UITableViewCellSeparatorStyleNone 0
+C UITableViewCellSeparatorStyleSingleLine 1
+
+# UITableViewDataSource
+
+: tableView:numberOfRowsInSection: i16@0:4@8i12
+: numberOfSectionsInTableView: i12@0:4@8
+: tableView:cellForRowAtIndexPath: @16@0:4@8@12
+: sectionIndexTitlesForTableView: @12@0:4@8
+: tableView:sectionForSectionIndexTitle:atIndex: i20@0:4@8@12i16
+: tableView:titleForHeaderInSection: @16@0:4@8i12
+: tableView:titleForFooterInSection: @16@0:4@8i12
+
+: tableView:commitEditingStyle:forRowAtIndexPath: v20@0:4@8i12@16
+: tableView:canEditRowAtIndexPath: B16@0:4@8@12
+
+: tableView:canMoveRowAtIndexPath: B16@0:4@8@12
+: tableView:moveRowAtIndexPath:toIndexPath: v20@0:4@8@12@16
+
+# UIView
+
+C UIViewAnimationCurveEaseInOut 0
+C UIViewAnimationCurveEaseIn 1
+C UIViewAnimationCurveEaseOut 2
+C UIViewAnimationCurveLinear 3
+
+C UIViewContentModeScaleToFill 0
+C UIViewContentModeScaleAspectFit 1
+C UIViewContentModeScaleAspectFill 2
+C UIViewContentModeRedraw 3
+C UIViewContentModeCenter 4
+C UIViewContentModeTop 5
+C UIViewContentModeBottom 6
+C UIViewContentModeLeft 7
+C UIViewContentModeRight 8
+C UIViewContentModeTopLeft 9
+C UIViewContentModeTopRight 10
+C UIViewContentModeBottomLeft 11
+C UIViewContentModeBottomRight 12
+
+C UIViewAutoresizingNone 0
+C UIViewAutoresizingFlexibleLeftMargin (1<<0)
+C UIViewAutoresizingFlexibleWidth (1<<1)
+C UIViewAutoresizingFlexibleRightMargin (1<<2)
+C UIViewAutoresizingFlexibleTopMargin (1<<3)
+C UIViewAutoresizingFlexibleHeight (1<<4)
+C UIViewAutoresizingFlexibleBottomMargin (1<<5)
+
+C UIViewAnimationTransitionNone 0
+C UIViewAnimationTransitionFlipFromLeft 1
+C UIViewAnimationTransitionFlipFromRight 2
+C UIViewAnimationTransitionCurlUp 3
+C UIViewAnimationTransitionCurlDown 4
+
+# UIWebView
+
+C UIWebViewNavigationTypeLinkClicked 0
+C UIWebViewNavigationTypeFormSubmitted 1
+C UIWebViewNavigationTypeBackForward 2
+C UIWebViewNavigationTypeReload 3
+C UIWebViewNavigationTypeFormResubmitted 4
+C UIWebViewNavigationTypeOther 5
+
+# UIWebViewDelegate
+
+: webView:shouldStartLoadWithRequest:navigationType: B20@0:4@8@12I16
+: webViewDidStartLoad: v12@0:4@8
+: webViewDidFinishLoad: v12@0:4@8
+: webView:didFailLoadWithError: v16@0:4@8@12
+
+# Miscellaneous
 
 F UIApplicationUseLegacyEvents vB
 

@@ -1184,7 +1184,7 @@ ClassMessageDeclaration
     ;
 
 ClassMessageDeclarationListOpt
-    : ClassMessageDeclarationListOpt ClassMessageDeclaration { if ($1) { $1->SetNext($2); $$ = $1; } else $$ = $2; }
+    : ClassMessageDeclarationListOpt ClassMessageDeclaration { $2->SetNext($1); $$ = $2; }
     | { $$ = NULL; }
     ;
 

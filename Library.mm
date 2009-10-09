@@ -356,7 +356,6 @@ JSObjectRef CYMakeStruct(JSContextRef context, void *data, sig::Type *type, ffi_
         internal->value_ = copy;
     }
 
-    NSLog(@"%s", type->name);
     return JSObjectMake(context, Struct_, internal);
 }
 
@@ -1264,8 +1263,11 @@ void CYPoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, ffi_type
             uint8_t *base(reinterpret_cast<uint8_t *>(data));
             bool aggregate(JSValueIsObject(context, value));
             for (size_t index(0); index != type->data.signature.count; ++index) {
+                ffi_type *element(ffi->elements[index]);
                 JSValueRef rhs(aggregate ? CYGetProperty(context, (JSObjectRef) value, index) : value);
-                CYPoolFFI(pool, context, type->data.signature.elements[index].type, ffi->elements[index], base, rhs);
+                CYPoolFFI(pool, context, type->data.signature.elements[index].type, element, base, rhs);
+                // XXX: alignment?
+                base += element->size;
             }
         } break;
 
@@ -1635,10 +1637,9 @@ static JSValueRef Pointer_callAsFunction_valueOf(JSContextRef context, JSObjectR
 static JSValueRef Instance_callAsFunction_toString(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     CYTry {
         Instance_privateData *data(reinterpret_cast<Instance_privateData *>(JSObjectGetPrivate(_this)));
-        NSString *description; CYPoolTry {
-            description = [data->GetValue() description];
+        CYPoolTry {
+            return CYCastJSValue(context, CYJSString([data->GetValue() description]));
         } CYPoolCatch(NULL)
-        return CYCastJSValue(context, CYJSString(description));
     } CYCatch
 }
 

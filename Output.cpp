@@ -353,6 +353,8 @@ void CYMember::Output(std::ostream &out, CYFlags flags) const {
 }
 
 void CYMessage::Output(std::ostream &out) const {
+    if (next_ != NULL)
+        next_->Output(out);
     out << "$cyn=new Selector(\"";
     for (CYMessageParameter *parameter(parameter_); parameter != NULL; parameter = parameter->next_)
         if (parameter->tag_ != NULL) {
