@@ -428,7 +428,8 @@ void CYPrefix::Output(std::ostream &out, CYFlags flags) const {
 }
 
 void CYProperty::Output(std::ostream &out) const {
-    out << *name_ << ':';
+    out << *name_;
+    out << ':';
     value_->Output(out, CYPA, CYNoFlags);
     if (next_ != NULL) {
         out << ',';

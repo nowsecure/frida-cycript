@@ -3,10 +3,10 @@ Priority: optional
 Section: Development
 Maintainer: Jay Freeman (saurik) <saurik@saurik.com>
 Architecture: iphoneos-arm
-Version: 0.9.3-1
+Version: 0.9.65-1
 Description: runtime execution server and disassembler
 Name: Cycript
-Depends: mobilesubstrate (>= 0.9.3005-1), readline
+Depends: mobilesubstrate (>= 0.9.3005-1), readline, libffi
 Author: Jay Freeman (saurik) <saurik@saurik.com>
 Depiction: http://cydia.saurik.com/info/cycript/
 Tag: purpose::daemon, role::developer

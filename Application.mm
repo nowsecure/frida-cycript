@@ -24,9 +24,11 @@
 
 static jmp_buf ctrlc_;
 
-void sigint(int) {
+static void sigint(int) {
     longjmp(ctrlc_, 1);
 }
+
+static JSStringRef Result_;
 
 void Run(const char *code, FILE *fout) { _pooled
     JSStringRef script(JSStringCreateWithUTF8CString(code));
@@ -50,6 +52,8 @@ void Run(const char *code, FILE *fout) { _pooled
         if (exception != NULL)
             goto error;
 
+        CYSetProperty(context, CYGetGlobalObject(context), Result_, result);
+
         if (fout != NULL) {
             fputs(json, fout);
             fputs("\n", fout);
@@ -58,7 +62,7 @@ void Run(const char *code, FILE *fout) { _pooled
     }
 }
 
-void Console() {
+static void Console() {
     bool bypass(false);
     bool debug(false);
 
@@ -160,7 +164,7 @@ void Console() {
     fflush(fout);
 }
 
-void *Map(const char *path, size_t *psize) {
+static void *Map(const char *path, size_t *psize) {
     int fd;
     _syscall(fd = open(path, O_RDONLY));
 
@@ -186,6 +190,8 @@ int main(int argc, const char *argv[]) {
         CYSetArgs(argc - 1, argv + 1);
         script = argv[1];
     }
+
+    Result_ = CYCopyJSString("_");
 
     if (script == NULL || strcmp(script, "-") == 0)
         Console();

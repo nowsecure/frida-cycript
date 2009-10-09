@@ -1725,6 +1725,10 @@ void CYSetArgs(int argc, const char *argv[]) {
     CYSetProperty(context, System_, CYJSString("args"), array);
 }
 
+JSObjectRef CYGetGlobalObject(JSContextRef context) {
+    return JSContextGetGlobalObject(context);
+}
+
 MSInitialize { _pooled
     apr_initialize();
 
@@ -1807,10 +1811,10 @@ MSInitialize { _pooled
     JSGlobalContextRef context(JSGlobalContextCreate(Global));
     Context_ = context;
 
-    JSObjectRef global(JSContextGetGlobalObject(context));
+    JSObjectRef global(CYGetGlobalObject(context));
 
     JSObjectSetPrototype(context, global, JSObjectMake(context, Runtime_, NULL));
-    CYSetProperty(context, global, CYJSString("obc"), JSObjectMake(context, Runtime_, NULL));
+    CYSetProperty(context, global, CYJSString("ObjectiveC"), JSObjectMake(context, Runtime_, NULL));
 
     CYSetProperty(context, global, CYJSString("Selector"), JSObjectMakeConstructor(context, Selector_, &Selector_new));
     CYSetProperty(context, global, CYJSString("Functor"), JSObjectMakeConstructor(context, Functor_, &Functor_new));
@@ -1821,7 +1825,7 @@ MSInitialize { _pooled
     System_ = JSObjectMake(context, NULL, NULL);
     CYSetProperty(context, global, CYJSString("system"), System_);
     CYSetProperty(context, System_, CYJSString("args"), CYJSNull(context));
-    CYSetProperty(context, System_, CYJSString("global"), global);
+    //CYSetProperty(context, System_, CYJSString("global"), global);
 
     CYSetProperty(context, System_, CYJSString("print"), JSObjectMakeFunctionWithCallback(context, CYJSString("print"), &System_print));
 
