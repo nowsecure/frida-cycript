@@ -1351,21 +1351,26 @@ JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void 
     return value;
 }
 
-void Index_(Struct_privateData *internal, double number, ssize_t &index, uint8_t *&base) {
+bool Index_(apr_pool_t *pool, Struct_privateData *internal, JSStringRef property, ssize_t &index, uint8_t *&base) {
     Type_privateData *typical(internal->type_);
 
+    size_t length;
+    const char *name(CYPoolCString(pool, property, &length));
+    double number(CYCastDouble(name, length));
+
+    if (std::isnan(number))
+        // XXX: implement!
+        return false;
+
     index = static_cast<ssize_t>(number);
-    if (index != number)
-        @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"struct index non-integral" userInfo:nil];
-    if (index < 0)
-        @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"struct index negative" userInfo:nil];
+    if (index != number || index < 0 || static_cast<size_t>(index) >= typical->type_.data.signature.count)
+        return false;
 
     base = reinterpret_cast<uint8_t *>(internal->value_);
     for (ssize_t local(0); local != index; ++local)
-        if (ffi_type *element = typical->ffi_.elements[local])
-            base += element->size;
-        else
-            @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"struct index out-of-range" userInfo:nil];
+        base += typical->ffi_.elements[local]->size;
+
+    return true;
 }
 
 static JSValueRef Struct_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
@@ -1374,19 +1379,11 @@ static JSValueRef Struct_getProperty(JSContextRef context, JSObjectRef object, J
         Struct_privateData *internal(reinterpret_cast<Struct_privateData *>(JSObjectGetPrivate(object)));
         Type_privateData *typical(internal->type_);
 
-        size_t length;
-        const char *name(CYPoolCString(pool, property, &length));
-        double number(CYCastDouble(name, length));
-
-        if (std::isnan(number)) {
-            // XXX: implement!
-            return NULL;
-        }
-
         ssize_t index;
         uint8_t *base;
 
-        Index_(internal, number, index, base);
+        if (!Index_(pool, internal, property, index, base))
+            return NULL;
 
         return CYFromFFI(context, typical->type_.data.signature.elements[index].type, typical->ffi_.elements[index], base, object);
     } CYCatch
@@ -1398,19 +1395,11 @@ static bool Struct_setProperty(JSContextRef context, JSObjectRef object, JSStrin
         Struct_privateData *internal(reinterpret_cast<Struct_privateData *>(JSObjectGetPrivate(object)));
         Type_privateData *typical(internal->type_);
 
-        size_t length;
-        const char *name(CYPoolCString(pool, property, &length));
-        double number(CYCastDouble(name, length));
-
-        if (std::isnan(number)) {
-            // XXX: implement!
-            return false;
-        }
-
         ssize_t index;
         uint8_t *base;
 
-        Index_(internal, number, index, base);
+        if (!Index_(pool, internal, property, index, base))
+            return false;
 
         CYPoolFFI(NULL, context, typical->type_.data.signature.elements[index].type, typical->ffi_.elements[index], base, value);
         return true;

@@ -9,6 +9,9 @@ package:
 flags := -mthumb -g3 -O0 -Wall -Werror -I. -fno-common
 flags += -F${PKG_ROOT}/System/Library/PrivateFrameworks
 
+svn := $(shell svnversion)
+deb := $(shell grep ^Package: control | cut -d ' ' -f 2-)_$(shell grep ^Version: control | cut -d ' ' -f 2 | sed -e 's/\#/$(svn)/')_iphoneos-arm.deb
+
 all: cycript libcycript.dylib libcycript.plist
 
 clean:
@@ -73,7 +76,7 @@ cycript: Application.o libcycript.dylib
 package: all
 	rm -rf package
 	mkdir -p package/DEBIAN
-	cp -a control package/DEBIAN
+	sed -e 's/#/$(svn)/' control >package/DEBIAN/control
 	mkdir -p package/Library/MobileSubstrate/DynamicLibraries
 	if [[ -e Settings.plist ]]; then \
 	    mkdir -p package/Library/PreferenceLoader/Preferences; \
@@ -87,10 +90,10 @@ package: all
 	#ln -s /usr/lib/libcycript.dylib package/Library/MobileSubstrate/DynamicLibraries/Cycript.dylib
 	cp -a cycript package/usr/bin
 	cp -a libcycript.plist package/usr/lib
-	dpkg-deb -b package $(shell grep ^Package: control | cut -d ' ' -f 2-)_$(shell grep ^Version: control | cut -d ' ' -f 2)_iphoneos-arm.deb
+	dpkg-deb -b package $(deb)
 
 test: package
-	dpkg -i $(shell grep ^Package: control | cut -d ' ' -f 2-)_$(shell grep ^Version: control | cut -d ' ' -f 2)_iphoneos-arm.deb
+	dpkg -i $(deb)
 	cycript test.cy
 
 .PHONY: all clean extra package

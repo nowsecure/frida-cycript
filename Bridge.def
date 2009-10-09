@@ -99,6 +99,62 @@ F sel_registerName :*
 
 f UIKit
 
+C UIBarStyleDefault 0
+C UIBarStyleBlack 1
+C UIBarStyleBlackOpaque 2
+C UIBarStyleBlackTranslucent 3
+
+C UIDataDetectorTypePhoneNumber (1<<0)
+C UIDataDetectorTypeLink (1<<1)
+C UIDataDetectorTypeNone 0
+# XXX: NSUIntegerMax
+C UIDataDetectorTypeAll -1
+
+# UINavigationBar
+
+# UINavigationController
+
+V UINavigationControllerHideShowBarDuration f
+
+# UINavigationControllerDelegate
+
+: navigationController:willShowViewController:animated: v20@0:4@8@12B16
+: navigationController:didShowViewController:animated: v20@0:4@8@12B16
+
+# UIScrollView
+
+C UIScrollViewIndicatorStyleDefault 0
+C UIScrollViewIndicatorStyleBlack 1
+C UIScrollViewIndicatorStyleWhite 2
+
+V UIScrollViewDecelerationRateNormal f
+V UIScrollViewDecelerationRateFast f
+
+# UIScrollViewDelegate
+
+: scrollViewDidScroll: v12@0:4@8
+: scrollViewWillBeginDragging: v12@0:4@8
+: scrollViewDidEndDragging:willDecelerate: v16@0:4@8B12
+: scrollViewShouldScrollToTop: B12@0:4@8
+: scrollViewDidScrollToTop: v12@0:4@8
+: scrollViewWillBeginDecelerating: v12@0:4@8
+: scrollViewDidEndDecelerating: v12@0:4@8
+
+: viewForZoomingInScrollView: @12@0:4@8
+: scrollViewDidEndZooming:withView:atScale: v20@0:4@8@12f16
+
+: scrollViewDidEndScrollingAnimation: v12@0:4@8
+
+# UITabBar
+
+# UITabBarDelegate
+
+: tabBar:willBeginCustomizingItems: v16@0:4@8@12
+: tabBar:didBeginCustomizingItems: v16@0:4@8@12
+: tabBar:willBeginCustomizingItems:changed: v20@0:4@8@12B16
+: tabBar:didBeginCustomizingItems:changed: v20@0:4@8@12B16
+: tabBar:didSelectItem: v16@0:4@8@12
+
 # UITableView
 
 C UITableViewStylePlain 0
@@ -145,6 +201,8 @@ C UITableViewCellAccessoryCheckmark 3
 C UITableViewCellSeparatorStyleNone 0
 C UITableViewCellSeparatorStyleSingleLine 1
 
+# UITableViewController
+
 # UITableViewDataSource
 
 : tableView:numberOfRowsInSection: i16@0:4@8i12
@@ -160,6 +218,8 @@ C UITableViewCellSeparatorStyleSingleLine 1
 
 : tableView:canMoveRowAtIndexPath: B16@0:4@8@12
 : tableView:moveRowAtIndexPath:toIndexPath: v20@0:4@8@12@16
+
+# UIToolbar
 
 # UIView
 
@@ -196,6 +256,12 @@ C UIViewAnimationTransitionFlipFromRight 2
 C UIViewAnimationTransitionCurlUp 3
 C UIViewAnimationTransitionCurlDown 4
 
+# UIViewController
+
+C UIModalTransitionStyleCoverVertical 0
+C UIModalTransitionStyleFlipHorizontal 1
+C UIModalTransitionStyleCrossDissolve 2
+
 # UIWebView
 
 C UIWebViewNavigationTypeLinkClicked 0
@@ -212,20 +278,56 @@ C UIWebViewNavigationTypeOther 5
 : webViewDidFinishLoad: v12@0:4@8
 : webView:didFailLoadWithError: v16@0:4@8@12
 
-# Miscellaneous
+# Functions
 
-F UIApplicationUseLegacyEvents vB
-
-F UIAccessibilityPostNotification vI@
 F UIApplicationMain ii^^c@@
-F UIGraphicsEndImageContext v
-F UIGraphicsGetCurrentContext @
-F UIGraphicsGetImageFromCurrentImageContext @
-F UIGraphicsPopContext v
-F UIGraphicsPushContext v@
+
 F UIImageJPEGRepresentation @@
 F UIImagePNGRepresentation @@
 F UIImageWriteToSavedPhotosAlbum v@@:^v
+
+F UISaveVideoAtPathToSavedPhotosAlbum v@@:^v
+F UIVideoAtPathIsCompatibleWithSavedPhotosAlbum B@
+
+F UIGraphicsGetCurrentContext @
+F UIGraphicsPushContext v@
+F UIGraphicsPopContext v
+F UIGraphicsBeginImageContext v{CGSize=ff}
+F UIGraphicsGetImageFromCurrentImageContext @
+F UIGraphicsEndImageContext v
+F UIRectClip v{CGRect={CGPoint=ff}{CGSize=ff}}
+F UIRectFill v{CGRect={CGPoint=ff}{CGSize=ff}}
+F UIRectFillUsingBlendMode v{CGRect={CGPoint=ff}{CGSize=ff}}i
+F UIRectFrame v{CGRect={CGPoint=ff}{CGSize=ff}}
+F UIRectFrameUsingBlendMode v{CGRect={CGPoint=ff}{CGSize=ff}}i
+
+F CGPointFromString {CGPoint=ff}@
+F CGRectFromString  {CGRect={CGPoint=ff}{CGSize=ff}}@
+F CGSizeFromString {CGSize=ff}@
+F CGAffineTransformFromString {CGAffineTransform=ffffff}@
+F UIEdgeInsetsFromString {UIEdgeInsets=ffff}@
+F NSStringFromCGPoint @{CGPoint=ff}
+F NSStringFromCGRect @{CGRect={CGPoint=ff}{CGSize=ff}}
+F NSStringFromCGSize @{CGSize=ff}
+F NSStringFromCGAffineTransform @{CGAffineTransform=ffffff}
+F NSStringFromUIEdgeInsets @{UIEdgeInsets=ffff}
+
+F UIEdgeInsetsMake {UIEdgeInsets=ffff}ffff
+F UIEdgeInsetsEqualToEdgeInsets B{UIEdgeInsets=ffff}{UIEdgeInsets=ffff}
+F UIEdgeInsetsInsetRect {CGRect={CGPoint=ff}{CGSize=ff}}{CGRect={CGPoint=ff}{CGSize=ff}}{UIEdgeInsets=ffff}
+
+# XXX: UIInterfaceOrientationIsPortrait
+# XXX: UIInterfaceOrientationIsLandscape
+
+# XXX: UIDeviceOrientationIsValidInterfaceOrientation
+# XXX: UIDeviceOrientationIsPortrait
+# XXX: UIDeviceOrientationIsLandscape
+
+F UIAccessibilityPostNotification vI@
+
+# Miscellaneous
+
+F UIApplicationUseLegacyEvents vB
 
 F UIKeyboardDisableAutomaticAppearance v
 F UIKeyboardEnableAutomaticAppearance v
@@ -595,6 +697,32 @@ f CoreFoundation
 
 F CFShow v@
 F CFShowStr v@
+
+f CoreGraphics
+
+# CGAffineTransform
+
+F CGAffineTransformMake {CGAffineTransform=ffffff}ffffff
+F CGAffineTransformMakeRotation {CGAffineTransform=ffffff}f
+F CGAffineTransformMakeScale {CGAffineTransform=ffffff}ff
+F CGAffineTransformMakeTranslation {CGAffineTransform=ffffff}ff
+
+F CGAffineTransformTranslate {CGAffineTransform=ffffff}{CGAffineTransform=ffffff}ff
+F CGAffineTransformScale {CGAffineTransform=ffffff}{CGAffineTransform=ffffff}ff
+F CGAffineTransformRotate {CGAffineTransform=ffffff}{CGAffineTransform=ffffff}f
+F CGAffineTransformInvert {CGAffineTransform=ffffff}{CGAffineTransform=ffffff}
+F CGAffineTransformConcat {CGAffineTransform=ffffff}{CGAffineTransform=ffffff}{CGAffineTransform=ffffff}
+
+F CGPointApplyAffineTransform {CGPoint=ff}{CGPoint=ff}{CGAffineTransform=ffffff}
+F CGSizeApplyAffineTransform {CGSize=ff}{CGSize=ff}{CGAffineTransform=ffffff}
+F CGRectApplyAffineTransform {CGRect={CGPoint=ff}{CGSize=ff}}{CGRect={CGPoint=ff}{CGSize=ff}}{CGAffineTransform=ffffff}
+
+F CGAffineTransformIsIdentity B{CGAffineTransform=ffffff}
+F CGAffineTransformEqualToTransform B{CGAffineTransform=ffffff}{CGAffineTransform=ffffff}
+
+S CGAffineTransform "a"f"b"f"c"f"d"f"tx"f"ty"f
+
+V CGAffineTransformIdentity {CGAffineTransform=ffffff}
 
 f CoreLocation
 
