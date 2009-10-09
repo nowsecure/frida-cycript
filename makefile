@@ -16,6 +16,7 @@ clean:
 
 libcycript.plist: Bridge.def
 	{ \
+	    echo '({'; \
 	    sed -e 's/^C/0/;s/^F/1/;s/^V/2/' Bridge.def | while read -r line; do \
 	        if [[ $$line == '' ]]; then \
 	            continue; \
@@ -26,7 +27,9 @@ libcycript.plist: Bridge.def
 	        fi; \
 	        echo "$$2 = ($$1, \"$$3\");";  \
 	    done; \
-	    grep ^: Bridge.def | sed -e 's/^: \([^ ]*\) \(.*\)/":\1" = "\2";/'; \
+	    echo '},{'; \
+	    grep ^: Bridge.def | sed -e 's/^: \([^ ]*\) \(.*\)/"\1" = "\2";/'; \
+	    echo '})'; \
 	} >$@
 
 Cycript.tab.cc Cycript.tab.hh location.hh position.hh: Cycript.y
@@ -88,6 +91,6 @@ package: all
 
 test: package
 	dpkg -i $(shell grep ^Package: control | cut -d ' ' -f 2-)_$(shell grep ^Version: control | cut -d ' ' -f 2)_iphoneos-arm.deb
-	cycript /Applications/HelloCycript.app/HelloCycript
+	cycript test.cy
 
 .PHONY: all clean extra package

@@ -2,6 +2,8 @@ C YES true
 C NO false
 C nil null
 
+: applicationDidFinishLaunching: v@:@
+
 l objc
 
 F class_addIvar B#*LC*
@@ -507,4 +509,22 @@ C MKPinAnnotationColorPurple 2
 # MKCoordinateRegionMakeWithDistance
 # MKCoordinateSpanMake
 
-: applicationDidFinishLaunching: v@:@
+C RTLD_LAZY 0x1
+C RTLD_NOW 0x2
+C RTLD_LOCAL 0x4
+C RTLD_GLOBAL 0x8
+
+C RTLD_NOLOAD 0x10
+C RTLD_NODELETE 0x80
+C RTLD_FIRST 0x100
+
+C RTLD_NEXT -1
+C RTLD_DEFAULT -2
+C RTLD_SELF -3
+
+# XXX: dladdr
+F dlclose i^v
+F dlerror *
+F dlopen ^v*i
+F dlsym ^v^v*
+F dlopen_preflight B*
