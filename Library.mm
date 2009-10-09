@@ -661,7 +661,6 @@ JSGlobalContextRef CYGetJSContext() {
     @try
 #define CYCatch \
     @catch (id error) { \
-        NSLog(@"e:%@", error); \
         CYThrow(context, error, exception); \
         return NULL; \
     }
