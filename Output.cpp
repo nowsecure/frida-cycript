@@ -3,6 +3,9 @@
 #include <iostream>
 #include <iomanip>
 
+#include <objc/runtime.h>
+#include <sstream>
+
 _finline CYFlags operator ~(CYFlags rhs) {
     return static_cast<CYFlags>(~static_cast<unsigned>(rhs));
 }
@@ -463,14 +466,15 @@ void CYSelectorPart::Output(std::ostream &out) const {
 void CYSend::Output(std::ostream &out, CYFlags flags) const {
     out << "objc_msgSend(";
     self_->Output(out, CYPA, CYNoFlags);
-    out << ",\"";
+    out << ",";
+    std::ostringstream name;
     for (CYArgument *argument(arguments_); argument != NULL; argument = argument->next_)
         if (argument->name_ != NULL) {
-            out << *argument->name_;
+            name << *argument->name_;
             if (argument->value_ != NULL)
-                out << ':';
+                name << ':';
         }
-    out << "\"";
+    out << reinterpret_cast<void *>(sel_registerName(name.str().c_str()));
     for (CYArgument *argument(arguments_); argument != NULL; argument = argument->next_)
         if (argument->value_ != NULL) {
             out << ",";

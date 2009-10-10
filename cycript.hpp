@@ -48,12 +48,21 @@
 #include <JavaScriptCore/JSStringRefCF.h>
 
 #include <apr-1/apr_pools.h>
+#include <ffi.h>
+
+#include <sig/types.hpp>
 
 JSGlobalContextRef CYGetJSContext();
-const char *CYPoolCYONString(apr_pool_t *pool, JSContextRef context, JSValueRef value, JSValueRef *exception);
-void CYSetArgs(int argc, const char *argv[]);
-void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef value);
 JSObjectRef CYGetGlobalObject(JSContextRef context);
+
+void CYSetArgs(int argc, const char *argv[]);
+
+const char *CYPoolCYONString(apr_pool_t *pool, JSContextRef context, JSValueRef value, JSValueRef *exception);
 JSStringRef CYCopyJSString(const char *value);
+
+void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef value);
+
+JSValueRef CYCallFunction(apr_pool_t *pool, JSContextRef context, size_t setups, void *setup[], size_t count, const JSValueRef *arguments, JSValueRef *exception, sig::Signature *signature, ffi_cif *cif, void (*function)());
+JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, SEL _cmd, size_t count, const JSValueRef arguments[], JSValueRef *exception);
 
 #endif/*CYCRIPT_HPP*/

@@ -278,6 +278,18 @@ C UIWebViewNavigationTypeOther 5
 : webViewDidFinishLoad: v12@0:4@8
 : webView:didFailLoadWithError: v16@0:4@8@12
 
+# UIWindow
+
+V UIWindowLevelNormal f
+V UIWindowLevelAlert f
+V UIWindowLevelStatusBar f
+
+V UIKeyboardCenterBeginUserInfoKey @
+V UIKeyboardCenterEndUserInfoKey @
+V UIKeyboardBoundsUserInfoKey @
+V UIKeyboardAnimationCurveUserInfoKey @
+V UIKeyboardAnimationDurationUserInfoKey @
+
 # Functions
 
 F UIApplicationMain ii^^c@@
