@@ -1358,13 +1358,17 @@ bool Index_(apr_pool_t *pool, Struct_privateData *internal, JSStringRef property
     const char *name(CYPoolCString(pool, property, &length));
     double number(CYCastDouble(name, length));
 
-    if (std::isnan(number))
+    if (std::isnan(number)) {
+        if (property == NULL)
+            return false;
+
         // XXX: implement!
         return false;
-
-    index = static_cast<ssize_t>(number);
-    if (index != number || index < 0 || static_cast<size_t>(index) >= typical->type_.data.signature.count)
-        return false;
+    } else {
+        index = static_cast<ssize_t>(number);
+        if (index != number || index < 0 || static_cast<size_t>(index) >= typical->type_.data.signature.count)
+            return false;
+    }
 
     base = reinterpret_cast<uint8_t *>(internal->value_);
     for (ssize_t local(0); local != index; ++local)
