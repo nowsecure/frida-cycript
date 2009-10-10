@@ -51,10 +51,8 @@
 
 namespace sig {
 
-void (*sig_aggregate)(apr_pool_t *pool, enum Primitive primitive, const char *name, struct Signature *signature, const char *types) = NULL;
-
-void Parse_(apr_pool_t *pool, struct Signature *signature, const char **name, char eos);
-struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named);
+void Parse_(apr_pool_t *pool, struct Signature *signature, const char **name, char eos, Callback callback);
+struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named, Callback callback);
 
 
 /* XXX: I really screwed up this time */
@@ -64,10 +62,11 @@ void *prealloc_(apr_pool_t *pool, void *odata, size_t osize, size_t nsize) {
     return ndata;
 }
 
-void Parse_(apr_pool_t *pool, struct Signature *signature, const char **name, char eos) {
+void Parse_(apr_pool_t *pool, struct Signature *signature, const char **name, char eos, Callback callback) {
     _assert(*name != NULL);
 
-    bool named = **name == '"';
+    // XXX: this is just a stupid check :(
+    bool named(**name == '"');
 
     signature->elements = NULL;
     signature->count = 0;
@@ -91,7 +90,7 @@ void Parse_(apr_pool_t *pool, struct Signature *signature, const char **name, ch
             *name = quote + 1;
         }
 
-        element->type = Parse_(pool, name, eos, named);
+        element->type = Parse_(pool, name, eos, named, callback);
 
         if (**name < '0' || **name > '9')
             element->offset = _not(size_t);
@@ -105,7 +104,7 @@ void Parse_(apr_pool_t *pool, struct Signature *signature, const char **name, ch
     }
 }
 
-struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named) {
+struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named, Callback callback) {
     char next = *(*name)++;
     if (next == '?')
         return NULL;
@@ -148,7 +147,7 @@ struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named) {
         case '[':
             type->primitive = array_P;
             type->data.data.size = strtoul(*name, (char **) name, 10);
-            type->data.data.type = Parse_(pool, name, eos, false);
+            type->data.data.type = Parse_(pool, name, eos, false, callback);
             if (**name != ']') {
                 printf("']' != \"%s\"\n", *name);
                 _assert(false);
@@ -164,7 +163,7 @@ struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named) {
             } else if (**name == '"') {
                 type->data.data.type = NULL;
             } else {
-                type->data.data.type = Parse_(pool, name, eos, named);
+                type->data.data.type = Parse_(pool, name, eos, named, callback);
             }
         break;
 
@@ -201,24 +200,19 @@ struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named) {
             else
                 type->name = NULL;
 
+            // XXX: this types thing is a throwback to JocStrap
+
             char *types;
-            if (next != '=')
+            if (next != '=') {
                 types = NULL;
-            else {
-                const char *temp = *name;
-                Parse_(pool, &type->data.signature, name, end);
+            } else {
+                const char *temp(*name);
+                Parse_(pool, &type->data.signature, name, end, callback);
                 types = (char *) apr_pstrmemdup(pool, temp, *name - temp - 1);
             }
 
-            if (type->name != NULL && sig_aggregate != NULL) {
-                char *angle = strchr(type->name, '<');
-                if (angle == NULL)
-                    (*sig_aggregate)(pool, type->primitive, type->name, &type->data.signature, types);
-                else {
-                    angle = (char *) apr_pstrmemdup(pool, type->name, angle - type->name);
-                    (*sig_aggregate)(pool, type->primitive, angle, &type->data.signature, types);
-                }
-            }
+            if (callback != NULL)
+                (*callback)(pool, type->name, types, type);
         } break;
 
         case 'N': type->flags |= JOC_TYPE_INOUT; goto next;
@@ -242,9 +236,9 @@ struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named) {
     return type;
 }
 
-void Parse(apr_pool_t *pool, struct Signature *signature, const char *name) {
+void Parse(apr_pool_t *pool, struct Signature *signature, const char *name, Callback callback) {
     const char *temp = name;
-    Parse_(pool, signature, &temp, '\0');
+    Parse_(pool, signature, &temp, '\0', callback);
     _assert(temp[-1] == '\0');
 }
 

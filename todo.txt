@@ -1,6 +1,5 @@
 labelled statements don't get labelled
 blocks and empty statements are poorly factored
-property labels should get minimized
 functors use both ffiData and ffoData...
 rename "data" variables to "internal"
 unicode identifier support (native and \u)

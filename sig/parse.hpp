@@ -46,9 +46,8 @@
 
 namespace sig {
 
-extern void (*sig_aggregate)(apr_pool_t *pool, enum Primitive primitive, const char *name, struct Signature *signature, const char *types);
-
-void Parse(apr_pool_t *pool, struct Signature *signature, const char *name);
+typedef void (*Callback)(apr_pool_t *pool, const char *name, const char *types, Type *type);
+void Parse(apr_pool_t *pool, struct Signature *signature, const char *name, Callback callback);
 
 const char *Unparse(apr_pool_t *pool, struct Signature *signature);
 const char *Unparse(apr_pool_t *pool, struct Type *type);

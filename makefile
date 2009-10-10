@@ -20,18 +20,20 @@ clean:
 libcycript.plist: Bridge.def
 	{ \
 	    echo '({'; \
-	    sed -e 's/^C/0/;s/^F/1/;s/^V/2/' Bridge.def | while read -r line; do \
+	    grep '^[CFV]' Bridge.def | sed -e 's/^C/0/;s/^F/1/;s/^V/2/' | while read -r line; do \
 	        if [[ $$line == '' ]]; then \
 	            continue; \
 	        fi; \
 	        set $$line; \
-	        if [[ $$1 =~ [#fl:] ]]; then \
-	            continue; \
-	        fi; \
 	        echo "$$2 = ($$1, \"$${3//\"/\\\"}\");";  \
 	    done; \
 	    echo '},{'; \
-	    grep ^: Bridge.def | sed -e 's/^: \([^ ]*\) \(.*\)/"\1" = "\2";/'; \
+	    grep '^:' Bridge.def | sed -e 's/^: \([^ ]*\) \(.*\)/"\1" = "\2";/'; \
+	    echo '},{'; \
+	    grep '^S' Bridge.def | sed -e 's/^S/0/' | while read -r line; do \
+	        set $$line; \
+	        echo "$$2 = ($$1, \"$${3//\"/\\\"}\");";  \
+	    done; \
 	    echo '})'; \
 	} >$@
 

@@ -157,32 +157,6 @@ struct Pointer_privateData :
     }
 };
 
-struct Functor_privateData :
-    Pointer_privateData
-{
-    sig::Signature signature_;
-    ffi_cif cif_;
-
-    Functor_privateData(const char *type, void (*value)()) :
-        Pointer_privateData(reinterpret_cast<void *>(value))
-    {
-        sig::Parse(pool_, &signature_, type);
-        sig::sig_ffi_cif(pool_, &sig::ObjectiveC, &signature_, &cif_);
-    }
-};
-
-struct ffoData :
-    Functor_privateData
-{
-    JSContextRef context_;
-    JSObjectRef function_;
-
-    ffoData(const char *type) :
-        Functor_privateData(type, NULL)
-    {
-    }
-};
-
 struct Selector_privateData : Pointer_privateData {
     Selector_privateData(SEL value) :
         Pointer_privateData(value)
@@ -279,6 +253,14 @@ void Copy(apr_pool_t *pool, ffi_type &lhs, ffi_type &rhs) {
 
 }
 
+struct CStringMapLess :
+    std::binary_function<const char *, const char *, bool>
+{
+    _finline bool operator ()(const char *lhs, const char *rhs) const {
+        return strcmp(lhs, rhs) < 0;
+    }
+};
+
 struct Type_privateData {
     sig::Type type_;
     ffi_type ffi_;
@@ -296,14 +278,6 @@ struct Struct_privateData :
     Type_privateData *type_;
 
     Struct_privateData() {
-    }
-};
-
-struct CStringMapLess :
-    std::binary_function<const char *, const char *, bool>
-{
-    _finline bool operator ()(const char *lhs, const char *rhs) const {
-        return strcmp(lhs, rhs) < 0;
     }
 };
 
@@ -330,6 +304,45 @@ JSObjectRef CYMakeStruct(JSContextRef context, void *data, sig::Type *type, ffi_
 
     return JSObjectMake(context, Struct_, internal);
 }
+
+void Structor_(apr_pool_t *pool, const char *name, const char *types, sig::Type *type) {
+    CYPoolTry {
+        if (NSMutableArray *entry = [[Bridge_ objectAtIndex:2] objectForKey:[NSString stringWithUTF8String:name]]) {
+            switch ([[entry objectAtIndex:0] intValue]) {
+                case 0:
+                    static CYPool Pool_;
+                    sig::Parse(Pool_, &type->data.signature, [[entry objectAtIndex:1] UTF8String], &Structor_);
+                break;
+            }
+        }
+    } CYPoolCatch()
+}
+
+struct Functor_privateData :
+    Pointer_privateData
+{
+    sig::Signature signature_;
+    ffi_cif cif_;
+
+    Functor_privateData(const char *type, void (*value)()) :
+        Pointer_privateData(reinterpret_cast<void *>(value))
+    {
+        sig::Parse(pool_, &signature_, type, &Structor_);
+        sig::sig_ffi_cif(pool_, &sig::ObjectiveC, &signature_, &cif_);
+    }
+};
+
+struct ffoData :
+    Functor_privateData
+{
+    JSContextRef context_;
+    JSObjectRef function_;
+
+    ffoData(const char *type) :
+        Functor_privateData(type, NULL)
+    {
+    }
+};
 
 JSObjectRef CYMakeInstance(JSContextRef context, id object, bool transient) {
     if (!transient)
@@ -384,6 +397,7 @@ JSValueRef CYJSUndefined(JSContextRef context) {
 
 - (NSObject *) cy$toJSON:(NSString *)key;
 - (NSString *) cy$toCYON;
+- (NSString *) cy$toKey;
 
 - (JSValueRef) cy$JSValueInContext:(JSContextRef)context transient:(bool)transient;
 
@@ -499,6 +513,10 @@ struct PropertyAttributes {
 
 - (NSString *) cy$toCYON {
     return [[self cy$toJSON:@""] cy$toCYON];
+}
+
+- (NSString *) cy$toKey {
+    return [self cy$toCYON];
 }
 
 - (JSValueRef) cy$JSValueInContext:(JSContextRef)context transient:(bool)transient {
@@ -624,7 +642,7 @@ struct PropertyAttributes {
 
 - (NSString *) cy$toCYON {
     NSMutableString *json([[[NSMutableString alloc] init] autorelease]);
-    [json appendString:@"({"];
+    [json appendString:@"{"];
 
     bool comma(false);
     for (id key in self) {
@@ -632,13 +650,13 @@ struct PropertyAttributes {
             [json appendString:@","];
         else
             comma = true;
-        [json appendString:[key cy$toCYON]];
+        [json appendString:[key cy$toKey]];
         [json appendString:@":"];
         NSObject *object([self objectForKey:key]);
         [json appendString:[object cy$toCYON]];
     }
 
-    [json appendString:@"})"];
+    [json appendString:@"}"];
     return json;
 }
 
@@ -702,6 +720,7 @@ struct PropertyAttributes {
 }
 
 - (NSString *) cy$toCYON {
+    // XXX: this should use the better code from Output.cpp
     CFMutableStringRef json(CFStringCreateMutableCopy(kCFAllocatorDefault, 0, (CFStringRef) self));
 
     CFStringFindAndReplace(json, CFSTR("\\"), CFSTR("\\\\"), CFRangeMake(0, CFStringGetLength(json)), 0);
@@ -714,6 +733,21 @@ struct PropertyAttributes {
     CFStringAppend(json, CFSTR("\""));
 
     return [reinterpret_cast<const NSString *>(json) autorelease];
+}
+
+- (NSString *) cy$toKey {
+    const char *value([self UTF8String]);
+    size_t size(strlen(value));
+
+    if (size == 0 || !WordStartRange_[value[0]])
+        goto cyon;
+    for (size_t i(1); i != size; ++i)
+        if (!WordEndRange_[value[i]])
+            goto cyon;
+    return self;
+
+  cyon:
+    return [self cy$toCYON];
 }
 
 - (void *) cy$symbol {
@@ -1353,13 +1387,26 @@ void CYPoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, ffi_type
 
         case sig::struct_P: {
             uint8_t *base(reinterpret_cast<uint8_t *>(data));
-            bool aggregate(JSValueIsObject(context, value));
+            JSObjectRef aggregate(JSValueIsObject(context, value) ? (JSObjectRef) value : NULL);
             for (size_t index(0); index != type->data.signature.count; ++index) {
-                ffi_type *element(ffi->elements[index]);
-                JSValueRef rhs(aggregate ? CYGetProperty(context, (JSObjectRef) value, index) : value);
-                CYPoolFFI(pool, context, type->data.signature.elements[index].type, element, base, rhs);
+                sig::Element *element(&type->data.signature.elements[index]);
+                ffi_type *field(ffi->elements[index]);
+
+                JSValueRef rhs;
+                if (aggregate == NULL)
+                    rhs = value;
+                else {
+                    rhs = CYGetProperty(context, aggregate, index);
+                    if (JSValueIsUndefined(context, rhs)) {
+                        rhs = CYGetProperty(context, aggregate, CYJSString(element->name));
+                        if (JSValueIsUndefined(context, rhs))
+                            @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"unable to extract structure value" userInfo:nil];
+                    }
+                }
+
+                CYPoolFFI(pool, context, element->type, field, base, rhs);
                 // XXX: alignment?
-                base += element->size;
+                base += field->size;
             }
         } break;
 
@@ -1451,18 +1498,28 @@ bool Index_(apr_pool_t *pool, Struct_privateData *internal, JSStringRef property
     const char *name(CYPoolCString(pool, property, &length));
     double number(CYCastDouble(name, length));
 
+    size_t count(typical->type_.data.signature.count);
+
     if (std::isnan(number)) {
         if (property == NULL)
             return false;
 
-        // XXX: implement!
+        sig::Element *elements(typical->type_.data.signature.elements);
+
+        for (size_t local(0); local != count; ++local)
+            if (strcmp(name, elements[local].name) == 0) {
+                index = local;
+                goto base;
+            }
+
         return false;
     } else {
         index = static_cast<ssize_t>(number);
-        if (index != number || index < 0 || static_cast<size_t>(index) >= typical->type_.data.signature.count)
+        if (index != number || index < 0 || static_cast<size_t>(index) >= count)
             return false;
     }
 
+  base:
     base = reinterpret_cast<uint8_t *>(internal->value_);
     for (ssize_t local(0); local != index; ++local)
         base += typical->ffi_.elements[local]->size;
@@ -1471,36 +1528,47 @@ bool Index_(apr_pool_t *pool, Struct_privateData *internal, JSStringRef property
 }
 
 static JSValueRef Struct_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
+    CYPool pool;
+    Struct_privateData *internal(reinterpret_cast<Struct_privateData *>(JSObjectGetPrivate(object)));
+    Type_privateData *typical(internal->type_);
+
+    ssize_t index;
+    uint8_t *base;
+
+    if (!Index_(pool, internal, property, index, base))
+        return NULL;
+
     CYTry {
-        CYPool pool;
-        Struct_privateData *internal(reinterpret_cast<Struct_privateData *>(JSObjectGetPrivate(object)));
-        Type_privateData *typical(internal->type_);
-
-        ssize_t index;
-        uint8_t *base;
-
-        if (!Index_(pool, internal, property, index, base))
-            return NULL;
-
         return CYFromFFI(context, typical->type_.data.signature.elements[index].type, typical->ffi_.elements[index], base, object);
     } CYCatch
 }
 
 static bool Struct_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) {
+    CYPool pool;
+    Struct_privateData *internal(reinterpret_cast<Struct_privateData *>(JSObjectGetPrivate(object)));
+    Type_privateData *typical(internal->type_);
+
+    ssize_t index;
+    uint8_t *base;
+
+    if (!Index_(pool, internal, property, index, base))
+        return false;
+
     CYTry {
-        CYPool pool;
-        Struct_privateData *internal(reinterpret_cast<Struct_privateData *>(JSObjectGetPrivate(object)));
-        Type_privateData *typical(internal->type_);
-
-        ssize_t index;
-        uint8_t *base;
-
-        if (!Index_(pool, internal, property, index, base))
-            return false;
-
         CYPoolFFI(NULL, context, typical->type_.data.signature.elements[index].type, typical->ffi_.elements[index], base, value);
         return true;
     } CYCatch
+}
+
+static void Struct_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
+    Struct_privateData *internal(reinterpret_cast<Struct_privateData *>(JSObjectGetPrivate(object)));
+    Type_privateData *typical(internal->type_);
+
+    size_t count(typical->type_.data.signature.count);
+    sig::Element *elements(typical->type_.data.signature.elements);
+
+    for (size_t index(0); index != count; ++index)
+        JSPropertyNameAccumulatorAddName(names, CYJSString(elements[index].name));
 }
 
 JSValueRef CYCallFunction(apr_pool_t *pool, JSContextRef context, size_t setups, void *setup[], size_t count, const JSValueRef *arguments, JSValueRef *exception, sig::Signature *signature, ffi_cif *cif, void (*function)()) {
@@ -1581,7 +1649,7 @@ static JSValueRef Runtime_getProperty(JSContextRef context, JSObjectRef object, 
                 case 2:
                     // XXX: this is horrendously inefficient
                     sig::Signature signature;
-                    sig::Parse(pool, &signature, CYPoolCString(pool, [entry objectAtIndex:1]));
+                    sig::Parse(pool, &signature, CYPoolCString(pool, [entry objectAtIndex:1]), &Structor_);
                     ffi_cif cif;
                     sig::sig_ffi_cif(pool, &sig::ObjectiveC, &signature, &cif);
                     return CYFromFFI(context, signature.elements[0].type, cif.rtype, [name cy$symbol]);
@@ -1643,7 +1711,7 @@ JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, SEL _c
     setup[1] = &_cmd;
 
     sig::Signature signature;
-    sig::Parse(pool, &signature, type);
+    sig::Parse(pool, &signature, type, &Structor_);
 
     ffi_cif cif;
     sig::sig_ffi_cif(pool, &sig::ObjectiveC, &signature, &cif);
@@ -1905,6 +1973,7 @@ MSInitialize { _pooled
     definition.className = "Struct";
     definition.getProperty = &Struct_getProperty;
     definition.setProperty = &Struct_setProperty;
+    definition.getPropertyNames = &Struct_getPropertyNames;
     definition.finalize = &CYData::Finalize;
     Struct_ = JSClassCreate(&definition);
 
