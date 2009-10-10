@@ -3,6 +3,9 @@
 #include "sig/ffi_type.hpp"
 #include "sig/types.hpp"
 
+#define ffi_type_slonglong ffi_type_sint64
+#define ffi_type_ulonglong ffi_type_uint64
+
 namespace sig {
 
 void sig_ffi_types(
@@ -34,7 +37,7 @@ ffi_type *ObjectiveC(apr_pool_t *pool, struct Type *type) {
         case uchar_P: return &ffi_type_uchar;
         case uint_P: return &ffi_type_uint;
         case ulong_P: return &ffi_type_ulong;
-        case ulonglong_P: return &ffi_type_ulong;
+        case ulonglong_P: return &ffi_type_ulonglong;
         case ushort_P: return &ffi_type_ushort;
 
         case array_P:
@@ -53,8 +56,8 @@ ffi_type *ObjectiveC(apr_pool_t *pool, struct Type *type) {
         case double_P: return &ffi_type_double;
         case float_P: return &ffi_type_float;
         case int_P: return &ffi_type_sint;
-        case long_P: return &ffi_type_sint;
-        case longlong_P: return &ffi_type_slong;
+        case long_P: return &ffi_type_slong;
+        case longlong_P: return &ffi_type_slonglong;
         case short_P: return &ffi_type_sshort;
 
         case void_P: return &ffi_type_void;
@@ -89,7 +92,7 @@ ffi_type *Java(apr_pool_t *pool, struct Type *type) {
         case uchar_P: return &ffi_type_uchar;
         case uint_P: return &ffi_type_uint;
         case ulong_P: return &ffi_type_ulong;
-        case ulonglong_P: return &ffi_type_ulong;
+        case ulonglong_P: return &ffi_type_ulonglong;
         case ushort_P: return &ffi_type_ushort;
         case array_P: return &ffi_type_pointer;
         case pointer_P: return &ffi_type_pointer;
@@ -101,8 +104,8 @@ ffi_type *Java(apr_pool_t *pool, struct Type *type) {
         case double_P: return &ffi_type_double;
         case float_P: return &ffi_type_double;
         case int_P: return &ffi_type_sint;
-        case long_P: return &ffi_type_sint;
-        case longlong_P: return &ffi_type_slong;
+        case long_P: return &ffi_type_slong;
+        case longlong_P: return &ffi_type_slonglong;
         case short_P: return &ffi_type_sshort;
         case void_P: return &ffi_type_void;
         case struct_P: return &ffi_type_pointer;
