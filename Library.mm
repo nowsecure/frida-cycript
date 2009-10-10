@@ -1,4 +1,4 @@
-/* Cyrker - Remove Execution Server and Disassembler
+/* Cycript - Remove Execution Server and Disassembler
  * Copyright (C) 2009  Jay Freeman (saurik)
 */
 
@@ -52,8 +52,6 @@
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFLogUtilities.h>
-
-#include <CFNetwork/CFNetwork.h>
 
 #include <WebKit/WebScriptObject.h>
 
@@ -113,18 +111,15 @@ static JSClassRef Struct_;
 static JSObjectRef Array_;
 static JSObjectRef Function_;
 
-static JSStringRef name_;
-static JSStringRef message_;
 static JSStringRef length_;
+static JSStringRef message_;
+static JSStringRef name_;
+static JSStringRef toCYON_;
+static JSStringRef toJSON_;
 
 static Class NSCFBoolean_;
 
 static NSArray *Bridge_;
-
-struct Client {
-    CFHTTPMessageRef message_;
-    CFSocketRef socket_;
-};
 
 struct CYData {
     apr_pool_t *pool_;
@@ -407,12 +402,18 @@ JSValueRef CYJSUndefined(JSContextRef context) {
 @end
 
 @interface NSObject (Cycript)
-- (bool) cy$isUndefined;
-- (NSString *) cy$toJSON;
+
+- (JSType) cy$JSType;
+
+- (NSObject *) cy$toJSON:(NSString *)key;
+- (NSString *) cy$toCYON;
+
 - (JSValueRef) cy$JSValueInContext:(JSContextRef)context transient:(bool)transient;
+
 - (NSObject *) cy$getProperty:(NSString *)name;
 - (bool) cy$setProperty:(NSString *)name to:(NSObject *)value;
 - (bool) cy$deleteProperty:(NSString *)name;
+
 @end
 
 @interface NSString (Cycript)
@@ -425,12 +426,16 @@ JSValueRef CYJSUndefined(JSContextRef context) {
 
 @implementation NSObject (Cycript)
 
-- (bool) cy$isUndefined {
-    return false;
+- (JSType) cy$JSType {
+    return kJSTypeObject;
 }
 
-- (NSString *) cy$toJSON {
+- (NSObject *) cy$toJSON:(NSString *)key {
     return [self description];
+}
+
+- (NSString *) cy$toCYON {
+    return [[self cy$toJSON:@""] cy$toCYON];
 }
 
 - (JSValueRef) cy$JSValueInContext:(JSContextRef)context transient:(bool)transient {
@@ -457,11 +462,15 @@ JSValueRef CYJSUndefined(JSContextRef context) {
 
 @implementation WebUndefined (Cycript)
 
-- (bool) cy$isUndefined {
-    return true;
+- (JSType) cy$JSType {
+    return kJSTypeUndefined;
 }
 
-- (NSString *) cy$toJSON {
+- (NSObject *) cy$toJSON:(NSString *)key {
+    return self;
+}
+
+- (NSString *) cy$toCYON {
     return @"undefined";
 }
 
@@ -473,7 +482,15 @@ JSValueRef CYJSUndefined(JSContextRef context) {
 
 @implementation NSNull (Cycript)
 
-- (NSString *) cy$toJSON {
+- (JSType) cy$JSType {
+    return kJSTypeNull;
+}
+
+- (NSObject *) cy$toJSON:(NSString *)key {
+    return self;
+}
+
+- (NSString *) cy$toCYON {
     return @"null";
 }
 
@@ -481,7 +498,7 @@ JSValueRef CYJSUndefined(JSContextRef context) {
 
 @implementation NSArray (Cycript)
 
-- (NSString *) cy$toJSON {
+- (NSString *) cy$toCYON {
     NSMutableString *json([[[NSMutableString alloc] init] autorelease]);
     [json appendString:@"["];
 
@@ -491,8 +508,8 @@ JSValueRef CYJSUndefined(JSContextRef context) {
             [json appendString:@","];
         else
             comma = true;
-        if (![object cy$isUndefined])
-            [json appendString:[object cy$toJSON]];
+        if ([object cy$JSType] != kJSTypeUndefined)
+            [json appendString:[object cy$toCYON]];
         else {
             [json appendString:@","];
             comma = false;
@@ -539,7 +556,7 @@ JSValueRef CYJSUndefined(JSContextRef context) {
 
 @implementation NSDictionary (Cycript)
 
-- (NSString *) cy$toJSON {
+- (NSString *) cy$toCYON {
     NSMutableString *json([[[NSMutableString alloc] init] autorelease]);
     [json appendString:@"({"];
 
@@ -549,10 +566,10 @@ JSValueRef CYJSUndefined(JSContextRef context) {
             [json appendString:@","];
         else
             comma = true;
-        [json appendString:[key cy$toJSON]];
+        [json appendString:[key cy$toCYON]];
         [json appendString:@":"];
         NSObject *object([self objectForKey:key]);
-        [json appendString:[object cy$toJSON]];
+        [json appendString:[object cy$toCYON]];
     }
 
     [json appendString:@"})"];
@@ -585,12 +602,21 @@ JSValueRef CYJSUndefined(JSContextRef context) {
 
 @implementation NSNumber (Cycript)
 
-- (NSString *) cy$toJSON {
-    return [self class] != NSCFBoolean_ ? [self stringValue] : [self boolValue] ? @"true" : @"false";
+- (JSType) cy$JSType {
+    // XXX: this just seems stupid
+    return [self class] == NSCFBoolean_ ? kJSTypeBoolean : kJSTypeNumber;
+}
+
+- (NSObject *) cy$toJSON:(NSString *)key {
+    return self;
+}
+
+- (NSString *) cy$toCYON {
+    return [self cy$JSType] != kJSTypeBoolean ? [self stringValue] : [self boolValue] ? @"true" : @"false";
 }
 
 - (JSValueRef) cy$JSValueInContext:(JSContextRef)context transient:(bool)transient {
-    return [self class] != NSCFBoolean_ ? CYCastJSValue(context, [self doubleValue]) : CYCastJSValue(context, [self boolValue]);
+    return [self cy$JSType] != kJSTypeBoolean ? CYCastJSValue(context, [self doubleValue]) : CYCastJSValue(context, [self boolValue]);
 }
 
 - (void *) cy$symbol {
@@ -601,7 +627,15 @@ JSValueRef CYJSUndefined(JSContextRef context) {
 
 @implementation NSString (Cycript)
 
-- (NSString *) cy$toJSON {
+- (JSType) cy$JSType {
+    return kJSTypeString;
+}
+
+- (NSObject *) cy$toJSON:(NSString *)key {
+    return self;
+}
+
+- (NSString *) cy$toCYON {
     CFMutableStringRef json(CFStringCreateMutableCopy(kCFAllocatorDefault, 0, (CFStringRef) self));
 
     CFStringFindAndReplace(json, CFSTR("\\"), CFSTR("\\\\"), CFRangeMake(0, CFStringGetLength(json)), 0);
@@ -629,6 +663,8 @@ JSValueRef CYJSUndefined(JSContextRef context) {
 }
 
 - (id) initWithJSObject:(JSObjectRef)object inContext:(JSContextRef)context;
+
+- (NSString *) cy$toJSON:(NSString *)key;
 
 - (NSUInteger) count;
 - (id) objectForKey:(id)key;
@@ -674,7 +710,9 @@ apr_status_t CYPoolRelease_(void *data) {
 }
 
 id CYPoolRelease(apr_pool_t *pool, id object) {
-    if (pool == NULL)
+    if (object == nil)
+        return nil;
+    else if (pool == NULL)
         return [object autorelease];
     else {
         apr_pool_cleanup_register(pool, object, &CYPoolRelease_, &apr_pool_cleanup_null);
@@ -938,6 +976,18 @@ void CYThrow(JSContextRef context, id error, JSValueRef *exception) {
     *exception = CYCastJSValue(context, error);
 }
 
+JSValueRef CYCallAsFunction(JSContextRef context, JSObjectRef function, JSObjectRef _this, size_t count, JSValueRef arguments[]) {
+    JSValueRef exception(NULL);
+    JSValueRef value(JSObjectCallAsFunction(context, function, _this, count, arguments, &exception));
+    CYThrow(context, exception);
+    return value;
+}
+
+bool CYIsCallable(JSContextRef context, JSValueRef value) {
+    // XXX: this isn't actually correct
+    return value != NULL && JSValueIsObject(context, value);
+}
+
 @implementation CYJSObject
 
 - (id) initWithJSObject:(JSObjectRef)object inContext:(JSContextRef)context {
@@ -945,6 +995,28 @@ void CYThrow(JSContextRef context, id error, JSValueRef *exception) {
         object_ = object;
         context_ = context;
     } return self;
+}
+
+- (NSObject *) cy$toJSON:(NSString *)key {
+    JSValueRef toJSON(CYGetProperty(context_, object_, toJSON_));
+    if (!CYIsCallable(context_, toJSON))
+        return [super cy$toJSON:key];
+    else {
+        JSValueRef arguments[1] = {CYCastJSValue(context_, key)};
+        JSValueRef value(CYCallAsFunction(context_, (JSObjectRef) toJSON, object_, 1, arguments));
+        // XXX: do I really want an NSNull here?!
+        return CYCastNSObject(NULL, context_, value) ?: [NSNull null];
+    }
+}
+
+- (NSString *) cy$toCYON {
+    JSValueRef toCYON(CYGetProperty(context_, object_, toCYON_));
+    if (!CYIsCallable(context_, toCYON))
+        return [super cy$toCYON];
+    else {
+        JSValueRef value(CYCallAsFunction(context_, (JSObjectRef) toCYON, object_, 0, NULL));
+        return CYCastNSString(NULL, CYJSString(context_, value));
+    }
 }
 
 - (NSUInteger) count {
@@ -1000,94 +1072,21 @@ void CYThrow(JSContextRef context, id error, JSValueRef *exception) {
 
 @end
 
-CFStringRef CYCopyJSONString(JSContextRef context, JSValueRef value, JSValueRef *exception) {
+CFStringRef CYCopyCYONString(JSContextRef context, JSValueRef value, JSValueRef *exception) {
     CYTry {
         CYPoolTry {
-            id object(CYCastNSObject(NULL, context, value));
-            return reinterpret_cast<CFStringRef>([(object == nil ? @"null" : [object cy$toJSON]) retain]);
+            id object(CYCastNSObject(NULL, context, value) ?: [NSNull null]);
+            return reinterpret_cast<CFStringRef>([[object cy$toCYON] retain]);
         } CYPoolCatch(NULL)
     } CYCatch
 }
 
-const char *CYPoolJSONString(apr_pool_t *pool, JSContextRef context, JSValueRef value, JSValueRef *exception) {
-    if (NSString *json = (NSString *) CYCopyJSONString(context, value, exception)) {
+const char *CYPoolCYONString(apr_pool_t *pool, JSContextRef context, JSValueRef value, JSValueRef *exception) {
+    if (NSString *json = (NSString *) CYCopyCYONString(context, value, exception)) {
         const char *string(CYPoolCString(pool, json));
         [json release];
         return string;
     } else return NULL;
-}
-
-static void OnData(CFSocketRef socket, CFSocketCallBackType type, CFDataRef address, const void *value, void *info) {
-    switch (type) {
-        case kCFSocketDataCallBack:
-            CFDataRef data(reinterpret_cast<CFDataRef>(value));
-            Client *client(reinterpret_cast<Client *>(info));
-
-            if (client->message_ == NULL)
-                client->message_ = CFHTTPMessageCreateEmpty(kCFAllocatorDefault, TRUE);
-
-            if (!CFHTTPMessageAppendBytes(client->message_, CFDataGetBytePtr(data), CFDataGetLength(data)))
-                CFLog(kCFLogLevelError, CFSTR("CFHTTPMessageAppendBytes()"));
-            else if (CFHTTPMessageIsHeaderComplete(client->message_)) {
-                CFURLRef url(CFHTTPMessageCopyRequestURL(client->message_));
-                Boolean absolute;
-                CFStringRef path(CFURLCopyStrictPath(url, &absolute));
-                CFRelease(client->message_);
-
-                CFStringRef code(CFURLCreateStringByReplacingPercentEscapes(kCFAllocatorDefault, path, CFSTR("")));
-                CFRelease(path);
-
-                JSStringRef script(JSStringCreateWithCFString(code));
-                CFRelease(code);
-
-                JSValueRef result(JSEvaluateScript(CYGetJSContext(), script, NULL, NULL, 0, NULL));
-                JSStringRelease(script);
-
-                CFHTTPMessageRef response(CFHTTPMessageCreateResponse(kCFAllocatorDefault, 200, NULL, kCFHTTPVersion1_1));
-                CFHTTPMessageSetHeaderFieldValue(response, CFSTR("Content-Type"), CFSTR("application/json; charset=utf-8"));
-
-                CFStringRef json(CYCopyJSONString(CYGetJSContext(), result, NULL));
-                CFDataRef body(CFStringCreateExternalRepresentation(kCFAllocatorDefault, json, kCFStringEncodingUTF8, NULL));
-                CFRelease(json);
-
-                CFStringRef length(CFStringCreateWithFormat(kCFAllocatorDefault, NULL, CFSTR("%u"), CFDataGetLength(body)));
-                CFHTTPMessageSetHeaderFieldValue(response, CFSTR("Content-Length"), length);
-                CFRelease(length);
-
-                CFHTTPMessageSetBody(response, body);
-                CFRelease(body);
-
-                CFDataRef serialized(CFHTTPMessageCopySerializedMessage(response));
-                CFRelease(response);
-
-                CFSocketSendData(socket, NULL, serialized, 0);
-                CFRelease(serialized);
-
-                CFRelease(url);
-            }
-        break;
-    }
-}
-
-static void OnAccept(CFSocketRef socket, CFSocketCallBackType type, CFDataRef address, const void *value, void *info) {
-    switch (type) {
-        case kCFSocketAcceptCallBack:
-            Client *client(new Client());
-
-            client->message_ = NULL;
-
-            CFSocketContext context;
-            context.version = 0;
-            context.info = client;
-            context.retain = NULL;
-            context.release = NULL;
-            context.copyDescription = NULL;
-
-            client->socket_ = CFSocketCreateWithNative(kCFAllocatorDefault, *reinterpret_cast<const CFSocketNativeHandle *>(value), kCFSocketDataCallBack, &OnData, &context);
-
-            CFRunLoopAddSource(CFRunLoopGetCurrent(), CFSocketCreateRunLoopSource(kCFAllocatorDefault, client->socket_, 0), kCFRunLoopDefaultMode);
-        break;
-    }
 }
 
 static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
@@ -1444,10 +1443,7 @@ void Closure_(ffi_cif *cif, void *result, void **arguments, void *arg) {
     for (size_t index(0); index != count; ++index)
         values[index] = CYFromFFI(context, data->signature_.elements[1 + index].type, data->cif_.arg_types[index], arguments[index]);
 
-    JSValueRef exception(NULL);
-    JSValueRef value(JSObjectCallAsFunction(context, data->function_, NULL, count, values, &exception));
-    CYThrow(context, exception);
-
+    JSValueRef value(CYCallAsFunction(context, data->function_, NULL, count, values));
     CYPoolFFI(NULL, context, data->signature_.elements[0].type, data->cif_.rtype, result, value);
 }
 
@@ -1626,6 +1622,29 @@ static JSValueRef Pointer_callAsFunction_valueOf(JSContextRef context, JSObjectR
     } CYCatch
 }
 
+static JSValueRef Pointer_callAsFunction_toJSON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    return Pointer_callAsFunction_valueOf(context, object, _this, count, arguments, exception);
+}
+
+static JSValueRef Instance_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    CYTry {
+        Instance_privateData *data(reinterpret_cast<Instance_privateData *>(JSObjectGetPrivate(_this)));
+        CYPoolTry {
+            return CYCastJSValue(context, CYJSString([data->GetValue() cy$toCYON]));
+        } CYPoolCatch(NULL)
+    } CYCatch
+}
+
+static JSValueRef Instance_callAsFunction_toJSON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    CYTry {
+        Instance_privateData *data(reinterpret_cast<Instance_privateData *>(JSObjectGetPrivate(_this)));
+        CYPoolTry {
+            NSString *key(count == 0 ? nil : CYCastNSString(NULL, CYJSString(context, arguments[0])));
+            return CYCastJSValue(context, CYJSString([data->GetValue() cy$toJSON:key]));
+        } CYPoolCatch(NULL)
+    } CYCatch
+}
+
 static JSValueRef Instance_callAsFunction_toString(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     CYTry {
         Instance_privateData *data(reinterpret_cast<Instance_privateData *>(JSObjectGetPrivate(_this)));
@@ -1639,6 +1658,20 @@ static JSValueRef Selector_callAsFunction_toString(JSContextRef context, JSObjec
     CYTry {
         Selector_privateData *data(reinterpret_cast<Selector_privateData *>(JSObjectGetPrivate(_this)));
         return CYCastJSValue(context, sel_getName(data->GetValue()));
+    } CYCatch
+}
+
+static JSValueRef Selector_callAsFunction_toJSON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    return Selector_callAsFunction_toString(context, object, _this, count, arguments, exception);
+}
+
+static JSValueRef Selector_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    CYTry {
+        Selector_privateData *data(reinterpret_cast<Selector_privateData *>(JSObjectGetPrivate(_this)));
+        const char *name(sel_getName(data->GetValue()));
+        CYPoolTry {
+            return CYCastJSValue(context, CYJSString([NSString stringWithFormat:@"@selector(%s)", name]));
+        } CYPoolCatch(NULL)
     } CYCatch
 }
 
@@ -1665,7 +1698,8 @@ static JSStaticValue Pointer_staticValues[2] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction Pointer_staticFunctions[2] = {
+static JSStaticFunction Pointer_staticFunctions[3] = {
+    {"toJSON", &Pointer_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"valueOf", &Pointer_callAsFunction_valueOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
@@ -1675,12 +1709,16 @@ static JSStaticFunction Pointer_staticFunctions[2] = {
     {NULL, NULL, NULL, 0}
 };*/
 
-static JSStaticFunction Instance_staticFunctions[2] = {
+static JSStaticFunction Instance_staticFunctions[4] = {
+    {"toCYON", &Instance_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"toJSON", &Instance_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toString", &Instance_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
 
-static JSStaticFunction Selector_staticFunctions[3] = {
+static JSStaticFunction Selector_staticFunctions[5] = {
+    {"toCYON", &Selector_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"toJSON", &Selector_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toString", &Selector_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"type", &Selector_callAsFunction_type, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
@@ -1728,25 +1766,6 @@ MSInitialize { _pooled
     Bridge_ = [[NSMutableArray arrayWithContentsOfFile:@"/usr/lib/libcycript.plist"] retain];
 
     NSCFBoolean_ = objc_getClass("NSCFBoolean");
-
-    pid_t pid(getpid());
-
-    struct sockaddr_in address;
-    address.sin_len = sizeof(address);
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(10000 + pid);
-
-    CFDataRef data(CFDataCreate(kCFAllocatorDefault, reinterpret_cast<UInt8 *>(&address), sizeof(address)));
-
-    CFSocketSignature signature;
-    signature.protocolFamily = AF_INET;
-    signature.socketType = SOCK_STREAM;
-    signature.protocol = IPPROTO_TCP;
-    signature.address = data;
-
-    CFSocketRef socket(CFSocketCreateWithSocketSignature(kCFAllocatorDefault, &signature, kCFSocketAcceptCallBack, &OnAccept, NULL));
-    CFRunLoopAddSource(CFRunLoopGetCurrent(), CFSocketCreateRunLoopSource(kCFAllocatorDefault, socket, 0), kCFRunLoopDefaultMode);
 
     JSClassDefinition definition;
 
@@ -1822,9 +1841,11 @@ MSInitialize { _pooled
 
     CYSetProperty(context, System_, CYJSString("print"), JSObjectMakeFunctionWithCallback(context, CYJSString("print"), &System_print));
 
-    name_ = JSStringCreateWithUTF8CString("name");
-    message_ = JSStringCreateWithUTF8CString("message");
     length_ = JSStringCreateWithUTF8CString("length");
+    message_ = JSStringCreateWithUTF8CString("message");
+    name_ = JSStringCreateWithUTF8CString("name");
+    toCYON_ = JSStringCreateWithUTF8CString("toCYON");
+    toJSON_ = JSStringCreateWithUTF8CString("toJSON");
 
     Array_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Array")));
     Function_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Function")));

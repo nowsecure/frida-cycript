@@ -495,10 +495,18 @@ void CYSource::Output(std::ostream &out, bool block) const {
 }
 
 void CYString::Output(std::ostream &out, CYFlags flags) const {
-    out << '\"';
+    unsigned quot(0), apos(0);
+    for (const char *value(value_), *end(value_ + size_); value != end; ++value)
+        if (*value == '"')
+            ++quot;
+        else if (*value == '\'')
+            ++apos;
+
+    bool single(quot > apos);
+
+    out << (single ? '\'' : '"');
     for (const char *value(value_), *end(value_ + size_); value != end; ++value)
         switch (*value) {
-            case '"': out << "\\\""; break;
             case '\\': out << "\\\\"; break;
             case '\b': out << "\\b"; break;
             case '\f': out << "\\f"; break;
@@ -507,13 +515,25 @@ void CYString::Output(std::ostream &out, CYFlags flags) const {
             case '\t': out << "\\t"; break;
             case '\v': out << "\\v"; break;
 
+            case '"':
+                if (!single)
+                    out << "\\\"";
+                else goto simple;
+            break;
+
+            case '\'':
+                if (single)
+                    out << "\\'";
+                else goto simple;
+            break;
+
             default:
                 if (*value < 0x20 || *value >= 0x7f)
                     out << "\\x" << std::setbase(16) << std::setw(2) << std::setfill('0') << unsigned(*value);
-                else
+                else simple:
                     out << *value;
         }
-    out << '\"';
+    out << (single ? '\'' : '"');
 }
 
 void CYSwitch::Output(std::ostream &out) const {
