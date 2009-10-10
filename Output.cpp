@@ -46,7 +46,7 @@ bool CYTrue::Value() const {
 
 void CYAddressOf::Output(std::ostream &out, CYFlags flags) const {
     rhs_->Output(out, 1, CYLeft(flags));
-    out << ".$()";
+    out << ".addressOf()";
 }
 
 void CYArgument::Output(std::ostream &out) const {

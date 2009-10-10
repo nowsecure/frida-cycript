@@ -754,6 +754,47 @@ C kCLErrorHeadingFailure 3
 
 V kCLErrorDomain @
 
+f Foundation
+
+S _NSRange "location"I"length"I
+
+C NSMinXEdge 0
+C NSMinYEdge 1
+C NSMaxXEdge 2
+C NSMaxYEdge 3
+
+C NSApplicationDirectory 1
+C NSDemoApplicationDirectory 2
+C NSDeveloperApplicationDirectory 3
+C NSAdminApplicationDirectory 4
+C NSLibraryDirectory 5
+C NSDeveloperDirectory 6
+C NSUserDirectory 7
+C NSDocumentationDirectory 8
+C NSDocumentDirectory 9
+C NSCoreServiceDirectory 10
+C NSAutosavedInformationDirectory 11
+C NSDesktopDirectory 12
+C NSCachesDirectory 13
+C NSApplicationSupportDirectory 14
+C NSDownloadsDirectory 15
+C NSInputMethodsDirectory 16
+C NSMoviesDirectory 17
+C NSMusicDirectory 18
+C NSPicturesDirectory 19
+C NSPrinterDescriptionDirectory 20
+C NSSharedPublicDirectory 21
+C NSPreferencePanesDirectory 22
+C NSItemReplacementDirectory 99
+C NSAllApplicationsDirectory 100
+C NSAllLibrariesDirectory 101
+
+C NSUserDomainMask 1
+C NSLocalDomainMask 2
+C NSNetworkDomainMask 4
+C NSSystemDomainMask 8
+C NSAllDomainsMask 0x0ffff
+
 f MapKit
 
 C MKMapTypeStandard 0

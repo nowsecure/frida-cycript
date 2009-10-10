@@ -3,3 +3,4 @@ blocks and empty statements are poorly factored
 functors use both ffiData and ffoData...
 rename "data" variables to "internal"
 unicode identifier support (native and \u)
+object literal compilation should use numerify strings

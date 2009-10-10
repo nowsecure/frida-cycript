@@ -312,6 +312,7 @@ struct CYRange {
     }
 };
 
+extern CYRange DigitRange_;
 extern CYRange WordStartRange_;
 extern CYRange WordEndRange_;
 

@@ -387,6 +387,24 @@ JSValueRef CYJSUndefined(JSContextRef context) {
     return JSValueMakeUndefined(context);
 }
 
+size_t CYCastIndex(const char *value) {
+    if (value[0] == '0') {
+        if (value[1] == '\0')
+            return 0;
+    } else {
+        char *end;
+        size_t index(strtoul(value, &end, 10));
+        if (value + strlen(value) == end)
+            return index;
+    }
+
+    return _not(size_t);
+}
+
+size_t CYCastIndex(NSString *value) {
+    return CYCastIndex([value UTF8String]);
+}
+
 @interface NSMethodSignature (Cycript)
 - (NSString *) _typeString;
 @end
@@ -605,8 +623,8 @@ struct PropertyAttributes {
     if ([name isEqualToString:@"length"])
         return [NSNumber numberWithUnsignedInteger:[self count]];
 
-    int index([name intValue]);
-    if (index < 0 || index >= static_cast<int>([self count]))
+    size_t index(CYCastIndex(name));
+    if (index == _not(size_t) || index >= [self count])
         return [super cy$getProperty:name];
     else
         return [self objectAtIndex:index];
@@ -617,8 +635,8 @@ struct PropertyAttributes {
 @implementation NSMutableArray (Cycript)
 
 - (bool) cy$setProperty:(NSString *)name to:(NSObject *)value {
-    int index([name intValue]);
-    if (index < 0 || index >= static_cast<int>([self count]))
+    size_t index(CYCastIndex(name));
+    if (index == _not(size_t) || index >= [self count])
         return [super cy$setProperty:name to:value];
     else {
         [self replaceObjectAtIndex:index withObject:(value ?: [NSNull null])];
@@ -627,8 +645,8 @@ struct PropertyAttributes {
 }
 
 - (bool) cy$deleteProperty:(NSString *)name {
-    int index([name intValue]);
-    if (index < 0 || index >= static_cast<int>([self count]))
+    size_t index(CYCastIndex(name));
+    if (index == _not(size_t) || index >= [self count])
         return [super cy$deleteProperty:name];
     else {
         [self removeObjectAtIndex:index];
@@ -739,11 +757,20 @@ struct PropertyAttributes {
     const char *value([self UTF8String]);
     size_t size(strlen(value));
 
-    if (size == 0 || !WordStartRange_[value[0]])
+    if (size == 0)
         goto cyon;
-    for (size_t i(1); i != size; ++i)
-        if (!WordEndRange_[value[i]])
+
+    if (DigitRange_[value[0]]) {
+        if (CYCastIndex(self) == _not(size_t))
             goto cyon;
+    } else {
+        if (!WordStartRange_[value[0]])
+            goto cyon;
+        for (size_t i(1); i != size; ++i)
+            if (!WordEndRange_[value[i]])
+                goto cyon;
+    }
+
     return self;
 
   cyon:
@@ -786,8 +813,9 @@ struct PropertyAttributes {
 
 @end
 
-CYRange WordStartRange_(0x1000000000LLU,0x7fffffe87fffffeLLU); // A-Za-z_$
-CYRange WordEndRange_(0x3ff001000000000LLU,0x7fffffe87fffffeLLU); // A-Za-z_$0-9
+CYRange DigitRange_    (0x3ff000000000000LLU, 0x000000000000000LLU); // 0-9
+CYRange WordStartRange_(0x000001000000000LLU, 0x7fffffe87fffffeLLU); // A-Za-z_$
+CYRange WordEndRange_  (0x3ff001000000000LLU, 0x7fffffe87fffffeLLU); // A-Za-z_$0-9
 
 JSGlobalContextRef CYGetJSContext() {
     return Context_;
@@ -863,7 +891,8 @@ class CYJSString {
     JSStringRef string_;
 
     void Clear_() {
-        JSStringRelease(string_);
+        if (string_ != NULL)
+            JSStringRelease(string_);
     }
 
   public:
@@ -1398,8 +1427,11 @@ void CYPoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, ffi_type
                 else {
                     rhs = CYGetProperty(context, aggregate, index);
                     if (JSValueIsUndefined(context, rhs)) {
-                        rhs = CYGetProperty(context, aggregate, CYJSString(element->name));
-                        if (JSValueIsUndefined(context, rhs))
+                        if (element->name != NULL)
+                            rhs = CYGetProperty(context, aggregate, CYJSString(element->name));
+                        else
+                            goto undefined;
+                        if (JSValueIsUndefined(context, rhs)) undefined:
                             @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"unable to extract structure value" userInfo:nil];
                     }
                 }
@@ -1506,11 +1538,13 @@ bool Index_(apr_pool_t *pool, Struct_privateData *internal, JSStringRef property
 
         sig::Element *elements(typical->type_.data.signature.elements);
 
-        for (size_t local(0); local != count; ++local)
-            if (strcmp(name, elements[local].name) == 0) {
+        for (size_t local(0); local != count; ++local) {
+            sig::Element *element(&elements[local]);
+            if (element->name != NULL && strcmp(name, element->name) == 0) {
                 index = local;
                 goto base;
             }
+        }
 
         return false;
     } else {
@@ -1567,8 +1601,19 @@ static void Struct_getPropertyNames(JSContextRef context, JSObjectRef object, JS
     size_t count(typical->type_.data.signature.count);
     sig::Element *elements(typical->type_.data.signature.elements);
 
-    for (size_t index(0); index != count; ++index)
-        JSPropertyNameAccumulatorAddName(names, CYJSString(elements[index].name));
+    char number[32];
+
+    for (size_t index(0); index != count; ++index) {
+        const char *name;
+        name = elements[index].name;
+
+        if (name == NULL) {
+            sprintf(number, "%lu", index);
+            name = number;
+        }
+
+        JSPropertyNameAccumulatorAddName(names, CYJSString(name));
+    }
 }
 
 JSValueRef CYCallFunction(apr_pool_t *pool, JSContextRef context, size_t setups, void *setup[], size_t count, const JSValueRef *arguments, JSValueRef *exception, sig::Signature *signature, ffi_cif *cif, void (*function)()) {
@@ -1681,13 +1726,19 @@ static JSValueRef System_print(JSContextRef context, JSObjectRef object, JSObjec
 static JSValueRef CYApplicationMain(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     CYTry {
         CYPool pool;
-        NSString *name(CYCastNSObject(pool, context, arguments[0]));
-        int argc(*_NSGetArgc());
-        char **argv(*_NSGetArgv());
+
+        int argc(CYCastDouble(context, arguments[0]));
+        char **argv(CYCastPointer<char **>(context, arguments[1]));
+        NSString *principal(CYCastNSObject(pool, context, arguments[2]));
+        NSString *delegate(CYCastNSObject(pool, context, arguments[3]));
+
+        argc = *_NSGetArgc() - 1;
+        argv = *_NSGetArgv() + 1;
         for (int i(0); i != argc; ++i)
             NSLog(@"argv[%i]=%s", i, argv[i]);
+
         _pooled
-        return CYCastJSValue(context, UIApplicationMain(argc, argv, name, name));
+        return CYCastJSValue(context, UIApplicationMain(argc, argv, principal, delegate));
     } CYCatch
 }
 
