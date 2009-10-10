@@ -8,6 +8,10 @@ S CGPoint "x"f"y"f
 S CGRect "origin"{CGPoint}"size"{CGSize}
 S CGSize "width"f"height"f
 
+l c
+
+S nlist_64 "_un"(?="n_strx"I)"n_type"C"n_sect"C"n_desc"S"n_value"Q
+
 l objc
 
 F class_addIvar B#*LC*

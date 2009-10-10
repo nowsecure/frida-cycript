@@ -306,6 +306,9 @@ JSObjectRef CYMakeStruct(JSContextRef context, void *data, sig::Type *type, ffi_
 }
 
 void Structor_(apr_pool_t *pool, const char *name, const char *types, sig::Type *type) {
+    if (name == NULL)
+        return;
+
     CYPoolTry {
         if (NSMutableArray *entry = [[Bridge_ objectAtIndex:2] objectForKey:[NSString stringWithUTF8String:name]]) {
             switch ([[entry objectAtIndex:0] intValue]) {
@@ -1068,7 +1071,7 @@ JSValueRef CYCastJSValue(JSContextRef context, const char *value) {
     return CYCastJSValue(context, CYJSString(value));
 }
 
-JSValueRef CYCastJSValue(JSContextRef context, id value, bool transient = true) {
+JSValueRef CYCastJSValue(JSContextRef context, id value, bool transient = false) {
     return value == nil ? CYJSNull(context) : [value cy$JSValueInContext:context transient:transient];
 }
 

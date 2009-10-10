@@ -118,7 +118,10 @@ struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named, C
         case '#': type->primitive = typename_P; break;
 
         case '(':
-            type->primitive = union_P;
+            if (type->data.signature.count < 2)
+                type->primitive = struct_P;
+            else
+                type->primitive = union_P;
             next = ')';
         goto aggregate;
 
