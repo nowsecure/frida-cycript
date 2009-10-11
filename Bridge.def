@@ -12,6 +12,9 @@ l c
 
 S nlist_64 "_un"(?="n_strx"I)"n_type"C"n_sect"C"n_desc"S"n_value"Q
 
+F malloc ^vL
+F free v^v
+
 l objc
 
 F class_addIvar B#*LC*

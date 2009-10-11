@@ -276,13 +276,16 @@ struct Type_privateData {
     apr_pool_t *pool_;
 
     ffi_type *ffi_;
-    sig::Type type_;
+    sig::Type *type_;
 
     Type_privateData(apr_pool_t *pool, sig::Type *type) :
         pool_(pool),
         ffi_(NULL)
     {
-        sig::Copy(pool, type_, *type);
+        if (type != NULL) {
+            type_ = new(pool) sig::Type;
+            sig::Copy(pool, *type_, *type);
+        }
     }
 
     Type_privateData(apr_pool_t *pool, sig::Type *type, ffi_type *ffi) :
@@ -290,7 +293,8 @@ struct Type_privateData {
     {
         ffi_ = new(pool) ffi_type;
         sig::Copy(pool, *ffi_, *ffi);
-        sig::Copy(pool, type_, *type);
+        type_ = new(pool) sig::Type;
+        sig::Copy(pool, *type_, *type);
     }
 
     ffi_type *GetFFI() {
@@ -299,7 +303,7 @@ struct Type_privateData {
 
             sig::Element element;
             element.name = NULL;
-            element.type = &type_;
+            element.type = type_;
             element.offset = 0;
 
             sig::Signature signature;
@@ -1604,18 +1608,21 @@ JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void 
 
 bool Index_(apr_pool_t *pool, Struct_privateData *internal, JSStringRef property, ssize_t &index, uint8_t *&base) {
     Type_privateData *typical(internal->type_);
+    sig::Type *type(typical->type_);
+    if (type == NULL)
+        return false;
 
     size_t length;
     const char *name(CYPoolCString(pool, property, &length));
     double number(CYCastDouble(name, length));
 
-    size_t count(typical->type_.data.signature.count);
+    size_t count(type->data.signature.count);
 
     if (std::isnan(number)) {
         if (property == NULL)
             return false;
 
-        sig::Element *elements(typical->type_.data.signature.elements);
+        sig::Element *elements(type->data.signature.elements);
 
         for (size_t local(0); local != count; ++local) {
             sig::Element *element(&elements[local]);
@@ -1647,6 +1654,9 @@ static JSValueRef Pointer_getProperty(JSContextRef context, JSObjectRef object, 
     Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(object)));
     Type_privateData *typical(internal->type_);
 
+    if (typical->type_ == NULL)
+        return NULL;
+
     ssize_t index;
     if (!CYGetIndex(pool, property, index))
         return NULL;
@@ -1659,7 +1669,7 @@ static JSValueRef Pointer_getProperty(JSContextRef context, JSObjectRef object, 
     JSObjectRef owner(internal->owner_ ?: object);
 
     CYTry {
-        return CYFromFFI(context, &typical->type_, ffi, base, false, owner);
+        return CYFromFFI(context, typical->type_, ffi, base, false, owner);
     } CYCatch
 }
 
@@ -1667,6 +1677,9 @@ static bool Pointer_setProperty(JSContextRef context, JSObjectRef object, JSStri
     CYPool pool;
     Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(object)));
     Type_privateData *typical(internal->type_);
+
+    if (typical->type_ == NULL)
+        return NULL;
 
     ssize_t index;
     if (!CYGetIndex(pool, property, index))
@@ -1678,7 +1691,7 @@ static bool Pointer_setProperty(JSContextRef context, JSObjectRef object, JSStri
     base += ffi->size * index;
 
     CYTry {
-        CYPoolFFI(NULL, context, &typical->type_, ffi, base, value);
+        CYPoolFFI(NULL, context, typical->type_, ffi, base, value);
         return true;
     } CYCatch
 }
@@ -1697,7 +1710,7 @@ static JSValueRef Struct_getProperty(JSContextRef context, JSObjectRef object, J
     JSObjectRef owner(internal->owner_ ?: object);
 
     CYTry {
-        return CYFromFFI(context, typical->type_.data.signature.elements[index].type, typical->GetFFI()->elements[index], base, false, owner);
+        return CYFromFFI(context, typical->type_->data.signature.elements[index].type, typical->GetFFI()->elements[index], base, false, owner);
     } CYCatch
 }
 
@@ -1713,7 +1726,7 @@ static bool Struct_setProperty(JSContextRef context, JSObjectRef object, JSStrin
         return false;
 
     CYTry {
-        CYPoolFFI(NULL, context, typical->type_.data.signature.elements[index].type, typical->GetFFI()->elements[index], base, value);
+        CYPoolFFI(NULL, context, typical->type_->data.signature.elements[index].type, typical->GetFFI()->elements[index], base, value);
         return true;
     } CYCatch
 }
@@ -1721,9 +1734,13 @@ static bool Struct_setProperty(JSContextRef context, JSObjectRef object, JSStrin
 static void Struct_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
     Struct_privateData *internal(reinterpret_cast<Struct_privateData *>(JSObjectGetPrivate(object)));
     Type_privateData *typical(internal->type_);
+    sig::Type *type(typical->type_);
 
-    size_t count(typical->type_.data.signature.count);
-    sig::Element *elements(typical->type_.data.signature.elements);
+    if (type == NULL)
+        return;
+
+    size_t count(type->data.signature.count);
+    sig::Element *elements(type->data.signature.elements);
 
     char number[32];
 
