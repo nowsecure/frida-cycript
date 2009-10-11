@@ -1663,6 +1663,26 @@ static JSValueRef Pointer_getProperty(JSContextRef context, JSObjectRef object, 
     } CYCatch
 }
 
+static bool Pointer_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) {
+    CYPool pool;
+    Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(object)));
+    Type_privateData *typical(internal->type_);
+
+    ssize_t index;
+    if (!CYGetIndex(pool, property, index))
+        return NULL;
+
+    ffi_type *ffi(typical->GetFFI());
+
+    uint8_t *base(reinterpret_cast<uint8_t *>(internal->value_));
+    base += ffi->size * index;
+
+    CYTry {
+        CYPoolFFI(NULL, context, &typical->type_, ffi, base, value);
+        return true;
+    } CYCatch
+}
+
 static JSValueRef Struct_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
     CYPool pool;
     Struct_privateData *internal(reinterpret_cast<Struct_privateData *>(JSObjectGetPrivate(object)));
@@ -2132,6 +2152,7 @@ MSInitialize { _pooled
     definition.className = "Pointer";
     definition.staticFunctions = Pointer_staticFunctions;
     definition.getProperty = &Pointer_getProperty;
+    definition.setProperty = &Pointer_setProperty;
     definition.finalize = &CYData::Finalize;
     Pointer_ = JSClassCreate(&definition);
 
