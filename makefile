@@ -12,6 +12,8 @@ flags += -F${PKG_ROOT}/System/Library/PrivateFrameworks
 svn := $(shell svnversion)
 deb := $(shell grep ^Package: control | cut -d ' ' -f 2-)_$(shell grep ^Version: control | cut -d ' ' -f 2 | sed -e 's/\#/$(svn)/')_iphoneos-arm.deb
 
+header := Cycript.tab.hh Parser.hpp Pooling.hpp Struct.hpp cycript.hpp
+
 all: cycript libcycript.dylib libcycript.plist
 
 clean:
@@ -20,20 +22,11 @@ clean:
 libcycript.plist: Bridge.def
 	{ \
 	    echo '({'; \
-	    grep '^[CFV]' Bridge.def | sed -e 's/^C/0/;s/^F/1/;s/^V/2/' | while read -r line; do \
-	        if [[ $$line == '' ]]; then \
-	            continue; \
-	        fi; \
-	        set $$line; \
-	        echo "$$2 = ($$1, \"$${3//\"/\\\"}\");";  \
-	    done; \
+	    grep '^[CFV]' Bridge.def | sed -e 's/^C/0/;s/^F/1/;s/^V/2/' | sed -e 's/"/\\"/g;s/^\([^ ]*\) \([^ ]*\) \(.*\)$$/\2 = (\1, \"\3\");/'; \
 	    echo '},{'; \
 	    grep '^:' Bridge.def | sed -e 's/^: \([^ ]*\) \(.*\)/"\1" = "\2";/'; \
 	    echo '},{'; \
-	    grep '^S' Bridge.def | sed -e 's/^S/0/' | while read -r line; do \
-	        set $$line; \
-	        echo "$$2 = ($$1, \"$${3//\"/\\\"}\");";  \
-	    done; \
+	    grep '^S' Bridge.def | sed -e 's/^S/0/' | sed -e 's/"/\\"/g;s/^\([^ ]*\) \([^ ]*\) \(.*\)$$/\2 = (\1, \"\3\");/'; \
 	    echo '})'; \
 	} >$@
 
@@ -58,21 +51,27 @@ Cycript.tab.o: Cycript.tab.cc Cycript.tab.hh Parser.hpp Pooling.hpp
 lex.cy.o: lex.cy.c Cycript.tab.hh Parser.hpp Pooling.hpp
 	$(target)g++ $(flags) -c -o $@ $<
 
-Output.o: Output.cpp Parser.hpp Pooling.hpp
+%.o: %.cpp $(header)
 	$(target)g++ $(flags) -c -o $@ $<
 
-Library.o: Library.mm Cycript.tab.hh Parser.hpp Pooling.hpp Struct.hpp cycript.hpp
-	$(target)g++ $(flags) -c -o $@ $<
-
-Application.o: Application.mm Cycript.tab.hh Parser.hpp Pooling.hpp cycript.hpp
+%.o: %.mm $(header)
 	$(target)g++ $(flags) -c -o $@ $<
 
 libcycript.dylib: ffi_type.o parse.o Output.o Cycript.tab.o lex.cy.o Library.o
-	$(target)g++ $(flags) -dynamiclib -o $@ $(filter %.o,$^) -lobjc -framework CFNetwork -framework JavaScriptCore -framework WebCore -install_name /usr/lib/libcycript.dylib -framework CoreFoundation -framework Foundation -L$(menes)/mobilesubstrate -lsubstrate -lapr-1 -lffi -framework UIKit
+	$(target)g++ $(flags) -dynamiclib -o $@ $(filter %.o,$^) \
+	    -install_name /usr/lib/libcycript.dylib \
+	    -lobjc -lapr-1 -lffi \
+	    -framework CoreFoundation -framework Foundation \
+	    -framework CFNetwork \
+	    -framework JavaScriptCore -framework WebCore
 	ldid -S $@
 
 cycript: Application.o libcycript.dylib
-	$(target)g++ $(flags) -o $@ $(filter %.o,$^) -framework UIKit -framework Foundation -framework CoreFoundation -lobjc libcycript.dylib -lreadline -framework JavaScriptCore -lapr-1
+	$(target)g++ $(flags) -o $@ $(filter %.o,$^) \
+	    -lobjc -lapr-1 -lreadline \
+	    -L. -lcycript \
+	    -framework Foundation -framework CoreFoundation \
+	    -framework JavaScriptCore -framework UIKit
 	ldid -S cycript
 
 package: all

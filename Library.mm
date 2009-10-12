@@ -366,7 +366,7 @@ JSObjectRef CYMakeStruct(JSContextRef context, void *data, sig::Type *type, ffi_
     return JSObjectMake(context, Struct_, internal);
 }
 
-void Structor_(apr_pool_t *pool, const char *name, const char *types, sig::Type *type) {
+void Structor_(apr_pool_t *pool, const char *name, const char *types, sig::Type *&type) {
     if (name == NULL)
         return;
 
@@ -408,7 +408,7 @@ struct ffoData :
     }
 };
 
-JSValueRef CYMakeInstance(JSContextRef context, id object, bool transient) {
+JSObjectRef CYMakeInstance(JSContextRef context, id object, bool transient) {
     Instance::Flags flags;
 
     if (transient)
@@ -487,12 +487,14 @@ bool CYGetIndex(apr_pool_t *pool, NSString *value, ssize_t &index) {
 - (NSString *) cy$toCYON;
 - (NSString *) cy$toKey;
 
-- (JSValueRef) cy$JSValueInContext:(JSContextRef)context;
-
 - (NSObject *) cy$getProperty:(NSString *)name;
 - (bool) cy$setProperty:(NSString *)name to:(NSObject *)value;
 - (bool) cy$deleteProperty:(NSString *)name;
 
+@end
+
+@protocol Cycript
+- (JSValueRef) cy$JSValueInContext:(JSContextRef)context;
 @end
 
 @interface NSString (Cycript)
@@ -605,10 +607,6 @@ struct PropertyAttributes {
 
 - (NSString *) cy$toKey {
     return [self cy$toCYON];
-}
-
-- (JSValueRef) cy$JSValueInContext:(JSContextRef)context {
-    return CYMakeInstance(context, self, false);
 }
 
 - (NSObject *) cy$getProperty:(NSString *)name {
@@ -1144,7 +1142,12 @@ JSValueRef CYCastJSValue(JSContextRef context, const char *value) {
 }
 
 JSValueRef CYCastJSValue(JSContextRef context, id value) {
-    return value == nil ? CYJSNull(context) : [value cy$JSValueInContext:context];
+    if (value == nil)
+        return CYJSNull(context);
+    else if ([value respondsToSelector:@selector(cy$JSValueInContext:)])
+        return [value cy$JSValueInContext:context];
+    else
+        return CYMakeInstance(context, value, false);
 }
 
 JSObjectRef CYCastJSObject(JSContextRef context, JSValueRef value) {
@@ -1864,25 +1867,6 @@ static JSValueRef System_print(JSContextRef context, JSObjectRef object, JSObjec
     } CYCatch
 }
 
-static JSValueRef CYApplicationMain(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
-    CYTry {
-        CYPool pool;
-
-        int argc(CYCastDouble(context, arguments[0]));
-        char **argv(CYCastPointer<char **>(context, arguments[1]));
-        NSString *principal(CYCastNSObject(pool, context, arguments[2]));
-        NSString *delegate(CYCastNSObject(pool, context, arguments[3]));
-
-        argc = *_NSGetArgc() - 1;
-        argv = *_NSGetArgv() + 1;
-        for (int i(0); i != argc; ++i)
-            NSLog(@"argv[%i]=%s", i, argv[i]);
-
-        _pooled
-        return CYCastJSValue(context, UIApplicationMain(argc, argv, principal, delegate));
-    } CYCatch
-}
-
 JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, SEL _cmd, size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception) {
     const char *type;
 
@@ -1944,6 +1928,35 @@ static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObje
     return CYSendMessage(pool, context, self, _cmd, count - 2, arguments + 2, uninitialized, exception);
 }
 
+static JSValueRef CYJSValueInContext(id self, SEL _cmd, JSContextRef context) {
+    // XXX: the offset of this Ivar could be recomputed and stored in some form of closure during $objc_registerClassPair
+
+    JSObjectRef value;
+    object_getInstanceVariable(self, "cy$value_", reinterpret_cast<void **>(&value));
+
+    if (value == NULL) {
+        value = CYMakeInstance(context, self, false);
+        object_setInstanceVariable(self, "cy$value_", value);
+    }
+
+    return value;
+}
+
+static JSValueRef $objc_registerClassPair(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    CYTry {
+        CYPool pool;
+
+        Class _class(CYCastNSObject(pool, context, object));
+        if (class_getInstanceMethod(_class, @selector(cy$JSValueInContext:)) == NULL) {
+            class_addIvar(_class, "cy$value_", sizeof(JSObjectRef), log2(sizeof(JSObjectRef)), "^v");
+            class_addMethod(_class, @selector(cy$JSValueInContext:), reinterpret_cast<IMP>(&CYJSValueInContext), "^v12@0:4^v8");
+        }
+
+        objc_registerClassPair(_class);
+        return CYJSUndefined(context);
+    } CYCatch
+}
+
 static JSValueRef Selector_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     JSValueRef setup[count + 2];
     setup[0] = _this;
@@ -1964,6 +1977,23 @@ JSObjectRef Selector_new(JSContextRef context, JSObjectRef object, size_t count,
             @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"incorrect number of arguments to Selector constructor" userInfo:nil];
         const char *name(CYCastCString(context, arguments[0]));
         return CYMakeSelector(context, sel_registerName(name));
+    } CYCatch
+}
+
+JSObjectRef Pointer_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    CYTry {
+        if (count != 2)
+            @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"incorrect number of arguments to Functor constructor" userInfo:nil];
+
+        void *value(CYCastPointer<void *>(context, arguments[0]));
+        const char *type(CYCastCString(context, arguments[1]));
+
+        CYPool pool;
+
+        sig::Signature signature;
+        sig::Parse(pool, &signature, type, &Structor_);
+
+        return CYMakePointer(context, value, signature.elements[0].type, NULL);
     } CYCatch
 }
 
@@ -2225,10 +2255,11 @@ MSInitialize { _pooled
     JSObjectSetPrototype(context, global, JSObjectMake(context, Runtime_, NULL));
     CYSetProperty(context, global, CYJSString("ObjectiveC"), JSObjectMake(context, Runtime_, NULL));
 
-    CYSetProperty(context, global, CYJSString("Selector"), JSObjectMakeConstructor(context, Selector_, &Selector_new));
     CYSetProperty(context, global, CYJSString("Functor"), JSObjectMakeConstructor(context, Functor_, &Functor_new));
+    CYSetProperty(context, global, CYJSString("Pointer"), JSObjectMakeConstructor(context, Pointer_, &Pointer_new));
+    CYSetProperty(context, global, CYJSString("Selector"), JSObjectMakeConstructor(context, Selector_, &Selector_new));
 
-    CYSetProperty(context, global, CYJSString("CYApplicationMain"), JSObjectMakeFunctionWithCallback(context, CYJSString("CYApplicationMain"), &CYApplicationMain));
+    CYSetProperty(context, global, CYJSString("objc_registerClassPair"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_registerClassPair"), &$objc_registerClassPair));
     CYSetProperty(context, global, CYJSString("objc_msgSend"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_msgSend"), &$objc_msgSend));
 
     System_ = JSObjectMake(context, NULL, NULL);
