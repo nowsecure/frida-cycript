@@ -244,7 +244,11 @@ int main(int argc, const char *argv[]) {
 
         if (size >= 2 && start[0] == '#' && start[1] == '!') {
             start += 2;
-            while (start != end && *start++ != '\n');
+
+            if (void *line = memchr(start, '\n', end - start))
+                start = reinterpret_cast<char *>(line);
+            else
+                start = end;
         }
 
         driver.data_ = start;
