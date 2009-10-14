@@ -26,7 +26,7 @@ libcycript.plist: Bridge.def
 	    echo '},{'; \
 	    grep '^:' Bridge.def | sed -e 's/^: \([^ ]*\) \(.*\)/"\1" = "\2";/'; \
 	    echo '},{'; \
-	    grep '^S' Bridge.def | sed -e 's/^S/0/' | sed -e 's/"/\\"/g;s/^\([^ ]*\) \([^ ]*\) \(.*\)$$/\2 = (\1, \"\3\");/'; \
+	    grep '^[EST]' Bridge.def | sed -e 's/^S/0/;s/^T/1/;s/^E/2/' | sed -e 's/^2\(.*\)$$/1\1 i/' | sed -e 's/"/\\"/g;s/^\([^ ]*\) \([^ ]*\) \(.*\)$$/\2 = (\1, \"\3\");/'; \
 	    echo '})'; \
 	} >$@
 
@@ -60,7 +60,7 @@ lex.cy.o: lex.cy.c Cycript.tab.hh Parser.hpp Pooling.hpp
 libcycript.dylib: ffi_type.o parse.o Output.o Cycript.tab.o lex.cy.o Library.o
 	$(target)g++ $(flags) -dynamiclib -o $@ $(filter %.o,$^) \
 	    -install_name /usr/lib/libcycript.dylib \
-	    -lobjc -lapr-1 -lffi \
+	    -lobjc -lapr-1 -lffi -lsubstrate \
 	    -framework CoreFoundation -framework Foundation \
 	    -framework CFNetwork \
 	    -framework JavaScriptCore -framework WebCore

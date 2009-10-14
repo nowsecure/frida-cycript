@@ -160,13 +160,12 @@ struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named, C
 
         case '^':
             type->primitive = pointer_P;
-            if (**name == 'v') {
-                type->data.data.type = NULL;
-                ++*name;
-            } else if (**name == '"') {
+            if (**name == '"') {
                 type->data.data.type = NULL;
             } else {
                 type->data.data.type = Parse_(pool, name, eos, named, callback);
+                if (type->data.data.type->primitive == void_P)
+                    type->data.data.type = NULL;
             }
         break;
 

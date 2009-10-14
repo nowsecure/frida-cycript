@@ -4,6 +4,7 @@ C nil null
 
 : applicationDidFinishLaunching: v12@0:4@8
 
+
 S CGPoint "x"f"y"f
 S CGRect "origin"{CGPoint}"size"{CGSize}
 S CGSize "width"f"height"f
@@ -110,12 +111,15 @@ C UIBarStyleDefault 0
 C UIBarStyleBlack 1
 C UIBarStyleBlackOpaque 2
 C UIBarStyleBlackTranslucent 3
+T UIBarStyle i
 
 C UIDataDetectorTypePhoneNumber (1<<0)
 C UIDataDetectorTypeLink (1<<1)
 C UIDataDetectorTypeNone 0
-# XXX: NSUIntegerMax
 C UIDataDetectorTypeAll -1
+T UIDataDetectorTypes {NSUInteger}
+
+S UIEdgeInsets "top"{CGFloat}"left"{CGFloat}"bottom"{CGFloat}"right"{CGFloat}
 
 # UINavigationBar
 
@@ -311,29 +315,29 @@ F UIVideoAtPathIsCompatibleWithSavedPhotosAlbum B@
 F UIGraphicsGetCurrentContext @
 F UIGraphicsPushContext v@
 F UIGraphicsPopContext v
-F UIGraphicsBeginImageContext v{CGSize=ff}
+F UIGraphicsBeginImageContext v{CGSize}
 F UIGraphicsGetImageFromCurrentImageContext @
 F UIGraphicsEndImageContext v
-F UIRectClip v{CGRect={CGPoint=ff}{CGSize=ff}}
-F UIRectFill v{CGRect={CGPoint=ff}{CGSize=ff}}
-F UIRectFillUsingBlendMode v{CGRect={CGPoint=ff}{CGSize=ff}}i
-F UIRectFrame v{CGRect={CGPoint=ff}{CGSize=ff}}
-F UIRectFrameUsingBlendMode v{CGRect={CGPoint=ff}{CGSize=ff}}i
+F UIRectClip v{CGRect}
+F UIRectFill v{CGRect}
+F UIRectFillUsingBlendMode v{CGRect}{CGBlendMode}
+F UIRectFrame v{CGRect}
+F UIRectFrameUsingBlendMode v{CGRect}{CGBlendMode}
 
-F CGPointFromString {CGPoint=ff}@
-F CGRectFromString  {CGRect={CGPoint=ff}{CGSize=ff}}@
-F CGSizeFromString {CGSize=ff}@
-F CGAffineTransformFromString {CGAffineTransform=ffffff}@
+F CGPointFromString {CGPoint}@
+F CGRectFromString  {CGRect}@
+F CGSizeFromString {CGSize}@
+F CGAffineTransformFromString {CGAffineTransform}@
 F UIEdgeInsetsFromString {UIEdgeInsets=ffff}@
-F NSStringFromCGPoint @{CGPoint=ff}
-F NSStringFromCGRect @{CGRect={CGPoint=ff}{CGSize=ff}}
-F NSStringFromCGSize @{CGSize=ff}
-F NSStringFromCGAffineTransform @{CGAffineTransform=ffffff}
+F NSStringFromCGPoint @{CGPoint}
+F NSStringFromCGRect @{CGRect}
+F NSStringFromCGSize @{CGSize}
+F NSStringFromCGAffineTransform @{CGAffineTransform}
 F NSStringFromUIEdgeInsets @{UIEdgeInsets=ffff}
 
 F UIEdgeInsetsMake {UIEdgeInsets=ffff}ffff
 F UIEdgeInsetsEqualToEdgeInsets B{UIEdgeInsets=ffff}{UIEdgeInsets=ffff}
-F UIEdgeInsetsInsetRect {CGRect={CGPoint=ff}{CGSize=ff}}{CGRect={CGPoint=ff}{CGSize=ff}}{UIEdgeInsets=ffff}
+F UIEdgeInsetsInsetRect {CGRect}{CGRect}{UIEdgeInsets=ffff}
 
 # XXX: UIInterfaceOrientationIsPortrait
 # XXX: UIInterfaceOrientationIsLandscape
@@ -558,6 +562,26 @@ V kABWorkLabel @
 V kABHomeLabel @
 V kABOtherLabel @
 
+f CoreAnimation
+
+S CATransform3D "m11"{CGFloat}"m12"{CGFloat}"m13"{CGFloat}"m14"{CGFloat}"m21"{CGFloat}"m22"{CGFloat}"m23"{CGFloat}"m24"{CGFloat}"m31"{CGFloat}"m32"{CGFloat}"m33"{CGFloat}"m34"{CGFloat}"m41"{CGFloat}"m42"{CGFloat}"m43"{CGFloat}"m44"{CGFloat}
+
+F CACurrentMediaTime {CFTimeInterval}
+
+F CATransform3DIsIdentity B{CATransform3D}
+F CATransform3DEqualToTransform B{CATransform3D}{CATransform3D}
+F CATransform3DMakeTranslation {CATransform3D}{CGFloat}{CGFloat}{CGFloat}
+F CATransform3DMakeScale {CATransform3D}{CGFloat}{CGFloat}{CGFloat}
+F CATransform3DMakeRotation {CATransform3D}{CGFloat}{CGFloat}{CGFloat}{CGFloat}
+F CATransform3DTranslate {CATransform3D}{CATransform3D}{CGFloat}{CGFloat}{CGFloat}
+F CATransform3DScale {CATransform3D}{CATransform3D}{CGFloat}{CGFloat}{CGFloat}
+F CATransform3DRotate {CATransform3D}{CATransform3D}{CGFloat}{CGFloat}{CGFloat}{CGFloat}
+F CATransform3DConcat {CATransform3D}{CATransform3D}{CATransform3D}
+F CATransform3DInvert {CATransform3D}{CATransform3D}
+F CATransform3DMakeAffineTransform {CATransform3D}{CGAffineTransform}
+F CATransform3DIsAffine B{CATransform3D}
+F CATransform3DGetAffineTransform {CGAffineTransform}{CATransform3D}
+
 f CoreData
 
 C NSUndefinedAttributeType 0
@@ -719,37 +743,120 @@ F CFShowStr v@
 
 f CoreGraphics
 
+T CGFloat f
+
+# CFByteOrderUtils
+
+E __CFByteOrder
+C CFByteOrderUnknown 0
+C CFByteOrderLittleEndian 1
+C CFByteOrderBigEndian 2
+T CFByteOrder __CFByteOrder
+
 # CGAffineTransform
 
-F CGAffineTransformMake {CGAffineTransform=ffffff}ffffff
-F CGAffineTransformMakeRotation {CGAffineTransform=ffffff}f
-F CGAffineTransformMakeScale {CGAffineTransform=ffffff}ff
-F CGAffineTransformMakeTranslation {CGAffineTransform=ffffff}ff
+F CGAffineTransformMake {CGAffineTransform}{CGFloat}{CGFloat}{CGFloat}{CGFloat}{CGFloat}{CGFloat}
+F CGAffineTransformMakeRotation {CGAffineTransform}{CGFloat}
+F CGAffineTransformMakeScale {CGAffineTransform}{CGFloat}{CGFloat}
+F CGAffineTransformMakeTranslation {CGAffineTransform}{CGFloat}{CGFloat}
 
-F CGAffineTransformTranslate {CGAffineTransform=ffffff}{CGAffineTransform=ffffff}ff
-F CGAffineTransformScale {CGAffineTransform=ffffff}{CGAffineTransform=ffffff}ff
-F CGAffineTransformRotate {CGAffineTransform=ffffff}{CGAffineTransform=ffffff}f
-F CGAffineTransformInvert {CGAffineTransform=ffffff}{CGAffineTransform=ffffff}
-F CGAffineTransformConcat {CGAffineTransform=ffffff}{CGAffineTransform=ffffff}{CGAffineTransform=ffffff}
+F CGAffineTransformTranslate {CGAffineTransform}{CGAffineTransform}{CGFloat}{CGFloat}
+F CGAffineTransformScale {CGAffineTransform}{CGAffineTransform}{CGFloat}{CGFloat}
+F CGAffineTransformRotate {CGAffineTransform}{CGAffineTransform}{CGFloat}
+F CGAffineTransformInvert {CGAffineTransform}{CGAffineTransform}
+F CGAffineTransformConcat {CGAffineTransform}{CGAffineTransform}{CGAffineTransform}
 
-F CGPointApplyAffineTransform {CGPoint=ff}{CGPoint=ff}{CGAffineTransform=ffffff}
-F CGSizeApplyAffineTransform {CGSize=ff}{CGSize=ff}{CGAffineTransform=ffffff}
-F CGRectApplyAffineTransform {CGRect={CGPoint=ff}{CGSize=ff}}{CGRect={CGPoint=ff}{CGSize=ff}}{CGAffineTransform=ffffff}
+F CGPointApplyAffineTransform {CGPoint}{CGPoint}{CGAffineTransform}
+F CGSizeApplyAffineTransform {CGSize}{CGSize}{CGAffineTransform}
+F CGRectApplyAffineTransform {CGRect}{CGRect}{CGAffineTransform}
 
-F CGAffineTransformIsIdentity B{CGAffineTransform=ffffff}
-F CGAffineTransformEqualToTransform B{CGAffineTransform=ffffff}{CGAffineTransform=ffffff}
+F CGAffineTransformIsIdentity B{CGAffineTransform}
+F CGAffineTransformEqualToTransform B{CGAffineTransform}{CGAffineTransform}
 
-S CGAffineTransform "a"f"b"f"c"f"d"f"tx"f"ty"f
+S CGAffineTransform "a"{CGFloat}"b"{CGFloat}"c"{CGFloat}"d"{CGFloat}"tx"{CGFloat}"ty"{CGFloat}
 
-V CGAffineTransformIdentity {CGAffineTransform=ffffff}
+V CGAffineTransformIdentity {CGAffineTransform}
+
+# CGContext
+
+T CGContextRef ^{CGContext}
+
+E CGBlendMode
+C kCGBlendModeNormal 0
+C kCGBlendModeMultiply 1
+C kCGBlendModeScreen 2
+C kCGBlendModeOverlay 3
+C kCGBlendModeDarken 4
+C kCGBlendModeLighten 5
+C kCGBlendModeColorDodge 6
+C kCGBlendModeColorBurn 7
+C kCGBlendModeSoftLight 8
+C kCGBlendModeHardLight 9
+C kCGBlendModeDifference 10
+C kCGBlendModeExclusion 11
+C kCGBlendModeHue 12
+C kCGBlendModeSaturation 13
+C kCGBlendModeColor 14
+C kCGBlendModeLuminosity 15
+C kCGBlendModeClear 16
+C kCGBlendModeCopy 17
+C kCGBlendModeSourceIn 18
+C kCGBlendModeSourceOut 19
+C kCGBlendModeSourceAtop 20
+C kCGBlendModeDestinationOver 21
+C kCGBlendModeDestinationIn 22
+C kCGBlendModeDestinationOut 23
+C kCGBlendModeDestinationAtop 24
+C kCGBlendModeXOR 25
+C kCGBlendModePlusDarker 26
+C kCGBlendModePlusLighter 27
+
+E CGInterpolationQuality
+C kCGInterpolationDefault 0
+C kCGInterpolationNone 1
+C kCGInterpolationLow 2
+C kCGInterpolationHigh 3
+
+E CGLineCap
+C kCGLineCapButt 0
+C kCGLineCapRound 1
+C kCGLineCapSquare 2
+
+E CGLineJoin
+C kCGLineJoinMiter 0
+C kCGLineJoinRound 1
+C kCGLineJoinBevel 2
+
+E CGTextDrawingMode
+C kCGTextFill 0
+C kCGTextStroke 1
+C kCGTextFillStroke 2
+C kCGTextInvisible 3
+C kCGTextFillClip 4
+C kCGTextStrokeClip 5
+C kCGTextFillStrokeClip 6
+C kCGTextClip 7
+
+E CGTextEncoding
+C kCGEncodingFontSpecific 0
+C kCGEncodingMacRoman 1
 
 f CoreLocation
+
+T CLLocationDegrees d
+
+S CLLocationCoordinate2D "latitude"{CLLocationDegrees}"longitude"{CLLocationDegrees}
+
+T CLLocationAccuracy d
 
 V kCLLocationAccuracyBest d
 V kCLLocationAccuracyNearestTenMeters d
 V kCLLocationAccuracyHundredMeters d
 V kCLLocationAccuracyKilometer d
 V kCLLocationAccuracyThreeKilometers d
+
+T CLLocationSpeed d
+T CLLocationDirection d
 
 V kCLDistanceFilterNone d
 V kCLHeadingFilterNone d
@@ -763,12 +870,55 @@ V kCLErrorDomain @
 
 f Foundation
 
-S _NSRange "location"I"length"I
+T NSAppleEventManagerSuspensionID ^r{__NSAppleEventManagerSuspension}
+
+E _NSByteOrder
+C NS_UnknownByteOrder CFByteOrderUnknown
+C NS_LittleEndian CFByteOrderLittleEndian
+C NS_BigEndian CFByteOrderBigEndian
+
+# NSComparator
+
+C NSOrderedAscending -1
+C NSOrderedSame 0
+C NSOrderedDescending 1
+T NSComparisonResult {NSInteger}
+
+# NSDecimal
+
+T NSEnumerationOptions {NSUInteger}
+# NSHashEnumerator
+T NSHashTable {_NSHashTable}
+# NSHashTableCallBacks
+
+T NSHashTableOptions {NSUInteger}
+T NSInteger l
+
+# NSMapEnumerator
+
+T NSMapTable {_NSMapTable}
+# NSMapTableKeyCallBacks
+
+T NSMapTableOptions {NSUInteger}
+# NSMapTableValueCallBacks
+
+T NSPoint {_NSPoint}
+T NSPointArray ^{NSPoint}
+T NSPointPointer ^{NSPoint}
+
+S _NSRange "location"{NSUInteger}"length"{NSUInteger}
+T NSRange {_NSRange}
+T NSRangePointer ^{NSRange}
+
+S _NSRect "origin"{NSPoint}"size"{NSSize}
+T NSRectArray ^{NSRect}
 
 C NSMinXEdge 0
 C NSMinYEdge 1
 C NSMaxXEdge 2
 C NSMaxYEdge 3
+
+T NSRectPointer ^{NSRect}
 
 C NSApplicationDirectory 1
 C NSDemoApplicationDirectory 2
@@ -795,12 +945,27 @@ C NSPreferencePanesDirectory 22
 C NSItemReplacementDirectory 99
 C NSAllApplicationsDirectory 100
 C NSAllLibrariesDirectory 101
+T NSSearchPathDirectory {NSUInteger}
 
 C NSUserDomainMask 1
 C NSLocalDomainMask 2
 C NSNetworkDomainMask 4
 C NSSystemDomainMask 8
 C NSAllDomainsMask 0x0ffff
+T NSSearchPathDomainMask {NSUInteger}
+
+S _NSSize "width"{CGFloat}"height"{CGFloat}
+T NSSize {_NSSize}
+
+T NSSizePointer ^{NSSize}
+T NSSocketNativeHandle i
+T NSStringEncoding {NSUInteger}
+S NSSwappedDouble "v"Q
+S NSSwappedFloat "v"L
+T NSTimeInterval d
+# NSUncaughtExceptionHandler
+T NSUInteger L
+T NSZone {_NSZone}
 
 f MapKit
 
@@ -820,7 +985,7 @@ C MKPinAnnotationColorGreen 1
 C MKPinAnnotationColorPurple 2
 
 # MKCoordinateRegionMake
-# MKCoordinateRegionMakeWithDistance
+F MKCoordinateRegionMakeWithDistance {MKCoordinateRegion}{CLLocationCoordinate2D}{CLLocationDistance}{CLLocationDistance}
 # MKCoordinateSpanMake
 
 C RTLD_LAZY 0x1
@@ -836,7 +1001,10 @@ C RTLD_NEXT -1
 C RTLD_DEFAULT -2
 C RTLD_SELF -3
 
-# XXX: dladdr
+S dl_info "dli_fname"*"dli_fbase"v^"dli_sname"*"dli_saddr"^v
+T Dl_info {dl_info}
+
+F dladdr i^rv^{dl_info}
 F dlclose i^v
 F dlerror *
 F dlopen ^v*i
