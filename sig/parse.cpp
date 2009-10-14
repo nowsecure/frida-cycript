@@ -164,8 +164,9 @@ struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named, C
                 type->data.data.type = NULL;
             } else {
                 type->data.data.type = Parse_(pool, name, eos, named, callback);
-                if (type->data.data.type->primitive == void_P)
-                    type->data.data.type = NULL;
+                sig::Type *&target(type->data.data.type);
+                if (target != NULL && target->primitive == void_P)
+                    target = NULL;
             }
         break;
 

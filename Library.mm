@@ -2016,8 +2016,10 @@ MSHook(void, objc_registerClassPair, Class _class) {
 
 static JSValueRef objc_registerClassPair_(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     CYTry {
+        if (count != 1)
+            @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"incorrect number of arguments to objc_registerClassPair" userInfo:nil];
         CYPool pool;
-        Class _class(CYCastNSObject(pool, context, object));
+        Class _class(CYCastNSObject(pool, context, arguments[0]));
         $objc_registerClassPair(_class);
         return CYJSUndefined(context);
     } CYCatch
