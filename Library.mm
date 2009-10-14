@@ -1996,24 +1996,19 @@ static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObje
     return CYSendMessage(pool, context, self, _cmd, count - 2, arguments + 2, uninitialized, exception);
 }
 
-void dealloc_(id self, SEL sel) {
+MSHook(void, CYDealloc, id self, SEL sel) {
     CYInternal *internal;
     object_getInstanceVariable(self, "cy$internal_", reinterpret_cast<void **>(&internal));
     if (internal != NULL)
         delete internal;
-    if (Method dealloc = class_getInstanceMethod(object_getClass(self), @selector(cy$dealloc)))
-        reinterpret_cast<void (*)(id, SEL)>(method_getImplementation(dealloc))(self, sel);
+    _CYDealloc(self, sel);
 }
 
 MSHook(void, objc_registerClassPair, Class _class) {
     Class super(class_getSuperclass(_class));
     if (super == NULL || class_getInstanceVariable(super, "cy$internal_") == NULL) {
         class_addIvar(_class, "cy$internal_", sizeof(CYInternal *), log2(sizeof(CYInternal *)), "^{CYInternal}");
-        if (!class_addMethod(_class, @selector(dealloc), reinterpret_cast<IMP>(&dealloc_), "v8@0:4")) {
-            Method dealloc(class_getInstanceMethod(_class, @selector(dealloc)));
-            class_addMethod(_class, @selector(cy$dealloc), method_getImplementation(dealloc), method_getTypeEncoding(dealloc));
-            method_setImplementation(dealloc, reinterpret_cast<IMP>(&dealloc_));
-        }
+        MSHookMessage(_class, @selector(dealloc), MSHake(CYDealloc));
     }
 
     _objc_registerClassPair(_class);
