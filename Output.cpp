@@ -379,6 +379,8 @@ void CYMessage::Output(std::ostream &out) const {
 }
 
 void CYNew::Output(std::ostream &out, CYFlags flags) const {
+    if ((flags & CYNoLeader) != 0)
+        out << ' ';
     out << "new";
     constructor_->Output(out, Precedence(), CYCenter(flags) | CYNoLeader);
     out << '(';
@@ -448,6 +450,8 @@ void CYReturn::Output(std::ostream &out) const {
 }
 
 void CYSelector::Output(std::ostream &out, CYFlags flags) const {
+    if ((flags & CYNoLeader) != 0)
+        out << ' ';
     out << "new Selector(\"";
     if (name_ != NULL)
         name_->Output(out);

@@ -114,6 +114,7 @@ static JSClassRef Pointer_;
 static JSClassRef Runtime_;
 static JSClassRef Selector_;
 static JSClassRef Struct_;
+static JSClassRef Type_;
 
 static JSObjectRef Array_;
 static JSObjectRef Function_;
@@ -136,12 +137,16 @@ struct CYData {
     virtual ~CYData() {
     }
 
-    static void *operator new(size_t size) {
-        apr_pool_t *pool;
-        apr_pool_create(&pool, NULL);
+    static void *operator new(size_t size, apr_pool_t *pool) {
         void *data(apr_palloc(pool, size));
         reinterpret_cast<CYData *>(data)->pool_ = pool;
         return data;
+    }
+
+    static void *operator new(size_t size) {
+        apr_pool_t *pool;
+        apr_pool_create(&pool, NULL);
+        return operator new(size, pool);
     }
 
     static void operator delete(void *data) {
@@ -289,29 +294,56 @@ struct CStringMapLess :
     }
 };
 
-struct Type_privateData {
-    apr_pool_t *pool_;
+void Structor_(apr_pool_t *pool, const char *name, const char *types, sig::Type *&type) {
+    if (name == NULL)
+        return;
 
+    CYPoolTry {
+        if (NSMutableArray *entry = [[Bridge_ objectAtIndex:2] objectForKey:[NSString stringWithUTF8String:name]])
+            switch ([[entry objectAtIndex:0] intValue]) {
+                case 0: {
+                    sig::Parse(pool, &type->data.signature, [[entry objectAtIndex:1] UTF8String], &Structor_);
+                } break;
+
+                case 1: {
+                    sig::Signature signature;
+                    sig::Parse(pool, &signature, [[entry objectAtIndex:1] UTF8String], &Structor_);
+                    type = signature.elements[0].type;
+                } break;
+            }
+    } CYPoolCatch()
+}
+
+struct Type_privateData :
+    CYData
+{
     ffi_type *ffi_;
     sig::Type *type_;
 
-    Type_privateData(apr_pool_t *pool, sig::Type *type) :
-        pool_(pool),
-        ffi_(NULL)
-    {
-        if (type != NULL) {
-            type_ = new(pool) sig::Type;
-            sig::Copy(pool, *type_, *type);
-        }
+    void Set(sig::Type *type) {
+        type_ = new(pool_) sig::Type;
+        sig::Copy(pool_, *type_, *type);
     }
 
-    Type_privateData(apr_pool_t *pool, sig::Type *type, ffi_type *ffi) :
-        pool_(pool)
+    Type_privateData(const char *type) :
+        ffi_(NULL)
     {
-        ffi_ = new(pool) ffi_type;
-        sig::Copy(pool, *ffi_, *ffi);
-        type_ = new(pool) sig::Type;
-        sig::Copy(pool, *type_, *type);
+        sig::Signature signature;
+        sig::Parse(pool_, &signature, type, &Structor_);
+        type_ = signature.elements[0].type;
+    }
+
+    Type_privateData(sig::Type *type) :
+        ffi_(NULL)
+    {
+        if (type != NULL)
+            Set(type);
+    }
+
+    Type_privateData(sig::Type *type, ffi_type *ffi) {
+        ffi_ = new(pool_) ffi_type;
+        sig::Copy(pool_, *ffi_, *ffi);
+        Set(type);
     }
 
     ffi_type *GetFFI() {
@@ -345,7 +377,7 @@ struct Pointer :
     Pointer(void *value, sig::Type *type, JSObjectRef owner) :
         CYValue(value),
         owner_(owner),
-        type_(new(pool_) Type_privateData(pool_, type))
+        type_(new(pool_) Type_privateData(type))
     {
     }
 };
@@ -368,7 +400,7 @@ static TypeMap Types_;
 JSObjectRef CYMakeStruct(JSContextRef context, void *data, sig::Type *type, ffi_type *ffi, JSObjectRef owner) {
     Struct_privateData *internal(new Struct_privateData(owner));
     apr_pool_t *pool(internal->pool_);
-    Type_privateData *typical(new(pool) Type_privateData(pool, type, ffi));
+    Type_privateData *typical(new(pool) Type_privateData(type, ffi));
     internal->type_ = typical;
 
     if (owner != NULL)
@@ -381,26 +413,6 @@ JSObjectRef CYMakeStruct(JSContextRef context, void *data, sig::Type *type, ffi_
     }
 
     return JSObjectMake(context, Struct_, internal);
-}
-
-void Structor_(apr_pool_t *pool, const char *name, const char *types, sig::Type *&type) {
-    if (name == NULL)
-        return;
-
-    CYPoolTry {
-        if (NSMutableArray *entry = [[Bridge_ objectAtIndex:2] objectForKey:[NSString stringWithUTF8String:name]])
-            switch ([[entry objectAtIndex:0] intValue]) {
-                case 0: {
-                    sig::Parse(pool, &type->data.signature, [[entry objectAtIndex:1] UTF8String], &Structor_);
-                } break;
-
-                case 1: {
-                    sig::Signature signature;
-                    sig::Parse(pool, &signature, [[entry objectAtIndex:1] UTF8String], &Structor_);
-                    type = signature.elements[0].type;
-                } break;
-            }
-    } CYPoolCatch()
 }
 
 struct Functor_privateData :
@@ -1936,12 +1948,14 @@ JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, SEL _c
     if (Method method = class_getInstanceMethod(_class, _cmd))
         type = method_getTypeEncoding(method);
     else {
-        CYPoolTry {
-            NSMethodSignature *method([self methodSignatureForSelector:_cmd]);
-            if (method == nil)
-                @throw [NSException exceptionWithName:NSInvalidArgumentException reason:[NSString stringWithFormat:@"unrecognized selector %s sent to object %p", sel_getName(_cmd), self] userInfo:nil];
-            type = CYPoolCString(pool, [method _typeString]);
-        } CYPoolCatch(NULL)
+        CYTry {
+            CYPoolTry {
+                NSMethodSignature *method([self methodSignatureForSelector:_cmd]);
+                if (method == nil)
+                    @throw [NSException exceptionWithName:NSInvalidArgumentException reason:[NSString stringWithFormat:@"unrecognized selector %s sent to object %p", sel_getName(_cmd), self] userInfo:nil];
+                type = CYPoolCString(pool, [method _typeString]);
+            } CYPoolCatch(NULL)
+        } CYCatch
     }
 
     void *setup[2];
@@ -2056,6 +2070,46 @@ JSObjectRef Pointer_new(JSContextRef context, JSObjectRef object, size_t count, 
         sig::Parse(pool, &signature, type, &Structor_);
 
         return CYMakePointer(context, value, signature.elements[0].type, NULL);
+    } CYCatch
+}
+
+JSObjectRef CYMakeType(JSContextRef context, JSObjectRef object, const char *type) {
+    Type_privateData *internal(new Type_privateData(type));
+    return JSObjectMake(context, Type_, internal);
+}
+
+JSObjectRef Type_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    CYTry {
+        if (count != 1)
+            @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"incorrect number of arguments to Type constructor" userInfo:nil];
+        const char *type(CYCastCString(context, arguments[0]));
+        return CYMakeType(context, object, type);
+    } CYCatch
+}
+
+static JSValueRef Type_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    CYTry {
+        if (count != 1)
+            @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"incorrect number of arguments to type cast function" userInfo:nil];
+        Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
+        sig::Type *type(internal->type_);
+        ffi_type *ffi(internal->GetFFI());
+        // XXX: alignment?
+        uint8_t value[ffi->size];
+        CYPool pool;
+        CYPoolFFI(pool, context, type, ffi, value, arguments[0]);
+        return CYFromFFI(context, type, ffi, value, false);
+    } CYCatch
+}
+
+static JSObjectRef Type_callAsConstructor(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    CYTry {
+        if (count > 1)
+            @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"incorrect number of arguments to type cast function" userInfo:nil];
+        Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
+        // XXX: alignment?
+        void *value(malloc(internal->GetFFI()->size));
+        return CYMakePointer(context, value, internal->type_, NULL);
     } CYCatch
 }
 
@@ -2396,6 +2450,13 @@ static void * APR_THREAD_FUNC Cyrver(apr_thread_t *thread, void *data) {
     return NULL;
 }
 
+void Unlink() {
+    pid_t pid(getpid());
+    char path[104];
+    sprintf(path, "/tmp/.s.cy.%u", pid);
+    unlink(path);
+}
+
 MSInitialize { _pooled
     _aprcall(apr_initialize());
     _aprcall(apr_pool_create(&Pool_, NULL));
@@ -2414,6 +2475,7 @@ MSInitialize { _pooled
 
     try {
         _syscall(bind(Socket_, reinterpret_cast<sockaddr *>(&address), SUN_LEN(&address)));
+        atexit(&Unlink);
         _syscall(listen(Socket_, 0));
 
         apr_threadattr_t *attr;
@@ -2431,36 +2493,11 @@ JSGlobalContextRef CYGetJSContext() {
         JSClassDefinition definition;
 
         definition = kJSClassDefinitionEmpty;
-        definition.className = "Pointer";
-        definition.staticFunctions = Pointer_staticFunctions;
-        definition.getProperty = &Pointer_getProperty;
-        definition.setProperty = &Pointer_setProperty;
-        definition.finalize = &CYData::Finalize;
-        Pointer_ = JSClassCreate(&definition);
-
-        definition = kJSClassDefinitionEmpty;
         definition.className = "Functor";
         definition.staticFunctions = Functor_staticFunctions;
         definition.callAsFunction = &Functor_callAsFunction;
         definition.finalize = &CYData::Finalize;
         Functor_ = JSClassCreate(&definition);
-
-        definition = kJSClassDefinitionEmpty;
-        definition.className = "Struct";
-        definition.getProperty = &Struct_getProperty;
-        definition.setProperty = &Struct_setProperty;
-        definition.getPropertyNames = &Struct_getPropertyNames;
-        definition.finalize = &CYData::Finalize;
-        Struct_ = JSClassCreate(&definition);
-
-        definition = kJSClassDefinitionEmpty;
-        definition.className = "Selector";
-        definition.staticValues = CYValue_staticValues;
-        //definition.staticValues = Selector_staticValues;
-        definition.staticFunctions = Selector_staticFunctions;
-        definition.callAsFunction = &Selector_callAsFunction;
-        definition.finalize = &CYData::Finalize;
-        Selector_ = JSClassCreate(&definition);
 
         definition = kJSClassDefinitionEmpty;
         definition.className = "Instance";
@@ -2472,6 +2509,38 @@ JSGlobalContextRef CYGetJSContext() {
         definition.callAsConstructor = &Instance_callAsConstructor;
         definition.finalize = &CYData::Finalize;
         Instance_ = JSClassCreate(&definition);
+
+        definition = kJSClassDefinitionEmpty;
+        definition.className = "Pointer";
+        definition.staticFunctions = Pointer_staticFunctions;
+        definition.getProperty = &Pointer_getProperty;
+        definition.setProperty = &Pointer_setProperty;
+        definition.finalize = &CYData::Finalize;
+        Pointer_ = JSClassCreate(&definition);
+
+        definition = kJSClassDefinitionEmpty;
+        definition.className = "Selector";
+        definition.staticValues = CYValue_staticValues;
+        //definition.staticValues = Selector_staticValues;
+        definition.staticFunctions = Selector_staticFunctions;
+        definition.callAsFunction = &Selector_callAsFunction;
+        definition.finalize = &CYData::Finalize;
+        Selector_ = JSClassCreate(&definition);
+
+        definition = kJSClassDefinitionEmpty;
+        definition.className = "Struct";
+        definition.getProperty = &Struct_getProperty;
+        definition.setProperty = &Struct_setProperty;
+        definition.getPropertyNames = &Struct_getPropertyNames;
+        definition.finalize = &CYData::Finalize;
+        Struct_ = JSClassCreate(&definition);
+
+        definition = kJSClassDefinitionEmpty;
+        definition.className = "Type";
+        definition.callAsFunction = &Type_callAsFunction;
+        definition.callAsConstructor = &Type_callAsConstructor;
+        definition.finalize = &CYData::Finalize;
+        Type_ = JSClassCreate(&definition);
 
         definition = kJSClassDefinitionEmpty;
         definition.className = "Runtime";
@@ -2491,8 +2560,10 @@ JSGlobalContextRef CYGetJSContext() {
         CYSetProperty(context, global, CYJSString("ObjectiveC"), JSObjectMake(context, Runtime_, NULL));
 
         CYSetProperty(context, global, CYJSString("Functor"), JSObjectMakeConstructor(context, Functor_, &Functor_new));
+        CYSetProperty(context, global, CYJSString("Instance"), JSObjectMakeConstructor(context, Instance_, NULL));
         CYSetProperty(context, global, CYJSString("Pointer"), JSObjectMakeConstructor(context, Pointer_, &Pointer_new));
         CYSetProperty(context, global, CYJSString("Selector"), JSObjectMakeConstructor(context, Selector_, &Selector_new));
+        CYSetProperty(context, global, CYJSString("Type"), JSObjectMakeConstructor(context, Type_, &Type_new));
 
         MSHookFunction(&objc_registerClassPair, MSHake(objc_registerClassPair));
 
