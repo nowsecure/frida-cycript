@@ -2107,8 +2107,9 @@ static JSObjectRef Type_callAsConstructor(JSContextRef context, JSObjectRef obje
         if (count > 1)
             @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"incorrect number of arguments to type cast function" userInfo:nil];
         Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
+        size_t size(count == 0 ? 0 : CYCastDouble(context, arguments[0]));
         // XXX: alignment?
-        void *value(malloc(internal->GetFFI()->size));
+        void *value(malloc(internal->GetFFI()->size * size));
         return CYMakePointer(context, value, internal->type_, NULL);
     } CYCatch
 }
@@ -2201,8 +2202,8 @@ static JSValueRef Selector_callAsFunction_toJSON(JSContextRef context, JSObjectR
 
 static JSValueRef Selector_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     CYTry {
-        Selector_privateData *data(reinterpret_cast<Selector_privateData *>(JSObjectGetPrivate(_this)));
-        const char *name(sel_getName(data->GetValue()));
+        Selector_privateData *internal(reinterpret_cast<Selector_privateData *>(JSObjectGetPrivate(_this)));
+        const char *name(sel_getName(internal->GetValue()));
         CYPoolTry {
             return CYCastJSValue(context, CYJSString([NSString stringWithFormat:@"@selector(%s)", name]));
         } CYPoolCatch(NULL)
@@ -2211,20 +2212,45 @@ static JSValueRef Selector_callAsFunction_toCYON(JSContextRef context, JSObjectR
 
 static JSValueRef Selector_callAsFunction_type(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     CYTry {
-        if (count != 2)
+        if (count != 1)
             @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"incorrect number of arguments to Selector.type" userInfo:nil];
         CYPool pool;
-        Selector_privateData *data(reinterpret_cast<Selector_privateData *>(JSObjectGetPrivate(_this)));
+        Selector_privateData *internal(reinterpret_cast<Selector_privateData *>(JSObjectGetPrivate(_this)));
         Class _class(CYCastNSObject(pool, context, arguments[0]));
-        bool instance(CYCastBool(context, arguments[1]));
-        SEL sel(data->GetValue());
-        if (Method method = (*(instance ? &class_getInstanceMethod : class_getClassMethod))(_class, sel))
+        SEL sel(internal->GetValue());
+        if (Method method = class_getInstanceMethod(_class, sel))
             return CYCastJSValue(context, method_getTypeEncoding(method));
         else if (NSString *type = [[Bridge_ objectAtIndex:1] objectForKey:CYCastNSString(pool, sel_getName(sel))])
             return CYCastJSValue(context, CYJSString(type));
         else
             return CYJSNull(context);
     } CYCatch
+}
+
+static JSValueRef Type_callAsFunction_toString(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    CYTry {
+        Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
+        CYPool pool;
+        const char *type(sig::Unparse(pool, internal->type_));
+        CYPoolTry {
+            return CYCastJSValue(context, CYJSString(type));
+        } CYPoolCatch(NULL)
+    } CYCatch
+}
+
+static JSValueRef Type_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    CYTry {
+        Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
+        CYPool pool;
+        const char *type(sig::Unparse(pool, internal->type_));
+        CYPoolTry {
+            return CYCastJSValue(context, CYJSString([NSString stringWithFormat:@"new Type(%@)", [[NSString stringWithUTF8String:type] cy$toCYON]]));
+        } CYPoolCatch(NULL)
+    } CYCatch
+}
+
+static JSValueRef Type_callAsFunction_toJSON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    return Type_callAsFunction_toString(context, object, _this, count, arguments, exception);
 }
 
 static JSStaticValue CYValue_staticValues[2] = {
@@ -2263,6 +2289,13 @@ static JSStaticFunction Selector_staticFunctions[5] = {
     {"toJSON", &Selector_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toString", &Selector_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"type", &Selector_callAsFunction_type, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {NULL, NULL, 0}
+};
+
+static JSStaticFunction Type_staticFunctions[5] = {
+    {"toCYON", &Type_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"toJSON", &Type_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"toString", &Type_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
 
@@ -2365,10 +2398,7 @@ struct CYExecute_ {
 
 - (void) execute:(NSValue *)value {
     CYExecute_ *execute(reinterpret_cast<CYExecute_ *>([value pointerValue]));
-    NSLog(@"b:%p", execute->data_);
-    NSLog(@"s:%s", execute->data_);
     execute->data_ = CYExecute(execute->pool_, execute->data_);
-    NSLog(@"a:%p", execute->data_);
 }
 
 @end
@@ -2537,6 +2567,7 @@ JSGlobalContextRef CYGetJSContext() {
 
         definition = kJSClassDefinitionEmpty;
         definition.className = "Type";
+        definition.staticFunctions = Type_staticFunctions;
         definition.callAsFunction = &Type_callAsFunction;
         definition.callAsConstructor = &Type_callAsConstructor;
         definition.finalize = &CYData::Finalize;

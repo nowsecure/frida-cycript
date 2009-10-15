@@ -56,6 +56,7 @@ typedef struct {
         CYBoolean *boolean_;
         CYClause *clause_;
         CYCatch *catch_;
+        CYClassName *className_;
         CYCompound *compound_;
         CYDeclaration *declaration_;
         CYDeclarations *declarations_;
@@ -70,10 +71,10 @@ typedef struct {
         CYLiteral *literal_;
         CYMessage *message_;
         CYMessageParameter *messageParameter_;
-        CYName *name_;
         CYNull *null_;
         CYNumber *number_;
         CYProperty *property_;
+        CYPropertyName *propertyName_;
         CYSelectorPart *selector_;
         CYSource *source_;
         CYStatement *statement_;
@@ -264,6 +265,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <source_> ClassDeclaration
 %type <message_> ClassMessageDeclaration
 %type <message_> ClassMessageDeclarationListOpt
+%type <className_> ClassName
 %type <expression_> ClassSuperOpt
 %type <field_> ClassFieldList
 %type <expression_> ConditionalExpression
@@ -338,7 +340,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> PrimaryExpression_
 %type <expression_> PrimaryExpressionNoBF
 %type <source_> Program
-%type <name_> PropertyName
+%type <propertyName_> PropertyName
 %type <property_> PropertyNameAndValueList
 %type <property_> PropertyNameAndValueList_
 %type <property_> PropertyNameAndValueListOpt
@@ -1227,8 +1229,14 @@ ClassMessageDeclarationListOpt
     | { $$ = NULL; }
     ;
 
+ClassName
+    : Identifier { $$ = $1; }
+    | "(" AssignmentExpression ")" { $$ = $2; }
+    ;
+
 ClassDeclaration
     : "@class" Identifier ClassSuperOpt ClassFieldList ClassMessageDeclarationListOpt "@end" { $$ = new CYClass($2, $3, $4, $5); }
+    | "@class" ClassName ClassMessageDeclarationListOpt "@end" { $$ = new CYCategory($2, $3); }
     ;
 
 SourceElement

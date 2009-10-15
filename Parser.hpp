@@ -83,14 +83,18 @@ struct CYSource :
     virtual void Output(std::ostream &out, bool block) const;
 };
 
-struct CYName :
-    CYThing
-{
-    virtual const char *Name() const = 0;
+struct CYPropertyName {
+    virtual void PropertyName(std::ostream &out) const = 0;
+};
+
+struct CYClassName {
+    virtual void ClassName(std::ostream &out) const = 0;
 };
 
 struct CYWord :
-    CYName
+    CYThing,
+    CYPropertyName,
+    CYClassName
 {
     const char *word_;
 
@@ -103,11 +107,10 @@ struct CYWord :
         return word_;
     }
 
-    virtual const char *Name() const {
-        return Value();
-    }
-
     virtual void Output(std::ostream &out) const;
+
+    virtual void ClassName(std::ostream &out) const;
+    virtual void PropertyName(std::ostream &out) const;
 };
 
 struct CYIdentifier :
@@ -204,12 +207,15 @@ enum CYFlags {
 struct CYExpression :
     CYNext<CYExpression>,
     CYForInitialiser,
-    CYForInInitialiser
+    CYForInInitialiser,
+    CYClassName
 {
     virtual unsigned Precedence() const = 0;
     virtual void Part(std::ostream &out) const;
     virtual void Output(std::ostream &out, CYFlags flags) const = 0;
     void Output(std::ostream &out, unsigned precedence, CYFlags flags) const;
+
+    virtual void ClassName(std::ostream &out) const;
 
     virtual const char *Word() const {
         return NULL;
@@ -318,7 +324,7 @@ extern CYRange WordEndRange_;
 
 struct CYString :
     CYLiteral,
-    CYName
+    CYPropertyName
 {
     const char *value_;
     size_t size_;
@@ -339,10 +345,6 @@ struct CYString :
         return value_;
     }
 
-    virtual const char *Name() const {
-        return Value();
-    }
-
     virtual const char *Word() const {
         if (size_ == 0 || !WordStartRange_[value_[0]])
             return NULL;
@@ -357,11 +359,12 @@ struct CYString :
     }
 
     virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void PropertyName(std::ostream &out) const;
 };
 
 struct CYNumber :
     CYLiteral,
-    CYName
+    CYPropertyName
 {
     double value_;
 
@@ -374,15 +377,12 @@ struct CYNumber :
         return value_;
     }
 
-    virtual const char *Name() const {
-        throw;
-    }
-
     virtual void Output(std::ostream &out) const {
         return Output(out, CYNoFlags);
     }
 
     virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void PropertyName(std::ostream &out) const;
 };
 
 struct CYNull :
@@ -645,7 +645,7 @@ struct CYMessageParameter :
 };
 
 struct CYMessage :
-    CYSource
+    CYNext<CYMessage>
 {
     bool instance_;
     CYExpression *type_;
@@ -660,7 +660,7 @@ struct CYMessage :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(std::ostream &out, bool replace) const;
 };
 
 struct CYClass :
@@ -675,6 +675,21 @@ struct CYClass :
         name_(name),
         super_(super),
         fields_(fields),
+        messages_(messages)
+    {
+    }
+
+    virtual void Output(std::ostream &out) const;
+};
+
+struct CYCategory :
+    CYSource
+{
+    CYClassName *name_;
+    CYMessage *messages_;
+
+    CYCategory(CYClassName *name, CYMessage *messages) :
+        name_(name),
         messages_(messages)
     {
     }
@@ -736,10 +751,10 @@ struct CYForIn :
 struct CYProperty :
     CYNext<CYProperty>
 {
-    CYName *name_;
+    CYPropertyName *name_;
     CYExpression *value_;
 
-    CYProperty(CYName *name, CYExpression *value, CYProperty *next) :
+    CYProperty(CYPropertyName *name, CYExpression *value, CYProperty *next) :
         CYNext<CYProperty>(next),
         name_(name),
         value_(value)

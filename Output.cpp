@@ -107,14 +107,26 @@ void CYCatch::Output(std::ostream &out) const {
     code_->Output(out, true);
 }
 
+void CYCategory::Output(std::ostream &out) const {
+    out << "(function($cys,$cyp,$cyc,$cyn,$cyt){";
+    out << "$cyp=object_getClass($cys);";
+    out << "$cyc=$cys;";
+    if (messages_ != NULL)
+        messages_->Output(out, true);
+    out << "})(";
+    name_->ClassName(out);
+    out << ");";
+}
+
 void CYClass::Output(std::ostream &out) const {
-    out << "(function($cys,$cyc,$cym,$cyn,$cyt){";
+    out << "(function($cys,$cyp,$cyc,$cyn,$cyt,$cym){";
+    out << "$cyp=object_getClass($cys);";
     out << "$cyc=objc_allocateClassPair($cys,\"" << *name_ << "\",0);";
     out << "$cym=object_getClass($cyc);";
     if (fields_ != NULL)
         fields_->Output(out);
     if (messages_ != NULL)
-        messages_->Output(out);
+        messages_->Output(out, false);
     out << "objc_registerClassPair($cyc);";
     out << "})(";
     if (super_ != NULL)
@@ -122,6 +134,22 @@ void CYClass::Output(std::ostream &out) const {
     else
         out << "null";
     out << ");";
+}
+
+void CYCompound::Output(std::ostream &out, CYFlags flags) const {
+    if (CYExpression *expression = expressions_)
+        if (CYExpression *next = expression->next_) {
+            expression->Output(out, CYLeft(flags));
+            CYFlags center(CYCenter(flags));
+            while (next != NULL) {
+                expression = next;
+                out << ',';
+                next = expression->next_;
+                CYFlags right(next != NULL ? center : CYRight(flags));
+                expression->Output(out, right);
+            }
+        } else
+            expression->Output(out, flags);
 }
 
 void CYCondition::Output(std::ostream &out, CYFlags flags) const {
@@ -220,25 +248,13 @@ void CYExpress::Output(std::ostream &out) const {
     out << ';';
 }
 
+void CYExpression::ClassName(std::ostream &out) const {
+    Output(out, CYPA, CYNoFlags);
+}
+
 void CYExpression::Part(std::ostream &out) const {
     // XXX: this should handle LeftHandSideExpression
     Output(out, CYNoIn);
-}
-
-void CYCompound::Output(std::ostream &out, CYFlags flags) const {
-    if (CYExpression *expression = expressions_)
-        if (CYExpression *next = expression->next_) {
-            expression->Output(out, CYLeft(flags));
-            CYFlags center(CYCenter(flags));
-            while (next != NULL) {
-                expression = next;
-                out << ',';
-                next = expression->next_;
-                CYFlags right(next != NULL ? center : CYRight(flags));
-                expression->Output(out, right);
-            }
-        } else
-            expression->Output(out, flags);
 }
 
 void CYExpression::Output(std::ostream &out, unsigned precedence, CYFlags flags) const {
@@ -355,9 +371,9 @@ void CYMember::Output(std::ostream &out, CYFlags flags) const {
     }
 }
 
-void CYMessage::Output(std::ostream &out) const {
+void CYMessage::Output(std::ostream &out, bool replace) const {
     if (next_ != NULL)
-        next_->Output(out);
+        next_->Output(out, replace);
     out << "$cyn=new Selector(\"";
     for (CYMessageParameter *parameter(parameter_); parameter != NULL; parameter = parameter->next_)
         if (parameter->tag_ != NULL) {
@@ -366,8 +382,8 @@ void CYMessage::Output(std::ostream &out) const {
                 out << ':';
         }
     out << "\");";
-    out << "$cyt=$cyn.type($cys," << (instance_ ? "true" : "false") << ");";
-    out << "class_addMethod($cy" << (instance_ ? 'c' : 'm') << ",$cyn,";
+    out << "$cyt=$cyn.type($cy" << (instance_ ? 's' : 'p') << ");";
+    out << "class_" << (replace ? "replace" : "add") << "Method($cy" << (instance_ ? 'c' : 'm') << ",$cyn,";
     out << "new Functor(function(self,_cmd";
     for (CYMessageParameter *parameter(parameter_); parameter != NULL; parameter = parameter->next_)
         if (parameter->name_ != NULL)
@@ -406,6 +422,10 @@ void CYNumber::Output(std::ostream &out, CYFlags flags) const {
         out << ' ';
 }
 
+void CYNumber::PropertyName(std::ostream &out) const {
+    Output(out);
+}
+
 void CYObject::Output(std::ostream &out, CYFlags flags) const {
     bool protect((flags & CYNoBrace) != 0);
     if (protect)
@@ -433,7 +453,7 @@ void CYPrefix::Output(std::ostream &out, CYFlags flags) const {
 }
 
 void CYProperty::Output(std::ostream &out) const {
-    out << *name_;
+    name_->PropertyName(out);
     out << ':';
     value_->Output(out, CYPA, CYNoFlags);
     if (next_ != NULL) {
@@ -544,6 +564,13 @@ void CYString::Output(std::ostream &out, CYFlags flags) const {
     out << (single ? '\'' : '"');
 }
 
+void CYString::PropertyName(std::ostream &out) const {
+    if (const char *word = Word())
+        out << word;
+    else
+        Output(out);
+}
+
 void CYSwitch::Output(std::ostream &out) const {
     out << "switch(";
     value_->Output(out, CYNoFlags);
@@ -601,6 +628,14 @@ void CYWith::Output(std::ostream &out) const {
     code_->Output(out, false);
 }
 
+void CYWord::ClassName(std::ostream &out) const {
+    out << "objc_getClass(\"" << Value() << "\")";
+}
+
 void CYWord::Output(std::ostream &out) const {
     out << Value();
+}
+
+void CYWord::PropertyName(std::ostream &out) const {
+    Output(out);
 }
