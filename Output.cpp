@@ -398,8 +398,8 @@ void CYNull::Output(std::ostream &out, CYFlags flags) const {
 void CYNumber::Output(std::ostream &out, CYFlags flags) const {
     if ((flags & CYNoLeader) != 0)
         out << ' ';
-    // XXX: this is not a useful formatting
-    out << Value();
+    // XXX: decide on correct precision
+    out << std::setprecision(9) << Value();
     if ((flags & CYNoTrailer) != 0)
         out << ' ';
 }

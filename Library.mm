@@ -1304,6 +1304,7 @@ const char *CYPoolCYONString(apr_pool_t *pool, JSContextRef context, JSValueRef 
     } else return NULL;
 }
 
+// XXX: use objc_getAssociatedObject and objc_setAssociatedObject on 10.6
 struct CYInternal :
     CYData
 {
@@ -1445,31 +1446,20 @@ JSObjectRef CYMakeFunctor(JSContextRef context, void (*function)(), const char *
     return JSObjectMake(context, Functor_, data);
 }
 
-const char *CYPoolCString(apr_pool_t *pool, JSStringRef value, size_t *length = NULL) {
+const char *CYPoolCString(apr_pool_t *pool, JSStringRef value) {
     if (pool == NULL) {
         const char *string([CYCastNSString(NULL, value) UTF8String]);
-        if (length != NULL)
-            *length = strlen(string);
         return string;
     } else {
         size_t size(JSStringGetMaximumUTF8CStringSize(value));
         char *string(new(pool) char[size]);
         JSStringGetUTF8CString(value, string, size);
-        // XXX: this is ironic
-        if (length != NULL)
-            *length = strlen(string);
         return string;
     }
 }
 
-const char *CYPoolCString(apr_pool_t *pool, JSContextRef context, JSValueRef value, size_t *length = NULL) {
-    if (!JSValueIsNull(context, value))
-        return CYPoolCString(pool, CYJSString(context, value), length);
-    else {
-        if (length != NULL)
-            *length = 0;
-        return NULL;
-    }
+const char *CYPoolCString(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
+    return JSValueIsNull(context, value) ? NULL : CYPoolCString(pool, CYJSString(context, value));
 }
 
 bool CYGetIndex(apr_pool_t *pool, JSStringRef value, ssize_t &index) {
@@ -1683,8 +1673,8 @@ bool Index_(apr_pool_t *pool, Struct_privateData *internal, JSStringRef property
     if (type == NULL)
         return false;
 
-    size_t length;
-    const char *name(CYPoolCString(pool, property, &length));
+    const char *name(CYPoolCString(pool, property));
+    size_t length(strlen(name));
     double number(CYCastDouble(name, length));
 
     size_t count(type->data.signature.count);
