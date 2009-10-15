@@ -53,6 +53,7 @@ typedef struct {
         bool bool_;
 
         CYArgument *argument_;
+        CYAssignment *assignment_;
         CYBoolean *boolean_;
         CYClause *clause_;
         CYCatch *catch_;
@@ -68,6 +69,7 @@ typedef struct {
         CYForInInitialiser *forin_;
         CYFunctionParameter *functionParameter_;
         CYIdentifier *identifier_;
+        CYInfix *infix_;
         CYLiteral *literal_;
         CYMessage *message_;
         CYMessageParameter *messageParameter_;
@@ -242,6 +244,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <argument_> Arguments
 %type <literal_> ArrayLiteral
 %type <expression_> AssignmentExpression
+%type <assignment_> AssignmentExpression_
 %type <expression_> AssignmentExpressionNoBF
 %type <expression_> AssignmentExpressionNoIn
 %type <expression_> BitwiseANDExpression
@@ -345,8 +348,10 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <property_> PropertyNameAndValueList_
 %type <property_> PropertyNameAndValueListOpt
 %type <expression_> RelationalExpression
+%type <infix_> RelationalExpression_
 %type <expression_> RelationalExpressionNoBF
 %type <expression_> RelationalExpressionNoIn
+%type <infix_> RelationalExpressionNoIn_
 %type <statement_> ReturnStatement
 %type <selector_> SelectorExpression
 %type <selector_> SelectorExpression_
@@ -735,33 +740,32 @@ ShiftExpressionNoBF
     | ShiftExpressionNoBF ">>>" AdditiveExpression { $$ = new(driver.pool_) CYShiftRightUnsigned($1, $3); }
     ;
 
+RelationalExpressionNoIn_
+    : "<" ShiftExpression { $$ = new(driver.pool_) CYLess(NULL, $2); }
+    | ">" ShiftExpression { $$ = new(driver.pool_) CYGreater(NULL, $2); }
+    | "<=" ShiftExpression { $$ = new(driver.pool_) CYLessOrEqual(NULL, $2); }
+    | ">=" ShiftExpression { $$ = new(driver.pool_) CYGreaterOrEqual(NULL, $2); }
+    | "instanceof" ShiftExpression { $$ = new(driver.pool_) CYInstanceOf(NULL, $2); }
+    ;
+
+RelationalExpression_
+    : RelationalExpressionNoIn_ { $$ = $1; }
+    | "in" ShiftExpression { $$ = new(driver.pool_) CYIn(NULL, $2); }
+    ;
+
 RelationalExpression
     : ShiftExpression { $$ = $1; }
-    | RelationalExpression "<" ShiftExpression { $$ = new(driver.pool_) CYLess($1, $3); }
-    | RelationalExpression ">" ShiftExpression { $$ = new(driver.pool_) CYGreater($1, $3); }
-    | RelationalExpression "<=" ShiftExpression { $$ = new(driver.pool_) CYLessOrEqual($1, $3); }
-    | RelationalExpression ">=" ShiftExpression { $$ = new(driver.pool_) CYGreaterOrEqual($1, $3); }
-    | RelationalExpression "instanceof" ShiftExpression { $$ = new(driver.pool_) CYInstanceOf($1, $3); }
-    | RelationalExpression "in" ShiftExpression { $$ = new(driver.pool_) CYIn($1, $3); }
+    | RelationalExpression RelationalExpression_ { $2->SetLeft($1); $$ = $2; }
     ;
 
 RelationalExpressionNoIn
     : ShiftExpression { $$ = $1; }
-    | RelationalExpressionNoIn "<" ShiftExpression { $$ = new(driver.pool_) CYLess($1, $3); }
-    | RelationalExpressionNoIn ">" ShiftExpression { $$ = new(driver.pool_) CYGreater($1, $3); }
-    | RelationalExpressionNoIn "<=" ShiftExpression { $$ = new(driver.pool_) CYLessOrEqual($1, $3); }
-    | RelationalExpressionNoIn ">=" ShiftExpression { $$ = new(driver.pool_) CYGreaterOrEqual($1, $3); }
-    | RelationalExpressionNoIn "instanceof" ShiftExpression { $$ = new(driver.pool_) CYInstanceOf($1, $3); }
+    | RelationalExpressionNoIn RelationalExpressionNoIn_ { $2->SetLeft($1); $$ = $2; }
     ;
 
 RelationalExpressionNoBF
     : ShiftExpressionNoBF { $$ = $1; }
-    | RelationalExpressionNoBF "<" ShiftExpression { $$ = new(driver.pool_) CYLess($1, $3); }
-    | RelationalExpressionNoBF ">" ShiftExpression { $$ = new(driver.pool_) CYGreater($1, $3); }
-    | RelationalExpressionNoBF "<=" ShiftExpression { $$ = new(driver.pool_) CYLessOrEqual($1, $3); }
-    | RelationalExpressionNoBF ">=" ShiftExpression { $$ = new(driver.pool_) CYGreaterOrEqual($1, $3); }
-    | RelationalExpressionNoBF "instanceof" ShiftExpression { $$ = new(driver.pool_) CYInstanceOf($1, $3); }
-    | RelationalExpressionNoBF "in" ShiftExpression { $$ = new(driver.pool_) CYIn($1, $3); }
+    | RelationalExpressionNoBF RelationalExpression_ { $2->SetLeft($1); $$ = $2; }
     ;
 
 EqualityExpression
@@ -878,20 +882,24 @@ ConditionalExpressionNoBF
     | LogicalORExpressionNoBF "?" AssignmentExpression ":" AssignmentExpression { $$ = new(driver.pool_) CYCondition($1, $3, $5); }
     ;
 
+AssignmentExpression_
+    : "=" AssignmentExpression { $$ = new(driver.pool_) CYAssign(NULL, $2); }
+    | "*=" AssignmentExpression { $$ = new(driver.pool_) CYMultiplyAssign(NULL, $2); }
+    | "/=" AssignmentExpression { $$ = new(driver.pool_) CYDivideAssign(NULL, $2); }
+    | "%=" AssignmentExpression { $$ = new(driver.pool_) CYModulusAssign(NULL, $2); }
+    | "+=" AssignmentExpression { $$ = new(driver.pool_) CYAddAssign(NULL, $2); }
+    | "-=" AssignmentExpression { $$ = new(driver.pool_) CYSubtractAssign(NULL, $2); }
+    | "<<=" AssignmentExpression { $$ = new(driver.pool_) CYShiftLeftAssign(NULL, $2); }
+    | ">>=" AssignmentExpression { $$ = new(driver.pool_) CYShiftRightSignedAssign(NULL, $2); }
+    | ">>>=" AssignmentExpression { $$ = new(driver.pool_) CYShiftRightUnsignedAssign(NULL, $2); }
+    | "&=" AssignmentExpression { $$ = new(driver.pool_) CYBitwiseAndAssign(NULL, $2); }
+    | "^=" AssignmentExpression { $$ = new(driver.pool_) CYBitwiseXOrAssign(NULL, $2); }
+    | "|=" AssignmentExpression { $$ = new(driver.pool_) CYBitwiseOrAssign(NULL, $2); }
+    ;
+
 AssignmentExpression
     : ConditionalExpression { $$ = $1; }
-    | LeftHandSideExpression "=" AssignmentExpression { $$ = new(driver.pool_) CYAssign($1, $3); }
-    | LeftHandSideExpression "*=" AssignmentExpression { $$ = new(driver.pool_) CYMultiplyAssign($1, $3); }
-    | LeftHandSideExpression "/=" AssignmentExpression { $$ = new(driver.pool_) CYDivideAssign($1, $3); }
-    | LeftHandSideExpression "%=" AssignmentExpression { $$ = new(driver.pool_) CYModulusAssign($1, $3); }
-    | LeftHandSideExpression "+=" AssignmentExpression { $$ = new(driver.pool_) CYAddAssign($1, $3); }
-    | LeftHandSideExpression "-=" AssignmentExpression { $$ = new(driver.pool_) CYSubtractAssign($1, $3); }
-    | LeftHandSideExpression "<<=" AssignmentExpression { $$ = new(driver.pool_) CYShiftLeftAssign($1, $3); }
-    | LeftHandSideExpression ">>=" AssignmentExpression { $$ = new(driver.pool_) CYShiftRightSignedAssign($1, $3); }
-    | LeftHandSideExpression ">>>=" AssignmentExpression { $$ = new(driver.pool_) CYShiftRightUnsignedAssign($1, $3); }
-    | LeftHandSideExpression "&=" AssignmentExpression { $$ = new(driver.pool_) CYBitwiseAndAssign($1, $3); }
-    | LeftHandSideExpression "^=" AssignmentExpression { $$ = new(driver.pool_) CYBitwiseXOrAssign($1, $3); }
-    | LeftHandSideExpression "|=" AssignmentExpression { $$ = new(driver.pool_) CYBitwiseOrAssign($1, $3); }
+    | LeftHandSideExpression AssignmentExpression_ { $2->SetLeft($1); $$ = $2; }
     ;
 
 AssignmentExpressionNoIn
@@ -912,18 +920,7 @@ AssignmentExpressionNoIn
 
 AssignmentExpressionNoBF
     : ConditionalExpressionNoBF { $$ = $1; }
-    | LeftHandSideExpressionNoBF "=" AssignmentExpression { $$ = new(driver.pool_) CYAssign($1, $3); }
-    | LeftHandSideExpressionNoBF "*=" AssignmentExpression { $$ = new(driver.pool_) CYMultiplyAssign($1, $3); }
-    | LeftHandSideExpressionNoBF "/=" AssignmentExpression { $$ = new(driver.pool_) CYDivideAssign($1, $3); }
-    | LeftHandSideExpressionNoBF "%=" AssignmentExpression { $$ = new(driver.pool_) CYModulusAssign($1, $3); }
-    | LeftHandSideExpressionNoBF "+=" AssignmentExpression { $$ = new(driver.pool_) CYAddAssign($1, $3); }
-    | LeftHandSideExpressionNoBF "-=" AssignmentExpression { $$ = new(driver.pool_) CYSubtractAssign($1, $3); }
-    | LeftHandSideExpressionNoBF "<<=" AssignmentExpression { $$ = new(driver.pool_) CYShiftLeftAssign($1, $3); }
-    | LeftHandSideExpressionNoBF ">>=" AssignmentExpression { $$ = new(driver.pool_) CYShiftRightSignedAssign($1, $3); }
-    | LeftHandSideExpressionNoBF ">>>=" AssignmentExpression { $$ = new(driver.pool_) CYShiftRightUnsignedAssign($1, $3); }
-    | LeftHandSideExpressionNoBF "&=" AssignmentExpression { $$ = new(driver.pool_) CYBitwiseAndAssign($1, $3); }
-    | LeftHandSideExpressionNoBF "^=" AssignmentExpression { $$ = new(driver.pool_) CYBitwiseXOrAssign($1, $3); }
-    | LeftHandSideExpressionNoBF "|=" AssignmentExpression { $$ = new(driver.pool_) CYBitwiseOrAssign($1, $3); }
+    | LeftHandSideExpressionNoBF AssignmentExpression_ { $2->SetLeft($1); $$ = $2; }
     ;
 
 Expression_

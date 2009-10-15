@@ -483,6 +483,10 @@ struct CYInfix :
     {
     }
 
+    void SetLeft(CYExpression *lhs) {
+        lhs_ = lhs;
+    }
+
     virtual bool Alphabetic() const = 0;
     virtual const char *Operator() const = 0;
 
@@ -514,6 +518,10 @@ struct CYAssignment :
         lhs_(lhs),
         rhs_(rhs)
     {
+    }
+
+    void SetLeft(CYExpression *lhs) {
+        lhs_ = lhs;
     }
 
     virtual const char *Operator() const = 0;
