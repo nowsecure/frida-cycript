@@ -72,15 +72,13 @@ static void sigint(int) {
     longjmp(ctrlc_, 1);
 }
 
-void Run(int socket, std::string &code, FILE *fout) {
+void Run(int socket, const char *data, size_t size, FILE *fout) {
     CYPool pool;
 
     const char *json;
     if (socket == -1)
-        json = CYExecute(pool, code.c_str());
+        json = CYExecute(pool, data);
     else {
-        const char *data(code.c_str());
-        size_t size(code.size());
         CYSendAll(socket, &size, sizeof(size));
         CYSendAll(socket, data, size);
         CYRecvAll(socket, &size, sizeof(size));
@@ -99,6 +97,10 @@ void Run(int socket, std::string &code, FILE *fout) {
         fputs("\n", fout);
         fflush(fout);
     }
+}
+
+void Run(int socket, std::string &code, FILE *fout) {
+    Run(socket, code.c_str(), code.size(), fout);
 }
 
 static void Console(int socket) {
@@ -245,7 +247,7 @@ int main(int argc, char *argv[]) {
         case -1:
             goto getopt;
         case '?':
-            fprintf(stderr, "usage: cycript [-p <pid>] [<script>]\n");
+            fprintf(stderr, "usage: cycript [-p <pid>] [<script> [<arg>...]]\n");
             return 1;
 
         case 'p': {
@@ -261,6 +263,11 @@ int main(int argc, char *argv[]) {
 
     const char *script;
 
+    if (optind < argc - 1 && pid != _not(pid_t)) {
+        fprintf(stderr, "-p cannot set argv\n");
+        return 1;
+    }
+
     if (optind == argc)
         script = NULL;
     else {
@@ -269,11 +276,6 @@ int main(int argc, char *argv[]) {
         script = argv[optind];
         if (strcmp(script, "-") == 0)
             script = NULL;
-    }
-
-    if (script != NULL && pid != _not(pid_t)) {
-        fprintf(stderr, "-p or <script>: choose one\n");
-        return 1;
     }
 
     int socket;
@@ -316,13 +318,15 @@ int main(int argc, char *argv[]) {
         if (parser.parse() != 0 || !driver.errors_.empty()) {
             for (CYDriver::Errors::const_iterator i(driver.errors_.begin()); i != driver.errors_.end(); ++i)
                 std::cerr << i->location_.begin << ": " << i->message_ << std::endl;
-        } else if (driver.source_ != NULL) {
-            std::ostringstream str;
-            driver.source_->Show(str);
-            std::string code(str.str());
-            std::cout << code << std::endl;
-            Run(socket, code, stdout);
-        }
+        } else if (driver.source_ != NULL)
+            if (socket != -1)
+                Run(socket, start, end - start, stdout);
+            else {
+                std::ostringstream str;
+                driver.source_->Show(str);
+                std::string code(str.str());
+                Run(socket, code, stdout);
+            }
     }
 
     return 0;
