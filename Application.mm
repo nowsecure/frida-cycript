@@ -167,10 +167,24 @@ static void Console(int socket) {
             driver.size_ = command.size();
 
             if (parser.parse() != 0 || !driver.errors_.empty()) {
-                for (CYDriver::Errors::const_iterator i(driver.errors_.begin()); i != driver.errors_.end(); ++i) {
-                    cy::position begin(i->location_.begin);
+                for (CYDriver::Errors::const_iterator error(driver.errors_.begin()); error != driver.errors_.end(); ++error) {
+                    cy::position begin(error->location_.begin);
                     if (begin.line != lines.size() || begin.column - 1 != lines.back().size()) {
-                        std::cerr << i->message_ << std::endl;
+                        cy::position end(error->location_.end);
+                        if (begin.line != lines.size()) {
+                            std::cerr << "  | ";
+                            std::cerr << lines[begin.line - 1] << std::endl;
+                        }
+                        std::cerr << "  | ";
+                        for (size_t i(0); i != begin.column - 1; ++i)
+                            std::cerr << '.';
+                        if (begin.line != end.line)
+                            std::cerr << '^';
+                        else for (size_t i(0), e(end.column - begin.column); i != e; ++i)
+                            std::cerr << '^';
+                        std::cerr << std::endl;
+                        std::cerr << "  | ";
+                        std::cerr << error->message_ << std::endl;
                         add_history(command.c_str());
                         goto restart;
                     }
