@@ -52,8 +52,22 @@
 
 #include <sig/types.hpp>
 
+bool CYRecvAll_(int socket, uint8_t *data, size_t size);
+bool CYSendAll_(int socket, const uint8_t *data, size_t size);
+
+template <typename Type_>
+bool CYRecvAll(int socket, Type_ *data, size_t size) {
+    return CYRecvAll_(socket, reinterpret_cast<uint8_t *>(data), size);
+}
+
+template <typename Type_>
+bool CYSendAll(int socket, const Type_ *data, size_t size) {
+    return CYSendAll_(socket, reinterpret_cast<const uint8_t *>(data), size);
+}
+
 JSGlobalContextRef CYGetJSContext();
 JSObjectRef CYGetGlobalObject(JSContextRef context);
+const char *CYExecute(apr_pool_t *pool, const char *code);
 
 void CYSetArgs(int argc, const char *argv[]);
 

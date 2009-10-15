@@ -61,47 +61,47 @@
 
 #include "Cycript.tab.hh"
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/un.h>
+
 static jmp_buf ctrlc_;
 
 static void sigint(int) {
     longjmp(ctrlc_, 1);
 }
 
-static JSStringRef Result_;
+void Run(int socket, std::string &code, FILE *fout) {
+    CYPool pool;
 
-void Run(const char *code, FILE *fout) { _pooled
-    JSStringRef script(JSStringCreateWithUTF8CString(code));
-
-    JSContextRef context(CYGetJSContext());
-
-    JSValueRef exception(NULL);
-    JSValueRef result(JSEvaluateScript(context, script, NULL, NULL, 0, &exception));
-    JSStringRelease(script);
-
-    if (exception != NULL) { error:
-        result = exception;
-        exception = NULL;
+    const char *json;
+    if (socket == -1)
+        json = CYExecute(pool, code.c_str());
+    else {
+        const char *data(code.c_str());
+        size_t size(code.size());
+        CYSendAll(socket, &size, sizeof(size));
+        CYSendAll(socket, data, size);
+        CYRecvAll(socket, &size, sizeof(size));
+        if (size == _not(size_t))
+            json = NULL;
+        else {
+            char *temp(new(pool) char[size + 1]);
+            CYRecvAll(socket, temp, size);
+            temp[size] = '\0';
+            json = temp;
+        }
     }
 
-    if (!JSValueIsUndefined(context, result)) {
-        CYPool pool;
-        const char *json;
-
-        json = CYPoolCYONString(pool, context, result, &exception);
-        if (exception != NULL)
-            goto error;
-
-        CYSetProperty(context, CYGetGlobalObject(context), Result_, result);
-
-        if (fout != NULL) {
-            fputs(json, fout);
-            fputs("\n", fout);
-            fflush(fout);
-        }
+    if (json != NULL && fout != NULL) {
+        fputs(json, fout);
+        fputs("\n", fout);
+        fflush(fout);
     }
 }
 
-static void Console() {
+static void Console(int socket) {
     bool bypass(false);
     bool debug(false);
 
@@ -186,9 +186,13 @@ static void Console() {
             if (driver.source_ == NULL)
                 goto restart;
 
-            std::ostringstream str;
-            driver.source_->Show(str);
-            code = str.str();
+            if (socket != -1)
+                code = command;
+            else {
+                std::ostringstream str;
+                driver.source_->Show(str);
+                code = str.str();
+            }
         }
 
         add_history(command.c_str());
@@ -196,7 +200,7 @@ static void Console() {
         if (debug)
             std::cout << code << std::endl;
 
-        Run(code.c_str(), fout);
+        Run(socket, code, fout);
     }
 
     fputs("\n", fout);
@@ -220,20 +224,61 @@ static void *Map(const char *path, size_t *psize) {
     return base;
 }
 
-int main(int argc, const char *argv[]) {
+int main(int argc, char *argv[]) {
+    pid_t pid(_not(pid_t));
+
+    for (;;) switch (getopt(argc, argv, "p:")) {
+        case -1:
+            goto getopt;
+        case '?':
+            fprintf(stderr, "usage: cycript [-p <pid>] [<script>]\n");
+            return 1;
+
+        case 'p': {
+            size_t size(strlen(optarg));
+            char *end;
+            pid = strtoul(optarg, &end, 0);
+            if (optarg + size != end) {
+                fprintf(stderr, "invalid pid for -p\n");
+                return 1;
+            }
+        } break;
+    } getopt:;
+
     const char *script;
 
-    if (argc == 1)
+    if (optind == argc)
         script = NULL;
     else {
-        CYSetArgs(argc - 1, argv + 1);
-        script = argv[1];
+        // XXX: const_cast?! wtf gcc :(
+        CYSetArgs(argc - optind - 1, const_cast<const char **>(argv + optind + 1));
+        script = argv[optind];
+        if (strcmp(script, "-") == 0)
+            script = NULL;
     }
 
-    Result_ = CYCopyJSString("_");
+    if (script != NULL && pid != _not(pid_t)) {
+        fprintf(stderr, "-p or <script>: choose one\n");
+        return 1;
+    }
 
-    if (script == NULL || strcmp(script, "-") == 0)
-        Console();
+    int socket;
+
+    if (pid == _not(pid_t))
+        socket = -1;
+    else {
+        socket = _syscall(::socket(PF_UNIX, SOCK_STREAM, 0));
+
+        struct sockaddr_un address;
+        memset(&address, 0, sizeof(address));
+        address.sun_family = AF_UNIX;
+        sprintf(address.sun_path, "/tmp/.s.cy.%u", pid);
+
+        _syscall(connect(socket, reinterpret_cast<sockaddr *>(&address), SUN_LEN(&address)));
+    }
+
+    if (script == NULL)
+        Console(socket);
     else {
         CYDriver driver(script);
         cy::parser parser(driver);
@@ -262,7 +307,7 @@ int main(int argc, const char *argv[]) {
             driver.source_->Show(str);
             std::string code(str.str());
             std::cout << code << std::endl;
-            Run(code.c_str(), stdout);
+            Run(socket, code, stdout);
         }
     }
 

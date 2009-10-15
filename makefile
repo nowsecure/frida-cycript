@@ -88,7 +88,7 @@ package: all
 	#cp -a Cycript.dylib package/Library/MobileSubstrate/DynamicLibraries
 	mkdir -p package/usr/{bin,lib}
 	cp -a libcycript.dylib package/usr/lib
-	#ln -s /usr/lib/libcycript.dylib package/Library/MobileSubstrate/DynamicLibraries/Cycript.dylib
+	ln -s /usr/lib/libcycript.dylib package/Library/MobileSubstrate/DynamicLibraries/Cycript.dylib
 	cp -a cycript package/usr/bin
 	cp -a libcycript.plist package/usr/lib
 	dpkg-deb -b package $(deb)

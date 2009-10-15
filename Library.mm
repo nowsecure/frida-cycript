@@ -58,6 +58,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/un.h>
+
 #include <sys/mman.h>
 
 #include <iostream>
@@ -65,10 +67,15 @@
 #include <set>
 #include <map>
 
+#include <sstream>
 #include <cmath>
 
 #include "Parser.hpp"
 #include "Cycript.tab.hh"
+
+#include <fcntl.h>
+
+#include <apr-1/apr_thread_proc.h>
 
 #undef _assert
 #undef _trace
@@ -110,6 +117,8 @@ static JSClassRef Struct_;
 
 static JSObjectRef Array_;
 static JSObjectRef Function_;
+
+static JSStringRef Result_;
 
 static JSStringRef length_;
 static JSStringRef message_;
@@ -894,10 +903,6 @@ struct PropertyAttributes {
 CYRange DigitRange_    (0x3ff000000000000LLU, 0x000000000000000LLU); // 0-9
 CYRange WordStartRange_(0x000001000000000LLU, 0x7fffffe87fffffeLLU); // A-Za-z_$
 CYRange WordEndRange_  (0x3ff001000000000LLU, 0x7fffffe87fffffeLLU); // A-Za-z_$0-9
-
-JSGlobalContextRef CYGetJSContext() {
-    return Context_;
-}
 
 #define CYTry \
     @try
@@ -1861,12 +1866,11 @@ JSObjectRef CYMakeFunctor(JSContextRef context, JSObjectRef function, const char
     // XXX: in case of exceptions this will leak
     ffoData *data(new ffoData(type));
 
-    ffi_closure *closure;
-    _syscall(closure = (ffi_closure *) mmap(
+    ffi_closure *closure((ffi_closure *) _syscall(mmap(
         NULL, sizeof(ffi_closure),
         PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE,
         -1, 0
-    ));
+    )));
 
     ffi_status status(ffi_prep_closure(closure, &data->cif_, &Closure_, data));
     _assert(status == FFI_OK);
@@ -2244,97 +2248,275 @@ JSObjectRef CYGetGlobalObject(JSContextRef context) {
     return JSContextGetGlobalObject(context);
 }
 
+const char *CYExecute(apr_pool_t *pool, const char *code) { _pooled
+    JSStringRef script(JSStringCreateWithUTF8CString(code));
+
+    JSContextRef context(CYGetJSContext());
+
+    JSValueRef exception(NULL);
+    JSValueRef result(JSEvaluateScript(context, script, NULL, NULL, 0, &exception));
+    JSStringRelease(script);
+
+    if (exception != NULL) { error:
+        result = exception;
+        exception = NULL;
+    }
+
+    if (JSValueIsUndefined(context, result))
+        return NULL;
+
+    const char *json(CYPoolCYONString(pool, context, result, &exception));
+    if (exception != NULL)
+        goto error;
+
+    CYSetProperty(context, CYGetGlobalObject(context), Result_, result);
+    return json;
+}
+
+bool CYRecvAll_(int socket, uint8_t *data, size_t size) {
+    while (size != 0) if (size_t writ = _syscall(recv(socket, data, size, 0))) {
+        data += writ;
+        size -= writ;
+    } else
+        return false;
+    return true;
+}
+
+bool CYSendAll_(int socket, const uint8_t *data, size_t size) {
+    while (size != 0) if (size_t writ = _syscall(send(socket, data, size, 0))) {
+        data += writ;
+        size -= writ;
+    } else
+        return false;
+    return true;
+}
+
+static int Socket_;
+apr_pool_t *Pool_;
+
+struct CYExecute_ {
+    apr_pool_t *pool_;
+    const char * volatile data_;
+};
+
+// XXX: this is "tre lame"
+@interface CYClient_ : NSObject {
+}
+
+- (void) execute:(NSValue *)value;
+
+@end
+
+@implementation CYClient_
+
+- (void) execute:(NSValue *)value {
+    CYExecute_ *execute(reinterpret_cast<CYExecute_ *>([value pointerValue]));
+    NSLog(@"b:%p", execute->data_);
+    NSLog(@"s:%s", execute->data_);
+    execute->data_ = CYExecute(execute->pool_, execute->data_);
+    NSLog(@"a:%p", execute->data_);
+}
+
+@end
+
+struct CYClient :
+    CYData
+{
+    int socket_;
+    apr_thread_t *thread_;
+
+    CYClient(int socket) :
+        socket_(socket)
+    {
+    }
+
+    ~CYClient() {
+        _syscall(close(socket_));
+    }
+
+    void Handle() { _pooled
+        CYClient_ *client = [[[CYClient_ alloc] init] autorelease];
+
+        for (;;) {
+            size_t size;
+            if (!CYRecvAll(socket_, &size, sizeof(size)))
+                return;
+
+            CYPool pool;
+            char *data(new(pool) char[size + 1]);
+            if (!CYRecvAll(socket_, data, size))
+                return;
+            data[size] = '\0';
+
+            CYDriver driver("");
+            cy::parser parser(driver);
+
+            driver.data_ = data;
+            driver.size_ = size;
+
+            const char *json;
+            if (parser.parse() != 0 || !driver.errors_.empty()) {
+                json = NULL;
+                size = _not(size_t);
+            } else {
+                std::ostringstream str;
+                driver.source_->Show(str);
+                std::string code(str.str());
+                CYExecute_ execute = {pool, code.c_str()};
+                [client performSelectorOnMainThread:@selector(execute:) withObject:[NSValue valueWithPointer:&execute] waitUntilDone:YES];
+                json = execute.data_;
+                size = json == NULL ? _not(size_t) : strlen(json);
+            }
+
+            if (!CYSendAll(socket_, &size, sizeof(size)))
+                return;
+            if (json != NULL)
+                if (!CYSendAll(socket_, json, size))
+                    return;
+        }
+    }
+};
+
+static void * APR_THREAD_FUNC OnClient(apr_thread_t *thread, void *data) {
+    CYClient *client(reinterpret_cast<CYClient *>(data));
+    client->Handle();
+    delete client;
+    return NULL;
+}
+
+static void * APR_THREAD_FUNC Cyrver(apr_thread_t *thread, void *data) {
+    for (;;) {
+        int socket(_syscall(accept(Socket_, NULL, NULL)));
+        CYClient *client(new CYClient(socket));
+        apr_threadattr_t *attr;
+        _aprcall(apr_threadattr_create(&attr, Pool_));
+        _aprcall(apr_thread_create(&client->thread_, attr, &OnClient, client, client->pool_));
+    }
+
+    return NULL;
+}
+
 MSInitialize { _pooled
-    apr_initialize();
+    _aprcall(apr_initialize());
+    _aprcall(apr_pool_create(&Pool_, NULL));
 
     Bridge_ = [[NSMutableArray arrayWithContentsOfFile:@"/usr/lib/libcycript.plist"] retain];
-
     NSCFBoolean_ = objc_getClass("NSCFBoolean");
 
-    JSClassDefinition definition;
+    Socket_ = _syscall(socket(PF_UNIX, SOCK_STREAM, 0));
 
-    definition = kJSClassDefinitionEmpty;
-    definition.className = "Pointer";
-    definition.staticFunctions = Pointer_staticFunctions;
-    definition.getProperty = &Pointer_getProperty;
-    definition.setProperty = &Pointer_setProperty;
-    definition.finalize = &CYData::Finalize;
-    Pointer_ = JSClassCreate(&definition);
+    struct sockaddr_un address;
+    memset(&address, 0, sizeof(address));
+    address.sun_family = AF_UNIX;
 
-    definition = kJSClassDefinitionEmpty;
-    definition.className = "Functor";
-    definition.staticFunctions = Functor_staticFunctions;
-    definition.callAsFunction = &Functor_callAsFunction;
-    definition.finalize = &CYData::Finalize;
-    Functor_ = JSClassCreate(&definition);
+    pid_t pid(getpid());
+    sprintf(address.sun_path, "/tmp/.s.cy.%u", pid);
 
-    definition = kJSClassDefinitionEmpty;
-    definition.className = "Struct";
-    definition.getProperty = &Struct_getProperty;
-    definition.setProperty = &Struct_setProperty;
-    definition.getPropertyNames = &Struct_getPropertyNames;
-    definition.finalize = &CYData::Finalize;
-    Struct_ = JSClassCreate(&definition);
+    try {
+        _syscall(bind(Socket_, reinterpret_cast<sockaddr *>(&address), SUN_LEN(&address)));
+        _syscall(listen(Socket_, 0));
 
-    definition = kJSClassDefinitionEmpty;
-    definition.className = "Selector";
-    definition.staticValues = CYValue_staticValues;
-    //definition.staticValues = Selector_staticValues;
-    definition.staticFunctions = Selector_staticFunctions;
-    definition.callAsFunction = &Selector_callAsFunction;
-    definition.finalize = &CYData::Finalize;
-    Selector_ = JSClassCreate(&definition);
+        apr_threadattr_t *attr;
+        _aprcall(apr_threadattr_create(&attr, Pool_));
 
-    definition = kJSClassDefinitionEmpty;
-    definition.className = "Instance";
-    definition.staticValues = CYValue_staticValues;
-    definition.staticFunctions = Instance_staticFunctions;
-    definition.getProperty = &Instance_getProperty;
-    definition.setProperty = &Instance_setProperty;
-    definition.deleteProperty = &Instance_deleteProperty;
-    definition.callAsConstructor = &Instance_callAsConstructor;
-    definition.finalize = &CYData::Finalize;
-    Instance_ = JSClassCreate(&definition);
+        apr_thread_t *thread;
+        _aprcall(apr_thread_create(&thread, attr, &Cyrver, NULL, Pool_));
+    } catch (...) {
+        NSLog(@"failed to setup Cyrver");
+    }
+}
 
-    definition = kJSClassDefinitionEmpty;
-    definition.className = "Runtime";
-    definition.getProperty = &Runtime_getProperty;
-    Runtime_ = JSClassCreate(&definition);
+JSGlobalContextRef CYGetJSContext() {
+    if (Context_ == NULL) {
+        JSClassDefinition definition;
 
-    definition = kJSClassDefinitionEmpty;
-    //definition.getProperty = &Global_getProperty;
-    JSClassRef Global(JSClassCreate(&definition));
+        definition = kJSClassDefinitionEmpty;
+        definition.className = "Pointer";
+        definition.staticFunctions = Pointer_staticFunctions;
+        definition.getProperty = &Pointer_getProperty;
+        definition.setProperty = &Pointer_setProperty;
+        definition.finalize = &CYData::Finalize;
+        Pointer_ = JSClassCreate(&definition);
 
-    JSGlobalContextRef context(JSGlobalContextCreate(Global));
-    Context_ = context;
+        definition = kJSClassDefinitionEmpty;
+        definition.className = "Functor";
+        definition.staticFunctions = Functor_staticFunctions;
+        definition.callAsFunction = &Functor_callAsFunction;
+        definition.finalize = &CYData::Finalize;
+        Functor_ = JSClassCreate(&definition);
 
-    JSObjectRef global(CYGetGlobalObject(context));
+        definition = kJSClassDefinitionEmpty;
+        definition.className = "Struct";
+        definition.getProperty = &Struct_getProperty;
+        definition.setProperty = &Struct_setProperty;
+        definition.getPropertyNames = &Struct_getPropertyNames;
+        definition.finalize = &CYData::Finalize;
+        Struct_ = JSClassCreate(&definition);
 
-    JSObjectSetPrototype(context, global, JSObjectMake(context, Runtime_, NULL));
-    CYSetProperty(context, global, CYJSString("ObjectiveC"), JSObjectMake(context, Runtime_, NULL));
+        definition = kJSClassDefinitionEmpty;
+        definition.className = "Selector";
+        definition.staticValues = CYValue_staticValues;
+        //definition.staticValues = Selector_staticValues;
+        definition.staticFunctions = Selector_staticFunctions;
+        definition.callAsFunction = &Selector_callAsFunction;
+        definition.finalize = &CYData::Finalize;
+        Selector_ = JSClassCreate(&definition);
 
-    CYSetProperty(context, global, CYJSString("Functor"), JSObjectMakeConstructor(context, Functor_, &Functor_new));
-    CYSetProperty(context, global, CYJSString("Pointer"), JSObjectMakeConstructor(context, Pointer_, &Pointer_new));
-    CYSetProperty(context, global, CYJSString("Selector"), JSObjectMakeConstructor(context, Selector_, &Selector_new));
+        definition = kJSClassDefinitionEmpty;
+        definition.className = "Instance";
+        definition.staticValues = CYValue_staticValues;
+        definition.staticFunctions = Instance_staticFunctions;
+        definition.getProperty = &Instance_getProperty;
+        definition.setProperty = &Instance_setProperty;
+        definition.deleteProperty = &Instance_deleteProperty;
+        definition.callAsConstructor = &Instance_callAsConstructor;
+        definition.finalize = &CYData::Finalize;
+        Instance_ = JSClassCreate(&definition);
 
-    MSHookFunction(&objc_registerClassPair, MSHake(objc_registerClassPair));
+        definition = kJSClassDefinitionEmpty;
+        definition.className = "Runtime";
+        definition.getProperty = &Runtime_getProperty;
+        Runtime_ = JSClassCreate(&definition);
 
-    CYSetProperty(context, global, CYJSString("objc_registerClassPair"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_registerClassPair"), &objc_registerClassPair_));
-    CYSetProperty(context, global, CYJSString("objc_msgSend"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_msgSend"), &$objc_msgSend));
+        definition = kJSClassDefinitionEmpty;
+        //definition.getProperty = &Global_getProperty;
+        JSClassRef Global(JSClassCreate(&definition));
 
-    System_ = JSObjectMake(context, NULL, NULL);
-    CYSetProperty(context, global, CYJSString("system"), System_);
-    CYSetProperty(context, System_, CYJSString("args"), CYJSNull(context));
-    //CYSetProperty(context, System_, CYJSString("global"), global);
+        JSGlobalContextRef context(JSGlobalContextCreate(Global));
+        Context_ = context;
 
-    CYSetProperty(context, System_, CYJSString("print"), JSObjectMakeFunctionWithCallback(context, CYJSString("print"), &System_print));
+        JSObjectRef global(CYGetGlobalObject(context));
 
-    length_ = JSStringCreateWithUTF8CString("length");
-    message_ = JSStringCreateWithUTF8CString("message");
-    name_ = JSStringCreateWithUTF8CString("name");
-    toCYON_ = JSStringCreateWithUTF8CString("toCYON");
-    toJSON_ = JSStringCreateWithUTF8CString("toJSON");
+        JSObjectSetPrototype(context, global, JSObjectMake(context, Runtime_, NULL));
+        CYSetProperty(context, global, CYJSString("ObjectiveC"), JSObjectMake(context, Runtime_, NULL));
 
-    Array_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Array")));
-    Function_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Function")));
+        CYSetProperty(context, global, CYJSString("Functor"), JSObjectMakeConstructor(context, Functor_, &Functor_new));
+        CYSetProperty(context, global, CYJSString("Pointer"), JSObjectMakeConstructor(context, Pointer_, &Pointer_new));
+        CYSetProperty(context, global, CYJSString("Selector"), JSObjectMakeConstructor(context, Selector_, &Selector_new));
+
+        MSHookFunction(&objc_registerClassPair, MSHake(objc_registerClassPair));
+
+        CYSetProperty(context, global, CYJSString("objc_registerClassPair"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_registerClassPair"), &objc_registerClassPair_));
+        CYSetProperty(context, global, CYJSString("objc_msgSend"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_msgSend"), &$objc_msgSend));
+
+        System_ = JSObjectMake(context, NULL, NULL);
+        CYSetProperty(context, global, CYJSString("system"), System_);
+        CYSetProperty(context, System_, CYJSString("args"), CYJSNull(context));
+        //CYSetProperty(context, System_, CYJSString("global"), global);
+
+        CYSetProperty(context, System_, CYJSString("print"), JSObjectMakeFunctionWithCallback(context, CYJSString("print"), &System_print));
+
+        Result_ = JSStringCreateWithUTF8CString("_");
+
+        length_ = JSStringCreateWithUTF8CString("length");
+        message_ = JSStringCreateWithUTF8CString("message");
+        name_ = JSStringCreateWithUTF8CString("name");
+        toCYON_ = JSStringCreateWithUTF8CString("toCYON");
+        toJSON_ = JSStringCreateWithUTF8CString("toJSON");
+
+        Array_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Array")));
+        Function_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Function")));
+    }
+
+    return Context_;
 }
