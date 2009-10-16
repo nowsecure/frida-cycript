@@ -9,12 +9,13 @@ flags += -F${PKG_ROOT}/System/Library/PrivateFrameworks
 
 svn := $(shell svnversion)
 deb := $(shell grep ^Package: control | cut -d ' ' -f 2-)_$(shell grep ^Version: control | cut -d ' ' -f 2 | sed -e 's/\#/$(svn)/')_iphoneos-arm.deb
+all := cycript libcycript.dylib libcycript.plist
 
 header := Cycript.tab.hh Parser.hpp Pooling.hpp Struct.hpp cycript.hpp
 
 $(deb):
 
-all: cycript libcycript.dylib libcycript.plist
+all: $(all)
 
 clean:
 	rm -f *.o libcycript.dylib cycript libcycript.plist Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh
@@ -74,7 +75,7 @@ cycript: Application.o libcycript.dylib
 	    -framework JavaScriptCore -framework UIKit
 	ldid -S cycript
 
-$(deb): all
+$(deb): $(all)
 	rm -rf package
 	mkdir -p package/DEBIAN
 	sed -e 's/#/$(svn)/' control >package/DEBIAN/control

@@ -1714,12 +1714,18 @@ static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object,
         } CYPoolCatch(NULL)
 
         const char *string(CYPoolCString(pool, name));
+        Class _class(object_getClass(self));
 
-        if (objc_property_t property = class_getProperty(object_getClass(self), string)) {
+        if (objc_property_t property = class_getProperty(_class, string)) {
             PropertyAttributes attributes(property);
             SEL sel(sel_registerName(attributes.Getter()));
             return CYSendMessage(pool, context, self, sel, 0, NULL, false, exception);
         }
+
+        if (SEL sel = sel_getUid(string))
+            // XXX: possibly use a more "awesome" check?
+            if (class_getInstanceMethod(_class, sel) != NULL)
+                return CYSendMessage(pool, context, self, sel, 0, NULL, false, exception);
 
         return NULL;
     } CYCatch
@@ -1744,8 +1750,9 @@ static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStr
         } CYPoolCatch(NULL)
 
         const char *string(CYPoolCString(pool, name));
+        Class _class(object_getClass(self));
 
-        if (objc_property_t property = class_getProperty(object_getClass(self), string)) {
+        if (objc_property_t property = class_getProperty(_class, string)) {
             PropertyAttributes attributes(property);
             if (const char *setter = attributes.Setter()) {
                 SEL sel(sel_registerName(setter));
@@ -1754,6 +1761,29 @@ static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStr
                 return true;
             }
         }
+
+        size_t length(strlen(string));
+
+        char set[length + 5];
+
+        set[0] = 's';
+        set[1] = 'e';
+        set[2] = 't';
+
+        if (string[0] != '\0') {
+            set[3] = toupper(string[0]);
+            memcpy(set + 4, string + 1, length - 1);
+        }
+
+        set[length + 3] = ':';
+        set[length + 4] = '\0';
+
+        if (SEL sel = sel_getUid(set))
+            // XXX: possibly use a more "awesome" check?
+            if (class_getInstanceMethod(_class, sel) != NULL) {
+                JSValueRef arguments[1] = {value};
+                CYSendMessage(pool, context, self, sel, 1, arguments, false, exception);
+            }
 
         if (CYInternal *internal = CYInternal::Set(self)) {
             internal->SetProperty(context, property, value);
