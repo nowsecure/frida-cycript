@@ -1378,6 +1378,7 @@ NSString *CYCopyNSCYON(id value) {
             string = @"_NSZombie_";
         else if (_class == NSZombie_)
             string = [NSString stringWithFormat:@"<_NSZombie_: %p>", value];
+        // XXX: frowny /in/ the pants
         else if (value == NSMessageBuilder_ || value == Object_)
             string = nil;
         else

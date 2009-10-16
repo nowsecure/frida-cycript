@@ -72,13 +72,15 @@ static void sigint(int) {
     longjmp(ctrlc_, 1);
 }
 
-void Run(int socket, const char *data, size_t size, FILE *fout) {
+void Run(int socket, const char *data, size_t size, FILE *fout, bool expand = false) {
     CYPool pool;
 
     const char *json;
-    if (socket == -1)
+    if (socket == -1) {
         json = CYExecute(pool, data);
-    else {
+        if (json != NULL)
+            size = strlen(json);
+    } else {
         CYSendAll(socket, &size, sizeof(size));
         CYSendAll(socket, data, size);
         CYRecvAll(socket, &size, sizeof(size));
@@ -93,19 +95,39 @@ void Run(int socket, const char *data, size_t size, FILE *fout) {
     }
 
     if (json != NULL && fout != NULL) {
-        fputs(json, fout);
+        if (!expand || json[0] != '"' && json[0] != '\'')
+            fputs(json, fout);
+        else for (size_t i(0); i != size; ++i)
+            if (json[i] != '\\')
+                fputc(json[i], fout);
+            else switch(json[++i]) {
+                case '\0': goto done;
+                case '\\': fputc('\\', fout); break;
+                case '\'': fputc('\'', fout); break;
+                case '"': fputc('"', fout); break;
+                case 'b': fputc('\b', fout); break;
+                case 'f': fputc('\f', fout); break;
+                case 'n': fputc('\n', fout); break;
+                case 'r': fputc('\r', fout); break;
+                case 't': fputc('\t', fout); break;
+                case 'v': fputc('\v', fout); break;
+                default: fputc('\\', fout); --i; break;
+            }
+
+      done:
         fputs("\n", fout);
         fflush(fout);
     }
 }
 
-void Run(int socket, std::string &code, FILE *fout) {
-    Run(socket, code.c_str(), code.size(), fout);
+void Run(int socket, std::string &code, FILE *fout, bool expand = false) {
+    Run(socket, code.c_str(), code.size(), fout, expand);
 }
 
 static void Console(int socket) {
     bool bypass(false);
     bool debug(false);
+    bool expand(false);
 
     FILE *fout(stdout);
 
@@ -137,7 +159,7 @@ static void Console(int socket) {
 
         if (!extra) {
             extra = true;
-            if (line[0] == '\\') {
+            if (line[0] == '?') {
                 std::string data(line + 1);
                 if (data == "bypass") {
                     bypass = !bypass;
@@ -146,6 +168,10 @@ static void Console(int socket) {
                 } else if (data == "debug") {
                     debug = !debug;
                     fprintf(fout, "debug == %s\n", debug ? "true" : "false");
+                    fflush(fout);
+                } else if (data == "expand") {
+                    expand = !expand;
+                    fprintf(fout, "expand == %s\n", expand ? "true" : "false");
                     fflush(fout);
                 }
                 add_history(line);
@@ -216,7 +242,7 @@ static void Console(int socket) {
         if (debug)
             std::cout << code << std::endl;
 
-        Run(socket, code, fout);
+        Run(socket, code, fout, expand);
     }
 
     fputs("\n", fout);
