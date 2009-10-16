@@ -20,7 +20,7 @@ class CYPool {
 
   public:
     CYPool() {
-        apr_pool_create(&pool_, NULL);
+        _aprcall(apr_pool_create(&pool_, NULL));
     }
 
     ~CYPool() {
@@ -42,6 +42,30 @@ class CYPool {
     char *operator ()(const char *data, size_t size) const {
         return apr_pstrndup(pool_, data, size);
     }
+};
+
+struct CYData {
+    apr_pool_t *pool_;
+
+    virtual ~CYData() {
+    }
+
+    static void *operator new(size_t size, apr_pool_t *pool) {
+        void *data(apr_palloc(pool, size));
+        reinterpret_cast<CYData *>(data)->pool_ = pool;
+        return data;
+    }
+
+    static void *operator new(size_t size) {
+        apr_pool_t *pool;
+        _aprcall(apr_pool_create(&pool, NULL));
+        return operator new(size, pool);
+    }
+
+    static void operator delete(void *data) {
+        apr_pool_destroy(reinterpret_cast<CYData *>(data)->pool_);
+    }
+
 };
 
 #endif/*CYPOOLING_HPP*/

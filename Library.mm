@@ -48,17 +48,10 @@
 #include "Pooling.hpp"
 #include "Struct.hpp"
 
-#include <unistd.h>
-
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFLogUtilities.h>
 
 #include <WebKit/WebScriptObject.h>
-
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <sys/un.h>
 
 #include <sys/mman.h>
 
@@ -72,8 +65,6 @@
 
 #include "Parser.hpp"
 #include "Cycript.tab.hh"
-
-#include <fcntl.h>
 
 #include <apr-1/apr_thread_proc.h>
 
@@ -142,32 +133,9 @@ static Class Object_;
 
 static NSArray *Bridge_;
 
-struct CYData {
-    apr_pool_t *pool_;
-
-    virtual ~CYData() {
-    }
-
-    static void *operator new(size_t size, apr_pool_t *pool) {
-        void *data(apr_palloc(pool, size));
-        reinterpret_cast<CYData *>(data)->pool_ = pool;
-        return data;
-    }
-
-    static void *operator new(size_t size) {
-        apr_pool_t *pool;
-        apr_pool_create(&pool, NULL);
-        return operator new(size, pool);
-    }
-
-    static void operator delete(void *data) {
-        apr_pool_destroy(reinterpret_cast<CYData *>(data)->pool_);
-    }
-
-    static void Finalize(JSObjectRef object) {
-        delete reinterpret_cast<CYData *>(JSObjectGetPrivate(object));
-    }
-};
+static void Finalize(JSObjectRef object) {
+    delete reinterpret_cast<CYData *>(JSObjectGetPrivate(object));
+}
 
 class Type_privateData;
 
@@ -2874,7 +2842,6 @@ bool CYSendAll_(int socket, const uint8_t *data, size_t size) {
     return true;
 }
 
-static int Socket_;
 apr_pool_t *Pool_;
 
 struct CYExecute_ {
@@ -2966,23 +2933,11 @@ static void * APR_THREAD_FUNC OnClient(apr_thread_t *thread, void *data) {
     return NULL;
 }
 
-static void * APR_THREAD_FUNC Cyrver(apr_thread_t *thread, void *data) {
-    for (;;) {
-        int socket(_syscall(accept(Socket_, NULL, NULL)));
-        CYClient *client(new CYClient(socket));
-        apr_threadattr_t *attr;
-        _aprcall(apr_threadattr_create(&attr, Pool_));
-        _aprcall(apr_thread_create(&client->thread_, attr, &OnClient, client, client->pool_));
-    }
-
-    return NULL;
-}
-
-void Unlink() {
-    pid_t pid(getpid());
-    char path[104];
-    sprintf(path, "/tmp/.s.cy.%u", pid);
-    unlink(path);
+extern "C" void CYHandleClient(apr_pool_t *pool, int socket) {
+    CYClient *client(new(pool) CYClient(socket));
+    apr_threadattr_t *attr;
+    _aprcall(apr_threadattr_create(&attr, client->pool_));
+    _aprcall(apr_thread_create(&client->thread_, attr, &OnClient, client, client->pool_));
 }
 
 MSInitialize { _pooled
@@ -2999,29 +2954,6 @@ MSInitialize { _pooled
     NSMessageBuilder_ = objc_getClass("NSMessageBuilder");
     NSZombie_ = objc_getClass("_NSZombie_");
     Object_ = objc_getClass("Object");
-
-    Socket_ = _syscall(socket(PF_UNIX, SOCK_STREAM, 0));
-
-    struct sockaddr_un address;
-    memset(&address, 0, sizeof(address));
-    address.sun_family = AF_UNIX;
-
-    pid_t pid(getpid());
-    sprintf(address.sun_path, "/tmp/.s.cy.%u", pid);
-
-    try {
-        _syscall(bind(Socket_, reinterpret_cast<sockaddr *>(&address), SUN_LEN(&address)));
-        atexit(&Unlink);
-        _syscall(listen(Socket_, 0));
-
-        apr_threadattr_t *attr;
-        _aprcall(apr_threadattr_create(&attr, Pool_));
-
-        apr_thread_t *thread;
-        _aprcall(apr_thread_create(&thread, attr, &Cyrver, NULL, Pool_));
-    } catch (...) {
-        NSLog(@"failed to setup Cyrver");
-    }
 }
 
 JSGlobalContextRef CYGetJSContext() {
@@ -3032,7 +2964,7 @@ JSGlobalContextRef CYGetJSContext() {
         definition.className = "Functor";
         definition.staticFunctions = Functor_staticFunctions;
         definition.callAsFunction = &Functor_callAsFunction;
-        definition.finalize = &CYData::Finalize;
+        definition.finalize = &Finalize;
         Functor_ = JSClassCreate(&definition);
 
         definition = kJSClassDefinitionEmpty;
@@ -3045,7 +2977,7 @@ JSGlobalContextRef CYGetJSContext() {
         definition.deleteProperty = &Instance_deleteProperty;
         definition.getPropertyNames = &Instance_getPropertyNames;
         definition.callAsConstructor = &Instance_callAsConstructor;
-        definition.finalize = &CYData::Finalize;
+        definition.finalize = &Finalize;
         Instance_ = JSClassCreate(&definition);
 
         definition = kJSClassDefinitionEmpty;
@@ -3055,7 +2987,7 @@ JSGlobalContextRef CYGetJSContext() {
         definition.getProperty = &Internal_getProperty;
         definition.setProperty = &Internal_setProperty;
         definition.getPropertyNames = &Internal_getPropertyNames;
-        definition.finalize = &CYData::Finalize;
+        definition.finalize = &Finalize;
         Internal_ = JSClassCreate(&definition);
 
         definition = kJSClassDefinitionEmpty;
@@ -3064,7 +2996,7 @@ JSGlobalContextRef CYGetJSContext() {
         definition.staticFunctions = Pointer_staticFunctions;
         definition.getProperty = &Pointer_getProperty;
         definition.setProperty = &Pointer_setProperty;
-        definition.finalize = &CYData::Finalize;
+        definition.finalize = &Finalize;
         Pointer_ = JSClassCreate(&definition);
 
         definition = kJSClassDefinitionEmpty;
@@ -3073,7 +3005,7 @@ JSGlobalContextRef CYGetJSContext() {
         //definition.staticValues = Selector_staticValues;
         definition.staticFunctions = Selector_staticFunctions;
         definition.callAsFunction = &Selector_callAsFunction;
-        definition.finalize = &CYData::Finalize;
+        definition.finalize = &Finalize;
         Selector_ = JSClassCreate(&definition);
 
         definition = kJSClassDefinitionEmpty;
@@ -3082,7 +3014,7 @@ JSGlobalContextRef CYGetJSContext() {
         definition.getProperty = &Struct_getProperty;
         definition.setProperty = &Struct_setProperty;
         definition.getPropertyNames = &Struct_getPropertyNames;
-        definition.finalize = &CYData::Finalize;
+        definition.finalize = &Finalize;
         Struct_ = JSClassCreate(&definition);
 
         definition = kJSClassDefinitionEmpty;
@@ -3091,7 +3023,7 @@ JSGlobalContextRef CYGetJSContext() {
         //definition.getProperty = &Type_getProperty;
         definition.callAsFunction = &Type_callAsFunction;
         definition.callAsConstructor = &Type_callAsConstructor;
-        definition.finalize = &CYData::Finalize;
+        definition.finalize = &Finalize;
         Type_ = JSClassCreate(&definition);
 
         definition = kJSClassDefinitionEmpty;
@@ -3115,7 +3047,7 @@ JSGlobalContextRef CYGetJSContext() {
         definition.className = "ObjectiveC::Image::Classes";
         definition.getProperty = &ObjectiveC_Image_Classes_getProperty;
         definition.getPropertyNames = &ObjectiveC_Image_Classes_getPropertyNames;
-        definition.finalize = &CYData::Finalize;
+        definition.finalize = &Finalize;
         ObjectiveC_Image_Classes_ = JSClassCreate(&definition);
 
         definition = kJSClassDefinitionEmpty;

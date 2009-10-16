@@ -360,6 +360,8 @@ void CYInfix::Output(std::ostream &out, CYFlags flags) const {
     CYFlags right(protect ? CYNoFlags : CYRight(flags));
     if (alphabetic)
         right |= CYNoLeader;
+    if (strcmp(name, "-") == 0)
+        right |= CYNoHyphen;
     rhs_->Output(out, Precedence() - 1, right);
     if (protect)
         out << ')';
@@ -426,10 +428,11 @@ void CYNull::Output(std::ostream &out, CYFlags flags) const {
 }
 
 void CYNumber::Output(std::ostream &out, CYFlags flags) const {
-    if ((flags & CYNoLeader) != 0)
+    double value(Value());
+    if ((flags & CYNoLeader) != 0 || value < 0 && (flags & CYNoHyphen) != 0)
         out << ' ';
     // XXX: decide on correct precision
-    out << std::setprecision(9) << Value();
+    out << std::setprecision(9) << value;
     if ((flags & CYNoTrailer) != 0)
         out << ' ';
 }
@@ -456,8 +459,11 @@ void CYPostfix::Output(std::ostream &out, CYFlags flags) const {
 }
 
 void CYPrefix::Output(std::ostream &out, CYFlags flags) const {
+    const char *name(Operator());
     bool alphabetic(Alphabetic());
-    out << Operator();
+    if (alphabetic && (flags & CYNoLeader) != 0 || name[0] == '-' && (flags & CYNoHyphen) != 0)
+        out << ' ';
+    out << name;
     CYFlags right(CYRight(flags));
     if (alphabetic)
         right |= CYNoLeader;

@@ -202,6 +202,7 @@ enum CYFlags {
     CYNoLeader =   (1 << 2),
     CYNoTrailer =  (1 << 3),
     CYNoIn =       (1 << 4),
+    CYNoHyphen =   (1 << 5),
 };
 
 struct CYExpression :
