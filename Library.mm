@@ -1405,6 +1405,9 @@ NSString *CYCopyNSCYON(id value) {
 }
 
 NSString *CYCopyNSCYON(JSContextRef context, JSValueRef value, JSValueRef *exception) {
+    if (JSValueIsNull(context, value))
+        return [@"null" retain];
+
     CYTry {
         CYPoolTry {
             return CYCopyNSCYON(CYCastNSObject(NULL, context, value));
