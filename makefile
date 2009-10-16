@@ -67,7 +67,7 @@ libcycript.dylib: ffi_type.o parse.o Output.o Cycript.tab.o lex.cy.o Library.o
 	    -framework JavaScriptCore -framework WebCore
 	ldid -S $@
 
-cycript: Application.o libcycript.dylib
+cycript: Console.o libcycript.dylib
 	$(target)g++ $(flags) -o $@ $(filter %.o,$^) \
 	    -lobjc -lapr-1 -lreadline \
 	    -L. -lcycript \
