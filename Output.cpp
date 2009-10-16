@@ -46,7 +46,7 @@ bool CYTrue::Value() const {
 
 void CYAddressOf::Output(std::ostream &out, CYFlags flags) const {
     rhs_->Output(out, 1, CYLeft(flags));
-    out << ".addressOf()";
+    out << ".$cya()";
 }
 
 void CYArgument::Output(std::ostream &out) const {
@@ -214,6 +214,17 @@ void CYDeclarations::Output(std::ostream &out) const {
     out << ';';
 }
 
+void CYDirectMember::Output(std::ostream &out, CYFlags flags) const {
+    object_->Output(out, Precedence(), CYLeft(flags));
+    if (const char *word = property_->Word())
+        out << '.' << word;
+    else {
+        out << '[';
+        property_->Output(out, CYNoFlags);
+        out << ']';
+    }
+}
+
 void CYDoWhile::Output(std::ostream &out) const {
     // XXX: extra space character!
     out << "do ";
@@ -320,7 +331,19 @@ void CYIf::Output(std::ostream &out) const {
 
 void CYIndirect::Output(std::ostream &out, CYFlags flags) const {
     rhs_->Output(out, 1, CYLeft(flags));
-    out << "[0]";
+    out << ".$cyi";
+}
+
+void CYIndirectMember::Output(std::ostream &out, CYFlags flags) const {
+    object_->Output(out, Precedence(), CYLeft(flags));
+    out << ".$cyi";
+    if (const char *word = property_->Word())
+        out << '.' << word;
+    else {
+        out << '[';
+        property_->Output(out, CYNoFlags);
+        out << ']';
+    }
 }
 
 void CYInfix::Output(std::ostream &out, CYFlags flags) const {
@@ -358,17 +381,6 @@ void CYLambda::Output(std::ostream &out, CYFlags flags) const {
     out << '}';
     if (protect)
         out << ')';
-}
-
-void CYMember::Output(std::ostream &out, CYFlags flags) const {
-    object_->Output(out, Precedence(), CYLeft(flags));
-    if (const char *word = property_->Word())
-        out << '.' << word;
-    else {
-        out << '[';
-        property_->Output(out, CYNoFlags);
-        out << ']';
-    }
 }
 
 void CYMessage::Output(std::ostream &out, bool replace) const {
@@ -601,7 +613,7 @@ void CYTry::Output(std::ostream &out) const {
     out << "try";
     try_->Output(out, true);
     if (catch_ != NULL)
-        out << catch_;
+        catch_->Output(out);
     if (finally_ != NULL) {
         out << "finally";
         finally_->Output(out, true);

@@ -4,8 +4,6 @@ else
 target := $(PKG_TARG)-
 endif
 
-package:
-
 flags := -mthumb -g3 -O0 -Wall -Werror -I. -fno-common
 flags += -F${PKG_ROOT}/System/Library/PrivateFrameworks
 
@@ -13,6 +11,8 @@ svn := $(shell svnversion)
 deb := $(shell grep ^Package: control | cut -d ' ' -f 2-)_$(shell grep ^Version: control | cut -d ' ' -f 2 | sed -e 's/\#/$(svn)/')_iphoneos-arm.deb
 
 header := Cycript.tab.hh Parser.hpp Pooling.hpp Struct.hpp cycript.hpp
+
+$(deb):
 
 all: cycript libcycript.dylib libcycript.plist
 
@@ -74,7 +74,7 @@ cycript: Application.o libcycript.dylib
 	    -framework JavaScriptCore -framework UIKit
 	ldid -S cycript
 
-package: all
+$(deb): all
 	rm -rf package
 	mkdir -p package/DEBIAN
 	sed -e 's/#/$(svn)/' control >package/DEBIAN/control
@@ -93,7 +93,9 @@ package: all
 	cp -a libcycript.plist package/usr/lib
 	dpkg-deb -b package $(deb)
 
-test: package
+package: $(deb)
+
+test: $(deb)
 	dpkg -i $(deb)
 	cycript test.cy
 

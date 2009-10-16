@@ -829,6 +829,32 @@ struct CYMember :
     {
     }
 
+    void SetLeft(CYExpression *object) {
+        object_ = object;
+    }
+};
+
+struct CYDirectMember :
+    CYMember
+{
+    CYDirectMember(CYExpression *object, CYExpression *property) :
+        CYMember(object, property)
+    {
+    }
+
+    CYPrecedence(1)
+
+    virtual void Output(std::ostream &out, CYFlags flags) const;
+};
+
+struct CYIndirectMember :
+    CYMember
+{
+    CYIndirectMember(CYExpression *object, CYExpression *property) :
+        CYMember(object, property)
+    {
+    }
+
     CYPrecedence(1)
 
     virtual void Output(std::ostream &out, CYFlags flags) const;

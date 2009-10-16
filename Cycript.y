@@ -71,6 +71,7 @@ typedef struct {
         CYIdentifier *identifier_;
         CYInfix *infix_;
         CYLiteral *literal_;
+        CYMember *member_;
         CYMessage *message_;
         CYMessageParameter *messageParameter_;
         CYNull *null_;
@@ -243,6 +244,9 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <argument_> ArgumentListOpt
 %type <argument_> Arguments
 %type <literal_> ArrayLiteral
+%type <expression_> AssigneeExpression
+%type <expression_> AssigneeExpression_
+%type <expression_> AssigneeExpressionNoBF
 %type <expression_> AssignmentExpression
 %type <assignment_> AssignmentExpression_
 %type <expression_> AssignmentExpressionNoBF
@@ -313,7 +317,6 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <statement_> IterationStatement
 %type <statement_> LabelledStatement
 %type <expression_> LeftHandSideExpression
-%type <expression_> LeftHandSideExpression_
 %type <expression_> LeftHandSideExpressionNoBF
 %type <literal_> Literal
 %type <expression_> LogicalANDExpression
@@ -322,6 +325,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> LogicalORExpression
 %type <expression_> LogicalORExpressionNoBF
 %type <expression_> LogicalORExpressionNoIn
+%type <member_> MemberAccess
 %type <expression_> MemberExpression
 %type <expression_> MemberExpression_
 %type <expression_> MemberExpressionNoBF
@@ -591,18 +595,21 @@ MemberExpression_
     : "new" MemberExpression Arguments { $$ = new(driver.pool_) CYNew($2, $3); }
     ;
 
+MemberAccess
+    : "[" Expression "]" { $$ = new(driver.pool_) CYDirectMember(NULL, $2); }
+    | "." Identifier { $$ = new(driver.pool_) CYDirectMember(NULL, new(driver.pool_) CYString($2)); }
+    ;
+
 MemberExpression
     : PrimaryExpression { $$ = $1; }
     | FunctionExpression { $$ = $1; }
-    | MemberExpression "[" Expression "]" { $$ = new(driver.pool_) CYMember($1, $3); }
-    | MemberExpression "." Identifier { $$ = new(driver.pool_) CYMember($1, new(driver.pool_) CYString($3)); }
+    | MemberExpression MemberAccess { $2->SetLeft($1); $$ = $2; }
     | MemberExpression_ { $$ = $1; }
     ;
 
 MemberExpressionNoBF
     : PrimaryExpressionNoBF { $$ = $1; }
-    | MemberExpressionNoBF "[" Expression "]" { $$ = new(driver.pool_) CYMember($1, $3); }
-    | MemberExpressionNoBF "." Identifier { $$ = new(driver.pool_) CYMember($1, new(driver.pool_) CYString($3)); }
+    | MemberExpressionNoBF MemberAccess { $2->SetLeft($1); $$ = $2; }
     | MemberExpression_ { $$ = $1; }
     ;
 
@@ -623,15 +630,13 @@ NewExpressionNoBF
 CallExpression
     : MemberExpression Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
     | CallExpression Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
-    | CallExpression "[" Expression "]" { $$ = new(driver.pool_) CYMember($1, $3); }
-    | CallExpression "." Identifier { $$ = new(driver.pool_) CYMember($1, new(driver.pool_) CYString($3)); }
+    | CallExpression MemberAccess { $2->SetLeft($1); $$ = $2; }
     ;
 
 CallExpressionNoBF
     : MemberExpressionNoBF Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
     | CallExpressionNoBF Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
-    | CallExpressionNoBF "[" Expression "]" { $$ = new(driver.pool_) CYMember($1, $3); }
-    | CallExpressionNoBF "." Identifier { $$ = new(driver.pool_) CYMember($1, new(driver.pool_) CYString($3)); }
+    | CallExpressionNoBF MemberAccess { $2->SetLeft($1); $$ = $2; }
     ;
 
 ArgumentList_
@@ -655,23 +660,21 @@ Arguments
 LeftHandSideExpression
     : NewExpression { $$ = $1; }
     | CallExpression { $$ = $1; }
-    | LeftHandSideExpression_ { $$ = $1; }
     ;
 
 LeftHandSideExpressionNoBF
     : NewExpressionNoBF { $$ = $1; }
     | CallExpressionNoBF { $$ = $1; }
-    | LeftHandSideExpression_ { $$ = $1; }
     ;
 
 PostfixExpression
-    : LeftHandSideExpression { $$ = $1; }
+    : AssigneeExpression { $$ = $1; }
     | LeftHandSideExpression "++" { $$ = new(driver.pool_) CYPostIncrement($1); }
     | LeftHandSideExpression "--" { $$ = new(driver.pool_) CYPostDecrement($1); }
     ;
 
 PostfixExpressionNoBF
-    : LeftHandSideExpressionNoBF { $$ = $1; }
+    : AssigneeExpressionNoBF { $$ = $1; }
     | LeftHandSideExpressionNoBF "++" { $$ = new(driver.pool_) CYPostIncrement($1); }
     | LeftHandSideExpressionNoBF "--" { $$ = new(driver.pool_) CYPostDecrement($1); }
     ;
@@ -897,30 +900,40 @@ AssignmentExpression_
     | "|=" AssignmentExpression { $$ = new(driver.pool_) CYBitwiseOrAssign(NULL, $2); }
     ;
 
+AssigneeExpression
+    : LeftHandSideExpression { $$ = $1; }
+    | AssigneeExpression_ { $$ = $1; }
+    ;
+
+AssigneeExpressionNoBF
+    : LeftHandSideExpressionNoBF { $$ = $1; }
+    | AssigneeExpression_ { $$ = $1; }
+    ;
+
 AssignmentExpression
     : ConditionalExpression { $$ = $1; }
-    | LeftHandSideExpression AssignmentExpression_ { $2->SetLeft($1); $$ = $2; }
+    | AssigneeExpression AssignmentExpression_ { $2->SetLeft($1); $$ = $2; }
     ;
 
 AssignmentExpressionNoIn
     : ConditionalExpressionNoIn { $$ = $1; }
-    | LeftHandSideExpression "=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYAssign($1, $3); }
-    | LeftHandSideExpression "*=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYMultiplyAssign($1, $3); }
-    | LeftHandSideExpression "/=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYDivideAssign($1, $3); }
-    | LeftHandSideExpression "%=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYModulusAssign($1, $3); }
-    | LeftHandSideExpression "+=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYAddAssign($1, $3); }
-    | LeftHandSideExpression "-=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYSubtractAssign($1, $3); }
-    | LeftHandSideExpression "<<=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYShiftLeftAssign($1, $3); }
-    | LeftHandSideExpression ">>=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYShiftRightSignedAssign($1, $3); }
-    | LeftHandSideExpression ">>>=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYShiftRightUnsignedAssign($1, $3); }
-    | LeftHandSideExpression "&=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYBitwiseAndAssign($1, $3); }
-    | LeftHandSideExpression "^=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYBitwiseXOrAssign($1, $3); }
-    | LeftHandSideExpression "|=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYBitwiseOrAssign($1, $3); }
+    | AssigneeExpression "=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYAssign($1, $3); }
+    | AssigneeExpression "*=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYMultiplyAssign($1, $3); }
+    | AssigneeExpression "/=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYDivideAssign($1, $3); }
+    | AssigneeExpression "%=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYModulusAssign($1, $3); }
+    | AssigneeExpression "+=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYAddAssign($1, $3); }
+    | AssigneeExpression "-=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYSubtractAssign($1, $3); }
+    | AssigneeExpression "<<=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYShiftLeftAssign($1, $3); }
+    | AssigneeExpression ">>=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYShiftRightSignedAssign($1, $3); }
+    | AssigneeExpression ">>>=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYShiftRightUnsignedAssign($1, $3); }
+    | AssigneeExpression "&=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYBitwiseAndAssign($1, $3); }
+    | AssigneeExpression "^=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYBitwiseXOrAssign($1, $3); }
+    | AssigneeExpression "|=" AssignmentExpressionNoIn { $$ = new(driver.pool_) CYBitwiseOrAssign($1, $3); }
     ;
 
 AssignmentExpressionNoBF
     : ConditionalExpressionNoBF { $$ = $1; }
-    | LeftHandSideExpressionNoBF AssignmentExpression_ { $2->SetLeft($1); $$ = $2; }
+    | AssigneeExpressionNoBF AssignmentExpression_ { $2->SetLeft($1); $$ = $2; }
     ;
 
 Expression_
@@ -1283,12 +1296,16 @@ PrimaryExpression_
     ;
 /* }}} */
 
-LeftHandSideExpression_
-    : "*" LeftHandSideExpression { $$ = new(driver.pool_) CYIndirect($2); }
+AssigneeExpression_
+    : "*" UnaryExpression { $$ = new(driver.pool_) CYIndirect($2); }
     ;
 
 UnaryExpression_
     : "&" UnaryExpression { $$ = new(driver.pool_) CYAddressOf($2); }
+    ;
+
+MemberAccess
+    : "->" Identifier { $$ = new(driver.pool_) CYIndirectMember(NULL, new(driver.pool_) CYString($2)); }
     ;
 
 %%
