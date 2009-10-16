@@ -71,7 +71,7 @@ const char *CYExecute(apr_pool_t *pool, const char *code);
 
 void CYSetArgs(int argc, const char *argv[]);
 
-const char *CYPoolCYONString(apr_pool_t *pool, JSContextRef context, JSValueRef value, JSValueRef *exception);
+const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSValueRef value, JSValueRef *exception);
 JSStringRef CYCopyJSString(const char *value);
 
 void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef value);

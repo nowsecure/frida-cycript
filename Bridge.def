@@ -350,6 +350,8 @@ F UIAccessibilityPostNotification vI@
 
 # Miscellaneous
 
+F UIGetScreenImage @
+
 F UIApplicationUseLegacyEvents vB
 
 F UIKeyboardDisableAutomaticAppearance v
@@ -736,9 +738,133 @@ C NSCoreDataVersionNumber10_5_3 186.0
 
 f CoreFoundation
 
-# XXX: incomplete by any stretch of the imagination
+# Base Utilities
 
-F CFShow v@
+F CFRangeMake {CFRange}{CFIndex}{CFIndex}
+
+# CFComparatorFunction
+
+T CFIndex l
+T CFOptionFlags {UInt32}
+S CFRange "location"{CFIndex}"length"{CFIndex}
+
+E CFComparisonResult
+C kCFCompareLessThan -1
+C kCFCompareEqualTo 0
+C kCFCompareGreaterThan 1
+# CFComparisonResult CFComparisonResult
+
+C kCFNotFound -1
+
+V kCFCoreFoundationVersionNumber d
+
+C kCFCoreFoundationVersionNumber10_0 196.40
+C kCFCoreFoundationVersionNumber10_0_3 196.50
+C kCFCoreFoundationVersionNumber10_1 226.00
+C kCFCoreFoundationVersionNumber10_1_1 226.00
+C kCFCoreFoundationVersionNumber10_1_2 227.20
+C kCFCoreFoundationVersionNumber10_1_3 227.20
+C kCFCoreFoundationVersionNumber10_1_4 227.30
+C kCFCoreFoundationVersionNumber10_2 263.00
+C kCFCoreFoundationVersionNumber10_2_1 263.10
+C kCFCoreFoundationVersionNumber10_2_2 263.10
+C kCFCoreFoundationVersionNumber10_2_3 263.30
+C kCFCoreFoundationVersionNumber10_2_4 263.30
+C kCFCoreFoundationVersionNumber10_2_5 263.50
+C kCFCoreFoundationVersionNumber10_2_6 263.50
+C kCFCoreFoundationVersionNumber10_2_7 263.50
+C kCFCoreFoundationVersionNumber10_2_8 263.50
+C kCFCoreFoundationVersionNumber10_3 299.00
+C kCFCoreFoundationVersionNumber10_3_1 299.00
+C kCFCoreFoundationVersionNumber10_3_2 299.00
+C kCFCoreFoundationVersionNumber10_3_3 299.30
+C kCFCoreFoundationVersionNumber10_3_4 299.31
+C kCFCoreFoundationVersionNumber10_3_5 299.31
+C kCFCoreFoundationVersionNumber10_3_6 299.32
+C kCFCoreFoundationVersionNumber10_3_7 299.33
+C kCFCoreFoundationVersionNumber10_3_8 299.33
+C kCFCoreFoundationVersionNumber10_3_9 299.35
+C kCFCoreFoundationVersionNumber10_4 368.00
+C kCFCoreFoundationVersionNumber10_4_1 368.10
+C kCFCoreFoundationVersionNumber10_4_2 368.11
+C kCFCoreFoundationVersionNumber10_4_3 368.18
+C kCFCoreFoundationVersionNumber10_4_4_Intel 368.26
+C kCFCoreFoundationVersionNumber10_4_4_PowerPC 368.25
+C kCFCoreFoundationVersionNumber10_4_5_Intel 368.26
+C kCFCoreFoundationVersionNumber10_4_5_PowerPC 368.25
+C kCFCoreFoundationVersionNumber10_4_6_Intel 368.26
+C kCFCoreFoundationVersionNumber10_4_6_PowerPC 368.25
+C kCFCoreFoundationVersionNumber10_4_7 368.27
+C kCFCoreFoundationVersionNumber10_4_8 368.27
+C kCFCoreFoundationVersionNumber10_4_9 368.28
+C kCFCoreFoundationVersionNumber10_4_10 368.28
+C kCFCoreFoundationVersionNumber10_4_11 368.31
+C kCFCoreFoundationVersionNumber10_5 476.00
+C kCFCoreFoundationVersionNumber10_5_1 476.00
+C kCFCoreFoundationVersionNumber10_5_2 476.10
+C kCFCoreFoundationVersionNumber10_5_3 476.13
+C kCFCoreFoundationVersionNumber10_5_4 476.14
+C kCFCoreFoundationVersionNumber10_5_5 476.15
+C kCFCoreFoundationVersionNumber10_5_6 476.17
+
+# CFAllocator
+
+F CFAllocatorCreate {CFAllocatorRef}{CFAllocatorRef}{CFAllocatorContext}
+
+F CFAllocatorAllocate ^v{CFAllocatorRef}{CFIndex}{CFOptionFlags}
+F CFAllocatorDeallocate v{CFAllocatorRef}^v
+F CFAllocatorGetPreferredSizeForSize {CFIndex}{CFAllocatorRef}{CFIndex}{CFOptionFlags}
+F CFAllocatorReallocate ^v{CFAllocatorRef}^v{CFIndex}{CFOptionFlags}
+
+F CFAllocatorGetDefault {CFAllocatorRef}
+f CFAllocatorSetDefault v{CFAllocatorRef}
+
+F CFAllocatorGetContext v{CFAllocatorRef}^{CFAllocatorContext}
+
+F CFAllocatorGetTypeID {CFTypeID}
+
+# CFAllocatorAllocateCallBack
+# CFAllocatorCopyDescriptionCallBack
+# CFAllocatorDeallocateCallBack
+# CFAllocatorPreferredSizeCallBack
+# CFAllocatorReallocateCallBack
+# CFAllocatorReleaseCallBack
+# CFAllocatorRetainCallBack
+
+S CFAllocatorContext "version"{CFIndex}"info"^v"retain"{CFAllocatorRetainCallBack}"release"{CFAllocatorReleaseCallBack}"copyDescription"{CFAllocatorCopyDescriptionCallBack}"allocate"{CFAllocatorAllocateCallBack}"reallocate"{CFAllocatorReallocateCallBack}"deallocate"{CFAllocatorDeallocateCallBack}"preferredSize"{CFAllocatorPreferredSizeCallBack}
+# CFAllocatorContext CFAllocatorContext
+
+T CFAllocatorRef ^r{__CFAllocator}
+
+V kCFAllocatorDefault {CFAllocatorRef}
+V kCFAllocatorSystemDefault {CFAllocatorRef}
+V kCFAllocatorMalloc {CFAllocatorRef}
+V kCFAllocatorMallocZone {CFAllocatorRef}
+V kCFAllocatorNull {CFAllocatorRef}
+V kCFAllocatorUseContext {CFAllocatorRef}
+
+# CFType
+
+F CFGetAllocator {CFAllocatorRef}{CFTypeRef}
+F CFGetRetainCount {CFIndex}{CFTypeRef}
+F CFMakeCollectable {CFTypeRef}{CFTypeRef}
+F CFRelease v{CFTypeRef}
+F CFRetain {CFTypeRef}{CFTypeRef}
+
+F CFEqual 
+
+F CFHash {CFHashCode}{CFTypeRef}
+
+F CFGetTypeID {CFTypeID}{CFTypeRef}
+F CFShow v{CFTypeRef}
+
+T CFHashCode L
+T CFTypeID L
+# technically ^v
+T CFTypeRef @
+
+# Private
+
 F CFShowStr v@
 
 f CoreGraphics

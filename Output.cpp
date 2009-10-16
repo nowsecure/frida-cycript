@@ -488,6 +488,8 @@ void CYSelectorPart::Output(std::ostream &out) const {
 }
 
 void CYSend::Output(std::ostream &out, CYFlags flags) const {
+    if ((flags & CYNoLeader) != 0)
+        out << ' ';
     out << "objc_msgSend(";
     self_->Output(out, CYPA, CYNoFlags);
     out << ",";
