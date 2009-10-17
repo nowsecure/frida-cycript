@@ -2769,6 +2769,7 @@ CYDriver::CYDriver(const std::string &filename) :
     state_(CYClear),
     data_(NULL),
     size_(0),
+    file_(NULL),
     filename_(filename),
     source_(NULL)
 {

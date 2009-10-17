@@ -35,7 +35,10 @@ int H(char c) {
 }
 
 #define YY_INPUT(data, value, size) { \
-    if (yyextra->size_ == 0) \
+    if (yyextra->file_ != NULL) { \
+        size_t copy(fread(data, 1, size, yyextra->file_)); \
+        value = copy == 0 ? YY_NULL : copy; \
+    } else if (yyextra->size_ == 0) \
         value = YY_NULL; \
     else { \
         size_t copy(std::min(size, yyextra->size_)); \
@@ -231,7 +234,7 @@ Escape   \\[\\'"bfnrtv]|\\0|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}
 [ \t] L
 <<EOF>> L yyterminate();
 
-. {
+. L {
     CYDriver::Error error;
     error.location_ = *yylloc;
     error.message_ = "syntax error, unknown token";

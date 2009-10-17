@@ -159,6 +159,7 @@ class CYDriver {
 
     const char *data_;
     size_t size_;
+    FILE *file_;
 
     std::string filename_;
 

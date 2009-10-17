@@ -72,7 +72,7 @@ static void sigint(int) {
     longjmp(ctrlc_, 1);
 }
 
-void Run(int socket, const char *data, size_t size, FILE *fout, bool expand = false) {
+void Run(int socket, const char *data, size_t size, FILE *fout = NULL, bool expand = false) {
     CYPool pool;
 
     const char *json;
@@ -120,7 +120,7 @@ void Run(int socket, const char *data, size_t size, FILE *fout, bool expand = fa
     }
 }
 
-void Run(int socket, std::string &code, FILE *fout, bool expand = false) {
+void Run(int socket, std::string &code, FILE *fout = NULL, bool expand = false) {
     Run(socket, code.c_str(), code.size(), fout, expand);
 }
 
@@ -199,20 +199,24 @@ static void Console(int socket) {
                     cy::position begin(error->location_.begin);
                     if (begin.line != lines.size() || begin.column - 1 != lines.back().size()) {
                         cy::position end(error->location_.end);
+
                         if (begin.line != lines.size()) {
                             std::cerr << "  | ";
                             std::cerr << lines[begin.line - 1] << std::endl;
                         }
+
                         std::cerr << "  | ";
                         for (size_t i(0); i != begin.column - 1; ++i)
                             std::cerr << '.';
-                        if (begin.line != end.line)
+                        if (begin.line != end.line || begin.column == end.column)
                             std::cerr << '^';
                         else for (size_t i(0), e(end.column - begin.column); i != e; ++i)
                             std::cerr << '^';
                         std::cerr << std::endl;
+
                         std::cerr << "  | ";
                         std::cerr << error->message_ << std::endl;
+
                         add_history(command.c_str());
                         goto restart;
                     }
@@ -267,6 +271,7 @@ static void *Map(const char *path, size_t *psize) {
 }
 
 int main(int argc, char *argv[]) {
+    bool tty(isatty(STDIN_FILENO));
     pid_t pid(_not(pid_t));
 
     for (;;) switch (getopt(argc, argv, "p:")) {
@@ -304,6 +309,11 @@ int main(int argc, char *argv[]) {
             script = NULL;
     }
 
+    if (script == NULL && !tty && pid != _not(pid_t)) {
+        fprintf(stderr, "non-terminal attaching to remove console\n");
+        return 1;
+    }
+
     int socket;
 
     if (pid == _not(pid_t))
@@ -319,27 +329,36 @@ int main(int argc, char *argv[]) {
         _syscall(connect(socket, reinterpret_cast<sockaddr *>(&address), SUN_LEN(&address)));
     }
 
-    if (script == NULL)
+    if (script == NULL && tty)
         Console(socket);
     else {
-        CYDriver driver(script);
+        CYDriver driver(script ?: "<stdin>");
         cy::parser parser(driver);
 
-        size_t size;
-        char *start(reinterpret_cast<char *>(Map(script, &size)));
-        char *end(start + size);
+        char *start, *end;
 
-        if (size >= 2 && start[0] == '#' && start[1] == '!') {
-            start += 2;
+        if (script == NULL) {
+            start = NULL;
+            end = NULL;
 
-            if (void *line = memchr(start, '\n', end - start))
-                start = reinterpret_cast<char *>(line);
-            else
-                start = end;
+            driver.file_ = stdin;
+        } else {
+            size_t size;
+            start = reinterpret_cast<char *>(Map(script, &size));
+            end = start + size;
+
+            if (size >= 2 && start[0] == '#' && start[1] == '!') {
+                start += 2;
+
+                if (void *line = memchr(start, '\n', end - start))
+                    start = reinterpret_cast<char *>(line);
+                else
+                    start = end;
+            }
+
+            driver.data_ = start;
+            driver.size_ = end - start;
         }
-
-        driver.data_ = start;
-        driver.size_ = end - start;
 
         if (parser.parse() != 0 || !driver.errors_.empty()) {
             for (CYDriver::Errors::const_iterator i(driver.errors_.begin()); i != driver.errors_.end(); ++i)
@@ -351,7 +370,7 @@ int main(int argc, char *argv[]) {
                 std::ostringstream str;
                 driver.source_->Show(str);
                 std::string code(str.str());
-                Run(socket, code, stdout);
+                Run(socket, code);
             }
     }
 
