@@ -79,6 +79,11 @@ void CYAssignment::Output(std::ostream &out, CYFlags flags) const {
     rhs_->Output(out, Precedence(), CYRight(flags));
 }
 
+void CYBlock::Output(std::ostream &out) const {
+    for (CYSource *statement(statements_); statement != NULL; statement = statement->next_)
+        statement->Output(out);
+}
+
 void CYBoolean::Output(std::ostream &out, CYFlags flags) const {
     if ((flags & CYNoLeader) != 0)
         out << ' ';
@@ -529,17 +534,27 @@ void CYSend::Output(std::ostream &out, CYFlags flags) const {
 
 void CYSource::Show(std::ostream &out) const {
     for (const CYSource *next(this); next != NULL; next = next->next_)
-        next->Output(out);
+        next->Output_(out);
 }
 
 void CYSource::Output(std::ostream &out, bool block) const {
-    if (!block && next_ == NULL)
+    if (!block && !IsBlock())
         Output(out);
     else {
         out << '{';
         Show(out);
         out << '}';
     }
+}
+
+void CYSource::Output_(std::ostream &out) const {
+    Output(out);
+}
+
+void CYStatement::Output_(std::ostream &out) const {
+    for (CYLabel *label(labels_); label != NULL; label = label->next_)
+        out << *label->name_ << ':';
+    Output(out);
 }
 
 void CYString::Output(std::ostream &out, CYFlags flags) const {

@@ -986,7 +986,7 @@ Statement
     ;
 
 Block
-    : "{" StatementListOpt "}" { $$ = $2 ?: new(driver.pool_) CYEmpty(); }
+    : "{" StatementListOpt "}" { if ($2) $$ = new(driver.pool_) CYBlock($2); else $$ = new(driver.pool_) CYEmpty(); }
     ;
 
 StatementList

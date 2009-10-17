@@ -1,8 +1,5 @@
 labelled statements don't get labelled
 blocks and empty statements are poorly factored
-Message : Function, Closure : Function !!
-rename "data" variables to "internal"
 unicode identifier support (native and \u)
 object literal compilation should use numerify strings
 support unions (right now 0-1 fields parsed as struct)
-Prototype's prototype needs to be the superclass Prototype

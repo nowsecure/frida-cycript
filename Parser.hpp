@@ -78,9 +78,14 @@ _finline std::ostream &operator <<(std::ostream &out, const CYThing &rhs) {
 struct CYSource :
     CYNext<CYSource>
 {
+    virtual bool IsBlock() const {
+        return next_ != NULL;
+    }
+
     virtual void Show(std::ostream &out) const;
     virtual void Output(std::ostream &out) const = 0;
     virtual void Output(std::ostream &out, bool block) const;
+    virtual void Output_(std::ostream &out) const;
 };
 
 struct CYPropertyName {
@@ -125,11 +130,11 @@ struct CYIdentifier :
 struct CYLabel :
     CYNext<CYLabel>
 {
-    CYIdentifier *identifier_;
+    CYIdentifier *name_;
 
-    CYLabel(CYIdentifier *identifier, CYLabel *next) :
+    CYLabel(CYIdentifier *name, CYLabel *next) :
         CYNext<CYLabel>(next),
-        identifier_(identifier)
+        name_(name)
     {
     }
 };
@@ -137,11 +142,35 @@ struct CYLabel :
 struct CYStatement :
     CYSource
 {
-    CYLabel *label_;
+    CYLabel *labels_;
+
+    CYStatement() :
+        labels_(NULL)
+    {
+    }
 
     void AddLabel(CYIdentifier *identifier) {
-        label_ = new CYLabel(identifier, label_);
+        labels_ = new CYLabel(identifier, labels_);
     }
+
+    virtual void Output_(std::ostream &out) const;
+};
+
+struct CYBlock :
+    CYStatement
+{
+    CYStatement *statements_;
+
+    CYBlock(CYStatement *statements) :
+        statements_(statements)
+    {
+    }
+
+    virtual bool IsBlock() const {
+        return true;
+    }
+
+    virtual void Output(std::ostream &out) const;
 };
 
 enum CYState {
