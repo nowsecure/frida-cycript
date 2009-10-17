@@ -9,7 +9,7 @@ flags += -F${PKG_ROOT}/System/Library/PrivateFrameworks
 
 svn := $(shell svnversion)
 deb := $(shell grep ^Package: control | cut -d ' ' -f 2-)_$(shell grep ^Version: control | cut -d ' ' -f 2 | sed -e 's/\#/$(svn)/')_iphoneos-arm.deb
-all := cycript libcycript.dylib libcycript.plist Cycript.dylib
+all := cycript libcycript.dylib libcycript.plist Cycript.dylib #cyrver
 
 header := Cycript.tab.hh Parser.hpp Pooling.hpp Struct.hpp cycript.hpp
 
@@ -58,6 +58,12 @@ lex.cy.o: lex.cy.c Cycript.tab.hh Parser.hpp Pooling.hpp
 %.o: %.mm $(header)
 	$(target)g++ $(flags) -c -o $@ $<
 
+cyrver: Server.o
+	$(target)g++ $(flags) -o $@ $(filter %.o,$^) \
+	    -lobjc -lapr-1 -lsubstrate \
+	    -framework CoreFoundation -framework CFNetwork
+	ldid -S $@
+
 Cycript.dylib: Connector.o
 	$(target)g++ $(flags) -dynamiclib -o $@ $(filter %.o,$^) \
 	    -lobjc -lapr-1 -lsubstrate \
@@ -85,6 +91,8 @@ $(deb): $(all)
 	rm -rf package
 	mkdir -p package/DEBIAN
 	sed -e 's/#/$(svn)/' control >package/DEBIAN/control
+	mkdir -p package/System/Library/LaunchDaemons
+	cp -a com.saurik.Cyrver.plist package/System/Library/LaunchDaemons
 	mkdir -p package/Library/MobileSubstrate/DynamicLibraries
 	if [[ -e Settings.plist ]]; then \
 	    mkdir -p package/Library/PreferenceLoader/Preferences; \
@@ -93,9 +101,10 @@ $(deb): $(all)
 	fi
 	if [[ -e Tweak.plist ]]; then cp -a Tweak.plist package/Library/MobileSubstrate/DynamicLibraries/Cycript.plist; fi
 	cp -a Cycript.dylib package/Library/MobileSubstrate/DynamicLibraries
-	mkdir -p package/usr/{bin,lib}
+	mkdir -p package/usr/{bin,lib,sbin}
 	cp -a libcycript.dylib package/usr/lib
 	cp -a cycript package/usr/bin
+	#cp -a cyrver package/usr/sbin
 	cp -a libcycript.plist package/usr/lib
 	dpkg-deb -b package $(deb)
 

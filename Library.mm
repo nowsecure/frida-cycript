@@ -103,7 +103,9 @@ static JSObjectRef ObjectiveC_;
 static JSClassRef Functor_;
 static JSClassRef Instance_;
 static JSClassRef Internal_;
+static JSClassRef Message_;
 static JSClassRef Pointer_;
+static JSClassRef Prototype_;
 static JSClassRef Runtime_;
 static JSClassRef Selector_;
 static JSClassRef Struct_;
@@ -122,6 +124,7 @@ static JSStringRef Result_;
 static JSStringRef length_;
 static JSStringRef message_;
 static JSStringRef name_;
+static JSStringRef prototype_;
 static JSStringRef toCYON_;
 static JSStringRef toJSON_;
 
@@ -200,7 +203,7 @@ struct Instance :
             [GetValue() performSelector:@selector(release) withObject:nil afterDelay:0];
     }
 
-    static JSObjectRef Make(JSContextRef context, id object, Flags flags) {
+    static JSObjectRef Make(JSContextRef context, id object, Flags flags = None) {
         return JSObjectMake(context, Instance_, new Instance(object, flags));
     }
 
@@ -213,6 +216,23 @@ struct Instance :
     }
 
     virtual Type_privateData *GetType() const;
+};
+
+struct Prototype :
+    CYValue
+{
+    Prototype(Class value) :
+        CYValue(value)
+    {
+    }
+
+    static JSObjectRef Make(JSContextRef context, Class _class) {
+        return JSObjectMake(context, Prototype_, new Prototype(_class));
+    }
+
+    Class GetValue() const {
+        return reinterpret_cast<Class>(value_);
+    }
 };
 
 struct Internal :
@@ -452,22 +472,39 @@ struct Functor_privateData :
     sig::Signature signature_;
     ffi_cif cif_;
 
+
     Functor_privateData(const char *type, void (*value)()) :
         CYValue(reinterpret_cast<void *>(value))
     {
         sig::Parse(pool_, &signature_, type, &Structor_);
         sig::sig_ffi_cif(pool_, &sig::ObjectiveC, &signature_, &cif_);
     }
+
+    void (*GetValue())() const {
+        return reinterpret_cast<void (*)()>(value_);
+    }
 };
 
-struct ffoData :
+struct Closure_privateData :
     Functor_privateData
 {
     JSContextRef context_;
     JSObjectRef function_;
 
-    ffoData(const char *type) :
+    Closure_privateData(const char *type) :
         Functor_privateData(type, NULL)
+    {
+    }
+};
+
+struct Message_privateData :
+    Functor_privateData
+{
+    SEL sel_;
+
+    Message_privateData(SEL sel, const char *type, IMP value = NULL) :
+        Functor_privateData(type, reinterpret_cast<void (*)()>(value)),
+        sel_(sel)
     {
     }
 };
@@ -1734,6 +1771,190 @@ static bool CYImplements(id object, Class _class, SEL selector, bool devoid) {
     return false;
 }
 
+const char *CYPoolTypeEncoding(apr_pool_t *pool, Class _class, SEL sel, Method method) {
+    if (method != NULL)
+        return method_getTypeEncoding(method);
+    else if (NSString *type = [[Bridge_ objectAtIndex:1] objectForKey:CYCastNSString(pool, sel_getName(sel))])
+        return CYPoolCString(pool, type);
+    else
+        return NULL;
+}
+
+void FunctionClosure_(ffi_cif *cif, void *result, void **arguments, void *arg) {
+    Closure_privateData *data(reinterpret_cast<Closure_privateData *>(arg));
+
+    JSContextRef context(data->context_);
+
+    size_t count(data->cif_.nargs);
+    JSValueRef values[count];
+
+    for (size_t index(0); index != count; ++index)
+        values[index] = CYFromFFI(context, data->signature_.elements[1 + index].type, data->cif_.arg_types[index], arguments[index]);
+
+    JSValueRef value(CYCallAsFunction(context, data->function_, NULL, count, values));
+    CYPoolFFI(NULL, context, data->signature_.elements[0].type, data->cif_.rtype, result, value);
+}
+
+void MessageClosure_(ffi_cif *cif, void *result, void **arguments, void *arg) {
+    Closure_privateData *data(reinterpret_cast<Closure_privateData *>(arg));
+
+    JSContextRef context(data->context_);
+
+    size_t count(data->cif_.nargs);
+    JSValueRef values[count];
+
+    for (size_t index(0); index != count; ++index)
+        values[index] = CYFromFFI(context, data->signature_.elements[1 + index].type, data->cif_.arg_types[index], arguments[index]);
+
+    JSObjectRef _this(CYCastJSObject(context, values[0]));
+
+    JSValueRef value(CYCallAsFunction(context, data->function_, _this, count - 2, values + 2));
+    CYPoolFFI(NULL, context, data->signature_.elements[0].type, data->cif_.rtype, result, value);
+}
+
+Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, const char *type, void (*callback)(ffi_cif *, void *, void **, void *)) {
+    // XXX: in case of exceptions this will leak
+    // XXX: in point of fact, this may /need/ to leak :(
+    Closure_privateData *internal(new Closure_privateData(type));
+
+    ffi_closure *closure((ffi_closure *) _syscall(mmap(
+        NULL, sizeof(ffi_closure),
+        PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE,
+        -1, 0
+    )));
+
+    ffi_status status(ffi_prep_closure(closure, &internal->cif_, callback, internal));
+    _assert(status == FFI_OK);
+
+    _syscall(mprotect(closure, sizeof(*closure), PROT_READ | PROT_EXEC));
+
+    internal->value_ = closure;
+
+    internal->context_ = CYGetJSContext();
+    internal->function_ = function;
+
+    return internal;
+}
+
+JSObjectRef CYMakeFunctor(JSContextRef context, JSObjectRef function, const char *type) {
+    Closure_privateData *internal(CYMakeFunctor_(context, function, type, &FunctionClosure_));
+    return JSObjectMake(context, Functor_, internal);
+}
+
+static JSObjectRef CYMakeFunctor(JSContextRef context, JSValueRef value, const char *type) {
+    JSValueRef exception(NULL);
+    bool function(JSValueIsInstanceOfConstructor(context, value, Function_, &exception));
+    CYThrow(context, exception);
+
+    if (function) {
+        JSObjectRef function(CYCastJSObject(context, value));
+        return CYMakeFunctor(context, function, type);
+    } else {
+        void (*function)()(CYCastPointer<void (*)()>(context, value));
+        return CYMakeFunctor(context, function, type);
+    }
+}
+
+static JSObjectRef CYMakeMessage(JSContextRef context, SEL sel, IMP imp, const char *type) {
+    Message_privateData *internal(new Message_privateData(sel, type, imp));
+    return JSObjectMake(context, Message_, internal);
+}
+
+static IMP CYMakeMessage(JSContextRef context, JSValueRef value, const char *type) {
+    JSObjectRef function(CYCastJSObject(context, value));
+    Closure_privateData *internal(CYMakeFunctor_(context, function, type, &MessageClosure_));
+    return reinterpret_cast<IMP>(internal->GetValue());
+}
+
+static bool Prototype_hasProperty(JSContextRef context, JSObjectRef object, JSStringRef property) {
+    Prototype *internal(reinterpret_cast<Prototype *>(JSObjectGetPrivate(object)));
+    Class _class(internal->GetValue());
+
+    CYPool pool;
+    const char *name(CYPoolCString(pool, property));
+
+    if (SEL sel = sel_getUid(name))
+        if (class_getInstanceMethod(_class, sel) != NULL)
+            return true;
+
+    return false;
+}
+
+static JSValueRef Prototype_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
+    Prototype *internal(reinterpret_cast<Prototype *>(JSObjectGetPrivate(object)));
+    Class _class(internal->GetValue());
+
+    CYPool pool;
+    const char *name(CYPoolCString(pool, property));
+
+    if (SEL sel = sel_getUid(name))
+        if (Method method = class_getInstanceMethod(_class, sel))
+            return CYMakeMessage(context, sel, method_getImplementation(method), method_getTypeEncoding(method));
+
+    return NULL;
+}
+
+static bool Prototype_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) {
+    Prototype *internal(reinterpret_cast<Prototype *>(JSObjectGetPrivate(object)));
+    Class _class(internal->GetValue());
+
+    CYPool pool;
+    const char *name(CYPoolCString(pool, property));
+
+    SEL sel(sel_registerName(name));
+
+    Method method(class_getInstanceMethod(_class, sel));
+
+    const char *type;
+    IMP imp;
+
+    if (JSValueIsObjectOfClass(context, value, Message_)) {
+        Message_privateData *message(reinterpret_cast<Message_privateData *>(JSObjectGetPrivate((JSObjectRef) value)));
+        type = sig::Unparse(pool, &message->signature_);
+        imp = reinterpret_cast<IMP>(message->GetValue());
+    } else {
+        type = CYPoolTypeEncoding(pool, _class, sel, method);
+        imp = CYMakeMessage(context, value, type);
+    }
+
+    if (method != NULL)
+        method_setImplementation(method, imp);
+    else
+        class_replaceMethod(_class, sel, imp, type);
+
+    return true;
+}
+
+#if !__OBJC2__
+static bool Prototype_deleteProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
+    Prototype *internal(reinterpret_cast<Prototype *>(JSObjectGetPrivate(object)));
+    Class _class(internal->GetValue());
+
+    CYPool pool;
+    const char *name(CYPoolCString(pool, property));
+
+    if (SEL sel = sel_getUid(name))
+        if (Method method = class_getInstanceMethod(_class, sel)) {
+            objc_method_list list = {NULL, 1, {method}};
+            class_removeMethods(_class, &list);
+            return true;
+        }
+
+    return false;
+}
+#endif
+
+static void Prototype_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
+    Prototype *internal(reinterpret_cast<Prototype *>(JSObjectGetPrivate(object)));
+    Class _class(internal->GetValue());
+
+    unsigned int size;
+    Method *data(class_copyMethodList(_class, &size));
+    for (size_t i(0); i != size; ++i)
+        JSPropertyNameAccumulatorAddName(names, CYJSString(sel_getName(method_getName(data[i]))));
+    free(data);
+}
+
 static bool Instance_hasProperty(JSContextRef context, JSObjectRef object, JSStringRef property) {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
     id self(internal->GetValue());
@@ -1804,10 +2025,12 @@ static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object,
 }
 
 static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) {
+    Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
+    id self(internal->GetValue());
+
     CYPool pool;
 
     CYTry {
-        id self(CYCastNSObject(pool, context, object));
         NSString *name(CYCastNSString(pool, property));
         NSString *data(CYCastNSObject(pool, context, value));
 
@@ -1861,9 +2084,11 @@ static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStr
 }
 
 static bool Instance_deleteProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
+    Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
+    id self(internal->GetValue());
+
     CYTry {
         CYPoolTry {
-            id self(CYCastNSObject(NULL, context, object));
             NSString *name(CYCastNSString(NULL, property));
             return [self cy$deleteProperty:name];
         } CYPoolCatch(NULL)
@@ -1871,8 +2096,10 @@ static bool Instance_deleteProperty(JSContextRef context, JSObjectRef object, JS
 }
 
 static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
+    Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
+    id self(internal->GetValue());
+
     CYPool pool;
-    NSString *self(CYCastNSObject(pool, context, object));
     Class _class(object_getClass(self));
 
     {
@@ -2164,44 +2391,6 @@ JSValueRef CYCallFunction(apr_pool_t *pool, JSContextRef context, size_t setups,
     } CYCatch
 }
 
-void Closure_(ffi_cif *cif, void *result, void **arguments, void *arg) {
-    ffoData *data(reinterpret_cast<ffoData *>(arg));
-
-    JSContextRef context(data->context_);
-
-    size_t count(data->cif_.nargs);
-    JSValueRef values[count];
-
-    for (size_t index(0); index != count; ++index)
-        values[index] = CYFromFFI(context, data->signature_.elements[1 + index].type, data->cif_.arg_types[index], arguments[index]);
-
-    JSValueRef value(CYCallAsFunction(context, data->function_, NULL, count, values));
-    CYPoolFFI(NULL, context, data->signature_.elements[0].type, data->cif_.rtype, result, value);
-}
-
-JSObjectRef CYMakeFunctor(JSContextRef context, JSObjectRef function, const char *type) {
-    // XXX: in case of exceptions this will leak
-    ffoData *data(new ffoData(type));
-
-    ffi_closure *closure((ffi_closure *) _syscall(mmap(
-        NULL, sizeof(ffi_closure),
-        PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE,
-        -1, 0
-    )));
-
-    ffi_status status(ffi_prep_closure(closure, &data->cif_, &Closure_, data));
-    _assert(status == FFI_OK);
-
-    _syscall(mprotect(closure, sizeof(*closure), PROT_READ | PROT_EXEC));
-
-    data->value_ = closure;
-
-    data->context_ = CYGetJSContext();
-    data->function_ = function;
-
-    return JSObjectMake(context, Functor_, data);
-}
-
 static JSValueRef ObjectiveC_Classes_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
     CYTry {
         CYPool pool;
@@ -2316,7 +2505,7 @@ static void ObjectiveC_Protocols_getPropertyNames(JSContextRef context, JSObject
 
 static JSValueRef Runtime_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
     if (JSStringIsEqualToUTF8CString(property, "nil"))
-        return Instance::Make(context, nil, Instance::None);
+        return Instance::Make(context, nil);
 
     CYTry {
         CYPool pool;
@@ -2461,10 +2650,24 @@ static JSValueRef Selector_callAsFunction(JSContextRef context, JSObjectRef obje
     return $objc_msgSend(context, NULL, NULL, count + 2, setup, exception);
 }
 
+static JSValueRef Message_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    CYPool pool;
+    Message_privateData *internal(reinterpret_cast<Message_privateData *>(JSObjectGetPrivate(object)));
+
+    // XXX: handle Instance::Uninitialized?
+    id self(CYCastNSObject(pool, context, _this));
+
+    void *setup[2];
+    setup[0] = &self;
+    setup[1] = &internal->sel_;
+
+    return CYCallFunction(pool, context, 2, setup, count, arguments, false, exception, &internal->signature_, &internal->cif_, internal->GetValue());
+}
+
 static JSValueRef Functor_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     CYPool pool;
-    Functor_privateData *data(reinterpret_cast<Functor_privateData *>(JSObjectGetPrivate(object)));
-    return CYCallFunction(pool, context, 0, NULL, count, arguments, false, exception, &data->signature_, &data->cif_, reinterpret_cast<void (*)()>(data->value_));
+    Functor_privateData *internal(reinterpret_cast<Functor_privateData *>(JSObjectGetPrivate(object)));
+    return CYCallFunction(pool, context, 0, NULL, count, arguments, false, exception, &internal->signature_, &internal->cif_, internal->GetValue());
 }
 
 JSObjectRef Selector_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
@@ -2539,7 +2742,7 @@ JSObjectRef Instance_new(JSContextRef context, JSObjectRef object, size_t count,
         if (count > 1)
             @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"incorrect number of arguments to Instance constructor" userInfo:nil];
         id self(count == 0 ? nil : CYCastPointer<id>(context, arguments[0]));
-        return Instance::Make(context, self, Instance::None);
+        return Instance::Make(context, self);
     } CYCatch
 }
 
@@ -2548,26 +2751,13 @@ JSObjectRef Functor_new(JSContextRef context, JSObjectRef object, size_t count, 
         if (count != 2)
             @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"incorrect number of arguments to Functor constructor" userInfo:nil];
         const char *type(CYCastCString(context, arguments[1]));
-        JSValueRef exception(NULL);
-        if (JSValueIsInstanceOfConstructor(context, arguments[0], Function_, &exception)) {
-            JSObjectRef function(CYCastJSObject(context, arguments[0]));
-            return CYMakeFunctor(context, function, type);
-        } else if (exception != NULL) {
-            return NULL;
-        } else {
-            void (*function)()(CYCastPointer<void (*)()>(context, arguments[0]));
-            return CYMakeFunctor(context, function, type);
-        }
+        return CYMakeFunctor(context, arguments[0], type);
     } CYCatch
 }
 
 JSValueRef CYValue_getProperty_value(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
     CYValue *internal(reinterpret_cast<CYValue *>(JSObjectGetPrivate(object)));
     return CYCastJSValue(context, reinterpret_cast<uintptr_t>(internal->value_));
-}
-
-JSValueRef Selector_getProperty_prototype(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
-    return Function_;
 }
 
 static JSValueRef CYValue_callAsFunction_$cya(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
@@ -2608,6 +2798,20 @@ static JSValueRef CYValue_callAsFunction_toCYON(JSContextRef context, JSObjectRe
     CYTry {
         return CYCastJSValue(context, string);
     } CYCatch
+}
+
+static JSValueRef Instance_getProperty_constructor(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
+    Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
+    return Instance::Make(context, object_getClass(internal->GetValue()));
+}
+
+static JSValueRef Instance_getProperty_prototype(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
+    Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
+    id self(internal->GetValue());
+    // XXX: this is a lame object_isClass
+    if (class_getInstanceMethod(object_getClass(self), @selector(alloc)) == NULL)
+        return CYJSUndefined(context);
+    return Prototype::Make(context, self);
 }
 
 static JSValueRef Instance_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
@@ -2672,12 +2876,9 @@ static JSValueRef Selector_callAsFunction_type(JSContextRef context, JSObjectRef
         Selector_privateData *internal(reinterpret_cast<Selector_privateData *>(JSObjectGetPrivate(_this)));
         Class _class(CYCastNSObject(pool, context, arguments[0]));
         SEL sel(internal->GetValue());
-        if (Method method = class_getInstanceMethod(_class, sel))
-            return CYCastJSValue(context, method_getTypeEncoding(method));
-        else if (NSString *type = [[Bridge_ objectAtIndex:1] objectForKey:CYCastNSString(pool, sel_getName(sel))])
-            return CYCastJSValue(context, CYJSString(type));
-        else
-            return CYJSNull(context);
+        Method method(class_getInstanceMethod(_class, sel));
+        const char *type(CYPoolTypeEncoding(pool, _class, sel, method));
+        return type == NULL ? CYJSNull(context) : CYCastJSValue(context, CYJSString(type));
     } CYCatch
 }
 
@@ -2736,12 +2937,9 @@ static JSStaticFunction Functor_staticFunctions[4] = {
     {NULL, NULL, 0}
 };
 
-/*static JSStaticValue Selector_staticValues[2] = {
-    {"prototype", &Selector_getProperty_prototype, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete},
-    {NULL, NULL, NULL, 0}
-};*/
-
-static JSStaticValue Instance_staticValues[2] = {
+static JSStaticValue Instance_staticValues[4] = {
+    {"constructor", &Instance_getProperty_constructor, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete},
+    {"prototype", &Instance_getProperty_prototype, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete},
     {"value", &CYValue_getProperty_value, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete},
     {NULL, NULL, NULL, 0}
 };
@@ -3004,6 +3202,13 @@ JSGlobalContextRef CYGetJSContext() {
         Internal_ = JSClassCreate(&definition);
 
         definition = kJSClassDefinitionEmpty;
+        definition.className = "Message";
+        definition.staticFunctions = Functor_staticFunctions;
+        definition.callAsFunction = &Message_callAsFunction;
+        definition.finalize = &Finalize;
+        Message_ = JSClassCreate(&definition);
+
+        definition = kJSClassDefinitionEmpty;
         definition.className = "Pointer";
         definition.staticValues = Pointer_staticValues;
         definition.staticFunctions = Pointer_staticFunctions;
@@ -3013,9 +3218,20 @@ JSGlobalContextRef CYGetJSContext() {
         Pointer_ = JSClassCreate(&definition);
 
         definition = kJSClassDefinitionEmpty;
+        definition.className = "Prototype";
+        definition.hasProperty = &Prototype_hasProperty;
+        definition.getProperty = &Prototype_getProperty;
+        definition.setProperty = &Prototype_setProperty;
+#if !__OBJC2__
+        definition.deleteProperty = &Prototype_deleteProperty;
+#endif
+        definition.getPropertyNames = &Prototype_getPropertyNames;
+        definition.finalize = &Finalize;
+        Prototype_ = JSClassCreate(&definition);
+
+        definition = kJSClassDefinitionEmpty;
         definition.className = "Selector";
         definition.staticValues = CYValue_staticValues;
-        //definition.staticValues = Selector_staticValues;
         definition.staticFunctions = Selector_staticFunctions;
         definition.callAsFunction = &Selector_callAsFunction;
         definition.finalize = &Finalize;
@@ -3086,7 +3302,24 @@ JSGlobalContextRef CYGetJSContext() {
         CYSetProperty(context, ObjectiveC_, CYJSString("images"), JSObjectMake(context, ObjectiveC_Images_, NULL));
         CYSetProperty(context, ObjectiveC_, CYJSString("protocols"), JSObjectMake(context, ObjectiveC_Protocols_, NULL));
 
-        CYSetProperty(context, global, CYJSString("Functor"), JSObjectMakeConstructor(context, Functor_, &Functor_new));
+        Array_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Array")));
+        Function_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Function")));
+
+        length_ = JSStringCreateWithUTF8CString("length");
+        message_ = JSStringCreateWithUTF8CString("message");
+        name_ = JSStringCreateWithUTF8CString("name");
+        prototype_ = JSStringCreateWithUTF8CString("prototype");
+        toCYON_ = JSStringCreateWithUTF8CString("toCYON");
+        toJSON_ = JSStringCreateWithUTF8CString("toJSON");
+
+        JSObjectRef Functor(JSObjectMakeConstructor(context, Functor_, &Functor_new));
+        JSObjectRef Message(JSObjectMakeConstructor(context, Message_, NULL));
+
+        JSValueRef function(CYGetProperty(context, Function_, prototype_));
+        JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Message, prototype_), function);
+        JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Functor, prototype_), function);
+
+        CYSetProperty(context, global, CYJSString("Functor"), Functor);
         CYSetProperty(context, global, CYJSString("Instance"), JSObjectMakeConstructor(context, Instance_, &Instance_new));
         CYSetProperty(context, global, CYJSString("Pointer"), JSObjectMakeConstructor(context, Pointer_, &Pointer_new));
         CYSetProperty(context, global, CYJSString("Selector"), JSObjectMakeConstructor(context, Selector_, &Selector_new));
@@ -3107,15 +3340,6 @@ JSGlobalContextRef CYGetJSContext() {
         CYSetProperty(context, System_, CYJSString("print"), JSObjectMakeFunctionWithCallback(context, CYJSString("print"), &System_print));
 
         Result_ = JSStringCreateWithUTF8CString("_");
-
-        length_ = JSStringCreateWithUTF8CString("length");
-        message_ = JSStringCreateWithUTF8CString("message");
-        name_ = JSStringCreateWithUTF8CString("name");
-        toCYON_ = JSStringCreateWithUTF8CString("toCYON");
-        toJSON_ = JSStringCreateWithUTF8CString("toJSON");
-
-        Array_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Array")));
-        Function_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Function")));
     }
 
     return Context_;

@@ -37,7 +37,17 @@
 */
 /* }}} */
 
+#include <Pooling.hpp>
+
+#include <apr-1/apr_thread_proc.h>
+
+#include <CoreFoundation/CFLogUtilities.h>
 #include <CFNetwork/CFNetwork.h>
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/un.h>
 
 struct Client {
     CFHTTPMessageRef message_;
@@ -117,23 +127,34 @@ static void OnAccept(CFSocketRef socket, CFSocketCallBackType type, CFDataRef ad
     }
 }
 
-MSInitialize {
-    pid_t pid(getpid());
+int main(int argc, char *argv[]) {
+    {
+        struct sockaddr_in address;
+        address.sin_len = sizeof(address);
+        address.sin_family = AF_INET;
+        address.sin_addr.s_addr = INADDR_ANY;
+        address.sin_port = htons(787);
 
-    struct sockaddr_in address;
-    address.sin_len = sizeof(address);
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(10000 + pid);
+        CFDataRef data(CFDataCreate(kCFAllocatorDefault, reinterpret_cast<UInt8 *>(&address), sizeof(address)));
 
-    CFDataRef data(CFDataCreate(kCFAllocatorDefault, reinterpret_cast<UInt8 *>(&address), sizeof(address)));
+        CFSocketSignature signature;
+        signature.protocolFamily = AF_INET;
+        signature.socketType = SOCK_STREAM;
+        signature.protocol = IPPROTO_TCP;
+        signature.address = data;
 
-    CFSocketSignature signature;
-    signature.protocolFamily = AF_INET;
-    signature.socketType = SOCK_STREAM;
-    signature.protocol = IPPROTO_TCP;
-    signature.address = data;
+        CFSocketRef socket(CFSocketCreateWithSocketSignature(kCFAllocatorDefault, &signature, kCFSocketAcceptCallBack, &OnAccept, NULL));
+        CFRunLoopAddSource(CFRunLoopGetCurrent(), CFSocketCreateRunLoopSource(kCFAllocatorDefault, socket, 0), kCFRunLoopDefaultMode);
+    }
 
-    CFSocketRef socket(CFSocketCreateWithSocketSignature(kCFAllocatorDefault, &signature, kCFSocketAcceptCallBack, &OnAccept, NULL));
-    CFRunLoopAddSource(CFRunLoopGetCurrent(), CFSocketCreateRunLoopSource(kCFAllocatorDefault, socket, 0), kCFRunLoopDefaultMode);
+    {
+        CYServer *server(new CYServer());
+        server->socket_ = _syscall(socket(PF_UNIX, SOCK_STREAM, 0));
+
+        struct sockaddr_un address;
+        memset(&address, 0, sizeof(address));
+        address.sun_family = AF_UNIX;
+
+        sprintf(address.sun_path, "/tmp/.s.cy");
+    }
 }
