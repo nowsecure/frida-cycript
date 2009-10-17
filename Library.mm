@@ -1720,9 +1720,18 @@ JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void 
     return value;
 }
 
-static bool CYImplements(id object, Class _class, SEL selector) {
+static bool CYImplements(id object, Class _class, SEL selector, bool devoid) {
+    if (Method method = class_getInstanceMethod(_class, selector)) {
+        if (!devoid)
+            return true;
+        char type[16];
+        method_getReturnType(method, type, sizeof(type));
+        if (type[0] != 'v')
+            return true;
+    }
+
     // XXX: possibly use a more "awesome" check?
-    return class_getInstanceMethod(_class, selector) != NULL;
+    return false;
 }
 
 static bool Instance_hasProperty(JSContextRef context, JSObjectRef object, JSStringRef property) {
@@ -1751,7 +1760,7 @@ static bool Instance_hasProperty(JSContextRef context, JSObjectRef object, JSStr
         return true;
 
     if (SEL sel = sel_getUid(string))
-        if (CYImplements(self, _class, sel))
+        if (CYImplements(self, _class, sel, true))
             return true;
 
     return false;
@@ -1787,7 +1796,7 @@ static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object,
         }
 
         if (SEL sel = sel_getUid(string))
-            if (CYImplements(self, _class, sel))
+            if (CYImplements(self, _class, sel, true))
                 return CYSendMessage(pool, context, self, sel, 0, NULL, false, exception);
 
         return NULL;
@@ -1837,7 +1846,7 @@ static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStr
         set[length + 4] = '\0';
 
         if (SEL sel = sel_getUid(set))
-            if (CYImplements(self, _class, sel)) {
+            if (CYImplements(self, _class, sel, false)) {
                 JSValueRef arguments[1] = {value};
                 CYSendMessage(pool, context, self, sel, 1, arguments, false, exception);
             }
