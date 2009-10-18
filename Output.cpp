@@ -119,26 +119,33 @@ void CYCategory::Output(std::ostream &out) const {
     if (messages_ != NULL)
         messages_->Output(out, true);
     out << "})(";
-    name_->ClassName(out);
+    name_->ClassName(out, true);
     out << ");";
 }
 
-void CYClass::Output(std::ostream &out) const {
+void CYClass::Output(std::ostream &out, CYFlags flags) const {
+    // XXX: I don't necc. need the ()s
     out << "(function($cys,$cyp,$cyc,$cyn,$cyt,$cym){";
     out << "$cyp=object_getClass($cys);";
-    out << "$cyc=objc_allocateClassPair($cys,\"" << *name_ << "\",0);";
+    out << "$cyc=objc_allocateClassPair($cys,";
+    if (name_ != NULL)
+        name_->ClassName(out, false);
+    else
+        out << "$cyq(\"CY$\")";
+    out << ",0);";
     out << "$cym=object_getClass($cyc);";
     if (fields_ != NULL)
         fields_->Output(out);
     if (messages_ != NULL)
         messages_->Output(out, false);
     out << "objc_registerClassPair($cyc);";
-    out << "})(";
+    out << "return $cyc;";
+    out << "}(";
     if (super_ != NULL)
         super_->Output(out, CYPA, CYNoFlags);
     else
         out << "null";
-    out << ");";
+    out << "))";
 }
 
 void CYCompound::Output(std::ostream &out, CYFlags flags) const {
@@ -264,7 +271,7 @@ void CYExpress::Output(std::ostream &out) const {
     out << ';';
 }
 
-void CYExpression::ClassName(std::ostream &out) const {
+void CYExpression::ClassName(std::ostream &out, bool object) const {
     Output(out, CYPA, CYNoFlags);
 }
 
@@ -663,8 +670,12 @@ void CYWith::Output(std::ostream &out) const {
     code_->Output(out, false);
 }
 
-void CYWord::ClassName(std::ostream &out) const {
-    out << "objc_getClass(\"" << Value() << "\")";
+void CYWord::ClassName(std::ostream &out, bool object) const {
+    if (object)
+        out << "objc_getClass(";
+    out << '"' << Value() << '"';
+    if (object)
+        out << ')';
 }
 
 void CYWord::Output(std::ostream &out) const {

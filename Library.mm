@@ -2710,6 +2710,14 @@ JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, SEL _c
     return CYCallFunction(pool, context, 2, setup, count, arguments, initialize, exception, &signature, &cif, function);
 }
 
+static size_t Nonce_(0);
+
+static JSValueRef $cyq(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    char name[16];
+    sprintf(name, "%s%zu", CYCastCString(context, arguments[0]), Nonce_++);
+    return CYCastJSValue(context, name);
+}
+
 static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     CYPool pool;
 
@@ -3468,6 +3476,7 @@ JSGlobalContextRef CYGetJSContext() {
 
         CYSetProperty(context, global, CYJSString("objc_registerClassPair"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_registerClassPair"), &objc_registerClassPair_));
         CYSetProperty(context, global, CYJSString("objc_msgSend"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_msgSend"), &$objc_msgSend));
+        CYSetProperty(context, global, CYJSString("$cyq"), JSObjectMakeFunctionWithCallback(context, CYJSString("$cyq"), &$cyq));
 
         System_ = JSObjectMake(context, NULL, NULL);
         CYSetProperty(context, global, CYJSString("system"), System_);

@@ -3,3 +3,4 @@ blocks and empty statements are poorly factored
 unicode identifier support (native and \u)
 object literal compilation should use numerify strings
 support unions (right now 0-1 fields parsed as struct)
+\\\n escapes in strings aren't handled in the console

@@ -93,7 +93,7 @@ struct CYPropertyName {
 };
 
 struct CYClassName {
-    virtual void ClassName(std::ostream &out) const = 0;
+    virtual void ClassName(std::ostream &out, bool object) const = 0;
 };
 
 struct CYWord :
@@ -114,7 +114,7 @@ struct CYWord :
 
     virtual void Output(std::ostream &out) const;
 
-    virtual void ClassName(std::ostream &out) const;
+    virtual void ClassName(std::ostream &out, bool object) const;
     virtual void PropertyName(std::ostream &out) const;
 };
 
@@ -246,7 +246,7 @@ struct CYExpression :
     virtual void Output(std::ostream &out, CYFlags flags) const = 0;
     void Output(std::ostream &out, unsigned precedence, CYFlags flags) const;
 
-    virtual void ClassName(std::ostream &out) const;
+    virtual void ClassName(std::ostream &out, bool object) const;
 
     virtual const char *Word() const {
         return NULL;
@@ -703,14 +703,14 @@ struct CYMessage :
 };
 
 struct CYClass :
-    CYSource
+    CYExpression
 {
-    CYIdentifier *name_;
+    CYClassName *name_;
     CYExpression *super_;
     CYField *fields_;
     CYMessage *messages_;
 
-    CYClass(CYIdentifier *name, CYExpression *super, CYField *fields, CYMessage *messages) :
+    CYClass(CYClassName *name, CYExpression *super, CYField *fields, CYMessage *messages) :
         name_(name),
         super_(super),
         fields_(fields),
@@ -718,11 +718,13 @@ struct CYClass :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    CYPrecedence(0)
+
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYCategory :
-    CYSource
+    CYStatement
 {
     CYClassName *name_;
     CYMessage *messages_;

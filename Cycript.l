@@ -61,7 +61,7 @@ int H(char c) {
 %option reentrant
 
 Exponent [eE][+-]?[0-9]+
-Escape   \\[\\'"bfnrtv]|\\0|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}
+Escape   \\[\\'"bfnrtv]|\\0|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\\n
 
 %%
 
@@ -204,6 +204,7 @@ Escape   \\[\\'"bfnrtv]|\\0|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}
 
         if (yytext[i] == '\\')
             switch (next = yytext[++i]) {
+                case '\n': continue;
                 case '\\': next = '\\'; break;
                 case '\'': next = '\''; break;
                 case '"': next = '"'; break;

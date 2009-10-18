@@ -269,10 +269,12 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <clause_> CaseClause
 %type <clause_> CaseClausesOpt
 %type <catch_> CatchOpt
-%type <source_> ClassDeclaration
+%type <statement_> CategoryStatement
+%type <expression_> ClassExpression
 %type <message_> ClassMessageDeclaration
 %type <message_> ClassMessageDeclarationListOpt
 %type <className_> ClassName
+%type <className_> ClassNameOpt
 %type <expression_> ClassSuperOpt
 %type <field_> ClassFieldList
 %type <expression_> ConditionalExpression
@@ -1244,13 +1246,25 @@ ClassName
     | "(" AssignmentExpression ")" { $$ = $2; }
     ;
 
-ClassDeclaration
-    : "@class" Identifier ClassSuperOpt ClassFieldList ClassMessageDeclarationListOpt "@end" { $$ = new CYClass($2, $3, $4, $5); }
-    | "@class" ClassName ClassMessageDeclarationListOpt "@end" { $$ = new CYCategory($2, $3); }
+ClassNameOpt
+    : ClassName { $$ = $1; }
+    | { $$ = NULL; }
     ;
 
-SourceElement
-    : ClassDeclaration { $$ = $1; }
+ClassExpression
+    : "@class" ClassNameOpt ClassSuperOpt ClassFieldList ClassMessageDeclarationListOpt "@end" { $$ = new CYClass($2, $3, $4, $5); }
+    ;
+
+CategoryStatement
+    : "@class" ClassName ClassMessageDeclarationListOpt "@end" { $$ = new CYCategory($2, $3); }
+    ;
+
+PrimaryExpression_
+    : ClassExpression { $$ = $1; }
+    ;
+
+Statement
+    : CategoryStatement
     ;
 
 VariadicCall
@@ -1307,5 +1321,31 @@ UnaryExpression_
 MemberAccess
     : "->" Identifier { $$ = new(driver.pool_) CYIndirectMember(NULL, new(driver.pool_) CYString($2)); }
     ;
+
+/*
+
+IfComprehension
+    : "if" "(" Expression ")"
+    ;
+
+ForComprehension
+    : "for" "(" ForInStatementInitialiser "in" Expression ")"
+    ;
+
+ComprehensionListOpt
+    : ComprehensionList
+    | IfComprehension
+    |
+    ;
+
+ComprehensionList
+    : ForComprehension ComprehensionListOpt
+    ;
+
+PrimaryExpression_
+    : "[" AssignmentExpression ComprehensionList "]"
+    ;
+
+*/
 
 %%
