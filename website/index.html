@@ -1,0 +1,211 @@
+<html><head><title>Cycript</title>
+</head><body>
+
+<h1>Cycript: Objective-JavaScript</h1>
+
+<h3>What is Cycript?</h3>
+
+<p>A programming language designed to blend the barrier between Objective-C and JavaScript. This project has similar goals to JSCocoa, but a very different set of starting technologies and a different guiding philosophy. In particular, Cycript has started life with a full-blown JavaScript parser/serializer, allowing it to have interesting hybrid syntax without constraints (such as those imposed on JSCocoa by JSLint).</p>
+
+<h3>Is it done?</h3>
+
+<p>Well, it works ;P. It is still "in flux": core language features are changing every few hours. However, it has already changed the workflow of the "elite" iPhone developers that write most of the extensions you see in Cydia: having a language that changes doesn't matter when you are mostly using it at the immediate console. I'm hoping, however, that I manage tolock it into something that feels "correct" in the very near future.</p>
+
+<h3>How do you pronounce "Cycript"?</h3>
+
+<p>I pronounce it "sscript" (with a geminate, aka long, 's'). I doubt anyone else will pronounce it like this, but I have my hopes.</p>
+
+<h3>Where do I get it?</h3>
+
+<p>Right now you can find releases of it at: <a href="http://www.cycript.org/debs/">http://www.cycript.org/debs/</a>. This package depends on MobileSubstrate and libffi (both of which are in Cydia).</p>
+
+<h3>So, how do I use it?!</h3>
+
+<p>Although you can write full applications in Cycript, the fastest way to get playing with it is via the immediate console: just type "cycript".<p>
+
+<xmp>iPhone:~$ cycript
+cy# </xmp>
+
+<p>Code typed at this prompt will be executed as it is able to be parsed: the immediate console is trying to eagerly parse lines of code as they come in (and thereby is not subject to automatic-semicolon insertion, for those JavaScript experts). Parse errors will be noted to the output in a hopefully useful fashion.</p>
+
+<xmp>cy# function a() {
+cy>    a + q r
+  | .........^
+  | syntax error, unexpected Identifier, expecting ; or "\n"
+cy# </xmp>
+
+<p>It should be noted that it is possible that you will manage to break my JavaScript serializer. In these cases, parse errors may be thrown by the underlying JavaScript engine rather than Cycript. To debug these issues you can use the special console command ?debug.</p>
+
+<xmp>cy# ?debug
+debug == true
+cy# var a = ((0 + (1)) * (2 * 3)) + m['a']('\'')
+var a=(0+1)*(2*3)+m.a("'");
+...</xmp>
+
+<p>In addition to standard JavaScript, you an also access anything in the Objective-C runtime. Attempts have been made, sparingly, to bridge syntax when possible between the two environments. In particular, you may notice interesting properties of arrays, dictonaries, strings, and numbers. Care has been taken to minimize the damage to the object model.</p>
+
+<xmp>cy# var a = [NSMutableArray arrayWithCapacity:4]
+cy# a instanceof Array
+true
+cy# [a class]
+"NSCFArray"
+cy# [a addObject:"hello"]; a
+["hello"]
+cy# a[1] = 4; a.push(10); a
+["hello",4,10]
+cy# a.splice(1, 1, 6, 7); a
+["hello",6,7,10]
+cy# b = [1, 2]; [b replaceObjectAtIndex:0 withObject:5]; b
+[5,2]</xmp>
+
+<p>Memory management is mostly automatic, but instead of using the usual -[alloc] message you will need to use JavaScript's "new" operator, which returns a special "uninitialized" handle that can be used to send a single message (probably a form of init) before it "expires" and reverts to nil.</p>
+
+<xmp>cy# var a = new NSMutableDictionary
+cy# a
+"*** -[NSCFDictionary count]: method sent to an uninitialized mutable dictionary object"
+cy# var b = [a init]; b
+{}
+cy# a
+nil
+cy# var q = [new NSString init]; q
+""</xmp>
+
+<p>One note in particular is made about selectors. Not only do they act as in Objective-C, including being typed using @selector notation, but they also have Function.prototype in their prototype-chain, allowing you to use them in interesting functional ways ala JavaScript. You can also generate one from a string using new Selector().</p>
+
+<xmp>cy# var sel = @selector(initWithFrame:)
+cy# sel
+@selector(initWithFrame:)
+cy# sel.call(new UIView, [UIHardware fullScreenApplicationContentRect])
+"<UIView: 0x22dae0; frame = (0 20; 320 460); layer = <CALayer: 0x209990>>"
+cy# new Selector("initWithFrame:")
+@selector(initWithFrame:)</xmp>
+
+<p>As one would expect from JavaScript, objects have a property called constructor that references their class, and classes have a property called prototype that gives you access to their messages. These can even be traded around and reassigned, with the results fully mapping back to the Objective-C runtime.</p>
+
+<xmp>cy# var view = [new UIView init]
+cy# view.constructor
+"UIView"
+cy# view.constructor.prototype.description
+0x309d84f5
+cy# [view description]
+"<UIView: 0x229bc0; frame = (0 0; 0 0); layer = <CALayer: 0x229d60>>"
+cy# view.constructor.prototype.description = function () { return "not!"; }
+{}
+cy# [view description]
+"not!"</xmp>
+
+<p>Structures are also supported (although unions are currently on the todo list and bitfields are still DOA): they are bridged back/forth as much as possible. You can specify them using either array syntax or in the form of dictionaries.</p>
+
+<xmp>cy# var rect = [UIHardware fullScreenApplicationContentRect]
+cy# rect
+{origin:{x:0,y:20},size:{width:320,height:460}}
+cy# rect.origin = [2, 3]
+[2,3]
+cy# rect.size = {width: 0, height: 1}
+{width:0,height:1}
+cy# rect
+{origin:{x:2,y:3},size:{width:0,height:1}}</xmp>
+
+<p>Access, allocation, and casting of pointers is possible through the usage of the Pointer and Type classes. Pointers can be indirected using the * and -> operators, as in C.</p>
+
+<xmp>cy# var count = new new Type("I")
+cy# var methods = class_copyMethodList(UIApplication, count)
+cy# *count
+305
+cy# *new Pointer(count, "d")
+7.304555902977629e-304
+cy# free(count)
+cy# methods
+0x843800
+cy# methods[304]
+0x825248
+cy# method_getName(methods[304])
+@selector(init)</xmp>
+
+<p>Objective-C @properties (some of which are auto-detected, as Apple doesn't always compile them into the resulting binaries) can be accessed using . notation. Currently, auto-detected @properties are usable, but aren't enumerable. This namespace is strictly separated from that of instance variables, which you can access by indirecting the object using * or ->.</p>
+
+<xmp>cy# var view = [new UIView init]
+cy# ps = []; for (var p in view) ps.push(p); ps
+["skipsSubviewEnumeration","gestureRecognizers","gesturesEnabled","capturesDescendantTouches","deliversTouchesForGesturesToSuperview","userInteractionEnabled","layer","tag"]
+cy# vs = []; for (var v in *view) vs.push(v); vs
+["isa","_layer","_tapInfo","_gestureInfo","_gestureRecognizers","_charge","_tag","_viewFlags"]
+cy# view.layer
+"<CALayer: 0x228f60>"
+cy# view->_layer
+"<CALayer: 0x228f60>"
+cy# (*view)._layer
+"<CALayer: 0x228f60>"</xmp>
+
+<p>Fully-fledged Objective-C classes can also be declared using @class, which blurs the line between Objective-C's @interface and @implementation. Right now, declaring instance variables are not supported, but will be in a future version: for now you must provide an empty variable block.</p>
+
+<xmp>cy# @class TestClass : NSObject {
+cy> }
+cy> - description {
+cy>     return "test";
+cy> }
+cy> @end
+cy# [new TestClass init]
+"test"</xmp>
+
+<p>The @class syntax can also be used to extend existing classes in a manner similar to categories. Note that type signatures, however, are not yet supported, so you end up heavily restricted in what you can add via this mechanism. In this case, one can also use a parenthesized expression as the class name.</p>
+
+<xmp>cy# @class NSObject
+cy> - description { return "replaced"; }
+cy> @end
+cy# var o = [new NSObject init]
+cy# o
+"replaced"
+cy# @class ([o class]) - description { return "again"; } @end
+cy# o
+"again"</xmp>
+
+<p>Cycript is also capable of accessing normal C functions and variables. Knowledge of the type signatures of various functions are provided in the bridge definition file, which is currently a plist stored at /usr/lib/libcycript.plist.</p>
+
+<xmp>cy# malloc
+0x31d48389
+cy# var p = malloc(4)
+cy# p
+0x22e0a0
+cy# free(p)
+cy# </xmp>
+
+<p>Cycript attempts to do its best to serialize information to the console about objects. In particular, CoreFoundaton objects bridged to Objective-C are detected and printed using CFCopyDescription.</p>
+
+<xmp>cy# UIGetScreenImage()
+"<CGImage 0x22f540>"
+cy# ABAddressBookCreate()
+"<ABCAddressBook 0x229cf0 [0x38208484]>"</xmp>
+
+<h3>How do I write an application with it?</h3>
+
+<p>This isn't quite "ready for primetime", but you can download the example HelloCycript.app from <a href="http://www.cycript.org/examples/">http://www.cycript.org/examples/</a> and put it in /Applicatons.</p>
+
+<h3>What else can it do?</h3>
+
+<p>Probably the awesomest thing you can do with Cycript is to hook into an existing process using the -p argument to the console interpreter. As an example, let's hook our way into SpringBoard and start spelunking.</p>
+
+<xmp>iPhone:~$ ps ax | grep Spring
+18110   ??  Us     0:03.03 /System/Library/CoreServices/SpringBoard.app/SpringBoard
+18115 s006  S+     0:00.02 grep --color=auto --exclude=.svn Spring
+iPhone:~$ cycript -p 18110
+cy# UIApp
+"<SpringBoard: 0x266f00>"
+cy# UIApp->_uiController.window
+"<SBAppWindow: 0x27ac10; baseClass = UIWindow; frame = (0 0; 320 480); layer = <CALayer: 0x27aba0>>"
+cy# UIApp->_uiController.window.subviews
+["<UIView: 0x4a6efa0; frame = (0 0; 320 480); autoresize = W+H; layer = <CALayer: 0x4a62d70>>","<SBAppContextHostView: 0x49a68f0; frame = (0 0; 320 480); clipsToBounds = YES; hidden = YES; layer = <CALayer: 0x2b4d10>> enabled: yes, context array: (\n)","<SBAppContextHostView: 0x4b5ccf0; frame = (0 0; 320 480); clipsToBounds = YES; hidden = YES; layer = <CALayer: 0x4b7f180>> enabled: yes, context array: (\n)"]
+cy# UIApp->_uiController.window.subviews[0].subviews
+["<UIImageView: 0x4b3cea0; frame = (0 0; 320 480); opaque = NO; userInteractionEnabled = NO; layer = <CALayer: 0x4a75550>>","<UIView: 0x4b4ba80; frame = (0 0; 320 480); autoresize = W+H; layer = <CALayer: 0x4b4bbf0>>"]
+cy# UIApp->_uiController.window.subviews[0].subviews[0].image.size
+{width:320,height:480}
+cy# UIApp->_uiController.window.subviews[0].subviews[1].subviews
+["<SBIconContentView: 0x4b4bc20; frame = (0 40; 320 349); autoresize = H; layer = <CALayer: 0x4a613c0>>","<UIView: 0x4a25250; frame = (0 389; 320 91); layer = <CALayer: 0x4a38630>>"]
+cy# UIApp->_uiController.window.subviews[0].subviews[1].subviews[0].subviews
+["<SBIconListPageControl: 0x27aab0; baseClass = UIPageControl; frame = (0 330; 320 19); autoresize = TM; layer = <CALayer: 0x4b3c370>>","<SBIconScrollView: 0x4a62360; baseClass = UIScrollView; frame = (0 0; 320 330); autoresize = H; layer = <CALayer: 0x4a624e0>>"]
+cy# var pages = UIApp->_uiController.window.subviews[0].subviews[1].subviews[0].subviews[0]
+cy# pages.currentPage
+1
+cy# pages.numberOfPages
+15</xmp>
+
+</body></html>
