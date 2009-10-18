@@ -128,6 +128,12 @@ static JSStringRef prototype_;
 static JSStringRef toCYON_;
 static JSStringRef toJSON_;
 
+static JSObjectRef Array_prototype_;
+static JSObjectRef Array_pop_;
+static JSObjectRef Array_push_;
+static JSObjectRef Array_splice_;
+
+static Class NSArray_;
 static Class NSCFBoolean_;
 static Class NSCFType_;
 static Class NSMessageBuilder_;
@@ -204,7 +210,14 @@ struct Instance :
     }
 
     static JSObjectRef Make(JSContextRef context, id object, Flags flags = None) {
-        return JSObjectMake(context, Instance_, new Instance(object, flags));
+        JSObjectRef value(JSObjectMake(context, Instance_, new Instance(object, flags)));
+        if (object != nil)
+            for (Class _class(object_getClass(object)); _class != nil; _class = class_getSuperclass(_class))
+                if (_class == NSArray_) {
+                    JSObjectSetPrototype(context, value, Array_prototype_);
+                    break;
+                }
+        return value;
     }
 
     id GetValue() const {
@@ -226,10 +239,14 @@ struct Prototype :
     {
     }
 
-    static JSObjectRef Make(JSContextRef context, Class _class) {
+    static JSObjectRef Make(JSContextRef context, Class _class, bool array = false) {
         JSObjectRef value(JSObjectMake(context, Prototype_, new Prototype(_class)));
+        if (_class == NSArray_)
+            array = true;
         if (Class super = class_getSuperclass(_class))
-            JSObjectSetPrototype(context, value, Prototype::Make(context, super));
+            JSObjectSetPrototype(context, value, Prototype::Make(context, super, array));
+        /*else if (array)
+            JSObjectSetPrototype(context, value, Array_prototype_);*/
         return value;
     }
 
@@ -561,7 +578,22 @@ JSValueRef CYJSUndefined(JSContextRef context) {
     return JSValueMakeUndefined(context);
 }
 
-bool CYGetIndex(const char *value, ssize_t &index) {
+size_t CYGetIndex(const char *value) {
+    if (value[0] != '0') {
+        char *end;
+        size_t index(strtoul(value, &end, 10));
+        if (value + strlen(value) == end)
+            return index;
+    } else if (value[1] == '\0')
+        return 0;
+    return _not(size_t);
+}
+
+size_t CYGetIndex(apr_pool_t *pool, NSString *value) {
+    return CYGetIndex(CYPoolCString(pool, value));
+}
+
+bool CYGetOffset(const char *value, ssize_t &index) {
     if (value[0] != '0') {
         char *end;
         index = strtol(value, &end, 10);
@@ -575,8 +607,8 @@ bool CYGetIndex(const char *value, ssize_t &index) {
     return false;
 }
 
-bool CYGetIndex(apr_pool_t *pool, NSString *value, ssize_t &index) {
-    return CYGetIndex(CYPoolCString(pool, value), index);
+bool CYGetOffset(apr_pool_t *pool, NSString *value, ssize_t &index) {
+    return CYGetOffset(CYPoolCString(pool, value), index);
 }
 
 NSString *CYPoolNSCYON(apr_pool_t *pool, id value);
@@ -815,8 +847,8 @@ NSString *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
     if ([name isEqualToString:@"length"])
         return true;
 
-    ssize_t index;
-    if (!CYGetIndex(NULL, name, index) || index < 0 || index >= static_cast<ssize_t>([self count]))
+    size_t index(CYGetIndex(NULL, name));
+    if (index == _not(size_t) || index >= [self count])
         return [super cy$hasProperty:name];
     else
         return true;
@@ -826,8 +858,8 @@ NSString *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
     if ([name isEqualToString:@"length"])
         return [NSNumber numberWithUnsignedInteger:[self count]];
 
-    ssize_t index;
-    if (!CYGetIndex(NULL, name, index) || index < 0 || index >= static_cast<ssize_t>([self count]))
+    size_t index(CYGetIndex(NULL, name));
+    if (index == _not(size_t) || index >= [self count])
         return [super cy$getProperty:name];
     else
         return [self objectAtIndex:index];
@@ -838,23 +870,48 @@ NSString *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 @implementation NSMutableArray (Cycript)
 
 - (bool) cy$setProperty:(NSString *)name to:(NSObject *)value {
-    ssize_t index;
-    if (!CYGetIndex(NULL, name, index) || index < 0 || index >= static_cast<ssize_t>([self count]))
-        return [super cy$setProperty:name to:value];
-    else {
-        [self replaceObjectAtIndex:index withObject:(value ?: [NSNull null])];
+    if ([name isEqualToString:@"length"]) {
+        // XXX: is this not intelligent?
+        NSUInteger size([(NSNumber *)value unsignedIntegerValue]);
+        NSUInteger count([self count]);
+        if (size < count)
+            [self removeObjectsInRange:NSMakeRange(size, count - size)];
+        else if (size != count) {
+            WebUndefined *undefined([WebUndefined undefined]);
+            for (size_t i(count); i != size; ++i)
+                [self addObject:undefined];
+        }
         return true;
     }
+
+    size_t index(CYGetIndex(NULL, name));
+    if (index == _not(size_t))
+        return [super cy$setProperty:name to:value];
+
+    id object(value ?: [NSNull null]);
+
+    size_t count([self count]);
+    if (index < count)
+        [self replaceObjectAtIndex:index withObject:object];
+    else {
+        if (index != count) {
+            WebUndefined *undefined([WebUndefined undefined]);
+            for (size_t i(count); i != index; ++i)
+                [self addObject:undefined];
+        }
+
+        [self addObject:object];
+    }
+
+    return true;
 }
 
 - (bool) cy$deleteProperty:(NSString *)name {
-    ssize_t index;
-    if (!CYGetIndex(NULL, name, index) || index < 0 || index >= static_cast<ssize_t>([self count]))
+    size_t index(CYGetIndex(NULL, name));
+    if (index == _not(size_t) || index >= [self count])
         return [super cy$deleteProperty:name];
-    else {
-        [self removeObjectAtIndex:index];
-        return true;
-    }
+    [self replaceObjectAtIndex:index withObject:[WebUndefined undefined]];
+    return true;
 }
 
 @end
@@ -964,8 +1021,8 @@ NSString *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
         goto cyon;
 
     if (DigitRange_[value[0]]) {
-        ssize_t index;
-        if (!CYGetIndex(NULL, self, index) || index < 0)
+        size_t index(CYGetIndex(NULL, self));
+        if (index == _not(size_t))
             goto cyon;
     } else {
         if (!WordStartRange_[value[0]])
@@ -988,7 +1045,7 @@ NSString *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 
 @end
 
-@interface CYJSObject : NSDictionary {
+@interface CYJSObject : NSMutableDictionary {
     JSObjectRef object_;
     JSContextRef context_;
 }
@@ -1005,7 +1062,7 @@ NSString *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 
 @end
 
-@interface CYJSArray : NSArray {
+@interface CYJSArray : NSMutableArray {
     JSObjectRef object_;
     JSContextRef context_;
 }
@@ -1014,6 +1071,12 @@ NSString *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 
 - (NSUInteger) count;
 - (id) objectAtIndex:(NSUInteger)index;
+
+- (void) addObject:(id)anObject;
+- (void) insertObject:(id)anObject atIndex:(NSUInteger)index;
+- (void) removeLastObject;
+- (void) removeObjectAtIndex:(NSUInteger)index;
+- (void) replaceObjectAtIndex:(NSUInteger)index withObject:(id)anObject;
 
 @end
 
@@ -1302,6 +1365,12 @@ JSValueRef CYGetProperty(JSContextRef context, JSObjectRef object, JSStringRef n
     return value;
 }
 
+void CYSetProperty(JSContextRef context, JSObjectRef object, size_t index, JSValueRef value) {
+    JSValueRef exception(NULL);
+    JSObjectSetPropertyAtIndex(context, object, index, value, &exception);
+    CYThrow(context, exception);
+}
+
 void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef value) {
     JSValueRef exception(NULL);
     JSObjectSetProperty(context, object, name, value, kJSPropertyAttributeNone, &exception);
@@ -1405,6 +1474,43 @@ bool CYIsCallable(JSContextRef context, JSValueRef value) {
     JSValueRef value(JSObjectGetPropertyAtIndex(context_, object_, index, &exception));
     CYThrow(context_, exception);
     return CYCastNSObject(NULL, context_, value) ?: [NSNull null];
+}
+
+- (void) addObject:(id)object {
+    JSValueRef exception(NULL);
+    JSValueRef arguments[1];
+    arguments[0] = CYCastJSValue(context_, object);
+    JSObjectCallAsFunction(context_, Array_push_, object_, 1, arguments, &exception);
+    CYThrow(context_, exception);
+}
+
+- (void) insertObject:(id)object atIndex:(NSUInteger)index {
+    JSValueRef exception(NULL);
+    JSValueRef arguments[3];
+    arguments[0] = CYCastJSValue(context_, index);
+    arguments[1] = CYCastJSValue(context_, 0);
+    arguments[2] = CYCastJSValue(context_, object);
+    JSObjectCallAsFunction(context_, Array_splice_, object_, 3, arguments, &exception);
+    CYThrow(context_, exception);
+}
+
+- (void) removeLastObject {
+    JSValueRef exception(NULL);
+    JSObjectCallAsFunction(context_, Array_pop_, object_, 0, NULL, &exception);
+    CYThrow(context_, exception);
+}
+
+- (void) removeObjectAtIndex:(NSUInteger)index {
+    JSValueRef exception(NULL);
+    JSValueRef arguments[2];
+    arguments[0] = CYCastJSValue(context_, index);
+    arguments[1] = CYCastJSValue(context_, 1);
+    JSObjectCallAsFunction(context_, Array_splice_, object_, 2, arguments, &exception);
+    CYThrow(context_, exception);
+}
+
+- (void) replaceObjectAtIndex:(NSUInteger)index withObject:(id)object {
+    CYSetProperty(context_, object_, index, CYCastJSValue(context_, object));
 }
 
 @end
@@ -1555,8 +1661,8 @@ const char *CYPoolCString(apr_pool_t *pool, JSContextRef context, JSValueRef val
     return JSValueIsNull(context, value) ? NULL : CYPoolCString(pool, CYJSString(context, value));
 }
 
-bool CYGetIndex(apr_pool_t *pool, JSStringRef value, ssize_t &index) {
-    return CYGetIndex(CYPoolCString(pool, value), index);
+bool CYGetOffset(apr_pool_t *pool, JSStringRef value, ssize_t &index) {
+    return CYGetOffset(CYPoolCString(pool, value), index);
 }
 
 // XXX: this macro is unhygenic
@@ -2263,11 +2369,11 @@ static JSValueRef Pointer_getProperty(JSContextRef context, JSObjectRef object, 
     if (typical->type_ == NULL)
         return NULL;
 
-    ssize_t index;
-    if (!CYGetIndex(pool, property, index))
+    ssize_t offset;
+    if (!CYGetOffset(pool, property, offset))
         return NULL;
 
-    return Pointer_getIndex(context, object, index, exception);
+    return Pointer_getIndex(context, object, offset, exception);
 }
 
 static JSValueRef Pointer_getProperty_$cyi(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
@@ -2297,11 +2403,11 @@ static bool Pointer_setProperty(JSContextRef context, JSObjectRef object, JSStri
     if (typical->type_ == NULL)
         return NULL;
 
-    ssize_t index;
-    if (!CYGetIndex(pool, property, index))
+    ssize_t offset;
+    if (!CYGetOffset(pool, property, offset))
         return NULL;
 
-    return Pointer_setIndex(context, object, 0, value, exception);
+    return Pointer_setIndex(context, object, offset, value, exception);
 }
 
 static bool Pointer_setProperty_$cyi(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) {
@@ -3168,6 +3274,7 @@ MSInitialize { _pooled
 
     Bridge_ = [[NSMutableArray arrayWithContentsOfFile:@"/usr/lib/libcycript.plist"] retain];
 
+    NSArray_ = objc_getClass("NSArray");
     NSCFBoolean_ = objc_getClass("NSCFBoolean");
     NSCFType_ = objc_getClass("NSCFType");
     NSMessageBuilder_ = objc_getClass("NSMessageBuilder");
@@ -3319,6 +3426,11 @@ JSGlobalContextRef CYGetJSContext() {
         prototype_ = JSStringCreateWithUTF8CString("prototype");
         toCYON_ = JSStringCreateWithUTF8CString("toCYON");
         toJSON_ = JSStringCreateWithUTF8CString("toJSON");
+
+        Array_prototype_ = CYCastJSObject(context, CYGetProperty(context, Array_, prototype_));
+        Array_pop_ = CYCastJSObject(context, CYGetProperty(context, Array_prototype_, CYJSString("pop")));
+        Array_push_ = CYCastJSObject(context, CYGetProperty(context, Array_prototype_, CYJSString("push")));
+        Array_splice_ = CYCastJSObject(context, CYGetProperty(context, Array_prototype_, CYJSString("splice")));
 
         JSObjectRef Functor(JSObjectMakeConstructor(context, Functor_, &Functor_new));
         JSObjectRef Message(JSObjectMakeConstructor(context, Message_, NULL));
