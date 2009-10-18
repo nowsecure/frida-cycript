@@ -179,8 +179,9 @@ static void Console(int socket) {
             }
         }
 
-        lines.push_back(line);
         command += line;
+        for (char *state, *token(apr_strtok(line, "\n", &state)); token != NULL; token = apr_strtok(NULL, "\n", &state))
+            lines.push_back(token);
         free(line);
 
         std::string code;

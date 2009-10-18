@@ -388,6 +388,8 @@ void CYLambda::Output(std::ostream &out, CYFlags flags) const {
     bool protect((flags & CYNoFunction) != 0);
     if (protect)
         out << '(';
+    else if ((flags & CYNoLeader) != 0)
+        out << ' ';
     out << "function";
     if (name_ != NULL)
         out << ' ' << *name_;
