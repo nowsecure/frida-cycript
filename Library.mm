@@ -1470,6 +1470,8 @@ bool CYIsCallable(JSContextRef context, JSValueRef value) {
 }
 
 - (id) objectAtIndex:(NSUInteger)index {
+    if (index >= CYCastDouble(context_, CYGetProperty(context_, object_, length_)))
+        return nil;
     JSValueRef exception(NULL);
     JSValueRef value(JSObjectGetPropertyAtIndex(context_, object_, index, &exception));
     CYThrow(context_, exception);
