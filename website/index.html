@@ -80,16 +80,27 @@ cy# sel.call(new UIView, [UIHardware fullScreenApplicationContentRect])
 cy# new Selector("initWithFrame:")
 @selector(initWithFrame:)</xmp>
 
-<p>As one would expect from JavaScript, objects have a property called constructor that references their class, and classes have a property called prototype that gives you access to their messages. These can even be traded around and reassigned, with the results fully mapping back to the Objective-C runtime.</p>
+<p>As one would expect from JavaScript, objects have a property called constructor that references their class. You can also add methods along the prototype chain to instances. Eventually, all objects go through Instance, where you can put functions that should be available for all Objective-C classes.</p>
+
+<xmp>cy# Instance.prototype.getMethod = function (sel) { return class_getInstanceMethod(this, sel); }
+{}
+cy# NSObject.getMethod(@selector(init))
+0x801354
+cy# NSObject.prototype.getMethod = function (sel) { return "ark"; }
+{}
+cy# NSObject.getMethod(@selector(init))
+"ark"</xmp>
+
+<p>Given that sending messages is actually a different namespace than function resolution, it is important to separate out the analog of a "prototype" in the world of Objective-C from that in JavaScript. Therefore, a field called "messages" (may change) is also added to Class objects. These messages can even be traded around and reassigned, with the results fully mapping back to the Objective-C runtime.</p>
 
 <xmp>cy# var view = [new UIView init]
 cy# view.constructor
 "UIView"
-cy# view.constructor.prototype.description
+cy# view.constructor.messages['description']
 0x309d84f5
 cy# [view description]
 "<UIView: 0x229bc0; frame = (0 0; 0 0); layer = <CALayer: 0x229d60>>"
-cy# view.constructor.prototype.description = function () { return "not!"; }
+cy# view.constructor.messages['description'] = function () { return "not!"; }
 {}
 cy# [view description]
 "not!"</xmp>
