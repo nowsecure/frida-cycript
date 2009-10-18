@@ -57,6 +57,7 @@ typedef struct {
         CYBoolean *boolean_;
         CYClause *clause_;
         CYCatch *catch_;
+        CYClass *class_;
         CYClassName *className_;
         CYCompound *compound_;
         CYDeclaration *declaration_;
@@ -270,7 +271,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <clause_> CaseClausesOpt
 %type <catch_> CatchOpt
 %type <statement_> CategoryStatement
-%type <expression_> ClassExpression
+%type <class_> ClassDefinition
 %type <message_> ClassMessageDeclaration
 %type <message_> ClassMessageDeclarationListOpt
 %type <className_> ClassName
@@ -1251,7 +1252,7 @@ ClassNameOpt
     | { $$ = NULL; }
     ;
 
-ClassExpression
+ClassDefinition
     : "@class" ClassNameOpt ClassSuperOpt ClassFieldList ClassMessageDeclarationListOpt "@end" { $$ = new CYClass($2, $3, $4, $5); }
     ;
 
@@ -1259,12 +1260,13 @@ CategoryStatement
     : "@class" ClassName ClassMessageDeclarationListOpt "@end" { $$ = new CYCategory($2, $3); }
     ;
 
-PrimaryExpression_
-    : ClassExpression { $$ = $1; }
+PrimaryExpression
+    : ClassDefinition { $$ = $1; }
     ;
 
 Statement
-    : CategoryStatement
+    : ClassDefinition { $$ = $1; }
+    | CategoryStatement { $$ = $1; }
     ;
 
 VariadicCall

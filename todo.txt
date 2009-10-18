@@ -4,3 +4,4 @@ unicode identifier support (native and \u)
 object literal compilation should use numerify strings
 support unions (right now 0-1 fields parsed as struct)
 \\\n escapes in strings aren't handled in the console
+look into what String is, and whether to bridge it

@@ -123,6 +123,11 @@ void CYCategory::Output(std::ostream &out) const {
     out << ");";
 }
 
+void CYClass::Output(std::ostream &out) const {
+    Output(out, CYNoBF);
+    out << ";";
+}
+
 void CYClass::Output(std::ostream &out, CYFlags flags) const {
     // XXX: I don't necc. need the ()s
     out << "(function($cys,$cyp,$cyc,$cyn,$cyt,$cym){";
@@ -267,7 +272,7 @@ void CYEmpty::Output(std::ostream &out, bool block) const {
 }
 
 void CYExpress::Output(std::ostream &out) const {
-    expression_->Output(out, CYNoFunction | CYNoBrace);
+    expression_->Output(out, CYNoBF);
     out << ';';
 }
 

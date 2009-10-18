@@ -233,6 +233,7 @@ enum CYFlags {
     CYNoTrailer =  (1 << 3),
     CYNoIn =       (1 << 4),
     CYNoHyphen =   (1 << 5),
+    CYNoBF =       (CYNoBrace | CYNoFunction),
 };
 
 struct CYExpression :
@@ -703,7 +704,8 @@ struct CYMessage :
 };
 
 struct CYClass :
-    CYExpression
+    CYExpression,
+    CYStatement
 {
     CYClassName *name_;
     CYExpression *super_;
@@ -720,6 +722,7 @@ struct CYClass :
 
     CYPrecedence(0)
 
+    virtual void Output(std::ostream &out) const;
     virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
