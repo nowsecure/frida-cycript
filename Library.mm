@@ -1434,7 +1434,10 @@ bool CYIsCallable(JSContextRef context, JSValueRef value) {
 }
 
 - (id) objectForKey:(id)key {
-    return CYCastNSObject(NULL, context_, CYGetProperty(context_, object_, CYJSString(key))) ?: [NSNull null];
+    JSValueRef value(CYGetProperty(context_, object_, CYJSString(key)));
+    if (JSValueIsUndefined(context_, value))
+        return nil;
+    return CYCastNSObject(NULL, context_, value) ?: [NSNull null];
 }
 
 - (NSEnumerator *) keyEnumerator {
