@@ -1470,8 +1470,9 @@ bool CYIsCallable(JSContextRef context, JSValueRef value) {
 }
 
 - (id) objectAtIndex:(NSUInteger)index {
-    if (index >= CYCastDouble(context_, CYGetProperty(context_, object_, length_)))
-        return nil;
+    size_t bounds([self count]);
+    if (index >= bounds)
+        @throw [NSException exceptionWithName:NSRangeException reason:[NSString stringWithFormat:@"*** -[CYJSArray objectAtIndex:]: index (%zu) beyond bounds (%zu)", index, bounds] userInfo:nil];
     JSValueRef exception(NULL);
     JSValueRef value(JSObjectGetPropertyAtIndex(context_, object_, index, &exception));
     CYThrow(context_, exception);
@@ -1487,6 +1488,9 @@ bool CYIsCallable(JSContextRef context, JSValueRef value) {
 }
 
 - (void) insertObject:(id)object atIndex:(NSUInteger)index {
+    size_t bounds([self count] + 1);
+    if (index >= bounds)
+        @throw [NSException exceptionWithName:NSRangeException reason:[NSString stringWithFormat:@"*** -[CYJSArray insertObject:atIndex:]: index (%zu) beyond bounds (%zu)", index, bounds] userInfo:nil];
     JSValueRef exception(NULL);
     JSValueRef arguments[3];
     arguments[0] = CYCastJSValue(context_, index);
@@ -1503,6 +1507,9 @@ bool CYIsCallable(JSContextRef context, JSValueRef value) {
 }
 
 - (void) removeObjectAtIndex:(NSUInteger)index {
+    size_t bounds([self count]);
+    if (index >= bounds)
+        @throw [NSException exceptionWithName:NSRangeException reason:[NSString stringWithFormat:@"*** -[CYJSArray removeObjectAtIndex:]: index (%zu) beyond bounds (%zu)", index, bounds] userInfo:nil];
     JSValueRef exception(NULL);
     JSValueRef arguments[2];
     arguments[0] = CYCastJSValue(context_, index);
@@ -1512,6 +1519,9 @@ bool CYIsCallable(JSContextRef context, JSValueRef value) {
 }
 
 - (void) replaceObjectAtIndex:(NSUInteger)index withObject:(id)object {
+    size_t bounds([self count]);
+    if (index >= bounds)
+        @throw [NSException exceptionWithName:NSRangeException reason:[NSString stringWithFormat:@"*** -[CYJSArray replaceObjectAtIndex:withObject:]: index (%zu) beyond bounds (%zu)", index, bounds] userInfo:nil];
     CYSetProperty(context_, object_, index, CYCastJSValue(context_, object));
 }
 
