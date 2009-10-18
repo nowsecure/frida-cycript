@@ -66,10 +66,29 @@
 #include <netinet/in.h>
 #include <sys/un.h>
 
+static volatile enum {
+    Working,
+    Parsing,
+    Running,
+    Sending,
+    Waiting,
+} mode_;
+
 static jmp_buf ctrlc_;
 
 static void sigint(int) {
-    longjmp(ctrlc_, 1);
+    switch (mode_) {
+        case Working:
+            return;
+        case Parsing:
+            longjmp(ctrlc_, 1);
+        case Running:
+            throw "*** Ctrl-C";
+        case Sending:
+            return;
+        case Waiting:
+            return;
+    }
 }
 
 void Run(int socket, const char *data, size_t size, FILE *fout = NULL, bool expand = false) {
@@ -77,12 +96,16 @@ void Run(int socket, const char *data, size_t size, FILE *fout = NULL, bool expa
 
     const char *json;
     if (socket == -1) {
+        mode_ = Running;
         json = CYExecute(pool, data);
+        mode_ = Working;
         if (json != NULL)
             size = strlen(json);
     } else {
+        mode_ = Sending;
         CYSendAll(socket, &size, sizeof(size));
         CYSendAll(socket, data, size);
+        mode_ = Waiting;
         CYRecvAll(socket, &size, sizeof(size));
         if (size == _not(size_t))
             json = NULL;
@@ -92,6 +115,7 @@ void Run(int socket, const char *data, size_t size, FILE *fout = NULL, bool expa
             temp[size] = '\0';
             json = temp;
         }
+        mode_ = Working;
     }
 
     if (json != NULL && fout != NULL) {
@@ -147,13 +171,16 @@ static void Console(int socket) {
         const char *prompt("cy# ");
 
         if (setjmp(ctrlc_) != 0) {
+            mode_ = Working;
             fputs("\n", fout);
             fflush(fout);
             goto restart;
         }
 
       read:
+        mode_ = Parsing;
         char *line(readline(prompt));
+        mode_ = Working;
         if (line == NULL)
             break;
 

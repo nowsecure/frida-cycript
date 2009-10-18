@@ -327,6 +327,7 @@ JSValueRef CYGetClassPrototype(JSContextRef context, id self) {
     JSObjectRef object(JSObjectMake(context, _class, NULL));
     JSObjectSetPrototype(context, object, prototype);
 
+    JSValueProtect(context, object);
     value = object;
     return object;
 }
@@ -395,19 +396,41 @@ struct Messages :
     }
 };
 
-struct Internal :
+struct CYOwned :
     CYValue
 {
+  private:
+    JSContextRef context_;
     JSObjectRef owner_;
 
-    Internal(id value, JSObjectRef owner) :
+  public:
+    CYOwned(void *value, JSContextRef context, JSObjectRef owner) :
         CYValue(value),
+        context_(context),
         owner_(owner)
+    {
+        JSValueProtect(context_, owner_);
+    }
+
+    virtual ~CYOwned() {
+        JSValueUnprotect(context_, owner_);
+    }
+
+    JSObjectRef GetOwner() const {
+        return owner_;
+    }
+};
+
+struct Internal :
+    CYOwned
+{
+    Internal(id value, JSContextRef context, JSObjectRef owner) :
+        CYOwned(value, context, owner)
     {
     }
 
     static JSObjectRef Make(JSContextRef context, id object, JSObjectRef owner) {
-        return JSObjectMake(context, Internal_, new Internal(object, owner));
+        return JSObjectMake(context, Internal_, new Internal(object, context, owner));
     }
 
     id GetValue() const {
@@ -580,27 +603,24 @@ Type_privateData *Selector_privateData::GetType() const {
 }
 
 struct Pointer :
-    CYValue
+    CYOwned
 {
-    JSObjectRef owner_;
     Type_privateData *type_;
 
-    Pointer(void *value, sig::Type *type, JSObjectRef owner) :
-        CYValue(value),
-        owner_(owner),
+    Pointer(void *value, JSContextRef context, JSObjectRef owner, sig::Type *type) :
+        CYOwned(value, context, owner),
         type_(new(pool_) Type_privateData(type))
     {
     }
 };
 
 struct Struct_privateData :
-    CYValue
+    CYOwned
 {
-    JSObjectRef owner_;
     Type_privateData *type_;
 
-    Struct_privateData(JSObjectRef owner) :
-        owner_(owner)
+    Struct_privateData(JSContextRef context, JSObjectRef owner) :
+        CYOwned(NULL, context, owner)
     {
     }
 };
@@ -609,7 +629,7 @@ typedef std::map<const char *, Type_privateData *, CStringMapLess> TypeMap;
 static TypeMap Types_;
 
 JSObjectRef CYMakeStruct(JSContextRef context, void *data, sig::Type *type, ffi_type *ffi, JSObjectRef owner) {
-    Struct_privateData *internal(new Struct_privateData(owner));
+    Struct_privateData *internal(new Struct_privateData(context, owner));
     apr_pool_t *pool(internal->pool_);
     Type_privateData *typical(new(pool) Type_privateData(type, ffi));
     internal->type_ = typical;
@@ -651,9 +671,16 @@ struct Closure_privateData :
     JSContextRef context_;
     JSObjectRef function_;
 
-    Closure_privateData(const char *type) :
-        Functor_privateData(type, NULL)
+    Closure_privateData(JSContextRef context, JSObjectRef function, const char *type) :
+        Functor_privateData(type, NULL),
+        context_(context),
+        function_(function)
     {
+        JSValueProtect(context_, function_);
+    }
+
+    virtual ~Closure_privateData() {
+        JSValueUnprotect(context_, function_);
     }
 };
 
@@ -1697,7 +1724,7 @@ JSObjectRef CYMakeSelector(JSContextRef context, SEL sel) {
 }
 
 JSObjectRef CYMakePointer(JSContextRef context, void *pointer, sig::Type *type, ffi_type *ffi, JSObjectRef owner) {
-    Pointer *internal(new Pointer(pointer, type, owner));
+    Pointer *internal(new Pointer(pointer, context, owner, type));
     return JSObjectMake(context, Pointer_, internal);
 }
 
@@ -1985,7 +2012,7 @@ void MessageClosure_(ffi_cif *cif, void *result, void **arguments, void *arg) {
 Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, const char *type, void (*callback)(ffi_cif *, void *, void **, void *)) {
     // XXX: in case of exceptions this will leak
     // XXX: in point of fact, this may /need/ to leak :(
-    Closure_privateData *internal(new Closure_privateData(type));
+    Closure_privateData *internal(new Closure_privateData(CYGetJSContext(), function, type));
 
     ffi_closure *closure((ffi_closure *) _syscall(mmap(
         NULL, sizeof(ffi_closure),
@@ -1999,9 +2026,6 @@ Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, 
     _syscall(mprotect(closure, sizeof(*closure), PROT_READ | PROT_EXEC));
 
     internal->value_ = closure;
-
-    internal->context_ = CYGetJSContext();
-    internal->function_ = function;
 
     return internal;
 }
@@ -2385,7 +2409,7 @@ static void Internal_getPropertyNames(JSContextRef context, JSObjectRef object, 
 
 static JSValueRef Internal_callAsFunction_$cya(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     Internal *internal(reinterpret_cast<Internal *>(JSObjectGetPrivate(object)));
-    return internal->owner_;
+    return internal->GetOwner();
 }
 
 bool Index_(apr_pool_t *pool, Struct_privateData *internal, JSStringRef property, ssize_t &index, uint8_t *&base) {
@@ -2440,7 +2464,7 @@ static JSValueRef Pointer_getIndex(JSContextRef context, JSObjectRef object, siz
     uint8_t *base(reinterpret_cast<uint8_t *>(internal->value_));
     base += ffi->size * index;
 
-    JSObjectRef owner(internal->owner_ ?: object);
+    JSObjectRef owner(internal->GetOwner() ?: object);
 
     CYTry {
         return CYFromFFI(context, typical->type_, ffi, base, false, owner);
@@ -2517,7 +2541,7 @@ static JSValueRef Struct_getProperty(JSContextRef context, JSObjectRef object, J
     if (!Index_(pool, internal, property, index, base))
         return NULL;
 
-    JSObjectRef owner(internal->owner_ ?: object);
+    JSObjectRef owner(internal->GetOwner() ?: object);
 
     CYTry {
         return CYFromFFI(context, typical->type_->data.signature.elements[index].type, typical->GetFFI()->elements[index], base, false, owner);
@@ -3259,7 +3283,14 @@ const char *CYExecute(apr_pool_t *pool, const char *code) { _pooled
     if (JSValueIsUndefined(context, result))
         return NULL;
 
-    const char *json(CYPoolCCYON(pool, context, result, &exception));
+    const char *json;
+
+    try {
+        json = CYPoolCCYON(pool, context, result, &exception);
+    } catch (const char *error) {
+        return error;
+    }
+
     if (exception != NULL)
         goto error;
 
@@ -3520,7 +3551,6 @@ JSGlobalContextRef CYGetJSContext() {
         definition.className = "ObjectiveC::Image::Classes";
         definition.getProperty = &ObjectiveC_Image_Classes_getProperty;
         definition.getPropertyNames = &ObjectiveC_Image_Classes_getPropertyNames;
-        definition.finalize = &Finalize;
         ObjectiveC_Image_Classes_ = JSClassCreate(&definition);
 
         definition = kJSClassDefinitionEmpty;
@@ -3599,6 +3629,18 @@ JSGlobalContextRef CYGetJSContext() {
         CYSetProperty(context, System_, CYJSString("print"), JSObjectMakeFunctionWithCallback(context, CYJSString("print"), &System_print));
 
         Result_ = JSStringCreateWithUTF8CString("_");
+
+        JSValueProtect(context, Array_);
+        JSValueProtect(context, Function_);
+        JSValueProtect(context, String_);
+
+        JSValueProtect(context, Instance_prototype_);
+        JSValueProtect(context, Object_prototype_);
+
+        JSValueProtect(context, Array_prototype_);
+        JSValueProtect(context, Array_pop_);
+        JSValueProtect(context, Array_push_);
+        JSValueProtect(context, Array_splice_);
     }
 
     return Context_;
