@@ -67,13 +67,32 @@ struct CYNext {
 };
 
 struct CYThing {
-    virtual void Output(std::ostream &out) const = 0;
+    virtual void Output(struct CYOutput &out) const = 0;
 };
 
-_finline std::ostream &operator <<(std::ostream &out, const CYThing &rhs) {
-    rhs.Output(out);
-    return out;
-}
+struct CYOutput {
+    std::ostream &out_;
+
+    CYOutput(std::ostream &out) :
+        out_(out)
+    {
+    }
+
+    _finline CYOutput &operator <<(char rhs) {
+        out_ << rhs;
+        return *this;
+    }
+
+    _finline CYOutput &operator <<(const char *rhs) {
+        out_ << rhs;
+        return *this;
+    }
+
+    _finline CYOutput &operator <<(const CYThing &rhs) {
+        rhs.Output(*this);
+        return *this;
+    }
+};
 
 struct CYSource :
     CYNext<CYSource>
@@ -82,18 +101,18 @@ struct CYSource :
         return next_ != NULL;
     }
 
-    virtual void Show(std::ostream &out) const;
-    virtual void Output(std::ostream &out) const = 0;
-    virtual void Output(std::ostream &out, bool block) const;
-    virtual void Output_(std::ostream &out) const;
+    virtual void Show(CYOutput &out) const;
+    virtual void Output(CYOutput &out) const = 0;
+    virtual void Output(CYOutput &out, bool block) const;
+    virtual void Output_(CYOutput &out) const;
 };
 
 struct CYPropertyName {
-    virtual void PropertyName(std::ostream &out) const = 0;
+    virtual void PropertyName(CYOutput &out) const = 0;
 };
 
 struct CYClassName {
-    virtual void ClassName(std::ostream &out, bool object) const = 0;
+    virtual void ClassName(CYOutput &out, bool object) const = 0;
 };
 
 struct CYWord :
@@ -112,11 +131,15 @@ struct CYWord :
         return word_;
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 
-    virtual void ClassName(std::ostream &out, bool object) const;
-    virtual void PropertyName(std::ostream &out) const;
+    virtual void ClassName(CYOutput &out, bool object) const;
+    virtual void PropertyName(CYOutput &out) const;
 };
+
+_finline std::ostream &operator <<(std::ostream &lhs, const CYWord &rhs) {
+    return lhs << rhs.Value();
+}
 
 struct CYIdentifier :
     CYWord
@@ -153,7 +176,7 @@ struct CYStatement :
         labels_ = new CYLabel(identifier, labels_);
     }
 
-    virtual void Output_(std::ostream &out) const;
+    virtual void Output_(CYOutput &out) const;
 };
 
 struct CYBlock :
@@ -170,7 +193,7 @@ struct CYBlock :
         return true;
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 enum CYState {
@@ -223,13 +246,13 @@ enum CYFlags {
 };
 
 struct CYForInitialiser {
-    virtual void For(std::ostream &out) const = 0;
+    virtual void For(CYOutput &out) const = 0;
 };
 
 struct CYForInInitialiser {
-    virtual void ForIn(std::ostream &out, CYFlags flags) const = 0;
+    virtual void ForIn(CYOutput &out, CYFlags flags) const = 0;
     virtual const char *ForEachIn() const = 0;
-    virtual void ForEachIn(std::ostream &out) const = 0;
+    virtual void ForEachIn(CYOutput &out) const = 0;
 };
 
 struct CYExpression :
@@ -240,16 +263,16 @@ struct CYExpression :
 {
     virtual unsigned Precedence() const = 0;
 
-    virtual void For(std::ostream &out) const;
-    virtual void ForIn(std::ostream &out, CYFlags flags) const;
+    virtual void For(CYOutput &out) const;
+    virtual void ForIn(CYOutput &out, CYFlags flags) const;
 
     virtual const char *ForEachIn() const;
-    virtual void ForEachIn(std::ostream &out) const;
+    virtual void ForEachIn(CYOutput &out) const;
 
-    virtual void Output(std::ostream &out, CYFlags flags) const = 0;
-    void Output(std::ostream &out, unsigned precedence, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const = 0;
+    void Output(CYOutput &out, unsigned precedence, CYFlags flags) const;
 
-    virtual void ClassName(std::ostream &out, bool object) const;
+    virtual void ClassName(CYOutput &out, bool object) const;
 
     virtual const char *Word() const {
         return NULL;
@@ -286,18 +309,18 @@ struct CYCompound :
 
     CYPrecedence(17)
 
-    void Output(std::ostream &out, CYFlags flags) const;
+    void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYComprehension :
     CYNext<CYComprehension>
 {
-    void Output(std::ostream &out) const;
+    void Output(CYOutput &out) const;
     virtual const char *Name() const = 0;
 
-    virtual void Begin_(std::ostream &out) const = 0;
+    virtual void Begin_(CYOutput &out) const = 0;
 
-    virtual void End_(std::ostream &out) const {
+    virtual void End_(CYOutput &out) const {
     }
 };
 
@@ -317,7 +340,7 @@ struct CYForInComprehension :
         return name_->Value();
     }
 
-    virtual void Begin_(std::ostream &out) const;
+    virtual void Begin_(CYOutput &out) const;
 };
 
 struct CYForEachInComprehension :
@@ -336,8 +359,8 @@ struct CYForEachInComprehension :
         return name_->Value();
     }
 
-    virtual void Begin_(std::ostream &out) const;
-    virtual void End_(std::ostream &out) const;
+    virtual void Begin_(CYOutput &out) const;
+    virtual void End_(CYOutput &out) const;
 };
 
 struct CYIfComprehension :
@@ -354,7 +377,7 @@ struct CYIfComprehension :
         return NULL;
     }
 
-    virtual void Begin_(std::ostream &out) const;
+    virtual void Begin_(CYOutput &out) const;
 };
 
 struct CYArrayComprehension :
@@ -371,7 +394,7 @@ struct CYArrayComprehension :
 
     CYPrecedence(0)
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYLiteral :
@@ -399,7 +422,7 @@ struct CYSelectorPart :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYSelector :
@@ -414,7 +437,7 @@ struct CYSelector :
 
     CYPrecedence(1)
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYRange {
@@ -473,12 +496,12 @@ struct CYString :
         return Value();
     }
 
-    virtual void Output(std::ostream &out) const {
+    virtual void Output(CYOutput &out) const {
         return Output(out, CYNoFlags);
     }
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
-    virtual void PropertyName(std::ostream &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+    virtual void PropertyName(CYOutput &out) const;
 };
 
 struct CYNumber :
@@ -496,12 +519,12 @@ struct CYNumber :
         return value_;
     }
 
-    virtual void Output(std::ostream &out) const {
+    virtual void Output(CYOutput &out) const {
         return Output(out, CYNoFlags);
     }
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
-    virtual void PropertyName(std::ostream &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+    virtual void PropertyName(CYOutput &out) const;
 };
 
 struct CYNull :
@@ -513,7 +536,7 @@ struct CYNull :
     {
     }
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYThis :
@@ -525,14 +548,14 @@ struct CYThis :
     {
     }
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYBoolean :
     CYLiteral
 {
     virtual bool Value() const = 0;
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYFalse :
@@ -571,7 +594,7 @@ struct CYVariable :
 
     CYPrecedence(0)
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYPrefix :
@@ -587,7 +610,7 @@ struct CYPrefix :
     virtual bool Alphabetic() const = 0;
     virtual const char *Operator() const = 0;
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYInfix :
@@ -609,7 +632,7 @@ struct CYInfix :
     virtual bool Alphabetic() const = 0;
     virtual const char *Operator() const = 0;
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYPostfix :
@@ -624,7 +647,7 @@ struct CYPostfix :
 
     virtual const char *Operator() const = 0;
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYAssignment :
@@ -645,7 +668,7 @@ struct CYAssignment :
 
     virtual const char *Operator() const = 0;
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYArgument :
@@ -661,7 +684,7 @@ struct CYArgument :
     {
     }
 
-    void Output(std::ostream &out) const;
+    void Output(CYOutput &out) const;
 };
 
 struct CYBlank :
@@ -686,7 +709,7 @@ struct CYClause :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYElement :
@@ -700,7 +723,7 @@ struct CYElement :
     {
     }
 
-    void Output(std::ostream &out) const;
+    void Output(CYOutput &out) const;
 };
 
 struct CYArray :
@@ -713,7 +736,7 @@ struct CYArray :
     {
     }
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYDeclaration :
@@ -728,12 +751,12 @@ struct CYDeclaration :
     {
     }
 
-    virtual void ForIn(std::ostream &out, CYFlags flags) const;
+    virtual void ForIn(CYOutput &out, CYFlags flags) const;
 
     virtual const char *ForEachIn() const;
-    virtual void ForEachIn(std::ostream &out) const;
+    virtual void ForEachIn(CYOutput &out) const;
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYDeclarations :
@@ -748,8 +771,8 @@ struct CYDeclarations :
     {
     }
 
-    virtual void For(std::ostream &out) const;
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void For(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYVar :
@@ -762,7 +785,7 @@ struct CYVar :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYLet :
@@ -777,13 +800,13 @@ struct CYLet :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYField :
     CYNext<CYField>
 {
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYMessageParameter :
@@ -817,7 +840,7 @@ struct CYMessage :
     {
     }
 
-    virtual void Output(std::ostream &out, bool replace) const;
+    virtual void Output(CYOutput &out, bool replace) const;
 };
 
 struct CYClass :
@@ -839,8 +862,8 @@ struct CYClass :
 
     CYPrecedence(0)
 
-    virtual void Output(std::ostream &out) const;
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYCategory :
@@ -855,7 +878,7 @@ struct CYCategory :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYFunctionParameter :
@@ -870,7 +893,7 @@ struct CYFunctionParameter :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYFor :
@@ -889,7 +912,7 @@ struct CYFor :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYForIn :
@@ -906,7 +929,7 @@ struct CYForIn :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYForEachIn :
@@ -923,7 +946,7 @@ struct CYForEachIn :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYProperty :
@@ -939,7 +962,7 @@ struct CYProperty :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYObject :
@@ -952,7 +975,7 @@ struct CYObject :
     {
     }
 
-    void Output(std::ostream &out, CYFlags flags) const;
+    void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYCatch :
@@ -967,7 +990,7 @@ struct CYCatch :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYSend :
@@ -984,7 +1007,7 @@ struct CYSend :
 
     CYPrecedence(0)
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYMember :
@@ -1014,7 +1037,7 @@ struct CYDirectMember :
 
     CYPrecedence(1)
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYIndirectMember :
@@ -1027,7 +1050,7 @@ struct CYIndirectMember :
 
     CYPrecedence(1)
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYNew :
@@ -1044,7 +1067,7 @@ struct CYNew :
 
     CYPrecedence(1)
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYCall :
@@ -1061,7 +1084,7 @@ struct CYCall :
 
     CYPrecedence(2)
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYIf :
@@ -1078,7 +1101,7 @@ struct CYIf :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYDoWhile :
@@ -1093,7 +1116,7 @@ struct CYDoWhile :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYWhile :
@@ -1108,7 +1131,7 @@ struct CYWhile :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYLambda :
@@ -1127,7 +1150,7 @@ struct CYLambda :
 
     CYPrecedence(0)
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYFunction :
@@ -1139,7 +1162,7 @@ struct CYFunction :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYExpress :
@@ -1152,7 +1175,7 @@ struct CYExpress :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYContinue :
@@ -1165,7 +1188,7 @@ struct CYContinue :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYBreak :
@@ -1178,7 +1201,7 @@ struct CYBreak :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYReturn :
@@ -1191,14 +1214,14 @@ struct CYReturn :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYEmpty :
     CYStatement
 {
-    virtual void Output(std::ostream &out) const;
-    virtual void Output(std::ostream &out, bool block) const;
+    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, bool block) const;
 };
 
 struct CYTry :
@@ -1215,7 +1238,7 @@ struct CYTry :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYThrow :
@@ -1228,7 +1251,7 @@ struct CYThrow :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYWith :
@@ -1243,7 +1266,7 @@ struct CYWith :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYSwitch :
@@ -1258,7 +1281,7 @@ struct CYSwitch :
     {
     }
 
-    virtual void Output(std::ostream &out) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYCondition :
@@ -1277,7 +1300,7 @@ struct CYCondition :
 
     CYPrecedence(15)
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYAddressOf :
@@ -1295,7 +1318,7 @@ struct CYAddressOf :
     CYAlphabetic(false)
     CYPrecedence(2)
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYIndirect :
@@ -1313,7 +1336,7 @@ struct CYIndirect :
     CYAlphabetic(false)
     CYPrecedence(1)
 
-    virtual void Output(std::ostream &out, CYFlags flags) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 #define CYPostfix_(op, name) \

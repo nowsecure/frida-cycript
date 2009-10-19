@@ -3450,7 +3450,8 @@ struct CYClient :
                 size = _not(size_t);
             } else {
                 std::ostringstream str;
-                driver.source_->Show(str);
+                CYOutput out(str);
+                driver.source_->Show(out);
                 std::string code(str.str());
                 CYExecute_ execute = {pool, code.c_str()};
                 [client performSelectorOnMainThread:@selector(execute:) withObject:[NSValue valueWithPointer:&execute] waitUntilDone:YES];

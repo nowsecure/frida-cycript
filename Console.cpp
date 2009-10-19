@@ -276,7 +276,8 @@ static void Console(int socket) {
                 code = command;
             else {
                 std::ostringstream str;
-                driver.source_->Show(str);
+                CYOutput out(str);
+                driver.source_->Show(out);
                 code = str.str();
             }
         }
@@ -431,7 +432,8 @@ int main(int argc, char *argv[]) {
                 Run(socket, start, end - start, stdout);
             else {
                 std::ostringstream str;
-                driver.source_->Show(str);
+                CYOutput out(str);
+                driver.source_->Show(out);
                 std::string code(str.str());
                 if (compile)
                     std::cout << code;
