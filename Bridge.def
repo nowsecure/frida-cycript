@@ -4,6 +4,20 @@ C nil null
 
 : applicationDidFinishLaunching: v12@0:4@8
 
+T id @
+
+T short s
+T int i
+T long l
+
+T uint I
+T ulong L
+T ushort S
+
+T char c
+T boolean B
+T float f
+T double d
 
 S CGPoint "x"f"y"f
 S CGRect "origin"{CGPoint}"size"{CGSize}

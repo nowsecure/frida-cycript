@@ -107,8 +107,8 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 
 %defines
 
-%glr-parser
-%expect 1
+//%glr-parser
+//%expect 1
 
 %debug
 
@@ -178,6 +178,11 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %token AtSelector "@selector"
 %token AtEnd "@end"
 
+%token <false_> False "false"
+%token <null_> Null "null"
+%token <true_> True "true"
+
+// ES3/ES5/WIE/JSC Reserved
 %token <word_> Break "break"
 %token <word_> Case "case"
 %token <word_> Catch "catch"
@@ -186,7 +191,6 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %token <word_> Delete "delete"
 %token <word_> Do "do"
 %token <word_> Else "else"
-%token <false_> False "false"
 %token <word_> Finally "finally"
 %token <word_> For "for"
 %token <word_> Function "function"
@@ -194,12 +198,10 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %token <word_> In "in"
 %token <word_> InstanceOf "instanceof"
 %token <word_> New "new"
-%token <null_> Null "null"
 %token <word_> Return "return"
 %token <word_> Switch "switch"
 %token <this_> This "this"
 %token <word_> Throw "throw"
-%token <true_> True "true"
 %token <word_> Try "try"
 %token <word_> TypeOf "typeof"
 %token <word_> Var "var"
@@ -207,40 +209,53 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %token <word_> While "while"
 %token <word_> With "with"
 
-%token <word_> Abstract "abstract"
-%token <word_> Boolean "boolean"
-%token <word_> Byte "byte"
-%token <word_> Char "char"
-%token <word_> Class "class"
-%token <word_> Const "const"
+// ES3/IE6 Future, ES5/JSC Reserved
 %token <word_> Debugger "debugger"
-%token <word_> Double "double"
+
+// ES3/ES5/IE6 Future, JSC Reserved
+%token <word_> Const "const"
+
+// ES3/ES5/IE6/JSC Future
+%token <word_> Class "class"
 %token <word_> Enum "enum"
 %token <word_> Export "export"
 %token <word_> Extends "extends"
-%token <word_> Final "final"
-%token <word_> Float "float"
-%token <word_> Goto "goto"
-%token <word_> Implements "implements"
 %token <word_> Import "import"
-%token <word_> Int "int"
-%token <word_> Interface "interface"
-%token <word_> Long "long"
-%token <word_> Native "native"
-%token <word_> Package "package"
-%token <word_> Private "private"
-%token <word_> Protected "protected"
-%token <word_> Public "public"
-%token <word_> Short "short"
-%token <word_> Static "static"
 %token <word_> Super "super"
-%token <word_> Synchronized "synchronized"
-%token <word_> Throws "throws"
-%token <word_> Transient "transient"
-%token <word_> Volatile "volatile"
 
-%token <identifier_> Each "each"
+// ES3 Future, ES5 Strict Future
+%token <identifier_> Implements "implements"
+%token <identifier_> Interface "interface"
+%token <identifier_> Package "package"
+%token <identifier_> Private "private"
+%token <identifier_> Protected "protected"
+%token <identifier_> Public "public"
+%token <identifier_> Static "static"
+
+// ES3 Future
+%token <identifier_> Abstract "abstract"
+%token <identifier_> Boolean "boolean"
+%token <identifier_> Byte "byte"
+%token <identifier_> Char "char"
+%token <identifier_> Double "double"
+%token <identifier_> Final "final"
+%token <identifier_> Float "float"
+%token <identifier_> Goto "goto"
+%token <identifier_> Int "int"
+%token <identifier_> Long "long"
+%token <identifier_> Native "native"
+%token <identifier_> Short "short"
+%token <identifier_> Synchronized "synchronized"
+%token <identifier_> Throws "throws"
+%token <identifier_> Transient "transient"
+%token <identifier_> Volatile "volatile"
+
+// ES5 Strict
 %token <identifier_> Let "let"
+%token <identifier_> Yield "yield"
+
+// Woah?!
+%token <identifier_> Each "each"
 
 %token <identifier_> Identifier_
 %token <number_> NumericLiteral
@@ -335,7 +350,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <statement_> LabelledStatement
 %type <expression_> LeftHandSideExpression
 %type <expression_> LeftHandSideExpressionNoBF
-%type <statement_> LetStatement
+//%type <statement_> LetStatement
 %type <literal_> Literal
 %type <expression_> LogicalANDExpression
 %type <expression_> LogicalANDExpressionNoBF
@@ -459,13 +474,9 @@ WordOpt
 
 Word
     : Identifier { $$ = $1; }
-    | "abstract" { $$ = $1; }
-    | "boolean" { $$ = $1; }
     | "break" NewLineOpt { $$ = $1; }
-    | "byte" { $$ = $1; }
     | "case" { $$ = $1; }
     | "catch" { $$ = $1; }
-    | "char" { $$ = $1; }
     | "class" { $$ = $1; }
     | "const" { $$ = $1; }
     | "continue" NewLineOpt { $$ = $1; }
@@ -473,57 +484,66 @@ Word
     | "default" { $$ = $1; }
     | "delete" { $$ = $1; }
     | "do" { $$ = $1; }
-    | "double" { $$ = $1; }
     | "else" { $$ = $1; }
     | "enum" { $$ = $1; }
     | "export" { $$ = $1; }
     | "extends" { $$ = $1; }
     | "false" { $$ = $1; }
-    | "final" { $$ = $1; }
     | "finally" { $$ = $1; }
-    | "float" { $$ = $1; }
     | "for" { $$ = $1; }
     | "function" { $$ = $1; }
-    | "goto" { $$ = $1; }
     | "if" { $$ = $1; }
-    | "implements" { $$ = $1; }
     | "import" { $$ = $1; }
     /* XXX: | "in" { $$ = $1; } */
     /* XXX: | "instanceof" { $$ = $1; } */
-    | "int" { $$ = $1; }
-    | "interface" { $$ = $1; }
-    | "long" { $$ = $1; }
-    | "native" { $$ = $1; }
     | "new" { $$ = $1; }
     | "null" { $$ = $1; }
-    | "package" { $$ = $1; }
-    | "private" { $$ = $1; }
-    | "protected" { $$ = $1; }
-    | "public" { $$ = $1; }
     | "return" NewLineOpt { $$ = $1; }
-    | "short" { $$ = $1; }
-    | "static" { $$ = $1; }
     | "super" { $$ = $1; }
     | "switch" { $$ = $1; }
-    | "synchronized" { $$ = $1; }
     | "this" { $$ = $1; }
     | "throw" NewLineOpt { $$ = $1; }
-    | "throws" { $$ = $1; }
-    | "transient" { $$ = $1; }
     | "true" { $$ = $1; }
     | "try" { $$ = $1; }
     | "typeof" { $$ = $1; }
     | "var" { $$ = $1; }
     | "void" { $$ = $1; }
-    | "volatile" { $$ = $1; }
     | "while" { $$ = $1; }
     | "with" { $$ = $1; }
     ;
 
 Identifier
     : Identifier_ { $$ = $1; }
-    | "each" { $$ = $1; }
+
+    | "implements" { $$ = $1; }
+    | "interface" { $$ = $1; }
+    | "package" { $$ = $1; }
+    | "private" { $$ = $1; }
+    | "protected" { $$ = $1; }
+    | "public" { $$ = $1; }
+    | "static" { $$ = $1; }
+
+    | "abstract" { $$ = $1; }
+    | "boolean" { $$ = $1; }
+    | "byte" { $$ = $1; }
+    | "char" { $$ = $1; }
+    | "double" { $$ = $1; }
+    | "final" { $$ = $1; }
+    | "float" { $$ = $1; }
+    | "goto" { $$ = $1; }
+    | "int" { $$ = $1; }
+    | "long" { $$ = $1; }
+    | "native" { $$ = $1; }
+    | "short" { $$ = $1; }
+    | "synchronized" { $$ = $1; }
+    | "throws" { $$ = $1; }
+    | "transient" { $$ = $1; }
+    | "volatile" { $$ = $1; }
+
     | "let" { $$ = $1; }
+    | "yield" { $$ = $1; }
+
+    | "each" { $$ = $1; }
     ;
 
 IdentifierOpt
@@ -1384,7 +1404,7 @@ ForInStatement
     : "for" "each" "(" ForInStatementInitialiser "in" Expression ")" Statement { $$ = new(driver.pool_) CYForEachIn($4, $6, $8); }
     ;
 /* }}} */
-/* JavaScript 1.7: Let Statements {{{ */
+/* JavaScript 1.7: Let Statements {{{ *//*
 LetStatement
     : "let" "(" VariableDeclarationList ")" Block_ { $$ = new(driver.pool_) CYLet($3, $5); }
     ;
@@ -1392,6 +1412,6 @@ LetStatement
 Statement
     : LetStatement
     ;
-/* }}} */
+*//* }}} */
 
 %%

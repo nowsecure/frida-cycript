@@ -79,10 +79,23 @@ ffi_type *ObjectiveC(apr_pool_t *pool, struct Type *type) {
         case ulonglong_P: return &ffi_type_ulonglong;
         case ushort_P: return &ffi_type_ushort;
 
-        case array_P:
-            /* XXX: implement */
-            _assert(false);
-        break;
+        case array_P: {
+            // XXX: this is really lame
+            ffi_type *aggregate(reinterpret_cast<ffi_type *>(apr_palloc(pool, sizeof(ffi_type))));
+            aggregate->size = 0;
+            aggregate->alignment = 0;
+            aggregate->type = FFI_TYPE_STRUCT;
+
+            ffi_type *element(ObjectiveC(pool, type->data.data.type));
+            size_t size(type->data.data.size);
+
+            aggregate->elements = reinterpret_cast<ffi_type **>(apr_palloc(pool, (size + 1) * sizeof(ffi_type *)));
+            for (size_t i(0); i != size; ++i)
+                aggregate->elements[i] = element;
+            aggregate->elements[size] = NULL;
+
+            return aggregate;
+        } break;
 
         case pointer_P: return &ffi_type_pointer;
 
@@ -102,7 +115,7 @@ ffi_type *ObjectiveC(apr_pool_t *pool, struct Type *type) {
         case void_P: return &ffi_type_void;
 
         case struct_P: {
-            ffi_type *aggregate = reinterpret_cast<ffi_type *>(apr_palloc(pool, sizeof(ffi_type)));
+            ffi_type *aggregate(reinterpret_cast<ffi_type *>(apr_palloc(pool, sizeof(ffi_type))));
             aggregate->size = 0;
             aggregate->alignment = 0;
             aggregate->type = FFI_TYPE_STRUCT;
