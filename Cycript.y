@@ -107,7 +107,11 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 
 %defines
 
-//%debug
+%glr-parser
+%expect 1
+
+%debug
+
 %error-verbose
 
 %parse-param { CYDriver &driver }
@@ -236,6 +240,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %token <word_> Volatile "volatile"
 
 %token <identifier_> Each "each"
+%token <identifier_> Let "let"
 
 %token <identifier_> Identifier_
 %token <number_> NumericLiteral
@@ -259,6 +264,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> BitwiseANDExpressionNoBF
 %type <expression_> BitwiseANDExpressionNoIn
 %type <statement_> Block
+%type <statement_> Block_
 %type <boolean_> BooleanLiteral
 %type <expression_> BitwiseORExpression
 %type <expression_> BitwiseORExpressionNoBF
@@ -329,6 +335,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <statement_> LabelledStatement
 %type <expression_> LeftHandSideExpression
 %type <expression_> LeftHandSideExpressionNoBF
+%type <statement_> LetStatement
 %type <literal_> Literal
 %type <expression_> LogicalANDExpression
 %type <expression_> LogicalANDExpressionNoBF
@@ -435,10 +442,10 @@ Terminator
     | error { if (yychar != 0 && yychar != cy::parser::token::CloseBrace && !yylval.newline_) YYABORT; else { yyerrok; driver.errors_.pop_back(); } }
     ;
 
-CommaOpt
+/*CommaOpt
     : ","
     |
-    ;
+    ;*/
 
 NewLineOpt
     : "\n"
@@ -516,6 +523,7 @@ Word
 Identifier
     : Identifier_ { $$ = $1; }
     | "each" { $$ = $1; }
+    | "let" { $$ = $1; }
     ;
 
 IdentifierOpt
@@ -588,7 +596,7 @@ ObjectLiteral
 
 PropertyNameAndValueList_
     : "," PropertyNameAndValueList { $$ = $2; }
-    | CommaOpt { $$ = NULL; }
+    | { $$ = NULL; }
     ;
 
 PropertyNameAndValueListOpt
@@ -1001,8 +1009,12 @@ Statement
     | TryStatement { $$ = $1; }
     ;
 
+Block_
+    : "{" StatementListOpt "}" { $$ = $2; }
+    ;
+
 Block
-    : "{" StatementListOpt "}" { if ($2) $$ = new(driver.pool_) CYBlock($2); else $$ = new(driver.pool_) CYEmpty(); }
+    : Block_ { if ($1) $$ = new(driver.pool_) CYBlock($1); else $$ = new(driver.pool_) CYEmpty(); }
     ;
 
 StatementList
@@ -1015,7 +1027,7 @@ StatementListOpt
     ;
 
 VariableStatement
-    : "var" VariableDeclarationList Terminator { $$ = $2; }
+    : "var" VariableDeclarationList Terminator { $$ = new(driver.pool_) CYVar($2); }
     ;
 
 VariableDeclarationList_
@@ -1105,7 +1117,6 @@ ForStatementInitialiser
 
 ForInStatement
     : "for" "(" ForInStatementInitialiser "in" Expression ")" Statement { $$ = new(driver.pool_) CYForIn($3, $5, $7); }
-    | "for" "each" "(" ForInStatementInitialiser "in" Expression ")" Statement { $$ = new(driver.pool_) CYForEachIn($4, $6, $8); }
     ;
 
 ForInStatementInitialiser
@@ -1160,16 +1171,16 @@ ThrowStatement
     ;
 
 TryStatement
-    : "try" Block CatchOpt FinallyOpt { $$ = new(driver.pool_) CYTry($2, $3, $4); }
+    : "try" Block_ CatchOpt FinallyOpt { $$ = new(driver.pool_) CYTry($2, $3, $4); }
     ;
 
 CatchOpt
-    : "catch" "(" Identifier ")" Block { $$ = new(driver.pool_) CYCatch($3, $5); }
+    : "catch" "(" Identifier ")" Block_ { $$ = new(driver.pool_) CYCatch($3, $5); }
     | { $$ = NULL; }
     ;
 
 FinallyOpt
-    : "finally" Block { $$ = $2; }
+    : "finally" Block_ { $$ = $2; }
     | { $$ = NULL; }
     ;
 
@@ -1209,7 +1220,7 @@ SourceElement
     | FunctionDeclaration { $$ = $1; }
     ;
 
-/* Objective-C Extensions {{{ */
+/* Cycript: @class Declaration {{{ */
 ClassSuperOpt
     : ":" MemberExpressionNoBF { $$ = $2; }
     | { $$ = NULL; }
@@ -1282,7 +1293,8 @@ Statement
     : ClassDefinition { $$ = $1; }
     | CategoryStatement { $$ = $1; }
     ;
-
+/* }}} */
+/* Cycript: Send Message {{{ */
 VariadicCall
     : "," AssignmentExpression VariadicCall { $$ = new(driver.pool_) CYArgument(NULL, $2, $3); }
     | { $$ = NULL; }
@@ -1325,7 +1337,7 @@ PrimaryExpression_
     | "@selector" "(" SelectorExpression ")" { $$ = new(driver.pool_) CYSelector($3); }
     ;
 /* }}} */
-
+/* Cycript: Pointer Indirection/Addressing {{{ */
 AssigneeExpression_
     : "*" UnaryExpression { $$ = new(driver.pool_) CYIndirect($2); }
     ;
@@ -1337,7 +1349,13 @@ UnaryExpression_
 MemberAccess
     : "->" Identifier { $$ = new(driver.pool_) CYIndirectMember(NULL, new(driver.pool_) CYString($2)); }
     ;
-
+/* }}} */
+/* ECMAScript5: Object Literal Trailing Comma {{{ */
+PropertyNameAndValueList_
+    : "," { $$ = NULL; }
+    ;
+/* }}} */
+/* JavaScript 1.7: Array Comprehensions {{{ */
 IfComprehension
     : "if" "(" Expression ")" { $$ = new(driver.pool_) CYIfComprehension($3); }
     ;
@@ -1360,5 +1378,20 @@ ComprehensionList
 PrimaryExpression_
     : "[" AssignmentExpression ComprehensionList "]" { $$ = new(driver.pool_) CYArrayComprehension($2, $3); }
     ;
+/* }}} */
+/* JavaScript 1.7: for each {{{ */
+ForInStatement
+    : "for" "each" "(" ForInStatementInitialiser "in" Expression ")" Statement { $$ = new(driver.pool_) CYForEachIn($4, $6, $8); }
+    ;
+/* }}} */
+/* JavaScript 1.7: Let Statements {{{ */
+LetStatement
+    : "let" "(" VariableDeclarationList ")" Block_ { $$ = new(driver.pool_) CYLet($3, $5); }
+    ;
+
+Statement
+    : LetStatement
+    ;
+/* }}} */
 
 %%

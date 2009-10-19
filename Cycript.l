@@ -1,9 +1,9 @@
 %{
+#define YYLTYPE cy::location
 #include "Cycript.tab.hh"
 typedef cy::parser::token tk;
 
 #define YY_EXTRA_TYPE CYDriver *
-#define YYLTYPE cy::location
 
 #define T yylval->newline_ = yyextra->state_ == CYNewLine;
 #define C T yyextra->state_ = CYClear;
@@ -188,6 +188,7 @@ Escape   \\[\\'"bfnrtv]|\\0|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\\n
 "volatile"     L C yylval->word_ = new CYWord("volatile"); return tk::Volatile;
 
 "each"         L C yylval->word_ = new CYIdentifier("each"); return tk::Each;
+"let"          L C yylval->word_ = new CYIdentifier("let"); return tk::Let;
 
 [a-zA-Z$_][a-zA-Z$_0-9]* yylval->identifier_ = new CYIdentifier(apr_pstrmemdup(yyextra->pool_, yytext, yyleng)); L C return tk::Identifier_;
 

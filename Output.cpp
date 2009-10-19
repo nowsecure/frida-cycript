@@ -212,16 +212,21 @@ void CYContinue::Output(std::ostream &out) const {
 void CYClause::Output(std::ostream &out) const {
     if (case_ != NULL) {
         out << "case";
-        case_->Output(out, CYNoFlags);
+        case_->Output(out, CYNoLeader);
     } else
         out << "default";
     out << ':';
     if (code_ != NULL)
         code_->Output(out, false);
-    out << *next_;
+    if (next_ != NULL)
+        out << *next_;
 }
 
-void CYDeclaration::Part(std::ostream &out, CYFlags flags) const {
+const char *CYDeclaration::ForEachIn() const {
+    return identifier_->Value();
+}
+
+void CYDeclaration::ForIn(std::ostream &out, CYFlags flags) const {
     if ((flags & CYNoLeader) != 0)
         out << ' ';
     out << "var ";
@@ -241,11 +246,12 @@ void CYDeclaration::Output(std::ostream &out, CYFlags flags) const {
         out << ' ';
 }
 
-void CYDeclarations::Part(std::ostream &out, CYFlags flags) const {
-    if ((flags & CYNoLeader) != 0)
-        out << ' ';
+void CYDeclarations::For(std::ostream &out) const {
     out << "var ";
+    Output(out, CYNoIn);
+}
 
+void CYDeclarations::Output(std::ostream &out, CYFlags flags) const {
     const CYDeclarations *declaration(this);
   output:
     CYDeclarations *next(declaration->next_);
@@ -257,11 +263,6 @@ void CYDeclarations::Part(std::ostream &out, CYFlags flags) const {
         declaration = next;
         goto output;
     }
-}
-
-void CYDeclarations::Output(std::ostream &out) const {
-    Part(out, CYNoFlags);
-    out << ';';
 }
 
 void CYDirectMember::Output(std::ostream &out, CYFlags flags) const {
@@ -313,12 +314,20 @@ void CYExpression::ClassName(std::ostream &out, bool object) const {
     Output(out, CYPA, CYNoFlags);
 }
 
+const char *CYExpression::ForEachIn() const {
+    return NULL;
+}
+
+void CYExpression::For(std::ostream &out) const {
+    Output(out, CYNoIn);
+}
+
 void CYExpression::ForEachIn(std::ostream &out) const {
     // XXX: this should handle LeftHandSideExpression
     Output(out, CYPA, CYNoFlags);
 }
 
-void CYExpression::Part(std::ostream &out, CYFlags flags) const {
+void CYExpression::ForIn(std::ostream &out, CYFlags flags) const {
     // XXX: this should handle LeftHandSideExpression
     Output(out, flags);
 }
@@ -339,7 +348,7 @@ void CYField::Output(std::ostream &out) const {
 void CYFor::Output(std::ostream &out) const {
     out << "for(";
     if (initialiser_ != NULL)
-        initialiser_->Part(out, CYNoFlags);
+        initialiser_->For(out);
     out << ';';
     if (test_ != NULL)
         test_->Output(out, CYNoFlags);
@@ -392,7 +401,7 @@ void CYForEachInComprehension::End_(std::ostream &out) const {
 
 void CYForIn::Output(std::ostream &out) const {
     out << "for(";
-    initialiser_->Part(out, CYNoIn | CYNoTrailer);
+    initialiser_->ForIn(out, CYNoIn | CYNoTrailer);
     out << "in";
     set_->Output(out, CYNoLeader);
     out << ')';
@@ -490,6 +499,15 @@ void CYLambda::Output(std::ostream &out, CYFlags flags) const {
     out << '}';
     if (protect)
         out << ')';
+}
+
+void CYLet::Output(std::ostream &out) const {
+    out << "let(";
+    declarations_->Output(out, CYNoFlags);
+    out << "){";
+    if (statements_ != NULL)
+        statements_->Show(out);
+    out << "}";
 }
 
 void CYMessage::Output(std::ostream &out, bool replace) const {
@@ -741,6 +759,12 @@ void CYTry::Output(std::ostream &out) const {
         out << "finally";
         finally_->Output(out, true);
     }
+}
+
+void CYVar::Output(std::ostream &out) const {
+    out << "var ";
+    declarations_->Output(out, CYNoFlags);
+    out << ';';
 }
 
 void CYVariable::Output(std::ostream &out, CYFlags flags) const {

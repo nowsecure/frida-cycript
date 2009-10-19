@@ -91,6 +91,17 @@ static void sigint(int) {
     }
 }
 
+#if YYDEBUG
+static bool bison_;
+#endif
+
+void Setup(cy::parser &parser) {
+#if YYDEBUG
+    if (bison_)
+        parser.set_debug_level(1);
+#endif
+}
+
 void Run(int socket, const char *data, size_t size, FILE *fout = NULL, bool expand = false) {
     CYPool pool;
 
@@ -218,7 +229,7 @@ static void Console(int socket) {
         else {
             CYDriver driver("");
             cy::parser parser(driver);
-            //parser.set_debug_level(1);
+            Setup(parser);
 
             driver.data_ = command.c_str();
             driver.size_ = command.size();
@@ -304,7 +315,7 @@ int main(int argc, char *argv[]) {
     pid_t pid(_not(pid_t));
     bool compile(false);
 
-    for (;;) switch (getopt(argc, argv, "cp:")) {
+    for (;;) switch (getopt(argc, argv, "cg:p:")) {
         case -1:
             goto getopt;
         case '?':
@@ -313,6 +324,18 @@ int main(int argc, char *argv[]) {
 
         case 'c':
             compile = true;
+        break;
+
+        case 'g':
+            if (false);
+#if YYDEBUG
+            else if (strcmp(optarg, "bison") == 0)
+                bison_ = true;
+#endif
+            else {
+                fprintf(stderr, "invalid name for -g\n");
+                return 1;
+            }
         break;
 
         case 'p': {
@@ -373,6 +396,7 @@ int main(int argc, char *argv[]) {
     else {
         CYDriver driver(script ?: "<stdin>");
         cy::parser parser(driver);
+        Setup(parser);
 
         char *start, *end;
 

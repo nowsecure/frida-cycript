@@ -222,18 +222,12 @@ enum CYFlags {
     CYNoBF =       (CYNoBrace | CYNoFunction),
 };
 
-struct CYPart {
-    virtual void Part(std::ostream &out, CYFlags flags) const = 0;
+struct CYForInitialiser {
+    virtual void For(std::ostream &out) const = 0;
 };
 
-struct CYForInitialiser :
-    CYPart
-{
-};
-
-struct CYForInInitialiser :
-    CYPart
-{
+struct CYForInInitialiser {
+    virtual void ForIn(std::ostream &out, CYFlags flags) const = 0;
     virtual const char *ForEachIn() const = 0;
     virtual void ForEachIn(std::ostream &out) const = 0;
 };
@@ -245,12 +239,11 @@ struct CYExpression :
     CYClassName
 {
     virtual unsigned Precedence() const = 0;
-    virtual void Part(std::ostream &out, CYFlags flags) const;
 
-    virtual const char *ForEachIn() const {
-        return NULL;
-    }
+    virtual void For(std::ostream &out) const;
+    virtual void ForIn(std::ostream &out, CYFlags flags) const;
 
+    virtual const char *ForEachIn() const;
     virtual void ForEachIn(std::ostream &out) const;
 
     virtual void Output(std::ostream &out, CYFlags flags) const = 0;
@@ -735,31 +728,55 @@ struct CYDeclaration :
     {
     }
 
-    virtual void Part(std::ostream &out, CYFlags flags) const;
+    virtual void ForIn(std::ostream &out, CYFlags flags) const;
 
-    virtual const char *ForEachIn() const {
-        return identifier_->Value();
-    }
-
+    virtual const char *ForEachIn() const;
     virtual void ForEachIn(std::ostream &out) const;
 
     virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYDeclarations :
-    CYStatement,
+    CYNext<CYDeclarations>,
     CYForInitialiser
 {
     CYDeclaration *declaration_;
-    CYDeclarations *next_;
 
     CYDeclarations(CYDeclaration *declaration, CYDeclarations *next) :
-        declaration_(declaration),
-        next_(next)
+        CYNext<CYDeclarations>(next),
+        declaration_(declaration)
     {
     }
 
-    virtual void Part(std::ostream &out, CYFlags flags) const;
+    virtual void For(std::ostream &out) const;
+    virtual void Output(std::ostream &out, CYFlags flags) const;
+};
+
+struct CYVar :
+    CYStatement
+{
+    CYDeclarations *declarations_;
+
+    CYVar(CYDeclarations *declarations) :
+        declarations_(declarations)
+    {
+    }
+
+    virtual void Output(std::ostream &out) const;
+};
+
+struct CYLet :
+    CYStatement
+{
+    CYDeclarations *declarations_;
+    CYStatement *statements_;
+
+    CYLet(CYDeclarations *declarations, CYStatement *statements) :
+        declarations_(declarations),
+        statements_(statements)
+    {
+    }
+
     virtual void Output(std::ostream &out) const;
 };
 
