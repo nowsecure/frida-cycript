@@ -59,6 +59,7 @@ typedef struct {
         CYCatch *catch_;
         CYClass *class_;
         CYClassName *className_;
+        CYComprehension *comprehension_;
         CYCompound *compound_;
         CYDeclaration *declaration_;
         CYDeclarations *declarations_;
@@ -106,7 +107,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 
 %defines
 
-%debug
+//%debug
 %error-verbose
 
 %parse-param { CYDriver &driver }
@@ -234,7 +235,9 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %token <word_> Transient "transient"
 %token <word_> Volatile "volatile"
 
-%token <identifier_> Identifier
+%token <identifier_> Each "each"
+
+%token <identifier_> Identifier_
 %token <number_> NumericLiteral
 %token <string_> StringLiteral
 
@@ -278,6 +281,8 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <className_> ClassNameOpt
 %type <expression_> ClassSuperOpt
 %type <field_> ClassFieldList
+%type <comprehension_> ComprehensionList
+%type <comprehension_> ComprehensionListOpt
 %type <expression_> ConditionalExpression
 %type <expression_> ConditionalExpressionNoBF
 %type <expression_> ConditionalExpressionNoIn
@@ -302,6 +307,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> ExpressionNoInOpt
 %type <statement_> ExpressionStatement
 %type <statement_> FinallyOpt
+%type <comprehension_> ForComprehension
 %type <statement_> ForStatement
 %type <for_> ForStatementInitialiser
 %type <statement_> ForInStatement
@@ -311,7 +317,9 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <source_> FunctionBody
 %type <source_> FunctionDeclaration
 %type <expression_> FunctionExpression
+%type <identifier_> Identifier
 %type <identifier_> IdentifierOpt
+%type <comprehension_> IfComprehension
 %type <statement_> IfStatement
 %type <expression_> Initialiser
 %type <expression_> InitialiserOpt
@@ -503,6 +511,11 @@ Word
     | "volatile" { $$ = $1; }
     | "while" { $$ = $1; }
     | "with" { $$ = $1; }
+    ;
+
+Identifier
+    : Identifier_ { $$ = $1; }
+    | "each" { $$ = $1; }
     ;
 
 IdentifierOpt
@@ -1092,6 +1105,7 @@ ForStatementInitialiser
 
 ForInStatement
     : "for" "(" ForInStatementInitialiser "in" Expression ")" Statement { $$ = new(driver.pool_) CYForIn($3, $5, $7); }
+    | "for" "each" "(" ForInStatementInitialiser "in" Expression ")" Statement { $$ = new(driver.pool_) CYForEachIn($4, $6, $8); }
     ;
 
 ForInStatementInitialiser
@@ -1216,7 +1230,7 @@ TypeOpt
     ;
 
 MessageParameter
-    : Word ":" TypeOpt Identifier { $$ = new CYMessageParameter($1, $3, $4); }
+    : Word ":" TypeOpt Identifier { $$ = new(driver.pool_) CYMessageParameter($1, $3, $4); }
     ;
 
 MessageParameterListOpt
@@ -1230,11 +1244,11 @@ MessageParameterList
 
 MessageParameters
     : MessageParameterList { $$ = $1; }
-    | Word { $$ = new CYMessageParameter($1, NULL, NULL); }
+    | Word { $$ = new(driver.pool_) CYMessageParameter($1, NULL, NULL); }
     ;
 
 ClassMessageDeclaration
-    : MessageScope TypeOpt MessageParameters "{" FunctionBody "}" { $$ = new CYMessage($1, $2, $3, $5); }
+    : MessageScope TypeOpt MessageParameters "{" FunctionBody "}" { $$ = new(driver.pool_) CYMessage($1, $2, $3, $5); }
     ;
 
 ClassMessageDeclarationListOpt
@@ -1253,11 +1267,11 @@ ClassNameOpt
     ;
 
 ClassDefinition
-    : "@class" ClassNameOpt ClassSuperOpt ClassFieldList ClassMessageDeclarationListOpt "@end" { $$ = new CYClass($2, $3, $4, $5); }
+    : "@class" ClassNameOpt ClassSuperOpt ClassFieldList ClassMessageDeclarationListOpt "@end" { $$ = new(driver.pool_) CYClass($2, $3, $4, $5); }
     ;
 
 CategoryStatement
-    : "@class" ClassName ClassMessageDeclarationListOpt "@end" { $$ = new CYCategory($2, $3); }
+    : "@class" ClassName ClassMessageDeclarationListOpt "@end" { $$ = new(driver.pool_) CYCategory($2, $3); }
     ;
 
 PrimaryExpression
@@ -1308,7 +1322,7 @@ SelectorExpression
 
 PrimaryExpression_
     : MessageExpression { $$ = $1; }
-    | "@selector" "(" SelectorExpression ")" { $$ = new CYSelector($3); }
+    | "@selector" "(" SelectorExpression ")" { $$ = new(driver.pool_) CYSelector($3); }
     ;
 /* }}} */
 
@@ -1324,30 +1338,27 @@ MemberAccess
     : "->" Identifier { $$ = new(driver.pool_) CYIndirectMember(NULL, new(driver.pool_) CYString($2)); }
     ;
 
-/*
-
 IfComprehension
-    : "if" "(" Expression ")"
+    : "if" "(" Expression ")" { $$ = new(driver.pool_) CYIfComprehension($3); }
     ;
 
 ForComprehension
-    : "for" "(" ForInStatementInitialiser "in" Expression ")"
+    : "for" "(" Identifier "in" Expression ")" { $$ = new(driver.pool_) CYForInComprehension($3, $5); }
+    | "for" "each" "(" Identifier "in" Expression ")" { $$ = new(driver.pool_) CYForEachInComprehension($4, $6); }
     ;
 
 ComprehensionListOpt
-    : ComprehensionList
-    | IfComprehension
-    |
+    : ComprehensionList { $$ = $1; }
+    | IfComprehension { $$ = $1; }
+    | { $$ = NULL; }
     ;
 
 ComprehensionList
-    : ForComprehension ComprehensionListOpt
+    : ForComprehension ComprehensionListOpt { $1->SetNext($2); $$ = $1; }
     ;
 
 PrimaryExpression_
-    : "[" AssignmentExpression ComprehensionList "]"
+    : "[" AssignmentExpression ComprehensionList "]" { $$ = new(driver.pool_) CYArrayComprehension($2, $3); }
     ;
-
-*/
 
 %%

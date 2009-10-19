@@ -187,7 +187,9 @@ Escape   \\[\\'"bfnrtv]|\\0|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\\n
 "transient"    L C yylval->word_ = new CYWord("transient"); return tk::Transient;
 "volatile"     L C yylval->word_ = new CYWord("volatile"); return tk::Volatile;
 
-[a-zA-Z$_][a-zA-Z$_0-9]* yylval->identifier_ = new CYIdentifier(apr_pstrmemdup(yyextra->pool_, yytext, yyleng)); L C return tk::Identifier;
+"each"         L C yylval->word_ = new CYIdentifier("each"); return tk::Each;
+
+[a-zA-Z$_][a-zA-Z$_0-9]* yylval->identifier_ = new CYIdentifier(apr_pstrmemdup(yyextra->pool_, yytext, yyleng)); L C return tk::Identifier_;
 
 (\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?){Exponent}? yylval->number_ = new CYNumber(strtod(yytext, NULL)); L C return tk::NumericLiteral;
 

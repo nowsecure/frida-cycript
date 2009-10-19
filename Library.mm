@@ -1475,7 +1475,13 @@ bool CYIsCallable(JSContextRef context, JSValueRef value) {
     if ((self = [super init]) != nil) {
         object_ = object;
         context_ = context;
+        JSValueProtect(context_, object_);
     } return self;
+}
+
+- (void) dealloc {
+    JSValueUnprotect(context_, object_);
+    [super dealloc];
 }
 
 - (NSObject *) cy$toJSON:(NSString *)key {
@@ -1538,7 +1544,13 @@ bool CYIsCallable(JSContextRef context, JSValueRef value) {
     if ((self = [super init]) != nil) {
         object_ = object;
         context_ = context;
+        JSValueProtect(context_, object_);
     } return self;
+}
+
+- (void) dealloc {
+    JSValueUnprotect(context_, object_);
+    [super dealloc];
 }
 
 - (NSUInteger) count {

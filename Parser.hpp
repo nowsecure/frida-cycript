@@ -211,20 +211,6 @@ class CYDriver {
     ~CYDriver();
 };
 
-struct CYPart {
-    virtual void Part(std::ostream &out) const = 0;
-};
-
-struct CYForInitialiser :
-    CYPart
-{
-};
-
-struct CYForInInitialiser :
-    CYPart
-{
-};
-
 enum CYFlags {
     CYNoFlags =    0,
     CYNoBrace =    (1 << 0),
@@ -236,6 +222,22 @@ enum CYFlags {
     CYNoBF =       (CYNoBrace | CYNoFunction),
 };
 
+struct CYPart {
+    virtual void Part(std::ostream &out, CYFlags flags) const = 0;
+};
+
+struct CYForInitialiser :
+    CYPart
+{
+};
+
+struct CYForInInitialiser :
+    CYPart
+{
+    virtual const char *ForEachIn() const = 0;
+    virtual void ForEachIn(std::ostream &out) const = 0;
+};
+
 struct CYExpression :
     CYNext<CYExpression>,
     CYForInitialiser,
@@ -243,7 +245,14 @@ struct CYExpression :
     CYClassName
 {
     virtual unsigned Precedence() const = 0;
-    virtual void Part(std::ostream &out) const;
+    virtual void Part(std::ostream &out, CYFlags flags) const;
+
+    virtual const char *ForEachIn() const {
+        return NULL;
+    }
+
+    virtual void ForEachIn(std::ostream &out) const;
+
     virtual void Output(std::ostream &out, CYFlags flags) const = 0;
     void Output(std::ostream &out, unsigned precedence, CYFlags flags) const;
 
@@ -285,6 +294,91 @@ struct CYCompound :
     CYPrecedence(17)
 
     void Output(std::ostream &out, CYFlags flags) const;
+};
+
+struct CYComprehension :
+    CYNext<CYComprehension>
+{
+    void Output(std::ostream &out) const;
+    virtual const char *Name() const = 0;
+
+    virtual void Begin_(std::ostream &out) const = 0;
+
+    virtual void End_(std::ostream &out) const {
+    }
+};
+
+struct CYForInComprehension :
+    CYComprehension
+{
+    CYIdentifier *name_;
+    CYExpression *set_;
+
+    CYForInComprehension(CYIdentifier *name, CYExpression *set) :
+        name_(name),
+        set_(set)
+    {
+    }
+
+    virtual const char *Name() const {
+        return name_->Value();
+    }
+
+    virtual void Begin_(std::ostream &out) const;
+};
+
+struct CYForEachInComprehension :
+    CYComprehension
+{
+    CYIdentifier *name_;
+    CYExpression *set_;
+
+    CYForEachInComprehension(CYIdentifier *name, CYExpression *set) :
+        name_(name),
+        set_(set)
+    {
+    }
+
+    virtual const char *Name() const {
+        return name_->Value();
+    }
+
+    virtual void Begin_(std::ostream &out) const;
+    virtual void End_(std::ostream &out) const;
+};
+
+struct CYIfComprehension :
+    CYComprehension
+{
+    CYExpression *test_;
+
+    CYIfComprehension(CYExpression *test) :
+        test_(test)
+    {
+    }
+
+    virtual const char *Name() const {
+        return NULL;
+    }
+
+    virtual void Begin_(std::ostream &out) const;
+};
+
+struct CYArrayComprehension :
+    CYExpression
+{
+    CYExpression *expression_;
+    CYComprehension *comprehensions_;
+
+    CYArrayComprehension(CYExpression *expression, CYComprehension *comprehensions) :
+        expression_(expression),
+        comprehensions_(comprehensions)
+    {
+    }
+
+    CYPrecedence(0)
+
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYLiteral :
@@ -630,7 +724,6 @@ struct CYArray :
 };
 
 struct CYDeclaration :
-    CYThing,
     CYForInInitialiser
 {
     CYIdentifier *identifier_;
@@ -642,8 +735,15 @@ struct CYDeclaration :
     {
     }
 
-    virtual void Part(std::ostream &out) const;
-    virtual void Output(std::ostream &out) const;
+    virtual void Part(std::ostream &out, CYFlags flags) const;
+
+    virtual const char *ForEachIn() const {
+        return identifier_->Value();
+    }
+
+    virtual void ForEachIn(std::ostream &out) const;
+
+    virtual void Output(std::ostream &out, CYFlags flags) const;
 };
 
 struct CYDeclarations :
@@ -659,7 +759,7 @@ struct CYDeclarations :
     {
     }
 
-    virtual void Part(std::ostream &out) const;
+    virtual void Part(std::ostream &out, CYFlags flags) const;
     virtual void Output(std::ostream &out) const;
 };
 
@@ -783,6 +883,23 @@ struct CYForIn :
     CYStatement *code_;
 
     CYForIn(CYForInInitialiser *initialiser, CYExpression *set, CYStatement *code) :
+        initialiser_(initialiser),
+        set_(set),
+        code_(code)
+    {
+    }
+
+    virtual void Output(std::ostream &out) const;
+};
+
+struct CYForEachIn :
+    CYStatement
+{
+    CYForInInitialiser *initialiser_;
+    CYExpression *set_;
+    CYStatement *code_;
+
+    CYForEachIn(CYForInInitialiser *initialiser, CYExpression *set, CYStatement *code) :
         initialiser_(initialiser),
         set_(set),
         code_(code)

@@ -218,6 +218,7 @@ static void Console(int socket) {
         else {
             CYDriver driver("");
             cy::parser parser(driver);
+            //parser.set_debug_level(1);
 
             driver.data_ = command.c_str();
             driver.size_ = command.size();
@@ -301,13 +302,18 @@ static void *Map(const char *path, size_t *psize) {
 int main(int argc, char *argv[]) {
     bool tty(isatty(STDIN_FILENO));
     pid_t pid(_not(pid_t));
+    bool compile(false);
 
-    for (;;) switch (getopt(argc, argv, "p:")) {
+    for (;;) switch (getopt(argc, argv, "cp:")) {
         case -1:
             goto getopt;
         case '?':
-            fprintf(stderr, "usage: cycript [-p <pid>] [<script> [<arg>...]]\n");
+            fprintf(stderr, "usage: cycript [-c] [-p <pid>] [<script> [<arg>...]]\n");
             return 1;
+
+        case 'c':
+            compile = true;
+        break;
 
         case 'p': {
             size_t size(strlen(optarg));
@@ -322,8 +328,13 @@ int main(int argc, char *argv[]) {
 
     const char *script;
 
-    if (optind < argc - 1 && pid != _not(pid_t)) {
+    if (pid != _not(pid_t) && optind < argc - 1) {
         fprintf(stderr, "-p cannot set argv\n");
+        return 1;
+    }
+
+    if (pid != _not(pid_t) && compile) {
+        fprintf(stderr, "-p conflicts with -c\n");
         return 1;
     }
 
@@ -398,7 +409,10 @@ int main(int argc, char *argv[]) {
                 std::ostringstream str;
                 driver.source_->Show(str);
                 std::string code(str.str());
-                Run(socket, code);
+                if (compile)
+                    std::cout << code;
+                else
+                    Run(socket, code);
             }
     }
 

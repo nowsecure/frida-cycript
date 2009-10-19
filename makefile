@@ -18,7 +18,7 @@ $(deb):
 all: $(all)
 
 clean:
-	rm -f *.o libcycript.dylib cycript libcycript.plist Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh
+	rm -f *.o libcycript.dylib cycript libcycript.plist Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver
 
 libcycript.plist: Bridge.def
 	{ \
