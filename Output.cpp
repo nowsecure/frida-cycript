@@ -360,14 +360,8 @@ void CYFor::Output(std::ostream &out) const {
 }
 
 void CYForEachIn::Output(std::ostream &out) const {
-    const char *name(initialiser_->ForEachIn());
+    out << "with({$cys:0,$cyt:0}){";
 
-    if (name != NULL) {
-        out << '{';
-        out << "var " << name << ';';
-    }
-
-    out << "(function($cys,$cyt){";
     out << "$cys=";
     set_->Output(out, CYPA, CYNoFlags);
     out << ";";
@@ -379,10 +373,9 @@ void CYForEachIn::Output(std::ostream &out) const {
 
     code_->Show(out);
 
-    out << "}}());";
+    out << '}';
 
-    if (name != NULL)
-        out << '}';
+    out << '}';
 }
 
 void CYForEachInComprehension::Begin_(std::ostream &out) const {
