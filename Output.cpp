@@ -80,14 +80,14 @@ void CYArrayComprehension::Output(std::ostream &out, CYFlags flags) const {
         if (const char *name = comprehension->Name())
             out << ',' << name;
     out << "){";
-    out << "$cyt=[];";
+    out << "$cyv=[];";
     comprehensions_->Output(out);
-    out << "$cyt.push(";
+    out << "$cyv.push(";
     expression_->Output(out, CYPA, CYNoFlags);
     out << ");";
     for (CYComprehension *comprehension(comprehensions_); comprehension != NULL; comprehension = comprehension->next_)
         comprehension->End_(out);
-    out << "return $cyt;";
+    out << "return $cyv;";
     out << "}())";
 }
 
