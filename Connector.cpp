@@ -22,8 +22,9 @@ struct CYServer :
 };
 
 apr_status_t CYPoolDLClose_(void *data) {
-    void *handle(reinterpret_cast<void *>(data));
-    dlclose(handle);
+    // XXX: this is an interesting idea
+    /* void *handle(reinterpret_cast<void *>(data));
+    dlclose(handle); */
     return APR_SUCCESS;
 }
 
