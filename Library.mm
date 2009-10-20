@@ -352,6 +352,7 @@ struct Instance :
     virtual ~Instance() {
         if ((flags_ & Transient) == 0)
             // XXX: does this handle background threads correctly?
+            // XXX: this simply does not work on the console because I'm stupid
             [GetValue() performSelector:@selector(release) withObject:nil afterDelay:0];
     }
 
@@ -2805,12 +2806,14 @@ static bool stret(ffi_type *ffi_type) {
 extern "C" {
     int *_NSGetArgc(void);
     char ***_NSGetArgv(void);
-    int UIApplicationMain(int argc, char *argv[], NSString *principalClassName, NSString *delegateClassName);
 }
 
 static JSValueRef System_print(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     CYTry {
-        NSLog(@"%s", CYCastCString(context, arguments[0]));
+        if (count == 0)
+            NSLog(@"");
+        else
+            NSLog(@"%s", CYCastCString(context, arguments[0]));
         return CYJSUndefined(context);
     } CYCatch
 }
@@ -2918,6 +2921,11 @@ static JSValueRef objc_registerClassPair_(JSContextRef context, JSObjectRef obje
     } CYCatch
 }
 /* }}} */
+
+static JSValueRef Cycript_gc_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    JSGarbageCollect(context);
+    return CYJSUndefined(context);
+}
 
 static JSValueRef Selector_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     JSValueRef setup[count + 2];
@@ -3702,6 +3710,10 @@ JSGlobalContextRef CYGetJSContext() {
         MSHookFunction(&objc_registerClassPair, MSHake(objc_registerClassPair));
 
         class_addMethod(NSCFType_, @selector(cy$toJSON:), reinterpret_cast<IMP>(&NSCFType$cy$toJSON), "@12@0:4@8");
+
+        JSObjectRef cycript(JSObjectMake(context, NULL, NULL));
+        CYSetProperty(context, global, CYJSString("Cycript"), cycript);
+        CYSetProperty(context, cycript, CYJSString("gc"), JSObjectMakeFunctionWithCallback(context, CYJSString("gc"), &Cycript_gc_callAsFunction));
 
         CYSetProperty(context, global, CYJSString("objc_registerClassPair"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_registerClassPair"), &objc_registerClassPair_));
         CYSetProperty(context, global, CYJSString("objc_msgSend"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_msgSend"), &$objc_msgSend));
