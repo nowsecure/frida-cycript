@@ -598,6 +598,12 @@ void CYProperty::Output(CYOutput &out) const {
     }
 }
 
+void CYRegEx::Output(CYOutput &out, CYFlags flags) const {
+    out << Value();
+    if ((flags & CYNoTrailer) != 0)
+        out << ' ';
+}
+
 void CYReturn::Output(CYOutput &out) const {
     out << "return";
     if (value_ != NULL)

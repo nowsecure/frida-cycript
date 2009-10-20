@@ -9,6 +9,15 @@ typedef cy::parser::token tk;
 #define C T yyextra->state_ = CYClear;
 #define R T yyextra->state_ = CYRestricted;
 
+#define E(prefix) L C BEGIN(INITIAL); { \
+    char *value(reinterpret_cast<char *>(apr_palloc(yyextra->pool_, yyleng + sizeof(prefix)))); \
+    memcpy(value, prefix, sizeof(prefix) - 1); \
+    memcpy(value + sizeof(prefix) - 1, yytext, yyleng); \
+    value[yyleng + sizeof(prefix) - 1] = '\0'; \
+    yylval->literal_ = new CYRegEx(value); \
+    return tk::RegularExpressionLiteral; \
+}
+
 #define N \
     if (yyextra->state_ != CYNewLine) { \
         bool restricted(yyextra->state_ == CYRestricted); \
@@ -63,7 +72,29 @@ int H(char c) {
 Exponent [eE][+-]?[0-9]+
 Escape   \\[\\'"bfnrtv]|\\0|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\\n
 
+IdentifierStart [a-zA-Z$_]
+IdentifierPart  [a-zA-Z$_0-9]
+
+NonTerminator [^\n]
+BackslashSequence \\{NonTerminator}
+RegularExpressionFirstChar [^\n*\\/]|{BackslashSequence}
+RegularExpressionChar [^\n\\/]|{BackslashSequence}
+RegularExpressionFlags {IdentifierPart}*
+RegularExpressionChars {RegularExpressionChar}*
+RegularExpressionBody_ {RegularExpressionChars}
+RegularExpressionBody {RegularExpressionFirstChar}{RegularExpressionBody_}
+
+RegularExpressionEnd_ \/{RegularExpressionFlags}
+RegularExpressionRest_ {RegularExpressionBody_}{RegularExpressionEnd_}
+RegularExpressionStart_ {RegularExpressionBody}{RegularExpressionEnd_}
+
+%x res
+%x rer
+
 %%
+
+<res>{RegularExpressionStart_} E("/")
+<rer>{RegularExpressionRest_} E("/=")
 
 \/\/[^\n]* ;
 \/\*(\n|[^\*]|\*[^/])\*\/ if (memchr(yytext, '\n', yyleng) != NULL) N // XXX: supposedly I will be screwed on very very long multi-line comments and need to replace this with a manual lexer. http://websrv.cs.fsu.edu/~engelen/courses/COP5621/Pr2.pdf ; XXX: this rule doesn't work anyway, fucking A :(
@@ -197,7 +228,7 @@ Escape   \\[\\'"bfnrtv]|\\0|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\\n
 
 "each"         L C yylval->identifier_ = new CYIdentifier("each"); return tk::Each;
 
-[a-zA-Z$_][a-zA-Z$_0-9]* yylval->identifier_ = new CYIdentifier(apr_pstrmemdup(yyextra->pool_, yytext, yyleng)); L C return tk::Identifier_;
+{IdentifierStart}{IdentifierPart}* yylval->identifier_ = new CYIdentifier(apr_pstrmemdup(yyextra->pool_, yytext, yyleng)); L C return tk::Identifier_;
 
 (\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?){Exponent}? yylval->number_ = new CYNumber(strtod(yytext, NULL)); L C return tk::NumericLiteral;
 
@@ -262,4 +293,19 @@ void CYDriver::ScannerInit() {
 
 void CYDriver::ScannerDestroy() {
     cylex_destroy(scanner_);
+}
+
+void CYDriver::SetCondition(Condition condition) {
+    struct yyguts_t *yyg(reinterpret_cast<struct yyguts_t *>(scanner_));
+
+    switch (condition) {
+        case RegExStart:
+            BEGIN(res);
+            break;
+        case RegExRest:
+            BEGIN(rer);
+            break;
+        default:
+            _assert(false);
+    }
 }

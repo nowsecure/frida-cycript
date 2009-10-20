@@ -213,6 +213,11 @@ class CYDriver {
     size_t size_;
     FILE *file_;
 
+    enum Condition {
+        RegExStart,
+        RegExRest
+    };
+
     std::string filename_;
 
     struct Error {
@@ -232,6 +237,8 @@ class CYDriver {
   public:
     CYDriver(const std::string &filename);
     ~CYDriver();
+
+    void SetCondition(Condition condition);
 };
 
 enum CYFlags {
@@ -525,6 +532,23 @@ struct CYNumber :
 
     virtual void Output(CYOutput &out, CYFlags flags) const;
     virtual void PropertyName(CYOutput &out) const;
+};
+
+struct CYRegEx :
+    CYLiteral
+{
+    const char *value_;
+
+    CYRegEx(const char *value) :
+        value_(value)
+    {
+    }
+
+    const char *Value() const {
+        return value_;
+    }
+
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYNull :

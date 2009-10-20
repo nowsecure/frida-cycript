@@ -4,7 +4,10 @@ else
 target := $(PKG_TARG)-
 endif
 
-flags := -mthumb -g0 -O3 -Wall -Werror -I. -fno-common
+#flags := -g3 -O0 -DYYDEBUG=1
+flags := -g0 -O3
+
+flags += -mthumb -Wall -Werror -I. -fno-common
 flags += -F${PKG_ROOT}/System/Library/PrivateFrameworks
 
 svn := $(shell svnversion)

@@ -52,6 +52,8 @@ typedef struct {
     union {
         bool bool_;
 
+        CYDriver::Condition condition_;
+
         CYArgument *argument_;
         CYAssignment *assignment_;
         CYBoolean *boolean_;
@@ -109,8 +111,6 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 
 //%glr-parser
 //%expect 1
-
-%debug
 
 %error-verbose
 
@@ -260,6 +260,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %token <identifier_> Identifier_
 %token <number_> NumericLiteral
 %token <string_> StringLiteral
+%token <literal_> RegularExpressionLiteral
 
 %type <expression_> AdditiveExpression
 %type <expression_> AdditiveExpressionNoBF
@@ -384,6 +385,8 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <property_> PropertyNameAndValueList
 %type <property_> PropertyNameAndValueList_
 %type <property_> PropertyNameAndValueListOpt
+%type <literal_> RegularExpressionLiteral_
+%type <condition_> RegularExpressionToken
 %type <expression_> RelationalExpression
 %type <infix_> RelationalExpression_
 %type <expression_> RelationalExpressionNoBF
@@ -551,11 +554,21 @@ IdentifierOpt
     | { $$ = NULL; }
     ;
 
+RegularExpressionToken
+    : "/" { $$ = CYDriver::RegExStart; }
+    | "/=" { $$ = CYDriver::RegExRest; }
+    ;
+
+RegularExpressionLiteral_
+    : RegularExpressionToken { driver.SetCondition($1); } RegularExpressionLiteral { $$ = $3; }
+    ;
+
 Literal
     : NullLiteral { $$ = $1; }
     | BooleanLiteral { $$ = $1; }
     | NumericLiteral { $$ = $1; }
     | StringLiteral { $$ = $1; }
+    | RegularExpressionLiteral_ { $$ = $1; }
     ;
 
 NullLiteral
@@ -635,6 +648,7 @@ PropertyName
     ;
 /* }}} */
 
+/* 11.2 Left-Hand-Side Expressions {{{ */
 MemberExpression_
     : "new" MemberExpression Arguments { $$ = new(driver.pool_) CYNew($2, $3); }
     ;
@@ -710,7 +724,8 @@ LeftHandSideExpressionNoBF
     : NewExpressionNoBF { $$ = $1; }
     | CallExpressionNoBF { $$ = $1; }
     ;
-
+/* }}} */
+/* 11.3 Postfix Expressions {{{ */
 PostfixExpression
     : AssigneeExpression { $$ = $1; }
     | LeftHandSideExpression "++" { $$ = new(driver.pool_) CYPostIncrement($1); }
@@ -722,7 +737,8 @@ PostfixExpressionNoBF
     | LeftHandSideExpressionNoBF "++" { $$ = new(driver.pool_) CYPostIncrement($1); }
     | LeftHandSideExpressionNoBF "--" { $$ = new(driver.pool_) CYPostDecrement($1); }
     ;
-
+/* }}} */
+/* 11.4 Unary Operators {{{ */
 UnaryExpression_
     : "delete" UnaryExpression { $$ = new(driver.pool_) CYDelete($2); }
     | "void" UnaryExpression { $$ = new(driver.pool_) CYVoid($2); }
@@ -746,7 +762,8 @@ UnaryExpressionNoBF
     : PostfixExpressionNoBF { $$ = $1; }
     | UnaryExpression_ { $$ = $1; }
     ;
-
+/* }}} */
+/* 11.5 Multiplicative Operators {{{ */
 MultiplicativeExpression
     : UnaryExpression { $$ = $1; }
     | MultiplicativeExpression "*" UnaryExpression { $$ = new(driver.pool_) CYMultiply($1, $3); }
@@ -760,7 +777,8 @@ MultiplicativeExpressionNoBF
     | MultiplicativeExpressionNoBF "/" UnaryExpression { $$ = new(driver.pool_) CYDivide($1, $3); }
     | MultiplicativeExpressionNoBF "%" UnaryExpression { $$ = new(driver.pool_) CYModulus($1, $3); }
     ;
-
+/* }}} */
+/* 11.6 Additive Operators {{{ */
 AdditiveExpression
     : MultiplicativeExpression { $$ = $1; }
     | AdditiveExpression "+" MultiplicativeExpression { $$ = new(driver.pool_) CYAdd($1, $3); }
@@ -772,7 +790,8 @@ AdditiveExpressionNoBF
     | AdditiveExpressionNoBF "+" MultiplicativeExpression { $$ = new(driver.pool_) CYAdd($1, $3); }
     | AdditiveExpressionNoBF "-" MultiplicativeExpression { $$ = new(driver.pool_) CYSubtract($1, $3); }
     ;
-
+/* }}} */
+/* 11.7 Bitwise Shift Operators {{{ */
 ShiftExpression
     : AdditiveExpression { $$ = $1; }
     | ShiftExpression "<<" AdditiveExpression { $$ = new(driver.pool_) CYShiftLeft($1, $3); }
@@ -786,7 +805,8 @@ ShiftExpressionNoBF
     | ShiftExpressionNoBF ">>" AdditiveExpression { $$ = new(driver.pool_) CYShiftRightSigned($1, $3); }
     | ShiftExpressionNoBF ">>>" AdditiveExpression { $$ = new(driver.pool_) CYShiftRightUnsigned($1, $3); }
     ;
-
+/* }}} */
+/* 11.8 Relational Operators {{{ */
 RelationalExpressionNoIn_
     : "<" ShiftExpression { $$ = new(driver.pool_) CYLess(NULL, $2); }
     | ">" ShiftExpression { $$ = new(driver.pool_) CYGreater(NULL, $2); }
@@ -814,7 +834,8 @@ RelationalExpressionNoBF
     : ShiftExpressionNoBF { $$ = $1; }
     | RelationalExpressionNoBF RelationalExpression_ { $2->SetLeft($1); $$ = $2; }
     ;
-
+/* }}} */
+/* 11.9 Equality Operators {{{ */
 EqualityExpression
     : RelationalExpression { $$ = $1; }
     | EqualityExpression "==" RelationalExpression { $$ = new(driver.pool_) CYEqual($1, $3); }
@@ -838,7 +859,8 @@ EqualityExpressionNoBF
     | EqualityExpressionNoBF "===" RelationalExpression { $$ = new(driver.pool_) CYIdentical($1, $3); }
     | EqualityExpressionNoBF "!==" RelationalExpression { $$ = new(driver.pool_) CYNotIdentical($1, $3); }
     ;
-
+/* }}} */
+/* 11.10 Binary Bitwise Operators {{{ */
 BitwiseANDExpression
     : EqualityExpression { $$ = $1; }
     | BitwiseANDExpression "&" EqualityExpression { $$ = new(driver.pool_) CYBitwiseAnd($1, $3); }
@@ -883,7 +905,8 @@ BitwiseORExpressionNoBF
     : BitwiseXORExpressionNoBF { $$ = $1; }
     | BitwiseORExpressionNoBF "|" BitwiseXORExpression { $$ = new(driver.pool_) CYBitwiseOr($1, $3); }
     ;
-
+/* }}} */
+/* 11.11 Binary Logical Operators {{{ */
 LogicalANDExpression
     : BitwiseORExpression { $$ = $1; }
     | LogicalANDExpression "&&" BitwiseORExpression { $$ = new(driver.pool_) CYLogicalAnd($1, $3); }
@@ -913,7 +936,8 @@ LogicalORExpressionNoBF
     : LogicalANDExpressionNoBF { $$ = $1; }
     | LogicalORExpressionNoBF "||" LogicalANDExpression { $$ = new(driver.pool_) CYLogicalOr($1, $3); }
     ;
-
+/* }}} */
+/* 11.12 Conditional Operator ( ? : ) {{{ */
 ConditionalExpression
     : LogicalORExpression { $$ = $1; }
     | LogicalORExpression "?" AssignmentExpression ":" AssignmentExpression { $$ = new(driver.pool_) CYCondition($1, $3, $5); }
@@ -928,7 +952,8 @@ ConditionalExpressionNoBF
     : LogicalORExpressionNoBF { $$ = $1; }
     | LogicalORExpressionNoBF "?" AssignmentExpression ":" AssignmentExpression { $$ = new(driver.pool_) CYCondition($1, $3, $5); }
     ;
-
+/* }}} */
+/* 11.13 Assignment Operators {{{ */
 AssignmentExpression_
     : "=" AssignmentExpression { $$ = new(driver.pool_) CYAssign(NULL, $2); }
     | "*=" AssignmentExpression { $$ = new(driver.pool_) CYMultiplyAssign(NULL, $2); }
@@ -979,7 +1004,8 @@ AssignmentExpressionNoBF
     : ConditionalExpressionNoBF { $$ = $1; }
     | AssigneeExpressionNoBF AssignmentExpression_ { $2->SetLeft($1); $$ = $2; }
     ;
-
+/* }}} */
+/* 11.14 Comma Operator {{{ */
 Expression_
     : "," Expression { $$ = new(driver.pool_) CYCompound($2); }
     | { $$ = NULL; }
@@ -1011,7 +1037,9 @@ ExpressionNoIn
 ExpressionNoBF
     : AssignmentExpressionNoBF Expression_ { if ($2) { $2->AddPrev($1); $$ = $2; } else $$ = $1; }
     ;
+/* }}} */
 
+/* 12 Statements {{{ */
 Statement
     : Block { $$ = $1; }
     | VariableStatement { $$ = $1; }
@@ -1028,7 +1056,8 @@ Statement
     | ThrowStatement { $$ = $1; }
     | TryStatement { $$ = $1; }
     ;
-
+/* }}} */
+/* 12.1 Block {{{ */
 Block_
     : "{" StatementListOpt "}" { $$ = $2; }
     ;
@@ -1045,7 +1074,8 @@ StatementListOpt
     : StatementList { $$ = $1; }
     | { $$ = NULL; }
     ;
-
+/* }}} */
+/* 12.2 Variable Statement {{{ */
 VariableStatement
     : "var" VariableDeclarationList Terminator { $$ = new(driver.pool_) CYVar($2); }
     ;
@@ -1093,15 +1123,18 @@ Initialiser
 InitialiserNoIn
     : "=" AssignmentExpressionNoIn { $$ = $2; }
     ;
-
+/* }}} */
+/* 12.3 Empty Statement {{{ */
 EmptyStatement
     : ";" { $$ = new(driver.pool_) CYEmpty(); }
     ;
-
+/* }}} */
+/* 12.4 Expression Statement {{{ */
 ExpressionStatement
     : ExpressionNoBF Terminator { $$ = new(driver.pool_) CYExpress($1); }
     ;
-
+/* }}} */
+/* 12.5 The if Statement {{{ */
 ElseStatementOpt
     : "else" Statement { $$ = $2; }
     | %prec "if" { $$ = NULL; }
@@ -1110,22 +1143,27 @@ ElseStatementOpt
 IfStatement
     : "if" "(" Expression ")" Statement ElseStatementOpt { $$ = new(driver.pool_) CYIf($3, $5, $6); }
     ;
+/* }}} */
 
+/* 12.6 Iteration Statements {{{ */
 IterationStatement
     : DoWhileStatement { $$ = $1; }
     | WhileStatement { $$ = $1; }
     | ForStatement { $$ = $1; }
     | ForInStatement { $$ = $1; }
     ;
-
+/* }}} */
+/* 12.6.1 The do-while Statement {{{ */
 DoWhileStatement
     : "do" Statement "while" "(" Expression ")" TerminatorOpt { $$ = new(driver.pool_) CYDoWhile($5, $2); }
     ;
-
+/* }}} */
+/* 12.6.2 The while Statement {{{ */
 WhileStatement
     : "while" "(" Expression ")" Statement { $$ = new(driver.pool_) CYWhile($3, $5); }
     ;
-
+/* }}} */
+/* 12.6.3 The for Statement {{{ */
 ForStatement
     : "for" "(" ForStatementInitialiser ";" ExpressionOpt ";" ExpressionOpt ")" Statement { $$ = new(driver.pool_) CYFor($3, $5, $7, $9); }
     ;
@@ -1134,7 +1172,8 @@ ForStatementInitialiser
     : ExpressionNoInOpt { $$ = $1; }
     | "var" VariableDeclarationListNoIn { $$ = $2; }
     ;
-
+/* }}} */
+/* 12.6.4 The for-in Statement {{{ */
 ForInStatement
     : "for" "(" ForInStatementInitialiser "in" Expression ")" Statement { $$ = new(driver.pool_) CYForIn($3, $5, $7); }
     ;
@@ -1143,23 +1182,30 @@ ForInStatementInitialiser
     : LeftHandSideExpression { $$ = $1; }
     | "var" VariableDeclarationNoIn { $$ = $2; }
     ;
+/* }}} */
 
+/* 12.7 The continue Statement {{{ */
 ContinueStatement
     : "continue" IdentifierOpt Terminator { $$ = new(driver.pool_) CYContinue($2); }
     ;
-
+/* }}} */
+/* 12.8 The break Statement {{{ */
 BreakStatement
     : "break" IdentifierOpt Terminator { $$ = new(driver.pool_) CYBreak($2); }
     ;
-
+/* }}} */
+/* 12.9 The return Statement {{{ */
 ReturnStatement
     : "return" ExpressionOpt Terminator { $$ = new(driver.pool_) CYReturn($2); }
     ;
-
+/* }}} */
+/* 12.10 The with Statement {{{ */
 WithStatement
     : "with" "(" Expression ")" Statement { $$ = new(driver.pool_) CYWith($3, $5); }
     ;
+/* }}} */
 
+/* 12.11 The switch Statement {{{ */
 SwitchStatement
     : "switch" "(" Expression ")" CaseBlock { $$ = new(driver.pool_) CYSwitch($3, $5); }
     ;
@@ -1181,15 +1227,18 @@ CaseClause
 DefaultClause
     : "default" ":" StatementListOpt { $$ = new(driver.pool_) CYClause(NULL, $3); }
     ;
-
+/* }}} */
+/* 12.12 Labelled Statements {{{ */
 LabelledStatement
     : Identifier ":" Statement { $3->AddLabel($1); $$ = $3; }
     ;
-
+/* }}} */
+/* 12.13 The throw Statement {{{ */
 ThrowStatement
     : "throw" Expression Terminator { $$ = new(driver.pool_) CYThrow($2); }
     ;
-
+/* }}} */
+/* 12.14 The try Statement {{{ */
 TryStatement
     : "try" Block_ CatchOpt FinallyOpt { $$ = new(driver.pool_) CYTry($2, $3, $4); }
     ;
@@ -1203,7 +1252,9 @@ FinallyOpt
     : "finally" Block_ { $$ = $2; }
     | { $$ = NULL; }
     ;
+/* }}} */
 
+/* 13 Function Definition {{{ */
 FunctionDeclaration
     : "function" Identifier "(" FormalParameterList ")" "{" FunctionBody "}" { $$ = new(driver.pool_) CYFunction($2, $4, $7); }
     ;
@@ -1225,7 +1276,8 @@ FormalParameterList
 FunctionBody
     : SourceElements { $$ = $1; }
     ;
-
+/* }}} */
+/* 14 Program {{{ */
 Program
     : SourceElements { driver.source_ = $1; }
     ;
@@ -1239,6 +1291,7 @@ SourceElement
     : Statement { $$ = $1; }
     | FunctionDeclaration { $$ = $1; }
     ;
+/* }}} */
 
 /* Cycript: @class Declaration {{{ */
 ClassSuperOpt
