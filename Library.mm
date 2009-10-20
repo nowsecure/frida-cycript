@@ -469,9 +469,14 @@ void Copy(apr_pool_t *pool, Type &lhs, Type &rhs) {
     if (sig::IsAggregate(rhs.primitive))
         Copy(pool, lhs.data.signature, rhs.data.signature);
     else {
-        if (rhs.data.data.type != NULL) {
-            lhs.data.data.type = new(pool) Type;
-            Copy(pool, *lhs.data.data.type, *rhs.data.data.type);
+        sig::Type *&lht(lhs.data.data.type);
+        sig::Type *&rht(rhs.data.data.type);
+
+        if (rht == NULL)
+            lht = NULL;
+        else {
+            lht = new(pool) Type;
+            Copy(pool, *lht, *rht);
         }
 
         lhs.data.data.size = rhs.data.data.size;
