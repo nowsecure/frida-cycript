@@ -69,6 +69,7 @@ typedef struct {
         CYExpression *expression_;
         CYFalse *false_;
         CYField *field_;
+        CYFinally *finally_;
         CYForInitialiser *for_;
         CYForInInitialiser *forin_;
         CYFunctionParameter *functionParameter_;
@@ -83,7 +84,6 @@ typedef struct {
         CYProperty *property_;
         CYPropertyName *propertyName_;
         CYSelectorPart *selector_;
-        CYSource *source_;
         CYStatement *statement_;
         CYString *string_;
         CYThis *this_;
@@ -328,7 +328,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <compound_> ExpressionNoIn_
 %type <expression_> ExpressionNoInOpt
 %type <statement_> ExpressionStatement
-%type <statement_> FinallyOpt
+%type <finally_> FinallyOpt
 %type <comprehension_> ForComprehension
 %type <statement_> ForStatement
 %type <for_> ForStatementInitialiser
@@ -336,8 +336,8 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <forin_> ForInStatementInitialiser
 %type <functionParameter_> FormalParameterList
 %type <functionParameter_> FormalParameterList_
-%type <source_> FunctionBody
-%type <source_> FunctionDeclaration
+%type <statement_> FunctionBody
+%type <statement_> FunctionDeclaration
 %type <expression_> FunctionExpression
 %type <identifier_> Identifier
 %type <identifier_> IdentifierOpt
@@ -380,7 +380,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> PrimaryExpression
 %type <expression_> PrimaryExpression_
 %type <expression_> PrimaryExpressionNoBF
-%type <source_> Program
+%type <statement_> Program
 %type <propertyName_> PropertyName
 %type <property_> PropertyNameAndValueList
 %type <property_> PropertyNameAndValueList_
@@ -398,9 +398,10 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <selector_> SelectorExpressionOpt
 %type <expression_> ShiftExpression
 %type <expression_> ShiftExpressionNoBF
-%type <source_> SourceElement
-%type <source_> SourceElements
+%type <statement_> SourceElement
+%type <statement_> SourceElements
 %type <statement_> Statement
+%type <statement_> Statement_
 %type <statement_> StatementList
 %type <statement_> StatementListOpt
 %type <statement_> SwitchStatement
@@ -448,16 +449,23 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 
 %%
 
-TerminatorOpt
+StrictSemi
+    : { driver.Warning(yylloc, "warning, automatic semi-colon insertion required"); }
+    ;
+
+Terminator_
     : ";"
-    | "\n"
-    | error { yyerrok; driver.errors_.pop_back(); }
+    | "\n" StrictSemi
+    ;
+
+TerminatorOpt
+    : Terminator_
+    | error { yyerrok; driver.errors_.pop_back(); } StrictSemi
     ;
 
 Terminator
-    : ";"
-    | "\n"
-    | error { if (yychar != 0 && yychar != cy::parser::token::CloseBrace && !yylval.newline_) YYABORT; else { yyerrok; driver.errors_.pop_back(); } }
+    : Terminator_
+    | error { if (yychar != 0 && yychar != cy::parser::token::CloseBrace && !yylval.newline_) YYABORT; else { yyerrok; driver.errors_.pop_back(); } } StrictSemi
     ;
 
 /*CommaOpt
@@ -1040,7 +1048,7 @@ ExpressionNoBF
 /* }}} */
 
 /* 12 Statements {{{ */
-Statement
+Statement_
     : Block { $$ = $1; }
     | VariableStatement { $$ = $1; }
     | EmptyStatement { $$ = $1; }
@@ -1055,6 +1063,10 @@ Statement
     | SwitchStatement { $$ = $1; }
     | ThrowStatement { $$ = $1; }
     | TryStatement { $$ = $1; }
+    ;
+
+Statement
+    : Statement_ { $$ = $1; }
     ;
 /* }}} */
 /* 12.1 Block {{{ */
@@ -1249,7 +1261,7 @@ CatchOpt
     ;
 
 FinallyOpt
-    : "finally" Block_ { $$ = $2; }
+    : "finally" Block_ { $$ = new(driver.pool_) CYFinally($2); }
     | { $$ = NULL; }
     ;
 /* }}} */
@@ -1279,7 +1291,7 @@ FunctionBody
 /* }}} */
 /* 14 Program {{{ */
 Program
-    : SourceElements { driver.source_ = $1; }
+    : SourceElements { driver.program_ = $1; }
     ;
 
 SourceElements
@@ -1288,7 +1300,7 @@ SourceElements
     ;
 
 SourceElement
-    : Statement { $$ = $1; }
+    : Statement_ { $$ = $1; }
     | FunctionDeclaration { $$ = $1; }
     ;
 /* }}} */
@@ -1362,7 +1374,7 @@ PrimaryExpression
     : ClassDefinition { $$ = $1; }
     ;
 
-Statement
+Statement_
     : ClassDefinition { $$ = $1; }
     | CategoryStatement { $$ = $1; }
     ;
@@ -1457,7 +1469,7 @@ ForInStatement
     : "for" "each" "(" ForInStatementInitialiser "in" Expression ")" Statement { $$ = new(driver.pool_) CYForEachIn($4, $6, $8); }
     ;
 /* }}} */
-/* JavaScript 1.7: Let Statements {{{ *//*
+/* JavaScript 1.7: let Statements {{{ *//*
 LetStatement
     : "let" "(" VariableDeclarationList ")" Block_ { $$ = new(driver.pool_) CYLet($3, $5); }
     ;
@@ -1466,5 +1478,10 @@ Statement
     : LetStatement
     ;
 *//* }}} */
+/* JavaScript FTW: Function Statements {{{ */
+Statement
+    : FunctionDeclaration { driver.Warning(yylloc, "warning, FunctionDeclaration is a SourceElement, not a Statement"); } { $$ = $1; }
+    ;
+/* }}} */
 
 %%

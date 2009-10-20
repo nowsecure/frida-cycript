@@ -94,12 +94,15 @@ static void sigint(int) {
 #if YYDEBUG
 static bool bison_;
 #endif
+static bool strict_;
 
-void Setup(cy::parser &parser) {
+void Setup(CYDriver &driver, cy::parser &parser) {
 #if YYDEBUG
     if (bison_)
         parser.set_debug_level(1);
 #endif
+    if (strict_)
+        driver.strict_ = true;
 }
 
 void Run(int socket, const char *data, size_t size, FILE *fout = NULL, bool expand = false) {
@@ -229,7 +232,7 @@ static void Console(int socket) {
         else {
             CYDriver driver("");
             cy::parser parser(driver);
-            Setup(parser);
+            Setup(driver, parser);
 
             driver.data_ = command.c_str();
             driver.size_ = command.size();
@@ -237,7 +240,7 @@ static void Console(int socket) {
             if (parser.parse() != 0 || !driver.errors_.empty()) {
                 for (CYDriver::Errors::const_iterator error(driver.errors_.begin()); error != driver.errors_.end(); ++error) {
                     cy::position begin(error->location_.begin);
-                    if (begin.line != lines.size() || begin.column - 1 != lines.back().size()) {
+                    if (begin.line != lines.size() || begin.column - 1 != lines.back().size() || error->warning_) {
                         cy::position end(error->location_.end);
 
                         if (begin.line != lines.size()) {
@@ -269,7 +272,7 @@ static void Console(int socket) {
                 goto read;
             }
 
-            if (driver.source_ == NULL)
+            if (driver.program_ == NULL)
                 goto restart;
 
             if (socket != -1)
@@ -277,7 +280,7 @@ static void Console(int socket) {
             else {
                 std::ostringstream str;
                 CYOutput out(str);
-                driver.source_->Show(out);
+                driver.program_->Show(out);
                 code = str.str();
             }
         }
@@ -316,7 +319,7 @@ int main(int argc, char *argv[]) {
     pid_t pid(_not(pid_t));
     bool compile(false);
 
-    for (;;) switch (getopt(argc, argv, "cg:p:")) {
+    for (;;) switch (getopt(argc, argv, "cg:p:s")) {
         case -1:
             goto getopt;
         case '?':
@@ -348,6 +351,10 @@ int main(int argc, char *argv[]) {
                 return 1;
             }
         } break;
+
+        case 's':
+            strict_ = true;
+        break;
     } getopt:;
 
     const char *script;
@@ -397,7 +404,7 @@ int main(int argc, char *argv[]) {
     else {
         CYDriver driver(script ?: "<stdin>");
         cy::parser parser(driver);
-        Setup(parser);
+        Setup(driver, parser);
 
         char *start, *end;
 
@@ -427,13 +434,13 @@ int main(int argc, char *argv[]) {
         if (parser.parse() != 0 || !driver.errors_.empty()) {
             for (CYDriver::Errors::const_iterator i(driver.errors_.begin()); i != driver.errors_.end(); ++i)
                 std::cerr << i->location_.begin << ": " << i->message_ << std::endl;
-        } else if (driver.source_ != NULL)
+        } else if (driver.program_ != NULL)
             if (socket != -1)
                 Run(socket, start, end - start, stdout);
             else {
                 std::ostringstream str;
                 CYOutput out(str);
-                driver.source_->Show(out);
+                driver.program_->Show(out);
                 std::string code(str.str());
                 if (compile)
                     std::cout << code;

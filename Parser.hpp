@@ -94,19 +94,6 @@ struct CYOutput {
     }
 };
 
-struct CYSource :
-    CYNext<CYSource>
-{
-    virtual bool IsBlock() const {
-        return next_ != NULL;
-    }
-
-    virtual void Show(CYOutput &out) const;
-    virtual void Output(CYOutput &out) const = 0;
-    virtual void Output(CYOutput &out, bool block) const;
-    virtual void Output_(CYOutput &out) const;
-};
-
 struct CYPropertyName {
     virtual void PropertyName(CYOutput &out) const = 0;
 };
@@ -163,7 +150,7 @@ struct CYLabel :
 };
 
 struct CYStatement :
-    CYSource
+    CYNext<CYStatement>
 {
     CYLabel *labels_;
 
@@ -176,6 +163,13 @@ struct CYStatement :
         labels_ = new CYLabel(identifier, labels_);
     }
 
+    virtual bool IsBlock() const {
+        return next_ != NULL;
+    }
+
+    virtual void Show(CYOutput &out) const;
+    virtual void Output(CYOutput &out) const = 0;
+    virtual void Output(CYOutput &out, bool block) const;
     virtual void Output_(CYOutput &out) const;
 };
 
@@ -213,6 +207,8 @@ class CYDriver {
     size_t size_;
     FILE *file_;
 
+    bool strict_;
+
     enum Condition {
         RegExStart,
         RegExRest
@@ -221,13 +217,14 @@ class CYDriver {
     std::string filename_;
 
     struct Error {
+        bool warning_;
         cy::location location_;
         std::string message_;
     };
 
     typedef std::vector<Error> Errors;
 
-    CYSource *source_;
+    CYStatement *program_;
     Errors errors_;
 
   private:
@@ -239,6 +236,8 @@ class CYDriver {
     ~CYDriver();
 
     void SetCondition(Condition condition);
+
+    void Warning(const cy::location &location, const char *message);
 };
 
 enum CYFlags {
@@ -854,9 +853,9 @@ struct CYMessage :
     bool instance_;
     CYExpression *type_;
     CYMessageParameter *parameter_;
-    CYSource *body_;
+    CYStatement *body_;
 
-    CYMessage(bool instance, CYExpression *type, CYMessageParameter *parameter, CYSource *body) :
+    CYMessage(bool instance, CYExpression *type, CYMessageParameter *parameter, CYStatement *body) :
         instance_(instance),
         type_(type),
         parameter_(parameter),
@@ -1163,9 +1162,9 @@ struct CYLambda :
 {
     CYIdentifier *name_;
     CYFunctionParameter *parameters_;
-    CYSource *body_;
+    CYStatement *body_;
 
-    CYLambda(CYIdentifier *name, CYFunctionParameter *parameters, CYSource *body) :
+    CYLambda(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *body) :
         name_(name),
         parameters_(parameters),
         body_(body)
@@ -1179,9 +1178,9 @@ struct CYLambda :
 
 struct CYFunction :
     CYLambda,
-    CYSource
+    CYStatement
 {
-    CYFunction(CYIdentifier *name, CYFunctionParameter *parameters, CYSource *body) :
+    CYFunction(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *body) :
         CYLambda(name, parameters, body)
     {
     }
@@ -1248,15 +1247,26 @@ struct CYEmpty :
     virtual void Output(CYOutput &out, bool block) const;
 };
 
+struct CYFinally {
+    CYStatement *code_;
+
+    CYFinally(CYStatement *code) :
+        code_(code)
+    {
+    }
+
+    virtual void Output(CYOutput &out) const;
+};
+
 struct CYTry :
     CYStatement
 {
-    CYStatement *try_;
+    CYStatement *code_;
     CYCatch *catch_;
-    CYStatement *finally_;
+    CYFinally *finally_;
 
-    CYTry(CYStatement *_try, CYCatch *_catch, CYStatement *finally) :
-        try_(_try),
+    CYTry(CYStatement *code, CYCatch *_catch, CYFinally *finally) :
+        code_(code),
         catch_(_catch),
         finally_(finally)
     {

@@ -289,7 +289,7 @@ RegularExpressionStart_ {RegularExpressionBody}{RegularExpressionEnd_}
     return tk::StringLiteral;
 }
 
-\n yylloc->end.lines(); yylloc->step(); N
+\r?\n yylloc->end.lines(); yylloc->step(); N
 
 [ \t] L
 <<EOF>> L yyterminate();

@@ -3300,8 +3300,9 @@ CYDriver::CYDriver(const std::string &filename) :
     data_(NULL),
     size_(0),
     file_(NULL),
+    strict_(false),
     filename_(filename),
-    source_(NULL)
+    program_(NULL)
 {
     ScannerInit();
 }
@@ -3310,8 +3311,20 @@ CYDriver::~CYDriver() {
     ScannerDestroy();
 }
 
+void CYDriver::Warning(const cy::location &location, const char *message) {
+    if (!strict_)
+        return;
+
+    CYDriver::Error error;
+    error.warning_ = true;
+    error.location_ = location;
+    error.message_ = message;
+    errors_.push_back(error);
+}
+
 void cy::parser::error(const cy::parser::location_type &location, const std::string &message) {
     CYDriver::Error error;
+    error.warning_ = false;
     error.location_ = location;
     error.message_ = message;
     driver.errors_.push_back(error);
@@ -3451,7 +3464,7 @@ struct CYClient :
             } else {
                 std::ostringstream str;
                 CYOutput out(str);
-                driver.source_->Show(out);
+                driver.program_->Show(out);
                 std::string code(str.str());
                 CYExecute_ execute = {pool, code.c_str()};
                 [client performSelectorOnMainThread:@selector(execute:) withObject:[NSValue valueWithPointer:&execute] waitUntilDone:YES];

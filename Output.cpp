@@ -98,7 +98,7 @@ void CYAssignment::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYBlock::Output(CYOutput &out) const {
-    for (CYSource *statement(statements_); statement != NULL; statement = statement->next_)
+    for (CYStatement *statement(statements_); statement != NULL; statement = statement->next_)
         statement->Output(out);
 }
 
@@ -126,8 +126,10 @@ void CYCall::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYCatch::Output(CYOutput &out) const {
-    out << "catch(" << *name_ << ')';
-    code_->Output(out, true);
+    out << "catch(" << *name_ << "){";
+    if (code_ != NULL)
+        code_->Show(out);
+    out << "}";
 }
 
 void CYCategory::Output(CYOutput &out) const {
@@ -300,7 +302,7 @@ void CYEmpty::Output(CYOutput &out) const {
 
 void CYEmpty::Output(CYOutput &out, bool block) const {
     if (next_ != NULL)
-        CYSource::Output(out, block);
+        CYStatement::Output(out, block);
     else
         out << "{}";
 }
@@ -343,6 +345,13 @@ void CYExpression::Output(CYOutput &out, unsigned precedence, CYFlags flags) con
 
 void CYField::Output(CYOutput &out) const {
     // XXX: implement!
+}
+
+void CYFinally::Output(CYOutput &out) const {
+    out << "finally{";
+    if (code_ != NULL)
+        code_->Show(out);
+    out << "}";
 }
 
 void CYFor::Output(CYOutput &out) const {
@@ -651,12 +660,12 @@ void CYSend::Output(CYOutput &out, CYFlags flags) const {
     out << ')';
 }
 
-void CYSource::Show(CYOutput &out) const {
-    for (const CYSource *next(this); next != NULL; next = next->next_)
+void CYStatement::Show(CYOutput &out) const {
+    for (const CYStatement *next(this); next != NULL; next = next->next_)
         next->Output_(out);
 }
 
-void CYSource::Output(CYOutput &out, bool block) const {
+void CYStatement::Output(CYOutput &out, bool block) const {
     if (!block && !IsBlock())
         Output(out);
     else {
@@ -664,10 +673,6 @@ void CYSource::Output(CYOutput &out, bool block) const {
         Show(out);
         out << '}';
     }
-}
-
-void CYSource::Output_(CYOutput &out) const {
-    Output(out);
 }
 
 void CYStatement::Output_(CYOutput &out) const {
@@ -750,14 +755,14 @@ void CYThrow::Output(CYOutput &out) const {
 }
 
 void CYTry::Output(CYOutput &out) const {
-    out << "try";
-    try_->Output(out, true);
+    out << "try{";
+    if (code_ != NULL)
+        code_->Show(out);
+    out << "}";
     if (catch_ != NULL)
         catch_->Output(out);
-    if (finally_ != NULL) {
-        out << "finally";
-        finally_->Output(out, true);
-    }
+    if (finally_ != NULL)
+        finally_->Output(out);
 }
 
 void CYVar::Output(CYOutput &out) const {
