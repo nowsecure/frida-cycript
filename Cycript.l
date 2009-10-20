@@ -14,7 +14,7 @@ typedef cy::parser::token tk;
     memcpy(value, prefix, sizeof(prefix) - 1); \
     memcpy(value + sizeof(prefix) - 1, yytext, yyleng); \
     value[yyleng + sizeof(prefix) - 1] = '\0'; \
-    yylval->literal_ = new CYRegEx(value); \
+    yylval->literal_ = new(yyextra->pool_) CYRegEx(value); \
     return tk::RegularExpressionLiteral; \
 }
 
@@ -157,84 +157,84 @@ RegularExpressionStart_ {RegularExpressionBody}{RegularExpressionEnd_}
 "@end"         L C return tk::AtEnd;
 "@selector"    L C return tk::AtSelector;
 
-"false"        L C yylval->false_ = new CYFalse(); return tk::False;
-"null"         L C yylval->null_ = new CYNull(); return tk::Null;
-"true"         L C yylval->true_ = new CYTrue(); return tk::True;
+"false"        L C yylval->false_ = new(yyextra->pool_) CYFalse(); return tk::False;
+"null"         L C yylval->null_ = new(yyextra->pool_) CYNull(); return tk::Null;
+"true"         L C yylval->true_ = new(yyextra->pool_) CYTrue(); return tk::True;
 
-"break"        L R yylval->word_ = new CYWord("break"); return tk::Break;
-"case"         L C yylval->word_ = new CYWord("case"); return tk::Case;
-"catch"        L C yylval->word_ = new CYWord("catch"); return tk::Catch;
-"continue"     L R yylval->word_ = new CYWord("continue"); return tk::Continue;
-"default"      L C yylval->word_ = new CYWord("default"); return tk::Default;
-"delete"       L C yylval->word_ = new CYWord("delete"); return tk::Delete;
-"do"           L C yylval->word_ = new CYWord("do"); return tk::Do;
-"else"         L C yylval->word_ = new CYWord("else"); return tk::Else;
-"finally"      L C yylval->word_ = new CYWord("finally"); return tk::Finally;
-"for"          L C yylval->word_ = new CYWord("for"); return tk::For;
-"function"     L C yylval->word_ = new CYWord("function"); return tk::Function;
-"if"           L C yylval->word_ = new CYWord("if"); return tk::If;
-"in"           L C yylval->word_ = new CYWord("in"); return tk::In;
-"instanceof"   L C yylval->word_ = new CYWord("instanceof"); return tk::InstanceOf;
-"new"          L C yylval->word_ = new CYWord("new"); return tk::New;
-"return"       L R yylval->word_ = new CYWord("return"); return tk::Return;
-"switch"       L C yylval->word_ = new CYWord("switch"); return tk::Switch;
-"this"         L C yylval->this_ = new CYThis(); return tk::This;
-"throw"        L R yylval->word_ = new CYWord("throw"); return tk::Throw;
-"try"          L C yylval->word_ = new CYWord("try"); return tk::Try;
-"typeof"       L C yylval->word_ = new CYWord("typeof"); return tk::TypeOf;
-"var"          L C yylval->word_ = new CYWord("var"); return tk::Var;
-"void"         L C yylval->word_ = new CYWord("void"); return tk::Void;
-"while"        L C yylval->word_ = new CYWord("while"); return tk::While;
-"with"         L C yylval->word_ = new CYWord("with"); return tk::With;
+"break"        L R yylval->word_ = new(yyextra->pool_) CYWord("break"); return tk::Break;
+"case"         L C yylval->word_ = new(yyextra->pool_) CYWord("case"); return tk::Case;
+"catch"        L C yylval->word_ = new(yyextra->pool_) CYWord("catch"); return tk::Catch;
+"continue"     L R yylval->word_ = new(yyextra->pool_) CYWord("continue"); return tk::Continue;
+"default"      L C yylval->word_ = new(yyextra->pool_) CYWord("default"); return tk::Default;
+"delete"       L C yylval->word_ = new(yyextra->pool_) CYWord("delete"); return tk::Delete;
+"do"           L C yylval->word_ = new(yyextra->pool_) CYWord("do"); return tk::Do;
+"else"         L C yylval->word_ = new(yyextra->pool_) CYWord("else"); return tk::Else;
+"finally"      L C yylval->word_ = new(yyextra->pool_) CYWord("finally"); return tk::Finally;
+"for"          L C yylval->word_ = new(yyextra->pool_) CYWord("for"); return tk::For;
+"function"     L C yylval->word_ = new(yyextra->pool_) CYWord("function"); return tk::Function;
+"if"           L C yylval->word_ = new(yyextra->pool_) CYWord("if"); return tk::If;
+"in"           L C yylval->word_ = new(yyextra->pool_) CYWord("in"); return tk::In;
+"instanceof"   L C yylval->word_ = new(yyextra->pool_) CYWord("instanceof"); return tk::InstanceOf;
+"new"          L C yylval->word_ = new(yyextra->pool_) CYWord("new"); return tk::New;
+"return"       L R yylval->word_ = new(yyextra->pool_) CYWord("return"); return tk::Return;
+"switch"       L C yylval->word_ = new(yyextra->pool_) CYWord("switch"); return tk::Switch;
+"this"         L C yylval->this_ = new(yyextra->pool_) CYThis(); return tk::This;
+"throw"        L R yylval->word_ = new(yyextra->pool_) CYWord("throw"); return tk::Throw;
+"try"          L C yylval->word_ = new(yyextra->pool_) CYWord("try"); return tk::Try;
+"typeof"       L C yylval->word_ = new(yyextra->pool_) CYWord("typeof"); return tk::TypeOf;
+"var"          L C yylval->word_ = new(yyextra->pool_) CYWord("var"); return tk::Var;
+"void"         L C yylval->word_ = new(yyextra->pool_) CYWord("void"); return tk::Void;
+"while"        L C yylval->word_ = new(yyextra->pool_) CYWord("while"); return tk::While;
+"with"         L C yylval->word_ = new(yyextra->pool_) CYWord("with"); return tk::With;
 
-"debugger"     L C yylval->word_ = new CYWord("debugger"); return tk::Debugger;
+"debugger"     L C yylval->word_ = new(yyextra->pool_) CYWord("debugger"); return tk::Debugger;
 
-"const"        L C yylval->word_ = new CYWord("const"); return tk::Const;
+"const"        L C yylval->word_ = new(yyextra->pool_) CYWord("const"); return tk::Const;
 
-"class"        L C yylval->word_ = new CYWord("class"); return tk::Class;
-"enum"         L C yylval->word_ = new CYWord("enum"); return tk::Enum;
-"export"       L C yylval->word_ = new CYWord("export"); return tk::Export;
-"extends"      L C yylval->word_ = new CYWord("extends"); return tk::Extends;
-"import"       L C yylval->word_ = new CYWord("import"); return tk::Import;
-"super"        L C yylval->word_ = new CYWord("super"); return tk::Super;
+"class"        L C yylval->word_ = new(yyextra->pool_) CYWord("class"); return tk::Class;
+"enum"         L C yylval->word_ = new(yyextra->pool_) CYWord("enum"); return tk::Enum;
+"export"       L C yylval->word_ = new(yyextra->pool_) CYWord("export"); return tk::Export;
+"extends"      L C yylval->word_ = new(yyextra->pool_) CYWord("extends"); return tk::Extends;
+"import"       L C yylval->word_ = new(yyextra->pool_) CYWord("import"); return tk::Import;
+"super"        L C yylval->word_ = new(yyextra->pool_) CYWord("super"); return tk::Super;
 
-"implements"   L C yylval->identifier_ = new CYIdentifier("implements"); return tk::Implements;
-"interface"    L C yylval->identifier_ = new CYIdentifier("interface"); return tk::Interface;
-"package"      L C yylval->identifier_ = new CYIdentifier("package"); return tk::Package;
-"private"      L C yylval->identifier_ = new CYIdentifier("private"); return tk::Private;
-"protected"    L C yylval->identifier_ = new CYIdentifier("protected"); return tk::Protected;
-"public"       L C yylval->identifier_ = new CYIdentifier("public"); return tk::Public;
-"static"       L C yylval->identifier_ = new CYIdentifier("static"); return tk::Static;
+"implements"   L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("implements"); return tk::Implements;
+"interface"    L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("interface"); return tk::Interface;
+"package"      L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("package"); return tk::Package;
+"private"      L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("private"); return tk::Private;
+"protected"    L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("protected"); return tk::Protected;
+"public"       L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("public"); return tk::Public;
+"static"       L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("static"); return tk::Static;
 
-"abstract"     L C yylval->identifier_ = new CYIdentifier("abstract"); return tk::Abstract;
-"boolean"      L C yylval->identifier_ = new CYIdentifier("boolean"); return tk::Boolean;
-"byte"         L C yylval->identifier_ = new CYIdentifier("byte"); return tk::Byte;
-"char"         L C yylval->identifier_ = new CYIdentifier("char"); return tk::Char;
-"double"       L C yylval->identifier_ = new CYIdentifier("double"); return tk::Double;
-"final"        L C yylval->identifier_ = new CYIdentifier("final"); return tk::Final;
-"float"        L C yylval->identifier_ = new CYIdentifier("float"); return tk::Float;
-"goto"         L C yylval->identifier_ = new CYIdentifier("goto"); return tk::Goto;
-"int"          L C yylval->identifier_ = new CYIdentifier("int"); return tk::Int;
-"long"         L C yylval->identifier_ = new CYIdentifier("long"); return tk::Long;
-"native"       L C yylval->identifier_ = new CYIdentifier("native"); return tk::Native;
-"short"        L C yylval->identifier_ = new CYIdentifier("short"); return tk::Short;
-"synchronized" L C yylval->identifier_ = new CYIdentifier("synchronized"); return tk::Synchronized;
-"throws"       L C yylval->identifier_ = new CYIdentifier("throws"); return tk::Throws;
-"transient"    L C yylval->identifier_ = new CYIdentifier("transient"); return tk::Transient;
-"volatile"     L C yylval->identifier_ = new CYIdentifier("volatile"); return tk::Volatile;
+"abstract"     L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("abstract"); return tk::Abstract;
+"boolean"      L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("boolean"); return tk::Boolean;
+"byte"         L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("byte"); return tk::Byte;
+"char"         L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("char"); return tk::Char;
+"double"       L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("double"); return tk::Double;
+"final"        L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("final"); return tk::Final;
+"float"        L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("float"); return tk::Float;
+"goto"         L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("goto"); return tk::Goto;
+"int"          L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("int"); return tk::Int;
+"long"         L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("long"); return tk::Long;
+"native"       L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("native"); return tk::Native;
+"short"        L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("short"); return tk::Short;
+"synchronized" L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("synchronized"); return tk::Synchronized;
+"throws"       L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("throws"); return tk::Throws;
+"transient"    L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("transient"); return tk::Transient;
+"volatile"     L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("volatile"); return tk::Volatile;
 
-"let"          L C yylval->identifier_ = new CYIdentifier("let"); return tk::Let;
-"yield"        L C yylval->identifier_ = new CYIdentifier("yield"); return tk::Yield;
+"let"          L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("let"); return tk::Let;
+"yield"        L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("yield"); return tk::Yield;
 
-"each"         L C yylval->identifier_ = new CYIdentifier("each"); return tk::Each;
+"each"         L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("each"); return tk::Each;
 
-{IdentifierStart}{IdentifierPart}* yylval->identifier_ = new CYIdentifier(apr_pstrmemdup(yyextra->pool_, yytext, yyleng)); L C return tk::Identifier_;
+{IdentifierStart}{IdentifierPart}* yylval->identifier_ = new(yyextra->pool_) CYIdentifier(apr_pstrmemdup(yyextra->pool_, yytext, yyleng)); L C return tk::Identifier_;
 
-(\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?){Exponent}? yylval->number_ = new CYNumber(strtod(yytext, NULL)); L C return tk::NumericLiteral;
+(\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?){Exponent}? yylval->number_ = new(yyextra->pool_) CYNumber(strtod(yytext, NULL)); L C return tk::NumericLiteral;
 
-0[xX][0-9a-fA-F]+ L C yylval->number_ = new CYNumber(strtoull(yytext + 2, NULL, 16)); return tk::NumericLiteral;
+0[xX][0-9a-fA-F]+ L C yylval->number_ = new(yyextra->pool_) CYNumber(strtoull(yytext + 2, NULL, 16)); return tk::NumericLiteral;
 
-0[bB][0-1]+ L C yylval->number_ = new CYNumber(strtoull(yytext + 2, NULL, 2)); return tk::NumericLiteral;
+0[bB][0-1]+ L C yylval->number_ = new(yyextra->pool_) CYNumber(strtoull(yytext + 2, NULL, 2)); return tk::NumericLiteral;
 
 \"([^"\\\n]|{Escape})*\"|'([^'\\\n]|{Escape})*' L C {
     char *value(reinterpret_cast<char *>(apr_palloc(yyextra->pool_, yyleng)));
@@ -267,7 +267,7 @@ RegularExpressionStart_ {RegularExpressionBody}{RegularExpressionEnd_}
     }
 
     *local = '\0';
-    yylval->string_ = new CYString(value, local - value);
+    yylval->string_ = new(yyextra->pool_) CYString(value, local - value);
     return tk::StringLiteral;
 }
 
