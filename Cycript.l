@@ -96,8 +96,26 @@ RegularExpressionStart_ {RegularExpressionBody}{RegularExpressionEnd_}
 <res>{RegularExpressionStart_} E("/")
 <rer>{RegularExpressionRest_} E("/=")
 
-\/\/[^\n]* ;
-\/\*(\n|[^\*]|\*[^/])\*\/ if (memchr(yytext, '\n', yyleng) != NULL) N // XXX: supposedly I will be screwed on very very long multi-line comments and need to replace this with a manual lexer. http://websrv.cs.fsu.edu/~engelen/courses/COP5621/Pr2.pdf ; XXX: this rule doesn't work anyway, fucking A :(
+\/\/[^\n]* L
+
+\/\*(\n|[^\*]|\*[^/])*\*\/ {
+    // XXX: supposedly I will be screwed on very very long multi-line comments and need to replace this with a manual lexer. http://websrv.cs.fsu.edu/~engelen/courses/COP5621/Pr2.pdf
+
+    if (const char *nl = reinterpret_cast<const char *>(memchr(yytext, '\n', yyleng))) {
+        unsigned lines(0);
+        size_t left;
+
+        do {
+            ++lines;
+            left = yyleng - (nl - yytext) - 1;
+            nl = reinterpret_cast<const char *>(memchr(nl + 1, '\n', left));
+        } while (nl != NULL);
+
+        yylloc->end.lines(lines);
+        yylloc->end.columns(left);
+        yylloc->step();
+    } else L
+}
 
 "&"    L C return tk::Ampersand;
 "&&"   L C return tk::AmpersandAmpersand;
