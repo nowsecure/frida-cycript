@@ -72,9 +72,13 @@ struct CYThing {
 
 struct CYOutput {
     std::ostream &out_;
+    bool pretty_;
+    unsigned indent_;
 
     CYOutput(std::ostream &out) :
-        out_(out)
+        out_(out),
+        pretty_(false),
+        indent_(0)
     {
     }
 
@@ -92,6 +96,8 @@ struct CYOutput {
         rhs.Output(*this);
         return *this;
     }
+
+    void Indent();
 };
 
 struct CYPropertyName {
@@ -515,14 +521,7 @@ struct CYString :
         return value_;
     }
 
-    virtual const char *Word() const {
-        if (size_ == 0 || !WordStartRange_[value_[0]])
-            return NULL;
-        for (size_t i(1); i != size_; ++i)
-            if (!WordEndRange_[value_[i]])
-                return NULL;
-        return Value();
-    }
+    virtual const char *Word() const;
 
     virtual void Output(CYOutput &out, CYFlags flags) const;
     virtual void PropertyName(CYOutput &out) const;
@@ -604,7 +603,9 @@ struct CYFalse :
     {
     }
 
-    virtual bool Value() const;
+    virtual bool Value() const {
+        return false;
+    }
 };
 
 struct CYTrue :
@@ -616,7 +617,9 @@ struct CYTrue :
     {
     }
 
-    virtual bool Value() const;
+    virtual bool Value() const {
+        return true;
+    }
 };
 
 struct CYVariable :

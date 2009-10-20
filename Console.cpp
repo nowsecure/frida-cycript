@@ -95,6 +95,7 @@ static void sigint(int) {
 static bool bison_;
 #endif
 static bool strict_;
+static bool pretty_;
 
 void Setup(CYDriver &driver, cy::parser &parser) {
 #if YYDEBUG
@@ -103,6 +104,10 @@ void Setup(CYDriver &driver, cy::parser &parser) {
 #endif
     if (strict_)
         driver.strict_ = true;
+}
+
+void Setup(CYOutput &out) {
+    out.pretty_ = pretty_;
 }
 
 void Run(int socket, const char *data, size_t size, FILE *fout = NULL, bool expand = false) {
@@ -288,6 +293,7 @@ static void Console(int socket) {
             else {
                 std::ostringstream str;
                 CYOutput out(str);
+                Setup(out);
                 driver.program_->Multiple(out);
                 code = str.str();
             }
@@ -327,7 +333,7 @@ int main(int argc, char *argv[]) {
     pid_t pid(_not(pid_t));
     bool compile(false);
 
-    for (;;) switch (getopt(argc, argv, "cg:p:s")) {
+    for (;;) switch (getopt(argc, argv, "cg:n:p:s")) {
         case -1:
             goto getopt;
         case '?':
@@ -346,6 +352,16 @@ int main(int argc, char *argv[]) {
 #endif
             else {
                 fprintf(stderr, "invalid name for -g\n");
+                return 1;
+            }
+        break;
+
+        case 'n':
+            if (false);
+            else if (strcmp(optarg, "minify") == 0)
+                pretty_ = true;
+            else {
+                fprintf(stderr, "invalid name for -n\n");
                 return 1;
             }
         break;
@@ -448,6 +464,7 @@ int main(int argc, char *argv[]) {
             else {
                 std::ostringstream str;
                 CYOutput out(str);
+                Setup(out);
                 driver.program_->Multiple(out);
                 std::string code(str.str());
                 if (compile)
