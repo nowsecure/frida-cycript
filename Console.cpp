@@ -221,8 +221,16 @@ static void Console(int socket) {
         }
 
         command += line;
-        for (char *state, *token(apr_strtok(line, "\n", &state)); token != NULL; token = apr_strtok(NULL, "\n", &state))
-            lines.push_back(token);
+
+        char *begin(line), *end(line + strlen(line));
+        while (char *nl = reinterpret_cast<char *>(memchr(begin, '\n', end - begin))) {
+            *nl = '\0';
+            lines.push_back(begin);
+            begin = nl + 1;
+        }
+
+        lines.push_back(begin);
+
         free(line);
 
         std::string code;
