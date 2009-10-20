@@ -149,6 +149,27 @@ struct CYLabel :
     }
 };
 
+enum CYNeeded {
+    CYNever     = -1,
+    CYSometimes =  0,
+    CYAlways    =  1,
+};
+
+enum CYFlags {
+    CYNoFlags =      0,
+    CYNoBrace =      (1 << 0),
+    CYNoFunction =   (1 << 1),
+    CYNoLeader =     (1 << 2),
+    CYNoTrailer =    (1 << 3),
+    CYNoIn =         (1 << 4),
+    CYNoHyphen =     (1 << 5),
+    CYNoCall =       (1 << 6),
+    CYNoRightHand =  (1 << 7),
+    CYNoDangle =     (1 << 8),
+    CYNoTerminator = (1 << 9),
+    CYNoBF =         (CYNoBrace | CYNoFunction),
+};
+
 struct CYStatement :
     CYNext<CYStatement>
 {
@@ -167,10 +188,11 @@ struct CYStatement :
         return next_ != NULL;
     }
 
-    virtual void Show(CYOutput &out) const;
-    virtual void Output(CYOutput &out) const = 0;
-    virtual void Output(CYOutput &out, bool block) const;
-    virtual void Output_(CYOutput &out) const;
+    virtual void Single(CYOutput &out, CYFlags flags) const;
+    virtual void Multiple(CYOutput &out, CYFlags flags = CYNoFlags) const;
+
+  private:
+    virtual void Output(CYOutput &out, CYFlags flags) const = 0;
 };
 
 struct CYBlock :
@@ -187,7 +209,7 @@ struct CYBlock :
         return true;
     }
 
-    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 enum CYState {
@@ -240,17 +262,6 @@ class CYDriver {
     void Warning(const cy::location &location, const char *message);
 };
 
-enum CYFlags {
-    CYNoFlags =    0,
-    CYNoBrace =    (1 << 0),
-    CYNoFunction = (1 << 1),
-    CYNoLeader =   (1 << 2),
-    CYNoTrailer =  (1 << 3),
-    CYNoIn =       (1 << 4),
-    CYNoHyphen =   (1 << 5),
-    CYNoBF =       (CYNoBrace | CYNoFunction),
-};
-
 struct CYForInitialiser {
     virtual void For(CYOutput &out) const = 0;
 };
@@ -268,6 +279,10 @@ struct CYExpression :
     CYClassName
 {
     virtual unsigned Precedence() const = 0;
+
+    virtual bool RightHand() const {
+        return true;
+    }
 
     virtual void For(CYOutput &out) const;
     virtual void ForIn(CYOutput &out, CYFlags flags) const;
@@ -292,6 +307,11 @@ struct CYExpression :
 
 #define CYPrecedence(value) \
     virtual unsigned Precedence() const { \
+        return value; \
+    }
+
+#define CYRightHand(value) \
+    virtual bool RightHand() const { \
         return value; \
     }
 
@@ -407,12 +427,14 @@ struct CYLiteral :
     CYExpression
 {
     CYPrecedence(0)
+    CYRightHand(false)
 };
 
 struct CYMagic :
     CYExpression
 {
     CYPrecedence(0)
+    CYRightHand(false)
 };
 
 struct CYSelectorPart :
@@ -502,10 +524,6 @@ struct CYString :
         return Value();
     }
 
-    virtual void Output(CYOutput &out) const {
-        return Output(out, CYNoFlags);
-    }
-
     virtual void Output(CYOutput &out, CYFlags flags) const;
     virtual void PropertyName(CYOutput &out) const;
 };
@@ -523,10 +541,6 @@ struct CYNumber :
 
     double Value() const {
         return value_;
-    }
-
-    virtual void Output(CYOutput &out) const {
-        return Output(out, CYNoFlags);
     }
 
     virtual void Output(CYOutput &out, CYFlags flags) const;
@@ -616,6 +630,7 @@ struct CYVariable :
     }
 
     CYPrecedence(0)
+    CYRightHand(false)
 
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -808,7 +823,7 @@ struct CYVar :
     {
     }
 
-    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYLet :
@@ -823,7 +838,7 @@ struct CYLet :
     {
     }
 
-    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYField :
@@ -866,10 +881,7 @@ struct CYMessage :
     virtual void Output(CYOutput &out, bool replace) const;
 };
 
-struct CYClass :
-    CYExpression,
-    CYStatement
-{
+struct CYClass {
     CYClassName *name_;
     CYExpression *super_;
     CYField *fields_;
@@ -883,9 +895,32 @@ struct CYClass :
     {
     }
 
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYClassExpression :
+    CYClass,
+    CYExpression
+{
+    CYClassExpression(CYClassName *name, CYExpression *super, CYField *fields, CYMessage *messages) :
+        CYClass(name, super, fields, messages)
+    {
+    }
+
     CYPrecedence(0)
 
-    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYClassStatement :
+    CYClass,
+    CYStatement
+{
+    CYClassStatement(CYClassName *name, CYExpression *super, CYField *fields, CYMessage *messages) :
+        CYClass(name, super, fields, messages)
+    {
+    }
+
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
@@ -901,7 +936,7 @@ struct CYCategory :
     {
     }
 
-    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYFunctionParameter :
@@ -935,7 +970,7 @@ struct CYFor :
     {
     }
 
-    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYForIn :
@@ -952,7 +987,7 @@ struct CYForIn :
     {
     }
 
-    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYForEachIn :
@@ -969,7 +1004,7 @@ struct CYForEachIn :
     {
     }
 
-    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYProperty :
@@ -1059,6 +1094,7 @@ struct CYDirectMember :
     }
 
     CYPrecedence(1)
+    CYRightHand(false)
 
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -1072,6 +1108,7 @@ struct CYIndirectMember :
     }
 
     CYPrecedence(1)
+    CYRightHand(false)
 
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -1088,7 +1125,11 @@ struct CYNew :
     {
     }
 
-    CYPrecedence(1)
+    virtual unsigned Precedence() const {
+        return arguments_ == NULL ? 2 : 1;
+    }
+
+    CYRightHand(false)
 
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -1105,7 +1146,8 @@ struct CYCall :
     {
     }
 
-    CYPrecedence(2)
+    CYPrecedence(1)
+    CYRightHand(false)
 
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -1124,7 +1166,7 @@ struct CYIf :
     {
     }
 
-    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYDoWhile :
@@ -1139,7 +1181,7 @@ struct CYDoWhile :
     {
     }
 
-    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYWhile :
@@ -1154,38 +1196,49 @@ struct CYWhile :
     {
     }
 
-    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CYLambda :
-    CYExpression
-{
+struct CYFunction {
     CYIdentifier *name_;
     CYFunctionParameter *parameters_;
     CYStatement *body_;
 
-    CYLambda(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *body) :
+    CYFunction(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *body) :
         name_(name),
         parameters_(parameters),
         body_(body)
     {
     }
 
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYFunctionExpression :
+    CYFunction,
+    CYExpression
+{
+    CYFunctionExpression(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *body) :
+        CYFunction(name, parameters, body)
+    {
+    }
+
     CYPrecedence(0)
+    CYRightHand(false)
 
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CYFunction :
-    CYLambda,
+struct CYFunctionStatement :
+    CYFunction,
     CYStatement
 {
-    CYFunction(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *body) :
-        CYLambda(name, parameters, body)
+    CYFunctionStatement(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *body) :
+        CYFunction(name, parameters, body)
     {
     }
 
-    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYExpress :
@@ -1198,7 +1251,7 @@ struct CYExpress :
     {
     }
 
-    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYContinue :
@@ -1211,7 +1264,7 @@ struct CYContinue :
     {
     }
 
-    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYBreak :
@@ -1224,7 +1277,7 @@ struct CYBreak :
     {
     }
 
-    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYReturn :
@@ -1237,14 +1290,13 @@ struct CYReturn :
     {
     }
 
-    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYEmpty :
     CYStatement
 {
-    virtual void Output(CYOutput &out) const;
-    virtual void Output(CYOutput &out, bool block) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYFinally {
@@ -1272,7 +1324,7 @@ struct CYTry :
     {
     }
 
-    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYThrow :
@@ -1285,7 +1337,7 @@ struct CYThrow :
     {
     }
 
-    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYWith :
@@ -1300,7 +1352,7 @@ struct CYWith :
     {
     }
 
-    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYSwitch :
@@ -1315,7 +1367,7 @@ struct CYSwitch :
     {
     }
 
-    virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYCondition :

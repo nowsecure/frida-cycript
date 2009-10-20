@@ -280,7 +280,7 @@ static void Console(int socket) {
             else {
                 std::ostringstream str;
                 CYOutput out(str);
-                driver.program_->Show(out);
+                driver.program_->Multiple(out);
                 code = str.str();
             }
         }
@@ -440,7 +440,7 @@ int main(int argc, char *argv[]) {
             else {
                 std::ostringstream str;
                 CYOutput out(str);
-                driver.program_->Show(out);
+                driver.program_->Multiple(out);
                 std::string code(str.str());
                 if (compile)
                     std::cout << code;

@@ -114,6 +114,8 @@ RegularExpressionStart_ {RegularExpressionBody}{RegularExpressionEnd_}
         yylloc->end.lines(lines);
         yylloc->end.columns(left);
         yylloc->step();
+
+        N
     } else L
 }
 

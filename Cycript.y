@@ -59,7 +59,6 @@ typedef struct {
         CYBoolean *boolean_;
         CYClause *clause_;
         CYCatch *catch_;
-        CYClass *class_;
         CYClassName *className_;
         CYComprehension *comprehension_;
         CYCompound *compound_;
@@ -296,11 +295,12 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <clause_> CaseClausesOpt
 %type <catch_> CatchOpt
 %type <statement_> CategoryStatement
-%type <class_> ClassDefinition
+%type <expression_> ClassExpression
 %type <message_> ClassMessageDeclaration
 %type <message_> ClassMessageDeclarationListOpt
 %type <className_> ClassName
 %type <className_> ClassNameOpt
+%type <statement_> ClassStatement
 %type <expression_> ClassSuperOpt
 %type <field_> ClassFieldList
 %type <comprehension_> ComprehensionList
@@ -1268,11 +1268,11 @@ FinallyOpt
 
 /* 13 Function Definition {{{ */
 FunctionDeclaration
-    : "function" Identifier "(" FormalParameterList ")" "{" FunctionBody "}" { $$ = new(driver.pool_) CYFunction($2, $4, $7); }
+    : "function" Identifier "(" FormalParameterList ")" "{" FunctionBody "}" { $$ = new(driver.pool_) CYFunctionStatement($2, $4, $7); }
     ;
 
 FunctionExpression
-    : "function" IdentifierOpt "(" FormalParameterList ")" "{" FunctionBody "}" { $$ = new(driver.pool_) CYLambda($2, $4, $7); }
+    : "function" IdentifierOpt "(" FormalParameterList ")" "{" FunctionBody "}" { $$ = new(driver.pool_) CYFunctionExpression($2, $4, $7); }
     ;
 
 FormalParameterList_
@@ -1362,8 +1362,12 @@ ClassNameOpt
     | { $$ = NULL; }
     ;
 
-ClassDefinition
-    : "@class" ClassNameOpt ClassSuperOpt ClassFieldList ClassMessageDeclarationListOpt "@end" { $$ = new(driver.pool_) CYClass($2, $3, $4, $5); }
+ClassExpression
+    : "@class" ClassNameOpt ClassSuperOpt ClassFieldList ClassMessageDeclarationListOpt "@end" { $$ = new(driver.pool_) CYClassExpression($2, $3, $4, $5); }
+    ;
+
+ClassStatement
+    : "@class" ClassName ClassSuperOpt ClassFieldList ClassMessageDeclarationListOpt "@end" { $$ = new(driver.pool_) CYClassStatement($2, $3, $4, $5); }
     ;
 
 CategoryStatement
@@ -1371,11 +1375,11 @@ CategoryStatement
     ;
 
 PrimaryExpression
-    : ClassDefinition { $$ = $1; }
+    : ClassExpression { $$ = $1; }
     ;
 
 Statement_
-    : ClassDefinition { $$ = $1; }
+    : ClassStatement { $$ = $1; }
     | CategoryStatement { $$ = $1; }
     ;
 /* }}} */
