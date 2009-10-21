@@ -67,6 +67,10 @@ CYOutput &CYOutput::operator <<(char rhs) {
             mode_ = Terminated;
             goto done;
         }
+    } else if (rhs == '+') {
+        if (mode_ == NoPlus)
+            out_ << ' ';
+        mode_ = NoPlus;
     } else if (rhs == '-') {
         if (mode_ == NoHyphen)
             out_ << ' ';
@@ -92,6 +96,7 @@ CYOutput &CYOutput::operator <<(const char *rhs) {
     if (mode_ == Terminated)
         out_ << ';';
     else if (
+        mode_ == NoPlus && *rhs == '+' ||
         mode_ == NoHyphen && *rhs == '-' ||
         mode_ == NoLetter && WordEndRange_[*rhs]
     )
@@ -612,9 +617,11 @@ void CYObject::Output(CYOutput &out, CYFlags flags) const {
     bool protect((flags & CYNoBrace) != 0);
     if (protect)
         out << '(';
-    out << '{';
+    out << '{' << '\n';
+    ++out.indent_;
     out << property_;
-    out << '}';
+    --out.indent_;
+    out << '\t' << '}';
     if (protect)
         out << ')';
 }
@@ -633,11 +640,14 @@ void CYPrefix::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYProperty::Output(CYOutput &out) const {
+    out << '\t';
     name_->PropertyName(out);
     out << ':' << ' ';
     value_->Output(out, CYPA, CYNoFlags);
     if (next_ != NULL)
-        out << ',' << ' ' << *next_;
+        out << ',' << '\n' << *next_;
+    else
+        out << '\n';
 }
 
 void CYRegEx::Output(CYOutput &out, CYFlags flags) const {
@@ -645,7 +655,10 @@ void CYRegEx::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYReturn::Output(CYOutput &out, CYFlags flags) const {
-    out << "return" << value_ << ';';
+    out << "return";
+    if (value_ != NULL)
+        out << ' ' << *value_;
+    out << ';';
 }
 
 void CYSelector::Output(CYOutput &out, CYFlags flags) const {
@@ -768,6 +781,30 @@ void CYString::PropertyName(CYOutput &out) const {
         out << *this;
 }
 
+static const char *Reserved_[] = {
+    "false", "null", "true",
+
+    "break", "case", "catch", "continue", "default",
+    "delete", "do", "else", "finally", "for", "function",
+    "if", "in", "instanceof", "new", "return", "switch",
+    "this", "throw", "try", "typeof", "var", "void",
+    "while", "with",
+
+    "debugger", "const",
+
+    "class", "enum", "export", "extends", "import", "super",
+
+    "abstract", "boolean", "byte", "char", "double", "final",
+    "float", "goto", "int", "long", "native", "short",
+    "synchronized", "throws", "transient", "volatile",
+
+    "let", "yield",
+
+    "each",
+
+    NULL
+};
+
 const char *CYString::Word() const {
     if (size_ == 0 || !WordStartRange_[value_[0]])
         return NULL;
@@ -775,9 +812,7 @@ const char *CYString::Word() const {
         if (!WordEndRange_[value_[i]])
             return NULL;
     const char *value(Value());
-    // XXX: we should probably include the full ECMAScript3+5 list.
-    static const char *reserveds[] = {"class", "const", "enum", "export", "extends", "import", "super", NULL};
-    for (const char **reserved(reserveds); *reserved != NULL; ++reserved)
+    for (const char **reserved(Reserved_); *reserved != NULL; ++reserved)
         if (strcmp(*reserved, value) == 0)
             return NULL;
     return value;
@@ -794,7 +829,10 @@ void CYThis::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYThrow::Output(CYOutput &out, CYFlags flags) const {
-    out << "throw" << value_ << ';';
+    out << "throw";
+    if (value_ != NULL)
+        out << ' ' << *value_;
+    out << ';';
 }
 
 void CYTry::Output(CYOutput &out, CYFlags flags) const {

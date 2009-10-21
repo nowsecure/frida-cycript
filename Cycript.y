@@ -757,7 +757,7 @@ UnaryExpression_
     | "\n++" UnaryExpression { $$ = new(driver.pool_) CYPreIncrement($2); }
     | "--" UnaryExpression { $$ = new(driver.pool_) CYPreDecrement($2); }
     | "\n--" UnaryExpression { $$ = new(driver.pool_) CYPreDecrement($2); }
-    | "+" UnaryExpression { $$ = $2; }
+    | "+" UnaryExpression { $$ = new(driver.pool_) CYAffirm($2); }
     | "-" UnaryExpression { $$ = new(driver.pool_) CYNegate($2); }
     | "~" UnaryExpression { $$ = new(driver.pool_) CYBitwiseNot($2); }
     | "!" UnaryExpression { $$ = new(driver.pool_) CYLogicalNot($2); }

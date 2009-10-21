@@ -78,6 +78,7 @@ struct CYOutput {
     enum {
         NoMode,
         NoLetter,
+        NoPlus,
         NoHyphen,
         Terminated
     } mode_;
@@ -1510,6 +1511,7 @@ CYPrefix_(true, "void", Void)
 CYPrefix_(true, "typeof", TypeOf)
 CYPrefix_(false, "++", PreIncrement)
 CYPrefix_(false, "--", PreDecrement)
+CYPrefix_(false, "+", Affirm)
 CYPrefix_(false, "-", Negate)
 CYPrefix_(false, "~", BitwiseNot)
 CYPrefix_(false, "!", LogicalNot)

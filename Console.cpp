@@ -470,7 +470,7 @@ int main(int argc, char *argv[]) {
                 if (compile)
                     std::cout << code;
                 else
-                    Run(socket, code);
+                    Run(socket, code, stdout);
             }
     }
 
