@@ -119,6 +119,8 @@ RegularExpressionStart_ {RegularExpressionBody}{RegularExpressionEnd_}
     } else L
 }
 
+"@"    L C return tk::At;
+
 "&"    L C return tk::Ampersand;
 "&&"   L C return tk::AmpersandAmpersand;
 "&="   L C return tk::AmpersandEqual;

@@ -116,6 +116,8 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %parse-param { CYDriver &driver }
 %lex-param { void *scanner }
 
+%token At "@"
+
 %token Ampersand "&"
 %token AmpersandAmpersand "&&"
 %token AmpersandEqual "&="
