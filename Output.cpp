@@ -549,7 +549,7 @@ void CYIndirectMember::Output(CYOutput &out, CYFlags flags) const {
 
 void CYInfix::Output(CYOutput &out, CYFlags flags) const {
     const char *name(Operator());
-    bool protect((flags & CYNoIn) != 0 && strcmp(name, "in"));
+    bool protect((flags & CYNoIn) != 0 && strcmp(name, "in") == 0);
     if (protect)
         out << '(';
     CYFlags left(protect ? CYNoFlags : CYLeft(flags));
