@@ -91,6 +91,7 @@ struct CYOutput {
     }
 
     void Check(char value);
+    void Terminate();
 
     CYOutput &operator <<(char rhs);
     CYOutput &operator <<(const char *rhs);
@@ -105,9 +106,6 @@ struct CYOutput {
         rhs.Output(*this);
         return *this;
     }
-
-    void Indent();
-    void Space();
 };
 
 struct CYPropertyName {
@@ -196,12 +194,8 @@ struct CYStatement :
         labels_ = new CYLabel(identifier, labels_);
     }
 
-    virtual bool IsBlock() const {
-        return next_ != NULL;
-    }
-
-    virtual void Single(CYOutput &out, CYFlags flags) const;
-    virtual void Multiple(CYOutput &out, CYFlags flags = CYNoFlags) const;
+    bool Single(CYOutput &out, CYFlags flags) const;
+    void Multiple(CYOutput &out, CYFlags flags = CYNoFlags) const;
 
   private:
     virtual void Output(CYOutput &out, CYFlags flags) const = 0;
@@ -215,10 +209,6 @@ struct CYBlock :
     CYBlock(CYStatement *statements) :
         statements_(statements)
     {
-    }
-
-    virtual bool IsBlock() const {
-        return true;
     }
 
     virtual void Output(CYOutput &out, CYFlags flags) const;
