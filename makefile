@@ -95,7 +95,7 @@ $(deb): $(all)
 	mkdir -p package/DEBIAN
 	sed -e 's/#/$(svn)/' control >package/DEBIAN/control
 	mkdir -p package/System/Library/LaunchDaemons
-	cp -a com.saurik.Cyrver.plist package/System/Library/LaunchDaemons
+	#cp -a com.saurik.Cyrver.plist package/System/Library/LaunchDaemons
 	mkdir -p package/Library/MobileSubstrate/DynamicLibraries
 	if [[ -e Settings.plist ]]; then \
 	    mkdir -p package/Library/PreferenceLoader/Preferences; \
