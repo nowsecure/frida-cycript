@@ -261,7 +261,7 @@ static void Console(int socket) {
                             std::cerr << lines[begin.line - 1] << std::endl;
                         }
 
-                        std::cerr << "  | ";
+                        std::cerr << "....";
                         for (size_t i(0); i != begin.column - 1; ++i)
                             std::cerr << '.';
                         if (begin.line != end.line || begin.column == end.column)
