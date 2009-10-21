@@ -23,7 +23,7 @@ _finline CYFlags &operator |=(CYFlags &lhs, CYFlags rhs) {
 }
 
 _finline CYFlags CYLeft(CYFlags flags) {
-    return flags;
+    return flags & ~CYNoDangle;
 }
 
 _finline CYFlags CYRight(CYFlags flags) {
@@ -31,7 +31,7 @@ _finline CYFlags CYRight(CYFlags flags) {
 }
 
 _finline CYFlags CYCenter(CYFlags flags) {
-    return CYRight(flags);
+    return CYLeft(CYRight(flags));
 }
 
 #define CYPA 16
@@ -344,7 +344,7 @@ void CYDirectMember::Output(CYOutput &out, CYFlags flags) const {
 
 void CYDoWhile::Output(CYOutput &out, CYFlags flags) const {
     out << "do";
-    code_->Single(out, CYNoFlags);
+    code_->Single(out, CYCenter(flags));
     out << "while" << ' ' << '(' << *test_ << ')';
 }
 
@@ -420,7 +420,7 @@ void CYFor::Output(CYOutput &out, CYFlags flags) const {
     out.Terminate();
     out << increment_;
     out << ')';
-    code_->Single(out, CYNoFlags);
+    code_->Single(out, CYRight(flags));
 }
 
 void CYForEachIn::Output(CYOutput &out, CYFlags flags) const {
@@ -505,9 +505,12 @@ void CYIf::Output(CYOutput &out, CYFlags flags) const {
     out << "if" << ' ' << '(' << *test_ << ')';
 
     CYFlags right(protect ? CYNoFlags : CYRight(flags));
+
     CYFlags jacks(CYNoDangle);
     if (false_ == NULL)
         jacks |= right;
+    else
+        jacks |= protect ? CYNoFlags : CYCenter(flags);
 
     bool single(true_->Single(out, jacks));
 
