@@ -75,20 +75,29 @@ struct CYOutput {
     bool pretty_;
     unsigned indent_;
 
+    enum {
+        NoMode,
+        NoLetter,
+        NoHyphen,
+        Terminated
+    } mode_;
+
     CYOutput(std::ostream &out) :
         out_(out),
         pretty_(false),
-        indent_(0)
+        indent_(0),
+        mode_(NoMode)
     {
     }
 
-    _finline CYOutput &operator <<(char rhs) {
-        out_ << rhs;
-        return *this;
-    }
+    void Check(char value);
 
-    _finline CYOutput &operator <<(const char *rhs) {
-        out_ << rhs;
+    CYOutput &operator <<(char rhs);
+    CYOutput &operator <<(const char *rhs);
+
+    _finline CYOutput &operator <<(const CYThing *rhs) {
+        if (rhs != NULL)
+            rhs->Output(*this);
         return *this;
     }
 
@@ -98,6 +107,7 @@ struct CYOutput {
     }
 
     void Indent();
+    void Space();
 };
 
 struct CYPropertyName {
@@ -165,14 +175,10 @@ enum CYFlags {
     CYNoFlags =      0,
     CYNoBrace =      (1 << 0),
     CYNoFunction =   (1 << 1),
-    CYNoLeader =     (1 << 2),
-    CYNoTrailer =    (1 << 3),
-    CYNoIn =         (1 << 4),
-    CYNoHyphen =     (1 << 5),
-    CYNoCall =       (1 << 6),
-    CYNoRightHand =  (1 << 7),
-    CYNoDangle =     (1 << 8),
-    CYNoTerminator = (1 << 9),
+    CYNoIn =         (1 << 2),
+    CYNoCall =       (1 << 3),
+    CYNoRightHand =  (1 << 4),
+    CYNoDangle =     (1 << 5),
     CYNoBF =         (CYNoBrace | CYNoFunction),
 };
 
@@ -282,7 +288,8 @@ struct CYExpression :
     CYNext<CYExpression>,
     CYForInitialiser,
     CYForInInitialiser,
-    CYClassName
+    CYClassName,
+    CYThing
 {
     virtual unsigned Precedence() const = 0;
 
@@ -296,6 +303,7 @@ struct CYExpression :
     virtual const char *ForEachIn() const;
     virtual void ForEachIn(CYOutput &out) const;
 
+    virtual void Output(CYOutput &out) const;
     virtual void Output(CYOutput &out, CYFlags flags) const = 0;
     void Output(CYOutput &out, unsigned precedence, CYFlags flags) const;
 
@@ -345,7 +353,8 @@ struct CYCompound :
 };
 
 struct CYComprehension :
-    CYNext<CYComprehension>
+    CYNext<CYComprehension>,
+    CYThing
 {
     void Output(CYOutput &out) const;
     virtual const char *Name() const = 0;
@@ -444,7 +453,8 @@ struct CYMagic :
 };
 
 struct CYSelectorPart :
-    CYNext<CYSelectorPart>
+    CYNext<CYSelectorPart>,
+    CYThing
 {
     CYWord *name_;
     bool value_;
@@ -713,7 +723,8 @@ struct CYAssignment :
 };
 
 struct CYArgument :
-    CYNext<CYArgument>
+    CYNext<CYArgument>,
+    CYThing
 {
     CYWord *name_;
     CYExpression *value_;
@@ -754,7 +765,8 @@ struct CYClause :
 };
 
 struct CYElement :
-    CYNext<CYElement>
+    CYNext<CYElement>,
+    CYThing
 {
     CYExpression *value_;
 
@@ -802,7 +814,8 @@ struct CYDeclaration :
 
 struct CYDeclarations :
     CYNext<CYDeclarations>,
-    CYForInitialiser
+    CYForInitialiser,
+    CYThing
 {
     CYDeclaration *declaration_;
 
@@ -813,6 +826,8 @@ struct CYDeclarations :
     }
 
     virtual void For(CYOutput &out) const;
+
+    virtual void Output(CYOutput &out) const;
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
@@ -1011,7 +1026,8 @@ struct CYForEachIn :
 };
 
 struct CYProperty :
-    CYNext<CYProperty>
+    CYNext<CYProperty>,
+    CYThing
 {
     CYPropertyName *name_;
     CYExpression *value_;
@@ -1302,7 +1318,9 @@ struct CYEmpty :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CYFinally {
+struct CYFinally :
+    CYThing
+{
     CYStatement *code_;
 
     CYFinally(CYStatement *code) :
