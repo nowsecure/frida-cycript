@@ -4,7 +4,7 @@ all += Cycript.$(dll) #cyrver
 
 arch := iphoneos-arm
 ldid := ldid -S
-link += -framework UIKit
+console += -framework UIKit
 
 Cycript.$(dll): Connector.o
 	$(target)g++ $(flags) -dynamiclib -o $@ $(filter %.o,$^) \

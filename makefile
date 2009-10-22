@@ -29,8 +29,8 @@ filters := C
 ldid := echo
 dll := so
 apr := $(shell apr-1-config --link-ld)
-library := $(apr) -lffi #-lsubstrate
-link := $(apr) -lreadline
+library := $(apr) -lffi
+console := $(apr) -lreadline
 
 uname_s := $(shell uname -s)
 uname_p := $(shell uname -p)
@@ -110,11 +110,11 @@ lex.cy.o: lex.cy.c Cycript.tab.hh Parser.hpp Pooling.hpp
 	$(target)g++ $(flags) -c -o $@ $<
 
 libcycript.$(dll): $(code)
-	$(target)g++ $(flags) -shared -dynamiclib -o $@ $(filter %.o,$^) $(library)
+	$(target)g++ $(flags) -shared -dynamiclib -o $@ $(filter %.o,$^) $(library) $(link)
 	$(ldid) -S $@
 
 cycript: Console.o libcycript.$(dll)
-	$(target)g++ $(flags) -o $@ $(filter %.o,$^) -L. -lcycript $(link)
+	$(target)g++ $(flags) -o $@ $(filter %.o,$^) -L. -lcycript $(console) $(link)
 	$(ldid) -S cycript
 
 package: $(deb)
