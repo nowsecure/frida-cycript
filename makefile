@@ -13,9 +13,9 @@ svn := $(shell svnversion)
 all:
 all := libcycript.plist cycript
 
-dpkg_architecture := $(shell dpkg-architecture &>/dev/null)
+dpkg_architecture := $(shell which dpkg-architecture 2>/dev/null)
 ifneq ($(dpkg_architecture),)
-arch := $(shell $(dpkg_architecture) -qDEB_HOST_ARCH)
+arch := $(shell $(dpkg_architecture) -qDEB_HOST_ARCH 2>/dev/null)
 endif
 
 header := Cycript.tab.hh Parser.hpp Pooling.hpp cycript.hpp
@@ -111,7 +111,7 @@ libcycript.$(dll): ffi_type.o parse.o Replace.o Output.o Cycript.tab.o lex.cy.o 
 	    -framework JavaScriptCore -framework WebCore
 	ldid -S $@
 
-cycript: Console.o libcycript.dylib
+cycript: Console.o libcycript.$(dll)
 	$(target)g++ $(flags) -o $@ $(filter %.o,$^) \
 	    -lobjc -lapr-1 -lreadline \
 	    -L. -lcycript \
