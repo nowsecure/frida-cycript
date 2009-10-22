@@ -73,7 +73,7 @@ Cycript.dylib: Connector.o
 	    -framework CoreFoundation
 	ldid -S $@
 
-libcycript.dylib: ffi_type.o parse.o Output.o Cycript.tab.o lex.cy.o Library.o
+libcycript.dylib: ffi_type.o parse.o Replace.o Output.o Cycript.tab.o lex.cy.o Library.o
 	$(target)g++ $(flags) -dynamiclib -o $@ $(filter %.o,$^) \
 	    -install_name /usr/lib/libcycript.dylib \
 	    -lobjc -lapr-1 -lffi -lsubstrate \

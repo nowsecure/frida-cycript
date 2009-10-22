@@ -111,20 +111,6 @@ CYOutput &CYOutput::operator <<(const char *rhs) {
     return *this;
 }
 
-void OutputBody(CYOutput &out, CYStatement *body) {
-    out << ' ' << '{' << '\n';
-    ++out.indent_;
-    if (body != NULL)
-        body->Multiple(out);
-    --out.indent_;
-    out << '\t' << '}';
-}
-
-void CYAddressOf::Output(CYOutput &out, CYFlags flags) const {
-    rhs_->Output(out, 1, CYLeft(flags));
-    out << ".$cya()";
-}
-
 void CYArgument::Output(CYOutput &out) const {
     if (name_ != NULL) {
         out << *name_;
@@ -168,8 +154,22 @@ void CYAssignment::Output(CYOutput &out, CYFlags flags) const {
     rhs_->Output(out, Precedence(), CYRight(flags));
 }
 
+void CYBlock::Output(CYOutput &out) const {
+    out << '{' << '\n';
+    ++out.indent_;
+    if (statements_ != NULL)
+        statements_->Multiple(out);
+    --out.indent_;
+    out << '\t' << '}';
+}
+
 void CYBlock::Output(CYOutput &out, CYFlags flags) const {
-    statements_->Single(out, flags);
+    if (statements_ == NULL)
+        out.Terminate();
+    else if (statements_->next_ == NULL)
+        statements_->Single(out, flags);
+    else
+        Output(out);
 }
 
 void CYBoolean::Output(CYOutput &out, CYFlags flags) const {
@@ -194,10 +194,7 @@ void CYCall::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYCatch::Output(CYOutput &out) const {
-    out << "catch" << ' ' << '(' << *name_ << ')' << ' ' << '{';
-    if (code_ != NULL)
-        code_->Multiple(out);
-    out << '}';
+    out << ' ' << "catch" << ' ' << '(' << *name_ << ')' << ' ' << code_;
 }
 
 void CYCategory::Output(CYOutput &out, CYFlags flags) const {
@@ -288,8 +285,8 @@ void CYClause::Output(CYOutput &out) const {
     else
         out << "default";
     out << ':' << '\n';
-    if (code_ != NULL)
-        code_->Multiple(out, CYNoFlags);
+    if (statements_ != NULL)
+        statements_->Multiple(out);
     out << next_;
 }
 
@@ -410,10 +407,7 @@ void CYField::Output(CYOutput &out) const {
 }
 
 void CYFinally::Output(CYOutput &out) const {
-    out << "finally" << ' ' << '{';
-    if (code_ != NULL)
-        code_->Multiple(out);
-    out << '}';
+    out << ' ' << "finally" << ' ' << code_;
 }
 
 void CYFor::Output(CYOutput &out, CYFlags flags) const {
@@ -481,7 +475,7 @@ void CYFunction::Output(CYOutput &out, CYFlags flags) const {
     if (name_ != NULL)
         out << ' ' << *name_;
     out << '(' << parameters_ << ')';
-    OutputBody(out, body_);
+    out << ' ' << code_;
     if (protect)
         out << ')';
 }
@@ -517,10 +511,9 @@ void CYIf::Output(CYOutput &out, CYFlags flags) const {
     else
         jacks |= protect ? CYNoFlags : CYCenter(flags);
 
-    bool single(true_->Single(out, jacks));
+    true_->Single(out, jacks);
 
     if (false_ != NULL) {
-        out << (single ? '\t' : ' ');
         out << "else";
         false_->Single(out, right);
     }
@@ -533,18 +526,12 @@ void CYIfComprehension::Begin_(CYOutput &out) const {
     out << "if" << '(' << *test_ << ')';
 }
 
-void CYIndirect::Output(CYOutput &out, CYFlags flags) const {
-    rhs_->Output(out, 1, CYLeft(flags));
-    out << ".$cyi";
-}
-
 void CYIndirectMember::Output(CYOutput &out, CYFlags flags) const {
     object_->Output(out, Precedence(), CYLeft(flags));
-    out << ".$cyi";
     if (const char *word = property_->Word())
-        out << '.' << word;
+        out << "->" << word;
     else
-        out << '[' << *property_ << ']';
+        out << "->" << '[' << *property_ << ']';
 }
 
 void CYInfix::Output(CYOutput &out, CYFlags flags) const {
@@ -561,33 +548,35 @@ void CYInfix::Output(CYOutput &out, CYFlags flags) const {
         out << ')';
 }
 
+void CYLabel::Output(CYOutput &out, CYFlags flags) const {
+    out << *name_ << ':' << ' ';
+    statement_->Single(out, CYRight(flags));
+}
+
 void CYLet::Output(CYOutput &out, CYFlags flags) const {
-    out << "let" << ' ' << '(' << *declarations_ << ')' << ' ' << '{';
-    if (statements_ != NULL)
-        statements_->Multiple(out);
-    out << '}';
+    out << "let" << ' ' << '(' << *declarations_ << ')' << ' ' << code_;
 }
 
 void CYMessage::Output(CYOutput &out, bool replace) const {
     if (next_ != NULL)
         next_->Output(out, replace);
     out << "$cyn=new Selector(\"";
-    for (CYMessageParameter *parameter(parameter_); parameter != NULL; parameter = parameter->next_)
+    for (CYMessageParameter *parameter(parameters_); parameter != NULL; parameter = parameter->next_)
         if (parameter->tag_ != NULL) {
             out << *parameter->tag_;
             if (parameter->name_ != NULL)
                 out << ':';
         }
     out << "\");";
-    out << "$cyt=$cyn.type($cy" << (instance_ ? 's' : 'p') << ");";
-    out << "class_" << (replace ? "replace" : "add") << "Method($cy" << (instance_ ? 'c' : 'm') << ",$cyn,";
+    out << "$cyt=$cyn.type($cy" << (instance_ ? 's' : 'p') << ')' << ';';
+    out << (replace ? "class_replaceMethod" : "class_addMethod") << '(' << (instance_ ? "$cyc" : "$cym") << ',' << "$cyn" << ',';
     out << "new Functor(function(self,_cmd";
-    for (CYMessageParameter *parameter(parameter_); parameter != NULL; parameter = parameter->next_)
+    for (CYMessageParameter *parameter(parameters_); parameter != NULL; parameter = parameter->next_)
         if (parameter->name_ != NULL)
             out << ',' << *parameter->name_;
     out << "){return function(){";
-    if (body_ != NULL)
-        body_->Multiple(out);
+    if (statements_ != NULL)
+        statements_->Multiple(out);
     out << "}.call(self);},$cyt),$cyt);";
 }
 
@@ -619,7 +608,7 @@ void CYObject::Output(CYOutput &out, CYFlags flags) const {
         out << '(';
     out << '{' << '\n';
     ++out.indent_;
-    out << property_;
+    out << properties_;
     --out.indent_;
     out << '\t' << '}';
     if (protect)
@@ -637,6 +626,11 @@ void CYPrefix::Output(CYOutput &out, CYFlags flags) const {
     if (Alphabetic())
         out << ' ';
     rhs_->Output(out, Precedence(), CYRight(flags));
+}
+
+void CYProgram::Output(CYOutput &out) const {
+    if (statements_ != NULL)
+        statements_->Multiple(out);
 }
 
 void CYProperty::Output(CYOutput &out) const {
@@ -662,10 +656,7 @@ void CYReturn::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYSelector::Output(CYOutput &out, CYFlags flags) const {
-    out << "new Selector(\"";
-    if (name_ != NULL)
-        name_->Output(out);
-    out << "\")";
+    out << "@selector" << '(' << name_ << ')';
 }
 
 void CYSelectorPart::Output(CYOutput &out) const {
@@ -676,9 +667,10 @@ void CYSelectorPart::Output(CYOutput &out) const {
 }
 
 void CYSend::Output(CYOutput &out, CYFlags flags) const {
-    out << "objc_msgSend(";
+    out << '[';
     self_->Output(out, CYPA, CYNoFlags);
-    out << ',';
+    out << ']';
+
     std::ostringstream name;
     for (CYArgument *argument(arguments_); argument != NULL; argument = argument->next_)
         if (argument->name_ != NULL) {
@@ -686,6 +678,7 @@ void CYSend::Output(CYOutput &out, CYFlags flags) const {
             if (argument->value_ != NULL)
                 name << ':';
         }
+
     out.out_ << reinterpret_cast<void *>(sel_registerName(name.str().c_str()));
     for (CYArgument *argument(arguments_); argument != NULL; argument = argument->next_)
         if (argument->value_ != NULL) {
@@ -707,25 +700,14 @@ void CYStatement::Multiple(CYOutput &out, CYFlags flags) const {
     }
 }
 
-bool CYStatement::Single(CYOutput &out, CYFlags flags) const {
-    if (next_ != NULL) {
-        out << ' ' << '{' << '\n';
-        ++out.indent_;
-        Multiple(out);
-        --out.indent_;
-        out << '\t' << '}';
-        return false;
-    } else {
-        for (CYLabel *label(labels_); label != NULL; label = label->next_)
-            out << ' ' << *label->name_ << ':';
-        out << '\n';
-        ++out.indent_;
-        out << '\t';
-        Output(out, flags);
-        out << '\n';
-        --out.indent_;
-        return true;
-    }
+void CYStatement::Single(CYOutput &out, CYFlags flags) const {
+    _assert(next_ == NULL);
+    out << '\n';
+    ++out.indent_;
+    out << '\t';
+    Output(out, flags);
+    out << '\n';
+    --out.indent_;
 }
 
 void CYString::Output(CYOutput &out, CYFlags flags) const {
@@ -836,12 +818,7 @@ void CYThrow::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYTry::Output(CYOutput &out, CYFlags flags) const {
-    out << "try" << ' ' << '{';
-    if (code_ != NULL)
-        code_->Multiple(out);
-    out << '}';
-    out << catch_;
-    out << finally_;
+    out << "try" << ' ' << code_ << catch_ << finally_;
 }
 
 void CYVar::Output(CYOutput &out, CYFlags flags) const {

@@ -3477,7 +3477,7 @@ struct CYClient :
             } else {
                 std::ostringstream str;
                 CYOutput out(str);
-                driver.program_->Multiple(out);
+                out << *driver.program_;
                 std::string code(str.str());
                 CYExecute_ execute = {pool, code.c_str()};
                 [client performSelectorOnMainThread:@selector(execute:) withObject:[NSValue valueWithPointer:&execute] waitUntilDone:YES];

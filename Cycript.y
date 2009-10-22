@@ -80,6 +80,7 @@ typedef struct {
         CYMessageParameter *messageParameter_;
         CYNull *null_;
         CYNumber *number_;
+        CYProgram *program_;
         CYProperty *property_;
         CYPropertyName *propertyName_;
         CYSelectorPart *selector_;
@@ -1244,7 +1245,7 @@ DefaultClause
 /* }}} */
 /* 12.12 Labelled Statements {{{ */
 LabelledStatement
-    : Identifier ":" Statement { $3->AddLabel($1); $$ = $3; }
+    : Identifier ":" Statement { $$ = new(driver.pool_) CYLabel($1, $3); }
     ;
 /* }}} */
 /* 12.13 The throw Statement {{{ */
@@ -1293,7 +1294,7 @@ FunctionBody
 /* }}} */
 /* 14 Program {{{ */
 Program
-    : SourceElements { driver.program_ = $1; }
+    : SourceElements { driver.program_ = new(driver.pool_) CYProgram($1); }
     ;
 
 SourceElements
@@ -1438,7 +1439,8 @@ UnaryExpression_
     ;
 
 MemberAccess
-    : "->" Identifier { $$ = new(driver.pool_) CYIndirectMember(NULL, new(driver.pool_) CYString($2)); }
+    : "->" "[" Expression "]" { $$ = new(driver.pool_) CYIndirectMember(NULL, $3); }
+    | "->" Identifier { $$ = new(driver.pool_) CYIndirectMember(NULL, new(driver.pool_) CYString($2)); }
     ;
 /* }}} */
 /* ECMAScript5: Object Literal Trailing Comma {{{ */

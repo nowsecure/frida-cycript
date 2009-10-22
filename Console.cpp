@@ -106,8 +106,11 @@ void Setup(CYDriver &driver, cy::parser &parser) {
         driver.strict_ = true;
 }
 
-void Setup(CYOutput &out) {
+void Setup(CYOutput &out, CYDriver &driver) {
     out.pretty_ = pretty_;
+
+    CYContext context(driver.pool_);
+    driver.program_->Replace(context);
 }
 
 void Run(int socket, const char *data, size_t size, FILE *fout = NULL, bool expand = false) {
@@ -293,8 +296,8 @@ static void Console(int socket) {
             else {
                 std::ostringstream str;
                 CYOutput out(str);
-                Setup(out);
-                driver.program_->Multiple(out);
+                Setup(out, driver);
+                out << *driver.program_;
                 code = str.str();
             }
         }
@@ -464,8 +467,8 @@ int main(int argc, char *argv[]) {
             else {
                 std::ostringstream str;
                 CYOutput out(str);
-                Setup(out);
-                driver.program_->Multiple(out);
+                Setup(out, driver);
+                out << *driver.program_;
                 std::string code(str.str());
                 if (compile)
                     std::cout << code;
