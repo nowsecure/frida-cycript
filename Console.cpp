@@ -39,7 +39,6 @@
 
 #define _GNU_SOURCE
 
-#include <substrate.h>
 #include "cycript.hpp"
 
 #include <cstdio>

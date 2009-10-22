@@ -51,6 +51,7 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFLogUtilities.h>
 
+#include <JavaScriptCore/JSStringRefCF.h>
 #include <WebKit/WebScriptObject.h>
 
 #include <sys/mman.h>
@@ -97,6 +98,14 @@
 }
 
 void CYThrow(JSContextRef context, JSValueRef value);
+
+const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSValueRef value, JSValueRef *exception);
+JSStringRef CYCopyJSString(const char *value);
+
+void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef value);
+
+JSValueRef CYCallFunction(apr_pool_t *pool, JSContextRef context, size_t setups, void *setup[], size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception, sig::Signature *signature, ffi_cif *cif, void (*function)());
+JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, SEL _cmd, size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception);
 
 /* JavaScript Properties {{{ */
 JSValueRef CYGetProperty(JSContextRef context, JSObjectRef object, size_t index) {

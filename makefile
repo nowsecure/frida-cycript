@@ -6,17 +6,55 @@ endif
 
 #flags := -g3 -O0 -DYYDEBUG=1
 flags := -g0 -O3
-
 flags += -Wall -Werror -I. -fno-common
-flags += -F${PKG_ROOT}/System/Library/PrivateFrameworks
 
 svn := $(shell svnversion)
-deb := $(shell grep ^Package: control | cut -d ' ' -f 2-)_$(shell grep ^Version: control | cut -d ' ' -f 2 | sed -e 's/\#/$(svn)/')_iphoneos-arm.deb
-all := cycript libcycript.dylib libcycript.plist Cycript.dylib #cyrver
 
-header := Cycript.tab.hh Parser.hpp Pooling.hpp Struct.hpp cycript.hpp
+all:
+all := libcycript.plist cycript
 
-$(deb):
+dpkg_architecture := $(shell dpkg-architecture &>/dev/null)
+ifneq ($(dpkg_architecture),)
+arch := $(shell $(dpkg_architecture) -qDEB_HOST_ARCH)
+endif
+
+header := Cycript.tab.hh Parser.hpp Pooling.hpp cycript.hpp
+
+dll := so
+
+uname_s := $(shell uname -s)
+uname_p := $(shell uname -p)
+-include $(uname_s).mk
+-include $(uname_s)-$(uname_p).mk
+
+all += libcycript.$(dll)
+
+ifdef arch
+deb := $(shell grep ^Package: control | cut -d ' ' -f 2-)_$(shell grep ^Version: control | cut -d ' ' -f 2 | sed -e 's/\#/$(svn)/')_$(arch).deb
+
+all: $(deb)
+
+$(deb): $(all)
+	rm -rf package
+	mkdir -p package/DEBIAN
+	sed -e 's/#/$(svn)/' control >package/DEBIAN/control
+	mkdir -p package/System/Library/LaunchDaemons
+	#cp -a com.saurik.Cyrver.plist package/System/Library/LaunchDaemons
+	mkdir -p package/Library/MobileSubstrate/DynamicLibraries
+	if [[ -e Settings.plist ]]; then \
+	    mkdir -p package/Library/PreferenceLoader/Preferences; \
+	    cp -a Settings.png package/Library/PreferenceLoader/Preferences/CycriptIcon.png; \
+	    cp -a Settings.plist package/Library/PreferenceLoader/Preferences/Cycript.plist; \
+	fi
+	if [[ -e Tweak.plist ]]; then cp -a Tweak.plist package/Library/MobileSubstrate/DynamicLibraries/Cycript.plist; fi
+	cp -a Cycript.dylib package/Library/MobileSubstrate/DynamicLibraries
+	mkdir -p package/usr/{bin,lib,sbin}
+	cp -a libcycript.dylib package/usr/lib
+	cp -a cycript package/usr/bin
+	#cp -a cyrver package/usr/sbin
+	cp -a libcycript.plist package/usr/lib
+	dpkg-deb -b package $(deb)
+endif
 
 all: $(all)
 
@@ -39,9 +77,6 @@ Cycript.tab.cc Cycript.tab.hh location.hh position.hh: Cycript.y
 
 lex.cy.c: Cycript.l
 	flex $<
-
-Struct.hpp:
-	$$($(target)gcc -print-prog-name=cc1obj) -print-objc-runtime-info </dev/null >$@
 
 #Parser.hpp: Parser.py Parser.dat
 #	./Parser.py <Parser.dat >$@
@@ -67,13 +102,7 @@ cyrver: Server.o
 	    -framework CoreFoundation -framework CFNetwork
 	ldid -S $@
 
-Cycript.dylib: Connector.o
-	$(target)g++ $(flags) -dynamiclib -o $@ $(filter %.o,$^) \
-	    -lobjc -lapr-1 -lsubstrate \
-	    -framework CoreFoundation
-	ldid -S $@
-
-libcycript.dylib: ffi_type.o parse.o Replace.o Output.o Cycript.tab.o lex.cy.o Library.o
+libcycript.$(dll): ffi_type.o parse.o Replace.o Output.o Cycript.tab.o lex.cy.o Library.o
 	$(target)g++ $(flags) -dynamiclib -o $@ $(filter %.o,$^) \
 	    -install_name /usr/lib/libcycript.dylib \
 	    -lobjc -lapr-1 -lffi -lsubstrate \
@@ -89,27 +118,6 @@ cycript: Console.o libcycript.dylib
 	    -framework Foundation -framework CoreFoundation \
 	    -framework JavaScriptCore -framework UIKit
 	ldid -S cycript
-
-$(deb): $(all)
-	rm -rf package
-	mkdir -p package/DEBIAN
-	sed -e 's/#/$(svn)/' control >package/DEBIAN/control
-	mkdir -p package/System/Library/LaunchDaemons
-	#cp -a com.saurik.Cyrver.plist package/System/Library/LaunchDaemons
-	mkdir -p package/Library/MobileSubstrate/DynamicLibraries
-	if [[ -e Settings.plist ]]; then \
-	    mkdir -p package/Library/PreferenceLoader/Preferences; \
-	    cp -a Settings.png package/Library/PreferenceLoader/Preferences/CycriptIcon.png; \
-	    cp -a Settings.plist package/Library/PreferenceLoader/Preferences/Cycript.plist; \
-	fi
-	if [[ -e Tweak.plist ]]; then cp -a Tweak.plist package/Library/MobileSubstrate/DynamicLibraries/Cycript.plist; fi
-	cp -a Cycript.dylib package/Library/MobileSubstrate/DynamicLibraries
-	mkdir -p package/usr/{bin,lib,sbin}
-	cp -a libcycript.dylib package/usr/lib
-	cp -a cycript package/usr/bin
-	#cp -a cyrver package/usr/sbin
-	cp -a libcycript.plist package/usr/lib
-	dpkg-deb -b package $(deb)
 
 package: $(deb)
 
