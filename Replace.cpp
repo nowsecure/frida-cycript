@@ -1,8 +1,77 @@
+/* Cycript - Remove Execution Server and Disassembler
+ * Copyright (C) 2009  Jay Freeman (saurik)
+*/
+
+/* Modified BSD License {{{ */
+/*
+ *        Redistribution and use in source and binary
+ * forms, with or without modification, are permitted
+ * provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the
+ *    above copyright notice, this list of conditions
+ *    and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the
+ *    above copyright notice, this list of conditions
+ *    and the following disclaimer in the documentation
+ *    and/or other materials provided with the
+ *    distribution.
+ * 3. The name of the author may not be used to endorse
+ *    or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS''
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+ * BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+ * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+/* }}} */
+
 #include "Parser.hpp"
 
 #include <iomanip>
 
 #include "Replace.hpp"
+
+CYExpression *CYAdd::Replace(CYContext &context) {
+    CYInfix::Replace(context);
+
+    CYExpression *lhp(lhs_->Primitive(context));
+    CYExpression *rhp(rhs_->Primitive(context));
+
+    CYString *lhs(dynamic_cast<CYString *>(lhp));
+    CYString *rhs(dynamic_cast<CYString *>(rhp));
+
+    if (lhs != NULL || rhs != NULL) {
+        if (lhs == NULL) {
+            lhs = lhp->String(context);
+            if (lhs == NULL)
+                return NULL;
+        } else if (rhs == NULL) {
+            rhs = rhp->String(context);
+            if (rhs == NULL)
+                return NULL;
+        }
+
+        return lhs->Concat(context, rhs);
+    }
+
+    if (CYNumber *lhn = lhp->Number(context))
+        if (CYNumber *rhn = rhp->Number(context))
+            return $D(lhn->Value() + rhn->Value());
+
+    return NULL;
+}
 
 CYExpression *CYAddressOf::Replace(CYContext &context) {
     CYPrefix::Replace(context);
@@ -147,6 +216,14 @@ CYExpression *CYExpression::ReplaceAll(CYContext &context) { $T(NULL)
     return replace;
 }
 
+CYNumber *CYFalse::Number(CYContext &context) {
+    return $D(0);
+}
+
+CYString *CYFalse::String(CYContext &context) {
+    return $S("false");
+}
+
 void CYFinally::Replace(CYContext &context) { $T()
     code_.Replace(context);
 }
@@ -263,6 +340,23 @@ CYExpression *CYNew::Replace(CYContext &context) {
     return NULL;
 }
 
+CYNumber *CYNull::Number(CYContext &context) {
+    return $D(0);
+}
+
+CYString *CYNull::String(CYContext &context) {
+    return $S("null");
+}
+
+CYNumber *CYNumber::Number(CYContext &context) {
+    return this;
+}
+
+CYString *CYNumber::String(CYContext &context) {
+    // XXX: there is a precise algorithm for this
+    return $S(apr_psprintf(context.pool_, "%.17g", Value()));
+}
+
 CYExpression *CYObject::Replace(CYContext &context) {
     properties_->Replace(context);
     return NULL;
@@ -304,6 +398,24 @@ CYStatement *CYStatement::ReplaceAll(CYContext &context) { $T(NULL)
     return replace;
 }
 
+CYString *CYString::Concat(CYContext &context, CYString *rhs) const {
+    size_t size(size_ + rhs->size_);
+    char *value(new(context.pool_) char[size + 1]);
+    memcpy(value, value_, size_);
+    memcpy(value + size_, rhs->value_, rhs->size_);
+    value[size] = '\0';
+    return $S(value);
+}
+
+CYNumber *CYString::Number(CYContext &context) {
+    // XXX: there is a precise algorithm for this
+    return NULL;
+}
+
+CYString *CYString::String(CYContext &context) {
+    return this;
+}
+
 CYStatement *CYSwitch::Replace(CYContext &context) {
     context.Replace(value_);
     clauses_->Replace(context);
@@ -321,6 +433,14 @@ CYStatement *CYThrow::Replace(CYContext &context) {
 
 CYExpression *CYTrivial::Replace(CYContext &context) {
     return NULL;
+}
+
+CYNumber *CYTrue::Number(CYContext &context) {
+    return $D(1);
+}
+
+CYString *CYTrue::String(CYContext &context) {
+    return $S("true");
 }
 
 CYStatement *CYTry::Replace(CYContext &context) {

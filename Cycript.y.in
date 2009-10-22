@@ -1,4 +1,4 @@
-/* Cycript - Remove Execution Server and Disassembler
+/* Cycript - Remote Execution Server and Disassembler
  * Copyright (C) 2009  Jay Freeman (saurik)
 */
 

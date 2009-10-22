@@ -1,3 +1,42 @@
+/* Cycript - Remove Execution Server and Disassembler
+ * Copyright (C) 2009  Jay Freeman (saurik)
+*/
+
+/* Modified BSD License {{{ */
+/*
+ *        Redistribution and use in source and binary
+ * forms, with or without modification, are permitted
+ * provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the
+ *    above copyright notice, this list of conditions
+ *    and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the
+ *    above copyright notice, this list of conditions
+ *    and the following disclaimer in the documentation
+ *    and/or other materials provided with the
+ *    distribution.
+ * 3. The name of the author may not be used to endorse
+ *    or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS''
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+ * BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+ * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+/* }}} */
+
 #include "Parser.hpp"
 
 #include <iomanip>
@@ -126,21 +165,7 @@ void CYArray::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYArrayComprehension::Output(CYOutput &out, CYFlags flags) const {
-    // XXX: I don't necc. need the ()s
-    out << "(function($cyv";
-    for (CYComprehension *comprehension(comprehensions_); comprehension != NULL; comprehension = comprehension->next_)
-        if (const char *name = comprehension->Name())
-            out << ',' << name;
-    out << "){";
-    out << "$cyv=[];";
-    comprehensions_->Output(out);
-    out << "$cyv.push(";
-    expression_->Output(out, CYPA, CYNoFlags);
-    out << ");";
-    for (CYComprehension *comprehension(comprehensions_); comprehension != NULL; comprehension = comprehension->next_)
-        comprehension->End_(out);
-    out << "return $cyv;";
-    out << "}())";
+    out << '[' << *expression_ << ' ' << *comprehensions_ << ']';
 }
 
 void CYAssignment::Output(CYOutput &out, CYFlags flags) const {
@@ -208,11 +233,6 @@ void CYCompound::Output(CYOutput &out, CYFlags flags) const {
             expression->Output(out, flags);
 }
 
-void CYComprehension::Output(CYOutput &out) const {
-    Begin_(out);
-    out << next_;
-}
-
 void CYCondition::Output(CYOutput &out, CYFlags flags) const {
     test_->Output(out, Precedence() - 1, CYLeft(flags));
     out << ' ' << '?' << ' ';
@@ -247,10 +267,6 @@ const char *CYDeclaration::ForEachIn() const {
 void CYDeclaration::ForIn(CYOutput &out, CYFlags flags) const {
     out << "var";
     Output(out, CYRight(flags));
-}
-
-void CYDeclaration::ForEachIn(CYOutput &out) const {
-    out << *identifier_;
 }
 
 void CYDeclaration::Output(CYOutput &out, CYFlags flags) const {
@@ -333,10 +349,6 @@ void CYExpression::For(CYOutput &out) const {
     Output(out, CYNoIn);
 }
 
-void CYExpression::ForEachIn(CYOutput &out) const {
-    Output(out, CYPA, CYNoRightHand);
-}
-
 void CYExpression::ForIn(CYOutput &out, CYFlags flags) const {
     Output(out, flags | CYNoRightHand);
 }
@@ -369,36 +381,14 @@ void CYFor::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYForEachIn::Output(CYOutput &out, CYFlags flags) const {
-    out << "with({$cys:0,$cyt:0}){";
-
-    out << "$cys=";
-    set_->Output(out, CYPA, CYNoFlags);
-    out << ';';
-
-    out << "for($cyt in $cys){";
-
-    initialiser_->ForEachIn(out);
-    out << "=$cys[$cyt];";
-
-    code_->Multiple(out);
-
-    out << '}';
-
-    out << '}';
+    out << "for" << ' ' << "each" << ' ' << '(';
+    initialiser_->ForIn(out, CYNoIn);
+    out << "in" << *set_ << ')';
+    code_->Single(out, CYRight(flags));
 }
 
-void CYForEachInComprehension::Begin_(CYOutput &out) const {
-    out << "(function($cys){";
-    out << "$cys=";
-    set_->Output(out, CYPA, CYNoFlags);
-    out << ';';
-
-    out << "for(" << *name_ << " in $cys){";
-    out << *name_ << "=$cys[" << *name_ << "];";
-}
-
-void CYForEachInComprehension::End_(CYOutput &out) const {
-    out << "}}());";
+void CYForEachInComprehension::Output(CYOutput &out) const {
+    out << "for" << ' ' << "each" << ' ' << '(' << *name_ << ' ' << "in" << ' ' << *set_ << ')' << next_;
 }
 
 void CYForIn::Output(CYOutput &out, CYFlags flags) const {
@@ -408,8 +398,8 @@ void CYForIn::Output(CYOutput &out, CYFlags flags) const {
     code_->Single(out, CYRight(flags));
 }
 
-void CYForInComprehension::Begin_(CYOutput &out) const {
-    out << "for" << ' ' << '(' << *name_ << "in" << *set_ << ')';
+void CYForInComprehension::Output(CYOutput &out) const {
+    out << "for" << ' ' << '(' << *name_ << ' ' << "in" << ' ' << *set_ << ')';
 }
 
 void CYFunction::Output(CYOutput &out, CYFlags flags) const {
@@ -468,8 +458,8 @@ void CYIf::Output(CYOutput &out, CYFlags flags) const {
         out << '}';
 }
 
-void CYIfComprehension::Begin_(CYOutput &out) const {
-    out << "if" << '(' << *test_ << ')';
+void CYIfComprehension::Output(CYOutput &out) const {
+    out << "if" << ' ' << '(' << *test_ << ')' << next_;
 }
 
 void CYIndirectMember::Output(CYOutput &out, CYFlags flags) const {
@@ -517,6 +507,7 @@ void CYNull::Output(CYOutput &out, CYFlags flags) const {
 
 void CYNumber::Output(CYOutput &out, CYFlags flags) const {
     char value[32];
+    // XXX: I want this to print 1e3 rather than 1000
     sprintf(value, "%.17g", Value());
     out << value;
 }

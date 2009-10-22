@@ -1,4 +1,4 @@
-/* Cycript - Remove Execution Server and Disassembler
+/* Cycript - Remote Execution Server and Disassembler
  * Copyright (C) 2009  Jay Freeman (saurik)
 */
 
@@ -280,6 +280,10 @@ struct CYBlock :
     {
     }
 
+    operator CYStatement *() const {
+        return statements_;
+    }
+
     virtual CYStatement *Replace(CYContext &context);
 
     virtual void Output(CYOutput &out) const;
@@ -343,9 +347,11 @@ struct CYForInitialiser {
 struct CYForInInitialiser {
     virtual void ForIn(CYOutput &out, CYFlags flags) const = 0;
     virtual const char *ForEachIn() const = 0;
-    virtual void ForEachIn(CYOutput &out) const = 0;
     virtual CYExpression *ForEachIn(CYContext &out) = 0;
 };
+
+struct CYNumber;
+struct CYString;
 
 struct CYExpression :
     CYNext<CYExpression>,
@@ -364,7 +370,6 @@ struct CYExpression :
     virtual void ForIn(CYOutput &out, CYFlags flags) const;
 
     virtual const char *ForEachIn() const;
-    virtual void ForEachIn(CYOutput &out) const;
     virtual CYExpression *ForEachIn(CYContext &out);
 
     virtual void Output(CYOutput &out) const;
@@ -377,6 +382,18 @@ struct CYExpression :
     CYExpression *ReplaceAll(CYContext &context);
 
     virtual CYExpression *Replace(CYContext &context) = 0;
+
+    virtual CYExpression *Primitive(CYContext &context) {
+        return this;
+    }
+
+    virtual CYNumber *Number(CYContext &context) {
+        return NULL;
+    }
+
+    virtual CYString *String(CYContext &context) {
+        return NULL;
+    }
 
     virtual const char *Word() const {
         return NULL;
@@ -441,17 +458,12 @@ struct CYComprehension :
     CYNext<CYComprehension>,
     CYThing
 {
-    void Output(CYOutput &out) const;
     virtual const char *Name() const = 0;
-
-    virtual void Begin_(CYOutput &out) const = 0;
-
-    virtual void End_(CYOutput &out) const {
-    }
 
     virtual CYFunctionParameter *Parameter(CYContext &context) const = 0;
     CYFunctionParameter *Parameters(CYContext &context) const;
     virtual CYStatement *Replace(CYContext &context, CYStatement *statement) const;
+    virtual void Output(CYOutput &out) const = 0;
 };
 
 struct CYForInComprehension :
@@ -470,10 +482,9 @@ struct CYForInComprehension :
         return name_->Value();
     }
 
-    virtual void Begin_(CYOutput &out) const;
-
     virtual CYFunctionParameter *Parameter(CYContext &context) const;
     virtual CYStatement *Replace(CYContext &context, CYStatement *statement) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYForEachInComprehension :
@@ -492,11 +503,9 @@ struct CYForEachInComprehension :
         return name_->Value();
     }
 
-    virtual void Begin_(CYOutput &out) const;
-    virtual void End_(CYOutput &out) const;
-
     virtual CYFunctionParameter *Parameter(CYContext &context) const;
     virtual CYStatement *Replace(CYContext &context, CYStatement *statement) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYIfComprehension :
@@ -513,10 +522,9 @@ struct CYIfComprehension :
         return NULL;
     }
 
-    virtual void Begin_(CYOutput &out) const;
-
     virtual CYFunctionParameter *Parameter(CYContext &context) const;
     virtual CYStatement *Replace(CYContext &context, CYStatement *statement) const;
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYArrayComprehension :
@@ -618,6 +626,10 @@ struct CYString :
 
     virtual const char *Word() const;
 
+    virtual CYNumber *Number(CYContext &context);
+    virtual CYString *String(CYContext &context);
+
+    virtual CYString *Concat(CYContext &out, CYString *rhs) const;
     virtual void Output(CYOutput &out, CYFlags flags) const;
     virtual void PropertyName(CYOutput &out) const;
 };
@@ -636,6 +648,9 @@ struct CYNumber :
     double Value() const {
         return value_;
     }
+
+    virtual CYNumber *Number(CYContext &context);
+    virtual CYString *String(CYContext &context);
 
     virtual void Output(CYOutput &out, CYFlags flags) const;
     virtual void PropertyName(CYOutput &out) const;
@@ -666,6 +681,9 @@ struct CYNull :
         CYWord("null")
     {
     }
+
+    virtual CYNumber *Number(CYContext &context);
+    virtual CYString *String(CYContext &context);
 
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -702,6 +720,9 @@ struct CYFalse :
     virtual bool Value() const {
         return false;
     }
+
+    virtual CYNumber *Number(CYContext &context);
+    virtual CYString *String(CYContext &context);
 };
 
 struct CYTrue :
@@ -716,6 +737,9 @@ struct CYTrue :
     virtual bool Value() const {
         return true;
     }
+
+    virtual CYNumber *Number(CYContext &context);
+    virtual CYString *String(CYContext &context);
 };
 
 struct CYVariable :
@@ -915,7 +939,6 @@ struct CYDeclaration :
     virtual void ForIn(CYOutput &out, CYFlags flags) const;
 
     virtual const char *ForEachIn() const;
-    virtual void ForEachIn(CYOutput &out) const;
     virtual CYExpression *ForEachIn(CYContext &out);
 
     void Replace(CYContext &context);
@@ -1458,10 +1481,13 @@ struct CYIndirect :
     virtual CYExpression *Replace(CYContext &context);
 };
 
-#define CYPostfix_(op, name) \
+#define CYReplace \
+    virtual CYExpression *Replace(CYContext &context);
+
+#define CYPostfix_(op, name, args...) \
     struct CY ## name : \
         CYPostfix \
-    { \
+    { args \
         CY ## name(CYExpression *lhs) : \
             CYPostfix(lhs) \
         { \
@@ -1472,10 +1498,10 @@ struct CYIndirect :
         } \
     };
 
-#define CYPrefix_(alphabetic, op, name) \
+#define CYPrefix_(alphabetic, op, name, args...) \
     struct CY ## name : \
         CYPrefix \
-    { \
+    { args \
         CY ## name(CYExpression *rhs) : \
             CYPrefix(rhs) \
         { \
@@ -1488,10 +1514,10 @@ struct CYIndirect :
         } \
     };
 
-#define CYInfix_(alphabetic, precedence, op, name) \
+#define CYInfix_(alphabetic, precedence, op, name, args...) \
     struct CY ## name : \
         CYInfix \
-    { \
+    { args \
         CY ## name(CYExpression *lhs, CYExpression *rhs) : \
             CYInfix(lhs, rhs) \
         { \
@@ -1505,10 +1531,10 @@ struct CYIndirect :
         } \
     };
 
-#define CYAssignment_(op, name) \
+#define CYAssignment_(op, name, args...) \
     struct CY ## name ## Assign : \
         CYAssignment \
-    { \
+    { args \
         CY ## name ## Assign(CYExpression *lhs, CYExpression *rhs) : \
             CYAssignment(lhs, rhs) \
         { \
@@ -1535,7 +1561,7 @@ CYPrefix_(false, "!", LogicalNot)
 CYInfix_(false, 5, "*", Multiply)
 CYInfix_(false, 5, "/", Divide)
 CYInfix_(false, 5, "%", Modulus)
-CYInfix_(false, 6, "+", Add)
+CYInfix_(false, 6, "+", Add, CYReplace)
 CYInfix_(false, 6, "-", Subtract)
 CYInfix_(false, 7, "<<", ShiftLeft)
 CYInfix_(false, 7, ">>", ShiftRightSigned)

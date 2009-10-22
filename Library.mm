@@ -1,4 +1,4 @@
-/* Cycript - Remove Execution Server and Disassembler
+/* Cycript - Remote Execution Server and Disassembler
  * Copyright (C) 2009  Jay Freeman (saurik)
 */
 
@@ -204,7 +204,7 @@ class CYJSString {
 /* Objective-C Strings {{{ */
 JSStringRef CYCopyJSString_(NSString *value) {
 #ifdef __APPLE__
-    return JSStringCreateWithCFString(reinterpret_cast<CFStringRef>(string));
+    return JSStringCreateWithCFString(reinterpret_cast<CFStringRef>(value));
 #else
     return CYCopyJSString([value UTF8String]);
 #endif
@@ -2806,12 +2806,12 @@ static void ObjectiveC_Protocols_getPropertyNames(JSContextRef context, JSObject
 
 static JSObjectRef CYMakeType(JSContextRef context, const char *type) {
     Type_privateData *internal(new Type_privateData(NULL, type));
-    return JSObjectMake(context, Type_, internal);
+    return JSObjectMake(context, Type_privateData::Class, internal);
 }
 
 static JSObjectRef CYMakeType(JSContextRef context, sig::Type *type) {
     Type_privateData *internal(new Type_privateData(type));
-    return JSObjectMake(context, Type_, internal);
+    return JSObjectMake(context, Type_privateData::Class, internal);
 }
 
 static JSValueRef Runtime_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
@@ -3622,7 +3622,8 @@ JSGlobalContextRef CYGetJSContext() {
         definition.callAsFunction = &Type_callAsFunction;
         definition.callAsConstructor = &Type_callAsConstructor;
         definition.finalize = &Finalize;
-        Type_privateData::Class = JSClassCreate(&definition);
+        // XXX: dude: just rename the damned variable
+        (Type_privateData::Class) = JSClassCreate(&definition);
 
         definition = kJSClassDefinitionEmpty;
         definition.className = "Runtime";
@@ -3705,7 +3706,7 @@ JSGlobalContextRef CYGetJSContext() {
         CYSetProperty(context, global, CYJSString("Instance"), Instance);
         CYSetProperty(context, global, CYJSString("Pointer"), JSObjectMakeConstructor(context, Pointer_, &Pointer_new));
         CYSetProperty(context, global, CYJSString("Selector"), Selector);
-        CYSetProperty(context, global, CYJSString("Type"), JSObjectMakeConstructor(context, Type_, &Type_new));
+        CYSetProperty(context, global, CYJSString("Type"), JSObjectMakeConstructor(context, Type_privateData::Class, &Type_new));
 
         MSHookFunction(&objc_registerClassPair, MSHake(objc_registerClassPair));
 

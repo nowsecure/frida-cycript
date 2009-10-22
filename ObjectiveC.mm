@@ -50,30 +50,19 @@ void CYClassStatement::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYField::Output(CYOutput &out) const {
-    // XXX: implement!
 }
 
 void CYMessage::Output(CYOutput &out, bool replace) const {
-    if (next_ != NULL)
-        next_->Output(out, replace);
-    out << "$cyn=new Selector(\"";
+    out << (instance_ ? '-' : '+');
+
     for (CYMessageParameter *parameter(parameters_); parameter != NULL; parameter = parameter->next_)
         if (parameter->tag_ != NULL) {
-            out << *parameter->tag_;
+            out << ' ' << *parameter->tag_;
             if (parameter->name_ != NULL)
-                out << ':';
+                out << ':' << *parameter->name_;
         }
-    out << "\");";
-    out << "$cyt=$cyn.type($cy" << (instance_ ? 's' : 'p') << ')' << ';';
-    out << (replace ? "class_replaceMethod" : "class_addMethod") << '(' << (instance_ ? "$cyc" : "$cym") << ',' << "$cyn" << ',';
-    out << "new Functor(function(self,_cmd";
-    for (CYMessageParameter *parameter(parameters_); parameter != NULL; parameter = parameter->next_)
-        if (parameter->name_ != NULL)
-            out << ',' << *parameter->name_;
-    out << "){return function(){";
-    if (statements_ != NULL)
-        statements_->Multiple(out);
-    out << "}.call(self);},$cyt),$cyt);";
+
+    out << code_;
 }
 
 void CYSelector::Output(CYOutput &out, CYFlags flags) const {
@@ -89,24 +78,17 @@ void CYSelectorPart::Output(CYOutput &out) const {
 
 void CYSend::Output(CYOutput &out, CYFlags flags) const {
     out << '[';
-    self_->Output(out, CYPA, CYNoFlags);
-    out << ']';
 
-    std::ostringstream name;
+    self_->Output(out, CYPA, CYNoFlags);
+
     for (CYArgument *argument(arguments_); argument != NULL; argument = argument->next_)
         if (argument->name_ != NULL) {
-            name << *argument->name_;
+            out << ' ' << *argument->name_;
             if (argument->value_ != NULL)
-                name << ':';
+                out << ':' << *argument->value_;
         }
 
-    out.out_ << reinterpret_cast<void *>(sel_registerName(name.str().c_str()));
-    for (CYArgument *argument(arguments_); argument != NULL; argument = argument->next_)
-        if (argument->value_ != NULL) {
-            out << ',';
-            argument->value_->Output(out, CYPA, CYNoFlags);
-        }
-    out << ')';
+    out << ']';
 }
 
 CYStatement *CYCategory::Replace(CYContext &context) {
@@ -159,7 +141,7 @@ CYStatement *CYMessage::Replace(CYContext &context, bool replace) const { $T(NUL
             $V(instance_ ? "$cyc" : "$cym"),
             cyn,
             $N2($V("Functor"), $F(NULL, $P2("self", "_cmd", parameters_->Parameters(context)), $$->*
-                $ CYReturn($C1($M($F(NULL, NULL, statements_), $S("call")), $V("self")))
+                $ CYReturn($C1($M($F(NULL, NULL, code_), $S("call")), $V("self")))
             ), cyt),
             cyt
         ))
