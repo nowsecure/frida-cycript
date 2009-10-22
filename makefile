@@ -1,4 +1,4 @@
-SHELL :=$(shell which bash 2>/dev/null)
+SHELL := $(shell which bash 2>/dev/null)
 
 ifndef PKG_TARG
 target :=
@@ -6,8 +6,8 @@ else
 target := $(PKG_TARG)-
 endif
 
-#flags := -g3 -O0 -DYYDEBUG=1
-flags := -g0 -O3
+flags := -g3 -O0 -DYYDEBUG=1
+#flags := -g0 -O3
 flags += -Wall -Werror -Wno-parentheses
 flags += -fPIC -fno-common
 flags += -I. -I$(shell apr-1-config --includedir)
@@ -34,6 +34,7 @@ dll := so
 apr := $(shell apr-1-config --link-ld)
 library := $(apr) -lffi
 console := $(apr) -lreadline
+depends :=
 
 uname_s := $(shell uname -s)
 uname_p := $(shell uname -p)
@@ -47,20 +48,13 @@ deb := $(shell grep ^Package: control | cut -d ' ' -f 2-)_$(shell grep ^Version:
 
 all: $(deb)
 
+extra:
+
 $(deb): $(all)
 	rm -rf package
 	mkdir -p package/DEBIAN
-	sed -e 's/#/$(svn)/' control >package/DEBIAN/control
-	mkdir -p package/System/Library/LaunchDaemons
-	#cp -a com.saurik.Cyrver.plist package/System/Library/LaunchDaemons
-	mkdir -p package/Library/MobileSubstrate/DynamicLibraries
-	if [[ -e Settings.plist ]]; then \
-	    mkdir -p package/Library/PreferenceLoader/Preferences; \
-	    cp -a Settings.png package/Library/PreferenceLoader/Preferences/CycriptIcon.png; \
-	    cp -a Settings.plist package/Library/PreferenceLoader/Preferences/Cycript.plist; \
-	fi
-	if [[ -e Tweak.plist ]]; then cp -a Tweak.plist package/Library/MobileSubstrate/DynamicLibraries/Cycript.plist; fi
-	cp -a Cycript.$(dll) package/Library/MobileSubstrate/DynamicLibraries
+	sed -e 's/&/$(foreach depend,$(depends),$(depend),)/;s/,$$//;s/#/$(svn)/;s/%/$(arch)/' control >package/DEBIAN/control
+	$(MAKE) extra
 	mkdir -p package/usr/{bin,lib,sbin}
 	cp -a libcycript.$(dll) package/usr/lib
 	cp -a cycript package/usr/bin
