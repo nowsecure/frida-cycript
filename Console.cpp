@@ -63,6 +63,8 @@
 #include <netinet/in.h>
 #include <sys/un.h>
 
+#include <apr_getopt.h>
+
 static volatile enum {
     Working,
     Parsing,
@@ -332,7 +334,9 @@ static void *Map(const char *path, size_t *psize) {
     return base;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char const * const argv[], char const * const envp[]) {
+    _aprcall(apr_app_initialize(&argc, &argv, &envp));
+
     bool tty(isatty(STDIN_FILENO));
     bool compile(false);
 
@@ -340,64 +344,82 @@ int main(int argc, char *argv[]) {
     pid_t pid(_not(pid_t));
 #endif
 
-    for (;;) switch (getopt(argc, argv,
-        "cg:n:"
-#ifdef CY_ATTACH
-        "p:"
-#endif
-        "s"
-    )) {
-        case -1:
-            goto getopt;
-        case '?':
-            fprintf(stderr, "usage: cycript [-c]"
-#ifdef CY_ATTACH
-            " [-p <pid>]"
-#endif
-            " [<script> [<arg>...]]\n");
-            return 1;
+    CYPool pool;
+    apr_getopt_t *state;
+    _aprcall(apr_getopt_init(&state, pool, argc, argv));
 
-        case 'c':
-            compile = true;
-        break;
+    for (;;) {
+        char opt;
+        const char *arg;
 
-        case 'g':
-            if (false);
+        apr_status_t status(apr_getopt(state,
+            "cg:n:"
+#ifdef CY_ATTACH
+            "p:"
+#endif
+            "s"
+        , &opt, &arg));
+
+        switch (status) {
+            case APR_EOF:
+                goto getopt;
+            case APR_BADCH:
+            case APR_BADARG:
+                fprintf(stderr,
+                    "usage: cycript [-c]"
+#ifdef CY_ATTACH
+                    " [-p <pid>]"
+#endif
+                    " [<script> [<arg>...]]\n"
+                );
+                return 1;
+            default:
+                _aprcall(status);
+        }
+
+        switch (opt) {
+            case 'c':
+                compile = true;
+            break;
+
+            case 'g':
+                if (false);
 #if YYDEBUG
-            else if (strcmp(optarg, "bison") == 0)
-                bison_ = true;
+                else if (strcmp(optarg, "bison") == 0)
+                    bison_ = true;
 #endif
-            else {
-                fprintf(stderr, "invalid name for -g\n");
-                return 1;
-            }
-        break;
+                else {
+                    fprintf(stderr, "invalid name for -g\n");
+                    return 1;
+                }
+            break;
 
-        case 'n':
-            if (false);
-            else if (strcmp(optarg, "minify") == 0)
-                pretty_ = true;
-            else {
-                fprintf(stderr, "invalid name for -n\n");
-                return 1;
-            }
-        break;
+            case 'n':
+                if (false);
+                else if (strcmp(optarg, "minify") == 0)
+                    pretty_ = true;
+                else {
+                    fprintf(stderr, "invalid name for -n\n");
+                    return 1;
+                }
+            break;
 
 #ifdef CY_ATTACH
-        case 'p': {
-            size_t size(strlen(optarg));
-            char *end;
-            pid = strtoul(optarg, &end, 0);
-            if (optarg + size != end) {
-                fprintf(stderr, "invalid pid for -p\n");
-                return 1;
-            }
-        } break;
+            case 'p': {
+                size_t size(strlen(optarg));
+                char *end;
+                pid = strtoul(optarg, &end, 0);
+                if (optarg + size != end) {
+                    fprintf(stderr, "invalid pid for -p\n");
+                    return 1;
+                }
+            } break;
 #endif
 
-        case 's':
-            strict_ = true;
-        break;
+            case 's':
+                strict_ = true;
+            break;
+        }
     } getopt:;
 
     const char *script;
