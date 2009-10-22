@@ -1,3 +1,5 @@
+SHELL :=$(shell which bash 2>/dev/null)
+
 ifndef PKG_TARG
 target :=
 else
