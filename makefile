@@ -6,11 +6,10 @@ endif
 
 #flags := -g3 -O0 -DYYDEBUG=1
 flags := -g0 -O3
-flags += -Wall -Werror -I. -fno-common
+flags += -Wall -Werror -Wno-parentheses -I. -fno-common
+flags += -I$(shell apr-1-config --includedir)
 
 svn := $(shell svnversion)
-
-filters := C
 
 all:
 all := libcycript.plist cycript
@@ -21,9 +20,17 @@ arch := $(shell $(dpkg_architecture) -qDEB_HOST_ARCH 2>/dev/null)
 endif
 
 header := Cycript.tab.hh Parser.hpp Pooling.hpp cycript.hpp
-code := ffi_type.o parse.o Replace.o Output.o Cycript.tab.o lex.cy.o Network.o
+code := ffi_type.o parse.o 
+code += Replace.o Output.o
+code += Cycript.tab.o lex.cy.o
+code += Network.o Parser.o
 
+filters := C
+ldid := echo
 dll := so
+apr := $(shell apr-1-config --link-ld)
+library := $(apr) -lffi #-lsubstrate
+link := $(apr) -lreadline
 
 uname_s := $(shell uname -s)
 uname_p := $(shell uname -p)
@@ -102,28 +109,13 @@ lex.cy.o: lex.cy.c Cycript.tab.hh Parser.hpp Pooling.hpp
 %.o: %.mm $(header)
 	$(target)g++ $(flags) -c -o $@ $<
 
-cyrver: Server.o
-	$(target)g++ $(flags) -o $@ $(filter %.o,$^) \
-	    -lobjc -lapr-1 -lsubstrate \
-	    -framework CoreFoundation -framework CFNetwork
-	ldid -S $@
-
 libcycript.$(dll): $(code)
-	$(target)g++ $(flags) -dynamiclib -o $@ $(filter %.o,$^) \
-	    -install_name /usr/lib/libcycript.$(dll) \
-	    -lobjc -lapr-1 -lffi -lsubstrate \
-	    -framework CoreFoundation -framework Foundation \
-	    -framework CFNetwork \
-	    -framework JavaScriptCore -framework WebCore
-	ldid -S $@
+	$(target)g++ $(flags) -shared -dynamiclib -o $@ $(filter %.o,$^) $(library)
+	$(ldid) -S $@
 
 cycript: Console.o libcycript.$(dll)
-	$(target)g++ $(flags) -o $@ $(filter %.o,$^) \
-	    -lobjc -lapr-1 -lreadline \
-	    -L. -lcycript \
-	    -framework Foundation -framework CoreFoundation \
-	    -framework JavaScriptCore -framework UIKit
-	ldid -S cycript
+	$(target)g++ $(flags) -o $@ $(filter %.o,$^) -L. -lcycript $(link)
+	$(ldid) -S cycript
 
 package: $(deb)
 

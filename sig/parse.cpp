@@ -43,7 +43,7 @@
 
 #include "minimal/stdlib.h"
 
-#include <apr-1/apr_strings.h>
+#include <apr_strings.h>
 
 #include <string.h>
 

@@ -8,7 +8,7 @@
 #include <netinet/in.h>
 #include <sys/un.h>
 
-#include <apr-1/apr_thread_proc.h>
+#include <apr_thread_proc.h>
 
 #include <fcntl.h>
 #include <unistd.h>

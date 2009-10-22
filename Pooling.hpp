@@ -1,8 +1,8 @@
 #ifndef CYPOOLING_HPP
 #define CYPOOLING_HPP
 
-#include <apr-1/apr_pools.h>
-#include <apr-1/apr_strings.h>
+#include <apr_pools.h>
+#include <apr_strings.h>
 
 #include <minimal/stdlib.h>
 

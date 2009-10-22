@@ -37,8 +37,6 @@
 */
 /* }}} */
 
-#define _GNU_SOURCE
-
 #include "cycript.hpp"
 
 #include <cstdio>
@@ -419,8 +417,10 @@ int main(int argc, char *argv[]) {
     if (optind == argc)
         script = NULL;
     else {
+#ifdef CY_EXECUTE
         // XXX: const_cast?! wtf gcc :(
         CYSetArgs(argc - optind - 1, const_cast<const char **>(argv + optind + 1));
+#endif
         script = argv[optind];
         if (strcmp(script, "-") == 0)
             script = NULL;

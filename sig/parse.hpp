@@ -42,7 +42,7 @@
 
 #include "sig/types.hpp"
 
-#include <apr-1/apr_pools.h>
+#include <apr_pools.h>
 
 namespace sig {
 

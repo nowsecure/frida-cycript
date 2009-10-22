@@ -39,7 +39,7 @@
 
 #include <Pooling.hpp>
 
-#include <apr-1/apr_thread_proc.h>
+#include <apr_thread_proc.h>
 
 #include <CoreFoundation/CFLogUtilities.h>
 #include <CFNetwork/CFNetwork.h>
