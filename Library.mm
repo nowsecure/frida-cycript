@@ -37,8 +37,6 @@
 */
 /* }}} */
 
-#define _GNU_SOURCE
-
 #include <substrate.h>
 #include "cycript.hpp"
 
@@ -48,10 +46,14 @@
 #include "Pooling.hpp"
 #include "Struct.hpp"
 
+#ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFLogUtilities.h>
-
 #include <JavaScriptCore/JSStringRefCF.h>
+#endif
+
+#include <Foundation/Foundation.h>
+
 #include <WebKit/WebScriptObject.h>
 
 #include <sys/mman.h>
@@ -135,11 +137,6 @@ void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, J
 }
 /* }}} */
 /* JavaScript Strings {{{ */
-JSStringRef CYCopyJSString(id value) {
-    // XXX: this definition scares me; is anyone using this?!
-    return value == NULL ? NULL : JSStringCreateWithCFString(reinterpret_cast<CFStringRef>([value description]));
-}
-
 JSStringRef CYCopyJSString(const char *value) {
     return value == NULL ? NULL : JSStringCreateWithUTF8CString(value);
 }
@@ -203,7 +200,25 @@ class CYJSString {
         return string_;
     }
 };
+/* }}} */
+/* Objective-C Strings {{{ */
+JSStringRef CYCopyJSString_(NSString *value) {
+#ifdef __APPLE__
+    return JSStringCreateWithCFString(reinterpret_cast<CFStringRef>(string));
+#else
+    return CYCopyJSString([value UTF8String]);
+#endif
+}
 
+JSStringRef CYCopyJSString(id value) {
+    if (value == nil)
+        return NULL;
+    // XXX: this definition scares me; is anyone using this?!
+    NSString *string([value description]);
+    return CYCopyJSString_(string);
+}
+
+#ifdef __APPLE__
 CFStringRef CYCopyCFString(JSStringRef value) {
     return JSStringCopyCFString(kCFAllocatorDefault, value);
 }
@@ -211,7 +226,7 @@ CFStringRef CYCopyCFString(JSStringRef value) {
 CFStringRef CYCopyCFString(JSContextRef context, JSValueRef value) {
     return CYCopyCFString(CYJSString(context, value));
 }
-
+#endif
 /* }}} */
 
 static JSGlobalContextRef Context_;
@@ -228,7 +243,6 @@ static JSClassRef Pointer_;
 static JSClassRef Runtime_;
 static JSClassRef Selector_;
 static JSClassRef Struct_;
-static JSClassRef Type_;
 
 static JSClassRef ObjectiveC_Classes_;
 static JSClassRef ObjectiveC_Image_Classes_;
@@ -280,8 +294,8 @@ struct CYValue :
     CYValue() {
     }
 
-    CYValue(void *value) :
-        value_(value)
+    CYValue(const void *value) :
+        value_(const_cast<void *>(value))
     {
     }
 
@@ -316,7 +330,7 @@ JSValueRef CYGetClassPrototype(JSContextRef context, id self) {
         return Instance_prototype_;
 
     // XXX: I need to think through multi-context
-    typedef std::map<Class, JSValueRef> CacheMap;
+    typedef std::map<id, JSValueRef> CacheMap;
     static CacheMap cache_;
 
     JSValueRef &value(cache_[self]);
@@ -551,6 +565,8 @@ struct Type_privateData :
 {
     static Type_privateData *Object;
     static Type_privateData *Selector;
+
+    static JSClassRef Class;
 
     ffi_type *ffi_;
     sig::Type *type_;
@@ -830,6 +846,7 @@ NSString *CYPoolNSCYON(apr_pool_t *pool, id value);
 - (void *) cy$symbol;
 @end
 
+#ifdef __APPLE__
 struct PropertyAttributes {
     CYPool pool_;
 
@@ -915,10 +932,13 @@ struct PropertyAttributes {
     }
 
 };
+#endif
 
+#ifdef __APPLE__
 NSString *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
     return [(NSString *) CFCopyDescription((CFTypeRef) self) autorelease];
 }
+#endif
 
 /* Bridge: NSArray {{{ */
 @implementation NSArray (Cycript)
@@ -928,7 +948,13 @@ NSString *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
     [json appendString:@"["];
 
     bool comma(false);
+#ifdef __APPLE__
     for (id object in self) {
+#else
+    id object;
+    for (size_t index(0), count([self count]); index != count; ++index) {
+        object = [self objectAtIndex:index];
+#endif
         if (comma)
             [json appendString:@","];
         else
@@ -957,8 +983,14 @@ NSString *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 }
 
 - (NSObject *) cy$getProperty:(NSString *)name {
-    if ([name isEqualToString:@"length"])
-        return [NSNumber numberWithUnsignedInteger:[self count]];
+    if ([name isEqualToString:@"length"]) {
+        NSUInteger count([self count]);
+#ifdef __APPLE__
+        return [NSNumber numberWithUnsignedInteger:count];
+#else
+        return [NSNumber numberWithUnsignedInt:count];
+#endif
+    }
 
     size_t index(CYGetIndex(NULL, name));
     if (index == _not(size_t) || index >= [self count])
@@ -977,7 +1009,12 @@ NSString *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
     [json appendString:@"{"];
 
     bool comma(false);
+#ifdef __APPLE__
     for (id key in self) {
+#else
+    NSEnumerator *keys([self keyEnumerator]);
+    while (id key = [keys nextObject]) {
+#endif
         if (comma)
             [json appendString:@","];
         else
@@ -1008,7 +1045,12 @@ NSString *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 - (bool) cy$setProperty:(NSString *)name to:(NSObject *)value {
     if ([name isEqualToString:@"length"]) {
         // XXX: is this not intelligent?
-        NSUInteger size([(NSNumber *)value unsignedIntegerValue]);
+        NSNumber *number(reinterpret_cast<NSNumber *>(value));
+#ifdef __APPLE__
+        NSUInteger size([number unsignedIntegerValue]);
+#else
+        NSUInteger size([number unsignedIntValue]);
+#endif
         NSUInteger count([self count]);
         if (size < count)
             [self removeObjectsInRange:NSMakeRange(size, count - size)];
@@ -2238,11 +2280,13 @@ static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object,
         const char *string(CYPoolCString(pool, name));
         Class _class(object_getClass(self));
 
+#ifdef __APPLE__
         if (objc_property_t property = class_getProperty(_class, string)) {
             PropertyAttributes attributes(property);
             SEL sel(sel_registerName(attributes.Getter()));
             return CYSendMessage(pool, context, self, sel, 0, NULL, false, exception);
         }
+#endif
 
         if (SEL sel = sel_getUid(string))
             if (CYImplements(self, _class, sel, true))
@@ -2270,6 +2314,7 @@ static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStr
         const char *string(CYPoolCString(pool, name));
         Class _class(object_getClass(self));
 
+#ifdef __APPLE__
         if (objc_property_t property = class_getProperty(_class, string)) {
             PropertyAttributes attributes(property);
             if (const char *setter = attributes.Setter()) {
@@ -2279,6 +2324,7 @@ static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStr
                 return true;
             }
         }
+#endif
 
         size_t length(strlen(string));
 
@@ -3576,7 +3622,7 @@ JSGlobalContextRef CYGetJSContext() {
         definition.callAsFunction = &Type_callAsFunction;
         definition.callAsConstructor = &Type_callAsConstructor;
         definition.finalize = &Finalize;
-        Type_ = JSClassCreate(&definition);
+        Type_privateData::Class = JSClassCreate(&definition);
 
         definition = kJSClassDefinitionEmpty;
         definition.className = "Runtime";
@@ -3663,7 +3709,9 @@ JSGlobalContextRef CYGetJSContext() {
 
         MSHookFunction(&objc_registerClassPair, MSHake(objc_registerClassPair));
 
+#ifdef __APPLE__
         class_addMethod(NSCFType_, @selector(cy$toJSON:), reinterpret_cast<IMP>(&NSCFType$cy$toJSON), "@12@0:4@8");
+#endif
 
         JSObjectRef cycript(JSObjectMake(context, NULL, NULL));
         CYSetProperty(context, global, CYJSString("Cycript"), cycript);

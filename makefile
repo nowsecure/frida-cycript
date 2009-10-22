@@ -6,11 +6,7 @@ else
 target := $(PKG_TARG)-
 endif
 
-flags := -g3 -O0 -DYYDEBUG=1
-#flags := -g0 -O3
-flags += -Wall -Werror -Wno-parentheses
-flags += -fPIC -fno-common
-flags += -I. -I$(shell apr-1-config --includedir)
+flags :=
 
 svn := $(shell svnversion)
 
@@ -27,6 +23,7 @@ code := ffi_type.o parse.o
 code += Replace.o Output.o
 code += Cycript.tab.o lex.cy.o
 code += Network.o Parser.o
+code += JavaScriptCore.o Library.o
 
 filters := C
 ldid := echo
@@ -40,6 +37,12 @@ uname_s := $(shell uname -s)
 uname_p := $(shell uname -p)
 -include $(uname_s).mk
 -include $(uname_s)-$(uname_p).mk
+
+flags += -g3 -O0 -DYYDEBUG=1
+#flags += -g0 -O3
+flags += -Wall -Werror -Wno-parentheses
+flags += -fPIC -fno-common
+flags += -I. -I$(shell apr-1-config --includedir)
 
 all += libcycript.$(dll)
 

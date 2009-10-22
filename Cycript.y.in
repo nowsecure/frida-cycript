@@ -46,7 +46,7 @@
 %code requires {
 #include "Parser.hpp"
 
-@begin ObjC
+@begin ObjectiveC
 #include "ObjectiveC.hpp"
 @end
 
@@ -89,7 +89,7 @@ typedef struct {
         CYTrue *true_;
         CYWord *word_;
 
-@begin ObjC
+@begin ObjectiveC
         CYClassName *className_;
         CYField *field_;
         CYMessage *message_;
@@ -413,7 +413,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <statement_> WhileStatement
 %type <statement_> WithStatement
 
-@begin ObjC
+@begin ObjectiveC
 %type <statement_> CategoryStatement
 %type <expression_> ClassExpression
 %type <statement_> ClassStatement
@@ -485,7 +485,7 @@ Terminator
     |
     ;*/
 
-@begin ObjC
+@begin ObjectiveC
 NewLineOpt
     : "\n"
     |
@@ -1319,7 +1319,7 @@ SourceElement
     ;
 /* }}} */
 
-@begin ObjC
+@begin ObjectiveC
 /* Cycript (Objective-C): @class Declaration {{{ */
 ClassSuperOpt
     : ":" MemberExpressionNoBF { $$ = $2; }

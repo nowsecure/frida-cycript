@@ -278,7 +278,7 @@ const char *Unparse(apr_pool_t *pool, struct Type *type) {
             return apr_psprintf(pool, "[%lu%s]", type->data.data.size, value);
         } break;
 
-        case pointer_P: return apr_psprintf(pool, "^%s", type->data.data.type == NULL ? "" : Unparse(pool, type->data.data.type));
+        case pointer_P: return apr_psprintf(pool, "^%s", type->data.data.type == NULL ? "v" : Unparse(pool, type->data.data.type));
         case bit_P: return apr_psprintf(pool, "b%zu", type->data.data.size);
         case char_P: return "c";
         case double_P: return "d";

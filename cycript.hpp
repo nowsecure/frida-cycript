@@ -40,10 +40,6 @@
 #ifndef CYCRIPT_HPP
 #define CYCRIPT_HPP
 
-#ifdef __OBJC__
-#include <Foundation/Foundation.h>
-#endif
-
 #include <JavaScriptCore/JavaScript.h>
 
 #include <apr_pools.h>
