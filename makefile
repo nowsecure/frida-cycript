@@ -7,6 +7,7 @@ target := $(PKG_TARG)-
 endif
 
 flags :=
+objc :=
 
 svn := $(shell svnversion)
 
@@ -107,7 +108,7 @@ lex.cy.o: lex.cy.c Cycript.tab.hh Parser.hpp Pooling.hpp
 	$(target)g++ $(flags) -c -o $@ $<
 
 %.o: %.mm $(header)
-	$(target)g++ $(flags) -c -o $@ $<
+	$(target)g++ $(flags) -c -o $@ $< $(objc)
 
 libcycript.$(dll): $(code)
 	$(target)g++ $(flags) -shared -dynamiclib -o $@ $(filter %.o,$^) $(library) $(link)
