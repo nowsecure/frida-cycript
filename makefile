@@ -4,8 +4,8 @@ else
 target := $(PKG_TARG)-
 endif
 
-flags := -g3 -O0 -DYYDEBUG=1
-#flags := -g0 -O3
+#flags := -g3 -O0 -DYYDEBUG=1
+flags := -g0 -O3
 flags += -Wall -Werror -I. -fno-common
 
 svn := $(shell svnversion)

@@ -3466,6 +3466,8 @@ struct CYClient :
                 json = NULL;
                 size = _not(size_t);
             } else {
+                CYContext context(driver.pool_);
+                driver.program_->Replace(context);
                 std::ostringstream str;
                 CYOutput out(str);
                 out << *driver.program_;
