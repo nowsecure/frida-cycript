@@ -3400,24 +3400,6 @@ const char *CYExecute(apr_pool_t *pool, const char *code) { _pooled
     return json;
 }
 
-bool CYRecvAll_(int socket, uint8_t *data, size_t size) {
-    while (size != 0) if (size_t writ = _syscall(recv(socket, data, size, 0))) {
-        data += writ;
-        size -= writ;
-    } else
-        return false;
-    return true;
-}
-
-bool CYSendAll_(int socket, const uint8_t *data, size_t size) {
-    while (size != 0) if (size_t writ = _syscall(send(socket, data, size, 0))) {
-        data += writ;
-        size -= writ;
-    } else
-        return false;
-    return true;
-}
-
 static apr_pool_t *Pool_;
 
 struct CYExecute_ {

@@ -118,7 +118,11 @@ void Run(int socket, const char *data, size_t size, FILE *fout = NULL, bool expa
     const char *json;
     if (socket == -1) {
         mode_ = Running;
+#ifdef CY_EXECUTE
         json = CYExecute(pool, data);
+#else
+        json = NULL;
+#endif
         mode_ = Working;
         if (json != NULL)
             size = strlen(json);
@@ -332,14 +336,27 @@ static void *Map(const char *path, size_t *psize) {
 
 int main(int argc, char *argv[]) {
     bool tty(isatty(STDIN_FILENO));
-    pid_t pid(_not(pid_t));
     bool compile(false);
 
-    for (;;) switch (getopt(argc, argv, "cg:n:p:s")) {
+#ifdef CY_ATTACH
+    pid_t pid(_not(pid_t));
+#endif
+
+    for (;;) switch (getopt(argc, argv,
+        "cg:n:"
+#ifdef CY_ATTACH
+        "p:"
+#endif
+        "s"
+    )) {
         case -1:
             goto getopt;
         case '?':
-            fprintf(stderr, "usage: cycript [-c] [-p <pid>] [<script> [<arg>...]]\n");
+            fprintf(stderr, "usage: cycript [-c]"
+#ifdef CY_ATTACH
+            " [-p <pid>]"
+#endif
+            " [<script> [<arg>...]]\n");
             return 1;
 
         case 'c':
@@ -368,6 +385,7 @@ int main(int argc, char *argv[]) {
             }
         break;
 
+#ifdef CY_ATTACH
         case 'p': {
             size_t size(strlen(optarg));
             char *end;
@@ -377,6 +395,7 @@ int main(int argc, char *argv[]) {
                 return 1;
             }
         } break;
+#endif
 
         case 's':
             strict_ = true;
@@ -385,6 +404,7 @@ int main(int argc, char *argv[]) {
 
     const char *script;
 
+#ifdef CY_ATTACH
     if (pid != _not(pid_t) && optind < argc - 1) {
         fprintf(stderr, "-p cannot set argv\n");
         return 1;
@@ -394,6 +414,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "-p conflicts with -c\n");
         return 1;
     }
+#endif
 
     if (optind == argc)
         script = NULL;
@@ -405,13 +426,16 @@ int main(int argc, char *argv[]) {
             script = NULL;
     }
 
-    if (script == NULL && !tty && pid != _not(pid_t)) {
-        fprintf(stderr, "non-terminal attaching to remove console\n");
+#ifdef CY_ATTACH
+    if (pid != _not(pid_t) && script == NULL && !tty) {
+        fprintf(stderr, "non-terminal attaching to remote console\n");
         return 1;
     }
+#endif
 
     int socket;
 
+#ifdef CY_ATTACH
     if (pid == _not(pid_t))
         socket = -1;
     else {
@@ -424,6 +448,9 @@ int main(int argc, char *argv[]) {
 
         _syscall(connect(socket, reinterpret_cast<sockaddr *>(&address), SUN_LEN(&address)));
     }
+#else
+    socket = -1;
+#endif
 
     if (script == NULL && tty)
         Console(socket);

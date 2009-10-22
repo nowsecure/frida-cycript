@@ -21,7 +21,7 @@ arch := $(shell $(dpkg_architecture) -qDEB_HOST_ARCH 2>/dev/null)
 endif
 
 header := Cycript.tab.hh Parser.hpp Pooling.hpp cycript.hpp
-code := ffi_type.o parse.o Replace.o Output.o Cycript.tab.o lex.cy.o Library.o
+code := ffi_type.o parse.o Replace.o Output.o Cycript.tab.o lex.cy.o Network.o
 
 dll := so
 
