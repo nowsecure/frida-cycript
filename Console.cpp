@@ -385,7 +385,7 @@ int main(int argc, char const * const argv[], char const * const envp[]) {
             case 'g':
                 if (false);
 #if YYDEBUG
-                else if (strcmp(optarg, "bison") == 0)
+                else if (strcmp(arg, "bison") == 0)
                     bison_ = true;
 #endif
                 else {
@@ -396,7 +396,7 @@ int main(int argc, char const * const argv[], char const * const envp[]) {
 
             case 'n':
                 if (false);
-                else if (strcmp(optarg, "minify") == 0)
+                else if (strcmp(arg, "minify") == 0)
                     pretty_ = true;
                 else {
                     fprintf(stderr, "invalid name for -n\n");
@@ -406,10 +406,10 @@ int main(int argc, char const * const argv[], char const * const envp[]) {
 
 #ifdef CY_ATTACH
             case 'p': {
-                size_t size(strlen(optarg));
+                size_t size(strlen(arg));
                 char *end;
-                pid = strtoul(optarg, &end, 0);
-                if (optarg + size != end) {
+                pid = strtoul(arg, &end, 0);
+                if (arg + size != end) {
                     fprintf(stderr, "invalid pid for -p\n");
                     return 1;
                 }
@@ -423,9 +423,10 @@ int main(int argc, char const * const argv[], char const * const envp[]) {
     } getopt:;
 
     const char *script;
+    int ind(state->ind);
 
 #ifdef CY_ATTACH
-    if (pid != _not(pid_t) && optind < argc - 1) {
+    if (pid != _not(pid_t) && ind < argc - 1) {
         fprintf(stderr, "-p cannot set argv\n");
         return 1;
     }
@@ -436,14 +437,14 @@ int main(int argc, char const * const argv[], char const * const envp[]) {
     }
 #endif
 
-    if (optind == argc)
+    if (ind == argc)
         script = NULL;
     else {
 #ifdef CY_EXECUTE
         // XXX: const_cast?! wtf gcc :(
-        CYSetArgs(argc - optind - 1, const_cast<const char **>(argv + optind + 1));
+        CYSetArgs(argc - ind - 1, const_cast<const char **>(argv + ind + 1));
 #endif
-        script = argv[optind];
+        script = argv[ind];
         if (strcmp(script, "-") == 0)
             script = NULL;
     }
