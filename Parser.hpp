@@ -866,7 +866,7 @@ struct CYClause :
     {
     }
 
-    virtual void Replace(CYContext &context);
+    void Replace(CYContext &context);
     virtual void Output(CYOutput &out) const;
 };
 
