@@ -6,8 +6,9 @@ endif
 
 #flags := -g3 -O0 -DYYDEBUG=1
 flags := -g0 -O3
-flags += -Wall -Werror -Wno-parentheses -I. -fno-common
-flags += -I$(shell apr-1-config --includedir)
+flags += -Wall -Werror -Wno-parentheses
+flags += -fPIC -fno-common
+flags += -I. -I$(shell apr-1-config --includedir)
 
 svn := $(shell svnversion)
 
