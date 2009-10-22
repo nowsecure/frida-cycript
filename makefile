@@ -50,9 +50,9 @@ $(deb): $(all)
 	    cp -a Settings.plist package/Library/PreferenceLoader/Preferences/Cycript.plist; \
 	fi
 	if [[ -e Tweak.plist ]]; then cp -a Tweak.plist package/Library/MobileSubstrate/DynamicLibraries/Cycript.plist; fi
-	cp -a Cycript.dylib package/Library/MobileSubstrate/DynamicLibraries
+	cp -a Cycript.$(dll) package/Library/MobileSubstrate/DynamicLibraries
 	mkdir -p package/usr/{bin,lib,sbin}
-	cp -a libcycript.dylib package/usr/lib
+	cp -a libcycript.$(dll) package/usr/lib
 	cp -a cycript package/usr/bin
 	#cp -a cyrver package/usr/sbin
 	cp -a libcycript.plist package/usr/lib
@@ -62,7 +62,7 @@ endif
 all: $(all)
 
 clean:
-	rm -f *.o libcycript.dylib cycript libcycript.plist Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver
+	rm -f *.o libcycript.$(dll) cycript libcycript.plist Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.y
 
 libcycript.plist: Bridge.def
 	{ \
@@ -110,7 +110,7 @@ cyrver: Server.o
 
 libcycript.$(dll): $(code)
 	$(target)g++ $(flags) -dynamiclib -o $@ $(filter %.o,$^) \
-	    -install_name /usr/lib/libcycript.dylib \
+	    -install_name /usr/lib/libcycript.$(dll) \
 	    -lobjc -lapr-1 -lffi -lsubstrate \
 	    -framework CoreFoundation -framework Foundation \
 	    -framework CFNetwork \

@@ -63,7 +63,6 @@ typedef struct {
         CYBoolean *boolean_;
         CYClause *clause_;
         CYCatch *catch_;
-        CYClassName *className_;
         CYComprehension *comprehension_;
         CYCompound *compound_;
         CYDeclaration *declaration_;
@@ -71,7 +70,6 @@ typedef struct {
         CYElement *element_;
         CYExpression *expression_;
         CYFalse *false_;
-        CYField *field_;
         CYFinally *finally_;
         CYForInitialiser *for_;
         CYForInInitialiser *forin_;
@@ -92,6 +90,8 @@ typedef struct {
         CYWord *word_;
 
 @begin ObjC
+        CYClassName *className_;
+        CYField *field_;
         CYMessage *message_;
         CYMessageParameter *messageParameter_;
         CYSelectorPart *selector_;
@@ -304,15 +304,6 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <clause_> CaseClause
 %type <clause_> CaseClausesOpt
 %type <catch_> CatchOpt
-%type <statement_> CategoryStatement
-%type <expression_> ClassExpression
-%type <message_> ClassMessageDeclaration
-%type <message_> ClassMessageDeclarationListOpt
-%type <className_> ClassName
-%type <className_> ClassNameOpt
-%type <statement_> ClassStatement
-%type <expression_> ClassSuperOpt
-%type <field_> ClassFieldList
 %type <comprehension_> ComprehensionList
 %type <comprehension_> ComprehensionListOpt
 %type <expression_> ConditionalExpression
@@ -373,11 +364,6 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> MemberExpression
 %type <expression_> MemberExpression_
 %type <expression_> MemberExpressionNoBF
-%type <messageParameter_> MessageParameter
-%type <messageParameter_> MessageParameters
-%type <messageParameter_> MessageParameterList
-%type <messageParameter_> MessageParameterListOpt
-%type <bool_> MessageScope
 %type <expression_> MultiplicativeExpression
 %type <expression_> MultiplicativeExpressionNoBF
 %type <expression_> NewExpression
@@ -403,9 +389,6 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> RelationalExpressionNoIn
 %type <infix_> RelationalExpressionNoIn_
 %type <statement_> ReturnStatement
-%type <selector_> SelectorExpression
-%type <selector_> SelectorExpression_
-%type <selector_> SelectorExpressionOpt
 %type <expression_> ShiftExpression
 %type <expression_> ShiftExpressionNoBF
 %type <statement_> SourceElement
@@ -417,7 +400,6 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <statement_> SwitchStatement
 %type <statement_> ThrowStatement
 %type <statement_> TryStatement
-%type <expression_> TypeOpt
 %type <expression_> UnaryExpression
 %type <expression_> UnaryExpression_
 %type <expression_> UnaryExpressionNoBF
@@ -430,14 +412,34 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <statement_> VariableStatement
 %type <statement_> WhileStatement
 %type <statement_> WithStatement
-%type <word_> Word
-%type <word_> WordOpt
 
+@begin ObjC
+%type <statement_> CategoryStatement
+%type <expression_> ClassExpression
+%type <statement_> ClassStatement
+%type <expression_> ClassSuperOpt
+%type <field_> ClassFieldList
+%type <message_> ClassMessageDeclaration
+%type <message_> ClassMessageDeclarationListOpt
+%type <className_> ClassName
+%type <className_> ClassNameOpt
 %type <expression_> MessageExpression
+%type <messageParameter_> MessageParameter
+%type <messageParameter_> MessageParameters
+%type <messageParameter_> MessageParameterList
+%type <messageParameter_> MessageParameterListOpt
+%type <bool_> MessageScope
 %type <argument_> SelectorCall
 %type <argument_> SelectorCall_
+%type <selector_> SelectorExpression
+%type <selector_> SelectorExpression_
+%type <selector_> SelectorExpressionOpt
 %type <argument_> SelectorList
+%type <expression_> TypeOpt
 %type <argument_> VariadicCall
+%type <word_> Word
+%type <word_> WordOpt
+@end
 
 %left "*" "/" "%"
 %left "+" "-"
@@ -483,6 +485,7 @@ Terminator
     |
     ;*/
 
+@begin ObjC
 NewLineOpt
     : "\n"
     |
@@ -532,6 +535,7 @@ Word
     | "while" { $$ = $1; }
     | "with" { $$ = $1; }
     ;
+@end
 
 Identifier
     : Identifier_ { $$ = $1; }
