@@ -4,11 +4,13 @@ else
 target := $(PKG_TARG)-
 endif
 
-#flags := -g3 -O0 -DYYDEBUG=1
-flags := -g0 -O3
+flags := -g3 -O0 -DYYDEBUG=1
+#flags := -g0 -O3
 flags += -Wall -Werror -I. -fno-common
 
 svn := $(shell svnversion)
+
+filters := C
 
 all:
 all := libcycript.plist cycript
@@ -19,6 +21,7 @@ arch := $(shell $(dpkg_architecture) -qDEB_HOST_ARCH 2>/dev/null)
 endif
 
 header := Cycript.tab.hh Parser.hpp Pooling.hpp cycript.hpp
+code := ffi_type.o parse.o Replace.o Output.o Cycript.tab.o lex.cy.o Library.o
 
 dll := so
 
@@ -72,6 +75,9 @@ libcycript.plist: Bridge.def
 	    echo '})'; \
 	} >$@
 
+Cycript.y: Cycript.y.in
+	./Filter.sh <$< >$@ $(filters)
+
 Cycript.tab.cc Cycript.tab.hh location.hh position.hh: Cycript.y
 	bison -v --report=state $<
 
@@ -102,7 +108,7 @@ cyrver: Server.o
 	    -framework CoreFoundation -framework CFNetwork
 	ldid -S $@
 
-libcycript.$(dll): ffi_type.o parse.o Replace.o Output.o Cycript.tab.o lex.cy.o Library.o
+libcycript.$(dll): $(code)
 	$(target)g++ $(flags) -dynamiclib -o $@ $(filter %.o,$^) \
 	    -install_name /usr/lib/libcycript.dylib \
 	    -lobjc -lapr-1 -lffi -lsubstrate \

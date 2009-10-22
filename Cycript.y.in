@@ -46,6 +46,10 @@
 %code requires {
 #include "Parser.hpp"
 
+@begin ObjC
+#include "ObjectiveC.hpp"
+@end
+
 typedef struct {
     bool newline_;
 
@@ -76,19 +80,22 @@ typedef struct {
         CYInfix *infix_;
         CYLiteral *literal_;
         CYMember *member_;
-        CYMessage *message_;
-        CYMessageParameter *messageParameter_;
         CYNull *null_;
         CYNumber *number_;
         CYProgram *program_;
         CYProperty *property_;
         CYPropertyName *propertyName_;
-        CYSelectorPart *selector_;
         CYStatement *statement_;
         CYString *string_;
         CYThis *this_;
         CYTrue *true_;
         CYWord *word_;
+
+@begin ObjC
+        CYMessage *message_;
+        CYMessageParameter *messageParameter_;
+        CYSelectorPart *selector_;
+@end
     };
 } YYSTYPE;
 
@@ -1308,7 +1315,8 @@ SourceElement
     ;
 /* }}} */
 
-/* Cycript: @class Declaration {{{ */
+@begin ObjC
+/* Cycript (Objective-C): @class Declaration {{{ */
 ClassSuperOpt
     : ":" MemberExpressionNoBF { $$ = $2; }
     | { $$ = NULL; }
@@ -1386,7 +1394,7 @@ Statement_
     | CategoryStatement { $$ = $1; }
     ;
 /* }}} */
-/* Cycript: Send Message {{{ */
+/* Cycript (Objective-C): Send Message {{{ */
 VariadicCall
     : "," AssignmentExpression VariadicCall { $$ = new(driver.pool_) CYArgument(NULL, $2, $3); }
     | { $$ = NULL; }
@@ -1429,7 +1437,10 @@ PrimaryExpression_
     | "@selector" "(" SelectorExpression ")" { $$ = new(driver.pool_) CYSelector($3); }
     ;
 /* }}} */
-/* Cycript: Pointer Indirection/Addressing {{{ */
+@end
+
+@begin C
+/* Cycript (C): Pointer Indirection/Addressing {{{ */
 AssigneeExpression_
     : "*" UnaryExpression { $$ = new(driver.pool_) CYIndirect($2); }
     ;
@@ -1443,6 +1454,8 @@ MemberAccess
     | "->" Identifier { $$ = new(driver.pool_) CYIndirectMember(NULL, new(driver.pool_) CYString($2)); }
     ;
 /* }}} */
+@end
+
 /* ECMAScript5: Object Literal Trailing Comma {{{ */
 PropertyNameAndValueList_
     : "," { $$ = NULL; }
