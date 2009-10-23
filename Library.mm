@@ -50,11 +50,10 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFLogUtilities.h>
 #include <JavaScriptCore/JSStringRefCF.h>
+#include <WebKit/WebScriptObject.h>
 #endif
 
 #include <Foundation/Foundation.h>
-
-#include <WebKit/WebScriptObject.h>
 
 #include <sys/mman.h>
 
@@ -80,7 +79,7 @@
 } while (false)
 
 #define _trace() do { \
-    CFLog(kCFLogLevelNotice, CFSTR("_trace():%u"), __LINE__); \
+    fprintf(stderr, "_trace():%u\n", __LINE__); \
 } while (false)
 
 #define CYPoolTry { \
@@ -202,11 +201,24 @@ class CYJSString {
 };
 /* }}} */
 /* Objective-C Strings {{{ */
+const char *CYPoolCString(apr_pool_t *pool, NSString *value) {
+    if (pool == NULL)
+        return [value UTF8String];
+    else {
+        size_t size([value maximumLengthOfBytesUsingEncoding:NSUTF8StringEncoding] + 1);
+        char *string(new(pool) char[size]);
+        if (![value getCString:string maxLength:size encoding:NSUTF8StringEncoding])
+            @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"[NSString getCString:maxLength:encoding:] == NO" userInfo:nil];
+        return string;
+    }
+}
+
 JSStringRef CYCopyJSString_(NSString *value) {
 #ifdef __APPLE__
     return JSStringCreateWithCFString(reinterpret_cast<CFStringRef>(value));
 #else
-    return CYCopyJSString([value UTF8String]);
+    CYPool pool;
+    return CYCopyJSString(CYPoolCString(pool, value));
 #endif
 }
 
@@ -270,9 +282,12 @@ static JSObjectRef Array_pop_;
 static JSObjectRef Array_push_;
 static JSObjectRef Array_splice_;
 
-static Class NSArray_;
+#ifdef __APPLE__
 static Class NSCFBoolean_;
 static Class NSCFType_;
+#endif
+
+static Class NSArray_;
 static Class NSDictionary_;
 static Class NSMessageBuilder_;
 static Class NSZombie_;
@@ -741,18 +756,6 @@ JSObjectRef CYMakeInstance(JSContextRef context, id object, bool transient) {
     return Instance::Make(context, object, flags);
 }
 
-const char *CYPoolCString(apr_pool_t *pool, NSString *value) {
-    if (pool == NULL)
-        return [value UTF8String];
-    else {
-        size_t size([value maximumLengthOfBytesUsingEncoding:NSUTF8StringEncoding] + 1);
-        char *string(new(pool) char[size]);
-        if (![value getCString:string maxLength:size encoding:NSUTF8StringEncoding])
-            @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"[NSString getCString:maxLength:encoding:] == NO" userInfo:nil];
-        return string;
-    }
-}
-
 JSValueRef CYCastJSValue(JSContextRef context, bool value) {
     return JSValueMakeBoolean(context, value);
 }
@@ -1138,8 +1141,12 @@ NSObject *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 @implementation NSNumber (Cycript)
 
 - (JSType) cy$JSType {
+#ifdef __APPLE__
     // XXX: this just seems stupid
-    return [self class] == NSCFBoolean_ ? kJSTypeBoolean : kJSTypeNumber;
+    if ([self class] == NSCFBoolean_)
+        return kJSTypeBoolean;
+#endif
+    return kJSTypeNumber;
 }
 
 - (NSObject *) cy$toJSON:(NSString *)key {
@@ -1240,18 +1247,19 @@ NSObject *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 
 - (NSString *) cy$toCYON {
     // XXX: this should use the better code from Output.cpp
-    CFMutableStringRef json(CFStringCreateMutableCopy(kCFAllocatorDefault, 0, (CFStringRef) self));
 
-    CFStringFindAndReplace(json, CFSTR("\\"), CFSTR("\\\\"), CFRangeMake(0, CFStringGetLength(json)), 0);
-    CFStringFindAndReplace(json, CFSTR("\""), CFSTR("\\\""), CFRangeMake(0, CFStringGetLength(json)), 0);
-    CFStringFindAndReplace(json, CFSTR("\t"), CFSTR("\\t"), CFRangeMake(0, CFStringGetLength(json)), 0);
-    CFStringFindAndReplace(json, CFSTR("\r"), CFSTR("\\r"), CFRangeMake(0, CFStringGetLength(json)), 0);
-    CFStringFindAndReplace(json, CFSTR("\n"), CFSTR("\\n"), CFRangeMake(0, CFStringGetLength(json)), 0);
+    NSMutableString *json([self mutableCopy]);
 
-    CFStringInsert(json, 0, CFSTR("\""));
-    CFStringAppend(json, CFSTR("\""));
+    [json replaceOccurrencesOfString:@"\\" withString:@"\\\\" options:NSLiteralSearch range:NSMakeRange(0, [json length])];
+    [json replaceOccurrencesOfString:@"\"" withString:@"\\\"" options:NSLiteralSearch range:NSMakeRange(0, [json length])];
+    [json replaceOccurrencesOfString:@"\t" withString:@"\\t" options:NSLiteralSearch range:NSMakeRange(0, [json length])];
+    [json replaceOccurrencesOfString:@"\r" withString:@"\\r" options:NSLiteralSearch range:NSMakeRange(0, [json length])];
+    [json replaceOccurrencesOfString:@"\n" withString:@"\\n" options:NSLiteralSearch range:NSMakeRange(0, [json length])];
 
-    return [reinterpret_cast<const NSString *>(json) autorelease];
+    [json appendString:@"\""];
+    [json insertString:@"\"" atIndex:0];
+
+    return json;
 }
 
 - (NSString *) cy$toKey {
@@ -1360,7 +1368,7 @@ apr_status_t CYPoolRelease_(void *data) {
     return APR_SUCCESS;
 }
 
-id CYPoolRelease(apr_pool_t *pool, id object) {
+id CYPoolRelease_(apr_pool_t *pool, id object) {
     if (object == nil)
         return nil;
     else if (pool == NULL)
@@ -1371,8 +1379,9 @@ id CYPoolRelease(apr_pool_t *pool, id object) {
     }
 }
 
-CFTypeRef CYPoolRelease(apr_pool_t *pool, CFTypeRef object) {
-    return (CFTypeRef) CYPoolRelease(pool, (id) object);
+template <typename Type_>
+Type_ CYPoolRelease(apr_pool_t *pool, Type_ object) {
+    return (Type_) CYPoolRelease_(pool, (id) object);
 }
 
 id CYCastNSObject_(apr_pool_t *pool, JSContextRef context, JSObjectRef object) {
@@ -1411,6 +1420,7 @@ double CYCastDouble(JSContextRef context, JSValueRef value) {
     return number;
 }
 
+#ifdef __APPLE__
 CFNumberRef CYCopyCFNumber(JSContextRef context, JSValueRef value) {
     double number(CYCastDouble(context, value));
     return CFNumberCreate(kCFAllocatorDefault, kCFNumberDoubleType, &number);
@@ -1420,18 +1430,30 @@ CFStringRef CYCopyCFString(const char *value) {
     return CFStringCreateWithCString(kCFAllocatorDefault, value, kCFStringEncodingUTF8);
 }
 
-NSString *CYCastNSString(apr_pool_t *pool, const char *value) {
-    return (NSString *) CYPoolRelease(pool, CYCopyCFString(value));
+template <typename Type_>
+NSString *CYCopyNSString(Type_ value) {
+    return (NSString *) CYCopyCFString(value);
+}
+#else
+NSString *CYCopyNSString(const char *value {
+    return [NSString stringWithUTF8String:value];
 }
 
-NSString *CYCastNSString(apr_pool_t *pool, JSStringRef value) {
-    return (NSString *) CYPoolRelease(pool, CYCopyCFString(value));
+NSString *CYCopyNSString(JSStringRef value) {
+    return CYCopyNSString(CYCastCString_(value));
+}
+#endif
+
+template <typename Type_>
+NSString *CYCastNSString(apr_pool_t *pool, Type_ value) {
+    return CYPoolRelease(pool, CYCopyNSString(value));
 }
 
 bool CYCastBool(JSContextRef context, JSValueRef value) {
     return JSValueToBoolean(context, value);
 }
 
+#ifdef __APPLE__
 CFTypeRef CYCFType(apr_pool_t *pool, JSContextRef context, JSValueRef value, bool cast) {
     CFTypeRef object;
     bool copy;
@@ -1487,6 +1509,7 @@ CFTypeRef CYCastCFType(apr_pool_t *pool, JSContextRef context, JSValueRef value)
 CFTypeRef CYCopyCFType(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
     return CYCFType(pool, context, value, false);
 }
+#endif
 
 NSArray *CYCastNSArray(JSPropertyNameArrayRef names) {
     CYPool pool;
@@ -1851,14 +1874,25 @@ static bool CYGetOffset(apr_pool_t *pool, JSStringRef value, ssize_t &index) {
 }
 
 // XXX: this macro is unhygenic
+#define CYCastCString_(string) ({ \
+    char *utf8; \
+    if (string == NULL) \
+        utf8 = NULL; \
+    else { \
+        size_t size(JSStringGetMaximumUTF8CStringSize(string)); \
+        utf8 = reinterpret_cast<char *>(alloca(size)); \
+        JSStringGetUTF8CString(string, utf8, size); \
+    } \
+    utf8; \
+})
+
+// XXX: this macro is unhygenic
 #define CYCastCString(context, value) ({ \
     char *utf8; \
     if (value == NULL) \
         utf8 = NULL; \
     else if (JSStringRef string = CYCopyJSString(context, value)) { \
-        size_t size(JSStringGetMaximumUTF8CStringSize(string)); \
-        utf8 = reinterpret_cast<char *>(alloca(size)); \
-        JSStringGetUTF8CString(string, utf8, size); \
+        utf8 = CYCastCString_(string); \
         JSStringRelease(string); \
     } else \
         utf8 = NULL; \
@@ -3541,9 +3575,12 @@ MSInitialize { _pooled
 
     Bridge_ = [[NSMutableArray arrayWithContentsOfFile:@"/usr/lib/libcycript.plist"] retain];
 
-    NSArray_ = objc_getClass("NSArray");
+#ifdef __APPLE__
     NSCFBoolean_ = objc_getClass("NSCFBoolean");
     NSCFType_ = objc_getClass("NSCFType");
+#endif
+
+    NSArray_ = objc_getClass("NSArray");
     NSDictionary_ = objc_getClass("NSDictonary");
     NSMessageBuilder_ = objc_getClass("NSMessageBuilder");
     NSZombie_ = objc_getClass("_NSZombie_");
