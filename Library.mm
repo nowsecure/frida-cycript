@@ -200,6 +200,33 @@ class CYJSString {
     }
 };
 /* }}} */
+/* C Strings {{{ */
+// XXX: this macro is unhygenic
+#define CYCastCString_(string) ({ \
+    char *utf8; \
+    if (string == NULL) \
+        utf8 = NULL; \
+    else { \
+        size_t size(JSStringGetMaximumUTF8CStringSize(string)); \
+        utf8 = reinterpret_cast<char *>(alloca(size)); \
+        JSStringGetUTF8CString(string, utf8, size); \
+    } \
+    utf8; \
+})
+
+// XXX: this macro is unhygenic
+#define CYCastCString(context, value) ({ \
+    char *utf8; \
+    if (value == NULL) \
+        utf8 = NULL; \
+    else if (JSStringRef string = CYCopyJSString(context, value)) { \
+        utf8 = CYCastCString_(string); \
+        JSStringRelease(string); \
+    } else \
+        utf8 = NULL; \
+    utf8; \
+})
+/* }}} */
 /* Objective-C Strings {{{ */
 const char *CYPoolCString(apr_pool_t *pool, NSString *value) {
     if (pool == NULL)
@@ -235,10 +262,27 @@ CFStringRef CYCopyCFString(JSStringRef value) {
     return JSStringCopyCFString(kCFAllocatorDefault, value);
 }
 
-CFStringRef CYCopyCFString(JSContextRef context, JSValueRef value) {
-    return CYCopyCFString(CYJSString(context, value));
+CFStringRef CYCopyCFString(const char *value) {
+    return CFStringCreateWithCString(kCFAllocatorDefault, value, kCFStringEncodingUTF8);
+}
+
+template <typename Type_>
+NSString *CYCopyNSString(Type_ value) {
+    return (NSString *) CYCopyCFString(value);
+}
+#else
+NSString *CYCopyNSString(const char *value) {
+    return [NSString stringWithUTF8String:value];
+}
+
+NSString *CYCopyNSString(JSStringRef value) {
+    return CYCopyNSString(CYCastCString_(value));
 }
 #endif
+
+NSString *CYCopyNSString(JSContextRef context, JSValueRef value) {
+    return CYCopyNSString(CYJSString(context, value));
+}
 /* }}} */
 
 static JSGlobalContextRef Context_;
@@ -1420,29 +1464,9 @@ double CYCastDouble(JSContextRef context, JSValueRef value) {
     return number;
 }
 
-#ifdef __APPLE__
-CFNumberRef CYCopyCFNumber(JSContextRef context, JSValueRef value) {
-    double number(CYCastDouble(context, value));
-    return CFNumberCreate(kCFAllocatorDefault, kCFNumberDoubleType, &number);
+NSNumber *CYCopyNSNumber(JSContextRef context, JSValueRef value) {
+    return [[NSNumber alloc] initWithDouble:CYCastDouble(context, value)];
 }
-
-CFStringRef CYCopyCFString(const char *value) {
-    return CFStringCreateWithCString(kCFAllocatorDefault, value, kCFStringEncodingUTF8);
-}
-
-template <typename Type_>
-NSString *CYCopyNSString(Type_ value) {
-    return (NSString *) CYCopyCFString(value);
-}
-#else
-NSString *CYCopyNSString(const char *value {
-    return [NSString stringWithUTF8String:value];
-}
-
-NSString *CYCopyNSString(JSStringRef value) {
-    return CYCopyNSString(CYCastCString_(value));
-}
-#endif
 
 template <typename Type_>
 NSString *CYCastNSString(apr_pool_t *pool, Type_ value) {
@@ -1453,9 +1477,8 @@ bool CYCastBool(JSContextRef context, JSValueRef value) {
     return JSValueToBoolean(context, value);
 }
 
-#ifdef __APPLE__
-CFTypeRef CYCFType(apr_pool_t *pool, JSContextRef context, JSValueRef value, bool cast) {
-    CFTypeRef object;
+id CYNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef value, bool cast) {
+    id object;
     bool copy;
 
     switch (JSType type = JSValueGetType(context, value)) {
@@ -1469,23 +1492,28 @@ CFTypeRef CYCFType(apr_pool_t *pool, JSContextRef context, JSValueRef value, boo
         break;
 
         case kJSTypeBoolean:
-            object = CYCastBool(context, value) ? kCFBooleanTrue : kCFBooleanFalse;
+#ifdef __APPLE__
+            object = (id) (CYCastBool(context, value) ? kCFBooleanTrue : kCFBooleanFalse);
             copy = false;
+#else
+            object = [[NSNumber alloc] initWithBoolean:value];
+            copy = true;
+#endif
         break;
 
         case kJSTypeNumber:
-            object = CYCopyCFNumber(context, value);
+            object = CYCopyNSNumber(context, value);
             copy = true;
         break;
 
         case kJSTypeString:
-            object = CYCopyCFString(context, value);
+            object = CYCopyNSString(context, value);
             copy = true;
         break;
 
         case kJSTypeObject:
             // XXX: this might could be more efficient
-            object = (CFTypeRef) CYCastNSObject(pool, context, (JSObjectRef) value);
+            object = CYCastNSObject(pool, context, (JSObjectRef) value);
             copy = false;
         break;
 
@@ -1499,17 +1527,16 @@ CFTypeRef CYCFType(apr_pool_t *pool, JSContextRef context, JSValueRef value, boo
     else if (copy)
         return CYPoolRelease(pool, object);
     else
-        return CFRetain(object);
+        return [object retain];
 }
 
-CFTypeRef CYCastCFType(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
-    return CYCFType(pool, context, value, true);
+id CYCastNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
+    return CYNSObject(pool, context, value, true);
 }
 
-CFTypeRef CYCopyCFType(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
-    return CYCFType(pool, context, value, false);
+id CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
+    return CYNSObject(pool, context, value, false);
 }
-#endif
 
 NSArray *CYCastNSArray(JSPropertyNameArrayRef names) {
     CYPool pool;
@@ -1518,10 +1545,6 @@ NSArray *CYCastNSArray(JSPropertyNameArrayRef names) {
     for (size_t index(0); index != size; ++index)
         [array addObject:CYCastNSString(pool, JSPropertyNameArrayGetNameAtIndex(names, index))];
     return array;
-}
-
-id CYCastNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
-    return reinterpret_cast<const NSObject *>(CYCastCFType(pool, context, value));
 }
 
 void CYThrow(JSContextRef context, JSValueRef value) {
@@ -1872,32 +1895,6 @@ static const char *CYPoolCString(apr_pool_t *pool, JSContextRef context, JSValue
 static bool CYGetOffset(apr_pool_t *pool, JSStringRef value, ssize_t &index) {
     return CYGetOffset(CYPoolCString(pool, value), index);
 }
-
-// XXX: this macro is unhygenic
-#define CYCastCString_(string) ({ \
-    char *utf8; \
-    if (string == NULL) \
-        utf8 = NULL; \
-    else { \
-        size_t size(JSStringGetMaximumUTF8CStringSize(string)); \
-        utf8 = reinterpret_cast<char *>(alloca(size)); \
-        JSStringGetUTF8CString(string, utf8, size); \
-    } \
-    utf8; \
-})
-
-// XXX: this macro is unhygenic
-#define CYCastCString(context, value) ({ \
-    char *utf8; \
-    if (value == NULL) \
-        utf8 = NULL; \
-    else if (JSStringRef string = CYCopyJSString(context, value)) { \
-        utf8 = CYCastCString_(string); \
-        JSStringRelease(string); \
-    } else \
-        utf8 = NULL; \
-    utf8; \
-})
 
 static void *CYCastPointer_(JSContextRef context, JSValueRef value) {
     switch (JSValueGetType(context, value)) {
