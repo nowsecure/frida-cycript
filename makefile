@@ -30,7 +30,7 @@ filters := C
 ldid := echo
 dll := so
 apr := $(shell apr-1-config --link-ld)
-library := $(apr) -lffi
+library := $(apr) -lffi -liconv
 console := $(apr) -lreadline
 depends :=
 

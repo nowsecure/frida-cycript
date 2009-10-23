@@ -37,9 +37,9 @@
 */
 /* }}} */
 
+#include "cycript.hpp"
 #include "Parser.hpp"
 
-#include <iomanip>
 #include <sstream>
 
 _finline CYFlags operator ~(CYFlags rhs) {
@@ -592,48 +592,8 @@ void CYStatement::Single(CYOutput &out, CYFlags flags) const {
 }
 
 void CYString::Output(CYOutput &out, CYFlags flags) const {
-    unsigned quot(0), apos(0);
-    for (const char *value(value_), *end(value_ + size_); value != end; ++value)
-        if (*value == '"')
-            ++quot;
-        else if (*value == '\'')
-            ++apos;
-
-    bool single(quot > apos);
-
     std::ostringstream str;
-
-    str << (single ? '\'' : '"');
-    for (const char *value(value_), *end(value_ + size_); value != end; ++value)
-        switch (*value) {
-            case '\\': str << "\\\\"; break;
-            case '\b': str << "\\b"; break;
-            case '\f': str << "\\f"; break;
-            case '\n': str << "\\n"; break;
-            case '\r': str << "\\r"; break;
-            case '\t': str << "\\t"; break;
-            case '\v': str << "\\v"; break;
-
-            case '"':
-                if (!single)
-                    str << "\\\"";
-                else goto simple;
-            break;
-
-            case '\'':
-                if (single)
-                    str << "\\'";
-                else goto simple;
-            break;
-
-            default:
-                if (*value < 0x20 || *value >= 0x7f)
-                    str << "\\x" << std::setbase(16) << std::setw(2) << std::setfill('0') << unsigned(*value);
-                else simple:
-                    str << *value;
-        }
-    str << (single ? '\'' : '"');
-
+    CYStringify(str, value_, size_);
     out << str.str().c_str();
 }
 

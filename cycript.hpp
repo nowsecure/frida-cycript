@@ -44,13 +44,13 @@
 
 #include <apr_pools.h>
 #include <ffi.h>
-
 #include <sig/types.hpp>
+#include <sstream>
 
 bool CYRecvAll_(int socket, uint8_t *data, size_t size);
 bool CYSendAll_(int socket, const uint8_t *data, size_t size);
 
-apr_pool_t *CYGetGlobalPool();
+void CYStringify(std::ostringstream &str, const char *data, size_t size);
 
 extern "C" void CYHandleClient(apr_pool_t *pool, int socket);
 
@@ -65,6 +65,7 @@ bool CYSendAll(int socket, const Type_ *data, size_t size) {
 }
 
 JSGlobalContextRef CYGetJSContext();
+apr_pool_t *CYGetGlobalPool();
 JSObjectRef CYGetGlobalObject(JSContextRef context);
 const char *CYExecute(apr_pool_t *pool, const char *code);
 

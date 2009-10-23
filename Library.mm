@@ -38,7 +38,9 @@
 /* }}} */
 
 #include <substrate.h>
+
 #include <dlfcn.h>
+#include <iconv.h>
 
 #include "cycript.hpp"
 
@@ -67,7 +69,7 @@
 #include <ext/stdio_filebuf.h>
 #include <set>
 #include <map>
-
+#include <iomanip>
 #include <sstream>
 #include <cmath>
 
@@ -87,12 +89,33 @@
 
 #define _assert(test) do { \
     if (!(test)) \
-        _throw(NSInternalInconsistencyException, "*** _assert(%s):%s(%u):%s", #test, __FILE__, __LINE__, __FUNCTION__); \
+        _throw(NSInternalInconsistencyException, "*** _assert(%s):%s(%u):%s [errno=%d]", #test, __FILE__, __LINE__, __FUNCTION__, errno); \
 } while (false)
 
 #define _trace() do { \
     fprintf(stderr, "_trace():%u\n", __LINE__); \
 } while (false)
+
+#define CYTry \
+    @try
+#define CYCatch \
+    @catch (NSException *error) { \
+        CYThrow(context, error, exception); \
+        return NULL; \
+    }
+
+#if 0
+#define CYTry \
+    try
+#define CYCatch \
+    catch (NSException *error) { \
+        CYThrow(context, error, exception); \
+        return NULL; \
+    } catch (...) { \
+        *exception = CYCastJSValue(context, "catch(...)"); \
+        return NULL; \
+    }
+#endif
 
 #ifdef __OBJC__
 #define CYPoolTry { \
@@ -129,6 +152,28 @@ void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, J
 
 JSValueRef CYCallFunction(apr_pool_t *pool, JSContextRef context, size_t setups, void *setup[], size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception, sig::Signature *signature, ffi_cif *cif, void (*function)());
 JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, SEL _cmd, size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception);
+
+struct CYUTF8String {
+    const char *data;
+    size_t size;
+
+    CYUTF8String(const char *data, size_t size) :
+        data(data),
+        size(size)
+    {
+    }
+};
+
+struct CYUTF16String {
+    const uint16_t *data;
+    size_t size;
+
+    CYUTF16String(const uint16_t *data, size_t size) :
+        data(data),
+        size(size)
+    {
+    }
+};
 
 /* JavaScript Properties {{{ */
 JSValueRef CYGetProperty(JSContextRef context, JSObjectRef object, size_t index) {
@@ -252,6 +297,29 @@ class CYJSString {
 /* }}} */
 
 #ifdef __OBJC__
+/* Objective-C Pool Release {{{ */
+apr_status_t CYPoolRelease_(void *data) {
+    id object(reinterpret_cast<id>(data));
+    [object release];
+    return APR_SUCCESS;
+}
+
+id CYPoolRelease_(apr_pool_t *pool, id object) {
+    if (object == nil)
+        return nil;
+    else if (pool == NULL)
+        return [object autorelease];
+    else {
+        apr_pool_cleanup_register(pool, object, &CYPoolRelease_, &apr_pool_cleanup_null);
+        return object;
+    }
+}
+
+template <typename Type_>
+Type_ CYPoolRelease(apr_pool_t *pool, Type_ object) {
+    return (Type_) CYPoolRelease_(pool, (id) object);
+}
+/* }}} */
 /* Objective-C Strings {{{ */
 const char *CYPoolCString(apr_pool_t *pool, NSString *value) {
     if (pool == NULL)
@@ -282,57 +350,91 @@ JSStringRef CYCopyJSString(id value) {
     return CYCopyJSString_(string);
 }
 
+NSString *CYCopyNSString(const CYUTF8String &value) {
 #ifdef __APPLE__
-CFStringRef CYCopyCFString(JSStringRef value) {
-    return JSStringCopyCFString(kCFAllocatorDefault, value);
-}
-
-CFStringRef CYCopyCFString(const char *value) {
-    return CFStringCreateWithCString(kCFAllocatorDefault, value, kCFStringEncodingUTF8);
-}
-
-template <typename Type_>
-NSString *CYCopyNSString(Type_ value) {
-    return (NSString *) CYCopyCFString(value);
-}
+    return (NSString *) CFStringCreateWithBytes(kCFAllocatorDefault, reinterpret_cast<const UInt8 *>(value.data), value.size, kCFStringEncodingUTF8, true);
 #else
-NSString *CYCopyNSString(const char *value) {
-    return [NSString stringWithUTF8String:value];
+    return [[NSString alloc] initWithBytes:value.data length:value.size encoding:NSUTF8StringEncoding];
+#endif
 }
 
 NSString *CYCopyNSString(JSStringRef value) {
+#ifdef __APPLE__
+    return (NSString *) JSStringCopyCFString(kCFAllocatorDefault, value);
+#else
     return CYCopyNSString(CYCastCString_(value));
-}
 #endif
+}
 
 NSString *CYCopyNSString(JSContextRef context, JSValueRef value) {
     return CYCopyNSString(CYJSString(context, value));
 }
-/* }}} */
-/* Objective-C Pool Release {{{ */
-apr_status_t CYPoolRelease_(void *data) {
-    id object(reinterpret_cast<id>(data));
-    [object release];
-    return APR_SUCCESS;
+
+NSString *CYCastNSString(apr_pool_t *pool, const CYUTF8String &value) {
+    return CYPoolRelease(pool, CYCopyNSString(value));
 }
 
-id CYPoolRelease_(apr_pool_t *pool, id object) {
-    if (object == nil)
-        return nil;
-    else if (pool == NULL)
-        return [object autorelease];
-    else {
-        apr_pool_cleanup_register(pool, object, &CYPoolRelease_, &apr_pool_cleanup_null);
-        return object;
-    }
+NSString *CYCastNSString(apr_pool_t *pool, SEL sel) {
+    const char *name(sel_getName(sel));
+    return CYPoolRelease(pool, CYCopyNSString(CYUTF8String(name, strlen(name))));
 }
 
-template <typename Type_>
-Type_ CYPoolRelease(apr_pool_t *pool, Type_ object) {
-    return (Type_) CYPoolRelease_(pool, (id) object);
+NSString *CYCastNSString(apr_pool_t *pool, JSStringRef value) {
+    return CYPoolRelease(pool, CYCopyNSString(value));
 }
 /* }}} */
 #endif
+
+CYUTF8String CYCastUTF8String(NSString *value) {
+    NSData *data([value dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:NO]);
+    return CYUTF8String(reinterpret_cast<const char *>([data bytes]), [data length]);
+}
+
+/* JavaScript Stringify {{{ */
+void CYStringify(std::ostringstream &str, const char *data, size_t size) {
+    unsigned quot(0), apos(0);
+    for (const char *value(data), *end(data + size); value != end; ++value)
+        if (*value == '"')
+            ++quot;
+        else if (*value == '\'')
+            ++apos;
+
+    bool single(quot > apos);
+
+    str << (single ? '\'' : '"');
+
+    for (const char *value(data), *end(data + size); value != end; ++value)
+        switch (*value) {
+            case '\\': str << "\\\\"; break;
+            case '\b': str << "\\b"; break;
+            case '\f': str << "\\f"; break;
+            case '\n': str << "\\n"; break;
+            case '\r': str << "\\r"; break;
+            case '\t': str << "\\t"; break;
+            case '\v': str << "\\v"; break;
+
+            case '"':
+                if (!single)
+                    str << "\\\"";
+                else goto simple;
+            break;
+
+            case '\'':
+                if (single)
+                    str << "\\'";
+                else goto simple;
+            break;
+
+            default:
+                if (*value < 0x20 || *value >= 0x7f)
+                    str << "\\x" << std::setbase(16) << std::setw(2) << std::setfill('0') << unsigned(*value);
+                else simple:
+                    str << *value;
+        }
+
+    str << (single ? '\'' : '"');
+}
+/* }}} */
 
 static JSGlobalContextRef Context_;
 static JSObjectRef System_;
@@ -883,22 +985,22 @@ JSValueRef CYJSUndefined(JSContextRef context) {
     return JSValueMakeUndefined(context);
 }
 
-size_t CYGetIndex(const char *value) {
-    if (value[0] != '0') {
+size_t CYGetIndex(const CYUTF8String &value) {
+    if (value.data[0] != '0') {
         char *end;
-        size_t index(strtoul(value, &end, 10));
-        if (value + strlen(value) == end)
+        size_t index(strtoul(value.data, &end, 10));
+        if (value.data + value.size == end)
             return index;
-    } else if (value[1] == '\0')
+    } else if (value.data[1] == '\0')
         return 0;
     return _not(size_t);
 }
 
 // XXX: fix this
-static const char *CYPoolCString(apr_pool_t *pool, JSStringRef value);
+static CYUTF8String CYPoolUTF8String(apr_pool_t *pool, JSStringRef value);
 
 size_t CYGetIndex(apr_pool_t *pool, JSStringRef value) {
-    return CYGetIndex(CYPoolCString(pool, value));
+    return CYGetIndex(CYPoolUTF8String(pool, value));
 }
 
 bool CYGetOffset(const char *value, ssize_t &index) {
@@ -916,8 +1018,8 @@ bool CYGetOffset(const char *value, ssize_t &index) {
 }
 
 #ifdef __OBJC__
-size_t CYGetIndex(apr_pool_t *pool, NSString *value) {
-    return CYGetIndex(CYPoolCString(pool, value));
+size_t CYGetIndex(NSString *value) {
+    return CYGetIndex(CYCastUTF8String(value));
 }
 
 bool CYGetOffset(apr_pool_t *pool, NSString *value, ssize_t &index) {
@@ -926,8 +1028,6 @@ bool CYGetOffset(apr_pool_t *pool, NSString *value, ssize_t &index) {
 #endif
 
 #ifdef __OBJC__
-NSString *CYPoolNSCYON(apr_pool_t *pool, id value);
-
 @interface NSMethodSignature (Cycript)
 - (NSString *) _typeString;
 @end
@@ -955,6 +1055,43 @@ NSString *CYPoolNSCYON(apr_pool_t *pool, id value);
 @interface NSString (Cycript)
 - (void *) cy$symbol;
 @end
+#endif
+
+#ifdef __OBJC__
+NSString *CYCastNSCYON(id value) {
+    NSString *string;
+
+    if (value == nil)
+        string = @"nil";
+    else {
+        Class _class(object_getClass(value));
+        SEL sel(@selector(cy$toCYON));
+
+        if (objc_method *toCYON = class_getInstanceMethod(_class, sel))
+            string = reinterpret_cast<NSString *(*)(id, SEL)>(method_getImplementation(toCYON))(value, sel);
+        else if (objc_method *methodSignatureForSelector = class_getInstanceMethod(_class, @selector(methodSignatureForSelector:))) {
+            if (reinterpret_cast<NSMethodSignature *(*)(id, SEL, SEL)>(method_getImplementation(methodSignatureForSelector))(value, @selector(methodSignatureForSelector:), sel) != nil)
+                string = [value cy$toCYON];
+            else goto fail;
+        } else fail: {
+            if (value == NSZombie_)
+                string = @"_NSZombie_";
+            else if (_class == NSZombie_)
+                string = [NSString stringWithFormat:@"<_NSZombie_: %p>", value];
+            // XXX: frowny /in/ the pants
+            else if (value == NSMessageBuilder_ || value == Object_)
+                string = nil;
+            else
+                string = [NSString stringWithFormat:@"%@", value];
+        }
+
+        // XXX: frowny pants
+        if (string == nil)
+            string = @"undefined";
+    }
+
+    return string;
+}
 #endif
 
 #ifdef __OBJC__
@@ -1098,7 +1235,7 @@ NSObject *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
         else
             comma = true;
         if (object == nil || [object cy$JSType] != kJSTypeUndefined)
-            [json appendString:CYPoolNSCYON(NULL, object)];
+            [json appendString:CYCastNSCYON(object)];
         else {
             [json appendString:@","];
             comma = false;
@@ -1113,7 +1250,7 @@ NSObject *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
     if ([name isEqualToString:@"length"])
         return true;
 
-    size_t index(CYGetIndex(NULL, name));
+    size_t index(CYGetIndex(name));
     if (index == _not(size_t) || index >= [self count])
         return [super cy$hasProperty:name];
     else
@@ -1130,7 +1267,7 @@ NSObject *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 #endif
     }
 
-    size_t index(CYGetIndex(NULL, name));
+    size_t index(CYGetIndex(name));
     if (index == _not(size_t) || index >= [self count])
         return [super cy$getProperty:name];
     else
@@ -1160,7 +1297,7 @@ NSObject *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
         [json appendString:[key cy$toKey]];
         [json appendString:@":"];
         NSObject *object([self objectForKey:key]);
-        [json appendString:CYPoolNSCYON(NULL, object)];
+        [json appendString:CYCastNSCYON(object)];
     }
 
     [json appendString:@"}"];
@@ -1200,7 +1337,7 @@ NSObject *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
         return true;
     }
 
-    size_t index(CYGetIndex(NULL, name));
+    size_t index(CYGetIndex(name));
     if (index == _not(size_t))
         return [super cy$setProperty:name to:value];
 
@@ -1223,7 +1360,7 @@ NSObject *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 }
 
 - (bool) cy$deleteProperty:(NSString *)name {
-    size_t index(CYGetIndex(NULL, name));
+    size_t index(CYGetIndex(name));
     if (index == _not(size_t) || index >= [self count])
         return [super cy$deleteProperty:name];
     [self replaceObjectAtIndex:index withObject:[WebUndefined undefined]];
@@ -1360,20 +1497,11 @@ NSObject *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 }
 
 - (NSString *) cy$toCYON {
-    // XXX: this should use the better code from Output.cpp
-
-    NSMutableString *json([self mutableCopy]);
-
-    [json replaceOccurrencesOfString:@"\\" withString:@"\\\\" options:NSLiteralSearch range:NSMakeRange(0, [json length])];
-    [json replaceOccurrencesOfString:@"\"" withString:@"\\\"" options:NSLiteralSearch range:NSMakeRange(0, [json length])];
-    [json replaceOccurrencesOfString:@"\t" withString:@"\\t" options:NSLiteralSearch range:NSMakeRange(0, [json length])];
-    [json replaceOccurrencesOfString:@"\r" withString:@"\\r" options:NSLiteralSearch range:NSMakeRange(0, [json length])];
-    [json replaceOccurrencesOfString:@"\n" withString:@"\\n" options:NSLiteralSearch range:NSMakeRange(0, [json length])];
-
-    [json appendString:@"\""];
-    [json insertString:@"\"" atIndex:0];
-
-    return json;
+    std::ostringstream str;
+    CYUTF8String string(CYCastUTF8String(self));
+    CYStringify(str, string.data, string.size);
+    std::string value(str.str());
+    return CYCastNSString(NULL, CYUTF8String(value.c_str(), value.size()));
 }
 
 - (NSString *) cy$toKey {
@@ -1384,7 +1512,7 @@ NSObject *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
         goto cyon;
 
     if (DigitRange_[value[0]]) {
-        size_t index(CYGetIndex(NULL, self));
+        size_t index(CYGetIndex(self));
         if (index == _not(size_t))
             goto cyon;
     } else {
@@ -1469,18 +1597,6 @@ NSObject *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 /* }}} */
 #endif
 
-#define CYTry \
-    try
-#define CYCatch \
-    catch (id error) { \
-        CYThrow(context, error, exception); \
-        return NULL; \
-    } catch (...) { \
-        *exception = CYCastJSValue(context, "catch(...)"); \
-        return NULL; \
-    }
-
-
 #ifdef __OBJC__
 NSObject *CYCastNSObject_(apr_pool_t *pool, JSContextRef context, JSObjectRef object) {
     JSValueRef exception(NULL);
@@ -1522,11 +1638,6 @@ double CYCastDouble(JSContextRef context, JSValueRef value) {
 #ifdef __OBJC__
 NSNumber *CYCopyNSNumber(JSContextRef context, JSValueRef value) {
     return [[NSNumber alloc] initWithDouble:CYCastDouble(context, value)];
-}
-
-template <typename Type_>
-NSString *CYCastNSString(apr_pool_t *pool, Type_ value) {
-    return CYPoolRelease(pool, CYCopyNSString(value));
 }
 #endif
 
@@ -1813,54 +1924,15 @@ bool CYIsCallable(JSContextRef context, JSValueRef value) {
 @end
 #endif
 
-NSString *CYCopyNSCYON(id value) {
-    NSString *string;
-
-    if (value == nil)
-        string = @"nil";
-    else {
-        Class _class(object_getClass(value));
-        SEL sel(@selector(cy$toCYON));
-
-        if (objc_method *toCYON = class_getInstanceMethod(_class, sel))
-            string = reinterpret_cast<NSString *(*)(id, SEL)>(method_getImplementation(toCYON))(value, sel);
-        else if (objc_method *methodSignatureForSelector = class_getInstanceMethod(_class, @selector(methodSignatureForSelector:))) {
-            if (reinterpret_cast<NSMethodSignature *(*)(id, SEL, SEL)>(method_getImplementation(methodSignatureForSelector))(value, @selector(methodSignatureForSelector:), sel) != nil)
-                string = [value cy$toCYON];
-            else goto fail;
-        } else fail: {
-            if (value == NSZombie_)
-                string = @"_NSZombie_";
-            else if (_class == NSZombie_)
-                string = [NSString stringWithFormat:@"<_NSZombie_: %p>", value];
-            // XXX: frowny /in/ the pants
-            else if (value == NSMessageBuilder_ || value == Object_)
-                string = nil;
-            else
-                string = [NSString stringWithFormat:@"%@", value];
-        }
-
-        // XXX: frowny pants
-        if (string == nil)
-            string = @"undefined";
-    }
-
-    return [string retain];
-}
-
 NSString *CYCopyNSCYON(JSContextRef context, JSValueRef value, JSValueRef *exception) {
     if (JSValueIsNull(context, value))
         return [@"null" retain];
 
     CYTry {
         CYPoolTry {
-            return CYCopyNSCYON(CYCastNSObject(NULL, context, value));
+            return [CYCastNSCYON(CYCastNSObject(NULL, context, value)) retain];
         } CYPoolCatch(NULL)
     } CYCatch
-}
-
-NSString *CYPoolNSCYON(apr_pool_t *pool, id value) {
-    return CYPoolRelease(pool, static_cast<id>(CYCopyNSCYON(value)));
 }
 
 const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSValueRef value, JSValueRef *exception) {
@@ -1947,17 +2019,36 @@ static JSObjectRef CYMakeFunctor(JSContextRef context, void (*function)(), const
     return JSObjectMake(context, Functor_, internal);
 }
 
+static CYUTF16String CYCastUTF16String(JSStringRef value) {
+    return CYUTF16String(JSStringGetCharactersPtr(value), JSStringGetLength(value));
+}
+
+// XXX: sometimes pool is null
+static CYUTF8String CYPoolUTF8String(apr_pool_t *pool, JSStringRef value) {
+    CYUTF16String utf16(CYCastUTF16String(value));
+    const char *in(reinterpret_cast<const char *>(utf16.data));
+
+    iconv_t conversion(_syscall(iconv_open("UTF-8", "UCS-2-INTERNAL")));
+
+    size_t size(JSStringGetMaximumUTF8CStringSize(value));
+    char *out(new(pool) char[size]);
+    CYUTF8String utf8(out, size);
+
+    size = utf16.size * 2;
+    _syscall(iconv(conversion, const_cast<char **>(&in), &size, &out, &utf8.size));
+
+    *out = '\0';
+    utf8.size = out - utf8.data;
+
+    _syscall(iconv_close(conversion));
+
+    return utf8;
+}
+
 static const char *CYPoolCString(apr_pool_t *pool, JSStringRef value) {
-    if (pool == NULL) {
-        // XXX: this could be much more efficient
-        const char *string([CYCastNSString(NULL, value) UTF8String]);
-        return string;
-    } else {
-        size_t size(JSStringGetMaximumUTF8CStringSize(value));
-        char *string(new(pool) char[size]);
-        JSStringGetUTF8CString(value, string, size);
-        return string;
-    }
+    CYUTF8String utf8(CYPoolUTF8String(pool, value));
+    _assert(memchr(utf8.data, '\0', utf8.size) == NULL);
+    return utf8.data;
 }
 
 static const char *CYPoolCString(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
@@ -2177,7 +2268,7 @@ static bool CYImplements(id object, Class _class, SEL selector, bool devoid) {
 static const char *CYPoolTypeEncoding(apr_pool_t *pool, Class _class, SEL sel, objc_method *method) {
     if (method != NULL)
         return method_getTypeEncoding(method);
-    else if (NSString *type = [[Bridge_ objectAtIndex:1] objectForKey:CYCastNSString(pool, sel_getName(sel))])
+    else if (NSString *type = [[Bridge_ objectAtIndex:1] objectForKey:CYCastNSString(pool, sel)])
         return CYPoolCString(pool, type);
     else
         return NULL;
@@ -2750,12 +2841,12 @@ static JSValueRef Struct_getProperty(JSContextRef context, JSObjectRef object, J
     ssize_t index;
     uint8_t *base;
 
-    if (!Index_(pool, internal, property, index, base))
-        return NULL;
-
-    JSObjectRef owner(internal->GetOwner() ?: object);
-
     CYTry {
+        if (!Index_(pool, internal, property, index, base))
+            return NULL;
+
+        JSObjectRef owner(internal->GetOwner() ?: object);
+
         return CYFromFFI(context, typical->type_->data.signature.elements[index].type, typical->GetFFI()->elements[index], base, false, owner);
     } CYCatch
 }
@@ -2768,10 +2859,10 @@ static bool Struct_setProperty(JSContextRef context, JSObjectRef object, JSStrin
     ssize_t index;
     uint8_t *base;
 
-    if (!Index_(pool, internal, property, index, base))
-        return false;
-
     CYTry {
+        if (!Index_(pool, internal, property, index, base))
+            return false;
+
         CYPoolFFI(NULL, context, typical->type_->data.signature.elements[index].type, typical->GetFFI()->elements[index], base, value);
         return true;
     } CYCatch
@@ -3343,7 +3434,7 @@ static JSValueRef Instance_callAsFunction_toCYON(JSContextRef context, JSObjectR
 
     CYTry {
         CYPoolTry {
-            return CYCastJSValue(context, CYJSString(CYPoolNSCYON(NULL, internal->GetValue())));
+            return CYCastJSValue(context, CYJSString(CYCastNSCYON(internal->GetValue())));
         } CYPoolCatch(NULL)
     } CYCatch
 }
