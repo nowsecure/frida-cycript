@@ -1435,7 +1435,7 @@ Type_ CYPoolRelease(apr_pool_t *pool, Type_ object) {
     return (Type_) CYPoolRelease_(pool, (id) object);
 }
 
-id CYCastNSObject_(apr_pool_t *pool, JSContextRef context, JSObjectRef object) {
+NSObject *CYCastNSObject_(apr_pool_t *pool, JSContextRef context, JSObjectRef object) {
     JSValueRef exception(NULL);
     bool array(JSValueIsInstanceOfConstructor(context, object, Array_, &exception));
     CYThrow(context, exception);
@@ -1443,7 +1443,7 @@ id CYCastNSObject_(apr_pool_t *pool, JSContextRef context, JSObjectRef object) {
     return CYPoolRelease(pool, [value initWithJSObject:object inContext:context]);
 }
 
-id CYCastNSObject(apr_pool_t *pool, JSContextRef context, JSObjectRef object) {
+NSObject *CYCastNSObject(apr_pool_t *pool, JSContextRef context, JSObjectRef object) {
     if (!JSValueIsObjectOfClass(context, object, Instance_))
         return CYCastNSObject_(pool, context, object);
     else {
@@ -1537,7 +1537,7 @@ id CYNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef value, bool cas
         return [object retain];
 }
 
-id CYCastNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
+NSObject *CYCastNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
     return CYNSObject(pool, context, value, true);
 }
 
@@ -1761,9 +1761,9 @@ NSString *CYCopyNSCYON(id value) {
         Class _class(object_getClass(value));
         SEL sel(@selector(cy$toCYON));
 
-        if (Method toCYON = class_getInstanceMethod(_class, sel))
+        if (objc_method *toCYON = class_getInstanceMethod(_class, sel))
             string = reinterpret_cast<NSString *(*)(id, SEL)>(method_getImplementation(toCYON))(value, sel);
-        else if (Method methodSignatureForSelector = class_getInstanceMethod(_class, @selector(methodSignatureForSelector:))) {
+        else if (objc_method *methodSignatureForSelector = class_getInstanceMethod(_class, @selector(methodSignatureForSelector:))) {
             if (reinterpret_cast<NSMethodSignature *(*)(id, SEL, SEL)>(method_getImplementation(methodSignatureForSelector))(value, @selector(methodSignatureForSelector:), sel) != nil)
                 string = [value cy$toCYON];
             else goto fail;
@@ -2090,7 +2090,7 @@ static JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi
 }
 
 static bool CYImplements(id object, Class _class, SEL selector, bool devoid) {
-    if (Method method = class_getInstanceMethod(_class, selector)) {
+    if (objc_method *method = class_getInstanceMethod(_class, selector)) {
         if (!devoid)
             return true;
         char type[16];
@@ -2103,7 +2103,7 @@ static bool CYImplements(id object, Class _class, SEL selector, bool devoid) {
     return false;
 }
 
-static const char *CYPoolTypeEncoding(apr_pool_t *pool, Class _class, SEL sel, Method method) {
+static const char *CYPoolTypeEncoding(apr_pool_t *pool, Class _class, SEL sel, objc_method *method) {
     if (method != NULL)
         return method_getTypeEncoding(method);
     else if (NSString *type = [[Bridge_ objectAtIndex:1] objectForKey:CYCastNSString(pool, sel_getName(sel))])
@@ -2217,7 +2217,7 @@ static JSValueRef Messages_getProperty(JSContextRef context, JSObjectRef object,
     const char *name(CYPoolCString(pool, property));
 
     if (SEL sel = sel_getUid(name))
-        if (Method method = class_getInstanceMethod(_class, sel))
+        if (objc_method *method = class_getInstanceMethod(_class, sel))
             return CYMakeMessage(context, sel, method_getImplementation(method), method_getTypeEncoding(method));
 
     return NULL;
@@ -2232,7 +2232,7 @@ static bool Messages_setProperty(JSContextRef context, JSObjectRef object, JSStr
 
     SEL sel(sel_registerName(name));
 
-    Method method(class_getInstanceMethod(_class, sel));
+    objc_method *method(class_getInstanceMethod(_class, sel));
 
     const char *type;
     IMP imp;
@@ -2263,7 +2263,7 @@ static bool Messages_deleteProperty(JSContextRef context, JSObjectRef object, JS
     const char *name(CYPoolCString(pool, property));
 
     if (SEL sel = sel_getUid(name))
-        if (Method method = class_getInstanceMethod(_class, sel)) {
+        if (objc_method *method = class_getInstanceMethod(_class, sel)) {
             objc_method_list list = {NULL, 1, {method}};
             class_removeMethods(_class, &list);
             return true;
@@ -2278,7 +2278,7 @@ static void Messages_getPropertyNames(JSContextRef context, JSObjectRef object, 
     Class _class(internal->GetValue());
 
     unsigned int size;
-    Method *data(class_copyMethodList(_class, &size));
+    objc_method **data(class_copyMethodList(_class, &size));
     for (size_t i(0); i != size; ++i)
         JSPropertyNameAccumulatorAddName(names, CYJSString(sel_getName(method_getName(data[i]))));
     free(data);
@@ -2935,7 +2935,7 @@ JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, SEL _c
     const char *type;
 
     Class _class(object_getClass(self));
-    if (Method method = class_getInstanceMethod(_class, _cmd))
+    if (objc_method *method = class_getInstanceMethod(_class, _cmd))
         type = method_getTypeEncoding(method);
     else {
         CYTry {
@@ -3324,7 +3324,7 @@ static JSValueRef Selector_callAsFunction_type(JSContextRef context, JSObjectRef
         Selector_privateData *internal(reinterpret_cast<Selector_privateData *>(JSObjectGetPrivate(_this)));
         Class _class(CYCastNSObject(pool, context, arguments[0]));
         SEL sel(internal->GetValue());
-        Method method(class_getInstanceMethod(_class, sel));
+        objc_method *method(class_getInstanceMethod(_class, sel));
         const char *type(CYPoolTypeEncoding(pool, _class, sel, method));
         return type == NULL ? CYJSNull(context) : CYCastJSValue(context, CYJSString(type));
     } CYCatch
