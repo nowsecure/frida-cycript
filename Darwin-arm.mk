@@ -6,6 +6,7 @@ arch := iphoneos-arm
 ldid := ldid -S
 console += -framework UIKit
 depends += readline libffi mobilesubstrate
+code += Handler.o
 
 Cycript.$(dll): Connector.o
 	$(target)g++ $(flags) -dynamiclib -o $@ $(filter %.o,$^) \

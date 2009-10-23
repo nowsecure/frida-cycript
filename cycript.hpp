@@ -50,6 +50,8 @@
 bool CYRecvAll_(int socket, uint8_t *data, size_t size);
 bool CYSendAll_(int socket, const uint8_t *data, size_t size);
 
+apr_pool_t *CYGetGlobalPool();
+
 extern "C" void CYHandleClient(apr_pool_t *pool, int socket);
 
 template <typename Type_>
