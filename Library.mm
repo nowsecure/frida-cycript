@@ -2366,7 +2366,7 @@ static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStr
 
     CYTry {
         NSString *name(CYCastNSString(pool, property));
-        NSString *data(CYCastNSObject(pool, context, value));
+        NSObject *data(CYCastNSObject(pool, context, value));
 
         CYPoolTry {
             if ([self cy$setProperty:name to:data])
@@ -3028,7 +3028,10 @@ static JSValueRef objc_registerClassPair_(JSContextRef context, JSObjectRef obje
         if (count != 1)
             @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"incorrect number of arguments to objc_registerClassPair" userInfo:nil];
         CYPool pool;
-        Class _class(CYCastNSObject(pool, context, arguments[0]));
+        NSObject *value(CYCastNSObject(pool, context, arguments[0]));
+        if (value == NULL || !CYIsClass(value))
+            @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"incorrect number of arguments to objc_registerClassPair" userInfo:nil];
+        Class _class((Class) value);
         $objc_registerClassPair(_class);
         return CYJSUndefined(context);
     } CYCatch
@@ -3322,11 +3325,20 @@ static JSValueRef Selector_callAsFunction_type(JSContextRef context, JSObjectRef
             @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"incorrect number of arguments to Selector.type" userInfo:nil];
         CYPool pool;
         Selector_privateData *internal(reinterpret_cast<Selector_privateData *>(JSObjectGetPrivate(_this)));
-        Class _class(CYCastNSObject(pool, context, arguments[0]));
-        SEL sel(internal->GetValue());
-        objc_method *method(class_getInstanceMethod(_class, sel));
-        const char *type(CYPoolTypeEncoding(pool, _class, sel, method));
-        return type == NULL ? CYJSNull(context) : CYCastJSValue(context, CYJSString(type));
+        NSObject *value(CYCastNSObject(pool, context, arguments[0]));
+        if (value == NULL) lookup:
+            // XXX: do a lookup of some kind
+            return CYJSNull(context);
+        else if (!CYIsClass(value))
+            @throw [NSException exceptionWithName:NSInvalidArgumentException reason:@"Selector.type takes a Class" userInfo:nil];
+        else {
+            Class _class((Class) value);
+            SEL sel(internal->GetValue());
+            if (objc_method *method = class_getInstanceMethod(_class, sel)) {
+                const char *type(CYPoolTypeEncoding(pool, _class, sel, method));
+                return type == NULL ? CYJSNull(context) : CYCastJSValue(context, CYJSString(type));
+            } else goto lookup;
+        }
     } CYCatch
 }
 
