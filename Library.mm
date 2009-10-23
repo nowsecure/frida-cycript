@@ -566,7 +566,7 @@ struct Type_privateData :
     static Type_privateData *Object;
     static Type_privateData *Selector;
 
-    static JSClassRef Class;
+    static JSClassRef Class_;
 
     ffi_type *ffi_;
     sig::Type *type_;
@@ -622,6 +622,7 @@ struct Type_privateData :
     }
 };
 
+JSClassRef Type_privateData::Class_;
 Type_privateData *Type_privateData::Object;
 Type_privateData *Type_privateData::Selector;
 
@@ -938,6 +939,26 @@ struct PropertyAttributes {
 NSString *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
     return [(NSString *) CFCopyDescription((CFTypeRef) self) autorelease];
 }
+#endif
+
+#ifndef __APPLE__
+@interface CYWebUndefined : NSObject {
+}
+
++ (CYWebUndefined *) undefined;
+
+@end
+
+@implementation CYWebUndefined
+
++ (CYWebUndefined *) undefined {
+    static CYWebUndefined *instance_([[CYWebUndefined alloc] init]);
+    return instance_;
+}
+
+@end
+
+#define WebUndefined CYWebUndefined
 #endif
 
 /* Bridge: NSArray {{{ */
@@ -1287,6 +1308,7 @@ NSString *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 @end
 /* }}} */
 
+/* Bridge: CYJSObject {{{ */
 @interface CYJSObject : NSMutableDictionary {
     JSObjectRef object_;
     JSContextRef context_;
@@ -1303,7 +1325,8 @@ NSString *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 - (void) removeObjectForKey:(id)key;
 
 @end
-
+/* }}} */
+/* Bridge: CYJSArray {{{ */
 @interface CYJSArray : NSMutableArray {
     JSObjectRef object_;
     JSContextRef context_;
@@ -1321,6 +1344,7 @@ NSString *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 - (void) replaceObjectAtIndex:(NSUInteger)index withObject:(id)anObject;
 
 @end
+/* }}} */
 
 #define CYTry \
     @try
@@ -2806,12 +2830,12 @@ static void ObjectiveC_Protocols_getPropertyNames(JSContextRef context, JSObject
 
 static JSObjectRef CYMakeType(JSContextRef context, const char *type) {
     Type_privateData *internal(new Type_privateData(NULL, type));
-    return JSObjectMake(context, Type_privateData::Class, internal);
+    return JSObjectMake(context, Type_privateData::Class_, internal);
 }
 
 static JSObjectRef CYMakeType(JSContextRef context, sig::Type *type) {
     Type_privateData *internal(new Type_privateData(type));
-    return JSObjectMake(context, Type_privateData::Class, internal);
+    return JSObjectMake(context, Type_privateData::Class_, internal);
 }
 
 static JSValueRef Runtime_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
@@ -3622,8 +3646,7 @@ JSGlobalContextRef CYGetJSContext() {
         definition.callAsFunction = &Type_callAsFunction;
         definition.callAsConstructor = &Type_callAsConstructor;
         definition.finalize = &Finalize;
-        // XXX: dude: just rename the damned variable
-        (Type_privateData::Class) = JSClassCreate(&definition);
+        Type_privateData::Class_ = JSClassCreate(&definition);
 
         definition = kJSClassDefinitionEmpty;
         definition.className = "Runtime";
@@ -3706,7 +3729,7 @@ JSGlobalContextRef CYGetJSContext() {
         CYSetProperty(context, global, CYJSString("Instance"), Instance);
         CYSetProperty(context, global, CYJSString("Pointer"), JSObjectMakeConstructor(context, Pointer_, &Pointer_new));
         CYSetProperty(context, global, CYJSString("Selector"), Selector);
-        CYSetProperty(context, global, CYJSString("Type"), JSObjectMakeConstructor(context, Type_privateData::Class, &Type_new));
+        CYSetProperty(context, global, CYJSString("Type"), JSObjectMakeConstructor(context, Type_privateData::Class_, &Type_new));
 
         MSHookFunction(&objc_registerClassPair, MSHake(objc_registerClassPair));
 

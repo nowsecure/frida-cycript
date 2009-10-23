@@ -39,6 +39,12 @@ uname_p := $(shell uname -p)
 -include $(uname_s).mk
 -include $(uname_s)-$(uname_p).mk
 
+ifeq ($(filter ObjectiveC,$(filters)),)
+ifneq ($(shell which gnustep-config 2>/dev/null),)
+include GNUstep.mk
+endif
+endif
+
 flags += -g3 -O0 -DYYDEBUG=1
 #flags += -g0 -O3
 flags += -Wall -Werror -Wno-parentheses
