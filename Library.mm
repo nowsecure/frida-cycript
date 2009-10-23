@@ -936,7 +936,7 @@ struct PropertyAttributes {
 #endif
 
 #ifdef __APPLE__
-NSString *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
+NSObject *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
     return [(NSString *) CFCopyDescription((CFTypeRef) self) autorelease];
 }
 #endif
@@ -1316,7 +1316,7 @@ NSString *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 
 - (id) initWithJSObject:(JSObjectRef)object inContext:(JSContextRef)context;
 
-- (NSString *) cy$toJSON:(NSString *)key;
+- (NSObject *) cy$toJSON:(NSString *)key;
 
 - (NSUInteger) count;
 - (id) objectForKey:(id)key;
