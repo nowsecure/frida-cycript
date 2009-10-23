@@ -38,6 +38,8 @@
 /* }}} */
 
 #include <substrate.h>
+#include <dlfcn.h>
+
 #include "cycript.hpp"
 
 #include "sig/parse.hpp"
@@ -97,6 +99,11 @@
             [_saved autorelease]; \
     } \
 }
+
+#ifndef __APPLE__
+#define class_getSuperclass GSObjCSuper
+#define object_getClass GSObjCClass
+#endif
 
 void CYThrow(JSContextRef context, JSValueRef value);
 
@@ -440,7 +447,7 @@ struct Instance :
 
     static JSObjectRef Make(JSContextRef context, id object, Flags flags = None) {
         JSObjectRef value(JSObjectMake(context, Instance_, new Instance(object, flags)));
-        JSObjectSetPrototype(context, value, CYGetClassPrototype(context, object == nil ? nil : object_getClass(object)));
+        JSObjectSetPrototype(context, value, CYGetClassPrototype(context, object_getClass(object)));
         return value;
     }
 
@@ -1496,7 +1503,7 @@ id CYNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef value, bool cas
             object = (id) (CYCastBool(context, value) ? kCFBooleanTrue : kCFBooleanFalse);
             copy = false;
 #else
-            object = [[NSNumber alloc] initWithBoolean:value];
+            object = [[NSNumber alloc] initWithBool:CYCastBool(context, value)];
             copy = true;
 #endif
         break;

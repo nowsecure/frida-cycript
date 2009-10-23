@@ -114,7 +114,7 @@ lex.cy.o: lex.cy.c Cycript.tab.hh Parser.hpp Pooling.hpp
 	$(target)g++ $(flags) -c -o $@ $<
 
 %.o: %.mm $(header)
-	$(target)g++ $(flags) -c -o $@ $< $(objc)
+	$(target)g++ $(objc) $(flags) -c -o $@ $<
 
 libcycript.$(dll): $(code)
 	$(target)g++ $(flags) -shared -dynamiclib -o $@ $(filter %.o,$^) $(library) $(link)
