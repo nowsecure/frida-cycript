@@ -533,11 +533,13 @@ struct CYOwned :
         context_(context),
         owner_(owner)
     {
-        JSValueProtect(context_, owner_);
+        if (owner_ != NULL)
+            JSValueProtect(context_, owner_);
     }
 
     virtual ~CYOwned() {
-        JSValueUnprotect(context_, owner_);
+        if (owner_ != NULL)
+            JSValueUnprotect(context_, owner_);
     }
 
     JSObjectRef GetOwner() const {
