@@ -187,16 +187,40 @@ struct CYCategory :
 struct CYSend :
     CYExpression
 {
-    CYExpression *self_;
     CYArgument *arguments_;
 
-    CYSend(CYExpression *self, CYArgument *arguments) :
-        self_(self),
+    CYSend(CYArgument *arguments) :
         arguments_(arguments)
     {
     }
 
     CYPrecedence(0)
+
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYSendDirect :
+    CYSend
+{
+    CYExpression *self_;
+
+    CYSendDirect(CYExpression *self, CYArgument *arguments) :
+        CYSend(arguments),
+        self_(self)
+    {
+    }
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYSendSuper :
+    CYSend
+{
+    CYSendSuper(CYArgument *arguments) :
+        CYSend(arguments)
+    {
+    }
 
     virtual CYExpression *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;

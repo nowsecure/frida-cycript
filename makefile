@@ -104,15 +104,16 @@ lex.cy.c: Cycript.l
 %.o: sig/%.cpp
 	$(target)g++ $(flags) -c -o $@ $<
 
-Cycript.tab.o: Cycript.tab.cc Cycript.tab.hh Parser.hpp Pooling.hpp
+Cycript.tab.o: Cycript.tab.cc $(header)
 	$(target)g++ $(flags) -c -o $@ $<
 
-lex.cy.o: lex.cy.c Cycript.tab.hh Parser.hpp Pooling.hpp
+lex.cy.o: lex.cy.c $(header)
 	$(target)g++ $(flags) -c -o $@ $<
 
 %.o: %.cpp $(header)
 	$(target)g++ $(flags) -c -o $@ $<
 
+#objc := -x c++
 %.o: %.mm $(header)
 	$(target)g++ $(objc) $(flags) -c -o $@ $<
 

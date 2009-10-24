@@ -1419,7 +1419,8 @@ SelectorList
     ;
 
 MessageExpression
-    : "[" AssignmentExpression SelectorList "]" { $$ = new(driver.pool_) CYSend($2, $3); }
+    : "[" AssignmentExpression SelectorList "]" { $$ = new(driver.pool_) CYSendDirect($2, $3); }
+    | "[" "super" SelectorList "]" { $$ = new(driver.pool_) CYSendSuper($3); }
     ;
 
 SelectorExpressionOpt

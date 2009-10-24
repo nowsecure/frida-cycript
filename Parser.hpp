@@ -953,7 +953,7 @@ struct CYDeclarations :
 {
     CYDeclaration *declaration_;
 
-    CYDeclarations(CYDeclaration *declaration, CYDeclarations *next) :
+    CYDeclarations(CYDeclaration *declaration, CYDeclarations *next = NULL) :
         CYNext<CYDeclarations>(next),
         declaration_(declaration)
     {

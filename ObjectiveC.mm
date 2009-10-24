@@ -117,17 +117,24 @@ void CYSelectorPart::Output(CYOutput &out) const {
 }
 
 void CYSend::Output(CYOutput &out, CYFlags flags) const {
-    out << '[';
-
-    self_->Output(out, CYPA, CYNoFlags);
-
     for (CYArgument *argument(arguments_); argument != NULL; argument = argument->next_)
         if (argument->name_ != NULL) {
             out << ' ' << *argument->name_;
             if (argument->value_ != NULL)
                 out << ':' << *argument->value_;
         }
+}
 
+void CYSendDirect::Output(CYOutput &out, CYFlags flags) const {
+    out << '[';
+    self_->Output(out, CYPA, CYNoFlags);
+    CYSend::Output(out, flags);
+    out << ']';
+}
+
+void CYSendSuper::Output(CYOutput &out, CYFlags flags) const {
+    out << '[' << "super";
+    CYSend::Output(out, flags);
     out << ']';
 }
 /* }}} */
@@ -173,16 +180,19 @@ CYStatement *CYField::Replace(CYContext &context) const {
 CYStatement *CYMessage::Replace(CYContext &context, bool replace) const { $T(NULL)
     CYVariable *cyn($V("$cyn"));
     CYVariable *cyt($V("$cyt"));
+    CYVariable *self($V("self"));
+    CYVariable *_class($V(instance_ ? "$cys" : "$cyp"));
 
     return $ CYBlock($$->*
         next_->Replace(context, replace)->*
         $E($ CYAssign(cyn, parameters_->Selector(context)))->*
-        $E($ CYAssign(cyt, $C1($M(cyn, $S("type")), $V(instance_ ? "$cys" : "$cyp"))))->*
+        $E($ CYAssign(cyt, $C1($M(cyn, $S("type")), _class)))->*
         $E($C4($V(replace ? "class_replaceMethod" : "class_addMethod"),
             $V(instance_ ? "$cyc" : "$cym"),
             cyn,
             $N2($V("Functor"), $F(NULL, $P2("self", "_cmd", parameters_->Parameters(context)), $$->*
-                $ CYReturn($C1($M($F(NULL, NULL, code_), $S("call")), $V("self")))
+                $ CYVar($ CYDeclarations($ CYDeclaration($I("$cyr"), $N2($V("Super"), self, _class))))->*
+                $ CYReturn($C1($M($F(NULL, NULL, code_), $S("call")), self))
             ), cyt),
             cyt
         ))
@@ -218,7 +228,7 @@ CYString *CYSelectorPart::Replace(CYContext &context) {
     return $S(apr_pstrdup(context.pool_, str.str().c_str()));
 }
 
-CYExpression *CYSend::Replace(CYContext &context) {
+CYExpression *CYSendDirect::Replace(CYContext &context) {
     std::ostringstream name;
     CYArgument **argument(&arguments_);
 
@@ -240,5 +250,9 @@ CYExpression *CYSend::Replace(CYContext &context) {
     double address(static_cast<double>(reinterpret_cast<uintptr_t>(sel)));
 
     return $C2($V("objc_msgSend"), self_, $D(address), arguments_);
+}
+
+CYExpression *CYSendSuper::Replace(CYContext &context) {
+    return $ CYSendDirect($V("$cyr"), arguments_);
 }
 /* }}} */
