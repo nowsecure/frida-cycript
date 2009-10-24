@@ -1733,7 +1733,7 @@ Class CYCastClass(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
     id self(CYCastNSObject(pool, context, value));
     if (CYIsClass(self))
         return (Class) self;
-    _throw(NSInvalidArgumentException, "got somwthing that is not a Class");
+    _throw(NSInvalidArgumentException, "got something that is not a Class");
     return NULL;
 }
 
