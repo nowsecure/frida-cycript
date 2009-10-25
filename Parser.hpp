@@ -310,8 +310,9 @@ class CYDriver {
     bool strict_;
 
     enum Condition {
-        RegExStart,
-        RegExRest
+        RegExpSlash,
+        RegExpSlashEqual,
+        RegExpSlashRight,
     };
 
     std::string filename_;

@@ -1,4 +1,6 @@
 %{
+// XXX: supposedly I will be screwed on very very long multi-line comments and need to replace these with a manual lexer. http://websrv.cs.fsu.edu/~engelen/courses/COP5621/Pr2.pdf
+
 #define YYLTYPE cy::location
 #include "Cycript.tab.hh"
 typedef cy::parser::token tk;
@@ -27,6 +29,22 @@ typedef cy::parser::token tk;
         } else \
             yyextra->state_ = CYNewLine; \
     }
+
+#define M { \
+    if (const char *nl = reinterpret_cast<const char *>(memchr(yytext, '\n', yyleng))) { \
+        unsigned lines(0); \
+        size_t left; \
+        do { \
+            ++lines; \
+            left = yyleng - (nl - yytext) - 1; \
+            nl = reinterpret_cast<const char *>(memchr(nl + 1, '\n', left)); \
+        } while (nl != NULL); \
+        yylloc->end.lines(lines); \
+        yylloc->end.columns(left); \
+        yylloc->step(); \
+        N \
+    } else L \
+}
 
 #define L { \
     yylloc->step(); \
@@ -88,38 +106,32 @@ RegularExpressionEnd_ \/{RegularExpressionFlags}
 RegularExpressionRest_ {RegularExpressionBody_}{RegularExpressionEnd_}
 RegularExpressionStart_ {RegularExpressionBody}{RegularExpressionEnd_}
 
-%x res
-%x rer
+%x RegExp
+%x RegExpSlash
+%x RegExpSlashEqual
+%x RegExpSlashRight
 
 %%
 
-<res>{RegularExpressionStart_} E("/")
-<rer>{RegularExpressionRest_} E("/=")
+<RegExpSlash>{RegularExpressionStart_} E("/")
+<RegExpSlashEqual>{RegularExpressionRest_} E("/=")
+<RegExpSlashRight>{RegularExpressionRest_} E("/>")
 
 \/\/[^\n]* L
+\/\*(\n|[^\*]|\*[^/])*\*\/ M
 
-\/\*(\n|[^\*]|\*[^/])*\*\/ {
-    // XXX: supposedly I will be screwed on very very long multi-line comments and need to replace this with a manual lexer. http://websrv.cs.fsu.edu/~engelen/courses/COP5621/Pr2.pdf
-
-    if (const char *nl = reinterpret_cast<const char *>(memchr(yytext, '\n', yyleng))) {
-        unsigned lines(0);
-        size_t left;
-
-        do {
-            ++lines;
-            left = yyleng - (nl - yytext) - 1;
-            nl = reinterpret_cast<const char *>(memchr(nl + 1, '\n', left));
-        } while (nl != NULL);
-
-        yylloc->end.lines(lines);
-        yylloc->end.columns(left);
-        yylloc->step();
-
-        N
-    } else L
-}
+@begin E4X
+<RegExp>\<!--(\n|[^-]|-[^-])*--> 
+<RegExp>\<!\[CDATA\[(\n|[^[]|\[[^[]|\[\[[^>])*]]> 
+<RegExp>\<?(\n|[^?]|\?[^>])*?> 
 
 "@"    L C return tk::At;
+"::"   L C return tk::ColonColon;
+"<>"   L C return tk::LeftRight;
+"</>"  L C return tk::LeftSlashRight;
+".."   L C return tk::PeriodPeriod;
+"/>"   L C return tk::SlashRight;
+@end
 
 "&"    L C return tk::Ampersand;
 "&&"   L C return tk::AmpersandAmpersand;
@@ -175,9 +187,11 @@ RegularExpressionStart_ {RegularExpressionBody}{RegularExpressionEnd_}
 "["    L C return tk::OpenBracket;
 "]"    L C return tk::CloseBracket;
 
+@begin ObjectiveC
 "@class"       L C return tk::AtClass;
 "@end"         L C return tk::AtEnd;
 "@selector"    L C return tk::AtSelector;
+@end
 
 "false"        L C yylval->false_ = new(yyextra->pool_) CYFalse(); return tk::False;
 "null"         L C yylval->null_ = new(yyextra->pool_) CYNull(); return tk::Null;
@@ -321,11 +335,14 @@ void CYDriver::SetCondition(Condition condition) {
     struct yyguts_t *yyg(reinterpret_cast<struct yyguts_t *>(scanner_));
 
     switch (condition) {
-        case RegExStart:
-            BEGIN(res);
+        case RegExpSlash:
+            BEGIN(RegExpSlash);
             break;
-        case RegExRest:
-            BEGIN(rer);
+        case RegExpSlashEqual:
+            BEGIN(RegExpSlashEqual);
+            break;
+        case RegExpSlashRight:
+            BEGIN(RegExpSlashRight);
             break;
         default:
             _assert(false);

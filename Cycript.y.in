@@ -124,7 +124,17 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %parse-param { CYDriver &driver }
 %lex-param { void *scanner }
 
+@begin E4X
 %token At "@"
+%token ColonColon "::"
+%token LeftRight "<>"
+%token LeftSlashRight "</>"
+%token PeriodPeriod ".."
+
+%token XMLCDATA
+%token XMLComment
+%token XMLPI
+@end
 
 %token Ampersand "&"
 %token AmpersandAmpersand "&&"
@@ -577,8 +587,11 @@ IdentifierOpt
     ;
 
 RegularExpressionToken
-    : "/" { $$ = CYDriver::RegExStart; }
-    | "/=" { $$ = CYDriver::RegExRest; }
+    : "/" { $$ = CYDriver::RegExpSlash; }
+    | "/=" { $$ = CYDriver::RegExpSlashEqual; }
+@begin E4X
+    | "/>" { $$ = CYDriver::RegExpSlashRight; }
+@end
     ;
 
 RegularExpressionLiteral_
@@ -1457,6 +1470,109 @@ UnaryExpression_
 MemberAccess
     : "->" "[" Expression "]" { $$ = new(driver.pool_) CYIndirectMember(NULL, $3); }
     | "->" Identifier { $$ = new(driver.pool_) CYIndirectMember(NULL, new(driver.pool_) CYString($2)); }
+    ;
+/* }}} */
+@end
+
+@begin E4X
+/* 8.3 XML Initialiser Input Elements {{{ */
+XMLMarkup
+    : XMLComment
+    | XMLCDATA
+    | XMLPI
+    ;
+/* }}} */
+/* 11.1 Primary Expressions {{{ */
+PrimaryExpression_
+    : PropertyIdentifier
+    | XMLInitialiser
+    | XMLListInitialiser
+    ;
+
+PropertyIdentifier
+    : AttributeIdentifier
+    | QualifiedIdentifier
+    | WildcardIdentifier
+    ;
+/* }}} */
+/* 11.1.1 Attribute Identifiers {{{ */
+AttributeIdentifier
+    : "@" PropertySelector
+    | "@" QualifiedIdentifier
+    | "@" "[" Expression "]"
+    ;
+
+PropertySelector
+    : Identifier
+    | WildcardIdentifier
+    ;
+/* }}} */
+/* 11.1.2 Qualified Identifiers {{{ */
+QualifiedIdentifier
+    : PropertySelector "::" PropertySelector
+    | PropertySelector "::" "[" Expression "]"
+    ;
+/* }}} */
+/* 11.1.3 Wildcard Identifiers {{{ */
+WildcardIdentifier
+    : "*"
+    ;
+/* }}} */
+/* 11.1.4 XML Initialiser {{{ */
+XMLInitialiser
+    : XMLMarkup
+    | XMLElement
+    ;
+
+XMLElement
+    : "<" XMLTagContent XMLWhitespaceOpt "/>"
+    | "<" XMLTagContent XMLWhitespace ">" XMLElementContentOpt "</" XMLTagName XMLWhitespaceOpt ">"
+    ;
+
+XMLTagContent
+    : XMLTagName XMLAttributesOpt
+    ;
+
+XMLTagName
+    : "{" Expression "}"
+    | XMLName
+    ;
+
+XMLAttributes
+    : XMLWhitespace "{" Expression "}"
+    | XMLAttributeOpt XMLAttributes
+    ;
+
+XMLAttributesOpt
+    : XMLAttributes
+    |
+    ;
+
+XMLAttribute
+    : XMLWhitespace XMLName XMLWhitespaceOpt "=" XMLWhitespaceOpt "{" Expression "}"
+    | XMLWhitespace XMLName XMLWhitespaceOpt "=" XMLWhitespaceOpt XMLAttributeValue
+    ;
+
+XMLAttributeOpt
+    : XMLAttribute
+    |
+    ;
+
+XMLElementContent
+    : "{" Expression "}" XMLElementContentOpt
+    | XMLMarkup XMLElementContentOpt
+    | XMLText XMLElementContentOpt
+    | XMLElement XMLElementContentOpt
+    ;
+
+XMLElementContentOpt
+    : XMLElementContent
+    |
+    ;
+/* }}} */
+/* 11.1.5 XMLList Initialiser {{{ */
+XMLListInitialiser
+    : "<>" XMLElementContent "</>"
     ;
 /* }}} */
 @end

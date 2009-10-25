@@ -89,7 +89,10 @@ libcycript.plist: Bridge.def
 	    echo '})'; \
 	} >$@
 
-Cycript.y: Cycript.y.in
+%.y: %.y.in
+	./Filter.sh <$< >$@ $(filters)
+
+%.l: %.l.in
 	./Filter.sh <$< >$@ $(filters)
 
 Cycript.tab.cc Cycript.tab.hh location.hh position.hh: Cycript.y
