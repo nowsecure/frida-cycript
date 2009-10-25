@@ -27,7 +27,7 @@ code += Network.o Parser.o
 code += JavaScriptCore.o Library.o
 
 filters := C
-ldid := echo
+ldid := true
 dll := so
 apr := $(shell apr-1-config --link-ld)
 library := $(apr) -lffi -liconv
@@ -47,7 +47,7 @@ endif
 
 #flags += -g3 -O0 -DYYDEBUG=1
 flags += -g0 -O3
-flags += -Wall -Werror -Wno-parentheses
+flags += -Wall -Werror -Wno-parentheses #-Wno-unused
 flags += -fPIC -fno-common
 flags += -I. -I$(shell apr-1-config --includedir)
 
@@ -119,11 +119,11 @@ lex.cy.o: lex.cy.c $(header)
 
 libcycript.$(dll): $(code)
 	$(target)g++ $(flags) -shared -dynamiclib -o $@ $(filter %.o,$^) $(library) $(link)
-	$(ldid) -S $@
+	$(ldid) $@
 
 cycript: Console.o libcycript.$(dll)
 	$(target)g++ $(flags) -o $@ $(filter %.o,$^) -L. -lcycript $(console) $(link)
-	$(ldid) -S cycript
+	$(ldid) cycript
 
 package: $(deb)
 

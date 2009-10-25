@@ -138,12 +138,6 @@
 
 void CYThrow(JSContextRef context, JSValueRef value);
 
-const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSValueRef value, JSValueRef *exception);
-JSStringRef CYCopyJSString(const char *value);
-
-void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef value);
-
-JSValueRef CYCallFunction(apr_pool_t *pool, JSContextRef context, size_t setups, void *setup[], size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception, sig::Signature *signature, ffi_cif *cif, void (*function)());
 JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, Class super, SEL _cmd, size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception);
 
 struct CYUTF8String {
@@ -438,8 +432,6 @@ static JSClassRef Runtime_;
 static JSClassRef Struct_;
 
 #ifdef __OBJC__
-static JSObjectRef ObjectiveC_;
-
 static JSClassRef Instance_;
 static JSClassRef Internal_;
 static JSClassRef Message_;
@@ -919,7 +911,6 @@ struct Functor_privateData :
 {
     sig::Signature signature_;
     ffi_cif cif_;
-
 
     Functor_privateData(const char *type, void (*value)()) :
         CYValue(reinterpret_cast<void *>(value))
@@ -1802,8 +1793,7 @@ JSValueRef CYCallAsFunction(JSContextRef context, JSObjectRef function, JSObject
 }
 
 bool CYIsCallable(JSContextRef context, JSValueRef value) {
-    // XXX: this isn't actually correct
-    return value != NULL && JSValueIsObject(context, value);
+    return value != NULL && JSValueIsObject(context, value) && JSObjectIsFunction(context, (JSObjectRef) value);
 }
 
 #ifdef __OBJC__
@@ -3795,8 +3785,13 @@ JSGlobalContextRef CYGetJSContext() {
         JSObjectSetPrototype(context, global, JSObjectMake(context, Runtime_, NULL));
 
         Array_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Array")));
+        JSValueProtect(context, Array_);
+
         Function_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Function")));
+        JSValueProtect(context, Function_);
+
         String_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("String")));
+        JSValueProtect(context, String_);
 
         length_ = JSStringCreateWithUTF8CString("length");
         message_ = JSStringCreateWithUTF8CString("message");
@@ -3807,13 +3802,21 @@ JSGlobalContextRef CYGetJSContext() {
 
         JSObjectRef Object(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Object"))));
         Object_prototype_ = CYCastJSObject(context, CYGetProperty(context, Object, prototype_));
+        JSValueProtect(context, Object_prototype_);
 
         Array_prototype_ = CYCastJSObject(context, CYGetProperty(context, Array_, prototype_));
         Array_pop_ = CYCastJSObject(context, CYGetProperty(context, Array_prototype_, CYJSString("pop")));
         Array_push_ = CYCastJSObject(context, CYGetProperty(context, Array_prototype_, CYJSString("push")));
         Array_splice_ = CYCastJSObject(context, CYGetProperty(context, Array_prototype_, CYJSString("splice")));
 
+        JSValueProtect(context, Array_prototype_);
+        JSValueProtect(context, Array_pop_);
+        JSValueProtect(context, Array_push_);
+        JSValueProtect(context, Array_splice_);
+
         JSObjectRef Functor(JSObjectMakeConstructor(context, Functor_, &Functor_new));
+
+        JSValueRef function(CYGetProperty(context, Function_, prototype_));
 
 /* Objective-C Classes {{{ */
 #ifdef __OBJC__
@@ -3859,11 +3862,14 @@ JSGlobalContextRef CYGetJSContext() {
         definition.getPropertyNames = &Messages_getPropertyNames;
         definition.finalize = &Finalize;
         Messages_ = JSClassCreate(&definition);
-        definition = kJSClassDefinitionEmpty;
 
+        definition = kJSClassDefinitionEmpty;
         definition.className = "Super";
+        definition.staticFunctions = Internal_staticFunctions;
+        definition.finalize = &Finalize;
         Super_ = JSClassCreate(&definition);
 
+        definition = kJSClassDefinitionEmpty;
         definition.className = "ObjectiveC::Classes";
         definition.getProperty = &ObjectiveC_Classes_getProperty;
         definition.getPropertyNames = &ObjectiveC_Classes_getPropertyNames;
@@ -3887,12 +3893,12 @@ JSGlobalContextRef CYGetJSContext() {
         definition.getPropertyNames = &ObjectiveC_Protocols_getPropertyNames;
         ObjectiveC_Protocols_ = JSClassCreate(&definition);
 
-        ObjectiveC_ = JSObjectMake(context, NULL, NULL);
-        CYSetProperty(context, global, CYJSString("ObjectiveC"), ObjectiveC_);
+        JSObjectRef ObjectiveC(JSObjectMake(context, NULL, NULL));
+        CYSetProperty(context, global, CYJSString("ObjectiveC"), ObjectiveC);
 
-        CYSetProperty(context, ObjectiveC_, CYJSString("classes"), JSObjectMake(context, ObjectiveC_Classes_, NULL));
-        CYSetProperty(context, ObjectiveC_, CYJSString("images"), JSObjectMake(context, ObjectiveC_Images_, NULL));
-        CYSetProperty(context, ObjectiveC_, CYJSString("protocols"), JSObjectMake(context, ObjectiveC_Protocols_, NULL));
+        CYSetProperty(context, ObjectiveC, CYJSString("classes"), JSObjectMake(context, ObjectiveC_Classes_, NULL));
+        CYSetProperty(context, ObjectiveC, CYJSString("images"), JSObjectMake(context, ObjectiveC_Images_, NULL));
+        CYSetProperty(context, ObjectiveC, CYJSString("protocols"), JSObjectMake(context, ObjectiveC_Protocols_, NULL));
 
         JSObjectRef Instance(JSObjectMakeConstructor(context, Instance_, &Instance_new));
         JSObjectRef Message(JSObjectMakeConstructor(context, Message_, NULL));
@@ -3908,13 +3914,13 @@ JSGlobalContextRef CYGetJSContext() {
 
         CYSetProperty(context, global, CYJSString("objc_registerClassPair"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_registerClassPair"), &objc_registerClassPair_));
         CYSetProperty(context, global, CYJSString("objc_msgSend"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_msgSend"), &$objc_msgSend));
+
+        JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Message, prototype_), function);
+        JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Selector, prototype_), function);
 #endif
 /* }}} */
 
-        JSValueRef function(CYGetProperty(context, Function_, prototype_));
-        JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Message, prototype_), function);
         JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Functor, prototype_), function);
-        JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Selector, prototype_), function);
 
         CYSetProperty(context, global, CYJSString("Functor"), Functor);
         CYSetProperty(context, global, CYJSString("Pointer"), JSObjectMakeConstructor(context, Pointer_, &Pointer_new));
@@ -3935,6 +3941,8 @@ JSGlobalContextRef CYGetJSContext() {
         CYSetProperty(context, global, CYJSString("$cyq"), JSObjectMakeFunctionWithCallback(context, CYJSString("$cyq"), &$cyq));
 
         System_ = JSObjectMake(context, NULL, NULL);
+        JSValueProtect(context, System_);
+
         CYSetProperty(context, global, CYJSString("system"), System_);
         CYSetProperty(context, System_, CYJSString("args"), CYJSNull(context));
         //CYSetProperty(context, System_, CYJSString("global"), global);
@@ -3942,17 +3950,6 @@ JSGlobalContextRef CYGetJSContext() {
         CYSetProperty(context, System_, CYJSString("print"), JSObjectMakeFunctionWithCallback(context, CYJSString("print"), &System_print));
 
         Result_ = JSStringCreateWithUTF8CString("_");
-
-        JSValueProtect(context, Array_);
-        JSValueProtect(context, Function_);
-        JSValueProtect(context, String_);
-
-        JSValueProtect(context, Object_prototype_);
-
-        JSValueProtect(context, Array_prototype_);
-        JSValueProtect(context, Array_pop_);
-        JSValueProtect(context, Array_push_);
-        JSValueProtect(context, Array_splice_);
     }
 
     return Context_;
