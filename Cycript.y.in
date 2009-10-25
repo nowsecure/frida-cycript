@@ -289,7 +289,6 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <argument_> Arguments
 %type <literal_> ArrayLiteral
 %type <expression_> AssigneeExpression
-%type <expression_> AssigneeExpression_
 %type <expression_> AssigneeExpressionNoBF
 %type <expression_> AssignmentExpression
 %type <assignment_> AssignmentExpression_
@@ -386,13 +385,12 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> PrimaryExpression
 %type <expression_> PrimaryExpression_
 %type <expression_> PrimaryExpressionNoBF
+%type <expression_> PrimaryExpressionNoBF_
 %type <statement_> Program
 %type <propertyName_> PropertyName
 %type <property_> PropertyNameAndValueList
 %type <property_> PropertyNameAndValueList_
 %type <property_> PropertyNameAndValueListOpt
-%type <literal_> RegularExpressionLiteral_
-%type <condition_> RegularExpressionToken
 %type <expression_> RelationalExpression
 %type <infix_> RelationalExpression_
 %type <expression_> RelationalExpressionNoBF
@@ -402,6 +400,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> ShiftExpression
 %type <expression_> ShiftExpressionNoBF
 %type <statement_> SourceElement
+%type <statement_> SourceElement_
 %type <statement_> SourceElements
 %type <statement_> Statement
 %type <statement_> Statement_
@@ -410,6 +409,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <statement_> SwitchStatement
 %type <statement_> ThrowStatement
 %type <statement_> TryStatement
+%type <expression_> UnaryAssigneeExpression
 %type <expression_> UnaryExpression
 %type <expression_> UnaryExpression_
 %type <expression_> UnaryExpressionNoBF
@@ -586,24 +586,12 @@ IdentifierOpt
     | { $$ = NULL; }
     ;
 
-RegularExpressionToken
-    : "/" { $$ = CYDriver::RegExpSlash; }
-    | "/=" { $$ = CYDriver::RegExpSlashEqual; }
-@begin E4X
-    | "/>" { $$ = CYDriver::RegExpSlashRight; }
-@end
-    ;
-
-RegularExpressionLiteral_
-    : RegularExpressionToken { driver.SetCondition($1); } RegularExpressionLiteral { $$ = $3; }
-    ;
-
 Literal
     : NullLiteral { $$ = $1; }
     | BooleanLiteral { $$ = $1; }
     | NumericLiteral { $$ = $1; }
     | StringLiteral { $$ = $1; }
-    | RegularExpressionLiteral_ { $$ = $1; }
+    | RegularExpressionLiteral { $$ = $1; }
     ;
 
 NullLiteral
@@ -617,6 +605,11 @@ BooleanLiteral
 
 /* 11.1 Primary Expressions {{{ */
 PrimaryExpression_
+    : ObjectLiteral { $$ = $1; }
+    | PrimaryExpressionNoBF_ { $$ = $1; }
+    ;
+
+PrimaryExpressionNoBF_
     : "this" { $$ = $1; }
     | Identifier { $$ = new(driver.pool_) CYVariable($1); }
     | Literal { $$ = $1; }
@@ -624,13 +617,16 @@ PrimaryExpression_
     | "(" Expression ")" { $$ = $2; }
     ;
 
+LexBeginRegExp
+    : { driver.BeginCondition(CYDriver::RegExpCondition); }
+    ;
+
 PrimaryExpression
-    : ObjectLiteral { $$ = $1; }
-    | PrimaryExpression_ { $$ = $1; }
+    : LexBeginRegExp PrimaryExpression_ { $$ = $2; }
     ;
 
 PrimaryExpressionNoBF
-    : PrimaryExpression_ { $$ = $1; }
+    : PrimaryExpressionNoBF_ { $$ = $1; }
     ;
 /* }}} */
 /* 11.1.4 Array Initialiser {{{ */
@@ -644,12 +640,12 @@ Element
 
 ElementOpt
     : Element { $$ = $1; }
-    | { $$ = NULL; }
+    | LexBeginRegExp { $$ = NULL; }
     ;
 
 ElementListOpt
     : ElementList { $$ = $1; }
-    | { $$ = NULL; }
+    | LexBeginRegExp { $$ = NULL; }
     ;
 
 ElementList
@@ -697,7 +693,7 @@ MemberExpression
     : PrimaryExpression { $$ = $1; }
     | FunctionExpression { $$ = $1; }
     | MemberExpression MemberAccess { $2->SetLeft($1); $$ = $2; }
-    | MemberExpression_ { $$ = $1; }
+    | LexBeginRegExp MemberExpression_ { $$ = $2; }
     ;
 
 MemberExpressionNoBF
@@ -712,7 +708,7 @@ NewExpression_
 
 NewExpression
     : MemberExpression { $$ = $1; }
-    | NewExpression_ { $$ = $1; }
+    | LexBeginRegExp NewExpression_ { $$ = $2; }
     ;
 
 NewExpressionNoBF
@@ -739,7 +735,7 @@ ArgumentList_
 
 ArgumentListOpt
     : ArgumentList { $$ = $1; }
-    | { $$ = NULL; }
+    | LexBeginRegExp { $$ = NULL; }
     ;
 
 ArgumentList
@@ -790,7 +786,7 @@ UnaryExpression_
 
 UnaryExpression
     : PostfixExpression { $$ = $1; }
-    | UnaryExpression_ { $$ = $1; }
+    | LexBeginRegExp UnaryExpression_ { $$ = $2; }
     ;
 
 UnaryExpressionNoBF
@@ -1006,12 +1002,12 @@ AssignmentExpression_
 
 AssigneeExpression
     : LeftHandSideExpression { $$ = $1; }
-    | AssigneeExpression_ { $$ = $1; }
+    | LexBeginRegExp UnaryAssigneeExpression { $$ = $2; }
     ;
 
 AssigneeExpressionNoBF
     : LeftHandSideExpressionNoBF { $$ = $1; }
-    | AssigneeExpression_ { $$ = $1; }
+    | UnaryAssigneeExpression { $$ = $1; }
     ;
 
 AssignmentExpression
@@ -1053,12 +1049,12 @@ ExpressionNoIn_
 
 ExpressionOpt
     : Expression { $$ = $1; }
-    | { $$ = NULL; }
+    | LexBeginRegExp { $$ = NULL; }
     ;
 
 ExpressionNoInOpt
     : ExpressionNoIn { $$ = $1; }
-    | { $$ = NULL; }
+    | LexBeginRegExp { $$ = NULL; }
     ;
 
 Expression
@@ -1093,7 +1089,7 @@ Statement_
     ;
 
 Statement
-    : Statement_ { $$ = $1; }
+    : LexBeginRegExp Statement_ { $$ = $2; }
     ;
 /* }}} */
 /* 12.1 Block {{{ */
@@ -1111,7 +1107,7 @@ StatementList
 
 StatementListOpt
     : StatementList { $$ = $1; }
-    | { $$ = NULL; }
+    | LexBeginRegExp { $$ = NULL; }
     ;
 /* }}} */
 /* 12.2 Variable Statement {{{ */
@@ -1209,7 +1205,7 @@ ForStatement
 
 ForStatementInitialiser
     : ExpressionNoInOpt { $$ = $1; }
-    | "var" VariableDeclarationListNoIn { $$ = $2; }
+    | LexBeginRegExp "var" VariableDeclarationListNoIn { $$ = $3; }
     ;
 /* }}} */
 /* 12.6.4 The for-in Statement {{{ */
@@ -1219,7 +1215,7 @@ ForInStatement
 
 ForInStatementInitialiser
     : LeftHandSideExpression { $$ = $1; }
-    | "var" VariableDeclarationNoIn { $$ = $2; }
+    | LexBeginRegExp "var" VariableDeclarationNoIn { $$ = $3; }
     ;
 /* }}} */
 
@@ -1299,7 +1295,7 @@ FunctionDeclaration
     ;
 
 FunctionExpression
-    : "function" IdentifierOpt "(" FormalParameterList ")" "{" FunctionBody "}" { $$ = new(driver.pool_) CYFunctionExpression($2, $4, $7); }
+    : LexBeginRegExp "function" IdentifierOpt "(" FormalParameterList ")" "{" FunctionBody "}" { $$ = new(driver.pool_) CYFunctionExpression($3, $5, $8); }
     ;
 
 FormalParameterList_
@@ -1323,19 +1319,24 @@ Program
 
 SourceElements
     : SourceElement SourceElements { $1->SetNext($2); $$ = $1; }
-    | { $$ = NULL; }
+    | LexBeginRegExp { $$ = NULL; }
+    ;
+
+SourceElement_
+    : Statement_ { $$ = $1; }
+    | FunctionDeclaration { $$ = $1; }
     ;
 
 SourceElement
-    : Statement_ { $$ = $1; }
-    | FunctionDeclaration { $$ = $1; }
+    : LexBeginRegExp SourceElement_ { $$ = $2; }
     ;
 /* }}} */
 
 @begin ObjectiveC
 /* Cycript (Objective-C): @class Declaration {{{ */
 ClassSuperOpt
-    : ":" MemberExpressionNoBF { $$ = $2; }
+    /* XXX: why the hell did I choose MemberExpressionNoBF? */
+    : ":" LexBeginRegExp MemberExpressionNoBF { $$ = $3; }
     | { $$ = NULL; }
     ;
 
@@ -1402,7 +1403,7 @@ CategoryStatement
     : "@class" ClassName ClassMessageDeclarationListOpt "@end" { $$ = new(driver.pool_) CYCategory($2, $3); }
     ;
 
-PrimaryExpression
+PrimaryExpression_
     : ClassExpression { $$ = $1; }
     ;
 
@@ -1433,7 +1434,7 @@ SelectorList
 
 MessageExpression
     : "[" AssignmentExpression SelectorList "]" { $$ = new(driver.pool_) CYSendDirect($2, $3); }
-    | "[" "super" SelectorList "]" { $$ = new(driver.pool_) CYSendSuper($3); }
+    | "[" LexBeginRegExp "super" SelectorList "]" { $$ = new(driver.pool_) CYSendSuper($4); }
     ;
 
 SelectorExpressionOpt
@@ -1450,7 +1451,7 @@ SelectorExpression
     | Word { $$ = new(driver.pool_) CYSelectorPart($1, false, NULL); }
     ;
 
-PrimaryExpression_
+PrimaryExpressionNoBF_
     : MessageExpression { $$ = $1; }
     | "@selector" "(" SelectorExpression ")" { $$ = new(driver.pool_) CYSelector($3); }
     ;
@@ -1459,7 +1460,7 @@ PrimaryExpression_
 
 @begin C
 /* Cycript (C): Pointer Indirection/Addressing {{{ */
-AssigneeExpression_
+UnaryAssigneeExpression
     : "*" UnaryExpression { $$ = new(driver.pool_) CYIndirect($2); }
     ;
 
@@ -1483,7 +1484,7 @@ XMLMarkup
     ;
 /* }}} */
 /* 11.1 Primary Expressions {{{ */
-PrimaryExpression_
+PrimaryExpressionNoBF_
     : PropertyIdentifier
     | XMLInitialiser
     | XMLListInitialiser
@@ -1602,7 +1603,7 @@ ComprehensionList
     : ForComprehension ComprehensionListOpt { $1->SetNext($2); $$ = $1; }
     ;
 
-PrimaryExpression_
+PrimaryExpressionNoBF_
     : "[" AssignmentExpression ComprehensionList "]" { $$ = new(driver.pool_) CYArrayComprehension($2, $3); }
     ;
 /* }}} */
@@ -1616,13 +1617,13 @@ LetStatement
     : "let" "(" VariableDeclarationList ")" Block_ { $$ = new(driver.pool_) CYLet($3, $5); }
     ;
 
-Statement
+Statement_
     : LetStatement
     ;
 *//* }}} */
 /* JavaScript FTW: Function Statements {{{ */
 Statement
-    : FunctionDeclaration { driver.Warning(yylloc, "warning, FunctionDeclaration is a SourceElement, not a Statement"); } { $$ = $1; }
+    : LexBeginRegExp FunctionDeclaration { driver.Warning(yylloc, "warning, FunctionDeclaration is a SourceElement, not a Statement"); } { $$ = $2; }
     ;
 /* }}} */
 

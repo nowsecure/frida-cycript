@@ -7,11 +7,11 @@ typedef cy::parser::token tk;
 
 #define YY_EXTRA_TYPE CYDriver *
 
-#define T yylval->newline_ = yyextra->state_ == CYNewLine;
+#define T yylval->newline_ = yyextra->state_ == CYNewLine; BEGIN(Div);
 #define C T yyextra->state_ = CYClear;
 #define R T yyextra->state_ = CYRestricted;
 
-#define E(prefix) L C BEGIN(INITIAL); { \
+#define E(prefix) L C { \
     char *value(reinterpret_cast<char *>(apr_palloc(yyextra->pool_, yyleng + sizeof(prefix)))); \
     memcpy(value, prefix, sizeof(prefix) - 1); \
     memcpy(value + sizeof(prefix) - 1, yytext, yyleng); \
@@ -99,23 +99,14 @@ RegularExpressionFirstChar [^\n*\\/]|{BackslashSequence}
 RegularExpressionChar [^\n\\/]|{BackslashSequence}
 RegularExpressionFlags {IdentifierPart}*
 RegularExpressionChars {RegularExpressionChar}*
-RegularExpressionBody_ {RegularExpressionChars}
-RegularExpressionBody {RegularExpressionFirstChar}{RegularExpressionBody_}
+RegularExpressionBody {RegularExpressionFirstChar}{RegularExpressionChars}
 
-RegularExpressionEnd_ \/{RegularExpressionFlags}
-RegularExpressionRest_ {RegularExpressionBody_}{RegularExpressionEnd_}
-RegularExpressionStart_ {RegularExpressionBody}{RegularExpressionEnd_}
-
-%x RegExp
-%x RegExpSlash
-%x RegExpSlashEqual
-%x RegExpSlashRight
+%s Div
+%s RegExp
 
 %%
 
-<RegExpSlash>{RegularExpressionStart_} E("/")
-<RegExpSlashEqual>{RegularExpressionRest_} E("/=")
-<RegExpSlashRight>{RegularExpressionRest_} E("/>")
+<RegExp>\/{RegularExpressionBody}\/{RegularExpressionFlags} E("")
 
 \/\/[^\n]* L
 \/\*(\n|[^\*]|\*[^/])*\*\/ M
@@ -167,11 +158,12 @@ RegularExpressionStart_ {RegularExpressionBody}{RegularExpressionEnd_}
 ">>="  L C return tk::RightRightEqual;
 ">>>"  L C return tk::RightRightRight;
 ">>>=" L C return tk::RightRightRightEqual;
-"/"    L C return tk::Slash;
-"/="   L C return tk::SlashEqual;
 "*"    L C return tk::Star;
 "*="   L C return tk::StarEqual;
 "~"    L C return tk::Tilde;
+
+<Div>"/"  L C return tk::Slash;
+<Div>"/=" L C return tk::SlashEqual;
 
 ":"    L C return tk::Colon;
 ","    L C return tk::Comma;
@@ -264,9 +256,9 @@ RegularExpressionStart_ {RegularExpressionBody}{RegularExpressionEnd_}
 
 "each"         L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("each"); return tk::Each;
 
-{IdentifierStart}{IdentifierPart}* yylval->identifier_ = new(yyextra->pool_) CYIdentifier(apr_pstrmemdup(yyextra->pool_, yytext, yyleng)); L C return tk::Identifier_;
+{IdentifierStart}{IdentifierPart}* L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier(apr_pstrmemdup(yyextra->pool_, yytext, yyleng)); return tk::Identifier_;
 
-(\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?){Exponent}? yylval->number_ = new(yyextra->pool_) CYNumber(strtod(yytext, NULL)); L C return tk::NumericLiteral;
+(\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?){Exponent}? L C yylval->number_ = new(yyextra->pool_) CYNumber(strtod(yytext, NULL)); return tk::NumericLiteral;
 
 0[xX][0-9a-fA-F]+ L C yylval->number_ = new(yyextra->pool_) CYNumber(strtoull(yytext + 2, NULL, 16)); return tk::NumericLiteral;
 
@@ -331,18 +323,12 @@ void CYDriver::ScannerDestroy() {
     cylex_destroy(scanner_);
 }
 
-void CYDriver::SetCondition(Condition condition) {
+void CYDriver::BeginCondition(Condition condition) {
     struct yyguts_t *yyg(reinterpret_cast<struct yyguts_t *>(scanner_));
 
     switch (condition) {
-        case RegExpSlash:
-            BEGIN(RegExpSlash);
-            break;
-        case RegExpSlashEqual:
-            BEGIN(RegExpSlashEqual);
-            break;
-        case RegExpSlashRight:
-            BEGIN(RegExpSlashRight);
+        case RegExpCondition:
+            BEGIN(RegExp);
             break;
         default:
             _assert(false);
