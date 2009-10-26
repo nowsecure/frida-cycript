@@ -506,10 +506,9 @@ void CYNull::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYNumber::Output(CYOutput &out, CYFlags flags) const {
-    char value[32];
-    // XXX: I want this to print 1e3 rather than 1000
-    sprintf(value, "%.17g", Value());
-    out << value;
+    std::ostringstream str;
+    CYNumerify(str, Value());
+    out << str.str().c_str();
 }
 
 void CYNumber::PropertyName(CYOutput &out) const {

@@ -5,7 +5,7 @@ all += Cycript.$(dll) #cyrver
 arch := iphoneos-arm
 ldid := ldid -S
 console += -framework UIKit
-depends += readline libffi mobilesubstrate
+depends += readline libffi mobilesubstrate sqlite3-lib
 code += Handler.o
 
 Cycript.$(dll): Connector.o

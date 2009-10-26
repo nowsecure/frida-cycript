@@ -12,7 +12,7 @@ objc :=
 svn := $(shell svnversion)
 
 all:
-all := libcycript.plist cycript
+all := libcycript.db cycript
 
 dpkg_architecture := $(shell which dpkg-architecture 2>/dev/null)
 ifneq ($(dpkg_architecture),)
@@ -26,11 +26,11 @@ code += Cycript.tab.o lex.cy.o
 code += Network.o Parser.o
 code += JavaScriptCore.o Library.o
 
-filters := C
+filters := C #E4X
 ldid := true
 dll := so
 apr := $(shell apr-1-config --link-ld)
-library := $(apr) -lffi -liconv
+library := $(apr) -lffi -liconv -lsqlite3
 console := $(apr) -lreadline
 depends :=
 
@@ -69,25 +69,23 @@ $(deb): $(all)
 	cp -a libcycript.$(dll) package/usr/lib
 	cp -a cycript package/usr/bin
 	#cp -a cyrver package/usr/sbin
-	cp -a libcycript.plist package/usr/lib
+	cp -a libcycript.db package/usr/lib
 	dpkg-deb -b package $(deb)
 endif
 
 all: $(all)
 
 clean:
-	rm -f *.o libcycript.$(dll) cycript libcycript.plist Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.y
+	rm -f *.o libcycript.$(dll) cycript libcycript.db Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.y
 
-libcycript.plist: Bridge.def
+libcycript.db: Bridge.def makefile
+	rm -f libcycript.db
 	{ \
-	    echo '({'; \
-	    grep '^[CFV]' Bridge.def | sed -e 's/^C/0/;s/^F/1/;s/^V/2/' | sed -e 's/"/\\"/g;s/^\([^ ]*\) \([^ ]*\) \(.*\)$$/\2 = (\1, \"\3\");/'; \
-	    echo '},{'; \
-	    grep '^:' Bridge.def | sed -e 's/^: \([^ ]*\) \(.*\)/"\1" = "\2";/'; \
-	    echo '},{'; \
-	    grep '^[EST]' Bridge.def | sed -e 's/^S/0/;s/^T/1/;s/^E/2/' | sed -e 's/^2\(.*\)$$/1\1 i/' | sed -e 's/"/\\"/g;s/^\([^ ]*\) \([^ ]*\) \(.*\)$$/\2 = (\1, \"\3\");/'; \
-	    echo '})'; \
-	} >$@
+	    echo 'create table "bridge" ("mode" int not null, "name" text not null, "value" text null);'; \
+	    grep '^[CFV]' Bridge.def | sed -e 's/^C/0/;s/^F/1/;s/^V/2/' | sed -e 's/"/\\"/g;s/^\([^ ]*\) \([^ ]*\) \(.*\)$$/insert into "bridge" ("mode", "name", "value") values (\1, '"'"'\2'"'"', '"'"'\3'"'"');/'; \
+	    grep '^:' Bridge.def | sed -e 's/^: \([^ ]*\) \(.*\)/insert into "bridge" ("mode", "name", "value") values (-1, '"'"'\1'"'"', '"'"'\2'"'"');/'; \
+	    grep '^[EST]' Bridge.def | sed -e 's/^S/3/;s/^T/4/;s/^E/5/' | sed -e 's/^5\(.*\)$$/4\1 i/' | sed -e 's/^\([^ ]*\) \([^ ]*\) \(.*\)$$/insert into "bridge" ("mode", "name", "value") values (\1, '"'"'\2'"'"', '"'"'\3'"'"');/'; \
+	} | sqlite3 libcycript.db
 
 %.y: %.y.in
 	./Filter.sh <$< >$@ $(filters)

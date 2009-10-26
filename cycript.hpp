@@ -50,6 +50,7 @@
 bool CYRecvAll_(int socket, uint8_t *data, size_t size);
 bool CYSendAll_(int socket, const uint8_t *data, size_t size);
 
+void CYNumerify(std::ostringstream &str, double value);
 void CYStringify(std::ostringstream &str, const char *data, size_t size);
 
 extern "C" void CYHandleClient(apr_pool_t *pool, int socket);
