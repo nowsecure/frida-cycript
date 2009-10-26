@@ -311,6 +311,8 @@ class CYDriver {
 
     enum Condition {
         RegExpCondition,
+        XMLContentCondition,
+        XMLTagCondition,
     };
 
     std::string filename_;
@@ -334,7 +336,11 @@ class CYDriver {
     CYDriver(const std::string &filename);
     ~CYDriver();
 
-    void BeginCondition(Condition condition);
+    Condition GetCondition();
+    void SetCondition(Condition condition);
+
+    void PushCondition(Condition condition);
+    void PopCondition();
 
     void Warning(const cy::location &location, const char *message);
 };
@@ -1472,7 +1478,7 @@ struct CYIndirect :
     }
 
     virtual const char *Operator() const {
-        return "*";
+        return "^";
     }
 
     CYAlphabetic(false)

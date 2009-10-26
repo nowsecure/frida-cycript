@@ -2043,8 +2043,10 @@ static CYUTF16String CYCastUTF16String(JSStringRef value) {
     return CYUTF16String(JSStringGetCharactersPtr(value), JSStringGetLength(value));
 }
 
-// XXX: sometimes pool is null
 static CYUTF8String CYPoolUTF8String(apr_pool_t *pool, JSStringRef value) {
+    if (pool == NULL)
+        return CYCastUTF8String(CYCastNSString(NULL, value));
+
     CYUTF16String utf16(CYCastUTF16String(value));
     const char *in(reinterpret_cast<const char *>(utf16.data));
 
@@ -3325,7 +3327,8 @@ static JSValueRef Type_getProperty(JSContextRef context, JSObjectRef object, JSS
             type.primitive = sig::pointer_P;
             type.data.data.size = 0;
         } else {
-            size_t index(CYGetIndex(NULL, property));
+            CYPool pool;
+            size_t index(CYGetIndex(pool, property));
             if (index == _not(size_t))
                 return NULL;
             type.primitive = sig::array_P;

@@ -30,7 +30,7 @@ typedef cy::parser::token tk;
             yyextra->state_ = CYNewLine; \
     }
 
-#define M { \
+#define V(more) { \
     if (const char *nl = reinterpret_cast<const char *>(memchr(yytext, '\n', yyleng))) { \
         unsigned lines(0); \
         size_t left; \
@@ -42,7 +42,7 @@ typedef cy::parser::token tk;
         yylloc->end.lines(lines); \
         yylloc->end.columns(left); \
         yylloc->step(); \
-        N \
+        more \
     } else L \
 }
 
@@ -86,6 +86,7 @@ int H(char c) {
 %option nounput
 %option interactive
 %option reentrant
+%option stack
 
 Exponent [eE][+-]?[0-9]+
 Escape   \\[\\'"bfnrtv]|\\0|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\\n
@@ -101,27 +102,56 @@ RegularExpressionFlags {IdentifierPart}*
 RegularExpressionChars {RegularExpressionChar}*
 RegularExpressionBody {RegularExpressionFirstChar}{RegularExpressionChars}
 
+@begin E4X
+XMLNameStart [a-zA-Z_:]
+XMLNamePart [a-zA-Z0-9.-_:]
+XMLName {XMLNameStart}{XMLNamePart}*
+@end
+
 %s Div
 %s RegExp
+
+@begin E4X
+%x XMLContent
+%x XMLTag
+@end
 
 %%
 
 <RegExp>\/{RegularExpressionBody}\/{RegularExpressionFlags} E("")
 
 \/\/[^\n]* L
-\/\*(\n|[^\*]|\*[^/])*\*\/ M
+\/\*(\n|[^\*]|\*[^/])*\*\/ V(N)
 
 @begin E4X
-<RegExp>\<!--(\n|[^-]|-[^-])*--> 
-<RegExp>\<!\[CDATA\[(\n|[^[]|\[[^[]|\[\[[^>])*]]> 
-<RegExp>\<?(\n|[^?]|\?[^>])*?> 
+<RegExp>"<>"      L return tk::LeftRight;
+<XMLContent>"</>" L return tk::LeftSlashRight;
 
+<RegExp,XMLContent>\<!\[CDATA\[(\n|[^[]|\[[^[]|\[\[[^>])*]]> V() return tk::XMLCDATA;
+<RegExp,XMLContent>\<!--(\n|[^-]|-[^-])*--> V() return tk::XMLComment;
+<RegExp,XMLContent>\<?(\n|[^?]|\?[^>])*?> V() return tk::XMLPI;
+
+<XMLTag>"="  L return tk::Equal;
+<XMLTag>">"  L return tk::Right;
+<XMLTag>"/>" L return tk::SlashRight;
+<XMLTag>"{"  L return tk::OpenBrace;
+
+<XMLTag>\"(\n|[^"])*\"|'(\n|[^'])*' V() {
+    return tk::XMLAttributeValue;
+}
+
+<XMLTag>{XMLName} L return tk::XMLName;
+<XMLTag>[ \t\r\n] V() return tk::XMLWhitespace;
+
+<XMLContent>"{"  L return tk::OpenBrace;
+<XMLContent>"<"  L return tk::Left;
+<XMLContent>"</" L return tk::LeftSlash;
+@end
+
+@begin E4X
 "@"    L C return tk::At;
 "::"   L C return tk::ColonColon;
-"<>"   L C return tk::LeftRight;
-"</>"  L C return tk::LeftSlashRight;
 ".."   L C return tk::PeriodPeriod;
-"/>"   L C return tk::SlashRight;
 @end
 
 "&"    L C return tk::Ampersand;
@@ -256,6 +286,11 @@ RegularExpressionBody {RegularExpressionFirstChar}{RegularExpressionChars}
 
 "each"         L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("each"); return tk::Each;
 
+@begin E4X
+"namespace"    L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("namespace"); return tk::Namespace;
+"xml"          L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("xml"); return tk::XML;
+@end
+
 {IdentifierStart}{IdentifierPart}* L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier(apr_pstrmemdup(yyextra->pool_, yytext, yyleng)); return tk::Identifier_;
 
 (\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?){Exponent}? L C yylval->number_ = new(yyextra->pool_) CYNumber(strtod(yytext, NULL)); return tk::NumericLiteral;
@@ -323,14 +358,59 @@ void CYDriver::ScannerDestroy() {
     cylex_destroy(scanner_);
 }
 
-void CYDriver::BeginCondition(Condition condition) {
+CYDriver::Condition CYDriver::GetCondition() {
+    switch (yy_top_state(scanner_)) {
+        case RegExp:
+            return RegExpCondition;
+@begin E4X
+        case XMLContent:
+            return XMLContentCondition;
+        case XMLTag:
+            return XMLTagCondition;
+@end
+        default:
+            _assert(false);
+    }
+}
+
+void CYDriver::SetCondition(Condition condition) {
     struct yyguts_t *yyg(reinterpret_cast<struct yyguts_t *>(scanner_));
 
     switch (condition) {
         case RegExpCondition:
             BEGIN(RegExp);
             break;
+@begin E4X
+        case XMLContentCondition:
+            BEGIN(XMLContent);
+            break;
+        case XMLTagCondition:
+            BEGIN(XMLTag);
+            break;
+@end
         default:
             _assert(false);
     }
+}
+
+void CYDriver::PushCondition(Condition condition) {
+    switch (condition) {
+        case RegExpCondition:
+            yy_push_state(RegExp, scanner_);
+            break;
+@begin E4X
+        case XMLContentCondition:
+            yy_push_state(XMLContent, scanner_);
+            break;
+        case XMLTagCondition:
+            yy_push_state(XMLTag, scanner_);
+            break;
+@end
+        default:
+            _assert(false);
+    }
+}
+
+void CYDriver::PopCondition() {
+    yy_pop_state(scanner_);
 }

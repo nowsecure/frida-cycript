@@ -50,6 +50,10 @@
 #include "ObjectiveC.hpp"
 @end
 
+@begin E4X
+#include "E4X.hpp"
+@end
+
 typedef struct {
     bool newline_;
 
@@ -96,6 +100,10 @@ typedef struct {
         CYMessageParameter *messageParameter_;
         CYSelectorPart *selector_;
 @end
+
+@begin E4X
+        CYAttribute *attribute_;
+@end
     };
 } YYSTYPE;
 
@@ -125,15 +133,27 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %lex-param { void *scanner }
 
 @begin E4X
-%token At "@"
-%token ColonColon "::"
-%token LeftRight "<>"
-%token LeftSlashRight "</>"
-%token PeriodPeriod ".."
-
 %token XMLCDATA
 %token XMLComment
 %token XMLPI
+
+%token XMLAttributeValue
+%token XMLName
+%token XMLTagCharacters
+%token XMLText
+%token XMLWhitespace
+@end
+
+@begin E4X
+%token LeftRight "<>"
+%token LeftSlashRight "</>"
+
+%token SlashRight "/>"
+%token LeftSlash "</"
+
+%token At "@"
+%token ColonColon "::"
+%token PeriodPeriod ".."
 @end
 
 %token Ampersand "&"
@@ -275,6 +295,12 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 
 // Woah?!
 %token <identifier_> Each "each"
+
+@begin E4X
+// E4X Conditional
+%token <identifier_> Namespace "namespace"
+%token <identifier_> XML "xml"
+@end
 
 %token <identifier_> Identifier_
 %token <number_> NumericLiteral
@@ -451,6 +477,28 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <word_> WordOpt
 @end
 
+@begin E4X
+%type <identifier_> PropertyIdentifier_
+%type <identifier_> PropertySelector
+%type <identifier_> PropertySelector_
+%type <identifier_> QualifiedIdentifier
+%type <identifier_> QualifiedIdentifier_
+%type <identifier_> WildcardIdentifier
+%type <identifier_> XMLComment
+%type <identifier_> XMLCDATA
+%type <identifier_> XMLElement
+%type <identifier_> XMLElementContent
+%type <identifier_> XMLMarkup
+%type <identifier_> XMLPI
+
+%type <attribute_> AttributeIdentifier
+%type <statement_> DefaultXMLNamespaceStatement
+%type <expression_> PropertyIdentifier
+%type <expression_> XMLListInitialiser
+%type <expression_> XMLInitialiser
+@end
+
+/*
 %left "*" "/" "%"
 %left "+" "-"
 %left "<<" ">>" ">>>"
@@ -463,6 +511,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %left "||"
 
 %right "=" "*=" "/=" "%=" "+=" "-=" "<<=" ">>=" ">>>=" "&=" "^=" "|="
+*/
 
 %nonassoc "if"
 %nonassoc "else"
@@ -470,6 +519,12 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %start Program
 
 %%
+
+/* Lexer State {{{ */
+LexSetRegExp
+    : { driver.SetCondition(CYDriver::RegExpCondition); }
+    ;
+/* }}} */
 
 StrictSemi
     : { driver.Warning(yylloc, "warning, automatic semi-colon insertion required"); }
@@ -617,12 +672,8 @@ PrimaryExpressionNoBF_
     | "(" Expression ")" { $$ = $2; }
     ;
 
-LexBeginRegExp
-    : { driver.BeginCondition(CYDriver::RegExpCondition); }
-    ;
-
 PrimaryExpression
-    : LexBeginRegExp PrimaryExpression_ { $$ = $2; }
+    : LexSetRegExp PrimaryExpression_ { $$ = $2; }
     ;
 
 PrimaryExpressionNoBF
@@ -640,12 +691,12 @@ Element
 
 ElementOpt
     : Element { $$ = $1; }
-    | LexBeginRegExp { $$ = NULL; }
+    | LexSetRegExp { $$ = NULL; }
     ;
 
 ElementListOpt
     : ElementList { $$ = $1; }
-    | LexBeginRegExp { $$ = NULL; }
+    | LexSetRegExp { $$ = NULL; }
     ;
 
 ElementList
@@ -693,7 +744,7 @@ MemberExpression
     : PrimaryExpression { $$ = $1; }
     | FunctionExpression { $$ = $1; }
     | MemberExpression MemberAccess { $2->SetLeft($1); $$ = $2; }
-    | LexBeginRegExp MemberExpression_ { $$ = $2; }
+    | LexSetRegExp MemberExpression_ { $$ = $2; }
     ;
 
 MemberExpressionNoBF
@@ -708,7 +759,7 @@ NewExpression_
 
 NewExpression
     : MemberExpression { $$ = $1; }
-    | LexBeginRegExp NewExpression_ { $$ = $2; }
+    | LexSetRegExp NewExpression_ { $$ = $2; }
     ;
 
 NewExpressionNoBF
@@ -735,7 +786,7 @@ ArgumentList_
 
 ArgumentListOpt
     : ArgumentList { $$ = $1; }
-    | LexBeginRegExp { $$ = NULL; }
+    | LexSetRegExp { $$ = NULL; }
     ;
 
 ArgumentList
@@ -786,7 +837,7 @@ UnaryExpression_
 
 UnaryExpression
     : PostfixExpression { $$ = $1; }
-    | LexBeginRegExp UnaryExpression_ { $$ = $2; }
+    | LexSetRegExp UnaryExpression_ { $$ = $2; }
     ;
 
 UnaryExpressionNoBF
@@ -1002,7 +1053,7 @@ AssignmentExpression_
 
 AssigneeExpression
     : LeftHandSideExpression { $$ = $1; }
-    | LexBeginRegExp UnaryAssigneeExpression { $$ = $2; }
+    | LexSetRegExp UnaryAssigneeExpression { $$ = $2; }
     ;
 
 AssigneeExpressionNoBF
@@ -1049,12 +1100,12 @@ ExpressionNoIn_
 
 ExpressionOpt
     : Expression { $$ = $1; }
-    | LexBeginRegExp { $$ = NULL; }
+    | LexSetRegExp { $$ = NULL; }
     ;
 
 ExpressionNoInOpt
     : ExpressionNoIn { $$ = $1; }
-    | LexBeginRegExp { $$ = NULL; }
+    | LexSetRegExp { $$ = NULL; }
     ;
 
 Expression
@@ -1089,7 +1140,7 @@ Statement_
     ;
 
 Statement
-    : LexBeginRegExp Statement_ { $$ = $2; }
+    : LexSetRegExp Statement_ { $$ = $2; }
     ;
 /* }}} */
 /* 12.1 Block {{{ */
@@ -1107,7 +1158,7 @@ StatementList
 
 StatementListOpt
     : StatementList { $$ = $1; }
-    | LexBeginRegExp { $$ = NULL; }
+    | LexSetRegExp { $$ = NULL; }
     ;
 /* }}} */
 /* 12.2 Variable Statement {{{ */
@@ -1205,7 +1256,7 @@ ForStatement
 
 ForStatementInitialiser
     : ExpressionNoInOpt { $$ = $1; }
-    | LexBeginRegExp "var" VariableDeclarationListNoIn { $$ = $3; }
+    | LexSetRegExp "var" VariableDeclarationListNoIn { $$ = $3; }
     ;
 /* }}} */
 /* 12.6.4 The for-in Statement {{{ */
@@ -1215,7 +1266,7 @@ ForInStatement
 
 ForInStatementInitialiser
     : LeftHandSideExpression { $$ = $1; }
-    | LexBeginRegExp "var" VariableDeclarationNoIn { $$ = $3; }
+    | LexSetRegExp "var" VariableDeclarationNoIn { $$ = $3; }
     ;
 /* }}} */
 
@@ -1295,7 +1346,7 @@ FunctionDeclaration
     ;
 
 FunctionExpression
-    : LexBeginRegExp "function" IdentifierOpt "(" FormalParameterList ")" "{" FunctionBody "}" { $$ = new(driver.pool_) CYFunctionExpression($3, $5, $8); }
+    : LexSetRegExp "function" IdentifierOpt "(" FormalParameterList ")" "{" FunctionBody "}" { $$ = new(driver.pool_) CYFunctionExpression($3, $5, $8); }
     ;
 
 FormalParameterList_
@@ -1319,7 +1370,7 @@ Program
 
 SourceElements
     : SourceElement SourceElements { $1->SetNext($2); $$ = $1; }
-    | LexBeginRegExp { $$ = NULL; }
+    | LexSetRegExp { $$ = NULL; }
     ;
 
 SourceElement_
@@ -1328,7 +1379,7 @@ SourceElement_
     ;
 
 SourceElement
-    : LexBeginRegExp SourceElement_ { $$ = $2; }
+    : LexSetRegExp SourceElement_ { $$ = $2; }
     ;
 /* }}} */
 
@@ -1336,7 +1387,7 @@ SourceElement
 /* Cycript (Objective-C): @class Declaration {{{ */
 ClassSuperOpt
     /* XXX: why the hell did I choose MemberExpressionNoBF? */
-    : ":" LexBeginRegExp MemberExpressionNoBF { $$ = $3; }
+    : ":" LexSetRegExp MemberExpressionNoBF { $$ = $3; }
     | { $$ = NULL; }
     ;
 
@@ -1434,7 +1485,7 @@ SelectorList
 
 MessageExpression
     : "[" AssignmentExpression SelectorList "]" { $$ = new(driver.pool_) CYSendDirect($2, $3); }
-    | "[" LexBeginRegExp "super" SelectorList "]" { $$ = new(driver.pool_) CYSendSuper($4); }
+    | "[" LexSetRegExp "super" SelectorList "]" { $$ = new(driver.pool_) CYSendSuper($4); }
     ;
 
 SelectorExpressionOpt
@@ -1461,7 +1512,7 @@ PrimaryExpressionNoBF_
 @begin C
 /* Cycript (C): Pointer Indirection/Addressing {{{ */
 UnaryAssigneeExpression
-    : "*" UnaryExpression { $$ = new(driver.pool_) CYIndirect($2); }
+    : "^" UnaryExpression { $$ = new(driver.pool_) CYIndirect($2); }
     ;
 
 UnaryExpression_
@@ -1476,71 +1527,123 @@ MemberAccess
 @end
 
 @begin E4X
+/* Lexer State {{{ */
+LexPushRegExp
+    : { driver.PushCondition(CYDriver::RegExpCondition); }
+    ;
+
+LexPushXMLContent
+    : { driver.PushCondition(CYDriver::XMLContentCondition); }
+    ;
+
+LexPushXMLTag
+    : { driver.PushCondition(CYDriver::XMLTagCondition); }
+    ;
+
+LexPop
+    : { driver.PopCondition(); }
+    ;
+
+LexSetXMLContent
+    : { driver.SetCondition(CYDriver::XMLContentCondition); }
+    ;
+
+LexSetXMLTag
+    : { driver.SetCondition(CYDriver::XMLTagCondition); }
+    ;
+/* }}} */
+
+XMLWhitespaceOpt
+    : XMLWhitespace
+    |
+    ;
+
+/* 8.1 Context Keywords {{{ */
+Identifier
+    : "namespace" { $$ = $1; }
+    | "xml" { $$ = $1; }
+    ;
+/* }}} */
 /* 8.3 XML Initialiser Input Elements {{{ */
 XMLMarkup
-    : XMLComment
-    | XMLCDATA
-    | XMLPI
+    : XMLComment { $$ = $1; }
+    | XMLCDATA { $$ = $1; }
+    | XMLPI { $$ = $1; }
     ;
 /* }}} */
 /* 11.1 Primary Expressions {{{ */
 PrimaryExpressionNoBF_
-    : PropertyIdentifier
-    | XMLInitialiser
-    | XMLListInitialiser
+    : PropertyIdentifier { $$ = $1; }
+    | XMLInitialiser { $$ = $1; }
+    | XMLListInitialiser { $$ = $1; }
     ;
 
 PropertyIdentifier
-    : AttributeIdentifier
-    | QualifiedIdentifier
-    | WildcardIdentifier
+    : AttributeIdentifier { $$ = $1; }
+    | QualifiedIdentifier { $$ = $1; }
+    | WildcardIdentifier { $$ = $1; }
     ;
 /* }}} */
 /* 11.1.1 Attribute Identifiers {{{ */
 AttributeIdentifier
-    : "@" PropertySelector
-    | "@" QualifiedIdentifier
-    | "@" "[" Expression "]"
+    : "@" QualifiedIdentifier_ { $$ = new(driver.pool_) CYAttribute($2); }
+    ;
+
+PropertySelector_
+    : PropertySelector
+    | "[" Expression "]"
     ;
 
 PropertySelector
-    : Identifier
-    | WildcardIdentifier
+    : Word { $$ = $1; }
+    | WildcardIdentifier { $$ = $1; }
     ;
 /* }}} */
 /* 11.1.2 Qualified Identifiers {{{ */
+QualifiedIdentifier_
+    : PropertySelector_ { $$ = $1; }
+    | QualifiedIdentifier { $$ = $1; }
+    ;
+
 QualifiedIdentifier
-    : PropertySelector "::" PropertySelector
-    | PropertySelector "::" "[" Expression "]"
+    : PropertySelector "::" PropertySelector_ { $$ = new(driver.pool_) CYQName($1, $3); }
     ;
 /* }}} */
 /* 11.1.3 Wildcard Identifiers {{{ */
 WildcardIdentifier
-    : "*"
+    : "*" { $$ = new(driver.pool_) CYWildcard(); }
     ;
 /* }}} */
 /* 11.1.4 XML Initialiser {{{ */
 XMLInitialiser
-    : XMLMarkup
-    | XMLElement
+    : XMLMarkup { $$ = $1; }
+    | XMLElement { $$ = $1; }
     ;
 
 XMLElement
-    : "<" XMLTagContent XMLWhitespaceOpt "/>"
-    | "<" XMLTagContent XMLWhitespace ">" XMLElementContentOpt "</" XMLTagName XMLWhitespaceOpt ">"
+    : "<" XMLTagContent_ "/>" LexPop
+    | "<" XMLTagContent_ ">" LexSetXMLContent XMLElementContentOpt "</" LexSetXMLTag XMLTagName XMLWhitespaceOpt ">" LexPop
+    ;
+
+XMLTagContent_
+    : LexPushXMLTag XMLTagContent XMLWhitespaceOpt
     ;
 
 XMLTagContent
     : XMLTagName XMLAttributesOpt
     ;
 
+XMLExpression
+    : "{" LexPushRegExp Expression "}" LexPop
+    ;
+
 XMLTagName
-    : "{" Expression "}"
+    : XMLExpression
     | XMLName
     ;
 
 XMLAttributes
-    : XMLWhitespace "{" Expression "}"
+    : XMLWhitespace XMLExpression
     | XMLAttributeOpt XMLAttributes
     ;
 
@@ -1549,9 +1652,13 @@ XMLAttributesOpt
     |
     ;
 
+XMLAttributeValue_
+    : XMLExpression
+    | XMLAttributeValue
+    ;
+
 XMLAttribute
-    : XMLWhitespace XMLName XMLWhitespaceOpt "=" XMLWhitespaceOpt "{" Expression "}"
-    | XMLWhitespace XMLName XMLWhitespaceOpt "=" XMLWhitespaceOpt XMLAttributeValue
+    : XMLWhitespace XMLName XMLWhitespaceOpt "=" XMLWhitespaceOpt XMLAttributeValue_
     ;
 
 XMLAttributeOpt
@@ -1560,7 +1667,7 @@ XMLAttributeOpt
     ;
 
 XMLElementContent
-    : "{" Expression "}" XMLElementContentOpt
+    : XMLExpression XMLElementContentOpt
     | XMLMarkup XMLElementContentOpt
     | XMLText XMLElementContentOpt
     | XMLElement XMLElementContentOpt
@@ -1573,7 +1680,28 @@ XMLElementContentOpt
 /* }}} */
 /* 11.1.5 XMLList Initialiser {{{ */
 XMLListInitialiser
-    : "<>" XMLElementContent "</>"
+    : "<>" LexPushXMLContent XMLElementContent "</>" LexPop { $$ = new(driver.pool_) CYXMLList($3); }
+    ;
+/* }}} */
+/* 11.2 Left-Hand-Side Expressions {{{ */
+PropertyIdentifier_
+    : Word { $$ = $1; }
+    | PropertyIdentifier { $$ = $1; }
+    ;
+
+MemberAccess
+    : "." PropertyIdentifier { $$ = new(driver.pool_) CYPropertyMember(NULL, $2); }
+    | ".." PropertyIdentifier_ { $$ = new(driver.pool_) CYDescendantMember(NULL, $2); }
+    | "." "(" Expression ")" { $$ = new(driver.pool_) CYFilteringPredicate(NULL, $3); }
+    ;
+/* }}} */
+/* 12.1 The default xml namespace Statement {{{ */
+DefaultXMLNamespaceStatement
+    : "default" "xml" "namespace" "=" Expression Terminator { $$ = new(driver.pool_) CYDefaultXMLNamespace($5); }
+    ;
+
+Statement_
+    : DefaultXMLNamespaceStatement { $$ = $1; }
     ;
 /* }}} */
 @end
@@ -1623,7 +1751,7 @@ Statement_
 *//* }}} */
 /* JavaScript FTW: Function Statements {{{ */
 Statement
-    : LexBeginRegExp FunctionDeclaration { driver.Warning(yylloc, "warning, FunctionDeclaration is a SourceElement, not a Statement"); } { $$ = $2; }
+    : LexSetRegExp FunctionDeclaration { driver.Warning(yylloc, "warning, FunctionDeclaration is a SourceElement, not a Statement"); } { $$ = $2; }
     ;
 /* }}} */
 
