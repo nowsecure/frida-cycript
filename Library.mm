@@ -755,6 +755,7 @@ struct Instance :
     virtual Type_privateData *GetType() const;
 };
 
+namespace cy {
 struct Super :
     Instance
 {
@@ -770,7 +771,7 @@ struct Super :
         JSObjectRef value(JSObjectMake(context, Super_, new Super(object, _class)));
         return value;
     }
-};
+}; }
 
 struct Messages :
     CYValue
@@ -1867,7 +1868,7 @@ JSObjectRef CYCastJSObject(JSContextRef context, JSValueRef value) {
     return object;
 }
 
-void CYThrow(JSContextRef context, id error, JSValueRef *exception) {
+void CYThrow(JSContextRef context, NSException *error, JSValueRef *exception) {
     if (exception == NULL)
         throw error;
     *exception = CYCastJSValue(context, error);
@@ -1919,7 +1920,10 @@ const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSObjectRef obje
     JSValueRef exception(NULL);
     const char *cyon(CYPoolCCYON(pool, context_, object_));
     CYThrow(context_, exception);
-    return cyon == NULL ? [super cy$toCYON] : [NSString stringWithUTF8String:cyon];
+    if (cyon == NULL)
+        return [super cy$toCYON];
+    else
+        return [NSString stringWithUTF8String:cyon];
 }
 
 - (NSUInteger) count {
@@ -2822,6 +2826,7 @@ static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, 
     CYPool pool;
     Class _class(object_getClass(self));
 
+#ifdef __APPLE__
     {
         unsigned int size;
         objc_property_t *data(class_copyPropertyList(_class, &size));
@@ -2829,6 +2834,7 @@ static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, 
             JSPropertyNameAccumulatorAddName(names, CYJSString(property_getName(data[i])));
         free(data);
     }
+#endif
 }
 
 static JSObjectRef Instance_callAsConstructor(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
@@ -3411,7 +3417,7 @@ static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObje
             _throw(NSInvalidArgumentException, "too few arguments to objc_msgSend");
 
         if (JSValueIsObjectOfClass(context, arguments[0], Super_)) {
-            Super *internal(reinterpret_cast<Super *>(JSObjectGetPrivate((JSObjectRef) arguments[0])));
+            cy::Super *internal(reinterpret_cast<cy::Super *>(JSObjectGetPrivate((JSObjectRef) arguments[0])));
             self = internal->GetValue();
             _class = internal->class_;;
             uninitialized = false;
@@ -3517,9 +3523,9 @@ static JSObjectRef Super_new(JSContextRef context, JSObjectRef object, size_t co
         if (count != 2)
             _throw(NSInvalidArgumentException, "incorrect number of arguments to Super constructor");
         CYPool pool;
-        NSObject *self(CYCastNSObject(pool, context, arguments[0]));
+        id self(CYCastNSObject(pool, context, arguments[0]));
         Class _class(CYCastClass(pool, context, arguments[1]));
-        return Super::Make(context, self, _class);
+        return cy::Super::Make(context, self, _class);
     } CYCatch
 }
 
