@@ -54,6 +54,18 @@
 
 #import <CoreFoundation/CFLogUtilities.h>
 
+void CYThrow(const char *format, ...) {
+    CYPool pool;
+
+    va_list args;
+    va_start (args, format);
+    const char *message(apr_pvsprintf(pool, format, args));
+    va_end (args);
+
+    fprintf(stderr, "%s\n", message);
+    throw std::string(message);
+}
+
 struct CYServer :
     CYData
 {

@@ -42,6 +42,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+#include "Error.hpp"
+
 bool CYRecvAll_(int socket, uint8_t *data, size_t size) {
     while (size != 0) if (size_t writ = _syscall(recv(socket, data, size, 0))) {
         data += writ;

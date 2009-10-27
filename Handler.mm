@@ -37,7 +37,6 @@
 */
 /* }}} */
 
-#include "substrate.h"
 #include "cycript.hpp"
 
 #include "Pooling.hpp"
@@ -89,8 +88,9 @@ struct CYClient :
         _syscall(close(socket_));
     }
 
-    void Handle() { _pooled
-        CYClient_ *client = [[[CYClient_ alloc] init] autorelease];
+    void Handle() {
+        CYClient_ *client = [[CYClient_ alloc] init];
+        @try {
 
         for (;;) {
             size_t size;
@@ -131,6 +131,10 @@ struct CYClient :
             if (json != NULL)
                 if (!CYSendAll(socket_, json, size))
                     return;
+        }
+
+        } @finally {
+            [client release];
         }
     }
 };

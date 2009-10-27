@@ -119,9 +119,14 @@ CYExpression *CYCall::Replace(CYContext &context) {
     return NULL;
 }
 
-void CYCatch::Replace(CYContext &context) { $T()
+namespace cy {
+namespace Syntax {
+
+void Catch::Replace(CYContext &context) { $T()
     code_.Replace(context);
 }
+
+} }
 
 void CYClause::Replace(CYContext &context) { $T()
     context.Replace(case_);
@@ -426,10 +431,15 @@ CYExpression *CYThis::Replace(CYContext &context) {
     return NULL;
 }
 
-CYStatement *CYThrow::Replace(CYContext &context) {
+namespace cy {
+namespace Syntax {
+
+CYStatement *Throw::Replace(CYContext &context) {
     context.Replace(value_);
     return NULL;
 }
+
+} }
 
 CYExpression *CYTrivial::Replace(CYContext &context) {
     return NULL;
@@ -443,12 +453,17 @@ CYString *CYTrue::String(CYContext &context) {
     return $S("true");
 }
 
-CYStatement *CYTry::Replace(CYContext &context) {
+namespace cy {
+namespace Syntax {
+
+CYStatement *Try::Replace(CYContext &context) {
     code_.Replace(context);
     catch_->Replace(context);
     finally_->Replace(context);
     return NULL;
 }
+
+} }
 
 CYStatement *CYVar::Replace(CYContext &context) {
     declarations_->Replace(context);

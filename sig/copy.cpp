@@ -41,7 +41,6 @@
 #define _GNU_SOURCE
 #endif
 
-#include "minimal/stdlib.h"
 #include <apr_strings.h>
 #include "Pooling.hpp"
 #include "sig/parse.hpp"

@@ -37,7 +37,7 @@
 */
 /* }}} */
 
-#include "minimal/stdlib.h"
+#include "Error.hpp"
 
 #include "sig/ffi_type.hpp"
 #include "sig/types.hpp"

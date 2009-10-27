@@ -66,7 +66,7 @@ typedef struct {
         CYAssignment *assignment_;
         CYBoolean *boolean_;
         CYClause *clause_;
-        CYCatch *catch_;
+        cy::Syntax::Catch *catch_;
         CYComprehension *comprehension_;
         CYCompound *compound_;
         CYDeclaration *declaration_;
@@ -1321,16 +1321,16 @@ LabelledStatement
 /* }}} */
 /* 12.13 The throw Statement {{{ */
 ThrowStatement
-    : "throw" Expression Terminator { $$ = new(driver.pool_) CYThrow($2); }
+    : "throw" Expression Terminator { $$ = new(driver.pool_) cy::Syntax::Throw($2); }
     ;
 /* }}} */
 /* 12.14 The try Statement {{{ */
 TryStatement
-    : "try" Block_ CatchOpt FinallyOpt { $$ = new(driver.pool_) CYTry($2, $3, $4); }
+    : "try" Block_ CatchOpt FinallyOpt { $$ = new(driver.pool_) cy::Syntax::Try($2, $3, $4); }
     ;
 
 CatchOpt
-    : "catch" "(" Identifier ")" Block_ { $$ = new(driver.pool_) CYCatch($3, $5); }
+    : "catch" "(" Identifier ")" Block_ { $$ = new(driver.pool_) cy::Syntax::Catch($3, $5); }
     | { $$ = NULL; }
     ;
 

@@ -37,17 +37,13 @@
 */
 /* }}} */
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
-#include "minimal/stdlib.h"
-
 #include <apr_strings.h>
-
-#include <string.h>
-
 #include "sig/parse.hpp"
+#include "Error.hpp"
+
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 namespace sig {
 

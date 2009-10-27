@@ -19,7 +19,7 @@ ifneq ($(dpkg_architecture),)
 arch := $(shell $(dpkg_architecture) -qDEB_HOST_ARCH 2>/dev/null)
 endif
 
-header := Cycript.tab.hh Parser.hpp Pooling.hpp cycript.hpp
+header := Cycript.tab.hh Parser.hpp Pooling.hpp cycript.hpp Internal.hpp Error.hpp String.hpp Exception.hpp Standard.hpp
 code := sig/ffi_type.o sig/parse.o sig/copy.o
 code += Replace.o Output.o
 code += Cycript.tab.o lex.cy.o
@@ -45,8 +45,8 @@ include GNUstep.mk
 endif
 endif
 
-#flags += -g3 -O0 -DYYDEBUG=1
-flags += -g0 -O3
+flags += -g3 -O0 -DYYDEBUG=1
+#flags += -g0 -O3
 flags += -Wall -Werror -Wno-parentheses #-Wno-unused
 flags += -fPIC -fno-common
 flags += -I. -I$(shell apr-1-config --includedir)

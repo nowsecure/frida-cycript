@@ -213,9 +213,14 @@ void CYCall::Output(CYOutput &out, CYFlags flags) const {
         out << ')';
 }
 
-void CYCatch::Output(CYOutput &out) const {
+namespace cy {
+namespace Syntax {
+
+void Catch::Output(CYOutput &out) const {
     out << ' ' << "catch" << ' ' << '(' << *name_ << ')' << ' ' << code_;
 }
+
+} }
 
 void CYCompound::Output(CYOutput &out, CYFlags flags) const {
     if (CYExpression *expression = expressions_)
@@ -650,16 +655,21 @@ void CYThis::Output(CYOutput &out, CYFlags flags) const {
     CYWord::Output(out);
 }
 
-void CYThrow::Output(CYOutput &out, CYFlags flags) const {
+namespace cy {
+namespace Syntax {
+
+void Throw::Output(CYOutput &out, CYFlags flags) const {
     out << "throw";
     if (value_ != NULL)
         out << ' ' << *value_;
     out << ';';
 }
 
-void CYTry::Output(CYOutput &out, CYFlags flags) const {
+void Try::Output(CYOutput &out, CYFlags flags) const {
     out << "try" << ' ' << code_ << catch_ << finally_;
 }
+
+} }
 
 void CYVar::Output(CYOutput &out, CYFlags flags) const {
     out << "var";

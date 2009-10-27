@@ -40,7 +40,7 @@
 #ifndef SIG_TYPES_H
 #define SIG_TYPES_H
 
-#include "minimal/stdlib.h"
+#include "Standard.hpp"
 
 namespace sig {
 

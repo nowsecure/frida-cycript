@@ -43,7 +43,8 @@
 #include <apr_pools.h>
 #include <apr_strings.h>
 
-#include <minimal/stdlib.h>
+#include "Exception.hpp"
+#include "Standard.hpp"
 
 _finline void *operator new(size_t size, apr_pool_t *pool) {
     return apr_palloc(pool, size);

@@ -4,6 +4,7 @@
 #include "Pooling.hpp"
 
 #include <JavaScriptCore/JSBase.h>
+#include <JavaScriptCore/JSObjectRef.h>
 #include <JavaScriptCore/JSValueRef.h>
 
 #include <sig/parse.hpp>
@@ -119,5 +120,47 @@ struct CYOwned :
         return owner_;
     }
 };
+
+namespace cy {
+struct Functor :
+    CYValue
+{
+    sig::Signature signature_;
+    ffi_cif cif_;
+
+    Functor(const char *type, void (*value)()) :
+        CYValue(reinterpret_cast<void *>(value))
+    {
+        sig::Parse(pool_, &signature_, type, &Structor_);
+        sig::sig_ffi_cif(pool_, &sig::ObjectiveC, &signature_, &cif_);
+    }
+
+    void (*GetValue())() const {
+        return reinterpret_cast<void (*)()>(value_);
+    }
+
+    static JSStaticFunction const * const StaticFunctions;
+}; }
+
+struct Closure_privateData :
+    cy::Functor
+{
+    JSContextRef context_;
+    JSObjectRef function_;
+
+    Closure_privateData(JSContextRef context, JSObjectRef function, const char *type) :
+        cy::Functor(type, NULL),
+        context_(context),
+        function_(function)
+    {
+        JSValueProtect(context_, function_);
+    }
+
+    virtual ~Closure_privateData() {
+        JSValueUnprotect(context_, function_);
+    }
+};
+
+Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, const char *type, void (*callback)(ffi_cif *, void *, void **, void *));
 
 #endif/*CYCRIPT_INTERNAL_HPP*/

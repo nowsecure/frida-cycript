@@ -3,3 +3,5 @@ object literal compilation should use numerify strings
 support unions (right now 0-1 fields parsed as struct)
 \\\n escapes in strings aren't handled in the console
 look into what String is, and whether to bridge it
+NULL context refs are being held for error throwing
+the console frontend's error handling, well, doesn't

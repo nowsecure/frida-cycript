@@ -1090,22 +1090,6 @@ struct CYObject :
     void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CYCatch :
-    CYThing
-{
-    CYIdentifier *name_;
-    CYBlock code_;
-
-    CYCatch(CYIdentifier *name, CYStatement *statements) :
-        name_(name),
-        code_(statements)
-    {
-    }
-
-    void Replace(CYContext &context);
-    virtual void Output(CYOutput &out) const;
-};
-
 struct CYMember :
     CYExpression
 {
@@ -1368,14 +1352,33 @@ struct CYFinally :
     virtual void Output(CYOutput &out) const;
 };
 
-struct CYTry :
+namespace cy {
+namespace Syntax {
+
+struct Catch :
+    CYThing
+{
+    CYIdentifier *name_;
+    CYBlock code_;
+
+    Catch(CYIdentifier *name, CYStatement *statements) :
+        name_(name),
+        code_(statements)
+    {
+    }
+
+    void Replace(CYContext &context);
+    virtual void Output(CYOutput &out) const;
+};
+
+struct Try :
     CYStatement
 {
     CYBlock code_;
-    CYCatch *catch_;
+    Catch *catch_;
     CYFinally *finally_;
 
-    CYTry(CYStatement *statements, CYCatch *_catch, CYFinally *finally) :
+    Try(CYStatement *statements, Catch *_catch, CYFinally *finally) :
         code_(statements),
         catch_(_catch),
         finally_(finally)
@@ -1386,12 +1389,12 @@ struct CYTry :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CYThrow :
+struct Throw :
     CYStatement
 {
     CYExpression *value_;
 
-    CYThrow(CYExpression *value) :
+    Throw(CYExpression *value) :
         value_(value)
     {
     }
@@ -1399,6 +1402,8 @@ struct CYThrow :
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
+
+} }
 
 struct CYWith :
     CYStatement
