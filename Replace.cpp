@@ -171,6 +171,10 @@ void CYDeclaration::Replace(CYContext &context) {
     context.Replace(initialiser_);
 }
 
+CYProperty *CYDeclarations::Property(CYContext &context) { $T(NULL)
+    return $ CYProperty(declaration_->identifier_, declaration_->initialiser_ ?: $U, next_->Property(context));
+}
+
 void CYDeclarations::Replace(CYContext &context) { $T()
     declaration_->Replace(context);
     next_->Replace(context);
@@ -259,13 +263,12 @@ CYStatement *CYForInComprehension::Replace(CYContext &context, CYStatement *stat
 CYStatement *CYForEachIn::Replace(CYContext &context) {
     CYVariable *cys($V("$cys")), *cyt($V("$cyt"));
 
-    return $ CYWith($ CYObject($ CYProperty($S("$cys"), $D(0), $ CYProperty($S("$cyt"), $D(0)))), $ CYBlock($$->*
-        $E($ CYAssign(cys, set_))->*
+    return $ CYLet($L2($L($I("$cys"), set_), $L($I("$cyt"))), $$->*
         $ CYForIn(cyt, cys, $ CYBlock($$->*
             $E($ CYAssign(initialiser_->ForEachIn(context), $M(cys, cyt)))->*
             code_
         ))
-    ));
+    );
 }
 
 CYFunctionParameter *CYForEachInComprehension::Parameter(CYContext &context) const {
@@ -332,6 +335,10 @@ CYExpression *CYInfix::Replace(CYContext &context) {
 CYStatement *CYLabel::Replace(CYContext &context) {
     context.Replace(statement_);
     return NULL;
+}
+
+CYStatement *CYLet::Replace(CYContext &context) {
+    return $ CYWith($ CYObject(declarations_->Property(context)), &code_);
 }
 
 void CYMember::Replace_(CYContext &context) {

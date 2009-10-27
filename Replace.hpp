@@ -59,6 +59,8 @@
     ($ CYFunctionParameter(args))
 #define $S(args...) \
     ($ CYString(args))
+#define $U \
+    $V("undefined")
 #define $V(name) \
     ($ CYVariable($I(name)))
 
@@ -126,5 +128,18 @@
     $N(func, $C4_(args))
 #define $N5(func, args...) \
     $N(func, $C5_(args))
+
+#define $L(args...) \
+    $ CYDeclaration(args)
+#define $L1(arg0) \
+    $ CYDeclarations(arg0)
+#define $L2(arg0, args...) \
+    $ CYDeclarations(arg0, $L1(args))
+#define $L3(arg0, args...) \
+    $ CYDeclarations(arg0, $L2(args))
+#define $L4(arg0, args...) \
+    $ CYDeclarations(arg0, $L3(args))
+#define $L5(arg0, args...) \
+    $ CYDeclarations(arg0, $L4(args))
 
 #endif/*REPLACE_HPP*/

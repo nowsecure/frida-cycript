@@ -929,13 +929,31 @@ struct CYArray :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
+struct CYProperty :
+    CYNext<CYProperty>,
+    CYThing
+{
+    CYPropertyName *name_;
+    CYExpression *value_;
+
+    CYProperty(CYPropertyName *name, CYExpression *value, CYProperty *next = NULL) :
+        CYNext<CYProperty>(next),
+        name_(name),
+        value_(value)
+    {
+    }
+
+    void Replace(CYContext &context);
+    virtual void Output(CYOutput &out) const;
+};
+
 struct CYDeclaration :
     CYForInInitialiser
 {
     CYIdentifier *identifier_;
     CYExpression *initialiser_;
 
-    CYDeclaration(CYIdentifier *identifier, CYExpression *initialiser) :
+    CYDeclaration(CYIdentifier *identifier, CYExpression *initialiser = NULL) :
         identifier_(identifier),
         initialiser_(initialiser)
     {
@@ -967,6 +985,7 @@ struct CYDeclarations :
     virtual void For(CYOutput &out) const;
 
     void Replace(CYContext &context);
+    CYProperty *Property(CYContext &context);
 
     virtual void Output(CYOutput &out) const;
     virtual void Output(CYOutput &out, CYFlags flags) const;
@@ -1056,24 +1075,6 @@ struct CYForEachIn :
 
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
-};
-
-struct CYProperty :
-    CYNext<CYProperty>,
-    CYThing
-{
-    CYPropertyName *name_;
-    CYExpression *value_;
-
-    CYProperty(CYPropertyName *name, CYExpression *value, CYProperty *next = NULL) :
-        CYNext<CYProperty>(next),
-        name_(name),
-        value_(value)
-    {
-    }
-
-    void Replace(CYContext &context);
-    virtual void Output(CYOutput &out) const;
 };
 
 struct CYObject :
