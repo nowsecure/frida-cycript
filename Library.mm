@@ -200,9 +200,9 @@ void CYSetProperty(JSContextRef context, JSObjectRef object, size_t index, JSVal
     CYThrow(context, exception);
 }
 
-void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef value) {
+void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef value, JSPropertyAttributes attributes = kJSPropertyAttributeNone) {
     JSValueRef exception(NULL);
-    JSObjectSetProperty(context, object, name, value, kJSPropertyAttributeNone, &exception);
+    JSObjectSetProperty(context, object, name, value, attributes, &exception);
     CYThrow(context, exception);
 }
 /* }}} */
@@ -213,6 +213,11 @@ JSStringRef CYCopyJSString(const char *value) {
 
 JSStringRef CYCopyJSString(JSStringRef value) {
     return value == NULL ? NULL : JSStringRetain(value);
+}
+
+JSStringRef CYCopyJSString(CYUTF8String value) {
+    // XXX: this is very wrong
+    return CYCopyJSString(value.data);
 }
 
 JSStringRef CYCopyJSString(JSContextRef context, JSValueRef value) {
@@ -431,6 +436,47 @@ CYUTF8String CYCastUTF8String(NSString *value) {
 /* }}} */
 #endif
 
+/* Index Offsets {{{ */
+size_t CYGetIndex(const CYUTF8String &value) {
+    if (value.data[0] != '0') {
+        char *end;
+        size_t index(strtoul(value.data, &end, 10));
+        if (value.data + value.size == end)
+            return index;
+    } else if (value.data[1] == '\0')
+        return 0;
+    return _not(size_t);
+}
+
+size_t CYGetIndex(apr_pool_t *pool, JSStringRef value) {
+    return CYGetIndex(CYPoolUTF8String(pool, value));
+}
+
+bool CYGetOffset(const char *value, ssize_t &index) {
+    if (value[0] != '0') {
+        char *end;
+        index = strtol(value, &end, 10);
+        if (value + strlen(value) == end)
+            return true;
+    } else if (value[1] == '\0') {
+        index = 0;
+        return true;
+    }
+
+    return false;
+}
+
+#ifdef __OBJC__
+size_t CYGetIndex(NSString *value) {
+    return CYGetIndex(CYCastUTF8String(value));
+}
+
+bool CYGetOffset(apr_pool_t *pool, NSString *value, ssize_t &index) {
+    return CYGetOffset(CYPoolCString(pool, value), index);
+}
+#endif
+/* }}} */
+
 /* JavaScript *ify {{{ */
 void CYStringify(std::ostringstream &str, const char *data, size_t size) {
     unsigned quot(0), apos(0);
@@ -483,6 +529,28 @@ void CYNumerify(std::ostringstream &str, double value) {
     str << string;
 }
 /* }}} */
+
+bool CYIsKey(CYUTF8String value) {
+    const char *data(value.data);
+    size_t size(value.size);
+
+    if (size == 0)
+        return false;
+
+    if (DigitRange_[data[0]]) {
+        size_t index(CYGetIndex(value));
+        if (index == _not(size_t))
+            return false;
+    } else {
+        if (!WordStartRange_[data[0]])
+            return false;
+        for (size_t i(1); i != size; ++i)
+            if (!WordEndRange_[data[i]])
+                return false;
+    }
+
+    return true;
+}
 
 static JSGlobalContextRef Context_;
 static JSObjectRef System_;
@@ -1085,45 +1153,6 @@ JSValueRef CYJSUndefined(JSContextRef context) {
     return JSValueMakeUndefined(context);
 }
 
-size_t CYGetIndex(const CYUTF8String &value) {
-    if (value.data[0] != '0') {
-        char *end;
-        size_t index(strtoul(value.data, &end, 10));
-        if (value.data + value.size == end)
-            return index;
-    } else if (value.data[1] == '\0')
-        return 0;
-    return _not(size_t);
-}
-
-size_t CYGetIndex(apr_pool_t *pool, JSStringRef value) {
-    return CYGetIndex(CYPoolUTF8String(pool, value));
-}
-
-bool CYGetOffset(const char *value, ssize_t &index) {
-    if (value[0] != '0') {
-        char *end;
-        index = strtol(value, &end, 10);
-        if (value + strlen(value) == end)
-            return true;
-    } else if (value[1] == '\0') {
-        index = 0;
-        return true;
-    }
-
-    return false;
-}
-
-#ifdef __OBJC__
-size_t CYGetIndex(NSString *value) {
-    return CYGetIndex(CYCastUTF8String(value));
-}
-
-bool CYGetOffset(apr_pool_t *pool, NSString *value, ssize_t &index) {
-    return CYGetOffset(CYPoolCString(pool, value), index);
-}
-#endif
-
 #ifdef __OBJC__
 @interface NSMethodSignature (Cycript)
 - (NSString *) _typeString;
@@ -1319,9 +1348,8 @@ NSObject *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 #ifdef __APPLE__
     for (id object in self) {
 #else
-    id object;
     for (size_t index(0), count([self count]); index != count; ++index) {
-        object = [self objectAtIndex:index];
+        id object([self objectAtIndex:index]);
 #endif
         if (comma)
             [json appendString:@","];
@@ -1598,27 +1626,8 @@ NSObject *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 }
 
 - (NSString *) cy$toKey {
-    const char *value([self UTF8String]);
-    size_t size(strlen(value));
-
-    if (size == 0)
-        goto cyon;
-
-    if (DigitRange_[value[0]]) {
-        size_t index(CYGetIndex(self));
-        if (index == _not(size_t))
-            goto cyon;
-    } else {
-        if (!WordStartRange_[value[0]])
-            goto cyon;
-        for (size_t i(1); i != size; ++i)
-            if (!WordEndRange_[value[i]])
-                goto cyon;
-    }
-
-    return self;
-
-  cyon:
+    if (CYIsKey(CYCastUTF8String(self)))
+        return self;
     return [self cy$toCYON];
 }
 
@@ -1875,6 +1884,8 @@ bool CYIsCallable(JSContextRef context, JSValueRef value) {
     return value != NULL && JSValueIsObject(context, value) && JSObjectIsFunction(context, (JSObjectRef) value);
 }
 
+const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSObjectRef object);
+
 #ifdef __OBJC__
 @implementation CYJSObject
 
@@ -1904,12 +1915,11 @@ bool CYIsCallable(JSContextRef context, JSValueRef value) {
 }
 
 - (NSString *) cy$toCYON {
-    JSValueRef toCYON(CYGetProperty(context_, object_, toCYON_));
-    if (!CYIsCallable(context_, toCYON)) super:
-        return [super cy$toCYON];
-    else if (JSValueRef value = CYCallAsFunction(context_, (JSObjectRef) toCYON, object_, 0, NULL))
-        return CYCastNSString(NULL, CYJSString(context_, value));
-    else goto super;
+    CYPool pool;
+    JSValueRef exception(NULL);
+    const char *cyon(CYPoolCCYON(pool, context_, object_));
+    CYThrow(context_, exception);
+    return cyon == NULL ? [super cy$toCYON] : [NSString stringWithUTF8String:cyon];
 }
 
 - (NSUInteger) count {
@@ -2047,17 +2057,9 @@ const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSValueRef value
             return apr_pstrmemdup(pool, value.c_str(), value.size());
         } break;
 
-        case kJSTypeObject: {
-            JSObjectRef object((JSObjectRef) value);
-            JSValueRef toCYON(CYGetProperty(context, object, toCYON_));
-
-            if (CYIsCallable(context, toCYON)) {
-                JSValueRef value(CYCallAsFunction(context, (JSObjectRef) toCYON, object, 0, NULL));
-                return CYPoolCString(pool, context, value);
-            }
-
-            return "\"[object /* XXX: implement something awesome */]\"";
-        } break;
+        case kJSTypeObject: CYTry {
+            return CYPoolCCYON(pool, context, (JSObjectRef) value);
+        } CYCatch
 
         default:
             _throw(NSInternalInconsistencyException, "JSValueGetType() == 0x%x", type);
@@ -2065,6 +2067,101 @@ const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSValueRef value
         break;
     }
 }
+
+const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
+    JSValueRef exception(NULL);
+    const char *cyon(CYPoolCCYON(pool, context, value, &exception));
+    CYThrow(context, exception);
+    return cyon;
+}
+
+const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSObjectRef object) {
+    JSValueRef toCYON(CYGetProperty(context, object, toCYON_));
+    if (CYIsCallable(context, toCYON)) {
+        JSValueRef value(CYCallAsFunction(context, (JSObjectRef) toCYON, object, 0, NULL));
+        return CYPoolCString(pool, context, value);
+    }
+
+    JSValueRef toJSON(CYGetProperty(context, object, toJSON_));
+    if (CYIsCallable(context, toJSON)) {
+        JSValueRef arguments[1] = {CYCastJSValue(context, CYJSString(""))};
+        JSValueRef exception(NULL);
+        const char *cyon(CYPoolCCYON(pool, context, CYCallAsFunction(context, (JSObjectRef) toJSON, object, 1, arguments), &exception));
+        CYThrow(context, exception);
+        return cyon;
+    }
+
+    std::ostringstream str;
+
+    str << '{';
+
+    // XXX: this is, sadly, going to leak
+    JSPropertyNameArrayRef names(JSObjectCopyPropertyNames(context, object));
+
+    bool comma(false);
+
+    for (size_t index(0), count(JSPropertyNameArrayGetCount(names)); index != count; ++index) {
+        JSStringRef name(JSPropertyNameArrayGetNameAtIndex(names, index));
+        JSValueRef value(CYGetProperty(context, object, name));
+
+        if (comma)
+            str << ',';
+        else
+            comma = true;
+
+        CYUTF8String string(CYPoolUTF8String(pool, name));
+        if (CYIsKey(string))
+            str << string.data;
+        else
+            CYStringify(str, string.data, string.size);
+
+        str << ':' << CYPoolCCYON(pool, context, value);
+    }
+
+    str << '}';
+
+    JSPropertyNameArrayRelease(names);
+
+    std::string string(str.str());
+    return apr_pstrmemdup(pool, string.c_str(), string.size());
+}
+
+static JSValueRef Array_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    CYPool pool;
+    std::ostringstream str;
+
+    str << '[';
+
+    // XXX: this is, sadly, going to leak
+    // XXX: shouldn't this be done with .length?!
+    JSPropertyNameArrayRef names(JSObjectCopyPropertyNames(context, _this));
+
+    bool comma(false);
+
+    for (size_t index(0), count(JSPropertyNameArrayGetCount(names)); index != count; ++index) {
+        JSStringRef name(JSPropertyNameArrayGetNameAtIndex(names, index));
+        JSValueRef value(CYGetProperty(context, _this, name));
+
+        if (comma)
+            str << ',';
+        else
+            comma = true;
+
+        if (!JSValueIsUndefined(context, value))
+            str << CYPoolCCYON(pool, context, value);
+        else {
+            str << ',';
+            comma = false;
+        }
+    }
+
+    str << ']';
+
+    JSPropertyNameArrayRelease(names);
+
+    std::string value(str.str());
+    return CYCastJSValue(context, CYJSString(CYUTF8String(value.c_str(), value.size())));
+} CYCatch }
 
 #ifdef __OBJC__
 // XXX: use objc_getAssociatedObject and objc_setAssociatedObject on 10.6
@@ -3954,6 +4051,8 @@ JSGlobalContextRef CYGetJSContext() {
         Array_pop_ = CYCastJSObject(context, CYGetProperty(context, Array_prototype_, CYJSString("pop")));
         Array_push_ = CYCastJSObject(context, CYGetProperty(context, Array_prototype_, CYJSString("push")));
         Array_splice_ = CYCastJSObject(context, CYGetProperty(context, Array_prototype_, CYJSString("splice")));
+
+        CYSetProperty(context, Array_prototype_, toCYON_, JSObjectMakeFunctionWithCallback(context, toCYON_, &Array_callAsFunction_toCYON), kJSPropertyAttributeDontEnum);
 
         JSValueProtect(context, Array_prototype_);
         JSValueProtect(context, Array_pop_);
