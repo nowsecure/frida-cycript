@@ -2136,15 +2136,11 @@ static JSValueRef Array_callAsFunction_toCYON(JSContextRef context, JSObjectRef 
 
     str << '[';
 
-    // XXX: this is, sadly, going to leak
-    // XXX: shouldn't this be done with .length?!
-    JSPropertyNameArrayRef names(JSObjectCopyPropertyNames(context, _this));
-
+    JSValueRef length(CYGetProperty(context, _this, length_));
     bool comma(false);
 
-    for (size_t index(0), count(JSPropertyNameArrayGetCount(names)); index != count; ++index) {
-        JSStringRef name(JSPropertyNameArrayGetNameAtIndex(names, index));
-        JSValueRef value(CYGetProperty(context, _this, name));
+    for (size_t index(0), count(CYCastDouble(context, length)); index != count; ++index) {
+        JSValueRef value(CYGetProperty(context, _this, index));
 
         if (comma)
             str << ',';
@@ -2160,8 +2156,6 @@ static JSValueRef Array_callAsFunction_toCYON(JSContextRef context, JSObjectRef 
     }
 
     str << ']';
-
-    JSPropertyNameArrayRelease(names);
 
     std::string value(str.str());
     return CYCastJSValue(context, CYJSString(CYUTF8String(value.c_str(), value.size())));
