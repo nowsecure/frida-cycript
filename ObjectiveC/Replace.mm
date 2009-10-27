@@ -95,7 +95,7 @@ CYStatement *CYMessage::Replace(CYContext &context, bool replace) const { $T(NUL
             $V(instance_ ? "$cyc" : "$cym"),
             cyn,
             $N2($V("Functor"), $F(NULL, $P2("self", "_cmd", parameters_->Parameters(context)), $$->*
-                $ CYVar($ CYDeclarations($ CYDeclaration($I("$cyr"), $N2($V("Super"), self, _class))))->*
+                $ CYVar($L1($L($I("$cyr"), $N2($V("Super"), self, _class))))->*
                 $ CYReturn($C1($M($F(NULL, NULL, code_), $S("call")), self))
             ), cyt),
             cyt
