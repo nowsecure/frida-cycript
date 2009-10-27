@@ -1,5 +1,3 @@
-#include "cycript.hpp"
-
 /* Cycript - Remove Execution Server and Disassembler
  * Copyright (C) 2009  Jay Freeman (saurik)
 */
@@ -38,6 +36,8 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 /* }}} */
+
+#include "cycript.hpp"
 
 #include <sys/types.h>
 #include <sys/socket.h>
