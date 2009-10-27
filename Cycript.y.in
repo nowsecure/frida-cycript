@@ -47,7 +47,7 @@
 #include "Parser.hpp"
 
 @begin ObjectiveC
-#include "ObjectiveC.hpp"
+#include "ObjectiveC/Syntax.hpp"
 @end
 
 @begin E4X

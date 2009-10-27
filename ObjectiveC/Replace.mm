@@ -38,107 +38,11 @@
 /* }}} */
 
 #include "Replace.hpp"
-#include "ObjectiveC.hpp"
+#include "ObjectiveC/Syntax.hpp"
 
 #include <objc/runtime.h>
 #include <sstream>
 
-/* Objective-C Output {{{ */
-void CYCategory::Output(CYOutput &out, CYFlags flags) const {
-    out << "(function($cys,$cyp,$cyc,$cyn,$cyt){";
-    out << "$cyp=object_getClass($cys);";
-    out << "$cyc=$cys;";
-    if (messages_ != NULL)
-        messages_->Output(out, true);
-    out << "})(";
-    name_->ClassName(out, true);
-    out << ')';
-    out << ';';
-}
-
-void CYClass::Output(CYOutput &out, CYFlags flags) const {
-    // XXX: I don't necc. need the ()s
-    out << "(function($cys,$cyp,$cyc,$cyn,$cyt,$cym){";
-    out << "$cyp=object_getClass($cys);";
-    out << "$cyc=objc_allocateClassPair($cys,";
-    if (name_ != NULL)
-        name_->ClassName(out, false);
-    else
-        out << "$cyq(\"CY$\")";
-    out << ",0);";
-    out << "$cym=object_getClass($cyc);";
-    if (fields_ != NULL)
-        fields_->Output(out);
-    if (messages_ != NULL)
-        messages_->Output(out, false);
-    out << "objc_registerClassPair($cyc);";
-    out << "return $cyc;";
-    out << "}(";
-    if (super_ != NULL)
-        super_->Output(out, CYPA, CYNoFlags);
-    else
-        out << "null";
-    out << "))";
-}
-
-void CYClassExpression::Output(CYOutput &out, CYFlags flags) const {
-    CYClass::Output(out, flags);
-}
-
-void CYClassStatement::Output(CYOutput &out, CYFlags flags) const {
-    CYClass::Output(out, flags);
-}
-
-void CYField::Output(CYOutput &out) const {
-}
-
-void CYMessage::Output(CYOutput &out, bool replace) const {
-    out << (instance_ ? '-' : '+');
-
-    for (CYMessageParameter *parameter(parameters_); parameter != NULL; parameter = parameter->next_)
-        if (parameter->tag_ != NULL) {
-            out << ' ' << *parameter->tag_;
-            if (parameter->name_ != NULL)
-                out << ':' << *parameter->name_;
-        }
-
-    out << code_;
-}
-
-void CYSelector::Output(CYOutput &out, CYFlags flags) const {
-    out << "@selector" << '(' << name_ << ')';
-}
-
-void CYSelectorPart::Output(CYOutput &out) const {
-    out << name_;
-    if (value_)
-        out << ':';
-    out << next_;
-}
-
-void CYSend::Output(CYOutput &out, CYFlags flags) const {
-    for (CYArgument *argument(arguments_); argument != NULL; argument = argument->next_)
-        if (argument->name_ != NULL) {
-            out << ' ' << *argument->name_;
-            if (argument->value_ != NULL)
-                out << ':' << *argument->value_;
-        }
-}
-
-void CYSendDirect::Output(CYOutput &out, CYFlags flags) const {
-    out << '[';
-    self_->Output(out, CYPA, CYNoFlags);
-    CYSend::Output(out, flags);
-    out << ']';
-}
-
-void CYSendSuper::Output(CYOutput &out, CYFlags flags) const {
-    out << '[' << "super";
-    CYSend::Output(out, flags);
-    out << ']';
-}
-/* }}} */
-/* Objective-C Replace {{{ */
 CYStatement *CYCategory::Replace(CYContext &context) {
     CYVariable *cyc($V("$cyc")), *cys($V("$cys"));
 
@@ -255,4 +159,3 @@ CYExpression *CYSendDirect::Replace(CYContext &context) {
 CYExpression *CYSendSuper::Replace(CYContext &context) {
     return $ CYSendDirect($V("$cyr"), arguments_);
 }
-/* }}} */

@@ -52,6 +52,10 @@ void Parse(apr_pool_t *pool, struct Signature *signature, const char *name, Call
 const char *Unparse(apr_pool_t *pool, struct Signature *signature);
 const char *Unparse(apr_pool_t *pool, struct Type *type);
 
+void Copy(apr_pool_t *pool, Type &lhs, Type &rhs);
+void Copy(apr_pool_t *pool, Signature &lhs, Signature &rhs);
+void Copy(apr_pool_t *pool, Type &lhs, Type &rhs);
+
 }
 
 #endif/*SIG_PARSE_H*/

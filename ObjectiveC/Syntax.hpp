@@ -37,8 +37,8 @@
 */
 /* }}} */
 
-#ifndef CYCRIPT_OBJECTIVEC_HPP
-#define CYCRIPT_OBJECTIVEC_HPP
+#ifndef CYCRIPT_OBJECTIVEC_SYNTAX_HPP
+#define CYCRIPT_OBJECTIVEC_SYNTAX_HPP
 
 #include "Parser.hpp"
 
@@ -226,4 +226,4 @@ struct CYSendSuper :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-#endif/*CYCRIPT_OBJECTIVEC_HPP*/
+#endif/*CYCRIPT_OBJECTIVEC_SYNTAX_HPP*/

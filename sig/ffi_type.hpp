@@ -60,6 +60,8 @@ void sig_ffi_cif(
     size_t offset = 0
 );
 
+void Copy(apr_pool_t *pool, ffi_type &lhs, ffi_type &rhs);
+
 }
 
 #endif/*SIG_FFI_TYPE_H*/

@@ -20,7 +20,7 @@ arch := $(shell $(dpkg_architecture) -qDEB_HOST_ARCH 2>/dev/null)
 endif
 
 header := Cycript.tab.hh Parser.hpp Pooling.hpp cycript.hpp
-code := ffi_type.o parse.o 
+code := sig/ffi_type.o sig/parse.o sig/copy.o
 code += Replace.o Output.o
 code += Cycript.tab.o lex.cy.o
 code += Network.o Parser.o
@@ -78,7 +78,7 @@ all: $(all)
 clean:
 	rm -f *.o libcycript.$(dll) cycript libcycript.db Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.y
 
-libcycript.db: Bridge.def makefile
+libcycript.db: Bridge.def
 	rm -f libcycript.db
 	{ \
 	    echo 'create table "bridge" ("mode" int not null, "name" text not null, "value" text null);'; \
@@ -101,9 +101,6 @@ lex.cy.c: Cycript.l
 
 #Parser.hpp: Parser.py Parser.dat
 #	./Parser.py <Parser.dat >$@
-
-%.o: sig/%.cpp
-	$(target)g++ $(flags) -c -o $@ $<
 
 Cycript.tab.o: Cycript.tab.cc $(header)
 	$(target)g++ $(flags) -c -o $@ $<

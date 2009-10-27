@@ -37,8 +37,8 @@
 */
 /* }}} */
 
-#ifndef CYCRIPT_E4X_HPP
-#define CYCRIPT_E4X_HPP
+#ifndef CYCRIPT_E4X_SYNTAX_HPP
+#define CYCRIPT_E4X_SYNTAX_HPP
 
 #include "Parser.hpp"
 
@@ -56,4 +56,4 @@ struct CYDefaultXMLNamespace :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-#endif/*CYCRIPT_E4X_HPP*/
+#endif/*CYCRIPT_E4X_SYNTAX_HPP*/
