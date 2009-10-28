@@ -151,10 +151,10 @@ static CYUTF8String CYPoolUTF8String(apr_pool_t *pool, JSContextRef context, JSS
     CYUTF16String utf16(CYCastUTF16String(value));
     const char *in(reinterpret_cast<const char *>(utf16.data));
 
-#ifdef __APPLE__
-    iconv_t conversion(_syscall(iconv_open("UTF-8", "UCS-2-INTERNAL")));
-#else
+#ifdef __GLIBC__
     iconv_t conversion(_syscall(iconv_open("UTF-8", "UCS-2")));
+#else
+    iconv_t conversion(_syscall(iconv_open("UTF-8", "UCS-2-INTERNAL")));
 #endif
 
     size_t size(JSStringGetMaximumUTF8CStringSize(value));
@@ -250,8 +250,9 @@ void CYStringify(std::ostringstream &str, const char *data, size_t size) {
             break;
 
             default:
+                // this test is designed to be "awewsome", generating neither warnings nor incorrect results
                 if (*value < 0x20 || *value >= 0x7f)
-                    str << "\\x" << std::setbase(16) << std::setw(2) << std::setfill('0') << unsigned(*value);
+                    str << "\\x" << std::setbase(16) << std::setw(2) << std::setfill('0') << unsigned(uint8_t(*value));
                 else simple:
                     str << *value;
         }
