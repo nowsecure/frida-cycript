@@ -146,7 +146,11 @@ static CYUTF8String CYPoolUTF8String(apr_pool_t *pool, JSContextRef context, JSS
     CYUTF16String utf16(CYCastUTF16String(value));
     const char *in(reinterpret_cast<const char *>(utf16.data));
 
+#ifdef __APPLE__
     iconv_t conversion(_syscall(iconv_open("UTF-8", "UCS-2-INTERNAL")));
+#else
+    iconv_t conversion(_syscall(iconv_open("UTF-8", "UCS-2")));
+#endif
 
     size_t size(JSStringGetMaximumUTF8CStringSize(value));
     char *out(new(pool) char[size]);
@@ -1297,9 +1301,14 @@ void CYSetArgs(int argc, const char *argv[]) {
     JSValueRef args[argc];
     for (int i(0); i != argc; ++i)
         args[i] = CYCastJSValue(context, argv[i]);
+#ifdef __APPLE__
     JSValueRef exception(NULL);
     JSObjectRef array(JSObjectMakeArray(context, argc, args, &exception));
     CYThrow(context, exception);
+#else
+    JSValueRef value(CYCallAsFunction(context, Array_, NULL, argc, args));
+    JSObjectRef array(CYCastJSObject(context, value));
+#endif
     CYSetProperty(context, System_, CYJSString("args"), array);
 }
 
@@ -1547,7 +1556,10 @@ JSGlobalContextRef CYGetJSContext() {
 
         Result_ = JSStringCreateWithUTF8CString("_");
 
+// XXX: this is very wrong and sad
+#ifdef __APPLE__
         CYObjectiveC(context, global);
+#endif
     }
 
     return Context_;

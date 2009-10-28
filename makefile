@@ -30,7 +30,7 @@ filters := C #E4X
 ldid := true
 dll := so
 apr := $(shell apr-1-config --link-ld)
-library := $(apr) -lffi -liconv -lsqlite3
+library := $(apr) -lffi -lsqlite3
 console := $(apr) -lreadline
 depends :=
 
@@ -41,7 +41,7 @@ uname_p := $(shell uname -p)
 
 ifeq ($(filter ObjectiveC,$(filters)),)
 ifneq ($(shell which gnustep-config 2>/dev/null),)
-include GNUstep.mk
+#include GNUstep.mk
 endif
 endif
 

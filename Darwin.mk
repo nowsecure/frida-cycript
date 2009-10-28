@@ -7,6 +7,6 @@ console += -framework Foundation
 library += -install_name /usr/lib/libcycript.$(dll)
 library += -framework Foundation -framework CFNetwork
 library += -framework JavaScriptCore -framework WebCore
-library += -lsubstrate
+library += -lsubstrate -liconv
 
 include ObjectiveC.mk
