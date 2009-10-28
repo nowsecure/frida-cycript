@@ -1036,7 +1036,11 @@ JSValueRef CYCallFunction(apr_pool_t *pool, JSContextRef context, size_t setups,
     }
 
     uint8_t value[cif->rtype->size];
-    ffi_call(cif, function, value, values);
+
+    if (hooks_ != NULL && hooks_->CallFunction != NULL)
+        (*hooks_->CallFunction)(context, cif, function, value, values);
+    else
+        ffi_call(cif, function, value, values);
 
     return CYFromFFI(context, signature->elements[0].type, cif->rtype, value, initialize);
 } CYCatch }
@@ -1309,7 +1313,7 @@ const char *CYExecute(apr_pool_t *pool, const char *code) {
 
     void *handle;
     if (hooks_ != NULL && hooks_->ExecuteStart != NULL)
-        handle = (*hooks_->ExecuteStart)();
+        handle = (*hooks_->ExecuteStart)(context);
     else
         handle = NULL;
 
@@ -1341,7 +1345,7 @@ const char *CYExecute(apr_pool_t *pool, const char *code) {
     CYSetProperty(context, CYGetGlobalObject(context), Result_, result);
 
     if (hooks_ != NULL && hooks_->ExecuteEnd != NULL)
-        (*hooks_->ExecuteEnd)(handle);
+        (*hooks_->ExecuteEnd)(context, handle);
     return json;
 }
 

@@ -307,6 +307,7 @@ JSObjectRef CYMakeInstance(JSContextRef context, id object, bool transient) {
 - (NSObject *) cy$getProperty:(NSString *)name;
 - (bool) cy$setProperty:(NSString *)name to:(NSObject *)value;
 - (bool) cy$deleteProperty:(NSString *)name;
+- (void) cy$getPropertyNames:(JSPropertyNameAccumulatorRef)names;
 
 @end
 
@@ -641,6 +642,19 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
         return [self objectAtIndex:index];
 }
 
+- (void) cy$getPropertyNames:(JSPropertyNameAccumulatorRef)names {
+    [super cy$getPropertyNames:names];
+
+    for (size_t index(0), count([self count]); index != count; ++index) {
+        id object([self objectAtIndex:index]);
+        if (object == nil || [object cy$JSType] != kJSTypeUndefined) {
+            char name[32];
+            sprintf(name, "%zu", index);
+            JSPropertyNameAccumulatorAddName(names, CYJSString(name));
+        }
+    }
+}
+
 @end
 /* }}} */
 /* Bridge: NSDictionary {{{ */
@@ -677,6 +691,19 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 
 - (NSObject *) cy$getProperty:(NSString *)name {
     return [self objectForKey:name];
+}
+
+- (void) cy$getPropertyNames:(JSPropertyNameAccumulatorRef)names {
+    [super cy$getPropertyNames:names];
+
+#ifdef __APPLE__
+    for (NSString *key in self) {
+#else
+    NSEnumerator *keys([self keyEnumerator]);
+    while (NSString *key = [keys nextObject]) {
+#endif
+        JSPropertyNameAccumulatorAddName(names, CYJSString(key));
+    }
 }
 
 @end
@@ -835,6 +862,9 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 
 - (bool) cy$deleteProperty:(NSString *)name {
     return false;
+}
+
+- (void) cy$getPropertyNames:(JSPropertyNameAccumulatorRef)names {
 }
 
 @end
@@ -1150,23 +1180,29 @@ static SEL CYCastSEL(JSContextRef context, JSValueRef value) {
         return CYCastPointer<SEL>(context, value);
 }
 
-void *CYObjectiveC_ExecuteStart() {
+void *CYObjectiveC_ExecuteStart(JSContextRef context) {
+    // XXX: deal with exceptions!
     return (void *) [[NSAutoreleasePool alloc] init];
 }
 
-void CYObjectiveC_ExecuteEnd(void *handle) {
+void CYObjectiveC_ExecuteEnd(JSContextRef context, void *handle) {
+    // XXX: deal with exceptions!
     return [(NSAutoreleasePool *) handle release];
 }
 
-JSValueRef CYObjectiveC_RuntimeProperty(JSContextRef context, CYUTF8String name) {
+JSValueRef CYObjectiveC_RuntimeProperty(JSContextRef context, CYUTF8String name) { CYObjectiveTry_(context) {
     if (name == "nil")
         return Instance::Make(context, nil);
     if (Class _class = objc_getClass(name.data))
         return CYMakeInstance(context, _class, true);
     return NULL;
-}
+} CYObjectiveCatch }
 
-static bool CYObjectiveC_PoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value) {
+static void CYObjectiveC_CallFunction(JSContextRef context, ffi_cif *cif, void (*function)(), uint8_t *value, void **values) { CYObjectiveTry_(context) {
+    ffi_call(cif, function, value, values);
+} CYObjectiveCatch }
+
+static bool CYObjectiveC_PoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value) { CYObjectiveTry_(context) {
     switch (type->primitive) {
         case sig::object_P:
         case sig::typename_P:
@@ -1182,9 +1218,9 @@ static bool CYObjectiveC_PoolFFI(apr_pool_t *pool, JSContextRef context, sig::Ty
     }
 
     return true;
-}
+} CYObjectiveCatch }
 
-static JSValueRef CYObjectiveC_FromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) {
+static JSValueRef CYObjectiveC_FromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) { CYObjectiveTry_(context) {
     switch (type->primitive) {
         case sig::object_P:
             if (id object = *reinterpret_cast<id *>(data)) {
@@ -1207,12 +1243,13 @@ static JSValueRef CYObjectiveC_FromFFI(JSContextRef context, sig::Type *type, ff
         default:
             return NULL;
     }
-}
+} CYObjectiveCatch }
 
-CYHooks CYObjectiveCHooks = {
+static CYHooks CYObjectiveCHooks = {
     &CYObjectiveC_ExecuteStart,
     &CYObjectiveC_ExecuteEnd,
     &CYObjectiveC_RuntimeProperty,
+    &CYObjectiveC_CallFunction,
     &CYObjectiveC_PoolFFI,
     &CYObjectiveC_FromFFI,
 };
@@ -1543,6 +1580,12 @@ static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, 
         free(data);
     }
 #endif
+
+    CYPoolTry {
+        // XXX: this is an evil hack to deal with NSProxy; fix elsewhere
+        if (CYImplements(self, _class, @selector(cy$getPropertyNames:), false))
+            [self cy$getPropertyNames:names];
+    } CYPoolCatch()
 }
 
 static JSObjectRef Instance_callAsConstructor(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {

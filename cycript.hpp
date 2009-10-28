@@ -119,9 +119,12 @@ JSValueRef CYCallAsFunction(JSContextRef context, JSObjectRef function, JSObject
 const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSObjectRef object);
 
 struct CYHooks {
-    void *(*ExecuteStart)();
-    void (*ExecuteEnd)(void *);
+    void *(*ExecuteStart)(JSContextRef);
+    void (*ExecuteEnd)(JSContextRef, void *);
+
     JSValueRef (*RuntimeProperty)(JSContextRef, CYUTF8String);
+    void (*CallFunction)(JSContextRef, ffi_cif *, void (*)(), uint8_t *, void **);
+
     bool (*PoolFFI)(apr_pool_t *, JSContextRef, sig::Type *, ffi_type *, void *, JSValueRef);
     JSValueRef (*FromFFI)(JSContextRef, sig::Type *, ffi_type *, void *, bool, JSObjectRef);
 };

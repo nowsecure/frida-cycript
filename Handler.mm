@@ -89,8 +89,9 @@ struct CYClient :
     }
 
     void Handle() {
-        CYClient_ *client = [[CYClient_ alloc] init];
-        @try {
+        NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+
+        CYClient_ *client = [[[CYClient_ alloc] init] autorelease];
 
         for (;;) {
             size_t size;
@@ -133,9 +134,7 @@ struct CYClient :
                     return;
         }
 
-        } @finally {
-            [client release];
-        }
+        [pool release];
     }
 };
 

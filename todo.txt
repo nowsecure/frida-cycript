@@ -4,4 +4,5 @@ support unions (right now 0-1 fields parsed as struct)
 \\\n escapes in strings aren't handled in the console
 look into what String is, and whether to bridge it
 the console frontend's error handling, well, doesn't
-Objective-C needs to be able to hook ffi_call for errors
+setup a default hook mechanism for ffi_call passthrough
+some JS callbacks don't use exception pointers at all...
