@@ -140,6 +140,11 @@ static CYUTF16String CYCastUTF16String(JSStringRef value) {
     return CYUTF16String(JSStringGetCharactersPtr(value), JSStringGetLength(value));
 }
 
+template <typename Type_>
+_finline size_t iconv_(size_t (*iconv)(iconv_t, Type_, size_t *, char **, size_t *), iconv_t cd, char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft) {
+    return iconv(cd, const_cast<Type_>(inbuf), inbytesleft, outbuf, outbytesleft);
+}
+
 static CYUTF8String CYPoolUTF8String(apr_pool_t *pool, JSContextRef context, JSStringRef value) {
     _assert(pool != NULL);
 
@@ -157,7 +162,7 @@ static CYUTF8String CYPoolUTF8String(apr_pool_t *pool, JSContextRef context, JSS
     CYUTF8String utf8(out, size);
 
     size = utf16.size * 2;
-    _syscall(iconv(conversion, const_cast<char **>(&in), &size, &out, &utf8.size));
+    _syscall(iconv_(&iconv, conversion, const_cast<char **>(&in), &size, &out, &utf8.size));
 
     *out = '\0';
     utf8.size = out - utf8.data;
