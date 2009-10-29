@@ -8,8 +8,7 @@ console += -framework UIKit
 depends += readline libffi mobilesubstrate sqlite3-lib
 code += Handler.o
 
-# XXX: this needs to share an exception library
-Cycript.$(dll): Connector.o Exception.o
+Cycript.$(dll): Connector.o
 	$(target)g++ $(flags) -dynamiclib -o $@ $(filter %.o,$^) \
 	    -lobjc -lapr-1 -lsubstrate \
 	    -framework CoreFoundation
