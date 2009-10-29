@@ -696,7 +696,7 @@ BooleanLiteral
 PrimaryExpression
     : PrimaryExpressionNoWC { $$ = $1; }
 @begin E4X
-    | LexSetRegExp PrimaryExpressionWC { $$ = $1; }
+    | LexSetRegExp PrimaryExpressionWC { $$ = $2; }
 @end
     ;
 
@@ -1748,7 +1748,7 @@ PropertySelector_
     ;
 
 PropertySelector
-    : Word { $$ = $1; }
+    : Identifier { $$ = $1; }
     | WildcardIdentifier { $$ = $1; }
     ;
 /* }}} */
@@ -1774,16 +1774,12 @@ XMLInitialiser
     ;
 
 XMLElement
-    : "<" XMLTagContent_ "/>" LexPop
-    | "<" XMLTagContent_ ">" LexSetXMLContent XMLElementContentOpt "</" LexSetXMLTag XMLTagName XMLWhitespaceOpt ">" LexPop
-    ;
-
-XMLTagContent_
-    : LexPushXMLTag XMLTagContent XMLWhitespaceOpt
+    : "<" XMLTagContent "/>" LexPop
+    | "<" XMLTagContent ">" LexSetXMLContent XMLElementContentOpt "</" LexSetXMLTag XMLTagName XMLWhitespaceOpt ">" LexPop
     ;
 
 XMLTagContent
-    : XMLTagName XMLAttributesOpt
+    : LexPushXMLTag XMLTagName XMLAttributes
     ;
 
 XMLExpression
@@ -1795,14 +1791,14 @@ XMLTagName
     | XMLName
     ;
 
-XMLAttributes
-    : XMLWhitespace XMLExpression
-    | XMLAttributeOpt XMLAttributes
+XMLAttributes_
+    : XMLAttributes_ XMLAttribute
+    |
     ;
 
-XMLAttributesOpt
-    : XMLAttributes
-    |
+XMLAttributes
+    : XMLAttributes_ XMLWhitespace XMLExpression XMLWhitespaceOpt
+    | XMLAttributes_ XMLWhitespaceOpt
     ;
 
 XMLAttributeValue_
@@ -1812,11 +1808,6 @@ XMLAttributeValue_
 
 XMLAttribute
     : XMLWhitespace XMLName XMLWhitespaceOpt "=" XMLWhitespaceOpt XMLAttributeValue_
-    ;
-
-XMLAttributeOpt
-    : XMLAttribute
-    |
     ;
 
 XMLElementContent
@@ -1838,7 +1829,7 @@ XMLListInitialiser
 /* }}} */
 /* 11.2 Left-Hand-Side Expressions {{{ */
 PropertyIdentifier_
-    : Word { $$ = $1; }
+    : Identifier { $$ = $1; }
     | PropertyIdentifier { $$ = $1; }
     ;
 
