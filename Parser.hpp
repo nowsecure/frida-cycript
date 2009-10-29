@@ -1484,7 +1484,7 @@ struct CYIndirect :
     }
 
     virtual const char *Operator() const {
-        return "^";
+        return "*";
     }
 
     CYAlphabetic(false)
