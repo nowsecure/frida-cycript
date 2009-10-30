@@ -6,7 +6,8 @@ else
 target := $(PKG_TARG)-
 endif
 
-flags :=
+paths := $(foreach path,$(paths),$(wildcard $(path)))
+flags := $(foreach path,$(paths),-I$(path) -L$(path))
 objc :=
 
 svn := $(shell svnversion)
@@ -34,8 +35,14 @@ library := $(apr) -lffi -lsqlite3
 console := $(apr) -lreadline
 depends :=
 
+ifndef uname_s
 uname_s := $(shell uname -s)
+endif
+
+ifndef uname_p
 uname_p := $(shell uname -p)
+endif
+
 -include $(uname_s).mk
 -include $(uname_s)-$(uname_p).mk
 
