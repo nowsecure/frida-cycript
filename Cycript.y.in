@@ -51,7 +51,7 @@
 @end
 
 @begin E4X
-#include "E4X.hpp"
+#include "E4X/Syntax.hpp"
 @end
 
 typedef struct {
@@ -103,6 +103,8 @@ typedef struct {
 
 @begin E4X
         CYAttribute *attribute_;
+        CYPropertyIdentifier *propertyIdentifier_;
+        CYSelector *selector_;
 @end
     };
 } YYSTYPE;
@@ -437,6 +439,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> PrimaryExpressionBF
 %type <statement_> Program
 %type <propertyName_> PropertyName
+%type <propertyName_> PropertyName_
 %type <property_> PropertyNameAndValueList
 %type <property_> PropertyNameAndValueList_
 %type <property_> PropertyNameAndValueListOpt
@@ -504,9 +507,9 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 @end
 
 @begin E4X
-%type <identifier_> PropertyIdentifier_
-%type <identifier_> PropertySelector
-%type <identifier_> PropertySelector_
+%type <propertyIdentifier_> PropertyIdentifier_
+%type <selector_> PropertySelector
+%type <selector_> PropertySelector_
 %type <identifier_> QualifiedIdentifier
 %type <identifier_> QualifiedIdentifier_
 %type <identifier_> WildcardIdentifier
@@ -518,13 +521,22 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <identifier_> XMLPI
 
 %type <attribute_> AttributeIdentifier
-%type <statement_> DefaultXMLNamespaceStatement
+/* XXX: %type <statement_> DefaultXMLNamespaceStatement */
 %type <expression_> PropertyIdentifier
 %type <expression_> XMLListInitialiser
 %type <expression_> XMLInitialiser
 @end
 
-/*
+%token WC
+
+%nonassoc Identifier_ "abstract" "boolean" "break" "byte" "case" "catch" "char" "class" "const" "continue" "debugger" "default" "delete" "do" "double" "each" "enum" "export" "extends" "false" "final" "finally" "float" /*"for"*/ "function" "goto" "implements" "import" /*"in"*/ /*"instanceof"*/ "int" "interface" "let" "long" "namespace" "native" "new" "null" "package" "private" "protected" "public" "return" "short" "super" "static" "switch" "synchronized" "this" "throw" "throws" "transient" "true" "try" "typeof" "var" "void" "volatile" "while" "with" "xml" "yield"
+
+%nonassoc "if"
+%nonassoc "else"
+
+%nonassoc "++" "--"
+%nonassoc "(" "["
+
 %left "*" "/" "%"
 %left "+" "-"
 %left "<<" ">>" ">>>"
@@ -537,10 +549,6 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %left "||"
 
 %right "=" "*=" "/=" "%=" "+=" "-=" "<<=" ">>=" ">>>=" "&=" "^=" "|="
-*/
-
-%nonassoc "if"
-%nonassoc "else"
 
 %start Program
 
@@ -672,6 +680,7 @@ LiteralNoRE
     | BooleanLiteral { $$ = $1; }
     | NumericLiteral { $$ = $1; }
     | StringLiteral { $$ = $1; }
+    | "@" StringLiteral { $$ = $2; }
     ;
 
 LiteralRE
@@ -771,10 +780,14 @@ PropertyNameAndValueList
     : PropertyName ":" AssignmentExpression PropertyNameAndValueList_ { $$ = new(driver.pool_) CYProperty($1, $3, $4); }
     ;
 
-PropertyName
+PropertyName_
     : Identifier { $$ = $1; }
     | StringLiteral { $$ = $1; }
     | NumericLiteral { $$ = $1; }
+    ;
+
+PropertyName
+    : LexSetRegExp PropertyName_ { $$ = $2; }
     ;
 /* }}} */
 
@@ -802,7 +815,7 @@ MemberExpressionNoBF
     ;
 
 MemberExpressionNoWC
-    : PrimaryExpressionNoWC { $$ = $1; }
+    : PrimaryExpression { $$ = $1; }
     | FunctionExpression { $$ = $1; }
     | MemberExpression MemberAccess { $2->SetLeft($1); $$ = $2; }
     | LexSetRegExp MemberExpression_ { $$ = $2; }
@@ -957,7 +970,7 @@ AdditiveExpressionNoBF
     ;
 
 AdditiveExpressionNoWC
-    : MultiplicativeExpressionNoWC{ $$ = $1; }
+    : MultiplicativeExpressionNoWC { $$ = $1; }
     | AdditiveExpression "+" MultiplicativeExpression { $$ = new(driver.pool_) CYAdd($1, $3); }
     | AdditiveExpression "-" MultiplicativeExpression { $$ = new(driver.pool_) CYSubtract($1, $3); }
     ;
@@ -1726,7 +1739,7 @@ XMLMarkup
 /* }}} */
 /* 11.1 Primary Expressions {{{ */
 PrimaryExpressionWC
-    : PropertyIdentifier { $$ = $1; }
+    : PropertyIdentifier { $$ = new(driver.pool_) CYPropertyVariable($1); }
     | XMLInitialiser { $$ = $1; }
     | XMLListInitialiser { $$ = $1; }
     ;
@@ -1743,23 +1756,23 @@ AttributeIdentifier
     ;
 
 PropertySelector_
-    : PropertySelector
-    | "[" Expression "]"
+    : PropertySelector { $$ = $1; }
+    | "[" Expression "]" { $$ = new(driver.pool_) CYSelector($2); }
     ;
 
 PropertySelector
-    : Identifier { $$ = $1; }
+    : Identifier { $$ = new(driver.pool_) CYSelector($1); }
     | WildcardIdentifier { $$ = $1; }
     ;
 /* }}} */
 /* 11.1.2 Qualified Identifiers {{{ */
 QualifiedIdentifier_
-    : PropertySelector_ { $$ = $1; }
+    : PropertySelector_ { $$ = new(driver.pool_) CYQualified(NULL, $1); }
     | QualifiedIdentifier { $$ = $1; }
     ;
 
 QualifiedIdentifier
-    : PropertySelector "::" PropertySelector_ { $$ = new(driver.pool_) CYQName($1, $3); }
+    : PropertySelector "::" PropertySelector_ { $$ = new(driver.pool_) CYQualified($1, $3); }
     ;
 /* }}} */
 /* 11.1.3 Wildcard Identifiers {{{ */
@@ -1840,13 +1853,13 @@ MemberAccess
     ;
 /* }}} */
 /* 12.1 The default xml namespace Statement {{{ */
-DefaultXMLNamespaceStatement
+/* XXX: DefaultXMLNamespaceStatement
     : "default" "xml" "namespace" "=" Expression Terminator { $$ = new(driver.pool_) CYDefaultXMLNamespace($5); }
     ;
 
 Statement_
     : DefaultXMLNamespaceStatement { $$ = $1; }
-    ;
+    ; */
 /* }}} */
 @end
 

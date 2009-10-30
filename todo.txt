@@ -6,4 +6,5 @@ look into what String is, and whether to bridge it
 the console frontend's error handling, well, doesn't
 setup a default hook mechanism for ffi_call passthrough
 some JS callbacks don't use exception pointers at all...
-PropertyName may need a LexSetRegExp before it
+a newline needs to not be allowed after a unary *
+finish implementing default xml namespace statement

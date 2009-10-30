@@ -56,4 +56,59 @@ struct CYDefaultXMLNamespace :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
+struct CYPropertyIdentifier {
+};
+
+struct CYSelector
+{
+};
+
+struct CYWildcard :
+    CYPropertyIdentifier,
+    CYSelector
+{
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYQualified :
+    CYPropertyIdentifier
+{
+    CYSelector *namespace_;
+    CYSelector *name_;
+
+    CYQualified(CYSelector *_namespace, CYSelector *name) :
+        namespace_(_namespace),
+        name_(name)
+    {
+    }
+};
+
+struct CYPropertyVariable :
+    CYExpression
+{
+    CYPropertyIdentifier *identifier_;
+
+    CYPropertyVariable(CYPropertyIdentifier *identifier) :
+        identifier_(identifier)
+    {
+    }
+
+    CYPrecedence(0)
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYAttribute :
+    CYPropertyIdentifier
+{
+    CYQualified *identifier_;
+
+    CYAttribute(CYQualified *identifier) :
+        identifier_(identifier)
+    {
+    }
+};
+
 #endif/*CYCRIPT_E4X_SYNTAX_HPP*/
