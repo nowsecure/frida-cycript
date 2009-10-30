@@ -388,7 +388,7 @@ int main(int argc, char const * const argv[], char const * const envp[]) {
                 fprintf(stderr,
                     "usage: cycript [-c]"
 #ifdef CY_ATTACH
-                    " [-p <pid>]"
+                    " [-p <pid|name>]"
 #endif
                     " [<script> [<arg>...]]\n"
                 );
@@ -428,10 +428,51 @@ int main(int argc, char const * const argv[], char const * const envp[]) {
             case 'p': {
                 size_t size(strlen(arg));
                 char *end;
+
                 pid = strtoul(arg, &end, 0);
                 if (arg + size != end) {
-                    fprintf(stderr, "invalid pid for -p\n");
-                    return 1;
+                    // XXX: arg needs to be escaped in some horrendous way of doom
+                    const char *command(apr_psprintf(pool, "ps axc|sed -e '/^ *[0-9]/{s/^ *\\([0-9]*\\)\\( *[^ ]*\\)\\{3\\} *-*\\([^ ]*\\)/\\3 \\1/;/^%s /{s/^[^ ]* //;q;};};d'", arg));
+
+                    if (FILE *pids = popen(command, "r")) {
+                        char value[32];
+                        size = 0;
+
+                        for (;;) {
+                            size_t read(fread(value + size, 1, sizeof(value) - size, pids));
+                            if (read == 0)
+                                break;
+                            else {
+                                size += read;
+                                if (size == sizeof(value)) {
+                                    pid = _not(pid_t);
+                                    goto pclose;
+                                }
+                            }
+                        }
+
+                      size:
+                        if (size == 0)
+                            goto pclose;
+                        if (value[size - 1] == '\n') {
+                            --size;
+                            goto size;
+                        }
+
+                        value[size] = '\0';
+                        size = strlen(value);
+                        pid = strtoul(value, &end, 0);
+                        if (value + size != end)
+                            pid = _not(pid_t);
+
+                      pclose:
+                        _syscall(pclose(pids));
+                    }
+
+                    if (pid == _not(pid_t)) {
+                        fprintf(stderr, "invalid pid for -p\n");
+                        return 1;
+                    }
                 }
             } break;
 #endif

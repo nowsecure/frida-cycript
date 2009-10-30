@@ -45,8 +45,8 @@ ifneq ($(shell which gnustep-config 2>/dev/null),)
 endif
 endif
 
-flags += -g3 -O0 -DYYDEBUG=1
-#flags += -g0 -O3
+#flags += -g3 -O0 -DYYDEBUG=1
+flags += -g0 -O3
 flags += -Wall -Werror -Wno-parentheses #-Wno-unused
 flags += -fPIC -fno-common
 flags += -I. -I$(shell apr-1-config --includedir)
