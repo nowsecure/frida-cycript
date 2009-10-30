@@ -26,7 +26,7 @@ code += Cycript.tab.o lex.cy.o
 code += Network.o Parser.o
 code += JavaScriptCore.o Library.o
 
-filters := C E4X
+filters := C #E4X
 ldid := true
 dll := so
 apr := $(shell apr-1-config --link-ld)

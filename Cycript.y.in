@@ -153,9 +153,12 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %token SlashRight "/>"
 %token LeftSlash "</"
 
-%token At "@"
 %token ColonColon "::"
 %token PeriodPeriod ".."
+@end
+
+@begin E4X ObjectiveC
+%token At "@"
 @end
 
 %token Ampersand "&"
@@ -319,6 +322,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <literal_> ArrayLiteral
 %type <expression_> AssigneeExpression
 %type <expression_> AssigneeExpressionNoBF
+%type <expression_> AssigneeExpressionNoRE
 %type <expression_> AssigneeExpressionNoWC
 %type <expression_> AssignmentExpression
 %type <assignment_> AssignmentExpression_
@@ -343,6 +347,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <statement_> BreakStatement
 %type <expression_> CallExpression
 %type <expression_> CallExpressionNoBF
+%type <expression_> CallExpressionNoRE
 %type <clause_> CaseBlock
 %type <clause_> CaseClause
 %type <clause_> CaseClausesOpt
@@ -385,7 +390,6 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <statement_> FunctionBody
 %type <statement_> FunctionDeclaration
 %type <expression_> FunctionExpression
-%type <expression_> FunctionExpression_
 %type <identifier_> Identifier
 %type <identifier_> IdentifierOpt
 %type <comprehension_> IfComprehension
@@ -398,6 +402,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <statement_> LabelledStatement
 %type <expression_> LeftHandSideExpression
 %type <expression_> LeftHandSideExpressionNoBF
+%type <expression_> LeftHandSideExpressionNoRE
 %type <expression_> LeftHandSideExpressionNoWC
 //%type <statement_> LetStatement
 %type <literal_> Literal
@@ -415,6 +420,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> MemberExpression
 %type <expression_> MemberExpression_
 %type <expression_> MemberExpressionNoBF
+%type <expression_> MemberExpressionNoRE
 %type <expression_> MemberExpressionNoWC
 %type <expression_> MultiplicativeExpression
 %type <expression_> MultiplicativeExpressionNoBF
@@ -422,15 +428,18 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> NewExpression
 %type <expression_> NewExpression_
 %type <expression_> NewExpressionNoBF
+%type <expression_> NewExpressionNoRE
 %type <expression_> NewExpressionNoWC
 %type <null_> NullLiteral
 %type <literal_> ObjectLiteral
 %type <expression_> PostfixExpression
 %type <expression_> PostfixExpressionNoBF
+%type <expression_> PostfixExpressionNoRE
 %type <expression_> PostfixExpressionNoWC
 %type <expression_> PrimaryExpression
 %type <expression_> PrimaryExpressionNo
 %type <expression_> PrimaryExpressionNoBF
+%type <expression_> PrimaryExpressionNoRE
 %type <expression_> PrimaryExpressionNoWC
 %type <expression_> PrimaryExpressionNoWC_
 @begin E4X
@@ -467,6 +476,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> UnaryExpression
 %type <expression_> UnaryExpression_
 %type <expression_> UnaryExpressionNoBF
+%type <expression_> UnaryExpressionNoRE
 %type <expression_> UnaryExpressionNoWC
 %type <declaration_> VariableDeclaration
 %type <declaration_> VariableDeclarationNoIn
@@ -716,6 +726,13 @@ PrimaryExpressionNoBF
 @end
     ;
 
+PrimaryExpressionNoRE
+    : PrimaryExpressionNoWC_ { $$ = $1; }
+@begin E4X
+    | PrimaryExpressionWC { $$ = $1; }
+@end
+    ;
+
 PrimaryExpressionNoWC_
     : PrimaryExpressionBF { $$ = $1; }
     | PrimaryExpressionNo { $$ = $1; }
@@ -803,7 +820,7 @@ MemberAccess
 
 MemberExpression
     : PrimaryExpression { $$ = $1; }
-    | FunctionExpression { $$ = $1; }
+    | LexSetRegExp FunctionExpression { $$ = $2; }
     | MemberExpression MemberAccess { $2->SetLeft($1); $$ = $2; }
     | LexSetRegExp MemberExpression_ { $$ = $2; }
     ;
@@ -814,9 +831,16 @@ MemberExpressionNoBF
     | MemberExpression_ { $$ = $1; }
     ;
 
+MemberExpressionNoRE
+    : PrimaryExpressionNoRE { $$ = $1; }
+    | FunctionExpression { $$ = $1; }
+    | MemberExpressionNoRE MemberAccess { $2->SetLeft($1); $$ = $2; }
+    | MemberExpression_ { $$ = $1; }
+    ;
+
 MemberExpressionNoWC
     : PrimaryExpression { $$ = $1; }
-    | FunctionExpression { $$ = $1; }
+    | LexSetRegExp FunctionExpression { $$ = $2; }
     | MemberExpression MemberAccess { $2->SetLeft($1); $$ = $2; }
     | LexSetRegExp MemberExpression_ { $$ = $2; }
     ;
@@ -835,6 +859,11 @@ NewExpressionNoBF
     | NewExpression_ { $$ = $1; }
     ;
 
+NewExpressionNoRE
+    : MemberExpressionNoRE { $$ = $1; }
+    | NewExpression_ { $$ = $1; }
+    ;
+
 NewExpressionNoWC
     : MemberExpressionNoWC { $$ = $1; }
     | LexSetRegExp NewExpression_ { $$ = $2; }
@@ -850,6 +879,12 @@ CallExpressionNoBF
     : MemberExpressionNoBF Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
     | CallExpressionNoBF Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
     | CallExpressionNoBF MemberAccess { $2->SetLeft($1); $$ = $2; }
+    ;
+
+CallExpressionNoRE
+    : PrimaryExpressionNoRE Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
+    | CallExpressionNoRE Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
+    | CallExpressionNoRE MemberAccess { $2->SetLeft($1); $$ = $2; }
     ;
 
 ArgumentList_
@@ -880,6 +915,11 @@ LeftHandSideExpressionNoBF
     | CallExpressionNoBF { $$ = $1; }
     ;
 
+LeftHandSideExpressionNoRE
+    : NewExpressionNoRE { $$ = $1; }
+    | CallExpressionNoRE { $$ = $1; }
+    ;
+
 LeftHandSideExpressionNoWC
     : NewExpressionNoWC { $$ = $1; }
     | CallExpression { $$ = $1; }
@@ -896,6 +936,12 @@ PostfixExpressionNoBF
     : AssigneeExpressionNoBF { $$ = $1; }
     | LeftHandSideExpressionNoBF "++" { $$ = new(driver.pool_) CYPostIncrement($1); }
     | LeftHandSideExpressionNoBF "--" { $$ = new(driver.pool_) CYPostDecrement($1); }
+    ;
+
+PostfixExpressionNoRE
+    : AssigneeExpressionNoRE { $$ = $1; }
+    | LeftHandSideExpressionNoRE "++" { $$ = new(driver.pool_) CYPostIncrement($1); }
+    | LeftHandSideExpressionNoRE "--" { $$ = new(driver.pool_) CYPostDecrement($1); }
     ;
 
 PostfixExpressionNoWC
@@ -926,6 +972,11 @@ UnaryExpression
 
 UnaryExpressionNoBF
     : PostfixExpressionNoBF { $$ = $1; }
+    | UnaryExpression_ { $$ = $1; }
+    ;
+
+UnaryExpressionNoRE
+    : PostfixExpressionNoRE { $$ = $1; }
     | UnaryExpression_ { $$ = $1; }
     ;
 
@@ -1210,6 +1261,11 @@ AssigneeExpression
 
 AssigneeExpressionNoBF
     : LeftHandSideExpressionNoBF { $$ = $1; }
+    | UnaryAssigneeExpression { $$ = $1; }
+    ;
+
+AssigneeExpressionNoRE
+    : LeftHandSideExpressionNoRE { $$ = $1; }
     | UnaryAssigneeExpression { $$ = $1; }
     ;
 
@@ -1507,12 +1563,8 @@ FunctionDeclaration
     : "function" Identifier "(" FormalParameterList ")" "{" FunctionBody "}" { $$ = new(driver.pool_) CYFunctionStatement($2, $4, $7); }
     ;
 
-FunctionExpression_
-    : "function" IdentifierOpt "(" FormalParameterList ")" "{" FunctionBody "}" { $$ = new(driver.pool_) CYFunctionExpression($2, $4, $7); }
-    ;
-
 FunctionExpression
-    : LexSetRegExp FunctionExpression_ { $$ = $2; }
+    : "function" IdentifierOpt "(" FormalParameterList ")" "{" FunctionBody "}" { $$ = new(driver.pool_) CYFunctionExpression($2, $4, $7); }
     ;
 
 FormalParameterList_
@@ -1678,7 +1730,7 @@ PrimaryExpressionNo
 @begin C
 /* Cycript (C): Pointer Indirection/Addressing {{{ */
 UnaryAssigneeExpression
-    : "*" UnaryExpression { $$ = new(driver.pool_) CYIndirect($2); }
+    : "*" UnaryExpressionNoRE { $$ = new(driver.pool_) CYIndirect($2); }
     ;
 
 UnaryExpression_

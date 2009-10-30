@@ -62,6 +62,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/un.h>
+#include <pwd.h>
 
 #include <apr_getopt.h>
 
@@ -173,7 +174,20 @@ void Run(int socket, std::string &code, FILE *fout = NULL, bool expand = false) 
     Run(socket, code.c_str(), code.size(), fout, expand);
 }
 
-static void Console(int socket) {
+static void Console(apr_pool_t *pool, int socket) {
+    passwd *passwd;
+    if (const char *username = getenv("LOGNAME"))
+        passwd = getpwnam(username);
+    else
+        passwd = getpwuid(getuid());
+
+    const char *basedir(apr_psprintf(pool, "%s/.cycript", passwd->pw_dir));
+    const char *histfile(apr_psprintf(pool, "%s/history", basedir));
+    size_t histlines(0);
+
+    mkdir(basedir, 0700);
+    read_history(histfile);
+
     bool bypass(false);
     bool debug(false);
     bool expand(false);
@@ -227,6 +241,7 @@ static void Console(int socket) {
                     fflush(fout);
                 }
                 add_history(line);
+                ++histlines;
                 goto restart;
             }
         }
@@ -280,6 +295,7 @@ static void Console(int socket) {
                         std::cerr << error->message_ << std::endl;
 
                         add_history(command.c_str());
+                        ++histlines;
                         goto restart;
                     }
                 }
@@ -306,12 +322,16 @@ static void Console(int socket) {
         }
 
         add_history(command.c_str());
+        ++histlines;
 
         if (debug)
             std::cout << code << std::endl;
 
         Run(socket, code, fout, expand);
     }
+
+    _syscall(close(_syscall(open(histfile, O_CREAT | O_WRONLY, 0600))));
+    append_history(histlines, histfile);
 
     fputs("\n", fout);
     fflush(fout);
@@ -476,7 +496,7 @@ int main(int argc, char const * const argv[], char const * const envp[]) {
 #endif
 
     if (script == NULL && tty)
-        Console(socket);
+        Console(pool, socket);
     else {
         CYDriver driver(script ?: "<stdin>");
         cy::parser parser(driver);
