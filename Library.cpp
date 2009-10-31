@@ -1302,7 +1302,7 @@ static JSStaticFunction Type_staticFunctions[4] = {
     {NULL, NULL, 0}
 };
 
-static JSObjectRef (*$JSObjectMakeArray)(JSContextRef, size_t, const JSValueRef[], JSValueRef *);
+static JSObjectRef (*JSObjectMakeArray$)(JSContextRef, size_t, const JSValueRef[], JSValueRef *);
 
 void CYSetArgs(int argc, const char *argv[]) {
     JSContextRef context(CYGetJSContext());
@@ -1311,9 +1311,9 @@ void CYSetArgs(int argc, const char *argv[]) {
         args[i] = CYCastJSValue(context, argv[i]);
 
     JSObjectRef array;
-    if ($JSObjectMakeArray != NULL) {
+    if (JSObjectMakeArray$ != NULL) {
         JSValueRef exception(NULL);
-        array = (*$JSObjectMakeArray)(context, argc, args, &exception);
+        array = (*JSObjectMakeArray$)(context, argc, args, &exception);
         CYThrow(context, exception);
     } else {
         JSValueRef value(CYCallAsFunction(context, Array_, NULL, argc, args));
@@ -1382,7 +1382,7 @@ void CYInitialize() {
     _aprcall(apr_pool_create(&Pool_, NULL));
     _sqlcall(sqlite3_open("/usr/lib/libcycript.db", &Bridge_));
 
-    $JSObjectMakeArray = reinterpret_cast<JSObjectRef (*)(JSContextRef, size_t, const JSValueRef[], JSValueRef *)>(dlsym(RTLD_DEFAULT, "JSObjectMakeArray"));
+    JSObjectMakeArray$ = reinterpret_cast<JSObjectRef (*)(JSContextRef, size_t, const JSValueRef[], JSValueRef *)>(dlsym(RTLD_DEFAULT, "JSObjectMakeArray"));
 }
 
 apr_pool_t *CYGetGlobalPool() {
