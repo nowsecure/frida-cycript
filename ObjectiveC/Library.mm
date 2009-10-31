@@ -1894,11 +1894,8 @@ JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, Class 
         } CYPoolCatch(NULL)
     }
 
-    objc_super super = {self, _class};
-    void *arg0 = &super;
-
     void *setup[2];
-    setup[0] = &arg0;
+    setup[0] = &self;
     setup[1] = &_cmd;
 
     sig::Signature signature;
@@ -1907,15 +1904,17 @@ JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, Class 
     ffi_cif cif;
     sig::sig_ffi_cif(pool, &sig::ObjectiveC, &signature, &cif);
 
-    if (imp == NULL)
+    if (imp == NULL) {
 #ifdef __APPLE__
         if (stret(cif.rtype))
             imp = class_getMethodImplementation_stret(_class, _cmd);
         else
             imp = class_getMethodImplementation(_class, _cmd);
 #else
+        objc_super super = {self, _class};
         imp = objc_msg_lookup_super(&super, _cmd);
 #endif
+    }
 
     void (*function)() = reinterpret_cast<void (*)()>(imp);
     return CYCallFunction(pool, context, 2, setup, count, arguments, initialize, exception, &signature, &cif, function);
