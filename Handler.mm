@@ -49,6 +49,11 @@
 #include <unistd.h>
 #include <sstream>
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/un.h>
+
 struct CYExecute_ {
     apr_pool_t *pool_;
     const char * volatile data_;
@@ -93,6 +98,13 @@ struct CYClient :
 
         CYClient_ *client = [[[CYClient_ alloc] init] autorelease];
 
+        bool dispatch;
+        if (CFStringRef mode = CFRunLoopCopyCurrentMode(CFRunLoopGetMain())) {
+            dispatch = true;
+            CFRelease(mode);
+        } else
+            dispatch = false;
+
         for (;;) {
             size_t size;
             if (!CYRecvAll(socket_, &size, sizeof(size)))
@@ -115,6 +127,8 @@ struct CYClient :
                 json = NULL;
                 size = _not(size_t);
             } else {
+                NSAutoreleasePool *ar = [[NSAutoreleasePool alloc] init];
+
                 CYContext context(driver.pool_);
                 driver.program_->Replace(context);
                 std::ostringstream str;
@@ -122,9 +136,15 @@ struct CYClient :
                 out << *driver.program_;
                 std::string code(str.str());
                 CYExecute_ execute = {pool, code.c_str()};
-                [client performSelectorOnMainThread:@selector(execute:) withObject:[NSValue valueWithPointer:&execute] waitUntilDone:YES];
+                NSValue *value([NSValue valueWithPointer:&execute]);
+                if (dispatch)
+                    [client performSelectorOnMainThread:@selector(execute:) withObject:value waitUntilDone:YES];
+                else
+                    [client execute:value];
                 json = execute.data_;
                 size = json == NULL ? _not(size_t) : strlen(json);
+
+                [ar release];
             }
 
             if (!CYSendAll(socket_, &size, sizeof(size)))

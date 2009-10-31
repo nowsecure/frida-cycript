@@ -19,6 +19,9 @@ T boolean B
 T float f
 T double d
 
+T Boolean B
+T SInt32 {int}
+
 S CGPoint "x"f"y"f
 S CGRect "origin"{CGPoint}"size"{CGSize}
 S CGSize "width"f"height"f
@@ -756,6 +759,24 @@ f CoreFoundation
 
 F CFRangeMake {CFRange}{CFIndex}{CFIndex}
 
+# Time Utilities
+
+T CFAbsoluteTime {CFTimeInterval}
+S CFGregorianDate "year"{SInt32}"month"{SInt8}"day"{SInt8}"hour"{SInt8}"minute"{SInt8}"second"{double}
+S CFGregorianUnits "years"{SInt32}"months"{SInt32}"days"{SInt32}"hours"{SInt32}"minutes"{SInt32}"second"{double}
+T CFTimeInterval {double}
+
+C kCFGregorianUnitsYears 1<<0
+C kCFGregorianUnitsMonths 1<<1
+C kCFGregorianUnitsDays 1<<2
+C kCFGregorianUnitsHours 1<<3
+C kCFGregorianUnitsMinutes 1<<4
+C kCFGregorianUnitsSeconds 1<<5
+C kCFGregorianAllUnits 0x00FFFFFF
+
+V kCFAbsoluteTimeIntervalSince1970 {CFTimeInterval}
+V kCFAbsoluteTimeIntervalSince1904 {CFTimeInterval}
+
 # CFComparatorFunction
 
 T CFIndex l
@@ -857,6 +878,68 @@ V kCFAllocatorMallocZone {CFAllocatorRef}
 V kCFAllocatorNull {CFAllocatorRef}
 V kCFAllocatorUseContext {CFAllocatorRef}
 
+# CFByteOrderUtils
+
+E __CFByteOrder
+C CFByteOrderUnknown 0
+C CFByteOrderLittleEndian 1
+C CFByteOrderBigEndian 2
+T CFByteOrder __CFByteOrder
+
+# CFArray
+
+T CFArrayRef @
+
+# CFRunLoop
+
+F CFRunLoopGetCurrent {CFRunLoopRef}
+F CFRunLoopGetMain {CFRunLoopRef}
+
+F CFRunLoopRun v
+F CFRunLoopRunInMode {SInt32}{CFStringRef}{CFTimeInterval}{Boolean}
+F CFRunLoopWakeUp v{CFRunLoopRef}
+F CFRunLoopStop v{CFRunLoopRef}
+F CFRunLoopIsWaiting {Boolean}{CFRunLoopRef}
+
+F CFRunLoopAddSource v{CFRunLoopRef}{CFRunLoopSourceRef}{CFStringRef}
+F CFRunLoopContainsSource {Boolean}{CFRunLoopRef}{CFRunLoopSourceRef}{CFStringRef}
+F CFRunLoopRemoveSource v{CFRunLoopRef}{CFRunLoopSourceRef}{CFStringRef}
+
+F CFRunLoopAddObserver v{CFRunLoopRef}{CFRunLoopObserverRef}{CFStringRef}
+F CFRunLoopContainsObserver {Boolean}{CFRunLoopRef}{CFRunLoopObserverRef}{CFStringRef}
+F CFRunLoopRemoveObserver v{CFRunLoopRef}{CFRunLoopObserverRef}{CFStringRef}
+
+F CFRunLoopAddCommonMode v{CFRunLoopRef}{CFStringRef}
+F CFRunLoopCopyAllModes {CFArrayRef}{CFRunLoopRef}
+F CFRunLoopCopyCurrentMode {CFStringRef}{CFRunLoopRef}
+
+F CFRunLoopAddTimer v{CFRunLoopRef}{CFRunLoopTimerRef}{CFStringRef}
+F CFRunLoopGetNextTimerFireDate {CFAbsoluteTime}{CFRunLoopRef}{CFStringRef}
+F CFRunLoopRemoveTimer v{CFRunLoopRef}{CFRunLoopTimerRef}{CFStringRef}
+F CFRunLoopContainsTimer {Boolean}{CFRunLoopRef}{CFRunLoopTimerRef}{CFStringRef}
+
+# F CFRunLoopPerformBlock
+
+F CFRunLoopGetTypeID {CFTypeID}
+
+T CFRunLoopRef @
+
+C kCFRunLoopRunFinished 1
+C kCFRunLoopRunStopped 2
+C kCFRunLoopRunTimedOut 3
+C kCFRunLoopRunHandledSource 4
+
+V kCFRunLoopCommonModes {CFStringRef}
+V kCFRunLoopDefaultMode {CFStringRef}
+
+# CFRunLoopTimer
+
+T CFRunLoopTimerRef @
+
+# CFString
+
+T CFStringRef @
+
 # CFType
 
 F CFGetAllocator {CFAllocatorRef}{CFTypeRef}
@@ -884,14 +967,6 @@ F CFShowStr v@
 f CoreGraphics
 
 T CGFloat f
-
-# CFByteOrderUtils
-
-E __CFByteOrder
-C CFByteOrderUnknown 0
-C CFByteOrderLittleEndian 1
-C CFByteOrderBigEndian 2
-T CFByteOrder __CFByteOrder
 
 # CGAffineTransform
 

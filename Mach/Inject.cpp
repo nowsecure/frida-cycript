@@ -42,6 +42,7 @@ void InjectLibrary(pid_t pid) {
     nl[0].n_un.n_name = (char *) "__pthread_set_self";
     nlist("/usr/lib/libSystem.B.dylib", nl);
     nlset(baton->_pthread_set_self, nl, 0);
+    _assert(baton->_pthread_set_self != NULL);
 
     baton->pthread_create = &pthread_create;
     baton->pthread_join = &pthread_join;
