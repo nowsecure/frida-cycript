@@ -188,9 +188,12 @@ XMLName {XMLNameStart}{XMLNamePart}*
 @end
 
 @begin E4X
-"@"    L C return tk::At;
 "::"   L C return tk::ColonColon;
 ".."   L C return tk::PeriodPeriod;
+@end
+
+@begin E4X ObjectiveC
+"@"    L C return tk::At;
 @end
 
 "&"    L C return tk::Ampersand;
