@@ -6,8 +6,10 @@ else
 target := $(PKG_TARG)-
 endif
 
+flags ?= -g3 -O0 -DYYDEBUG=1
+
 paths := $(foreach path,$(paths),$(wildcard $(path)))
-flags := $(foreach path,$(paths),-I$(path) -L$(path))
+flags += $(foreach path,$(paths),-I$(path) -L$(path))
 objc :=
 
 svn := $(shell svnversion)
@@ -48,8 +50,6 @@ ifneq ($(shell which gnustep-config 2>/dev/null),)
 endif
 endif
 
-#flags += -g3 -O0 -DYYDEBUG=1
-flags += -g0 -O3
 flags += -Wall -Werror -Wno-parentheses #-Wno-unused
 flags += -fPIC -fno-common
 flags += -I. -I$(shell apr-1-config --includedir)

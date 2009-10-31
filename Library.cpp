@@ -145,7 +145,7 @@ _finline size_t iconv_(size_t (*iconv)(iconv_t, Type_, size_t *, char **, size_t
     return iconv(cd, const_cast<Type_>(inbuf), inbytesleft, outbuf, outbytesleft);
 }
 
-static CYUTF8String CYPoolUTF8String(apr_pool_t *pool, JSContextRef context, JSStringRef value) {
+CYUTF8String CYPoolUTF8String(apr_pool_t *pool, JSContextRef context, JSStringRef value) {
     _assert(pool != NULL);
 
     CYUTF16String utf16(CYCastUTF16String(value));

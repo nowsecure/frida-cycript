@@ -41,6 +41,7 @@
 #define CYCRIPT_OBJECTIVEC_INTERNAL_HPP
 
 #include <Internal.hpp>
+#include <objc/objc.h>
 
 struct Selector_privateData :
     CYValue
@@ -77,6 +78,10 @@ struct Instance :
     virtual ~Instance();
 
     static JSObjectRef Make(JSContextRef context, id object, Flags flags = None);
+
+    static _finline JSObjectRef Make(JSContextRef context, Class object) {
+        return Make(context, (id) object);
+    }
 
     _finline id GetValue() const {
         return reinterpret_cast<id>(value_);

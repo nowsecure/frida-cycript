@@ -1,9 +1,14 @@
 #include <substrate.h>
 
 #include "ObjectiveC/Internal.hpp"
+
+#ifdef __APPLE__
 #include "Struct.hpp"
+#endif
 
 #include <Foundation/Foundation.h>
+
+#include <objc/Protocol.h>
 
 #include "cycript.hpp"
 
@@ -20,6 +25,7 @@
 #include "JavaScript.hpp"
 #include "String.hpp"
 
+#include <cmath>
 #include <map>
 
 #define CYObjectiveTry_(context) { \
@@ -51,7 +57,36 @@
 
 #ifndef __APPLE__
 #define class_getSuperclass GSObjCSuper
+#define class_getInstanceVariable GSCGetInstanceVariableDefinition
+#define class_getName GSNameFromClass
+
+#define class_removeMethods(cls, list) GSRemoveMethodList(cls, list, YES)
+
+#define ivar_getName(ivar) ((ivar)->ivar_name)
+#define ivar_getOffset(ivar) ((ivar)->ivar_offset)
+#define ivar_getTypeEncoding(ivar) ((ivar)->ivar_type)
+
+#define method_getName(method) ((method)->method_name)
+#define method_getImplementation(method) ((method)->method_imp)
+#define method_getTypeEncoding(method) ((method)->method_types)
+#define method_setImplementation(method, imp) ((void) ((method)->method_imp = (imp)))
+
+#define objc_getProtocol GSProtocolFromName
+
 #define object_getClass GSObjCClass
+
+#define object_getInstanceVariable(object, name, value) ({ \
+    objc_ivar *ivar(class_getInstanceVariable(object_getClass(object), name)); \
+    GSObjCGetVariable(object, ivar_getOffset(ivar), sizeof(void *), value); \
+    ivar; \
+})
+
+#define object_setIvar(object, ivar, value) ({ \
+    void *data = (value); \
+    GSObjCSetVariable(object, ivar_getOffset(ivar), sizeof(void *), &data); \
+})
+
+#define protocol_getName(protocol) [(protocol) name]
 #endif
 
 JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, Class super, SEL _cmd, size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception);
@@ -94,21 +129,21 @@ const char *CYPoolCString(apr_pool_t *pool, JSContextRef context, NSString *valu
     }
 }
 
-JSStringRef CYCopyJSString_(NSString *value) {
+JSStringRef CYCopyJSString(JSContextRef context, NSString *value) {
 #ifdef __APPLE__
     return JSStringCreateWithCFString(reinterpret_cast<CFStringRef>(value));
 #else
     CYPool pool;
-    return CYCopyJSString(CYPoolCString(pool, value));
+    return CYCopyJSString(CYPoolCString(pool, context, value));
 #endif
 }
 
-JSStringRef CYCopyJSString(id value) {
+JSStringRef CYCopyJSString(NSObject *value) {
     if (value == nil)
         return NULL;
     // XXX: this definition scares me; is anyone using this?!
     NSString *string([value description]);
-    return CYCopyJSString_(string);
+    return CYCopyJSString(string);
 }
 
 NSString *CYCopyNSString(const CYUTF8String &value) {
@@ -119,16 +154,17 @@ NSString *CYCopyNSString(const CYUTF8String &value) {
 #endif
 }
 
-NSString *CYCopyNSString(JSStringRef value) {
+NSString *CYCopyNSString(JSContextRef context, JSStringRef value) {
 #ifdef __APPLE__
     return (NSString *) JSStringCopyCFString(kCFAllocatorDefault, value);
 #else
-    return CYCopyNSString(CYCastCString_(value));
+    CYPool pool;
+    return CYCopyNSString(CYPoolUTF8String(pool, context, value));
 #endif
 }
 
 NSString *CYCopyNSString(JSContextRef context, JSValueRef value) {
-    return CYCopyNSString(CYJSString(context, value));
+    return CYCopyNSString(context, CYJSString(context, value));
 }
 
 NSString *CYCastNSString(apr_pool_t *pool, const CYUTF8String &value) {
@@ -140,8 +176,8 @@ NSString *CYCastNSString(apr_pool_t *pool, SEL sel) {
     return CYPoolRelease(pool, CYCopyNSString(CYUTF8String(name, strlen(name))));
 }
 
-NSString *CYCastNSString(apr_pool_t *pool, JSStringRef value) {
-    return CYPoolRelease(pool, CYCopyNSString(value));
+NSString *CYCastNSString(apr_pool_t *pool, JSContextRef context, JSStringRef value) {
+    return CYPoolRelease(pool, CYCopyNSString(context, value));
 }
 
 CYUTF8String CYCastUTF8String(NSString *value) {
@@ -172,9 +208,12 @@ static JSClassRef Selector_;
 static JSClassRef Super_;
 
 static JSClassRef ObjectiveC_Classes_;
+static JSClassRef ObjectiveC_Protocols_;
+
+#ifdef __APPLE__
 static JSClassRef ObjectiveC_Image_Classes_;
 static JSClassRef ObjectiveC_Images_;
-static JSClassRef ObjectiveC_Protocols_;
+#endif
 
 static JSObjectRef Instance_prototype_;
 
@@ -932,8 +971,12 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 /* }}} */
 
 static bool CYIsClass(id self) {
+#ifdef __APPLE__
     // XXX: this is a lame object_isClass
     return class_getInstanceMethod(object_getClass(self), @selector(alloc)) != NULL;
+#else
+    return GSObjCIsClass(self);
+#endif
 }
 
 Class CYCastClass(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
@@ -944,12 +987,12 @@ Class CYCastClass(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
     return NULL;
 }
 
-NSArray *CYCastNSArray(JSPropertyNameArrayRef names) {
+NSArray *CYCastNSArray(JSContextRef context, JSPropertyNameArrayRef names) {
     CYPool pool;
     size_t size(JSPropertyNameArrayGetCount(names));
     NSMutableArray *array([NSMutableArray arrayWithCapacity:size]);
     for (size_t index(0); index != size; ++index)
-        [array addObject:CYCastNSString(pool, JSPropertyNameArrayGetNameAtIndex(names, index))];
+        [array addObject:CYCastNSString(pool, context, JSPropertyNameArrayGetNameAtIndex(names, index))];
     return array;
 }
 
@@ -1008,7 +1051,8 @@ JSValueRef CYCastJSValue(JSContextRef context, id value) { CYPoolTry {
 } CYObjectiveCatch }
 
 - (id) objectForKey:(id)key { CYObjectiveTry {
-    JSValueRef value(CYGetProperty(context_, object_, CYJSString(key)));
+    // XXX: are NSDictionary keys always NSString *?
+    JSValueRef value(CYGetProperty(context_, object_, CYJSString((NSString *) key)));
     if (JSValueIsUndefined(context_, value))
         return nil;
     return CYCastNSObject(NULL, context_, value) ?: [NSNull null];
@@ -1022,12 +1066,14 @@ JSValueRef CYCastJSValue(JSContextRef context, id value) { CYPoolTry {
 } CYObjectiveCatch }
 
 - (void) setObject:(id)object forKey:(id)key { CYObjectiveTry {
-    CYSetProperty(context_, object_, CYJSString(key), CYCastJSValue(context_, object));
+    // XXX: are NSDictionary keys always NSString *?
+    CYSetProperty(context_, object_, CYJSString((NSString *) key), CYCastJSValue(context_, object));
 } CYObjectiveCatch }
 
 - (void) removeObjectForKey:(id)key { CYObjectiveTry {
     JSValueRef exception(NULL);
-    (void) JSObjectDeleteProperty(context_, object_, CYJSString(key), &exception);
+    // XXX: are NSDictionary keys always NSString *?
+    (void) JSObjectDeleteProperty(context_, object_, CYJSString((NSString *) key), &exception);
     CYThrow(context_, exception);
 } CYObjectiveCatch }
 
@@ -1136,7 +1182,7 @@ struct CYInternal :
 
     static CYInternal *Set(id self) {
         CYInternal *internal(NULL);
-        if (Ivar ivar = object_getInstanceVariable(self, "cy$internal_", reinterpret_cast<void **>(&internal))) {
+        if (objc_ivar *ivar = object_getInstanceVariable(self, "cy$internal_", reinterpret_cast<void **>(&internal))) {
             if (internal == NULL) {
                 internal = new CYInternal();
                 object_setIvar(self, ivar, reinterpret_cast<id>(internal));
@@ -1393,13 +1439,13 @@ static bool Messages_setProperty(JSContextRef context, JSObjectRef object, JSStr
     return true;
 }
 
-#if !__OBJC2__
+#if 0 && !__OBJC2__
 static bool Messages_deleteProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
     Messages *internal(reinterpret_cast<Messages *>(JSObjectGetPrivate(object)));
     Class _class(internal->GetValue());
 
     CYPool pool;
-    const char *name(CYPoolCString(pool, property));
+    const char *name(CYPoolCString(pool, context, property));
 
     if (SEL sel = sel_getUid(name))
         if (objc_method *method = class_getInstanceMethod(_class, sel)) {
@@ -1416,11 +1462,17 @@ static void Messages_getPropertyNames(JSContextRef context, JSObjectRef object, 
     Messages *internal(reinterpret_cast<Messages *>(JSObjectGetPrivate(object)));
     Class _class(internal->GetValue());
 
+#ifdef __OBJC2__
     unsigned int size;
     objc_method **data(class_copyMethodList(_class, &size));
     for (size_t i(0); i != size; ++i)
         JSPropertyNameAccumulatorAddName(names, CYJSString(sel_getName(method_getName(data[i]))));
     free(data);
+#else
+    for (objc_method_list *methods(_class->methods); methods != NULL; methods = methods->method_next)
+        for (int i(0); i != methods->method_count; ++i)
+            JSPropertyNameAccumulatorAddName(names, CYJSString(sel_getName(method_getName(&methods->method_list[i]))));
+#endif
 }
 
 static bool Instance_hasProperty(JSContextRef context, JSObjectRef object, JSStringRef property) {
@@ -1431,7 +1483,7 @@ static bool Instance_hasProperty(JSContextRef context, JSObjectRef object, JSStr
         return true;
 
     CYPool pool;
-    NSString *name(CYCastNSString(pool, property));
+    NSString *name(CYCastNSString(pool, context, property));
 
     if (CYInternal *internal = CYInternal::Get(self))
         if (internal->HasProperty(context, property))
@@ -1448,8 +1500,10 @@ static bool Instance_hasProperty(JSContextRef context, JSObjectRef object, JSStr
 
     const char *string(CYPoolCString(pool, context, name));
 
+#ifdef __APPLE__
     if (class_getProperty(_class, string) != NULL)
         return true;
+#endif
 
     if (SEL sel = sel_getUid(string))
         if (CYImplements(self, _class, sel, true))
@@ -1466,7 +1520,7 @@ static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object,
         return Internal::Make(context, self, object);
 
     CYPool pool;
-    NSString *name(CYCastNSString(pool, property));
+    NSString *name(CYCastNSString(pool, context, property));
 
     if (CYInternal *internal = CYInternal::Get(self))
         if (JSValueRef value = internal->GetProperty(context, property))
@@ -1501,7 +1555,7 @@ static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStr
 
     CYPool pool;
 
-    NSString *name(CYCastNSString(pool, property));
+    NSString *name(CYCastNSString(pool, context, property));
     NSObject *data(CYCastNSObject(pool, context, value));
 
     CYPoolTry {
@@ -1559,7 +1613,7 @@ static bool Instance_deleteProperty(JSContextRef context, JSObjectRef object, JS
     id self(internal->GetValue());
 
     CYPoolTry {
-        NSString *name(CYCastNSString(NULL, property));
+        NSString *name(CYCastNSString(NULL, context, property));
         return [self cy$deleteProperty:name];
     } CYPoolCatch(NULL)
 } CYCatch }
@@ -1629,7 +1683,7 @@ static JSValueRef Internal_getProperty(JSContextRef context, JSObjectRef object,
     id self(internal->GetValue());
     const char *name(CYPoolCString(pool, context, property));
 
-    if (Ivar ivar = object_getInstanceVariable(self, name, NULL)) {
+    if (objc_ivar *ivar = object_getInstanceVariable(self, name, NULL)) {
         Type_privateData type(pool, ivar_getTypeEncoding(ivar));
         return CYFromFFI(context, type.type_, type.GetFFI(), reinterpret_cast<uint8_t *>(self) + ivar_getOffset(ivar));
     }
@@ -1644,7 +1698,7 @@ static bool Internal_setProperty(JSContextRef context, JSObjectRef object, JSStr
     id self(internal->GetValue());
     const char *name(CYPoolCString(pool, context, property));
 
-    if (Ivar ivar = object_getInstanceVariable(self, name, NULL)) {
+    if (objc_ivar *ivar = object_getInstanceVariable(self, name, NULL)) {
         Type_privateData type(pool, ivar_getTypeEncoding(ivar));
         CYPoolFFI(pool, context, type.type_, type.GetFFI(), reinterpret_cast<uint8_t *>(self) + ivar_getOffset(ivar), value);
         return true;
@@ -1658,7 +1712,7 @@ static void Internal_getPropertyNames_(Class _class, JSPropertyNameAccumulatorRe
         Internal_getPropertyNames_(super, names);
 
     unsigned int size;
-    Ivar *data(class_copyIvarList(_class, &size));
+    objc_ivar **data(class_copyIvarList(_class, &size));
     for (size_t i(0); i != size; ++i)
         JSPropertyNameAccumulatorAddName(names, CYJSString(ivar_getName(data[i])));
     free(data);
@@ -1681,13 +1735,14 @@ static JSValueRef Internal_callAsFunction_$cya(JSContextRef context, JSObjectRef
 
 static JSValueRef ObjectiveC_Classes_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     CYPool pool;
-    NSString *name(CYCastNSString(pool, property));
+    NSString *name(CYCastNSString(pool, context, property));
     if (Class _class = NSClassFromString(name))
         return CYMakeInstance(context, _class, true);
     return NULL;
 } CYCatch }
 
 static void ObjectiveC_Classes_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
+#ifdef __APPLE__
     size_t size(objc_getClassList(NULL, 0));
     Class *data(reinterpret_cast<Class *>(malloc(sizeof(Class) * size)));
 
@@ -1706,8 +1761,14 @@ static void ObjectiveC_Classes_getPropertyNames(JSContextRef context, JSObjectRe
 
   done:
     free(data);
+#else
+    void *state(NULL);
+    while (Class _class = objc_next_class(&state))
+        JSPropertyNameAccumulatorAddName(names, CYJSString(class_getName(_class)));
+#endif
 }
 
+#ifdef __OBJC2__
 static JSValueRef ObjectiveC_Image_Classes_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     const char *internal(reinterpret_cast<const char *>(JSObjectGetPrivate(object)));
 
@@ -1766,29 +1827,36 @@ static void ObjectiveC_Images_getPropertyNames(JSContextRef context, JSObjectRef
         JSPropertyNameAccumulatorAddName(names, CYJSString(data[i]));
     free(data);
 }
+#endif
 
 static JSValueRef ObjectiveC_Protocols_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     CYPool pool;
-    NSString *name(CYCastNSString(pool, property));
-    if (Protocol *protocol = NSProtocolFromString(name))
+    const char *name(CYPoolCString(pool, context, property));
+    if (Protocol *protocol = objc_getProtocol(name))
         return CYMakeInstance(context, protocol, true);
     return NULL;
 } CYCatch }
 
 static void ObjectiveC_Protocols_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
+#ifdef __OBJC2__
     unsigned int size;
     Protocol **data(objc_copyProtocolList(&size));
     for (size_t i(0); i != size; ++i)
         JSPropertyNameAccumulatorAddName(names, CYJSString(protocol_getName(data[i])));
     free(data);
+#else
+    // XXX: fix this!
+#endif
 }
 
+#ifdef __APPLE__
 static bool stret(ffi_type *ffi_type) {
     return ffi_type->type == FFI_TYPE_STRUCT && (
         ffi_type->size > OBJC_MAX_STRUCT_BY_VALUE ||
         struct_forward_array[ffi_type->size] != 0
     );
 }
+#endif
 
 JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, Class _class, SEL _cmd, size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception) { CYTry {
     const char *type;
@@ -1796,9 +1864,14 @@ JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, Class 
     if (_class == NULL)
         _class = object_getClass(self);
 
-    if (objc_method *method = class_getInstanceMethod(_class, _cmd))
+    IMP imp;
+
+    if (objc_method *method = class_getInstanceMethod(_class, _cmd)) {
+        imp = method_getImplementation(method);
         type = method_getTypeEncoding(method);
-    else {
+    } else {
+        imp = NULL;
+
         CYPoolTry {
             NSMethodSignature *method([self methodSignatureForSelector:_cmd]);
             if (method == nil)
@@ -1820,7 +1893,17 @@ JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, Class 
     ffi_cif cif;
     sig::sig_ffi_cif(pool, &sig::ObjectiveC, &signature, &cif);
 
-    void (*function)() = stret(cif.rtype) ? reinterpret_cast<void (*)()>(&objc_msgSendSuper_stret) : reinterpret_cast<void (*)()>(&objc_msgSendSuper);
+    if (imp == NULL)
+#ifdef __APPLE__
+        if (stret(cif.rtype))
+            imp = class_getMethodImplementation_stret(_class, _cmd);
+        else
+            imp = class_getMethodImplementation(_class, _cmd);
+#else
+        imp = objc_msg_lookup_super(&super, _cmd);
+#endif
+
+    void (*function)() = reinterpret_cast<void (*)()>(imp);
     return CYCallFunction(pool, context, 2, setup, count, arguments, initialize, exception, &signature, &cif, function);
 } CYCatch }
 
@@ -2001,7 +2084,7 @@ static JSValueRef Instance_callAsFunction_toJSON(JSContextRef context, JSObjectR
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
 
     CYPoolTry {
-        NSString *key(count == 0 ? nil : CYCastNSString(NULL, CYJSString(context, arguments[0])));
+        NSString *key(count == 0 ? nil : CYCastNSString(NULL, context, CYJSString(context, arguments[0])));
         // XXX: check for support of cy$toJSON?
         return CYCastJSValue(context, CYJSString([internal->GetValue() cy$toJSON:key]));
     } CYPoolCatch(NULL)
@@ -2033,7 +2116,7 @@ static JSValueRef Selector_callAsFunction_toCYON(JSContextRef context, JSObjectR
     const char *name(sel_getName(internal->GetValue()));
 
     CYPoolTry {
-        return CYCastJSValue(context, CYJSString([NSString stringWithFormat:@"@selector(%s)", name]));
+        return CYCastJSValue(context, CYJSString((NSString *) [NSString stringWithFormat:@"@selector(%s)", name]));
     } CYPoolCatch(NULL)
 } CYCatch }
 
@@ -2148,7 +2231,7 @@ void CYObjectiveC(JSContextRef context, JSObjectRef global) {
     definition.hasProperty = &Messages_hasProperty;
     definition.getProperty = &Messages_getProperty;
     definition.setProperty = &Messages_setProperty;
-#if !__OBJC2__
+#if 0 && !__OBJC2__
     definition.deleteProperty = &Messages_deleteProperty;
 #endif
     definition.getPropertyNames = &Messages_getPropertyNames;
@@ -2176,6 +2259,19 @@ void CYObjectiveC(JSContextRef context, JSObjectRef global) {
     ObjectiveC_Classes_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
+    definition.className = "ObjectiveC::Protocols";
+    definition.getProperty = &ObjectiveC_Protocols_getProperty;
+    definition.getPropertyNames = &ObjectiveC_Protocols_getPropertyNames;
+    ObjectiveC_Protocols_ = JSClassCreate(&definition);
+
+    JSObjectRef ObjectiveC(JSObjectMake(context, NULL, NULL));
+    CYSetProperty(context, global, CYJSString("ObjectiveC"), ObjectiveC);
+
+    CYSetProperty(context, ObjectiveC, CYJSString("classes"), JSObjectMake(context, ObjectiveC_Classes_, NULL));
+    CYSetProperty(context, ObjectiveC, CYJSString("protocols"), JSObjectMake(context, ObjectiveC_Protocols_, NULL));
+
+#ifdef __OBJC2__
+    definition = kJSClassDefinitionEmpty;
     definition.className = "ObjectiveC::Images";
     definition.getProperty = &ObjectiveC_Images_getProperty;
     definition.getPropertyNames = &ObjectiveC_Images_getPropertyNames;
@@ -2187,18 +2283,8 @@ void CYObjectiveC(JSContextRef context, JSObjectRef global) {
     definition.getPropertyNames = &ObjectiveC_Image_Classes_getPropertyNames;
     ObjectiveC_Image_Classes_ = JSClassCreate(&definition);
 
-    definition = kJSClassDefinitionEmpty;
-    definition.className = "ObjectiveC::Protocols";
-    definition.getProperty = &ObjectiveC_Protocols_getProperty;
-    definition.getPropertyNames = &ObjectiveC_Protocols_getPropertyNames;
-    ObjectiveC_Protocols_ = JSClassCreate(&definition);
-
-    JSObjectRef ObjectiveC(JSObjectMake(context, NULL, NULL));
-    CYSetProperty(context, global, CYJSString("ObjectiveC"), ObjectiveC);
-
-    CYSetProperty(context, ObjectiveC, CYJSString("classes"), JSObjectMake(context, ObjectiveC_Classes_, NULL));
     CYSetProperty(context, ObjectiveC, CYJSString("images"), JSObjectMake(context, ObjectiveC_Images_, NULL));
-    CYSetProperty(context, ObjectiveC, CYJSString("protocols"), JSObjectMake(context, ObjectiveC_Protocols_, NULL));
+#endif
 
     JSObjectRef Instance(JSObjectMakeConstructor(context, Instance_, &Instance_new));
     JSObjectRef Message(JSObjectMakeConstructor(context, Message_, NULL));
