@@ -140,12 +140,12 @@ JSStringRef CYCopyJSString(JSContextRef context, NSString *value) {
 #endif
 }
 
-JSStringRef CYCopyJSString(NSObject *value) {
+JSStringRef CYCopyJSString(JSContextRef context, NSObject *value) {
     if (value == nil)
         return NULL;
     // XXX: this definition scares me; is anyone using this?!
     NSString *string([value description]);
-    return CYCopyJSString(string);
+    return CYCopyJSString(context, string);
 }
 
 NSString *CYCopyNSString(const CYUTF8String &value) {
@@ -348,7 +348,7 @@ JSObjectRef CYMakeInstance(JSContextRef context, id object, bool transient) {
 - (NSObject *) cy$getProperty:(NSString *)name;
 - (bool) cy$setProperty:(NSString *)name to:(NSObject *)value;
 - (bool) cy$deleteProperty:(NSString *)name;
-- (void) cy$getPropertyNames:(JSPropertyNameAccumulatorRef)names;
+- (void) cy$getPropertyNames:(JSPropertyNameAccumulatorRef)names inContext:(JSContextRef)context;
 
 @end
 
@@ -686,8 +686,8 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
         return [self objectAtIndex:index];
 }
 
-- (void) cy$getPropertyNames:(JSPropertyNameAccumulatorRef)names {
-    [super cy$getPropertyNames:names];
+- (void) cy$getPropertyNames:(JSPropertyNameAccumulatorRef)names inContext:(JSContextRef)context {
+    [super cy$getPropertyNames:names inContext:context];
 
     for (size_t index(0), count([self count]); index != count; ++index) {
         id object([self objectAtIndex:index]);
@@ -737,8 +737,8 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     return [self objectForKey:name];
 }
 
-- (void) cy$getPropertyNames:(JSPropertyNameAccumulatorRef)names {
-    [super cy$getPropertyNames:names];
+- (void) cy$getPropertyNames:(JSPropertyNameAccumulatorRef)names inContext:(JSContextRef)context {
+    [super cy$getPropertyNames:names inContext:context];
 
 #ifdef __APPLE__
     for (NSString *key in self) {
@@ -746,7 +746,7 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     NSEnumerator *keys([self keyEnumerator]);
     while (NSString *key = [keys nextObject]) {
 #endif
-        JSPropertyNameAccumulatorAddName(names, CYJSString(key));
+        JSPropertyNameAccumulatorAddName(names, CYJSString(context, key));
     }
 }
 
@@ -908,7 +908,7 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     return false;
 }
 
-- (void) cy$getPropertyNames:(JSPropertyNameAccumulatorRef)names {
+- (void) cy$getPropertyNames:(JSPropertyNameAccumulatorRef)names inContext:(JSContextRef)context {
 }
 
 @end
@@ -1057,7 +1057,7 @@ JSValueRef CYCastJSValue(JSContextRef context, id value) { CYPoolTry {
 
 - (id) objectForKey:(id)key { CYObjectiveTry {
     // XXX: are NSDictionary keys always NSString *?
-    JSValueRef value(CYGetProperty(context_, object_, CYJSString((NSString *) key)));
+    JSValueRef value(CYGetProperty(context_, object_, CYJSString(context_, (NSString *) key)));
     if (JSValueIsUndefined(context_, value))
         return nil;
     return CYCastNSObject(NULL, context_, value) ?: [NSNull null];
@@ -1072,13 +1072,13 @@ JSValueRef CYCastJSValue(JSContextRef context, id value) { CYPoolTry {
 
 - (void) setObject:(id)object forKey:(id)key { CYObjectiveTry {
     // XXX: are NSDictionary keys always NSString *?
-    CYSetProperty(context_, object_, CYJSString((NSString *) key), CYCastJSValue(context_, object));
+    CYSetProperty(context_, object_, CYJSString(context_, (NSString *) key), CYCastJSValue(context_, object));
 } CYObjectiveCatch }
 
 - (void) removeObjectForKey:(id)key { CYObjectiveTry {
     JSValueRef exception(NULL);
     // XXX: are NSDictionary keys always NSString *?
-    (void) JSObjectDeleteProperty(context_, object_, CYJSString((NSString *) key), &exception);
+    (void) JSObjectDeleteProperty(context_, object_, CYJSString(context_, (NSString *) key), &exception);
     CYThrow(context_, exception);
 } CYObjectiveCatch }
 
@@ -1645,8 +1645,8 @@ static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, 
 
     CYPoolTry {
         // XXX: this is an evil hack to deal with NSProxy; fix elsewhere
-        if (CYImplements(self, _class, @selector(cy$getPropertyNames:), false))
-            [self cy$getPropertyNames:names];
+        if (CYImplements(self, _class, @selector(cy$getPropertyNames:inContext:), false))
+            [self cy$getPropertyNames:names inContext:context];
     } CYPoolCatch()
 }
 
@@ -2089,7 +2089,7 @@ static JSValueRef Instance_callAsFunction_toCYON(JSContextRef context, JSObjectR
         return NULL;
 
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
-    return CYCastJSValue(context, CYJSString(CYCastNSCYON(internal->GetValue())));
+    return CYCastJSValue(context, CYJSString(context, CYCastNSCYON(internal->GetValue())));
 } CYCatch }
 
 static JSValueRef Instance_callAsFunction_toJSON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -2105,7 +2105,7 @@ static JSValueRef Instance_callAsFunction_toJSON(JSContextRef context, JSObjectR
         else
             key = CYCastNSString(NULL, context, CYJSString(context, arguments[0]));
         // XXX: check for support of cy$toJSON?
-        return CYCastJSValue(context, CYJSString([internal->GetValue() cy$toJSON:key]));
+        return CYCastJSValue(context, CYJSString(context, [internal->GetValue() cy$toJSON:key]));
     } CYPoolCatch(NULL)
 } CYCatch }
 
@@ -2117,7 +2117,7 @@ static JSValueRef Instance_callAsFunction_toString(JSContextRef context, JSObjec
 
     CYPoolTry {
         // XXX: this seems like a stupid implementation; what if it crashes? why not use the CYONifier backend?
-        return CYCastJSValue(context, CYJSString([internal->GetValue() description]));
+        return CYCastJSValue(context, CYJSString(context, [internal->GetValue() description]));
     } CYPoolCatch(NULL)
 } CYCatch }
 
@@ -2135,7 +2135,7 @@ static JSValueRef Selector_callAsFunction_toCYON(JSContextRef context, JSObjectR
     const char *name(sel_getName(internal->GetValue()));
 
     CYPoolTry {
-        return CYCastJSValue(context, CYJSString((NSString *) [NSString stringWithFormat:@"@selector(%s)", name]));
+        return CYCastJSValue(context, CYJSString(context, [NSString stringWithFormat:@"@selector(%s)", name]));
     } CYPoolCatch(NULL)
 } CYCatch }
 
