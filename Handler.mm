@@ -151,3 +151,24 @@ extern "C" void CYHandleClient(apr_pool_t *pool, int socket) {
     _aprcall(apr_threadattr_create(&attr, client->pool_));
     _aprcall(apr_thread_create(&client->thread_, attr, &OnClient, client, client->pool_));
 }
+
+extern "C" void CYHandleServer(pid_t pid) {
+    CYInitialize();
+
+    int socket(_syscall(::socket(PF_UNIX, SOCK_STREAM, 0))); try {
+        struct sockaddr_un address;
+        memset(&address, 0, sizeof(address));
+        address.sun_family = AF_UNIX;
+        sprintf(address.sun_path, "/tmp/.s.cy.%u", pid);
+
+        _syscall(connect(socket, reinterpret_cast<sockaddr *>(&address), SUN_LEN(&address)));
+
+        apr_pool_t *pool;
+        apr_pool_create(&pool, NULL);
+
+        CYHandleClient(pool, socket);
+    } catch (const CYException &error) {
+        CYPool pool;
+        fprintf(stderr, "%s\n", error.PoolCString(pool));
+    }
+}

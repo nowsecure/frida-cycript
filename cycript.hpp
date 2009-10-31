@@ -51,6 +51,8 @@
 
 #include <sqlite3.h>
 
+void CYInitialize();
+
 bool CYRecvAll_(int socket, uint8_t *data, size_t size);
 bool CYSendAll_(int socket, const uint8_t *data, size_t size);
 
