@@ -2135,7 +2135,8 @@ static JSValueRef Selector_callAsFunction_toCYON(JSContextRef context, JSObjectR
     const char *name(sel_getName(internal->GetValue()));
 
     CYPoolTry {
-        return CYCastJSValue(context, CYJSString(context, [NSString stringWithFormat:@"@selector(%s)", name]));
+        NSString *string([NSString stringWithFormat:@"@selector(%s)", name]);
+        return CYCastJSValue(context, CYJSString(context, string));
     } CYPoolCatch(NULL)
 } CYCatch }
 

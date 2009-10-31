@@ -542,6 +542,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
             }
         } catch (...) {
             _syscall(close(server));
+            throw;
         }
     }
 #else
