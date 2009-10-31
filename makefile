@@ -29,8 +29,11 @@ code += Cycript.tab.o lex.cy.o
 code += Network.o Parser.o
 code += JavaScriptCore.o Library.o
 
+inject := 
+
 filters := C #E4X
 ldid := true
+entitle := $(ldid)
 dll := so
 apr := $(shell apr-1-config --link-ld)
 library := $(apr) -lffi -lsqlite3
@@ -130,9 +133,9 @@ libcycript.$(dll): $(code)
 	$(target)g++ $(flags) -shared -dynamiclib -o $@ $(filter %.o,$^) $(library) $(link)
 	$(ldid) $@
 
-cycript: Console.o libcycript.$(dll)
+cycript: Console.o libcycript.$(dll) $(inject)
 	$(target)g++ $(flags) -o $@ $(filter %.o,$^) -L. -lcycript $(console) $(link)
-	$(ldid) cycript
+	$(entitle) cycript
 
 package: $(deb)
 

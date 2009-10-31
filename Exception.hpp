@@ -42,6 +42,7 @@
 
 #include <JavaScriptCore/JSBase.h>
 
+#include <apr_pools.h>
 #include "Standard.hpp"
 
 struct CYException {
@@ -89,6 +90,12 @@ void CYThrow(JSContextRef context, JSValueRef value);
     do { \
         apr_status_t _aprstatus((expr)); \
         _assert(_aprstatus == APR_SUCCESS); \
+    } while (false)
+
+#define _krncall(expr) \
+    do { \
+        kern_return_t _krnstatus((expr)); \
+        _assert(_krnstatus == KERN_SUCCESS); \
     } while (false)
 
 #define _sqlcall(expr) ({ \

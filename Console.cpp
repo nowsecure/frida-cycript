@@ -354,9 +354,9 @@ static void *Map(const char *path, size_t *psize) {
     return base;
 }
 
-int main(int argc, char const * const argv[], char const * const envp[]) {
-    _aprcall(apr_app_initialize(&argc, &argv, &envp));
+void InjectLibrary(pid_t pid);
 
+int Main(int argc, char const * const argv[], char const * const envp[]) {
     bool tty(isatty(STDIN_FILENO));
     bool compile(false);
 
@@ -523,6 +523,8 @@ int main(int argc, char const * const argv[], char const * const envp[]) {
     if (pid == _not(pid_t))
         socket = -1;
     else {
+        InjectLibrary(pid);
+
         socket = _syscall(::socket(PF_UNIX, SOCK_STREAM, 0));
 
         struct sockaddr_un address;
@@ -588,4 +590,18 @@ int main(int argc, char const * const argv[], char const * const envp[]) {
     }
 
     return 0;
+}
+
+int main(int argc, char const * const argv[], char const * const envp[]) {
+    apr_status_t status(apr_app_initialize(&argc, &argv, &envp));
+    if (status != APR_SUCCESS) {
+        fprintf(stderr, "apr_app_initialize() != APR_SUCCESS\n");
+        return 1;
+    } else try {
+        return Main(argc, argv, envp);
+    } catch (const CYException &error) {
+        CYPool pool;
+        fprintf(stderr, "%s\n", error.PoolCString(pool));
+        return 1;
+    }
 }

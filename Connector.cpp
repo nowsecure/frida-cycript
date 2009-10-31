@@ -111,6 +111,8 @@ static void Unlink() {
 }
 
 MSInitialize {
+    CFLog(kCFLogLevelError, CFSTR("CY:Notice: library loaded"));
+
     _aprcall(apr_initialize());
 
     CYServer *server(new CYServer());

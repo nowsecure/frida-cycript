@@ -2,7 +2,6 @@ unicode identifier support (native and \u)
 support unions (right now 0-1 fields parsed as struct)
 \\\n escapes in strings aren't handled in the console
 look into what String is, and whether to bridge it
-the console frontend's error handling, well, doesn't
 some JS callbacks don't use exception pointers at all...
 a newline needs to not be allowed after a unary *
 finish implementing default xml namespace statement
