@@ -113,11 +113,11 @@ void Setup(CYOutput &out, CYDriver &driver) {
     driver.program_->Replace(context);
 }
 
-void Run(int socket, const char *data, size_t size, FILE *fout = NULL, bool expand = false) {
+void Run(int client, const char *data, size_t size, FILE *fout = NULL, bool expand = false) {
     CYPool pool;
 
     const char *json;
-    if (socket == -1) {
+    if (client == -1) {
         mode_ = Running;
 #ifdef CY_EXECUTE
         json = CYExecute(pool, data);
@@ -129,15 +129,15 @@ void Run(int socket, const char *data, size_t size, FILE *fout = NULL, bool expa
             size = strlen(json);
     } else {
         mode_ = Sending;
-        CYSendAll(socket, &size, sizeof(size));
-        CYSendAll(socket, data, size);
+        CYSendAll(client, &size, sizeof(size));
+        CYSendAll(client, data, size);
         mode_ = Waiting;
-        CYRecvAll(socket, &size, sizeof(size));
+        CYRecvAll(client, &size, sizeof(size));
         if (size == _not(size_t))
             json = NULL;
         else {
             char *temp(new(pool) char[size + 1]);
-            CYRecvAll(socket, temp, size);
+            CYRecvAll(client, temp, size);
             temp[size] = '\0';
             json = temp;
         }
@@ -170,11 +170,11 @@ void Run(int socket, const char *data, size_t size, FILE *fout = NULL, bool expa
     }
 }
 
-void Run(int socket, std::string &code, FILE *fout = NULL, bool expand = false) {
-    Run(socket, code.c_str(), code.size(), fout, expand);
+void Run(int client, std::string &code, FILE *fout = NULL, bool expand = false) {
+    Run(client, code.c_str(), code.size(), fout, expand);
 }
 
-static void Console(apr_pool_t *pool, int socket) {
+static void Console(apr_pool_t *pool, int client) {
     passwd *passwd;
     if (const char *username = getenv("LOGNAME"))
         passwd = getpwnam(username);
@@ -310,7 +310,7 @@ static void Console(apr_pool_t *pool, int socket) {
             if (driver.program_ == NULL)
                 goto restart;
 
-            if (socket != -1)
+            if (client != -1)
                 code = command;
             else {
                 std::ostringstream str;
@@ -327,7 +327,7 @@ static void Console(apr_pool_t *pool, int socket) {
         if (debug)
             std::cout << code << std::endl;
 
-        Run(socket, code, fout, expand);
+        Run(client, code, fout, expand);
     }
 
     _syscall(close(_syscall(open(histfile, O_CREAT | O_WRONLY, 0600))));
@@ -446,14 +446,14 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
                                 size += read;
                                 if (size == sizeof(value)) {
                                     pid = _not(pid_t);
-                                    goto pclose;
+                                    goto fail;
                                 }
                             }
                         }
 
                       size:
                         if (size == 0)
-                            goto pclose;
+                            goto fail;
                         if (value[size - 1] == '\n') {
                             --size;
                             goto size;
@@ -462,10 +462,8 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
                         value[size] = '\0';
                         size = strlen(value);
                         pid = strtoul(value, &end, 0);
-                        if (value + size != end)
+                        if (value + size != end) fail:
                             pid = _not(pid_t);
-
-                      pclose:
                         _syscall(pclose(pids));
                     }
 
@@ -517,29 +515,41 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
     }
 #endif
 
-    int socket;
+    int client;
 
 #ifdef CY_ATTACH
     if (pid == _not(pid_t))
-        socket = -1;
+        client = -1;
     else {
-        InjectLibrary(pid);
+        int server(_syscall(socket(PF_UNIX, SOCK_STREAM, 0))); try {
+            struct sockaddr_un address;
+            memset(&address, 0, sizeof(address));
+            address.sun_family = AF_UNIX;
 
-        socket = _syscall(::socket(PF_UNIX, SOCK_STREAM, 0));
+            sprintf(address.sun_path, "/tmp/.s.cy.%u", getpid());
 
-        struct sockaddr_un address;
-        memset(&address, 0, sizeof(address));
-        address.sun_family = AF_UNIX;
-        sprintf(address.sun_path, "/tmp/.s.cy.%u", pid);
+            _syscall(bind(server, reinterpret_cast<sockaddr *>(&address), SUN_LEN(&address)));
+            _syscall(chmod(address.sun_path, 0777));
 
-        _syscall(connect(socket, reinterpret_cast<sockaddr *>(&address), SUN_LEN(&address)));
+            try {
+                _syscall(listen(server, 1));
+                InjectLibrary(pid);
+                client = _syscall(accept(server, NULL, NULL));
+            } catch (...) {
+                // XXX: exception?
+                unlink(address.sun_path);
+                throw;
+            }
+        } catch (...) {
+            _syscall(close(server));
+        }
     }
 #else
-    socket = -1;
+    client = -1;
 #endif
 
     if (script == NULL && tty)
-        Console(pool, socket);
+        Console(pool, client);
     else {
         CYDriver driver(script ?: "<stdin>");
         cy::parser parser(driver);
@@ -574,8 +584,8 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
             for (CYDriver::Errors::const_iterator i(driver.errors_.begin()); i != driver.errors_.end(); ++i)
                 std::cerr << i->location_.begin << ": " << i->message_ << std::endl;
         } else if (driver.program_ != NULL)
-            if (socket != -1)
-                Run(socket, start, end - start, stdout);
+            if (client != -1)
+                Run(client, start, end - start, stdout);
             else {
                 std::ostringstream str;
                 CYOutput out(str);
@@ -585,7 +595,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
                 if (compile)
                     std::cout << code;
                 else
-                    Run(socket, code, stdout);
+                    Run(client, code, stdout);
             }
     }
 

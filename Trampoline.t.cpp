@@ -13,13 +13,15 @@ extern "C" void Start(Baton *baton) {
     baton->pthread_create(&thread, NULL, &Routine, baton);
 
     void *result;
-    baton->pthread_detach(thread);
+    baton->pthread_join(thread, &result);
 
     baton->thread_terminate(baton->mach_thread_self());
 }
 
 void *Routine(void *arg) {
     Baton *baton(reinterpret_cast<Baton *>(arg));
-    baton->dlopen(baton->library, RTLD_LAZY | RTLD_GLOBAL);
+    void *handle(baton->dlopen(baton->library, RTLD_LAZY | RTLD_LOCAL));
+    void (*HandleServer)(pid_t) = reinterpret_cast<void (*)(pid_t)>(baton->dlsym(handle, "CYHandleServer"));
+    HandleServer(baton->pid);
     return arg;
 }

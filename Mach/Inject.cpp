@@ -7,6 +7,7 @@ extern "C" {
 
 #include <cstdio>
 #include <pthread.h>
+#include <unistd.h>
 
 #include "Baton.hpp"
 #include "Exception.hpp"
@@ -25,7 +26,8 @@ static void nlset(Type_ &function, struct nlist *nl, size_t index) {
 }
 
 void InjectLibrary(pid_t pid) {
-    const char *library("/Library/MobileSubstrate/DynamicLibraries/Cycript.dylib");
+    // XXX: break this into the build environment
+    const char *library("/usr/lib/libcycript.dylib");
 
     static const size_t Stack_(8 * 1024);
     size_t length(strlen(library) + 1), depth(sizeof(Baton) + length);
@@ -33,20 +35,25 @@ void InjectLibrary(pid_t pid) {
 
     CYPool pool;
     uint8_t *local(reinterpret_cast<uint8_t *>(apr_palloc(pool, depth)));
-
     Baton *baton(reinterpret_cast<Baton *>(local));
-    baton->pthread_create = &pthread_create;
-    baton->pthread_detach = &pthread_detach;
-    baton->dlopen = &dlopen;
-    baton->mach_thread_self = &mach_thread_self;
-    baton->thread_terminate = &thread_terminate;
-    memcpy(baton->library, library, length);
 
     struct nlist nl[2];
     memset(nl, 0, sizeof(nl));
     nl[0].n_un.n_name = (char *) "__pthread_set_self";
     nlist("/usr/lib/libSystem.B.dylib", nl);
     nlset(baton->_pthread_set_self, nl, 0);
+
+    baton->pthread_create = &pthread_create;
+    baton->pthread_join = &pthread_join;
+
+    baton->dlopen = &dlopen;
+    baton->dlsym = &dlsym;
+
+    baton->mach_thread_self = &mach_thread_self;
+    baton->thread_terminate = &thread_terminate;
+
+    baton->pid = getpid();
+    memcpy(baton->library, library, length);
 
     vm_size_t size(depth + Stack_);
 
@@ -71,14 +78,19 @@ void InjectLibrary(pid_t pid) {
 
 #if defined(__arm__)
     arm_thread_state_t state;
-    memset(&state, 0, sizeof(state));
-
     flavor = ARM_THREAD_STATE;
     count = ARM_THREAD_STATE_COUNT;
+#else
+    #error XXX: implement
+#endif
 
-    _krncall(thread_get_state(thread, flavor, reinterpret_cast<thread_state_t>(&state), &count));
-    _assert(count == ARM_THREAD_STATE_COUNT);
+    memset(&state, 0, sizeof(state));
 
+    mach_msg_type_number_t read(count);
+    _krncall(thread_get_state(thread, flavor, reinterpret_cast<thread_state_t>(&state), &read));
+    _assert(count == count);
+
+#if defined(__arm__)
     state.r[0] = data;
     state.r[1] = RTLD_LAZY | RTLD_GLOBAL;
     state.sp = stack + Stack_;
@@ -88,15 +100,12 @@ void InjectLibrary(pid_t pid) {
         state.pc &= ~0x1;
         state.cpsr |= 0x20;
     }
-
-    _krncall(thread_set_state(thread, flavor, reinterpret_cast<thread_state_t>(&state), count));
 #else
     #error XXX: implement
 #endif
 
+    _krncall(thread_set_state(thread, flavor, reinterpret_cast<thread_state_t>(&state), count));
     _krncall(thread_resume(thread));
 
-    //_krncall(thread_create_running(task, flavor, reinterpret_cast<thread_state_t>(&state), count, &thread));
-
-    //_krncall(mach_port_deallocate(self, task));
+    _krncall(mach_port_deallocate(self, task));
 }

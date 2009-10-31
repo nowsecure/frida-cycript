@@ -61,6 +61,11 @@
 #include <sstream>
 #include <cmath>
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/un.h>
+
 #include "Parser.hpp"
 #include "Cycript.tab.hh"
 
@@ -1447,6 +1452,27 @@ CYJSError::CYJSError(JSContextRef context, const char *format, ...) {
     JSValueRef exception(NULL);
     value_ = JSObjectCallAsConstructor(context, Error_, 1, arguments, &exception);
     CYThrow(context, exception);
+}
+
+extern "C" void CYHandleServer(pid_t pid) {
+    CYInitialize();
+
+    int socket(_syscall(::socket(PF_UNIX, SOCK_STREAM, 0))); try {
+        struct sockaddr_un address;
+        memset(&address, 0, sizeof(address));
+        address.sun_family = AF_UNIX;
+        sprintf(address.sun_path, "/tmp/.s.cy.%u", pid);
+
+        _syscall(connect(socket, reinterpret_cast<sockaddr *>(&address), SUN_LEN(&address)));
+
+        apr_pool_t *pool;
+        apr_pool_create(&pool, NULL);
+
+        CYHandleClient(pool, socket);
+    } catch (const CYException &error) {
+        CYPool pool;
+        fprintf(stderr, "%s\n", error.PoolCString(pool));
+    }
 }
 
 JSGlobalContextRef CYGetJSContext() {
