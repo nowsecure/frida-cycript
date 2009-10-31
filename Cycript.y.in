@@ -307,6 +307,27 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %token <identifier_> XML "xml"
 @end
 
+@begin ObjectiveC
+%type <expression_> AdditiveExpressionNoWC
+%type <expression_> AssigneeExpressionNoWC
+%type <expression_> AssignmentExpressionNoWC
+%type <expression_> BitwiseANDExpressionNoWC
+%type <expression_> BitwiseXORExpressionNoWC
+%type <expression_> BitwiseORExpressionNoWC
+%type <expression_> ConditionalExpressionNoWC
+%type <expression_> EqualityExpressionNoWC
+%type <expression_> LeftHandSideExpressionNoWC
+%type <expression_> LogicalANDExpressionNoWC
+%type <expression_> LogicalORExpressionNoWC
+%type <expression_> MemberExpressionNoWC
+%type <expression_> MultiplicativeExpressionNoWC
+%type <expression_> NewExpressionNoWC
+%type <expression_> PostfixExpressionNoWC
+%type <expression_> RelationalExpressionNoWC
+%type <expression_> ShiftExpressionNoWC
+%type <expression_> UnaryExpressionNoWC
+@end
+
 %token <identifier_> Identifier_
 %token <number_> NumericLiteral
 %token <string_> StringLiteral
@@ -314,7 +335,6 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 
 %type <expression_> AdditiveExpression
 %type <expression_> AdditiveExpressionNoBF
-%type <expression_> AdditiveExpressionNoWC
 %type <argument_> ArgumentList
 %type <argument_> ArgumentList_
 %type <argument_> ArgumentListOpt
@@ -323,27 +343,22 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> AssigneeExpression
 %type <expression_> AssigneeExpressionNoBF
 %type <expression_> AssigneeExpressionNoRE
-%type <expression_> AssigneeExpressionNoWC
 %type <expression_> AssignmentExpression
 %type <assignment_> AssignmentExpression_
 %type <expression_> AssignmentExpressionNoBF
 %type <expression_> AssignmentExpressionNoIn
-%type <expression_> AssignmentExpressionNoWC
 %type <expression_> BitwiseANDExpression
 %type <expression_> BitwiseANDExpressionNoBF
 %type <expression_> BitwiseANDExpressionNoIn
-%type <expression_> BitwiseANDExpressionNoWC
 %type <statement_> Block
 %type <statement_> Block_
 %type <boolean_> BooleanLiteral
 %type <expression_> BitwiseORExpression
 %type <expression_> BitwiseORExpressionNoBF
 %type <expression_> BitwiseORExpressionNoIn
-%type <expression_> BitwiseORExpressionNoWC
 %type <expression_> BitwiseXORExpression
 %type <expression_> BitwiseXORExpressionNoBF
 %type <expression_> BitwiseXORExpressionNoIn
-%type <expression_> BitwiseXORExpressionNoWC
 %type <statement_> BreakStatement
 %type <expression_> CallExpression
 %type <expression_> CallExpressionNoBF
@@ -357,7 +372,6 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> ConditionalExpression
 %type <expression_> ConditionalExpressionNoBF
 %type <expression_> ConditionalExpressionNoIn
-%type <expression_> ConditionalExpressionNoWC
 %type <statement_> ContinueStatement
 %type <clause_> DefaultClause
 %type <statement_> DoWhileStatement
@@ -370,7 +384,6 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> EqualityExpression
 %type <expression_> EqualityExpressionNoBF
 %type <expression_> EqualityExpressionNoIn
-%type <expression_> EqualityExpressionNoWC
 %type <expression_> Expression
 %type <expression_> ExpressionOpt
 %type <compound_> Expression_
@@ -403,7 +416,6 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> LeftHandSideExpression
 %type <expression_> LeftHandSideExpressionNoBF
 %type <expression_> LeftHandSideExpressionNoRE
-%type <expression_> LeftHandSideExpressionNoWC
 //%type <statement_> LetStatement
 %type <literal_> Literal
 %type <literal_> LiteralNoRE
@@ -411,31 +423,25 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> LogicalANDExpression
 %type <expression_> LogicalANDExpressionNoBF
 %type <expression_> LogicalANDExpressionNoIn
-%type <expression_> LogicalANDExpressionNoWC
 %type <expression_> LogicalORExpression
 %type <expression_> LogicalORExpressionNoBF
 %type <expression_> LogicalORExpressionNoIn
-%type <expression_> LogicalORExpressionNoWC
 %type <member_> MemberAccess
 %type <expression_> MemberExpression
 %type <expression_> MemberExpression_
 %type <expression_> MemberExpressionNoBF
 %type <expression_> MemberExpressionNoRE
-%type <expression_> MemberExpressionNoWC
 %type <expression_> MultiplicativeExpression
 %type <expression_> MultiplicativeExpressionNoBF
-%type <expression_> MultiplicativeExpressionNoWC
 %type <expression_> NewExpression
 %type <expression_> NewExpression_
 %type <expression_> NewExpressionNoBF
 %type <expression_> NewExpressionNoRE
-%type <expression_> NewExpressionNoWC
 %type <null_> NullLiteral
 %type <literal_> ObjectLiteral
 %type <expression_> PostfixExpression
 %type <expression_> PostfixExpressionNoBF
 %type <expression_> PostfixExpressionNoRE
-%type <expression_> PostfixExpressionNoWC
 %type <expression_> PrimaryExpression
 %type <expression_> PrimaryExpressionNo
 %type <expression_> PrimaryExpressionNoBF
@@ -456,12 +462,10 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <infix_> RelationalExpression_
 %type <expression_> RelationalExpressionNoBF
 %type <expression_> RelationalExpressionNoIn
-%type <expression_> RelationalExpressionNoWC
 %type <infix_> RelationalExpressionNoIn_
 %type <statement_> ReturnStatement
 %type <expression_> ShiftExpression
 %type <expression_> ShiftExpressionNoBF
-%type <expression_> ShiftExpressionNoWC
 %type <statement_> SourceElement
 %type <statement_> SourceElement_
 %type <statement_> SourceElements
@@ -477,7 +481,6 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> UnaryExpression_
 %type <expression_> UnaryExpressionNoBF
 %type <expression_> UnaryExpressionNoRE
-%type <expression_> UnaryExpressionNoWC
 %type <declaration_> VariableDeclaration
 %type <declaration_> VariableDeclarationNoIn
 %type <declarations_> VariableDeclarationList
@@ -838,12 +841,14 @@ MemberExpressionNoRE
     | MemberExpression_ { $$ = $1; }
     ;
 
+@begin ObjectiveC
 MemberExpressionNoWC
     : PrimaryExpression { $$ = $1; }
     | LexSetRegExp FunctionExpression { $$ = $2; }
     | MemberExpression MemberAccess { $2->SetLeft($1); $$ = $2; }
     | LexSetRegExp MemberExpression_ { $$ = $2; }
     ;
+@end
 
 NewExpression_
     : "new" NewExpression { $$ = new(driver.pool_) CYNew($2, NULL); }
@@ -864,10 +869,12 @@ NewExpressionNoRE
     | NewExpression_ { $$ = $1; }
     ;
 
+@begin ObjectiveC
 NewExpressionNoWC
     : MemberExpressionNoWC { $$ = $1; }
     | LexSetRegExp NewExpression_ { $$ = $2; }
     ;
+@end
 
 CallExpression
     : PrimaryExpressionNoWC Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
@@ -920,10 +927,12 @@ LeftHandSideExpressionNoRE
     | CallExpressionNoRE { $$ = $1; }
     ;
 
+@begin ObjectiveC
 LeftHandSideExpressionNoWC
     : NewExpressionNoWC { $$ = $1; }
     | CallExpression { $$ = $1; }
     ;
+@end
 /* }}} */
 /* 11.3 Postfix Expressions {{{ */
 PostfixExpression
@@ -944,11 +953,13 @@ PostfixExpressionNoRE
     | LeftHandSideExpressionNoRE "--" { $$ = new(driver.pool_) CYPostDecrement($1); }
     ;
 
+@begin ObjectiveC
 PostfixExpressionNoWC
     : AssigneeExpressionNoWC { $$ = $1; }
     | LeftHandSideExpression "++" { $$ = new(driver.pool_) CYPostIncrement($1); }
     | LeftHandSideExpression "--" { $$ = new(driver.pool_) CYPostDecrement($1); }
     ;
+@end
 /* }}} */
 /* 11.4 Unary Operators {{{ */
 UnaryExpression_
@@ -980,10 +991,12 @@ UnaryExpressionNoRE
     | UnaryExpression_ { $$ = $1; }
     ;
 
+@begin ObjectiveC
 UnaryExpressionNoWC
     : PostfixExpressionNoWC { $$ = $1; }
     | LexSetRegExp UnaryExpression_ { $$ = $2; }
     ;
+@end
 /* }}} */
 /* 11.5 Multiplicative Operators {{{ */
 MultiplicativeExpression
@@ -1000,12 +1013,14 @@ MultiplicativeExpressionNoBF
     | MultiplicativeExpressionNoBF "%" UnaryExpression { $$ = new(driver.pool_) CYModulus($1, $3); }
     ;
 
+@begin ObjectiveC
 MultiplicativeExpressionNoWC
     : UnaryExpressionNoWC { $$ = $1; }
     | MultiplicativeExpression "*" UnaryExpression { $$ = new(driver.pool_) CYMultiply($1, $3); }
     | MultiplicativeExpression "/" UnaryExpression { $$ = new(driver.pool_) CYDivide($1, $3); }
     | MultiplicativeExpression "%" UnaryExpression { $$ = new(driver.pool_) CYModulus($1, $3); }
     ;
+@end
 /* }}} */
 /* 11.6 Additive Operators {{{ */
 AdditiveExpression
@@ -1020,11 +1035,13 @@ AdditiveExpressionNoBF
     | AdditiveExpressionNoBF "-" MultiplicativeExpression { $$ = new(driver.pool_) CYSubtract($1, $3); }
     ;
 
+@begin ObjectiveC
 AdditiveExpressionNoWC
     : MultiplicativeExpressionNoWC { $$ = $1; }
     | AdditiveExpression "+" MultiplicativeExpression { $$ = new(driver.pool_) CYAdd($1, $3); }
     | AdditiveExpression "-" MultiplicativeExpression { $$ = new(driver.pool_) CYSubtract($1, $3); }
     ;
+@end
 /* }}} */
 /* 11.7 Bitwise Shift Operators {{{ */
 ShiftExpression
@@ -1041,12 +1058,14 @@ ShiftExpressionNoBF
     | ShiftExpressionNoBF ">>>" AdditiveExpression { $$ = new(driver.pool_) CYShiftRightUnsigned($1, $3); }
     ;
 
+@begin ObjectiveC
 ShiftExpressionNoWC
     : AdditiveExpressionNoWC { $$ = $1; }
     | ShiftExpression "<<" AdditiveExpression { $$ = new(driver.pool_) CYShiftLeft($1, $3); }
     | ShiftExpression ">>" AdditiveExpression { $$ = new(driver.pool_) CYShiftRightSigned($1, $3); }
     | ShiftExpression ">>>" AdditiveExpression { $$ = new(driver.pool_) CYShiftRightUnsigned($1, $3); }
     ;
+@end
 /* }}} */
 /* 11.8 Relational Operators {{{ */
 RelationalExpressionNoIn_
@@ -1077,10 +1096,12 @@ RelationalExpressionNoBF
     | RelationalExpressionNoBF RelationalExpression_ { $2->SetLeft($1); $$ = $2; }
     ;
 
+@begin ObjectiveC
 RelationalExpressionNoWC
     : ShiftExpressionNoWC { $$ = $1; }
     | RelationalExpression RelationalExpression_ { $2->SetLeft($1); $$ = $2; }
     ;
+@end
 /* }}} */
 /* 11.9 Equality Operators {{{ */
 EqualityExpression
@@ -1107,6 +1128,7 @@ EqualityExpressionNoBF
     | EqualityExpressionNoBF "!==" RelationalExpression { $$ = new(driver.pool_) CYNotIdentical($1, $3); }
     ;
 
+@begin ObjectiveC
 EqualityExpressionNoWC
     : RelationalExpressionNoWC { $$ = $1; }
     | EqualityExpression "==" RelationalExpression { $$ = new(driver.pool_) CYEqual($1, $3); }
@@ -1114,6 +1136,7 @@ EqualityExpressionNoWC
     | EqualityExpression "===" RelationalExpression { $$ = new(driver.pool_) CYIdentical($1, $3); }
     | EqualityExpression "!==" RelationalExpression { $$ = new(driver.pool_) CYNotIdentical($1, $3); }
     ;
+@end
 /* }}} */
 /* 11.10 Binary Bitwise Operators {{{ */
 BitwiseANDExpression
@@ -1131,10 +1154,12 @@ BitwiseANDExpressionNoBF
     | BitwiseANDExpressionNoBF "&" EqualityExpression { $$ = new(driver.pool_) CYBitwiseAnd($1, $3); }
     ;
 
+@begin ObjectiveC
 BitwiseANDExpressionNoWC
     : EqualityExpressionNoWC { $$ = $1; }
     | BitwiseANDExpression "&" EqualityExpression { $$ = new(driver.pool_) CYBitwiseAnd($1, $3); }
     ;
+@end
 
 BitwiseXORExpression
     : BitwiseANDExpression { $$ = $1; }
@@ -1151,10 +1176,12 @@ BitwiseXORExpressionNoBF
     | BitwiseXORExpressionNoBF "^" BitwiseANDExpression { $$ = new(driver.pool_) CYBitwiseXOr($1, $3); }
     ;
 
+@begin ObjectiveC
 BitwiseXORExpressionNoWC
     : BitwiseANDExpressionNoWC { $$ = $1; }
     | BitwiseXORExpression "^" BitwiseANDExpression { $$ = new(driver.pool_) CYBitwiseXOr($1, $3); }
     ;
+@end
 
 BitwiseORExpression
     : BitwiseXORExpression { $$ = $1; }
@@ -1171,10 +1198,12 @@ BitwiseORExpressionNoBF
     | BitwiseORExpressionNoBF "|" BitwiseXORExpression { $$ = new(driver.pool_) CYBitwiseOr($1, $3); }
     ;
 
+@begin ObjectiveC
 BitwiseORExpressionNoWC
     : BitwiseXORExpressionNoWC { $$ = $1; }
     | BitwiseORExpression "|" BitwiseXORExpression { $$ = new(driver.pool_) CYBitwiseOr($1, $3); }
     ;
+@end
 /* }}} */
 /* 11.11 Binary Logical Operators {{{ */
 LogicalANDExpression
@@ -1192,10 +1221,12 @@ LogicalANDExpressionNoBF
     | LogicalANDExpressionNoBF "&&" BitwiseORExpression { $$ = new(driver.pool_) CYLogicalAnd($1, $3); }
     ;
 
+@begin ObjectiveC
 LogicalANDExpressionNoWC
     : BitwiseORExpressionNoWC { $$ = $1; }
     | LogicalANDExpression "&&" BitwiseORExpression { $$ = new(driver.pool_) CYLogicalAnd($1, $3); }
     ;
+@end
 
 LogicalORExpression
     : LogicalANDExpression { $$ = $1; }
@@ -1212,10 +1243,12 @@ LogicalORExpressionNoBF
     | LogicalORExpressionNoBF "||" LogicalANDExpression { $$ = new(driver.pool_) CYLogicalOr($1, $3); }
     ;
 
+@begin ObjectiveC
 LogicalORExpressionNoWC
     : LogicalANDExpressionNoWC { $$ = $1; }
     | LogicalORExpression "||" LogicalANDExpression { $$ = new(driver.pool_) CYLogicalOr($1, $3); }
     ;
+@end
 /* }}} */
 /* 11.12 Conditional Operator ( ? : ) {{{ */
 ConditionalExpression
@@ -1233,10 +1266,12 @@ ConditionalExpressionNoBF
     | LogicalORExpressionNoBF "?" AssignmentExpression ":" AssignmentExpression { $$ = new(driver.pool_) CYCondition($1, $3, $5); }
     ;
 
+@begin ObjectiveC
 ConditionalExpressionNoWC
     : LogicalORExpressionNoWC { $$ = $1; }
     | LogicalORExpression "?" AssignmentExpression ":" AssignmentExpression { $$ = new(driver.pool_) CYCondition($1, $3, $5); }
     ;
+@end
 /* }}} */
 /* 11.13 Assignment Operators {{{ */
 AssignmentExpression_
@@ -1269,10 +1304,12 @@ AssigneeExpressionNoRE
     | UnaryAssigneeExpression { $$ = $1; }
     ;
 
+@begin ObjectiveC
 AssigneeExpressionNoWC
     : LeftHandSideExpressionNoWC { $$ = $1; }
     | LexSetRegExp UnaryAssigneeExpression { $$ = $2; }
     ;
+@end
 
 AssignmentExpression
     : ConditionalExpression { $$ = $1; }
@@ -1300,10 +1337,12 @@ AssignmentExpressionNoBF
     | AssigneeExpressionNoBF AssignmentExpression_ { $2->SetLeft($1); $$ = $2; }
     ;
 
+@begin ObjectiveC
 AssignmentExpressionNoWC
     : ConditionalExpressionNoWC { $$ = $1; }
     | AssigneeExpression AssignmentExpression_ { $2->SetLeft($1); $$ = $2; }
     ;
+@end
 /* }}} */
 /* 11.14 Comma Operator {{{ */
 Expression_

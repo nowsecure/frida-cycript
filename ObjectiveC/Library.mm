@@ -1,4 +1,6 @@
+#ifdef __APPLE__
 #include <substrate.h>
+#endif
 
 #include "ObjectiveC/Internal.hpp"
 
@@ -220,12 +222,12 @@ static JSObjectRef Instance_prototype_;
 #ifdef __APPLE__
 static Class NSCFBoolean_;
 static Class NSCFType_;
+static Class NSMessageBuilder_;
+static Class NSZombie_;
 #endif
 
 static Class NSArray_;
 static Class NSDictionary_;
-static Class NSMessageBuilder_;
-static Class NSZombie_;
 static Class Object_;
 
 static Type_privateData *Object_type;
@@ -370,13 +372,16 @@ NSString *CYCastNSCYON(id value) {
                 string = [value cy$toCYON];
             else goto fail;
         } else fail: {
-            if (value == NSZombie_)
+            if (false);
+#ifdef __APPLE__
+            else if (value == NSZombie_)
                 string = @"_NSZombie_";
             else if (_class == NSZombie_)
                 string = [NSString stringWithFormat:@"<_NSZombie_: %p>", value];
             // XXX: frowny /in/ the pants
             else if (value == NSMessageBuilder_ || value == Object_)
                 string = nil;
+#endif
             else
                 string = [NSString stringWithFormat:@"%@", value];
         }
@@ -1291,21 +1296,16 @@ static JSValueRef CYObjectiveC_FromFFI(JSContextRef context, sig::Type *type, ff
     }
 } CYObjectiveCatch }
 
-static CYHooks CYObjectiveCHooks = {
-    &CYObjectiveC_ExecuteStart,
-    &CYObjectiveC_ExecuteEnd,
-    &CYObjectiveC_RuntimeProperty,
-    &CYObjectiveC_CallFunction,
-    &CYObjectiveC_PoolFFI,
-    &CYObjectiveC_FromFFI,
-};
-
 static bool CYImplements(id object, Class _class, SEL selector, bool devoid) {
     if (objc_method *method = class_getInstanceMethod(_class, selector)) {
         if (!devoid)
             return true;
+#ifdef __OBJC2__
         char type[16];
         method_getReturnType(method, type, sizeof(type));
+#else
+        const char *type(method_getTypeEncoding(method));
+#endif
         if (type[0] != 'v')
             return true;
     }
@@ -1433,8 +1433,16 @@ static bool Messages_setProperty(JSContextRef context, JSObjectRef object, JSStr
 
     if (method != NULL)
         method_setImplementation(method, imp);
-    else
-        class_replaceMethod(_class, sel, imp, type);
+    else {
+#ifdef GNU_RUNTIME
+        GSMethodList list(GSAllocMethodList(1));
+        GSAppendMethodToList(list, sel, type, imp, YES);
+        GSAddMethodList(_class, list, YES);
+        GSFlushMethodCacheForClass(_class);
+#else
+        class_addMethod(_class, sel, imp, type);
+#endif
+    }
 
     return true;
 }
@@ -1711,11 +1719,17 @@ static void Internal_getPropertyNames_(Class _class, JSPropertyNameAccumulatorRe
     if (Class super = class_getSuperclass(_class))
         Internal_getPropertyNames_(super, names);
 
+#ifdef __OBJC2__
     unsigned int size;
     objc_ivar **data(class_copyIvarList(_class, &size));
     for (size_t i(0); i != size; ++i)
         JSPropertyNameAccumulatorAddName(names, CYJSString(ivar_getName(data[i])));
     free(data);
+#else
+    if (objc_ivar_list *ivars = _class->ivars)
+        for (int i(0); i != ivars->ivar_count; ++i)
+            JSPropertyNameAccumulatorAddName(names, CYJSString(ivar_getName(&ivars->ivar_list[i])));
+#endif
 }
 
 static void Internal_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
@@ -1946,6 +1960,7 @@ static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObje
 } CYCatch }
 
 /* Hook: objc_registerClassPair {{{ */
+#ifdef __OBJC2__
 // XXX: replace this with associated objects
 
 MSHook(void, CYDealloc, id self, SEL sel) {
@@ -1977,6 +1992,7 @@ static JSValueRef objc_registerClassPair_(JSContextRef context, JSObjectRef obje
     $objc_registerClassPair(_class);
     return CYJSUndefined(context);
 } CYCatch }
+#endif
 /* }}} */
 
 static JSValueRef Selector_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
@@ -2064,9 +2080,9 @@ static JSValueRef Instance_getProperty_protocol(JSContextRef context, JSObjectRe
 static JSValueRef Instance_getProperty_messages(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
     id self(internal->GetValue());
-    if (class_getInstanceMethod(object_getClass(self), @selector(alloc)) == NULL)
+    if (!CYIsClass(self))
         return CYJSUndefined(context);
-    return Messages::Make(context, self);
+    return Messages::Make(context, (Class) self);
 }
 
 static JSValueRef Instance_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -2084,7 +2100,11 @@ static JSValueRef Instance_callAsFunction_toJSON(JSContextRef context, JSObjectR
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
 
     CYPoolTry {
-        NSString *key(count == 0 ? nil : CYCastNSString(NULL, context, CYJSString(context, arguments[0])));
+        NSString *key;
+        if (count == 0)
+            key = nil;
+        else
+            key = CYCastNSString(NULL, context, CYJSString(context, arguments[0]));
         // XXX: check for support of cy$toJSON?
         return CYCastJSValue(context, CYJSString([internal->GetValue() cy$toJSON:key]));
     } CYPoolCatch(NULL)
@@ -2174,10 +2194,9 @@ static JSStaticFunction Selector_staticFunctions[5] = {
     {NULL, NULL, 0}
 };
 
-void CYObjectiveC(JSContextRef context, JSObjectRef global) {
+void CYObjectiveC_SetupContext(JSContextRef context) {
+    JSObjectRef global(CYGetGlobalObject(context));
     apr_pool_t *pool(CYGetGlobalPool());
-
-    hooks_ = &CYObjectiveCHooks;
 
     Object_type = new(pool) Type_privateData(pool, "@");
     Selector_type = new(pool) Type_privateData(pool, ":");
@@ -2185,12 +2204,12 @@ void CYObjectiveC(JSContextRef context, JSObjectRef global) {
 #ifdef __APPLE__
     NSCFBoolean_ = objc_getClass("NSCFBoolean");
     NSCFType_ = objc_getClass("NSCFType");
+    NSMessageBuilder_ = objc_getClass("NSMessageBuilder");
+    NSZombie_ = objc_getClass("_NSZombie_");
 #endif
 
     NSArray_ = objc_getClass("NSArray");
-    NSDictionary_ = objc_getClass("NSDictonary");
-    NSMessageBuilder_ = objc_getClass("NSMessageBuilder");
-    NSZombie_ = objc_getClass("_NSZombie_");
+    NSDictionary_ = objc_getClass("NSDictionary");
     Object_ = objc_getClass("Object");
 
     JSClassDefinition definition;
@@ -2298,15 +2317,33 @@ void CYObjectiveC(JSContextRef context, JSObjectRef global) {
     CYSetProperty(context, global, CYJSString("Selector"), Selector);
     CYSetProperty(context, global, CYJSString("Super"), Super);
 
+#ifdef __OBJC2__
     CYSetProperty(context, global, CYJSString("objc_registerClassPair"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_registerClassPair"), &objc_registerClassPair_));
+    MSHookFunction(&objc_registerClassPair, MSHake(objc_registerClassPair));
+#endif
+
     CYSetProperty(context, global, CYJSString("objc_msgSend"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_msgSend"), &$objc_msgSend));
 
     JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Message, prototype_), Function_prototype_);
     JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Selector, prototype_), Function_prototype_);
 
-    MSHookFunction(&objc_registerClassPair, MSHake(objc_registerClassPair));
-
 #ifdef __APPLE__
     class_addMethod(NSCFType_, @selector(cy$toJSON:), reinterpret_cast<IMP>(&NSCFType$cy$toJSON), "@12@0:4@8");
 #endif
 }
+
+static CYHooks CYObjectiveCHooks = {
+    &CYObjectiveC_ExecuteStart,
+    &CYObjectiveC_ExecuteEnd,
+    &CYObjectiveC_RuntimeProperty,
+    &CYObjectiveC_CallFunction,
+    &CYObjectiveC_SetupContext,
+    &CYObjectiveC_PoolFFI,
+    &CYObjectiveC_FromFFI,
+};
+
+struct CYObjectiveC {
+    CYObjectiveC() {
+        hooks_ = &CYObjectiveCHooks;
+    }
+} CYObjectiveC;

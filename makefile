@@ -57,16 +57,23 @@ flags += -I. -I$(shell apr-1-config --includedir)
 all += libcycript.$(dll)
 
 ifdef arch
-deb := $(shell grep ^Package: control | cut -d ' ' -f 2-)_$(shell grep ^Version: control | cut -d ' ' -f 2 | sed -e 's/\#/$(svn)/')_$(arch).deb
+deb := $(shell grep ^Package: control.in | cut -d ' ' -f 2-)_$(shell grep ^Version: control.in | cut -d ' ' -f 2 | sed -e 's/\#/$(svn)/')_$(arch).deb
 
 all: $(deb)
 
 extra:
 
-$(deb): $(all)
+control: control.in cycript libcycript.so
+ifeq ($(depends),)
+	sed -e 's/&/'"$$(dpkg-query -S $$(ldd cycript libcycript.so | sed -e '/:$$/ d; s/^[ \t]*\([^ ]* => \)\?\([^ ]*\) .*/\2/' | sort -u) 2>/dev/null | sed -e 's/:.*//; /^cycript$$/ d; s/$$/,/' | sort -u | tr '\n' ' ')"'/;s/, $$//;s/#/$(svn)/;s/%/$(arch)/' $< >$@
+else
+	sed -e 's/&/$(foreach depend,$(depends),$(depend),)/;s/,$$//;s/#/$(svn)/;s/%/$(arch)/' $< >$@
+endif
+
+$(deb): $(all) control
 	rm -rf package
 	mkdir -p package/DEBIAN
-	sed -e 's/&/$(foreach depend,$(depends),$(depend),)/;s/,$$//;s/#/$(svn)/;s/%/$(arch)/' control >package/DEBIAN/control
+	cp -a control package/DEBIAN
 	$(restart) extra
 	mkdir -p package/usr/{bin,lib,sbin}
 	cp -a libcycript.$(dll) package/usr/lib
@@ -79,7 +86,7 @@ endif
 all: $(all)
 
 clean:
-	rm -f *.o libcycript.$(dll) cycript libcycript.db Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.y Cycript.l
+	rm -f *.o libcycript.$(dll) cycript libcycript.db Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.y Cycript.l control
 
 libcycript.db: Bridge.def
 	rm -f libcycript.db

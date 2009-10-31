@@ -1449,8 +1449,6 @@ CYJSError::CYJSError(JSContextRef context, const char *format, ...) {
     CYThrow(context, exception);
 }
 
-void CYObjectiveC(JSContextRef context, JSObjectRef global);
-
 JSGlobalContextRef CYGetJSContext() {
     CYInitialize();
 
@@ -1569,10 +1567,8 @@ JSGlobalContextRef CYGetJSContext() {
 
         Result_ = JSStringCreateWithUTF8CString("_");
 
-// XXX: this is very wrong and sad
-#ifdef __APPLE__
-        CYObjectiveC(context, global);
-#endif
+        if (hooks_ != NULL && hooks_->SetupContext != NULL)
+            (*hooks_->SetupContext)(context);
     }
 
     return Context_;
