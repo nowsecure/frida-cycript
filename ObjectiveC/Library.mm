@@ -1060,7 +1060,7 @@ JSValueRef CYCastJSValue(JSContextRef context, id value) { CYPoolTry {
 
 - (NSEnumerator *) keyEnumerator { CYObjectiveTry {
     JSPropertyNameArrayRef names(JSObjectCopyPropertyNames(context_, object_));
-    NSEnumerator *enumerator([CYCastNSArray(names) objectEnumerator]);
+    NSEnumerator *enumerator([CYCastNSArray(context_, names) objectEnumerator]);
     JSPropertyNameArrayRelease(names);
     return enumerator;
 } CYObjectiveCatch }
@@ -2050,7 +2050,7 @@ static JSValueRef CYValue_callAsFunction_$cya(JSContextRef context, JSObjectRef 
 
 static JSValueRef Instance_getProperty_constructor(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
-    return Instance::Make(context, object_getClass(internal->GetValue()));
+    return Instance::Make(context, (id) object_getClass(internal->GetValue()));
 }
 
 static JSValueRef Instance_getProperty_protocol(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
