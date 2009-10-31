@@ -35,13 +35,9 @@ library := $(apr) -lffi -lsqlite3
 console := $(apr) -lreadline
 depends :=
 
-ifndef uname_s
-uname_s := $(shell uname -s)
-endif
-
-ifndef uname_p
-uname_p := $(shell uname -p)
-endif
+restart ?= $(MAKE)
+uname_s ?= $(shell uname -s)
+uname_p ?= $(shell uname -p)
 
 -include $(uname_s).mk
 -include $(uname_s)-$(uname_p).mk
@@ -71,7 +67,7 @@ $(deb): $(all)
 	rm -rf package
 	mkdir -p package/DEBIAN
 	sed -e 's/&/$(foreach depend,$(depends),$(depend),)/;s/,$$//;s/#/$(svn)/;s/%/$(arch)/' control >package/DEBIAN/control
-	$(MAKE) extra
+	$(restart) extra
 	mkdir -p package/usr/{bin,lib,sbin}
 	cp -a libcycript.$(dll) package/usr/lib
 	cp -a cycript package/usr/bin
