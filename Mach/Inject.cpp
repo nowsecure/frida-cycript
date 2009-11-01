@@ -91,7 +91,7 @@ void InjectLibrary(pid_t pid) {
     flavor = ARM_THREAD_STATE;
     count = ARM_THREAD_STATE_COUNT;
     push = 0;
-#elif defined(__i386__)
+#elif defined(__i386__) || defined(__x86_64__)
     i386_thread_state_t state;
     flavor = i386_THREAD_STATE;
     count = i386_THREAD_STATE_COUNT;
@@ -119,7 +119,7 @@ void InjectLibrary(pid_t pid) {
         state.pc &= ~0x1;
         state.cpsr |= 0x20;
     }
-#elif defined(__i386__)
+#elif defined(__i386__) || defined(__x86_64__)
     frame[0] = 0;
     frame[1] = data;
 
