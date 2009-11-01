@@ -1118,17 +1118,21 @@ static JSValueRef Runtime_getProperty(JSContextRef context, JSObjectRef object, 
 
         case 0:
             return JSEvaluateScript(CYGetJSContext(), CYJSString(value), NULL, NULL, 0, NULL);
-        case 1:
-            return CYMakeFunctor(context, reinterpret_cast<void (*)()>(CYCastSymbol(name.data)), value);
 
-        case 2: {
-            // XXX: this is horrendously inefficient
-            sig::Signature signature;
-            sig::Parse(pool, &signature, value, &Structor_);
-            ffi_cif cif;
-            sig::sig_ffi_cif(pool, &sig::ObjectiveC, &signature, &cif);
-            return CYFromFFI(context, signature.elements[0].type, cif.rtype, CYCastSymbol(name.data));
-        }
+        case 1:
+            if (void (*symbol)() = reinterpret_cast<void (*)()>(CYCastSymbol(name.data)))
+                return CYMakeFunctor(context, symbol, value);
+            else return NULL;
+
+        case 2:
+            if (void *symbol = CYCastSymbol(name.data)) {
+                // XXX: this is horrendously inefficient
+                sig::Signature signature;
+                sig::Parse(pool, &signature, value, &Structor_);
+                ffi_cif cif;
+                sig::sig_ffi_cif(pool, &sig::ObjectiveC, &signature, &cif);
+                return CYFromFFI(context, signature.elements[0].type, cif.rtype, symbol);
+            } else return NULL;
 
         // XXX: implement case 3
         case 4:

@@ -66,12 +66,17 @@ all: $(deb)
 
 extra:
 
-ifeq ($(depends)$(dll),.so)
+ifeq ($(depends)$(dll),dylib)
+control: control.in cycript libcycript.dylib
+	sed -e 's/&/'"$$(dpkg-query -S $$(otool -lah cycript *.dylib | grep dylib | grep -v ':$$' | sed -e 's/^ *name //;s/ (offset [0-9]*)$$//' | sort -u) 2>/dev/null | sed -e 's/:.*//; /^cycript$$/ d; s/$$/,/' | sort -u | tr '\n' ' ')"'/;s/, $$//;s/#/$(svn)/;s/%/$(arch)/' $< >$@
+else
+ifeq ($(depends)$(dll),so)
 control: control.in cycript libcycript.so
 	sed -e 's/&/'"$$(dpkg-query -S $$(ldd cycript libcycript.so | sed -e '/:$$/ d; s/^[ \t]*\([^ ]* => \)\?\([^ ]*\) .*/\2/' | sort -u) 2>/dev/null | sed -e 's/:.*//; /^cycript$$/ d; s/$$/,/' | sort -u | tr '\n' ' ')"'/;s/, $$//;s/#/$(svn)/;s/%/$(arch)/' $< >$@
 else
 control: control.in
 	sed -e 's/&/$(foreach depend,$(depends),$(depend),)/;s/,$$//;s/#/$(svn)/;s/%/$(arch)/' $< >$@
+endif
 endif
 
 $(deb): $(all) control
