@@ -1241,19 +1241,19 @@ void CYObjectiveC_ExecuteEnd(JSContextRef context, void *handle) {
     return [(NSAutoreleasePool *) handle release];
 }
 
-JSValueRef CYObjectiveC_RuntimeProperty(JSContextRef context, CYUTF8String name) { CYObjectiveTry_(context) {
+JSValueRef CYObjectiveC_RuntimeProperty(JSContextRef context, CYUTF8String name) { CYPoolTry {
     if (name == "nil")
         return Instance::Make(context, nil);
     if (Class _class = objc_getClass(name.data))
         return CYMakeInstance(context, _class, true);
     return NULL;
-} CYObjectiveCatch }
+} CYPoolCatch(NULL) }
 
-static void CYObjectiveC_CallFunction(JSContextRef context, ffi_cif *cif, void (*function)(), uint8_t *value, void **values) { CYObjectiveTry_(context) {
+static void CYObjectiveC_CallFunction(JSContextRef context, ffi_cif *cif, void (*function)(), uint8_t *value, void **values) { CYPoolTry {
     ffi_call(cif, function, value, values);
-} CYObjectiveCatch }
+} CYPoolCatch() }
 
-static bool CYObjectiveC_PoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value) { CYObjectiveTry_(context) {
+static bool CYObjectiveC_PoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value) { CYPoolTry  {
     switch (type->primitive) {
         case sig::object_P:
         case sig::typename_P:
@@ -1269,9 +1269,9 @@ static bool CYObjectiveC_PoolFFI(apr_pool_t *pool, JSContextRef context, sig::Ty
     }
 
     return true;
-} CYObjectiveCatch }
+} CYPoolCatch(false) }
 
-static JSValueRef CYObjectiveC_FromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) { CYObjectiveTry_(context) {
+static JSValueRef CYObjectiveC_FromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) { CYPoolTry {
     switch (type->primitive) {
         case sig::object_P:
             if (id object = *reinterpret_cast<id *>(data)) {
@@ -1294,7 +1294,7 @@ static JSValueRef CYObjectiveC_FromFFI(JSContextRef context, sig::Type *type, ff
         default:
             return NULL;
     }
-} CYObjectiveCatch }
+} CYPoolCatch(NULL) }
 
 static bool CYImplements(id object, Class _class, SEL selector, bool devoid) {
     if (objc_method *method = class_getInstanceMethod(_class, selector)) {
