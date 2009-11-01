@@ -49,7 +49,7 @@
 #include <sig/parse.hpp>
 #include <sig/ffi_type.hpp>
 
-void Structor_(apr_pool_t *pool, const char *name, const char *types, sig::Type *&type);
+void Structor_(apr_pool_t *pool, sig::Type *&type);
 
 struct Type_privateData :
     CYData

@@ -46,7 +46,7 @@
 
 namespace sig {
 
-typedef void (*Callback)(apr_pool_t *pool, const char *name, const char *types, Type *&type);
+typedef void (*Callback)(apr_pool_t *pool, Type *&type);
 void Parse(apr_pool_t *pool, struct Signature *signature, const char *name, Callback callback);
 
 const char *Unparse(apr_pool_t *pool, struct Signature *signature);

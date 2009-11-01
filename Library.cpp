@@ -340,8 +340,19 @@ struct CStringMapLess :
     }
 };
 
-void Structor_(apr_pool_t *pool, const char *name, const char *types, sig::Type *&type) {
-    if (name == NULL)
+void Structor_(apr_pool_t *pool, sig::Type *&type) {
+    if (
+        type->primitive == sig::pointer_P &&
+        type->data.data.type != NULL &&
+        type->data.data.type->primitive == sig::struct_P &&
+        strcmp(type->data.data.type->name, "_objc_class") == 0
+    ) {
+        type->primitive = sig::typename_P;
+        type->data.data.type = NULL;
+        return;
+    }
+
+    if (type->primitive != sig::struct_P || type->name == NULL)
         return;
 
     sqlite3_stmt *statement;
@@ -357,7 +368,7 @@ void Structor_(apr_pool_t *pool, const char *name, const char *types, sig::Type 
         " limit 1"
     , -1, &statement, NULL));
 
-    _sqlcall(sqlite3_bind_text(statement, 1, name, -1, SQLITE_STATIC));
+    _sqlcall(sqlite3_bind_text(statement, 1, type->name, -1, SQLITE_STATIC));
 
     int mode;
     const char *value;

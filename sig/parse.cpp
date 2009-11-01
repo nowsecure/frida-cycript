@@ -201,17 +201,8 @@ struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named, C
 
             // XXX: this types thing is a throwback to JocStrap
 
-            char *types;
-            if (next != '=') {
-                types = NULL;
-            } else {
-                const char *temp(*name);
+            if (next == '=')
                 Parse_(pool, &type->data.signature, name, end, callback);
-                types = (char *) apr_pstrmemdup(pool, temp, *name - temp - 1);
-            }
-
-            if (callback != NULL)
-                (*callback)(pool, type->name, types, type);
         } break;
 
         case 'N': type->flags |= JOC_TYPE_INOUT; goto next;
@@ -231,6 +222,9 @@ struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named, C
             printf("invalid type character: '%c' {%s}\n", next, *name - 10);
             _assert(false);
     }
+
+    if (callback != NULL)
+        (*callback)(pool, type);
 
     return type;
 }
