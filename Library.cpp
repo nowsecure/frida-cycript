@@ -1021,7 +1021,7 @@ static void Struct_getPropertyNames(JSContextRef context, JSObjectRef object, JS
         name = elements[index].name;
 
         if (name == NULL) {
-            sprintf(number, "%lu", index);
+            sprintf(number, "%zu", index);
             name = number;
         }
 
