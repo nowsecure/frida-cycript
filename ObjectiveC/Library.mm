@@ -74,13 +74,17 @@
 #define method_getTypeEncoding(method) ((method)->method_types)
 #define method_setImplementation(method, imp) ((void) ((method)->method_imp = (imp)))
 
+#undef objc_getClass
+#define objc_getClass GSClassFromName
+
 #define objc_getProtocol GSProtocolFromName
 
 #define object_getClass GSObjCClass
 
 #define object_getInstanceVariable(object, name, value) ({ \
     objc_ivar *ivar(class_getInstanceVariable(object_getClass(object), name)); \
-    GSObjCGetVariable(object, ivar_getOffset(ivar), sizeof(void *), value); \
+    if (ivar != NULL) \
+        GSObjCGetVariable(object, ivar_getOffset(ivar), sizeof(void *), value); \
     ivar; \
 })
 
@@ -188,6 +192,8 @@ CYUTF8String CYCastUTF8String(NSString *value) {
     return CYUTF8String(reinterpret_cast<const char *>([data bytes]), [data length]);
 }
 /* }}} */
+
+JSValueRef CYCastJSValue(JSContextRef context, NSObject *value);
 
 void CYThrow(JSContextRef context, NSException *error, JSValueRef *exception) {
     if (exception == NULL)
@@ -1002,7 +1008,7 @@ NSArray *CYCastNSArray(JSContextRef context, JSPropertyNameArrayRef names) {
     return array;
 }
 
-JSValueRef CYCastJSValue(JSContextRef context, id value) { CYPoolTry {
+JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
     if (value == nil)
         return CYJSNull(context);
     else if ([value respondsToSelector:@selector(cy$JSValueInContext:)])
@@ -1073,7 +1079,7 @@ JSValueRef CYCastJSValue(JSContextRef context, id value) { CYPoolTry {
 
 - (void) setObject:(id)object forKey:(id)key { CYObjectiveTry {
     // XXX: are NSDictionary keys always NSString *?
-    CYSetProperty(context_, object_, CYJSString(context_, (NSString *) key), CYCastJSValue(context_, object));
+    CYSetProperty(context_, object_, CYJSString(context_, (NSString *) key), CYCastJSValue(context_, (NSString *) object));
 } CYObjectiveCatch }
 
 - (void) removeObjectForKey:(id)key { CYObjectiveTry {
@@ -1117,7 +1123,7 @@ JSValueRef CYCastJSValue(JSContextRef context, id value) { CYPoolTry {
 - (void) addObject:(id)object { CYObjectiveTry {
     JSValueRef exception(NULL);
     JSValueRef arguments[1];
-    arguments[0] = CYCastJSValue(context_, object);
+    arguments[0] = CYCastJSValue(context_, (NSObject *) object);
     JSObjectCallAsFunction(context_, Array_push_, object_, 1, arguments, &exception);
     CYThrow(context_, exception);
 } CYObjectiveCatch }
@@ -1130,7 +1136,7 @@ JSValueRef CYCastJSValue(JSContextRef context, id value) { CYPoolTry {
     JSValueRef arguments[3];
     arguments[0] = CYCastJSValue(context_, index);
     arguments[1] = CYCastJSValue(context_, 0);
-    arguments[2] = CYCastJSValue(context_, object);
+    arguments[2] = CYCastJSValue(context_, (NSObject *) object);
     JSObjectCallAsFunction(context_, Array_splice_, object_, 3, arguments, &exception);
     CYThrow(context_, exception);
 } CYObjectiveCatch }
@@ -1157,7 +1163,7 @@ JSValueRef CYCastJSValue(JSContextRef context, id value) { CYPoolTry {
     size_t bounds([self count]);
     if (index >= bounds)
         @throw [NSException exceptionWithName:NSRangeException reason:[NSString stringWithFormat:@"*** -[CYJSArray replaceObjectAtIndex:withObject:]: index (%zu) beyond bounds (%zu)", index, bounds] userInfo:nil];
-    CYSetProperty(context_, object_, index, CYCastJSValue(context_, object));
+    CYSetProperty(context_, object_, index, CYCastJSValue(context_, (NSObject *) object));
 } CYObjectiveCatch }
 
 @end
@@ -1275,7 +1281,7 @@ static bool CYObjectiveC_PoolFFI(apr_pool_t *pool, JSContextRef context, sig::Ty
 static JSValueRef CYObjectiveC_FromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) { CYPoolTry {
     switch (type->primitive) {
         case sig::object_P:
-            if (id object = *reinterpret_cast<id *>(data)) {
+            if (NSObject *object = *reinterpret_cast<NSObject **>(data)) {
                 JSValueRef value(CYCastJSValue(context, object));
                 if (initialize)
                     [object release];

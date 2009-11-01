@@ -49,7 +49,7 @@ uname_p ?= $(shell uname -p)
 
 ifeq ($(filter ObjectiveC,$(filters)),)
 ifneq ($(shell which gnustep-config 2>/dev/null),)
-#include GNUstep.mk
+include GNUstep.mk
 endif
 endif
 

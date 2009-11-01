@@ -186,19 +186,25 @@ const char *CYPoolCString(apr_pool_t *pool, JSContextRef context, JSValueRef val
 /* Index Offsets {{{ */
 size_t CYGetIndex(const CYUTF8String &value) {
     if (value.data[0] != '0') {
-        char *end;
-        size_t index(strtoul(value.data, &end, 10));
-        if (value.data + value.size == end)
-            return index;
-    } else if (value.data[1] == '\0')
+        size_t index(0);
+        for (size_t i(0); i != value.size; ++i) {
+            if (!DigitRange_[value.data[i]])
+                return _not(size_t);
+            index *= 10;
+            index += value.data[i] - '0';
+        }
+        return index;
+    } else if (value.size == 1)
         return 0;
-    return _not(size_t);
+    else
+        return _not(size_t);
 }
 
 size_t CYGetIndex(apr_pool_t *pool, JSContextRef context, JSStringRef value) {
     return CYGetIndex(CYPoolUTF8String(pool, context, value));
 }
 
+// XXX: this isn't actually right
 bool CYGetOffset(const char *value, ssize_t &index) {
     if (value[0] != '0') {
         char *end;

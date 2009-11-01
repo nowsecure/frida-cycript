@@ -93,7 +93,7 @@ JSValueRef CYGetProperty(JSContextRef context, JSObjectRef object, JSStringRef n
 void CYSetProperty(JSContextRef context, JSObjectRef object, size_t index, JSValueRef value);
 void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef value, JSPropertyAttributes attributes = kJSPropertyAttributeNone);
 
-JSValueRef CYCastJSValue(JSContextRef context, bool value);
+//JSValueRef CYCastJSValue(JSContextRef context, bool value);
 JSValueRef CYCastJSValue(JSContextRef context, double value);
 JSValueRef CYCastJSValue(JSContextRef context, int value);
 JSValueRef CYCastJSValue(JSContextRef context, unsigned int value);
