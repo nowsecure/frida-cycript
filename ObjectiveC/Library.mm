@@ -1,5 +1,7 @@
-#ifdef __APPLE__
+#if defined(__APPLE__) && defined(__arm__)
 #include <substrate.h>
+#else
+#include <objc/objc-api.h>
 #endif
 
 #include "ObjectiveC/Internal.hpp"
@@ -18,7 +20,6 @@
 
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
-#include <CoreFoundation/CFLogUtilities.h>
 #include <JavaScriptCore/JSStringRefCF.h>
 #include <WebKit/WebScriptObject.h>
 #endif
@@ -1008,7 +1009,7 @@ JSValueRef CYCastJSValue(JSContextRef context, id value) { CYPoolTry {
         return [value cy$JSValueInContext:context];
     else
         return CYMakeInstance(context, value, false);
-} CYPoolCatch(NULL) }
+} CYPoolCatch(NULL) return /*XXX*/ NULL; }
 
 @implementation CYJSObject
 
@@ -1247,7 +1248,7 @@ JSValueRef CYObjectiveC_RuntimeProperty(JSContextRef context, CYUTF8String name)
     if (Class _class = objc_getClass(name.data))
         return CYMakeInstance(context, _class, true);
     return NULL;
-} CYPoolCatch(NULL) }
+} CYPoolCatch(NULL) return /*XXX*/ NULL; }
 
 static void CYObjectiveC_CallFunction(JSContextRef context, ffi_cif *cif, void (*function)(), uint8_t *value, void **values) { CYPoolTry {
     ffi_call(cif, function, value, values);
@@ -1269,7 +1270,7 @@ static bool CYObjectiveC_PoolFFI(apr_pool_t *pool, JSContextRef context, sig::Ty
     }
 
     return true;
-} CYPoolCatch(false) }
+} CYPoolCatch(false) return /*XXX*/ NULL; }
 
 static JSValueRef CYObjectiveC_FromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) { CYPoolTry {
     switch (type->primitive) {
@@ -1294,13 +1295,13 @@ static JSValueRef CYObjectiveC_FromFFI(JSContextRef context, sig::Type *type, ff
         default:
             return NULL;
     }
-} CYPoolCatch(NULL) }
+} CYPoolCatch(NULL) return /*XXX*/ NULL; }
 
 static bool CYImplements(id object, Class _class, SEL selector, bool devoid) {
     if (objc_method *method = class_getInstanceMethod(_class, selector)) {
         if (!devoid)
             return true;
-#ifdef __OBJC2__
+#if OBJC_API_VERSION >= 2
         char type[16];
         method_getReturnType(method, type, sizeof(type));
 #else
@@ -1447,7 +1448,7 @@ static bool Messages_setProperty(JSContextRef context, JSObjectRef object, JSStr
     return true;
 }
 
-#if 0 && !__OBJC2__
+#if 0 && OBJC_API_VERSION < 2
 static bool Messages_deleteProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
     Messages *internal(reinterpret_cast<Messages *>(JSObjectGetPrivate(object)));
     Class _class(internal->GetValue());
@@ -1470,7 +1471,7 @@ static void Messages_getPropertyNames(JSContextRef context, JSObjectRef object, 
     Messages *internal(reinterpret_cast<Messages *>(JSObjectGetPrivate(object)));
     Class _class(internal->GetValue());
 
-#ifdef __OBJC2__
+#if OBJC_API_VERSION >= 2
     unsigned int size;
     objc_method **data(class_copyMethodList(_class, &size));
     for (size_t i(0); i != size; ++i)
@@ -1624,7 +1625,7 @@ static bool Instance_deleteProperty(JSContextRef context, JSObjectRef object, JS
         NSString *name(CYCastNSString(NULL, context, property));
         return [self cy$deleteProperty:name];
     } CYPoolCatch(NULL)
-} CYCatch }
+} CYCatch return /*XXX*/ NULL; }
 
 static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
@@ -1719,7 +1720,7 @@ static void Internal_getPropertyNames_(Class _class, JSPropertyNameAccumulatorRe
     if (Class super = class_getSuperclass(_class))
         Internal_getPropertyNames_(super, names);
 
-#ifdef __OBJC2__
+#if OBJC_API_VERSION >= 2
     unsigned int size;
     objc_ivar **data(class_copyIvarList(_class, &size));
     for (size_t i(0); i != size; ++i)
@@ -1782,7 +1783,7 @@ static void ObjectiveC_Classes_getPropertyNames(JSContextRef context, JSObjectRe
 #endif
 }
 
-#ifdef __OBJC2__
+#if OBJC_API_VERSION >= 2
 static JSValueRef ObjectiveC_Image_Classes_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     const char *internal(reinterpret_cast<const char *>(JSObjectGetPrivate(object)));
 
@@ -1852,7 +1853,7 @@ static JSValueRef ObjectiveC_Protocols_getProperty(JSContextRef context, JSObjec
 } CYCatch }
 
 static void ObjectiveC_Protocols_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
-#ifdef __OBJC2__
+#if OBJC_API_VERSION >= 2
     unsigned int size;
     Protocol **data(objc_copyProtocolList(&size));
     for (size_t i(0); i != size; ++i)
@@ -1959,7 +1960,7 @@ static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObje
 } CYCatch }
 
 /* Hook: objc_registerClassPair {{{ */
-#ifdef __OBJC2__
+#if defined(__APPLE__) && defined(__arm__)
 // XXX: replace this with associated objects
 
 MSHook(void, CYDealloc, id self, SEL sel) {
@@ -2107,7 +2108,7 @@ static JSValueRef Instance_callAsFunction_toJSON(JSContextRef context, JSObjectR
         // XXX: check for support of cy$toJSON?
         return CYCastJSValue(context, CYJSString(context, [internal->GetValue() cy$toJSON:key]));
     } CYPoolCatch(NULL)
-} CYCatch }
+} CYCatch return /*XXX*/ NULL; }
 
 static JSValueRef Instance_callAsFunction_toString(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (!JSValueIsObjectOfClass(context, _this, Instance_))
@@ -2119,7 +2120,7 @@ static JSValueRef Instance_callAsFunction_toString(JSContextRef context, JSObjec
         // XXX: this seems like a stupid implementation; what if it crashes? why not use the CYONifier backend?
         return CYCastJSValue(context, CYJSString(context, [internal->GetValue() description]));
     } CYPoolCatch(NULL)
-} CYCatch }
+} CYCatch return /*XXX*/ NULL; }
 
 static JSValueRef Selector_callAsFunction_toString(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     Selector_privateData *internal(reinterpret_cast<Selector_privateData *>(JSObjectGetPrivate(_this)));
@@ -2138,7 +2139,7 @@ static JSValueRef Selector_callAsFunction_toCYON(JSContextRef context, JSObjectR
         NSString *string([NSString stringWithFormat:@"@selector(%s)", name]);
         return CYCastJSValue(context, CYJSString(context, string));
     } CYPoolCatch(NULL)
-} CYCatch }
+} CYCatch return /*XXX*/ NULL; }
 
 static JSValueRef Selector_callAsFunction_type(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 1)
@@ -2250,7 +2251,7 @@ void CYObjectiveC_SetupContext(JSContextRef context) {
     definition.hasProperty = &Messages_hasProperty;
     definition.getProperty = &Messages_getProperty;
     definition.setProperty = &Messages_setProperty;
-#if 0 && !__OBJC2__
+#if 0 && OBJC_API_VERSION < 2
     definition.deleteProperty = &Messages_deleteProperty;
 #endif
     definition.getPropertyNames = &Messages_getPropertyNames;
@@ -2289,7 +2290,7 @@ void CYObjectiveC_SetupContext(JSContextRef context) {
     CYSetProperty(context, ObjectiveC, CYJSString("classes"), JSObjectMake(context, ObjectiveC_Classes_, NULL));
     CYSetProperty(context, ObjectiveC, CYJSString("protocols"), JSObjectMake(context, ObjectiveC_Protocols_, NULL));
 
-#ifdef __OBJC2__
+#if OBJC_API_VERSION >= 2
     definition = kJSClassDefinitionEmpty;
     definition.className = "ObjectiveC::Images";
     definition.getProperty = &ObjectiveC_Images_getProperty;
@@ -2317,7 +2318,7 @@ void CYObjectiveC_SetupContext(JSContextRef context) {
     CYSetProperty(context, global, CYJSString("Selector"), Selector);
     CYSetProperty(context, global, CYJSString("Super"), Super);
 
-#ifdef __OBJC2__
+#if defined(__APPLE__) && defined(__arm__)
     CYSetProperty(context, global, CYJSString("objc_registerClassPair"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_registerClassPair"), &objc_registerClassPair_));
     MSHookFunction(&objc_registerClassPair, MSHake(objc_registerClassPair));
 #endif

@@ -46,6 +46,9 @@
 #include "Standard.hpp"
 
 struct CYException {
+    virtual ~CYException() {
+    }
+
     virtual const char *PoolCString(apr_pool_t *pool) const = 0;
     virtual JSValueRef CastJSValue(JSContextRef context) const = 0;
 };

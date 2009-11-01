@@ -55,7 +55,7 @@ endif
 
 flags += -Wall -Werror -Wno-parentheses #-Wno-unused
 flags += -fPIC -fno-common
-flags += -I. -I$(shell apr-1-config --includedir)
+flags += -I. -Iinclude -I$(shell apr-1-config --includedir)
 
 all += libcycript.$(dll)
 
@@ -66,7 +66,7 @@ all: $(deb)
 
 extra:
 
-ifeq ($(depends),)
+ifeq ($(depends)$(dll),.so)
 control: control.in cycript libcycript.so
 	sed -e 's/&/'"$$(dpkg-query -S $$(ldd cycript libcycript.so | sed -e '/:$$/ d; s/^[ \t]*\([^ ]* => \)\?\([^ ]*\) .*/\2/' | sort -u) 2>/dev/null | sed -e 's/:.*//; /^cycript$$/ d; s/$$/,/' | sort -u | tr '\n' ' ')"'/;s/, $$//;s/#/$(svn)/;s/%/$(arch)/' $< >$@
 else
@@ -77,13 +77,13 @@ endif
 $(deb): $(all) control
 	rm -rf package
 	mkdir -p package/DEBIAN
-	cp -a control package/DEBIAN
+	cp -pR control package/DEBIAN
 	$(restart) extra
 	mkdir -p package/usr/{bin,lib,sbin}
-	cp -a libcycript.$(dll) package/usr/lib
-	cp -a cycript package/usr/bin
-	#cp -a cyrver package/usr/sbin
-	cp -a libcycript.db package/usr/lib
+	cp -pR libcycript.$(dll) package/usr/lib
+	cp -pR cycript package/usr/bin
+	#cp -pR cyrver package/usr/sbin
+	cp -pR libcycript.db package/usr/lib
 	dpkg-deb -b package $(deb)
 endif
 

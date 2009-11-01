@@ -14,15 +14,16 @@ extern "C" {
 #include "Pooling.hpp"
 #include "Trampoline.t.hpp"
 
-extern "C" void _pthread_set_self(pthread_t);
+extern "C" void __pthread_set_self(pthread_t);
 
 template <typename Type_>
 static void nlset(Type_ &function, struct nlist *nl, size_t index) {
     struct nlist &name(nl[index]);
     uintptr_t value(name.n_value);
+    _assert(value != 0);
     if ((name.n_desc & N_ARM_THUMB_DEF) != 0)
         value |= 0x00000001;
-    function = reinterpret_cast<Type_>(value);
+    function = value;
 }
 
 void InjectLibrary(pid_t pid) {
@@ -37,12 +38,18 @@ void InjectLibrary(pid_t pid) {
     uint8_t *local(reinterpret_cast<uint8_t *>(apr_palloc(pool, depth)));
     Baton *baton(reinterpret_cast<Baton *>(local));
 
-    struct nlist nl[2];
+    uintptr_t set_self_internal;
+    uintptr_t set_self_external;
+
+    struct nlist nl[3];
     memset(nl, 0, sizeof(nl));
     nl[0].n_un.n_name = (char *) "__pthread_set_self";
+    nl[1].n_un.n_name = (char *) "___pthread_set_self";
     nlist("/usr/lib/libSystem.B.dylib", nl);
-    nlset(baton->_pthread_set_self, nl, 0);
-    _assert(baton->_pthread_set_self != NULL);
+    nlset(set_self_internal, nl, 0);
+    nlset(set_self_external, nl, 1);
+
+    baton->_pthread_set_self = reinterpret_cast<void (*)(pthread_t)>(reinterpret_cast<uintptr_t>(&__pthread_set_self) - set_self_external + set_self_internal);
 
     baton->pthread_create = &pthread_create;
     baton->pthread_join = &pthread_join;
@@ -61,9 +68,10 @@ void InjectLibrary(pid_t pid) {
     mach_port_t self(mach_task_self()), task;
     _krncall(task_for_pid(self, pid, &task));
 
-    vm_address_t data;
-    _krncall(vm_allocate(task, &data, size, true));
-    vm_address_t stack(data + depth);
+    vm_address_t stack;
+    _krncall(vm_allocate(task, &stack, size, true));
+    vm_address_t data(stack + Stack_);
+
     vm_write(task, data, reinterpret_cast<vm_address_t>(baton), depth);
 
     vm_address_t code;
@@ -76,14 +84,25 @@ void InjectLibrary(pid_t pid) {
 
     thread_state_flavor_t flavor;
     mach_msg_type_number_t count;
+    size_t push;
 
 #if defined(__arm__)
     arm_thread_state_t state;
     flavor = ARM_THREAD_STATE;
     count = ARM_THREAD_STATE_COUNT;
+    push = 0;
+#elif defined(__i386__)
+    i386_thread_state_t state;
+    flavor = i386_THREAD_STATE;
+    count = i386_THREAD_STATE_COUNT;
+    push = 5;
 #else
     #error XXX: implement
 #endif
+
+    uintptr_t frame[push];
+    if (sizeof(frame) != 0)
+        memset(frame, 0, sizeof(frame));
 
     memset(&state, 0, sizeof(state));
 
@@ -93,7 +112,6 @@ void InjectLibrary(pid_t pid) {
 
 #if defined(__arm__)
     state.r[0] = data;
-    state.r[1] = RTLD_LAZY | RTLD_GLOBAL;
     state.sp = stack + Stack_;
     state.pc = code;
 
@@ -101,9 +119,18 @@ void InjectLibrary(pid_t pid) {
         state.pc &= ~0x1;
         state.cpsr |= 0x20;
     }
+#elif defined(__i386__)
+    frame[0] = 0;
+    frame[1] = data;
+
+    state.__eip = code;
+    state.__esp = stack + Stack_ - sizeof(frame);
 #else
     #error XXX: implement
 #endif
+
+    if (sizeof(frame) != 0)
+        vm_write(task, stack + Stack_ - sizeof(frame), reinterpret_cast<vm_address_t>(frame), sizeof(frame));
 
     _krncall(thread_set_state(thread, flavor, reinterpret_cast<thread_state_t>(&state), count));
     _krncall(thread_resume(thread));

@@ -40,7 +40,7 @@
 #ifndef CYCRIPT_HPP
 #define CYCRIPT_HPP
 
-#include <JavaScriptCore/JavaScript.h>
+#include <JavaScriptCore/JavaScriptCore.h>
 
 #include <apr_pools.h>
 #include <ffi.h>

@@ -136,6 +136,9 @@ struct CYClass {
     {
     }
 
+    virtual ~CYClass() {
+    }
+
     CYExpression *Replace_(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };

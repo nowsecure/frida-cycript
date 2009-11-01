@@ -107,7 +107,8 @@ int H(char c) {
     } else if (yyextra->size_ == 0) \
         value = YY_NULL; \
     else { \
-        size_t copy(std::min(size, yyextra->size_)); \
+        size_t copy(size); \
+        copy = (std::min(copy, yyextra->size_)); \
         memcpy(data, yyextra->data_, copy); \
         yyextra->data_ += copy; \
         yyextra->size_ -= copy; \

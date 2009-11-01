@@ -73,6 +73,9 @@ struct CYNext {
 };
 
 struct CYThing {
+    virtual ~CYThing() {
+    }
+
     virtual void Output(struct CYOutput &out) const = 0;
 };
 
@@ -117,6 +120,9 @@ struct CYOutput {
 
 struct CYPropertyName {
     virtual void PropertyName(CYOutput &out) const = 0;
+
+    virtual ~CYPropertyName() {
+    }
 };
 
 struct CYExpression;
@@ -157,6 +163,9 @@ struct CYContext {
 struct CYStatement :
     CYNext<CYStatement>
 {
+    virtual ~CYStatement() {
+    }
+
     void Single(CYOutput &out, CYFlags flags) const;
     void Multiple(CYOutput &out, CYFlags flags = CYNoFlags) const;
 
@@ -198,6 +207,9 @@ struct CYStatements {
 };
 
 struct CYClassName {
+    virtual ~CYClassName() {
+    }
+
     virtual CYExpression *ClassName(CYContext &context, bool object) = 0;
     virtual void ClassName(CYOutput &out, bool object) const = 0;
 };
@@ -346,10 +358,16 @@ class CYDriver {
 };
 
 struct CYForInitialiser {
+    virtual ~CYForInitialiser() {
+    }
+
     virtual void For(CYOutput &out) const = 0;
 };
 
 struct CYForInInitialiser {
+    virtual ~CYForInInitialiser() {
+    }
+
     virtual void ForIn(CYOutput &out, CYFlags flags) const = 0;
     virtual const char *ForEachIn() const = 0;
     virtual CYExpression *ForEachIn(CYContext &out) = 0;
@@ -1241,6 +1259,9 @@ struct CYFunction {
         parameters_(parameters),
         code_(statements)
     {
+    }
+
+    virtual ~CYFunction() {
     }
 
     virtual void Replace_(CYContext &context);
