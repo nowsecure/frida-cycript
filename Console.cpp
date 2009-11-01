@@ -66,6 +66,8 @@
 
 #include <apr_getopt.h>
 
+#include <dlfcn.h>
+
 static volatile enum {
     Working,
     Parsing,
@@ -173,6 +175,8 @@ void Run(int client, const char *data, size_t size, FILE *fout = NULL, bool expa
 void Run(int client, std::string &code, FILE *fout = NULL, bool expand = false) {
     Run(client, code.c_str(), code.size(), fout, expand);
 }
+
+int (*append_history$)(int, const char *);
 
 static void Console(apr_pool_t *pool, int client) {
     passwd *passwd;
@@ -330,8 +334,12 @@ static void Console(apr_pool_t *pool, int client) {
         Run(client, code, fout, expand);
     }
 
-    _syscall(close(_syscall(open(histfile, O_CREAT | O_WRONLY, 0600))));
-    append_history(histlines, histfile);
+    if (append_history$ != NULL) {
+        _syscall(close(_syscall(open(histfile, O_CREAT | O_WRONLY, 0600))));
+        (*append_history$)(histlines, histfile);
+    } else {
+        write_history(histfile);
+    }
 
     fputs("\n", fout);
     fflush(fout);
@@ -359,6 +367,8 @@ void InjectLibrary(pid_t pid);
 int Main(int argc, char const * const argv[], char const * const envp[]) {
     bool tty(isatty(STDIN_FILENO));
     bool compile(false);
+
+    append_history$ = reinterpret_cast<int (*)(int, const char *)>(dlsym(RTLD_DEFAULT, "append_history"));
 
 #ifdef CY_ATTACH
     pid_t pid(_not(pid_t));
@@ -605,6 +615,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
 
 int main(int argc, char const * const argv[], char const * const envp[]) {
     apr_status_t status(apr_app_initialize(&argc, &argv, &envp));
+
     if (status != APR_SUCCESS) {
         fprintf(stderr, "apr_app_initialize() != APR_SUCCESS\n");
         return 1;
