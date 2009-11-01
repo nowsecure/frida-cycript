@@ -231,6 +231,8 @@ static Class NSCFBoolean_;
 static Class NSCFType_;
 static Class NSMessageBuilder_;
 static Class NSZombie_;
+#else
+static Class NSBoolNumber_;
 #endif
 
 static Class NSArray_;
@@ -574,6 +576,12 @@ NSNumber *CYCopyNSNumber(JSContextRef context, JSValueRef value) {
     return [[NSNumber alloc] initWithDouble:CYCastDouble(context, value)];
 }
 
+#ifndef __APPLE__
+@interface NSBoolNumber : NSNumber {
+}
+@end
+#endif
+
 id CYNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef value, bool cast) {
     id object;
     bool copy;
@@ -593,7 +601,7 @@ id CYNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef value, bool cas
             object = (id) (CYCastBool(context, value) ? kCFBooleanTrue : kCFBooleanFalse);
             copy = false;
 #else
-            object = [[NSNumber alloc] initWithBool:CYCastBool(context, value)];
+            object = [[NSBoolNumber alloc] initWithBool:CYCastBool(context, value)];
             copy = true;
 #endif
         break;
@@ -707,6 +715,29 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 }
 
 @end
+/* }}} */
+/* Bridge: NSBoolNumber {{{ */
+#ifndef __APPLE__
+@implementation NSBoolNumber (Cycript)
+
+- (JSType) cy$JSType {
+    return kJSTypeBoolean;
+}
+
+- (NSObject *) cy$toJSON:(NSString *)key {
+    return self;
+}
+
+- (NSString *) cy$toCYON {
+    return [self boolValue] ? @"true" : @"false";
+}
+
+- (JSValueRef) cy$JSValueInContext:(JSContextRef)context { CYObjectiveTry_(context) {
+    return CYCastJSValue(context, (bool) [self boolValue]);
+} CYObjectiveCatch }
+
+@end
+#endif
 /* }}} */
 /* Bridge: NSDictionary {{{ */
 @implementation NSDictionary (Cycript)
@@ -2213,6 +2244,8 @@ void CYObjectiveC_SetupContext(JSContextRef context) {
     NSCFType_ = objc_getClass("NSCFType");
     NSMessageBuilder_ = objc_getClass("NSMessageBuilder");
     NSZombie_ = objc_getClass("_NSZombie_");
+#else
+    NSBoolNumber_ = objc_getClass("NSBoolNumber");
 #endif
 
     NSArray_ = objc_getClass("NSArray");
