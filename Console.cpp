@@ -226,6 +226,8 @@ static void Console(apr_pool_t *pool, int client) {
         mode_ = Working;
         if (line == NULL)
             break;
+        if (line[0] == '\0')
+            goto read;
 
         if (!extra) {
             extra = true;
