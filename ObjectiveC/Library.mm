@@ -1731,6 +1731,7 @@ static JSValueRef Internal_getProperty(JSContextRef context, JSObjectRef object,
 
     if (objc_ivar *ivar = object_getInstanceVariable(self, name, NULL)) {
         Type_privateData type(pool, ivar_getTypeEncoding(ivar));
+        // XXX: if this fails and throws an exception the person we are throwing it to gets the wrong exception
         return CYFromFFI(context, type.type_, type.GetFFI(), reinterpret_cast<uint8_t *>(self) + ivar_getOffset(ivar));
     }
 

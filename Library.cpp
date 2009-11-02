@@ -1448,8 +1448,18 @@ CYPoolError::CYPoolError(const char *format, va_list args) {
     message_ = apr_pvsprintf(pool_, format, args);
 }
 
+JSValueRef CYCastJSError(JSContextRef context, const char *message) {
+    JSValueRef arguments[1] = {CYCastJSValue(context, message)};
+
+    JSValueRef exception(NULL);
+    JSValueRef value(JSObjectCallAsConstructor(context, Error_, 1, arguments, &exception));
+    CYThrow(context, exception);
+
+    return value;
+}
+
 JSValueRef CYPoolError::CastJSValue(JSContextRef context) const {
-    return CYCastJSValue(context, message_);
+    return CYCastJSError(context, message_);
 }
 
 CYJSError::CYJSError(JSContextRef context, const char *format, ...) {
@@ -1463,11 +1473,7 @@ CYJSError::CYJSError(JSContextRef context, const char *format, ...) {
     const char *message(apr_pvsprintf(pool, format, args));
     va_end (args);
 
-    JSValueRef arguments[1] = {CYCastJSValue(context, CYJSString(message))};
-
-    JSValueRef exception(NULL);
-    value_ = JSObjectCallAsConstructor(context, Error_, 1, arguments, &exception);
-    CYThrow(context, exception);
+    value_ = CYCastJSError(context, message);
 }
 
 JSGlobalContextRef CYGetJSContext() {
