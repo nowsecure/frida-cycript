@@ -5,9 +5,17 @@ look into what String is, and whether to bridge it
 some JS callbacks don't use exception pointers at all...
 a newline needs to not be allowed after a unary *
 finish implementing default xml namespace statement
+encode newlines in history for later reply (psql uses ^A)
+
 consider replacing regex literals with constructors
   https://bugzilla.mozilla.org/show_bug.cgi?id=98409
 numerification needs to use specific precision values
   https://bugzilla.mozilla.org/show_bug.cgi?id=5856
 consider a mode where unicode string content is saved
   https://bugzilla.mozilla.org/show_bug.cgi?id=274152
+
+cy# SBAwayController.sharedAwayController->_displayValues
+"*** -[NSCFNumber length]: unrecognized selector sent to instance 0x4a4bda0"
+b = []; for (x in a) b.push(x); <- crashes
+
+errors in another process aren't displayed; to fix this, parse errors should get converted to exceptions and thrown

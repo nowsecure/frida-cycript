@@ -265,11 +265,11 @@ const char *Unparse(apr_pool_t *pool, struct Type *type) {
 
         case array_P: {
             const char *value = Unparse(pool, type->data.data.type);
-            return apr_psprintf(pool, "[%zu%s]", type->data.data.size, value);
+            return apr_psprintf(pool, "[%"APR_SIZE_T_FMT"%s]", type->data.data.size, value);
         } break;
 
         case pointer_P: return apr_psprintf(pool, "^%s", type->data.data.type == NULL ? "v" : Unparse(pool, type->data.data.type));
-        case bit_P: return apr_psprintf(pool, "b%zu", type->data.data.size);
+        case bit_P: return apr_psprintf(pool, "b%"APR_SIZE_T_FMT"", type->data.data.size);
         case char_P: return "c";
         case double_P: return "d";
         case float_P: return "f";

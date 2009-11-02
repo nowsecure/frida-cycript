@@ -539,7 +539,7 @@ static size_t Nonce_(0);
 
 static JSValueRef $cyq(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     CYPool pool;
-    const char *name(apr_psprintf(pool, "%s%zu", CYPoolCString(pool, context, arguments[0]), Nonce_++));
+    const char *name(apr_psprintf(pool, "%s%"APR_SIZE_T_FMT"", CYPoolCString(pool, context, arguments[0]), Nonce_++));
     return CYCastJSValue(context, name);
 }
 

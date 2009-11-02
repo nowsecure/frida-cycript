@@ -1287,9 +1287,11 @@ JSValueRef CYObjectiveC_RuntimeProperty(JSContextRef context, CYUTF8String name)
     return NULL;
 } CYPoolCatch(NULL) return /*XXX*/ NULL; }
 
-static void CYObjectiveC_CallFunction(JSContextRef context, ffi_cif *cif, void (*function)(), uint8_t *value, void **values) { CYPoolTry {
+static void CYObjectiveC_CallFunction(JSContextRef context, ffi_cif *cif, void (*function)(), uint8_t *value, void **values) { @try {
     ffi_call(cif, function, value, values);
-} CYPoolCatch() }
+} @catch (NSException *error ) {
+    throw CYJSError(context, CYCastJSValue(context, error));
+} }
 
 static bool CYObjectiveC_PoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value) { CYPoolTry  {
     switch (type->primitive) {
