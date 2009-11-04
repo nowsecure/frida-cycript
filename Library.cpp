@@ -1078,7 +1078,7 @@ static JSValueRef Functor_callAsFunction(JSContextRef context, JSObjectRef objec
 }
 
 static JSObjectRef CYMakeType(JSContextRef context, const char *type) {
-    Type_privateData *internal(new Type_privateData(NULL, type));
+    Type_privateData *internal(new Type_privateData(type));
     return JSObjectMake(context, Type_privateData::Class_, internal);
 }
 
