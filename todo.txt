@@ -2,6 +2,7 @@ unicode identifier support (native and \u)
 support unions (right now 0-1 fields parsed as struct)
 \\\n escapes in strings aren't handled in the console
 look into what String is, and whether to bridge it
+think about bridging NSNumber with Number prototype
 some JS callbacks don't use exception pointers at all...
 a newline needs to not be allowed after a unary *
 finish implementing default xml namespace statement
@@ -14,10 +15,7 @@ numerification needs to use specific precision values
 consider a mode where unicode string content is saved
   https://bugzilla.mozilla.org/show_bug.cgi?id=274152
 
-cy# SBAwayController.sharedAwayController->_displayValues
-"*** -[NSCFNumber length]: unrecognized selector sent to instance 0x4a4bda0"
-b = []; for (x in a) b.push(x); <- crashes
-
+NSDictionaries that have NSNumber keys don't getProperty
 errors in another process aren't displayed; to fix this, parse errors should get converted to exceptions and thrown
 CYPoolTry/Catch now carefully save the exception after it /no longer needs the exception/... uhh... wtf?
 throw CYJSError should probably be replaced with CYThrow() across the board

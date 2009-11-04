@@ -748,10 +748,10 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 
     bool comma(false);
 #ifdef __APPLE__
-    for (id key in self) {
+    for (NSObject *key in self) {
 #else
     NSEnumerator *keys([self keyEnumerator]);
-    while (id key = [keys nextObject]) {
+    while (NSObject *key = [keys nextObject]) {
 #endif
         if (comma)
             [json appendString:@","];
@@ -779,10 +779,10 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     [super cy$getPropertyNames:names inContext:context];
 
 #ifdef __APPLE__
-    for (NSString *key in self) {
+    for (NSObject *key in self) {
 #else
     NSEnumerator *keys([self keyEnumerator]);
-    while (NSString *key = [keys nextObject]) {
+    while (NSObject *key = [keys nextObject]) {
 #endif
         JSPropertyNameAccumulatorAddName(names, CYJSString(context, key));
     }
@@ -1096,8 +1096,7 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
 } CYObjectiveCatch }
 
 - (id) objectForKey:(id)key { CYObjectiveTry {
-    // XXX: are NSDictionary keys always NSString *?
-    JSValueRef value(CYGetProperty(context_, object_, CYJSString(context_, (NSString *) key)));
+    JSValueRef value(CYGetProperty(context_, object_, CYJSString(context_, (NSObject *) key)));
     if (JSValueIsUndefined(context_, value))
         return nil;
     return CYCastNSObject(NULL, context_, value) ?: [NSNull null];
@@ -1111,14 +1110,12 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
 } CYObjectiveCatch }
 
 - (void) setObject:(id)object forKey:(id)key { CYObjectiveTry {
-    // XXX: are NSDictionary keys always NSString *?
-    CYSetProperty(context_, object_, CYJSString(context_, (NSString *) key), CYCastJSValue(context_, (NSString *) object));
+    CYSetProperty(context_, object_, CYJSString(context_, (NSObject *) key), CYCastJSValue(context_, (NSString *) object));
 } CYObjectiveCatch }
 
 - (void) removeObjectForKey:(id)key { CYObjectiveTry {
     JSValueRef exception(NULL);
-    // XXX: are NSDictionary keys always NSString *?
-    (void) JSObjectDeleteProperty(context_, object_, CYJSString(context_, (NSString *) key), &exception);
+    (void) JSObjectDeleteProperty(context_, object_, CYJSString(context_, (NSObject *) key), &exception);
     CYThrow(context_, exception);
 } CYObjectiveCatch }
 
