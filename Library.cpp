@@ -409,7 +409,7 @@ struct Pointer :
     Type_privateData *type_;
     size_t length_;
 
-    Pointer(void *value, JSContextRef context, JSObjectRef owner, sig::Type *type, size_t length = _not(size_t)) :
+    Pointer(void *value, JSContextRef context, JSObjectRef owner, size_t length, sig::Type *type) :
         CYOwned(value, context, owner),
         type_(new(pool_) Type_privateData(type)),
         length_(length)
@@ -671,7 +671,7 @@ static JSValueRef Array_callAsFunction_toCYON(JSContextRef context, JSObjectRef 
 } CYCatch }
 
 JSObjectRef CYMakePointer(JSContextRef context, void *pointer, size_t length, sig::Type *type, ffi_type *ffi, JSObjectRef owner) {
-    Pointer *internal(new Pointer(pointer, context, owner, type));
+    Pointer *internal(new Pointer(pointer, context, owner, length, type));
     return JSObjectMake(context, Pointer_, internal);
 }
 
@@ -725,6 +725,27 @@ void CYPoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, ffi_type
         CYPoolFFI_(float, float)
         CYPoolFFI_(double, double)
 
+        case sig::array_P: {
+            uint8_t *base(reinterpret_cast<uint8_t *>(data));
+            JSObjectRef aggregate(JSValueIsObject(context, value) ? (JSObjectRef) value : NULL);
+            for (size_t index(0); index != type->data.data.size; ++index) {
+                ffi_type *field(ffi->elements[index]);
+
+                JSValueRef rhs;
+                if (aggregate == NULL)
+                    rhs = value;
+                else {
+                    rhs = CYGetProperty(context, aggregate, index);
+                    if (JSValueIsUndefined(context, rhs))
+                        throw CYJSError(context, "unable to extract array value");
+                }
+
+                CYPoolFFI(pool, context, type->data.data.type, field, base, rhs);
+                // XXX: alignment?
+                base += field->size;
+            }
+        } break;
+
         case sig::pointer_P:
             *reinterpret_cast<void **>(data) = CYCastPointer<void *>(context, value);
         break;
@@ -769,8 +790,7 @@ void CYPoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, ffi_type
                 if ((*hooks_->PoolFFI)(pool, context, type, ffi, data, value))
                     return;
 
-            fprintf(stderr, "CYPoolFFI(%c)\n", type->primitive);
-            _assert(false);
+            CYThrow("unimplemented signature code: '%c''\n", type->primitive);
     }
 }
 
@@ -823,7 +843,7 @@ JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void 
                 if (JSValueRef value = (*hooks_->FromFFI)(context, type, ffi, data, initialize, owner))
                     return value;
 
-            CYThrow("failed conversion from FFI format: '%c'\n", type->primitive);
+            CYThrow("unimplemented signature code: '%c''\n", type->primitive);
     }
 }
 
@@ -1217,17 +1237,17 @@ static JSObjectRef Type_callAsConstructor(JSContextRef context, JSObjectRef obje
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
 
     sig::Type *type(internal->type_);
-    size_t size;
+    size_t length;
 
     if (type->primitive != sig::array_P)
-        size = 0;
+        length = _not(size_t);
     else {
-        size = type->data.data.size;
+        length = type->data.data.size;
         type = type->data.data.type;
     }
 
     void *value(malloc(internal->GetFFI()->size));
-    return CYMakePointer(context, value, _not(size_t), type, NULL, NULL);
+    return CYMakePointer(context, value, length, type, NULL, NULL);
 } CYCatch }
 
 static JSObjectRef Functor_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {

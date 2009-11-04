@@ -142,7 +142,7 @@ extern struct CYHooks *hooks_;
 
 char *sqlite3_column_pooled(apr_pool_t *pool, sqlite3_stmt *stmt, int n);
 
-JSObjectRef CYMakePointer(JSContextRef context, void *pointer, sig::Type *type, ffi_type *ffi, JSObjectRef owner);
+JSObjectRef CYMakePointer(JSContextRef context, void *pointer, size_t length, sig::Type *type, ffi_type *ffi, JSObjectRef owner);
 
 void CYFinalize(JSObjectRef object);
 

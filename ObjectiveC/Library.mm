@@ -2101,7 +2101,7 @@ static JSValueRef CYValue_callAsFunction_$cya(JSContextRef context, JSObjectRef 
         ffi = typical->ffi_;
     }
 
-    return CYMakePointer(context, &internal->value_, type, ffi, object);
+    return CYMakePointer(context, &internal->value_, _not(size_t), type, ffi, object);
 }
 
 static JSValueRef Instance_getProperty_constructor(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
