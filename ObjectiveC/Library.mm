@@ -224,8 +224,6 @@ static JSClassRef ObjectiveC_Image_Classes_;
 static JSClassRef ObjectiveC_Images_;
 #endif
 
-static JSObjectRef Instance_prototype_;
-
 #ifdef __APPLE__
 static Class NSCFBoolean_;
 static Class NSCFType_;
@@ -253,7 +251,7 @@ Type_privateData *Selector_privateData::GetType() const {
 // XXX: trick this out with associated objects!
 JSValueRef CYGetClassPrototype(JSContextRef context, id self) {
     if (self == nil)
-        return Instance_prototype_;
+        return CYGetCachedObject(context, CYJSString("Instance_prototype"));
 
     // XXX: I need to think through multi-context
     typedef std::map<id, JSValueRef> CacheMap;
@@ -267,9 +265,9 @@ JSValueRef CYGetClassPrototype(JSContextRef context, id self) {
     JSValueRef prototype;
 
     if (self == NSArray_)
-        prototype = Array_prototype_;
+        prototype = CYGetCachedObject(context, CYJSString("Array_prototype"));
     else if (self == NSDictionary_)
-        prototype = Object_prototype_;
+        prototype = CYGetCachedObject(context, CYJSString("Object_prototype"));
     else
         prototype = CYGetClassPrototype(context, class_getSuperclass(self));
 
@@ -556,8 +554,9 @@ NSObject *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 /* }}} */
 
 NSObject *CYCastNSObject_(apr_pool_t *pool, JSContextRef context, JSObjectRef object) {
+    JSObjectRef Array(CYGetCachedObject(context, Array_s));
     JSValueRef exception(NULL);
-    bool array(JSValueIsInstanceOfConstructor(context, object, Array_, &exception));
+    bool array(JSValueIsInstanceOfConstructor(context, object, Array, &exception));
     CYThrow(context, exception);
     id value(array ? [CYJSArray alloc] : [CYJSObject alloc]);
     return CYPoolRelease(pool, [value initWithJSObject:object inContext:context]);
@@ -1156,7 +1155,8 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
     JSValueRef exception(NULL);
     JSValueRef arguments[1];
     arguments[0] = CYCastJSValue(context_, (NSObject *) object);
-    JSObjectCallAsFunction(context_, CYCastJSObject(context_, CYGetProperty(context_, Array_, push_s)), object_, 1, arguments, &exception);
+    JSObjectRef Array(CYGetCachedObject(context_, Array_s));
+    JSObjectCallAsFunction(context_, CYCastJSObject(context_, CYGetProperty(context_, Array, push_s)), object_, 1, arguments, &exception);
     CYThrow(context_, exception);
 } CYObjectiveCatch }
 
@@ -1169,13 +1169,15 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
     arguments[0] = CYCastJSValue(context_, index);
     arguments[1] = CYCastJSValue(context_, 0);
     arguments[2] = CYCastJSValue(context_, (NSObject *) object);
-    JSObjectCallAsFunction(context_, CYCastJSObject(context_, CYGetProperty(context_, Array_, splice_s)), object_, 3, arguments, &exception);
+    JSObjectRef Array(CYGetCachedObject(context_, Array_s));
+    JSObjectCallAsFunction(context_, CYCastJSObject(context_, CYGetProperty(context_, Array, splice_s)), object_, 3, arguments, &exception);
     CYThrow(context_, exception);
 } CYObjectiveCatch }
 
 - (void) removeLastObject { CYObjectiveTry {
     JSValueRef exception(NULL);
-    JSObjectCallAsFunction(context_, CYCastJSObject(context_, CYGetProperty(context_, Array_, pop_s)), object_, 0, NULL, &exception);
+    JSObjectRef Array(CYGetCachedObject(context_, Array_s));
+    JSObjectCallAsFunction(context_, CYCastJSObject(context_, CYGetProperty(context_, Array, pop_s)), object_, 0, NULL, &exception);
     CYThrow(context_, exception);
 } CYObjectiveCatch }
 
@@ -1187,7 +1189,8 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
     JSValueRef arguments[2];
     arguments[0] = CYCastJSValue(context_, index);
     arguments[1] = CYCastJSValue(context_, 1);
-    JSObjectCallAsFunction(context_, CYCastJSObject(context_, CYGetProperty(context_, Array_, splice_s)), object_, 2, arguments, &exception);
+    JSObjectRef Array(CYGetCachedObject(context_, Array_s));
+    JSObjectCallAsFunction(context_, CYCastJSObject(context_, CYGetProperty(context_, Array, splice_s)), object_, 2, arguments, &exception);
     CYThrow(context_, exception);
 } CYObjectiveCatch }
 
@@ -2351,6 +2354,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
 
 void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     JSObjectRef global(CYGetGlobalObject(context));
+    JSObjectRef cy(CYCastJSObject(context, CYGetProperty(context, global, cy_s)));
 
     JSObjectRef ObjectiveC(JSObjectMake(context, NULL, NULL));
     CYSetProperty(context, global, CYJSString("ObjectiveC"), ObjectiveC);
@@ -2367,8 +2371,8 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     JSObjectRef Selector(JSObjectMakeConstructor(context, Selector_, &Selector_new));
     JSObjectRef Super(JSObjectMakeConstructor(context, Super_, &Super_new));
 
-    Instance_prototype_ = (JSObjectRef) CYGetProperty(context, Instance, prototype_s);
-    JSValueProtect(context, Instance_prototype_);
+    JSObjectRef Instance_prototype(CYCastJSObject(context, CYGetProperty(context, Instance, prototype_s)));
+    CYSetProperty(context, cy, CYJSString("Instance_prototype"), Instance_prototype);
 
     CYSetProperty(context, global, CYJSString("Instance"), Instance);
     CYSetProperty(context, global, CYJSString("Selector"), Selector);
@@ -2380,8 +2384,9 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
 
     CYSetProperty(context, global, CYJSString("objc_msgSend"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_msgSend"), &$objc_msgSend));
 
-    JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Message, prototype_s), Function_prototype_);
-    JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Selector, prototype_s), Function_prototype_);
+    JSObjectRef Function_prototype(CYGetCachedObject(context, CYJSString("Function_prototype")));
+    JSObjectSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Message, prototype_s)), Function_prototype);
+    JSObjectSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Selector, prototype_s)), Function_prototype);
 } CYPoolCatch() }
 
 static CYHooks CYObjectiveCHooks = {

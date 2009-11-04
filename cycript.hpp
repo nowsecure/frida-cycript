@@ -78,6 +78,8 @@ bool CYSendAll(int socket, const Type_ *data, size_t size) {
 JSGlobalContextRef CYGetJSContext();
 apr_pool_t *CYGetGlobalPool();
 JSObjectRef CYGetGlobalObject(JSContextRef context);
+
+void CYSetupContext(JSGlobalContextRef context);
 const char *CYExecute(apr_pool_t *pool, const char *code);
 
 void CYSetArgs(int argc, const char *argv[]);
@@ -92,6 +94,8 @@ JSValueRef CYGetProperty(JSContextRef context, JSObjectRef object, size_t index)
 JSValueRef CYGetProperty(JSContextRef context, JSObjectRef object, JSStringRef name);
 void CYSetProperty(JSContextRef context, JSObjectRef object, size_t index, JSValueRef value);
 void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef value, JSPropertyAttributes attributes = kJSPropertyAttributeNone);
+
+JSObjectRef CYGetCachedObject(JSContextRef context, JSStringRef name);
 
 JSValueRef CYCastJSValue(JSContextRef context, bool value);
 JSValueRef CYCastJSValue(JSContextRef context, double value);
