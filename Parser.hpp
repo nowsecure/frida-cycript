@@ -652,7 +652,7 @@ struct CYString :
     virtual CYNumber *Number(CYContext &context);
     virtual CYString *String(CYContext &context);
 
-    virtual CYString *Concat(CYContext &out, CYString *rhs) const;
+    CYString *Concat(CYContext &out, CYString *rhs) const;
     virtual void Output(CYOutput &out, CYFlags flags) const;
     virtual void PropertyName(CYOutput &out) const;
 };
