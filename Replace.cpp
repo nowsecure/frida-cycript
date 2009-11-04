@@ -416,7 +416,7 @@ CYString *CYString::Concat(CYContext &context, CYString *rhs) const {
     memcpy(value, value_, size_);
     memcpy(value + size_, rhs->value_, rhs->size_);
     value[size] = '\0';
-    return $S(value);
+    return $S(value, size);
 }
 
 CYNumber *CYString::Number(CYContext &context) {
