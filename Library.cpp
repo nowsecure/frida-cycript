@@ -1494,6 +1494,11 @@ CYJSError::CYJSError(JSContextRef context, const char *format, ...) {
     value_ = CYCastJSError(context, message);
 }
 
+JSGlobalContextRef CYGetJSContext(JSContextRef context) {
+    // XXX: do something better
+    return Context_;
+}
+
 JSGlobalContextRef CYGetJSContext() {
     CYInitialize();
 

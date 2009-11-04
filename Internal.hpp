@@ -43,12 +43,14 @@
 #include "Pooling.hpp"
 
 #include <JavaScriptCore/JSBase.h>
+#include <JavaScriptCore/JSContextRef.h>
 #include <JavaScriptCore/JSObjectRef.h>
 #include <JavaScriptCore/JSValueRef.h>
 
 #include <sig/parse.hpp>
 #include <sig/ffi_type.hpp>
 
+JSGlobalContextRef CYGetJSContext(JSContextRef context);
 void Structor_(apr_pool_t *pool, sig::Type *&type);
 
 struct Type_privateData :
@@ -144,15 +146,16 @@ struct CYOwned :
     CYValue
 {
   private:
-    JSContextRef context_;
+    JSGlobalContextRef context_;
     JSObjectRef owner_;
 
   public:
     CYOwned(void *value, JSContextRef context, JSObjectRef owner) :
         CYValue(value),
-        context_(context),
+        context_(CYGetJSContext(context)),
         owner_(owner)
     {
+        //XXX:JSGlobalContextRetain(context_);
         if (owner_ != NULL)
             JSValueProtect(context_, owner_);
     }
@@ -160,6 +163,7 @@ struct CYOwned :
     virtual ~CYOwned() {
         if (owner_ != NULL)
             JSValueUnprotect(context_, owner_);
+        //XXX:JSGlobalContextRelease(context_);
     }
 
     JSObjectRef GetOwner() const {
@@ -191,19 +195,21 @@ struct Functor :
 struct Closure_privateData :
     cy::Functor
 {
-    JSContextRef context_;
+    JSGlobalContextRef context_;
     JSObjectRef function_;
 
     Closure_privateData(JSContextRef context, JSObjectRef function, const char *type) :
         cy::Functor(type, NULL),
-        context_(context),
+        context_(CYGetJSContext(context)),
         function_(function)
     {
+        //XXX:JSGlobalContextRetain(context_);
         JSValueProtect(context_, function_);
     }
 
     virtual ~Closure_privateData() {
         JSValueUnprotect(context_, function_);
+        //XXX:JSGlobalContextRelease(context_);
     }
 };
 

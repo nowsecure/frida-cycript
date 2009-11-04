@@ -21,3 +21,4 @@ b = []; for (x in a) b.push(x); <- crashes
 errors in another process aren't displayed; to fix this, parse errors should get converted to exceptions and thrown
 CYPoolTry/Catch now carefully save the exception after it /no longer needs the exception/... uhh... wtf?
 throw CYJSError should probably be replaced with CYThrow() across the board
+figure out what to do about global context refs: I really really want to retain the bastards

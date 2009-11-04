@@ -1053,13 +1053,15 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
 - (id) initWithJSObject:(JSObjectRef)object inContext:(JSContextRef)context { CYObjectiveTry {
     if ((self = [super init]) != nil) {
         object_ = object;
-        context_ = context;
+        context_ = CYGetJSContext(context);
+        //XXX:JSGlobalContextRetain(context_);
         JSValueProtect(context_, object_);
     } return self;
 } CYObjectiveCatch }
 
 - (void) dealloc { CYObjectiveTry {
     JSValueUnprotect(context_, object_);
+    //XXX:JSGlobalContextRelease(context_);
     [super dealloc];
 } CYObjectiveCatch }
 
@@ -1127,13 +1129,15 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
 - (id) initWithJSObject:(JSObjectRef)object inContext:(JSContextRef)context { CYObjectiveTry {
     if ((self = [super init]) != nil) {
         object_ = object;
-        context_ = context;
+        context_ = CYGetJSContext(context);
+        //XXX:JSGlobalContextRetain(context_);
         JSValueProtect(context_, object_);
     } return self;
 } CYObjectiveCatch }
 
 - (void) dealloc { CYObjectiveTry {
     JSValueUnprotect(context_, object_);
+    //XXX:JSGlobalContextRelease(context_);
     [super dealloc];
 } CYObjectiveCatch }
 
