@@ -588,6 +588,7 @@ const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSObjectRef obje
     JSValueRef toCYON(CYGetProperty(context, object, toCYON_s));
     if (CYIsCallable(context, toCYON)) {
         JSValueRef value(CYCallAsFunction(context, (JSObjectRef) toCYON, object, 0, NULL));
+        _assert(value != NULL);
         return CYPoolCString(pool, context, value);
     }
 
@@ -881,7 +882,10 @@ Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, 
 
 static JSObjectRef CYMakeFunctor(JSContextRef context, JSObjectRef function, const char *type) {
     Closure_privateData *internal(CYMakeFunctor_(context, function, type, &FunctionClosure_));
-    return JSObjectMake(context, Functor_, internal);
+    JSObjectRef object(JSObjectMake(context, Functor_, internal));
+    // XXX: see above notes about needing to leak
+    JSValueProtect(CYGetJSContext(context), object);
+    return object;
 }
 
 JSObjectRef CYGetCachedObject(JSContextRef context, JSStringRef name) {

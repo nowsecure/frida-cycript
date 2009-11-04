@@ -4,13 +4,13 @@
 #include <objc/objc-api.h>
 #endif
 
-#include "ObjectiveC/Internal.hpp"
-
 #ifdef __APPLE__
 #include "Struct.hpp"
 #endif
 
 #include <Foundation/Foundation.h>
+
+#include "ObjectiveC/Internal.hpp"
 
 #include <objc/Protocol.h>
 
@@ -1297,7 +1297,7 @@ static void CYObjectiveC_CallFunction(JSContextRef context, ffi_cif *cif, void (
     throw CYJSError(context, CYCastJSValue(context, error));
 } }
 
-static bool CYObjectiveC_PoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value) { CYPoolTry  {
+static bool CYObjectiveC_PoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value) { @try  {
     switch (type->primitive) {
         case sig::object_P:
         case sig::typename_P:
@@ -1313,7 +1313,9 @@ static bool CYObjectiveC_PoolFFI(apr_pool_t *pool, JSContextRef context, sig::Ty
     }
 
     return true;
-} CYPoolCatch(false) return /*XXX*/ NULL; }
+} @catch (NSException *error ) {
+    throw CYJSError(context, CYCastJSValue(context, error));
+} }
 
 static JSValueRef CYObjectiveC_FromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) { CYPoolTry {
     switch (type->primitive) {
@@ -1421,6 +1423,7 @@ static JSObjectRef CYMakeMessage(JSContextRef context, SEL sel, IMP imp, const c
 static IMP CYMakeMessage(JSContextRef context, JSValueRef value, const char *type) {
     JSObjectRef function(CYCastJSObject(context, value));
     Closure_privateData *internal(CYMakeFunctor_(context, function, type, &MessageClosure_));
+    // XXX: see notes in Library.cpp about needing to leak
     return reinterpret_cast<IMP>(internal->GetValue());
 }
 

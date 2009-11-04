@@ -1,5 +1,5 @@
 filters += ObjectiveC
-header += Struct.hpp ObjectiveC/Internal.hpp ObjectiveC/Syntax.hpp
+header += Struct.hpp #ObjectiveC/Internal.hpp ObjectiveC/Syntax.hpp
 code += ObjectiveC/Output.o ObjectiveC/Replace.o ObjectiveC/Library.o
 
 Struct.hpp:
