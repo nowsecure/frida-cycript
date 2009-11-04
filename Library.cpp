@@ -816,8 +816,7 @@ JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void 
                 if (JSValueRef value = (*hooks_->FromFFI)(context, type, ffi, data, initialize, owner))
                     return value;
 
-            fprintf(stderr, "CYFromFFI(%c)\n", type->primitive);
-            _assert(false);
+            CYThrow("failed conversion from FFI format: '%c'\n", type->primitive);
     }
 }
 
