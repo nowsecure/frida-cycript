@@ -2239,8 +2239,8 @@ void CYObjectiveC_SetupContext(JSContextRef context) {
     JSObjectRef global(CYGetGlobalObject(context));
     apr_pool_t *pool(CYGetGlobalPool());
 
-    Object_type = new(pool) Type_privateData(pool, "@");
-    Selector_type = new(pool) Type_privateData(pool, ":");
+    Object_type = new(pool) Type_privateData("@");
+    Selector_type = new(pool) Type_privateData(":");
 
 #ifdef __APPLE__
     NSCFBoolean_ = objc_getClass("NSCFBoolean");

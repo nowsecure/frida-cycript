@@ -67,9 +67,16 @@ struct Type_privateData :
     Type_privateData(apr_pool_t *pool, const char *type) :
         ffi_(NULL)
     {
-        if (pool != NULL)
-            pool_ = pool;
+        _assert(pool != NULL);
+        pool_ = pool;
+        sig::Signature signature;
+        sig::Parse(pool_, &signature, type, &Structor_);
+        type_ = signature.elements[0].type;
+    }
 
+    Type_privateData(const char *type) :
+        ffi_(NULL)
+    {
         sig::Signature signature;
         sig::Parse(pool_, &signature, type, &Structor_);
         type_ = signature.elements[0].type;
