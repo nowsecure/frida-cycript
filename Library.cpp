@@ -112,6 +112,10 @@ void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, J
     JSObjectSetProperty(context, object, name, value, attributes, &exception);
     CYThrow(context, exception);
 }
+
+void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef (*callback)(JSContextRef, JSObjectRef, JSObjectRef, size_t, const JSValueRef[], JSValueRef *), JSPropertyAttributes attributes = kJSPropertyAttributeNone) {
+    CYSetProperty(context, object, name, JSObjectMakeFunctionWithCallback(context, name, callback), attributes);
+}
 /* }}} */
 /* JavaScript Strings {{{ */
 JSStringRef CYCopyJSString(const char *value) {
@@ -305,27 +309,26 @@ static JSClassRef Pointer_;
 static JSClassRef Runtime_;
 static JSClassRef Struct_;
 
-static JSStringRef Result_;
-
 JSObjectRef Array_;
 JSObjectRef Error_;
 JSObjectRef Function_;
 JSObjectRef String_;
 
-JSStringRef length_;
-JSStringRef message_;
-JSStringRef name_;
-JSStringRef prototype_;
-JSStringRef toCYON_;
-JSStringRef toJSON_;
-
-JSObjectRef Object_prototype_;
-JSObjectRef Function_prototype_;
-
 JSObjectRef Array_prototype_;
-JSObjectRef Array_pop_;
-JSObjectRef Array_push_;
-JSObjectRef Array_splice_;
+JSObjectRef Function_prototype_;
+JSObjectRef Object_prototype_;
+
+JSStringRef length_s;
+JSStringRef message_s;
+JSStringRef name_s;
+JSStringRef pop_s;
+JSStringRef prototype_s;
+JSStringRef push_s;
+JSStringRef splice_s;
+JSStringRef toCYON_s;
+JSStringRef toJSON_s;
+
+static JSStringRef Result_;
 
 sqlite3 *Bridge_;
 
@@ -590,13 +593,13 @@ const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSValueRef value
 }
 
 const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSObjectRef object) {
-    JSValueRef toCYON(CYGetProperty(context, object, toCYON_));
+    JSValueRef toCYON(CYGetProperty(context, object, toCYON_s));
     if (CYIsCallable(context, toCYON)) {
         JSValueRef value(CYCallAsFunction(context, (JSObjectRef) toCYON, object, 0, NULL));
         return CYPoolCString(pool, context, value);
     }
 
-    JSValueRef toJSON(CYGetProperty(context, object, toJSON_));
+    JSValueRef toJSON(CYGetProperty(context, object, toJSON_s));
     if (CYIsCallable(context, toJSON)) {
         JSValueRef arguments[1] = {CYCastJSValue(context, CYJSString(""))};
         JSValueRef exception(NULL);
@@ -646,7 +649,7 @@ static JSValueRef Array_callAsFunction_toCYON(JSContextRef context, JSObjectRef 
 
     str << '[';
 
-    JSValueRef length(CYGetProperty(context, _this, length_));
+    JSValueRef length(CYGetProperty(context, _this, length_s));
     bool comma(false);
 
     for (size_t index(0), count(CYCastDouble(context, length)); index != count; ++index) {
@@ -950,7 +953,7 @@ static JSValueRef Pointer_getProperty(JSContextRef context, JSObjectRef object, 
     CYPool pool;
     Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(object)));
 
-    if (JSStringIsEqual(property, length_))
+    if (JSStringIsEqual(property, length_s))
         return internal->length_ == _not(size_t) ? CYJSUndefined(context) : CYCastJSValue(context, internal->length_);
 
     Type_privateData *typical(internal->type_);
@@ -1468,12 +1471,15 @@ void CYInitialize() {
     //definition.getProperty = &Global_getProperty;
     Global_ = JSClassCreate(&definition);
 
-    length_ = JSStringCreateWithUTF8CString("length");
-    message_ = JSStringCreateWithUTF8CString("message");
-    name_ = JSStringCreateWithUTF8CString("name");
-    prototype_ = JSStringCreateWithUTF8CString("prototype");
-    toCYON_ = JSStringCreateWithUTF8CString("toCYON");
-    toJSON_ = JSStringCreateWithUTF8CString("toJSON");
+    length_s = JSStringCreateWithUTF8CString("length");
+    message_s = JSStringCreateWithUTF8CString("message");
+    name_s = JSStringCreateWithUTF8CString("name");
+    pop_s = JSStringCreateWithUTF8CString("pop");
+    prototype_s = JSStringCreateWithUTF8CString("prototype");
+    push_s = JSStringCreateWithUTF8CString("push");
+    splice_s = JSStringCreateWithUTF8CString("splice");
+    toCYON_s = JSStringCreateWithUTF8CString("toCYON");
+    toJSON_s = JSStringCreateWithUTF8CString("toJSON");
 
     Result_ = JSStringCreateWithUTF8CString("_");
 
@@ -1558,42 +1564,33 @@ JSGlobalContextRef CYGetJSContext(JSContextRef context) {
 void CYSetupContext(JSGlobalContextRef context) {
     JSObjectRef global(CYGetGlobalObject(context));
 
-    JSObjectSetPrototype(context, global, JSObjectMake(context, Runtime_, NULL));
-
     Array_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Array")));
     JSValueProtect(context, Array_);
+    Array_prototype_ = CYCastJSObject(context, CYGetProperty(context, Array_, prototype_s));
+    JSValueProtect(context, Array_prototype_);
 
     Error_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Error")));
     JSValueProtect(context, Error_);
 
     Function_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Function")));
     JSValueProtect(context, Function_);
+    Function_prototype_ = (JSObjectRef) CYGetProperty(context, Function_, prototype_s);
+    JSValueProtect(context, Function_prototype_);
+
+    JSObjectRef Object(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Object"))));
+    Object_prototype_ = CYCastJSObject(context, CYGetProperty(context, Object, prototype_s));
+    JSValueProtect(context, Object_prototype_);
 
     String_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("String")));
     JSValueProtect(context, String_);
 
-    JSObjectRef Object(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Object"))));
-    Object_prototype_ = CYCastJSObject(context, CYGetProperty(context, Object, prototype_));
-    JSValueProtect(context, Object_prototype_);
+    JSObjectSetPrototype(context, global, JSObjectMake(context, Runtime_, NULL));
 
-    Array_prototype_ = CYCastJSObject(context, CYGetProperty(context, Array_, prototype_));
-    Array_pop_ = CYCastJSObject(context, CYGetProperty(context, Array_prototype_, CYJSString("pop")));
-    Array_push_ = CYCastJSObject(context, CYGetProperty(context, Array_prototype_, CYJSString("push")));
-    Array_splice_ = CYCastJSObject(context, CYGetProperty(context, Array_prototype_, CYJSString("splice")));
-
-    CYSetProperty(context, Array_prototype_, toCYON_, JSObjectMakeFunctionWithCallback(context, toCYON_, &Array_callAsFunction_toCYON), kJSPropertyAttributeDontEnum);
-
-    JSValueProtect(context, Array_prototype_);
-    JSValueProtect(context, Array_pop_);
-    JSValueProtect(context, Array_push_);
-    JSValueProtect(context, Array_splice_);
+    CYSetProperty(context, Array_prototype_, toCYON_s, &Array_callAsFunction_toCYON, kJSPropertyAttributeDontEnum);
 
     JSObjectRef Functor(JSObjectMakeConstructor(context, Functor_, &Functor_new));
 
-    Function_prototype_ = (JSObjectRef) CYGetProperty(context, Function_, prototype_);
-    JSValueProtect(context, Function_prototype_);
-
-    JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Functor, prototype_), Function_prototype_);
+    JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Functor, prototype_s), Function_prototype_);
 
     CYSetProperty(context, global, CYJSString("Functor"), Functor);
     CYSetProperty(context, global, CYJSString("Pointer"), JSObjectMakeConstructor(context, Pointer_, &Pointer_new));
@@ -1601,9 +1598,9 @@ void CYSetupContext(JSGlobalContextRef context) {
 
     JSObjectRef cycript(JSObjectMake(context, NULL, NULL));
     CYSetProperty(context, global, CYJSString("Cycript"), cycript);
-    CYSetProperty(context, cycript, CYJSString("gc"), JSObjectMakeFunctionWithCallback(context, CYJSString("gc"), &Cycript_gc_callAsFunction));
+    CYSetProperty(context, cycript, CYJSString("gc"), &Cycript_gc_callAsFunction);
 
-    CYSetProperty(context, global, CYJSString("$cyq"), JSObjectMakeFunctionWithCallback(context, CYJSString("$cyq"), &$cyq));
+    CYSetProperty(context, global, CYJSString("$cyq"), &$cyq);
 
     System_ = JSObjectMake(context, NULL, NULL);
     JSValueProtect(context, System_);
@@ -1611,8 +1608,7 @@ void CYSetupContext(JSGlobalContextRef context) {
     CYSetProperty(context, global, CYJSString("system"), System_);
     CYSetProperty(context, System_, CYJSString("args"), CYJSNull(context));
     //CYSetProperty(context, System_, CYJSString("global"), global);
-
-    CYSetProperty(context, System_, CYJSString("print"), JSObjectMakeFunctionWithCallback(context, CYJSString("print"), &System_print));
+    CYSetProperty(context, System_, CYJSString("print"), &System_print);
 
     if (hooks_ != NULL && hooks_->SetupContext != NULL)
         (*hooks_->SetupContext)(context);

@@ -1066,7 +1066,7 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
 } CYObjectiveCatch }
 
 - (NSObject *) cy$toJSON:(NSString *)key { CYObjectiveTry {
-    JSValueRef toJSON(CYGetProperty(context_, object_, toJSON_));
+    JSValueRef toJSON(CYGetProperty(context_, object_, toJSON_s));
     if (!CYIsCallable(context_, toJSON))
         return [super cy$toJSON:key];
     else {
@@ -1139,7 +1139,7 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
 } CYObjectiveCatch }
 
 - (NSUInteger) count { CYObjectiveTry {
-    return CYCastDouble(context_, CYGetProperty(context_, object_, length_));
+    return CYCastDouble(context_, CYGetProperty(context_, object_, length_s));
 } CYObjectiveCatch }
 
 - (id) objectAtIndex:(NSUInteger)index { CYObjectiveTry {
@@ -1156,7 +1156,7 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
     JSValueRef exception(NULL);
     JSValueRef arguments[1];
     arguments[0] = CYCastJSValue(context_, (NSObject *) object);
-    JSObjectCallAsFunction(context_, Array_push_, object_, 1, arguments, &exception);
+    JSObjectCallAsFunction(context_, CYCastJSObject(context_, CYGetProperty(context_, Array_, push_s)), object_, 1, arguments, &exception);
     CYThrow(context_, exception);
 } CYObjectiveCatch }
 
@@ -1169,13 +1169,13 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
     arguments[0] = CYCastJSValue(context_, index);
     arguments[1] = CYCastJSValue(context_, 0);
     arguments[2] = CYCastJSValue(context_, (NSObject *) object);
-    JSObjectCallAsFunction(context_, Array_splice_, object_, 3, arguments, &exception);
+    JSObjectCallAsFunction(context_, CYCastJSObject(context_, CYGetProperty(context_, Array_, splice_s)), object_, 3, arguments, &exception);
     CYThrow(context_, exception);
 } CYObjectiveCatch }
 
 - (void) removeLastObject { CYObjectiveTry {
     JSValueRef exception(NULL);
-    JSObjectCallAsFunction(context_, Array_pop_, object_, 0, NULL, &exception);
+    JSObjectCallAsFunction(context_, CYCastJSObject(context_, CYGetProperty(context_, Array_, pop_s)), object_, 0, NULL, &exception);
     CYThrow(context_, exception);
 } CYObjectiveCatch }
 
@@ -1187,7 +1187,7 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
     JSValueRef arguments[2];
     arguments[0] = CYCastJSValue(context_, index);
     arguments[1] = CYCastJSValue(context_, 1);
-    JSObjectCallAsFunction(context_, Array_splice_, object_, 2, arguments, &exception);
+    JSObjectCallAsFunction(context_, CYCastJSObject(context_, CYGetProperty(context_, Array_, splice_s)), object_, 2, arguments, &exception);
     CYThrow(context_, exception);
 } CYObjectiveCatch }
 
@@ -2367,7 +2367,7 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     JSObjectRef Selector(JSObjectMakeConstructor(context, Selector_, &Selector_new));
     JSObjectRef Super(JSObjectMakeConstructor(context, Super_, &Super_new));
 
-    Instance_prototype_ = (JSObjectRef) CYGetProperty(context, Instance, prototype_);
+    Instance_prototype_ = (JSObjectRef) CYGetProperty(context, Instance, prototype_s);
     JSValueProtect(context, Instance_prototype_);
 
     CYSetProperty(context, global, CYJSString("Instance"), Instance);
@@ -2380,8 +2380,8 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
 
     CYSetProperty(context, global, CYJSString("objc_msgSend"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_msgSend"), &$objc_msgSend));
 
-    JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Message, prototype_), Function_prototype_);
-    JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Selector, prototype_), Function_prototype_);
+    JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Message, prototype_s), Function_prototype_);
+    JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Selector, prototype_s), Function_prototype_);
 } CYPoolCatch() }
 
 static CYHooks CYObjectiveCHooks = {

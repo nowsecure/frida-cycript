@@ -45,19 +45,18 @@ extern JSObjectRef Error_;
 extern JSObjectRef Function_;
 extern JSObjectRef String_;
 
-extern JSStringRef length_;
-extern JSStringRef message_;
-extern JSStringRef name_;
-extern JSStringRef prototype_;
-extern JSStringRef toCYON_;
-extern JSStringRef toJSON_;
-
-extern JSObjectRef Object_prototype_;
-extern JSObjectRef Function_prototype_;
+extern JSStringRef length_s;
+extern JSStringRef message_s;
+extern JSStringRef name_s;
+extern JSStringRef pop_s;
+extern JSStringRef prototype_s;
+extern JSStringRef push_s;
+extern JSStringRef splice_s;
+extern JSStringRef toCYON_s;
+extern JSStringRef toJSON_s;
 
 extern JSObjectRef Array_prototype_;
-extern JSObjectRef Array_pop_;
-extern JSObjectRef Array_push_;
-extern JSObjectRef Array_splice_;
+extern JSObjectRef Function_prototype_;
+extern JSObjectRef Object_prototype_;
 
 #endif/*CYCRIPT_JAVASCRIPT_HPP*/
