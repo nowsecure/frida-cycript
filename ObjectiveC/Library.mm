@@ -2236,8 +2236,7 @@ static JSStaticFunction Selector_staticFunctions[5] = {
     {NULL, NULL, 0}
 };
 
-void CYObjectiveC_SetupContext(JSContextRef context) {
-    JSObjectRef global(CYGetGlobalObject(context));
+void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     apr_pool_t *pool(CYGetGlobalPool());
 
     Object_type = new(pool) Type_privateData("@");
@@ -2321,18 +2320,6 @@ void CYObjectiveC_SetupContext(JSContextRef context) {
     definition.getPropertyNames = &ObjectiveC_Classes_getPropertyNames;
     ObjectiveC_Classes_ = JSClassCreate(&definition);
 
-    definition = kJSClassDefinitionEmpty;
-    definition.className = "ObjectiveC::Protocols";
-    definition.getProperty = &ObjectiveC_Protocols_getProperty;
-    definition.getPropertyNames = &ObjectiveC_Protocols_getPropertyNames;
-    ObjectiveC_Protocols_ = JSClassCreate(&definition);
-
-    JSObjectRef ObjectiveC(JSObjectMake(context, NULL, NULL));
-    CYSetProperty(context, global, CYJSString("ObjectiveC"), ObjectiveC);
-
-    CYSetProperty(context, ObjectiveC, CYJSString("classes"), JSObjectMake(context, ObjectiveC_Classes_, NULL));
-    CYSetProperty(context, ObjectiveC, CYJSString("protocols"), JSObjectMake(context, ObjectiveC_Protocols_, NULL));
-
 #if OBJC_API_VERSION >= 2
     definition = kJSClassDefinitionEmpty;
     definition.className = "ObjectiveC::Images";
@@ -2345,7 +2332,33 @@ void CYObjectiveC_SetupContext(JSContextRef context) {
     definition.getProperty = &ObjectiveC_Image_Classes_getProperty;
     definition.getPropertyNames = &ObjectiveC_Image_Classes_getPropertyNames;
     ObjectiveC_Image_Classes_ = JSClassCreate(&definition);
+#endif
 
+    definition = kJSClassDefinitionEmpty;
+    definition.className = "ObjectiveC::Protocols";
+    definition.getProperty = &ObjectiveC_Protocols_getProperty;
+    definition.getPropertyNames = &ObjectiveC_Protocols_getPropertyNames;
+    ObjectiveC_Protocols_ = JSClassCreate(&definition);
+
+#if defined(__APPLE__) && defined(__arm__)
+    MSHookFunction(&objc_registerClassPair, MSHake(objc_registerClassPair));
+#endif
+
+#ifdef __APPLE__
+    class_addMethod(NSCFType_, @selector(cy$toJSON:), reinterpret_cast<IMP>(&NSCFType$cy$toJSON), "@12@0:4@8");
+#endif
+} CYPoolCatch() }
+
+void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
+    JSObjectRef global(CYGetGlobalObject(context));
+
+    JSObjectRef ObjectiveC(JSObjectMake(context, NULL, NULL));
+    CYSetProperty(context, global, CYJSString("ObjectiveC"), ObjectiveC);
+
+    CYSetProperty(context, ObjectiveC, CYJSString("classes"), JSObjectMake(context, ObjectiveC_Classes_, NULL));
+    CYSetProperty(context, ObjectiveC, CYJSString("protocols"), JSObjectMake(context, ObjectiveC_Protocols_, NULL));
+
+#if OBJC_API_VERSION >= 2
     CYSetProperty(context, ObjectiveC, CYJSString("images"), JSObjectMake(context, ObjectiveC_Images_, NULL));
 #endif
 
@@ -2363,24 +2376,20 @@ void CYObjectiveC_SetupContext(JSContextRef context) {
 
 #if defined(__APPLE__) && defined(__arm__)
     CYSetProperty(context, global, CYJSString("objc_registerClassPair"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_registerClassPair"), &objc_registerClassPair_));
-    MSHookFunction(&objc_registerClassPair, MSHake(objc_registerClassPair));
 #endif
 
     CYSetProperty(context, global, CYJSString("objc_msgSend"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_msgSend"), &$objc_msgSend));
 
     JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Message, prototype_), Function_prototype_);
     JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Selector, prototype_), Function_prototype_);
-
-#ifdef __APPLE__
-    class_addMethod(NSCFType_, @selector(cy$toJSON:), reinterpret_cast<IMP>(&NSCFType$cy$toJSON), "@12@0:4@8");
-#endif
-}
+} CYPoolCatch() }
 
 static CYHooks CYObjectiveCHooks = {
     &CYObjectiveC_ExecuteStart,
     &CYObjectiveC_ExecuteEnd,
     &CYObjectiveC_RuntimeProperty,
     &CYObjectiveC_CallFunction,
+    &CYObjectiveC_Initialize,
     &CYObjectiveC_SetupContext,
     &CYObjectiveC_PoolFFI,
     &CYObjectiveC_FromFFI,

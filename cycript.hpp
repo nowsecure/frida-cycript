@@ -132,6 +132,8 @@ struct CYHooks {
 
     JSValueRef (*RuntimeProperty)(JSContextRef, CYUTF8String);
     void (*CallFunction)(JSContextRef, ffi_cif *, void (*)(), uint8_t *, void **);
+
+    void (*Initialize)();
     void (*SetupContext)(JSContextRef);
 
     bool (*PoolFFI)(apr_pool_t *, JSContextRef, sig::Type *, ffi_type *, void *, JSValueRef);

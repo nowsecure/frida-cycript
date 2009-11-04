@@ -300,6 +300,7 @@ static JSGlobalContextRef Context_;
 static JSObjectRef System_;
 
 static JSClassRef Functor_;
+static JSClassRef Global_;
 static JSClassRef Pointer_;
 static JSClassRef Runtime_;
 static JSClassRef Struct_;
@@ -865,7 +866,7 @@ static void FunctionClosure_(ffi_cif *cif, void *result, void **arguments, void 
 Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, const char *type, void (*callback)(ffi_cif *, void *, void **, void *)) {
     // XXX: in case of exceptions this will leak
     // XXX: in point of fact, this may /need/ to leak :(
-    Closure_privateData *internal(new Closure_privateData(CYGetJSContext(), function, type));
+    Closure_privateData *internal(new Closure_privateData(context, function, type));
 
     ffi_closure *closure((ffi_closure *) _syscall(mmap(
         NULL, sizeof(ffi_closure),
@@ -1146,7 +1147,7 @@ static JSValueRef Runtime_getProperty(JSContextRef context, JSObjectRef object, 
             return NULL;
 
         case 0:
-            return JSEvaluateScript(CYGetJSContext(), CYJSString(value), NULL, NULL, 0, NULL);
+            return JSEvaluateScript(CYGetJSContext(context), CYJSString(value), NULL, NULL, 0, NULL);
 
         case 1:
             if (void (*symbol)() = reinterpret_cast<void (*)()>(CYCastSymbol(name.data)))
@@ -1422,6 +1423,62 @@ void CYInitialize() {
     _sqlcall(sqlite3_open("/usr/lib/libcycript.db", &Bridge_));
 
     JSObjectMakeArray$ = reinterpret_cast<JSObjectRef (*)(JSContextRef, size_t, const JSValueRef[], JSValueRef *)>(dlsym(RTLD_DEFAULT, "JSObjectMakeArray"));
+
+    JSClassDefinition definition;
+
+    definition = kJSClassDefinitionEmpty;
+    definition.className = "Functor";
+    definition.staticFunctions = cy::Functor::StaticFunctions;
+    definition.callAsFunction = &Functor_callAsFunction;
+    definition.finalize = &CYFinalize;
+    Functor_ = JSClassCreate(&definition);
+
+    definition = kJSClassDefinitionEmpty;
+    definition.className = "Pointer";
+    definition.staticFunctions = Pointer_staticFunctions;
+    definition.getProperty = &Pointer_getProperty;
+    definition.setProperty = &Pointer_setProperty;
+    definition.finalize = &CYFinalize;
+    Pointer_ = JSClassCreate(&definition);
+
+    definition = kJSClassDefinitionEmpty;
+    definition.className = "Struct";
+    definition.staticFunctions = Struct_staticFunctions;
+    definition.getProperty = &Struct_getProperty;
+    definition.setProperty = &Struct_setProperty;
+    definition.getPropertyNames = &Struct_getPropertyNames;
+    definition.finalize = &CYFinalize;
+    Struct_ = JSClassCreate(&definition);
+
+    definition = kJSClassDefinitionEmpty;
+    definition.className = "Type";
+    definition.staticFunctions = Type_staticFunctions;
+    definition.getProperty = &Type_getProperty;
+    definition.callAsFunction = &Type_callAsFunction;
+    definition.callAsConstructor = &Type_callAsConstructor;
+    definition.finalize = &CYFinalize;
+    Type_privateData::Class_ = JSClassCreate(&definition);
+
+    definition = kJSClassDefinitionEmpty;
+    definition.className = "Runtime";
+    definition.getProperty = &Runtime_getProperty;
+    Runtime_ = JSClassCreate(&definition);
+
+    definition = kJSClassDefinitionEmpty;
+    //definition.getProperty = &Global_getProperty;
+    Global_ = JSClassCreate(&definition);
+
+    length_ = JSStringCreateWithUTF8CString("length");
+    message_ = JSStringCreateWithUTF8CString("message");
+    name_ = JSStringCreateWithUTF8CString("name");
+    prototype_ = JSStringCreateWithUTF8CString("prototype");
+    toCYON_ = JSStringCreateWithUTF8CString("toCYON");
+    toJSON_ = JSStringCreateWithUTF8CString("toJSON");
+
+    Result_ = JSStringCreateWithUTF8CString("_");
+
+    if (hooks_ != NULL && hooks_->Initialize != NULL)
+        (*hooks_->Initialize)();
 }
 
 apr_pool_t *CYGetGlobalPool() {
@@ -1481,8 +1538,7 @@ JSValueRef CYPoolError::CastJSValue(JSContextRef context) const {
 }
 
 CYJSError::CYJSError(JSContextRef context, const char *format, ...) {
-    if (context == NULL)
-        context = CYGetJSContext();
+    _assert(context != NULL);
 
     CYPool pool;
 
@@ -1499,125 +1555,75 @@ JSGlobalContextRef CYGetJSContext(JSContextRef context) {
     return Context_;
 }
 
+void CYSetupContext(JSGlobalContextRef context) {
+    JSObjectRef global(CYGetGlobalObject(context));
+
+    JSObjectSetPrototype(context, global, JSObjectMake(context, Runtime_, NULL));
+
+    Array_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Array")));
+    JSValueProtect(context, Array_);
+
+    Error_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Error")));
+    JSValueProtect(context, Error_);
+
+    Function_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Function")));
+    JSValueProtect(context, Function_);
+
+    String_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("String")));
+    JSValueProtect(context, String_);
+
+    JSObjectRef Object(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Object"))));
+    Object_prototype_ = CYCastJSObject(context, CYGetProperty(context, Object, prototype_));
+    JSValueProtect(context, Object_prototype_);
+
+    Array_prototype_ = CYCastJSObject(context, CYGetProperty(context, Array_, prototype_));
+    Array_pop_ = CYCastJSObject(context, CYGetProperty(context, Array_prototype_, CYJSString("pop")));
+    Array_push_ = CYCastJSObject(context, CYGetProperty(context, Array_prototype_, CYJSString("push")));
+    Array_splice_ = CYCastJSObject(context, CYGetProperty(context, Array_prototype_, CYJSString("splice")));
+
+    CYSetProperty(context, Array_prototype_, toCYON_, JSObjectMakeFunctionWithCallback(context, toCYON_, &Array_callAsFunction_toCYON), kJSPropertyAttributeDontEnum);
+
+    JSValueProtect(context, Array_prototype_);
+    JSValueProtect(context, Array_pop_);
+    JSValueProtect(context, Array_push_);
+    JSValueProtect(context, Array_splice_);
+
+    JSObjectRef Functor(JSObjectMakeConstructor(context, Functor_, &Functor_new));
+
+    Function_prototype_ = (JSObjectRef) CYGetProperty(context, Function_, prototype_);
+    JSValueProtect(context, Function_prototype_);
+
+    JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Functor, prototype_), Function_prototype_);
+
+    CYSetProperty(context, global, CYJSString("Functor"), Functor);
+    CYSetProperty(context, global, CYJSString("Pointer"), JSObjectMakeConstructor(context, Pointer_, &Pointer_new));
+    CYSetProperty(context, global, CYJSString("Type"), JSObjectMakeConstructor(context, Type_privateData::Class_, &Type_new));
+
+    JSObjectRef cycript(JSObjectMake(context, NULL, NULL));
+    CYSetProperty(context, global, CYJSString("Cycript"), cycript);
+    CYSetProperty(context, cycript, CYJSString("gc"), JSObjectMakeFunctionWithCallback(context, CYJSString("gc"), &Cycript_gc_callAsFunction));
+
+    CYSetProperty(context, global, CYJSString("$cyq"), JSObjectMakeFunctionWithCallback(context, CYJSString("$cyq"), &$cyq));
+
+    System_ = JSObjectMake(context, NULL, NULL);
+    JSValueProtect(context, System_);
+
+    CYSetProperty(context, global, CYJSString("system"), System_);
+    CYSetProperty(context, System_, CYJSString("args"), CYJSNull(context));
+    //CYSetProperty(context, System_, CYJSString("global"), global);
+
+    CYSetProperty(context, System_, CYJSString("print"), JSObjectMakeFunctionWithCallback(context, CYJSString("print"), &System_print));
+
+    if (hooks_ != NULL && hooks_->SetupContext != NULL)
+        (*hooks_->SetupContext)(context);
+}
+
 JSGlobalContextRef CYGetJSContext() {
     CYInitialize();
 
     if (Context_ == NULL) {
-        JSClassDefinition definition;
-
-        definition = kJSClassDefinitionEmpty;
-        definition.className = "Functor";
-        definition.staticFunctions = cy::Functor::StaticFunctions;
-        definition.callAsFunction = &Functor_callAsFunction;
-        definition.finalize = &CYFinalize;
-        Functor_ = JSClassCreate(&definition);
-
-        definition = kJSClassDefinitionEmpty;
-        definition.className = "Pointer";
-        definition.staticFunctions = Pointer_staticFunctions;
-        definition.getProperty = &Pointer_getProperty;
-        definition.setProperty = &Pointer_setProperty;
-        definition.finalize = &CYFinalize;
-        Pointer_ = JSClassCreate(&definition);
-
-        definition = kJSClassDefinitionEmpty;
-        definition.className = "Struct";
-        definition.staticFunctions = Struct_staticFunctions;
-        definition.getProperty = &Struct_getProperty;
-        definition.setProperty = &Struct_setProperty;
-        definition.getPropertyNames = &Struct_getPropertyNames;
-        definition.finalize = &CYFinalize;
-        Struct_ = JSClassCreate(&definition);
-
-        definition = kJSClassDefinitionEmpty;
-        definition.className = "Type";
-        definition.staticFunctions = Type_staticFunctions;
-        definition.getProperty = &Type_getProperty;
-        definition.callAsFunction = &Type_callAsFunction;
-        definition.callAsConstructor = &Type_callAsConstructor;
-        definition.finalize = &CYFinalize;
-        Type_privateData::Class_ = JSClassCreate(&definition);
-
-        definition = kJSClassDefinitionEmpty;
-        definition.className = "Runtime";
-        definition.getProperty = &Runtime_getProperty;
-        Runtime_ = JSClassCreate(&definition);
-
-        definition = kJSClassDefinitionEmpty;
-        //definition.getProperty = &Global_getProperty;
-        JSClassRef Global(JSClassCreate(&definition));
-
-        JSGlobalContextRef context(JSGlobalContextCreate(Global));
-        Context_ = context;
-        JSObjectRef global(CYGetGlobalObject(context));
-
-        JSObjectSetPrototype(context, global, JSObjectMake(context, Runtime_, NULL));
-
-        Array_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Array")));
-        JSValueProtect(context, Array_);
-
-        Error_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Error")));
-        JSValueProtect(context, Error_);
-
-        Function_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Function")));
-        JSValueProtect(context, Function_);
-
-        String_ = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("String")));
-        JSValueProtect(context, String_);
-
-        length_ = JSStringCreateWithUTF8CString("length");
-        message_ = JSStringCreateWithUTF8CString("message");
-        name_ = JSStringCreateWithUTF8CString("name");
-        prototype_ = JSStringCreateWithUTF8CString("prototype");
-        toCYON_ = JSStringCreateWithUTF8CString("toCYON");
-        toJSON_ = JSStringCreateWithUTF8CString("toJSON");
-
-        JSObjectRef Object(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Object"))));
-        Object_prototype_ = CYCastJSObject(context, CYGetProperty(context, Object, prototype_));
-        JSValueProtect(context, Object_prototype_);
-
-        Array_prototype_ = CYCastJSObject(context, CYGetProperty(context, Array_, prototype_));
-        Array_pop_ = CYCastJSObject(context, CYGetProperty(context, Array_prototype_, CYJSString("pop")));
-        Array_push_ = CYCastJSObject(context, CYGetProperty(context, Array_prototype_, CYJSString("push")));
-        Array_splice_ = CYCastJSObject(context, CYGetProperty(context, Array_prototype_, CYJSString("splice")));
-
-        CYSetProperty(context, Array_prototype_, toCYON_, JSObjectMakeFunctionWithCallback(context, toCYON_, &Array_callAsFunction_toCYON), kJSPropertyAttributeDontEnum);
-
-        JSValueProtect(context, Array_prototype_);
-        JSValueProtect(context, Array_pop_);
-        JSValueProtect(context, Array_push_);
-        JSValueProtect(context, Array_splice_);
-
-        JSObjectRef Functor(JSObjectMakeConstructor(context, Functor_, &Functor_new));
-
-        Function_prototype_ = (JSObjectRef) CYGetProperty(context, Function_, prototype_);
-        JSValueProtect(context, Function_prototype_);
-
-        JSObjectSetPrototype(context, (JSObjectRef) CYGetProperty(context, Functor, prototype_), Function_prototype_);
-
-        CYSetProperty(context, global, CYJSString("Functor"), Functor);
-        CYSetProperty(context, global, CYJSString("Pointer"), JSObjectMakeConstructor(context, Pointer_, &Pointer_new));
-        CYSetProperty(context, global, CYJSString("Type"), JSObjectMakeConstructor(context, Type_privateData::Class_, &Type_new));
-
-        JSObjectRef cycript(JSObjectMake(context, NULL, NULL));
-        CYSetProperty(context, global, CYJSString("Cycript"), cycript);
-        CYSetProperty(context, cycript, CYJSString("gc"), JSObjectMakeFunctionWithCallback(context, CYJSString("gc"), &Cycript_gc_callAsFunction));
-
-        CYSetProperty(context, global, CYJSString("$cyq"), JSObjectMakeFunctionWithCallback(context, CYJSString("$cyq"), &$cyq));
-
-        System_ = JSObjectMake(context, NULL, NULL);
-        JSValueProtect(context, System_);
-
-        CYSetProperty(context, global, CYJSString("system"), System_);
-        CYSetProperty(context, System_, CYJSString("args"), CYJSNull(context));
-        //CYSetProperty(context, System_, CYJSString("global"), global);
-
-        CYSetProperty(context, System_, CYJSString("print"), JSObjectMakeFunctionWithCallback(context, CYJSString("print"), &System_print));
-
-        Result_ = JSStringCreateWithUTF8CString("_");
-
-        if (hooks_ != NULL && hooks_->SetupContext != NULL)
-            (*hooks_->SetupContext)(context);
+        Context_ = JSGlobalContextCreate(Global_);
+        CYSetupContext(Context_);
     }
 
     return Context_;
