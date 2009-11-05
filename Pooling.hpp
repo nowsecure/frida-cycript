@@ -1,4 +1,4 @@
-/* Cycript - Error.hppution Server and Disassembler
+/* Cycript - Inlining/Optimizing JavaScript Compiler
  * Copyright (C) 2009  Jay Freeman (saurik)
 */
 
