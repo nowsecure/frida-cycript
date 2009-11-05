@@ -126,7 +126,7 @@ JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void 
 JSValueRef CYCallFunction(apr_pool_t *pool, JSContextRef context, size_t setups, void *setup[], size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception, sig::Signature *signature, ffi_cif *cif, void (*function)());
 
 bool CYIsCallable(JSContextRef context, JSValueRef value);
-JSValueRef CYCallAsFunction(JSContextRef context, JSObjectRef function, JSObjectRef _this, size_t count, JSValueRef arguments[]);
+JSValueRef CYCallAsFunction(JSContextRef context, JSObjectRef function, JSObjectRef _this, size_t count, const JSValueRef arguments[]);
 
 const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSObjectRef object);
 

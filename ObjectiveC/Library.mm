@@ -97,6 +97,14 @@
     } \
 }
 
+#define CYSadTry { \
+    @try
+#define CYSadCatch \
+    @catch (NSException *error ) { \
+        throw CYJSError(context, CYCastJSValue(context, error)); \
+    } \
+}
+
 #ifndef __APPLE__
 #define class_getSuperclass GSObjCSuper
 #define class_getInstanceVariable GSCGetInstanceVariableDefinition
@@ -287,17 +295,19 @@ Type_privateData *Selector_privateData::GetType() const {
     return Selector_type;
 }
 
-// XXX: trick this out with associated objects!
 JSValueRef CYGetClassPrototype(JSContextRef context, id self) {
     if (self == nil)
         return CYGetCachedObject(context, CYJSString("Instance_prototype"));
 
-    // XXX: I need to think through multi-context
-    typedef std::map<id, JSValueRef> CacheMap;
-    static CacheMap cache_;
+    JSObjectRef global(CYGetGlobalObject(context));
+    JSObjectRef cy(CYCastJSObject(context, CYGetProperty(context, global, cy_s)));
 
-    JSValueRef &value(cache_[self]);
-    if (value != NULL)
+    char label[32];
+    sprintf(label, "i%p", self);
+    CYJSString name(label);
+
+    JSValueRef value(CYGetProperty(context, cy, name));
+    if (!JSValueIsUndefined(context, value))
         return value;
 
     JSClassRef _class(NULL);
@@ -312,9 +322,7 @@ JSValueRef CYGetClassPrototype(JSContextRef context, id self) {
 
     JSObjectRef object(JSObjectMake(context, _class, NULL));
     JSObjectSetPrototype(context, object, prototype);
-
-    JSValueProtect(context, object);
-    value = object;
+    CYSetProperty(context, cy, name, object);
     return object;
 }
 
@@ -1312,15 +1320,13 @@ static SEL CYCastSEL(JSContextRef context, JSValueRef value) {
         return CYCastPointer<SEL>(context, value);
 }
 
-void *CYObjectiveC_ExecuteStart(JSContextRef context) {
-    // XXX: deal with exceptions!
+void *CYObjectiveC_ExecuteStart(JSContextRef context) { CYSadTry {
     return (void *) [[NSAutoreleasePool alloc] init];
-}
+} CYSadCatch }
 
-void CYObjectiveC_ExecuteEnd(JSContextRef context, void *handle) {
-    // XXX: deal with exceptions!
+void CYObjectiveC_ExecuteEnd(JSContextRef context, void *handle) { CYSadTry {
     return [(NSAutoreleasePool *) handle release];
-}
+} CYSadCatch }
 
 JSValueRef CYObjectiveC_RuntimeProperty(JSContextRef context, CYUTF8String name) { CYPoolTry {
     if (name == "nil")
@@ -1330,13 +1336,11 @@ JSValueRef CYObjectiveC_RuntimeProperty(JSContextRef context, CYUTF8String name)
     return NULL;
 } CYPoolCatch(NULL) return /*XXX*/ NULL; }
 
-static void CYObjectiveC_CallFunction(JSContextRef context, ffi_cif *cif, void (*function)(), uint8_t *value, void **values) { @try {
+static void CYObjectiveC_CallFunction(JSContextRef context, ffi_cif *cif, void (*function)(), uint8_t *value, void **values) { CYSadTry {
     ffi_call(cif, function, value, values);
-} @catch (NSException *error ) {
-    throw CYJSError(context, CYCastJSValue(context, error));
-} }
+} CYSadCatch }
 
-static bool CYObjectiveC_PoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value) { @try  {
+static bool CYObjectiveC_PoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value) { CYSadTry {
     switch (type->primitive) {
         case sig::object_P:
         case sig::typename_P:
@@ -1352,9 +1356,7 @@ static bool CYObjectiveC_PoolFFI(apr_pool_t *pool, JSContextRef context, sig::Ty
     }
 
     return true;
-} @catch (NSException *error ) {
-    throw CYJSError(context, CYCastJSValue(context, error));
-} }
+} CYSadCatch }
 
 static JSValueRef CYObjectiveC_FromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) { CYPoolTry {
     switch (type->primitive) {

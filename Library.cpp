@@ -127,7 +127,7 @@ JSStringRef CYCopyJSString(JSStringRef value) {
 }
 
 JSStringRef CYCopyJSString(CYUTF8String value) {
-    // XXX: this is very wrong
+    // XXX: this is very wrong; it needs to convert to UTF16 and then create from there
     return CYCopyJSString(value.data);
 }
 
@@ -260,7 +260,7 @@ void CYStringify(std::ostringstream &str, const char *data, size_t size) {
             break;
 
             default:
-                // this test is designed to be "awewsome", generating neither warnings nor incorrect results
+                // this test is designed to be "awesome", generating neither warnings nor incorrect results
                 if (*value < 0x20 || *value >= 0x7f)
                     str << "\\x" << std::setbase(16) << std::setw(2) << std::setfill('0') << unsigned(uint8_t(*value));
                 else simple:
@@ -300,8 +300,7 @@ bool CYIsKey(CYUTF8String value) {
 }
 /* }}} */
 
-static JSGlobalContextRef Context_;
-
+static JSClassRef Context_;
 static JSClassRef Functor_;
 static JSClassRef Global_;
 static JSClassRef Pointer_;
@@ -398,6 +397,17 @@ void Structor_(apr_pool_t *pool, sig::Type *&type) {
 }
 
 JSClassRef Type_privateData::Class_;
+
+struct Context :
+    CYData
+{
+    JSGlobalContextRef context_;
+
+    Context(JSGlobalContextRef context) :
+        context_(context)
+    {
+    }
+};
 
 struct Pointer :
     CYOwned
@@ -511,7 +521,7 @@ JSObjectRef CYCastJSObject(JSContextRef context, JSValueRef value) {
     return object;
 }
 
-JSValueRef CYCallAsFunction(JSContextRef context, JSObjectRef function, JSObjectRef _this, size_t count, JSValueRef arguments[]) {
+JSValueRef CYCallAsFunction(JSContextRef context, JSObjectRef function, JSObjectRef _this, size_t count, const JSValueRef arguments[]) {
     JSValueRef exception(NULL);
     JSValueRef value(JSObjectCallAsFunction(context, function, _this, count, arguments, &exception));
     CYThrow(context, exception);
@@ -1282,10 +1292,11 @@ static JSValueRef CYValue_callAsFunction_toCYON(JSContextRef context, JSObjectRe
 
 static JSValueRef Pointer_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(_this)));
-    if (internal->length_ != _not(size_t))
-        // XXX: maybe dynamically look up Array.toCYON?
-        return Array_callAsFunction_toCYON(context, object, _this, count, arguments, exception);
-    else {
+    if (internal->length_ != _not(size_t)) {
+        JSObjectRef Array(CYGetCachedObject(context, Array_s));
+        JSObjectRef toCYON(CYCastJSObject(context, CYGetProperty(context, Array, toCYON_s)));
+        return CYCallAsFunction(context, toCYON, _this, count, arguments);
+    } else {
         char string[32];
         sprintf(string, "%p", internal->value_);
         return CYCastJSValue(context, string);
@@ -1434,6 +1445,11 @@ void CYInitialize() {
     JSClassDefinition definition;
 
     definition = kJSClassDefinitionEmpty;
+    definition.className = "Context";
+    definition.finalize = &CYFinalize;
+    Context_ = JSClassCreate(&definition);
+
+    definition = kJSClassDefinitionEmpty;
     definition.className = "Functor";
     definition.staticFunctions = cy::Functor::StaticFunctions;
     definition.callAsFunction = &Functor_callAsFunction;
@@ -1515,10 +1531,10 @@ JSValueRef CYJSError::CastJSValue(JSContextRef context) const {
 
 void CYThrow(const char *format, ...) {
     va_list args;
-    va_start (args, format);
+    va_start(args, format);
     throw CYPoolError(format, args);
     // XXX: does this matter? :(
-    va_end (args);
+    va_end(args);
 }
 
 const char *CYPoolError::PoolCString(apr_pool_t *pool) const {
@@ -1527,9 +1543,9 @@ const char *CYPoolError::PoolCString(apr_pool_t *pool) const {
 
 CYPoolError::CYPoolError(const char *format, ...) {
     va_list args;
-    va_start (args, format);
+    va_start(args, format);
     message_ = apr_pvsprintf(pool_, format, args);
-    va_end (args);
+    va_end(args);
 }
 
 CYPoolError::CYPoolError(const char *format, va_list args) {
@@ -1558,23 +1574,22 @@ CYJSError::CYJSError(JSContextRef context, const char *format, ...) {
     CYPool pool;
 
     va_list args;
-    va_start (args, format);
+    va_start(args, format);
     const char *message(apr_pvsprintf(pool, format, args));
-    va_end (args);
+    va_end(args);
 
     value_ = CYCastJSError(context, message);
 }
 
 JSGlobalContextRef CYGetJSContext(JSContextRef context) {
-    // XXX: do something better
-    return Context_;
+    return reinterpret_cast<Context *>(JSObjectGetPrivate(CYCastJSObject(context, CYGetProperty(context, CYGetGlobalObject(context), cy_s))))->context_;
 }
 
 void CYSetupContext(JSGlobalContextRef context) {
     JSObjectRef global(CYGetGlobalObject(context));
 
-    JSObjectRef cy(JSObjectMake(context, NULL, NULL));
-    CYSetProperty(context, global, cy_s, cy);
+    JSObjectRef cy(JSObjectMake(context, Context_, new Context(context)));
+    CYSetProperty(context, global, cy_s, cy, kJSPropertyAttributeDontEnum);
 
     JSObjectRef Array(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Array"))));
     CYSetProperty(context, cy, CYJSString("Array"), Array);
@@ -1632,10 +1647,12 @@ void CYSetupContext(JSGlobalContextRef context) {
 JSGlobalContextRef CYGetJSContext() {
     CYInitialize();
 
-    if (Context_ == NULL) {
-        Context_ = JSGlobalContextCreate(Global_);
-        CYSetupContext(Context_);
+    static JSGlobalContextRef context_;
+
+    if (context_ == NULL) {
+        context_ = JSGlobalContextCreate(Global_);
+        CYSetupContext(context_);
     }
 
-    return Context_;
+    return context_;
 }
