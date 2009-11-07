@@ -608,8 +608,10 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
                 std::string code(str.str());
                 if (compile)
                     std::cout << code;
-                else
+                else {
+                    code = "with(Cycript.all){" + code + "}";
                     Run(client, code, stdout);
+                }
             }
     }
 
