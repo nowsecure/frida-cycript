@@ -1,6 +1,7 @@
 C YES true
 C NO false
 C nil null
+C NULL null
 
 : applicationDidFinishLaunching: v12@0:4@8
 
@@ -368,6 +369,27 @@ F UIAccessibilityPostNotification vI@
 # Miscellaneous
 
 F UIGetScreenImage @
+
+V UIAbbreviatedMonthDayFormat @
+V UIAbbreviatedWeekdayDateFormat @
+V UIAbbreviatedWeekdayFormat @
+V UIAbbreviatedWeekdayMonthDayFormat @
+V UIAbbreviatedWeekdayMonthDayMinutelessFormat @
+V UIAbbreviatedWeekdayMonthDayTimeFormat @
+V UIDatePickerDayFormat @
+V UIDatePickerMonthFormat @
+V UIDatePickerYearFormat @
+V UIHourFormat @
+V UIMinutelessTimeFormat @
+V UIMonthYearFormat @
+V UINoAMPMTimeFormat @
+V UIShortMonthDayFormat @
+V UIWeekdayAbbreviatedDateFormat @
+V UIWeekdayAbbreviatedNoYearDateFormat @
+V UIWeekdayFormat @
+V UIWeekdayNoYearDateFormat @
+
+F UIDateFormatStringForFormatType @@
 
 F UIApplicationUseLegacyEvents vB
 
@@ -761,6 +783,8 @@ F CFRangeMake {CFRange}{CFIndex}{CFIndex}
 
 # Time Utilities
 
+F CFAbsoluteTimeGetCurrent {CFAbsoluteTime}
+
 T CFAbsoluteTime {CFTimeInterval}
 S CFGregorianDate "year"{SInt32}"month"{SInt8}"day"{SInt8}"hour"{SInt8}"minute"{SInt8}"second"{double}
 S CFGregorianUnits "years"{SInt32}"months"{SInt32}"days"{SInt32}"hours"{SInt32}"minutes"{SInt32}"second"{double}
@@ -869,7 +893,8 @@ F CFAllocatorGetTypeID {CFTypeID}
 S CFAllocatorContext "version"{CFIndex}"info"^v"retain"{CFAllocatorRetainCallBack}"release"{CFAllocatorReleaseCallBack}"copyDescription"{CFAllocatorCopyDescriptionCallBack}"allocate"{CFAllocatorAllocateCallBack}"reallocate"{CFAllocatorReallocateCallBack}"deallocate"{CFAllocatorDeallocateCallBack}"preferredSize"{CFAllocatorPreferredSizeCallBack}
 # CFAllocatorContext CFAllocatorContext
 
-T CFAllocatorRef ^r{__CFAllocator}
+T CFAllocatorRef @
+# CFAllocatorRef ^r{__CFAllocator}
 
 V kCFAllocatorDefault {CFAllocatorRef}
 V kCFAllocatorSystemDefault {CFAllocatorRef}
@@ -889,6 +914,173 @@ T CFByteOrder __CFByteOrder
 # CFArray
 
 T CFArrayRef @
+
+# CFData
+
+F CFDataCreate {CFDataRef}{CFAllocatorRef}^r{UInt8}{CFIndex}
+F CFDataCreateCopy {CFDataRef}{CFAllocatorRef}{CFDataRef}
+F CFDataCreateWithBytesNoCopy {CFDataRef}{CFAllocatorRef}^r{UInt8}{CFIndex}{CFAllocatorRef}
+
+F CFDataGetBytePtr ^r{UInt8}{CFDataRef}
+F CFDataGetBytes v{CFDataRef}{CFRange}^{UInt8}
+F CFDataGetLength {CFIndex}{CFDataRef}
+
+F CFDataGetTypeID {CFTypeID}
+
+T CFDataRef @
+# CFDataRef ^r{__CFData}
+
+# CFDate
+
+F CFDateCompare {CFComparisonResult}{CFDateRef}{CFDateRef}^v
+F CFDateCreate {CFDateRef}{CFAllocatorRef}{CFAbsoluteTime}
+F CFDateGetAbsoluteTime {CFAbsoluteTime}{CFDateRef}
+F CFDateGetTimeIntervalSinceDate {CFTimeInterval}{CFDateRef}{CFDateRef}
+F CFDateGetTypeID {CFTypeID}
+
+T CFDateRef @
+# CFDateRef ^r{__CFDate}
+
+# CFDateFormatter
+
+F CFDateFormatterCreate {CFDateFormatterRef}{CFAllocatorRef}{CFLocaleRef}{CFDateFormatterStyle}{CFDateFormatterStyle}
+
+F CFDateFormatterSetFormat v{CFDateFormatterRef}{CFStringRef}
+F CFDateFormatterSetProperty v{CFDateFormatterRef}{CFStringRef}{CFTypeRef}
+
+F CFDateFormatterCreateDateFromString {CFDateRef}{CFAllocatorRef}{CFDateFormatterRef}{CFStringRef}^{CFRange}
+F CFDateFormatterGetAbsoluteTimeFromString {Boolean}{CFDateFormatterRef}{CFStringRef}^{CFRange}^{CFAbsoluteTime}
+
+F CFDateFormatterCreateStringWithAbsoluteTime {CFStringRef}{CFAllocatorRef}{CFDateFormatterRef}{CFAbsoluteTime}
+F CFDateFormatterCreateStringWithDate {CFStringRef}{CFAllocatorRef}{CFDateFormatterRef}{CFDateRef}
+F CFDateFormatterCreateDateFormatFromTemplate {CFStringRef}{CFAllocatorRef}{CFStringRef}{CFOptionFlags}{CFLocaleRef}
+
+F CFDateFormatterCopyProperty {CFTypeRef}{CFDateFormatterRef}{CFStringRef}
+F CFDateFormatterGetDateStyle {CFDateFormatterStyle}{CFDateFormatterRef}
+F CFDateFormatterGetFormat {CFStringRef}{CFDateFormatterRef}
+F CFDateFormatterGetLocale {CFLocaleRef}{CFDateFormatterRef}
+F CFDateFormatterGetTimeStyle {CFDateFormatterStyle}{CFDateFormatterRef}
+
+F CFDateFormatterGetTypeID {CFTypeID}
+
+T CFDateFormatterRef @
+# CFDateFormatterRef ^r{__CFDateFormatter}
+
+T CFDateFormatterStyle {CFIndex}
+
+C kCFDateFormatterNoStyle 0
+C kCFDateFormatterShortStyle 1
+C kCFDateFormatterMediumStyle 2
+C kCFDateFormatterLongStyle 3
+C kCFDateFormatterFullStyle 4
+
+V kCFDateFormatterIsLenient @
+V kCFDateFormatterTimeZone @
+V kCFDateFormatterCalendarName @
+V kCFDateFormatterDefaultFormat @
+   
+V kCFDateFormatterTwoDigitStartDate @
+V kCFDateFormatterDefaultDate @
+V kCFDateFormatterCalendar @
+V kCFDateFormatterEraSymbols @
+V kCFDateFormatterMonthSymbols @
+V kCFDateFormatterShortMonthSymbols @
+V kCFDateFormatterWeekdaySymbols @
+V kCFDateFormatterShortWeekdaySymbols @
+V kCFDateFormatterAMSymbol @
+V kCFDateFormatterPMSymbol @
+   
+V kCFDateFormatterLongEraSymbols @
+V kCFDateFormatterVeryShortMonthSymbols @
+V kCFDateFormatterStandaloneMonthSymbols @
+V kCFDateFormatterShortStandaloneMonthSymbols @
+V kCFDateFormatterVeryShortStandaloneMonthSymbols @
+V kCFDateFormatterVeryShortWeekdaySymbols @
+V kCFDateFormatterStandaloneWeekdaySymbols @
+V kCFDateFormatterShortStandaloneWeekdaySymbols @
+V kCFDateFormatterVeryShortStandaloneWeekdaySymbols @
+V kCFDateFormatterQuarterSymbols @
+V kCFDateFormatterShortQuarterSymbols @
+V kCFDateFormatterStandaloneQuarterSymbols @
+V kCFDateFormatterShortStandaloneQuarterSymbols @
+V kCFDateFormatterGregorianStartDate @
+
+V CFGregorianCalendar @
+
+# CFLocale
+
+F CFLocaleCopyCurrent {CFLocaleRef}
+F CFLocaleCreate {CFLocaleRef}{CFAllocatorRef}{CFStringRef}
+F CFLocaleCreateCopy {CFLocaleRef}{CFAllocatorRef}{CFLocaleRef}
+F CFLocaleGetSystem {CFLocaleRef}
+
+F CFLocaleCopyAvailableLocaleIdentifiers {CFArrayRef}
+
+F CFLocaleCopyISOCountryCodes {CFArrayRef}
+F CFLocaleCopyISOLanguageCodes {CFArrayRef}
+F CFLocaleCopyISOCurrencyCodes {CFArrayRef}
+F CFLocaleCopyCommonISOCurrencyCodes {CFArrayRef}
+
+F CFLocaleCopyPreferredLanguages {CFArrayRef}
+
+F CFLocaleCopyDisplayNameForPropertyValue {CFStringRef}{CFLocaleRef}{CFStringRef}{CFStringRef}
+F CFLocaleGetValue {CFTypeRef}{CFLocaleRef}{CFStringRef}
+F CFLocaleGetIdentifier {CFStringRef}{CFLocaleRef}
+
+F CFLocaleCreateCanonicalLocaleIdentifierFromScriptManagerCodes {CFStringRef}{CFAllocatorRef}{LangCode}{RegionCode}
+F CFLocaleCreateCanonicalLanguageIdentifierFromString {CFStringRef}{CFAllocatorRef}{CFStringRef}
+F CFLocaleCreateCanonicalLocaleIdentifierFromString {CFStringRef}{CFAllocatorRef}{CFStringRef}
+F CFLocaleCreateComponentsFromLocaleIdentifier {CFDictionaryRef}{CFAllocatorRef}{CFStringRef}
+F CFLocaleCreateLocaleIdentifierFromComponents {CFStringRef}{CFAllocatorRef}{CFDictionaryRef}
+
+F CFLocaleGetTypeID {CFTypeID}
+
+F CFLocaleCreateLocaleIdentifierFromWindowsLocaleCode {CFStringRef}{CFAllocatorRef}{uint32_t}
+F CFLocaleGetLanguageCharacterDirection {CFLocaleLanguageDirection}{CFStringRef}
+F CFLocaleGetLanguageLineDirection {CFLocaleLanguageDirection}{CFStringRef}
+F CFLocaleGetWindowsLocaleCodeFromLocaleIdentifier {uint32_t}{CFStringRef}
+
+T CFLocaleRef @
+# CFLocaleRef ^r{__CFLocale}
+
+C kCFLocaleLanguageDirectionUnknown 0
+C kCFLocaleLanguageDirectionLeftToRight 1
+C kCFLocaleLanguageDirectionRightToLeft 2
+C kCFLocaleLanguageDirectionTopToBottom 3
+C kCFLocaleLanguageDirectionBottomToTop 4
+
+T CFLocaleLanguageDirection {CFIndex}
+
+V kCFLocaleMeasurementSystem @
+V kCFLocaleDecimalSeparator @
+V kCFLocaleGroupingSeparator @
+V kCFLocaleCurrencySymbol @
+V kCFLocaleCurrencyCode @
+
+V kCFLocaleIdentifier @
+V kCFLocaleLanguageCode @
+V kCFLocaleCountryCode @
+V kCFLocaleScriptCode @
+V kCFLocaleVariantCode @
+V kCFLocaleExemplarCharacterSet @
+V kCFLocaleCalendarIdentifier @
+V kCFLocaleCalendar @
+V kCFLocaleCollationIdentifier @
+V kCFLocaleUsesMetricSystem @
+
+V kCFGregorianCalendar @
+V kCFBuddhistCalendar @
+V kCFChineseCalendar @
+V kCFHebrewCalendar @
+V kCFIslamicCalendar @
+V kCFIslamicCivilCalendar @
+V kCFJapaneseCalendar @
+V kCFRepublicOfChinaCalendar @
+V kCFPersianCalendar @
+V kCFIndianCalendar @
+V kCFISO8601Calendar @
+
+V kCFLocaleCurrentLocaleDidChangeNotificatio @
 
 # CFRunLoop
 
@@ -957,8 +1149,9 @@ F CFShow v{CFTypeRef}
 
 T CFHashCode L
 T CFTypeID L
-# technically ^v
+
 T CFTypeRef @
+# CFTypeRef ^rv
 
 # Private
 

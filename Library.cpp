@@ -113,7 +113,7 @@ void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, J
     CYThrow(context, exception);
 }
 
-void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef (*callback)(JSContextRef, JSObjectRef, JSObjectRef, size_t, const JSValueRef[], JSValueRef *), JSPropertyAttributes attributes = kJSPropertyAttributeNone) {
+void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef (*callback)(JSContextRef, JSObjectRef, JSObjectRef, size_t, const JSValueRef[], JSValueRef *), JSPropertyAttributes attributes) {
     CYSetProperty(context, object, name, JSObjectMakeFunctionWithCallback(context, name, callback), attributes);
 }
 /* }}} */
@@ -300,11 +300,11 @@ bool CYIsKey(CYUTF8String value) {
 }
 /* }}} */
 
+static JSClassRef All_;
 static JSClassRef Context_;
 static JSClassRef Functor_;
 static JSClassRef Global_;
 static JSClassRef Pointer_;
-static JSClassRef Runtime_;
 static JSClassRef Struct_;
 
 JSStringRef Array_s;
@@ -1120,7 +1120,13 @@ static void *CYCastSymbol(const char *name) {
     return dlsym(RTLD_DEFAULT, name);
 }
 
-static JSValueRef Runtime_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
+static JSValueRef All_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
+    JSObjectRef global(CYGetGlobalObject(context));
+    JSObjectRef cycript(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Cycript"))));
+    if (JSValueRef value = CYGetProperty(context, cycript, property))
+        if (!JSValueIsUndefined(context, value))
+            return value;
+
     CYPool pool;
     CYUTF8String name(CYPoolUTF8String(pool, context, property));
 
@@ -1445,6 +1451,11 @@ void CYInitialize() {
     JSClassDefinition definition;
 
     definition = kJSClassDefinitionEmpty;
+    definition.className = "All";
+    definition.getProperty = &All_getProperty;
+    All_ = JSClassCreate(&definition);
+
+    definition = kJSClassDefinitionEmpty;
     definition.className = "Context";
     definition.finalize = &CYFinalize;
     Context_ = JSClassCreate(&definition);
@@ -1481,11 +1492,6 @@ void CYInitialize() {
     definition.callAsConstructor = &Type_callAsConstructor;
     definition.finalize = &CYFinalize;
     Type_privateData::Class_ = JSClassCreate(&definition);
-
-    definition = kJSClassDefinitionEmpty;
-    definition.className = "Runtime";
-    definition.getProperty = &Runtime_getProperty;
-    Runtime_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
     //definition.getProperty = &Global_getProperty;
@@ -1585,12 +1591,15 @@ JSGlobalContextRef CYGetJSContext(JSContextRef context) {
     return reinterpret_cast<Context *>(JSObjectGetPrivate(CYCastJSObject(context, CYGetProperty(context, CYGetGlobalObject(context), cy_s))))->context_;
 }
 
-void CYSetupContext(JSGlobalContextRef context) {
+extern "C" void CYSetupContext(JSGlobalContextRef context) {
+    CYInitialize();
+
     JSObjectRef global(CYGetGlobalObject(context));
 
     JSObjectRef cy(JSObjectMake(context, Context_, new Context(context)));
     CYSetProperty(context, global, cy_s, cy, kJSPropertyAttributeDontEnum);
 
+/* Cache Globals {{{ */
     JSObjectRef Array(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Array"))));
     CYSetProperty(context, cy, CYJSString("Array"), Array);
 
@@ -1614,21 +1623,23 @@ void CYSetupContext(JSGlobalContextRef context) {
 
     JSObjectRef String(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("String"))));
     CYSetProperty(context, cy, CYJSString("String"), String);
-
-    JSObjectSetPrototype(context, global, JSObjectMake(context, Runtime_, NULL));
+/* }}} */
 
     CYSetProperty(context, Array_prototype, toCYON_s, &Array_callAsFunction_toCYON, kJSPropertyAttributeDontEnum);
-
-    JSObjectRef Functor(JSObjectMakeConstructor(context, Functor_, &Functor_new));
-    JSObjectSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Functor, prototype_s)), Function_prototype);
-    CYSetProperty(context, global, CYJSString("Functor"), Functor);
-
-    CYSetProperty(context, global, CYJSString("Pointer"), JSObjectMakeConstructor(context, Pointer_, &Pointer_new));
-    CYSetProperty(context, global, CYJSString("Type"), JSObjectMakeConstructor(context, Type_privateData::Class_, &Type_new));
 
     JSObjectRef cycript(JSObjectMake(context, NULL, NULL));
     CYSetProperty(context, global, CYJSString("Cycript"), cycript);
     CYSetProperty(context, cycript, CYJSString("gc"), &Cycript_gc_callAsFunction);
+
+    JSObjectRef Functor(JSObjectMakeConstructor(context, Functor_, &Functor_new));
+    JSObjectSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Functor, prototype_s)), Function_prototype);
+    CYSetProperty(context, cycript, CYJSString("Functor"), Functor);
+
+    CYSetProperty(context, cycript, CYJSString("Pointer"), JSObjectMakeConstructor(context, Pointer_, &Pointer_new));
+    CYSetProperty(context, cycript, CYJSString("Type"), JSObjectMakeConstructor(context, Type_privateData::Class_, &Type_new));
+
+    JSObjectRef all(JSObjectMake(context, All_, NULL));
+    CYSetProperty(context, cycript, CYJSString("all"), all);
 
     CYSetProperty(context, global, CYJSString("$cyq"), &$cyq);
 
@@ -1652,6 +1663,7 @@ JSGlobalContextRef CYGetJSContext() {
     if (context_ == NULL) {
         context_ = JSGlobalContextCreate(Global_);
         CYSetupContext(context_);
+        JSObjectSetPrototype(context_, CYGetGlobalObject(context_), JSObjectMake(context_, All_, NULL));
     }
 
     return context_;

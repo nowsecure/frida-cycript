@@ -79,7 +79,7 @@ JSGlobalContextRef CYGetJSContext();
 apr_pool_t *CYGetGlobalPool();
 JSObjectRef CYGetGlobalObject(JSContextRef context);
 
-void CYSetupContext(JSGlobalContextRef context);
+extern "C" void CYSetupContext(JSGlobalContextRef context);
 const char *CYExecute(apr_pool_t *pool, const char *code);
 
 void CYSetArgs(int argc, const char *argv[]);
@@ -92,8 +92,10 @@ const char *CYPoolCString(apr_pool_t *pool, JSContextRef context, JSStringRef va
 
 JSValueRef CYGetProperty(JSContextRef context, JSObjectRef object, size_t index);
 JSValueRef CYGetProperty(JSContextRef context, JSObjectRef object, JSStringRef name);
+
 void CYSetProperty(JSContextRef context, JSObjectRef object, size_t index, JSValueRef value);
 void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef value, JSPropertyAttributes attributes = kJSPropertyAttributeNone);
+void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef (*callback)(JSContextRef, JSObjectRef, JSObjectRef, size_t, const JSValueRef[], JSValueRef *), JSPropertyAttributes attributes = kJSPropertyAttributeNone);
 
 JSObjectRef CYGetCachedObject(JSContextRef context, JSStringRef name);
 

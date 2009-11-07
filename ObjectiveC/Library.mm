@@ -2399,9 +2399,11 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
 void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     JSObjectRef global(CYGetGlobalObject(context));
     JSObjectRef cy(CYCastJSObject(context, CYGetProperty(context, global, cy_s)));
+    JSObjectRef cycript(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Cycript"))));
+    JSObjectRef all(CYCastJSObject(context, CYGetProperty(context, cycript, CYJSString("all"))));
 
     JSObjectRef ObjectiveC(JSObjectMake(context, NULL, NULL));
-    CYSetProperty(context, global, CYJSString("ObjectiveC"), ObjectiveC);
+    CYSetProperty(context, cycript, CYJSString("ObjectiveC"), ObjectiveC);
 
     CYSetProperty(context, ObjectiveC, CYJSString("classes"), JSObjectMake(context, ObjectiveC_Classes_, NULL));
     CYSetProperty(context, ObjectiveC, CYJSString("protocols"), JSObjectMake(context, ObjectiveC_Protocols_, NULL));
@@ -2418,15 +2420,15 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     JSObjectRef Instance_prototype(CYCastJSObject(context, CYGetProperty(context, Instance, prototype_s)));
     CYSetProperty(context, cy, CYJSString("Instance_prototype"), Instance_prototype);
 
-    CYSetProperty(context, global, CYJSString("Instance"), Instance);
-    CYSetProperty(context, global, CYJSString("Selector"), Selector);
-    CYSetProperty(context, global, CYJSString("Super"), Super);
+    CYSetProperty(context, cycript, CYJSString("Instance"), Instance);
+    CYSetProperty(context, cycript, CYJSString("Selector"), Selector);
+    CYSetProperty(context, cycript, CYJSString("Super"), Super);
 
 #if defined(__APPLE__) && defined(__arm__)
-    CYSetProperty(context, global, CYJSString("objc_registerClassPair"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_registerClassPair"), &objc_registerClassPair_));
+    CYSetProperty(context, all, CYJSString("objc_registerClassPair"), &objc_registerClassPair_);
 #endif
 
-    CYSetProperty(context, global, CYJSString("objc_msgSend"), JSObjectMakeFunctionWithCallback(context, CYJSString("objc_msgSend"), &$objc_msgSend));
+    CYSetProperty(context, all, CYJSString("objc_msgSend"), &$objc_msgSend);
 
     JSObjectRef Function_prototype(CYGetCachedObject(context, CYJSString("Function_prototype")));
     JSObjectSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Message, prototype_s)), Function_prototype);

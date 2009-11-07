@@ -135,13 +135,17 @@ CYString *CYSelectorPart::Replace(CYContext &context) {
 CYExpression *CYSendDirect::Replace(CYContext &context) {
     std::ostringstream name;
     CYArgument **argument(&arguments_);
+    CYSelectorPart *selector(NULL), *current(NULL);
 
     while (*argument != NULL) {
         if ((*argument)->name_ != NULL) {
-            name << *(*argument)->name_;
+            CYSelectorPart *part($ CYSelectorPart((*argument)->name_, (*argument)->value_ != NULL));
+            if (selector == NULL)
+                selector = part;
+            if (current != NULL)
+                current->SetNext(part);
+            current = part;
             (*argument)->name_ = NULL;
-            if ((*argument)->value_ != NULL)
-                name << ':';
         }
 
         if ((*argument)->value_ == NULL)
@@ -150,10 +154,7 @@ CYExpression *CYSendDirect::Replace(CYContext &context) {
             argument = &(*argument)->next_;
     }
 
-    SEL sel(sel_registerName(name.str().c_str()));
-    double address(static_cast<double>(reinterpret_cast<uintptr_t>(sel)));
-
-    return $C2($V("objc_msgSend"), self_, $D(address), arguments_);
+    return $C2($V("objc_msgSend"), self_, ($ CYSelector(selector))->Replace(context), arguments_);
 }
 
 CYExpression *CYSendSuper::Replace(CYContext &context) {

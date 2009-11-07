@@ -332,6 +332,7 @@ static void Console(apr_pool_t *pool, int client) {
 
         if (debug)
             std::cout << code << std::endl;
+        code = "with(Cycript.all){" + code + "}";
 
         Run(client, code, fout, expand);
     }

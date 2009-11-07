@@ -49,7 +49,7 @@ struct CYSelectorPart :
     CYWord *name_;
     bool value_;
 
-    CYSelectorPart(CYWord *name, bool value, CYSelectorPart *next) :
+    CYSelectorPart(CYWord *name, bool value, CYSelectorPart *next = NULL) :
         CYNext<CYSelectorPart>(next),
         name_(name),
         value_(value)
