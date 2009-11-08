@@ -104,7 +104,7 @@ libcycript.db: Bridge.def
 	    grep '^[CFV]' Bridge.def | sed -e 's/^C/0/;s/^F/1/;s/^V/2/' | sed -e 's/"/\\"/g;s/^\([^ ]*\) \([^ ]*\) \(.*\)$$/insert into "bridge" ("mode", "name", "value") values (\1, '"'"'\2'"'"', '"'"'\3'"'"');/'; \
 	    grep '^:' Bridge.def | sed -e 's/^: \([^ ]*\) \(.*\)/insert into "bridge" ("mode", "name", "value") values (-1, '"'"'\1'"'"', '"'"'\2'"'"');/'; \
 	    grep '^[EST]' Bridge.def | sed -e 's/^S/3/;s/^T/4/;s/^E/5/' | sed -e 's/^5\(.*\)$$/4\1 i/' | sed -e 's/^\([^ ]*\) \([^ ]*\) \(.*\)$$/insert into "bridge" ("mode", "name", "value") values (\1, '"'"'\2'"'"', '"'"'\3'"'"');/'; \
-	} | sqlite3 libcycript.db
+	} | tee libcycript.sql | sqlite3 libcycript.db
 
 %.y: %.y.in
 	./Filter.sh <$< >$@ $(filters)
@@ -148,4 +148,4 @@ test: $(deb)
 	dpkg -i $(deb)
 	cycript test.cy
 
-.PHONY: all clean extra package
+.PHONY: all clean extra package control

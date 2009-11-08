@@ -19,5 +19,6 @@ cyrver: Server.o
 	$(ldid) $@
 
 extra:
+	sed -i -e '/^Depends: / s/\<mobilesubstrate\>/mobilesubstrate (>= 0.9.3072)/g' package/DEBIAN/control
 	#mkdir -p package/System/Library/LaunchDaemons
 	#cp -pR com.saurik.Cyrver.plist package/System/Library/LaunchDaemons

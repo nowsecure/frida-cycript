@@ -1396,6 +1396,71 @@ C MKPinAnnotationColorPurple 2
 F MKCoordinateRegionMakeWithDistance {MKCoordinateRegion}{CLLocationCoordinate2D}{CLLocationDistance}{CLLocationDistance}
 # MKCoordinateSpanMake
 
+f MobileWiFi
+
+#F WiFiManagerClientAddNetwork
+#F WiFiManagerClientCopyDevices
+#F WiFiManagerClientCopyNetworks
+#F WiFiManagerClientCopyProperty
+#F WiFiManagerClientCreate
+#F WiFiManagerClientDisable
+#F WiFiManagerClientDisableNetwork
+#F WiFiManagerClientDispatchNotificationResponse
+#F WiFiManagerClientEnable
+#F WiFiManagerClientEnableNetwork
+#F WiFiManagerClientGetAssociationMode
+#F WiFiManagerClientGetDevice
+#F WiFiManagerClientGetType
+#F WiFiManagerClientGetTypeID
+#F WiFiManagerClientIsNetworkEnabled
+#F WiFiManagerClientRegisterNotificationCallback
+#F WiFiManagerClientRemoveNetwork
+#F WiFiManagerClientScheduleWithRunLoop
+#F WiFiManagerClientSetAssociationMode
+#F WiFiManagerClientSetPower
+#F WiFiManagerClientSetProperty
+#F WiFiManagerClientSetType
+#F WiFiManagerClientUnscheduleFromRunLoop
+#F WiFiManagerClientUpdateNetwork
+
+F WiFiNetworkComparePriority B@@
+#F WiFiNetworkCopyFilteredRecord
+F WiFiNetworkCopyPassword @@
+#F WiFiNetworkCopyPreparedEAPProfile
+#F WiFiNetworkCopyRecord
+#F WiFiNetworkCreate
+#F WiFiNetworkCreateCopy
+F WiFiNetworkGetAssociationDate @@
+#F WiFiNetworkGetAuthFlags
+#F WiFiNetworkGetDirectedState
+#F WiFiNetworkGetFloatProperty
+#F WiFiNetworkGetIntProperty
+#F WiFiNetworkGetProperty
+#F WiFiNetworkGetRateBounds
+F WiFiNetworkGetSSID @@
+F WiFiNetworkGetSSIDData @@
+F WiFiNetworkGetTypeID {CFTypeID}
+F WiFiNetworkIsEAP B@
+F WiFiNetworkIsEnabled B@
+F WiFiNetworkIsHidden B@
+F WiFiNetworkIsHiddenSSID B@
+F WiFiNetworkIsWEP B@
+F WiFiNetworkIsWPA B@
+#F WiFiNetworkMerge
+#F WiFiNetworkMergeForAssociation
+#F WiFiNetworkMergeProperties
+F WiFiNetworkRemovePassword v@
+F WiFiNetworkRequiresIdentity B@
+F WiFiNetworkRequiresOneTimePassword B@
+F WiFiNetworkRequiresPassword B@
+F WiFiNetworkRequiresUsername B@
+F WiFiNetworkSetAssociationDate v@@
+#F WiFiNetworkSetDirectedState
+#F WiFiNetworkSetFloatProperty
+#F WiFiNetworkSetIntProperty
+F WiFiNetworkSetPassword v@@
+#F WiFiNetworkSetProperty
+
 C RTLD_LAZY 0x1
 C RTLD_NOW 0x2
 C RTLD_LOCAL 0x4

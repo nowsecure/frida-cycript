@@ -601,7 +601,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
             if (client != -1) {
                 std::string code(start, end-start);
                 code = "with(Cycript.all){" + code + "}";
-                Run(client, start, end - start, stdout);
+                Run(client, code, stdout);
             } else {
                 std::ostringstream str;
                 CYOutput out(str);
