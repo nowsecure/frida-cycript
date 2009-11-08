@@ -21,3 +21,5 @@ CYPoolTry/Catch now carefully save the exception after it /no longer needs the e
 throw CYJSError should probably be replaced with CYThrow() across the board
 figure out what to do about global context refs: I really really want to retain the bastards
 the concept of NULL pooling is entirely incorrect and sad... bad... evil... need to work on this... really
+NSArray's .toString() and .toLocaleString() fail hard, as Array.prototype.to*String are Array-specific
+(4).toString() is legal, but I'm stripping the ()'s somehow in the serializer
