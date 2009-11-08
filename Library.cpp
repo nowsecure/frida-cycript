@@ -86,6 +86,65 @@ char *sqlite3_column_pooled(apr_pool_t *pool, sqlite3_stmt *stmt, int n) {
 
 struct CYHooks *hooks_;
 
+/* C Strings {{{ */
+template <typename Type_>
+_finline size_t iconv_(size_t (*iconv)(iconv_t, Type_, size_t *, char **, size_t *), iconv_t cd, char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft) {
+    return iconv(cd, const_cast<Type_>(inbuf), inbytesleft, outbuf, outbytesleft);
+}
+
+#ifdef __GLIBC__
+#define UCS_2_INTERNAL "UCS-2"
+#else
+#define UCS_2_INTERNAL "UCS-2-INTERNAL"
+#endif
+
+CYUTF8String CYPoolUTF8String(apr_pool_t *pool, CYUTF16String utf16) {
+    _assert(pool != NULL);
+
+    const char *in(reinterpret_cast<const char *>(utf16.data));
+
+    iconv_t conversion(_syscall(iconv_open("UTF-8", UCS_2_INTERNAL)));
+
+    // XXX: this is wrong
+    size_t size(utf16.size * 5);
+    char *out(new(pool) char[size]);
+    CYUTF8String utf8(out, size);
+
+    size = utf16.size * 2;
+    _syscall(iconv_(&iconv, conversion, const_cast<char **>(&in), &size, &out, &utf8.size));
+
+    *out = '\0';
+    utf8.size = out - utf8.data;
+
+    _syscall(iconv_close(conversion));
+
+    return utf8;
+}
+
+CYUTF16String CYPoolUTF16String(apr_pool_t *pool, CYUTF8String utf8) {
+    _assert(pool != NULL);
+
+    const char *in(utf8.data);
+
+    iconv_t conversion(_syscall(iconv_open(UCS_2_INTERNAL, "UTF-8")));
+
+    // XXX: this is wrong
+    size_t size(utf8.size * 5);
+    uint16_t *temp(new (pool) uint16_t[size]);
+    CYUTF16String utf16(temp, size * 2);
+    char *out(reinterpret_cast<char *>(temp));
+
+    size = utf8.size;
+    _syscall(iconv_(&iconv, conversion, const_cast<char **>(&in), &size, &out, &utf16.size));
+
+    utf16.size = reinterpret_cast<uint16_t *>(out) - utf16.data;
+    temp[utf16.size] = 0;
+
+    _syscall(iconv_close(conversion));
+
+    return utf16;
+}
+/* }}} */
 /* JavaScript Properties {{{ */
 JSValueRef CYGetProperty(JSContextRef context, JSObjectRef object, size_t index) {
     JSValueRef exception(NULL);
@@ -144,36 +203,8 @@ static CYUTF16String CYCastUTF16String(JSStringRef value) {
     return CYUTF16String(JSStringGetCharactersPtr(value), JSStringGetLength(value));
 }
 
-template <typename Type_>
-_finline size_t iconv_(size_t (*iconv)(iconv_t, Type_, size_t *, char **, size_t *), iconv_t cd, char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft) {
-    return iconv(cd, const_cast<Type_>(inbuf), inbytesleft, outbuf, outbytesleft);
-}
-
 CYUTF8String CYPoolUTF8String(apr_pool_t *pool, JSContextRef context, JSStringRef value) {
-    _assert(pool != NULL);
-
-    CYUTF16String utf16(CYCastUTF16String(value));
-    const char *in(reinterpret_cast<const char *>(utf16.data));
-
-#ifdef __GLIBC__
-    iconv_t conversion(_syscall(iconv_open("UTF-8", "UCS-2")));
-#else
-    iconv_t conversion(_syscall(iconv_open("UTF-8", "UCS-2-INTERNAL")));
-#endif
-
-    size_t size(JSStringGetMaximumUTF8CStringSize(value));
-    char *out(new(pool) char[size]);
-    CYUTF8String utf8(out, size);
-
-    size = utf16.size * 2;
-    _syscall(iconv_(&iconv, conversion, const_cast<char **>(&in), &size, &out, &utf8.size));
-
-    *out = '\0';
-    utf8.size = out - utf8.data;
-
-    _syscall(iconv_close(conversion));
-
-    return utf8;
+    return CYPoolUTF8String(pool, CYCastUTF16String(value));
 }
 
 const char *CYPoolCString(apr_pool_t *pool, JSContextRef context, JSStringRef value) {
@@ -1431,6 +1462,31 @@ const char *CYExecute(apr_pool_t *pool, const char *code) {
     if (hooks_ != NULL && hooks_->ExecuteEnd != NULL)
         (*hooks_->ExecuteEnd)(context, handle);
     return json;
+}
+
+extern "C" void CYParseWebCore(apr_pool_t *pool, const uint16_t **data, size_t *size) {
+    CYDriver driver("");
+    cy::parser parser(driver);
+
+    CYUTF8String utf8(CYPoolUTF8String(pool, CYUTF16String(*data, *size)));
+
+    driver.data_ = utf8.data;
+    driver.size_ = utf8.size;
+
+    if (parser.parse() != 0 || !driver.errors_.empty())
+        return;
+
+    CYContext context(driver.pool_);
+    driver.program_->Replace(context);
+    std::ostringstream str;
+    CYOutput out(str);
+    out << *driver.program_;
+    std::string code(str.str());
+
+    CYUTF16String utf16(CYPoolUTF16String(pool, CYUTF8String(code.c_str(), code.size())));
+
+    *data = utf16.data;
+    *size = utf16.size;
 }
 
 static apr_pool_t *Pool_;

@@ -4,7 +4,7 @@ all += #cyrver
 
 arch := iphoneos-arm
 console += -framework UIKit
-depends += readline libffi mobilesubstrate sqlite3-lib
+depends += apr-lib readline libffi mobilesubstrate sqlite3-lib
 #library += -framework CFNetwork
 library += -framework WebCore
 # XXX: all Darwin, maybe all device, should have this
