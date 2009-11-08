@@ -598,9 +598,11 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
             for (CYDriver::Errors::const_iterator i(driver.errors_.begin()); i != driver.errors_.end(); ++i)
                 std::cerr << i->location_.begin << ": " << i->message_ << std::endl;
         } else if (driver.program_ != NULL)
-            if (client != -1)
+            if (client != -1) {
+                std::string code(start, end-start);
+                code = "with(Cycript.all){" + code + "}";
                 Run(client, start, end - start, stdout);
-            else {
+            } else {
                 std::ostringstream str;
                 CYOutput out(str);
                 Setup(out, driver);
