@@ -1464,7 +1464,26 @@ const char *CYExecute(apr_pool_t *pool, const char *code) {
     return json;
 }
 
-extern "C" void CYParseWebCore(apr_pool_t *pool, const uint16_t **data, size_t *size) {
+extern "C" void CydgetSetupContext(JSGlobalContextRef context) {
+    CYSetupContext(context);
+
+    JSObjectRef last(NULL);
+    JSObjectRef curr(CYGetGlobalObject(context));
+
+    goto next; for (JSValueRef next;;) {
+        if (JSValueIsNull(context, next))
+            break;
+        last = curr;
+        curr = CYCastJSObject(context, next);
+      next:
+        next = JSObjectGetPrototype(context, curr);
+    }
+
+    JSObjectRef all(JSObjectMake(context, All_, NULL));
+    JSObjectSetPrototype(context, last, all);
+}
+
+extern "C" void CydgetPoolParse(apr_pool_t *pool, const uint16_t **data, size_t *size) {
     CYDriver driver("");
     cy::parser parser(driver);
 
