@@ -99,9 +99,10 @@
 
 #define CYSadTry { \
     @try
-#define CYSadCatch \
+#define CYSadCatch(value) \
     @catch (NSException *error ) { \
         throw CYJSError(context, CYCastJSValue(context, error)); \
+        return value; \
     } \
 }
 
@@ -1322,11 +1323,11 @@ static SEL CYCastSEL(JSContextRef context, JSValueRef value) {
 
 void *CYObjectiveC_ExecuteStart(JSContextRef context) { CYSadTry {
     return (void *) [[NSAutoreleasePool alloc] init];
-} CYSadCatch }
+} CYSadCatch(NULL) }
 
 void CYObjectiveC_ExecuteEnd(JSContextRef context, void *handle) { CYSadTry {
     return [(NSAutoreleasePool *) handle release];
-} CYSadCatch }
+} CYSadCatch() }
 
 JSValueRef CYObjectiveC_RuntimeProperty(JSContextRef context, CYUTF8String name) { CYPoolTry {
     if (name == "nil")
@@ -1338,7 +1339,7 @@ JSValueRef CYObjectiveC_RuntimeProperty(JSContextRef context, CYUTF8String name)
 
 static void CYObjectiveC_CallFunction(JSContextRef context, ffi_cif *cif, void (*function)(), uint8_t *value, void **values) { CYSadTry {
     ffi_call(cif, function, value, values);
-} CYSadCatch }
+} CYSadCatch() }
 
 static bool CYObjectiveC_PoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value) { CYSadTry {
     switch (type->primitive) {
@@ -1356,7 +1357,7 @@ static bool CYObjectiveC_PoolFFI(apr_pool_t *pool, JSContextRef context, sig::Ty
     }
 
     return true;
-} CYSadCatch }
+} CYSadCatch(false) }
 
 static JSValueRef CYObjectiveC_FromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) { CYPoolTry {
     switch (type->primitive) {
