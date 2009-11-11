@@ -1276,6 +1276,68 @@ C kCLErrorHeadingFailure 3
 
 V kCLErrorDomain @
 
+f CoreTelephony
+
+# most of this is garbage
+
+F _CTCallCopyAllMissedCallsAfterRowID {CFArrayRef}{CFAllocatorRef}l
+F _CTCallCopyAllMissedCallsSince {CFArrayRef}{CFAllocatorRef}{CFDateRef}
+
+T CTCallRef @
+
+# CTCallAddressBlocked
+# CTCallAnswer
+# CTCallAnswerEndingActive
+# CTCallAnswerEndingAllOthers
+# CTCallAnswerEndingHeld
+# CTCallAnswerWithSourceIdentifier
+F CTCallCopyAddress {CFStringRef}{CFAllocatorRef}{CTCallRef}
+# CTCallCopyAllCallsSince
+# CTCallCopyAllIncomingCallsSince
+# CTCallCopyAllMissedCallsAfterRowID
+# CTCallCopyAllMissedCallsSince
+# CTCallCopyAllOutgoingCallsSince
+# CTCallCopyName
+# CTCallCopyUUID
+# CTCallDeleteAllCallsBeforeDate
+# CTCallDial
+# CTCallDialEmergency
+# CTCallDialEmergencyWithSourceIdentifier
+# CTCallDialVoicemail
+# CTCallDialVoicemailWithSourceIdentifier
+# CTCallDialWithID
+# CTCallDialWithIDAndSourceIdentifier
+# CTCallDialWithSourceIdentifier
+# CTCallDisconnect
+# CTCallGetCauseCode
+# CTCallGetDuration
+# CTCallGetEmergencyStatus
+F CTCallGetGetRowIDOfLastInsert i
+F CTCallGetID l{CTCallRef}
+# CTCallGetMultiPartyCallCountMax
+F CTCallGetStartTime B{CTCallRef}^d
+# CTCallGetStatus
+F CTCallGetTypeID {CFTypeID}
+# CTCallHistoryInvalidateCaches
+# CTCallHold
+# CTCallIsAlerting
+# CTCallIsConferenced
+# CTCallIsOutgoing
+# CTCallIsToVoicemail
+# CTCallIsWaiting
+# CTCallJoinConference
+# CTCallLeaveConference
+# CTCallListDisconnect
+# CTCallListDisconnectAll
+# CTCallResume
+# CTCallTimersGetAll
+# CTCallTimersGetIncoming
+# CTCallTimersGetLast
+# CTCallTimersGetLastResetTime
+# CTCallTimersGetLifetime
+# CTCallTimersGetOutgoing
+# CTCallTimersReset
+
 f Foundation
 
 T NSAppleEventManagerSuspensionID ^r{__NSAppleEventManagerSuspension}
