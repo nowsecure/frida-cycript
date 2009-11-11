@@ -1466,21 +1466,6 @@ const char *CYExecute(apr_pool_t *pool, const char *code) {
 
 extern "C" void CydgetSetupContext(JSGlobalContextRef context) {
     CYSetupContext(context);
-
-    JSObjectRef last(NULL);
-    JSObjectRef curr(CYGetGlobalObject(context));
-
-    goto next; for (JSValueRef next;;) {
-        if (JSValueIsNull(context, next))
-            break;
-        last = curr;
-        curr = CYCastJSObject(context, next);
-      next:
-        next = JSObjectGetPrototype(context, curr);
-    }
-
-    JSObjectRef all(JSObjectMake(context, All_, NULL));
-    JSObjectSetPrototype(context, last, all);
 }
 
 extern "C" void CydgetPoolParse(apr_pool_t *pool, const uint16_t **data, size_t *size) {
@@ -1716,6 +1701,19 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     JSObjectRef all(JSObjectMake(context, All_, NULL));
     CYSetProperty(context, cycript, CYJSString("all"), all);
 
+    JSObjectRef last(NULL), curr(global);
+
+    goto next; for (JSValueRef next;;) {
+        if (JSValueIsNull(context, next))
+            break;
+        last = curr;
+        curr = CYCastJSObject(context, next);
+      next:
+        next = JSObjectGetPrototype(context, curr);
+    }
+
+    JSObjectSetPrototype(context, last, all);
+
     CYSetProperty(context, global, CYJSString("$cyq"), &$cyq);
 
     JSObjectRef System(JSObjectMake(context, NULL, NULL));
@@ -1738,7 +1736,6 @@ JSGlobalContextRef CYGetJSContext() {
     if (context_ == NULL) {
         context_ = JSGlobalContextCreate(Global_);
         CYSetupContext(context_);
-        JSObjectSetPrototype(context_, CYGetGlobalObject(context_), JSObjectMake(context_, All_, NULL));
     }
 
     return context_;

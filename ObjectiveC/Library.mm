@@ -2425,10 +2425,10 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     CYSetProperty(context, cycript, CYJSString("Super"), Super);
 
 #if defined(__APPLE__) && defined(__arm__)
-    CYSetProperty(context, all, CYJSString("objc_registerClassPair"), &objc_registerClassPair_);
+    CYSetProperty(context, all, CYJSString("objc_registerClassPair"), &objc_registerClassPair_, kJSPropertyAttributeDontEnum);
 #endif
 
-    CYSetProperty(context, all, CYJSString("objc_msgSend"), &$objc_msgSend);
+    CYSetProperty(context, all, CYJSString("objc_msgSend"), &$objc_msgSend, kJSPropertyAttributeDontEnum);
 
     JSObjectRef Function_prototype(CYGetCachedObject(context, CYJSString("Function_prototype")));
     JSObjectSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Message, prototype_s)), Function_prototype);

@@ -332,8 +332,6 @@ static void Console(apr_pool_t *pool, int client) {
 
         if (debug)
             std::cout << code << std::endl;
-        if (!bypass)
-            code = "with(Cycript.all){" + code + "}";
 
         Run(client, code, fout, expand);
     }
@@ -601,7 +599,6 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
         } else if (driver.program_ != NULL)
             if (client != -1) {
                 std::string code(start, end-start);
-                code = "with(Cycript.all){" + code + "}";
                 Run(client, code, stdout);
             } else {
                 std::ostringstream str;
@@ -611,10 +608,8 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
                 std::string code(str.str());
                 if (compile)
                     std::cout << code;
-                else {
-                    code = "with(Cycript.all){" + code + "}";
+                else
                     Run(client, code, stdout);
-                }
             }
     }
 
