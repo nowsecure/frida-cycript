@@ -102,8 +102,7 @@
 #define CYSadCatch(value) \
     @catch (NSException *error ) { \
         throw CYJSError(context, CYCastJSValue(context, error)); \
-        return value; \
-    } \
+    } return value; \
 }
 
 #ifndef __APPLE__
