@@ -49,6 +49,7 @@ CYStatement *CYCategory::Replace(CYContext &context) {
     return $E($C1($F(NULL, $P5("$cys", "$cyp", "$cyc", "$cyn", "$cyt"), $$->*
         $E($ CYAssign($V("$cyp"), $C1($V("object_getClass"), cys)))->*
         $E($ CYAssign(cyc, cys))->*
+        $E($ CYAssign($V("$cym"), $C1($V("object_getClass"), cyc)))->*
         messages_->Replace(context, true)
     ), name_->ClassName(context, true)));
 }
