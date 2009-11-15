@@ -41,6 +41,7 @@
 #define CYCRIPT_STRING_HPP
 
 #include "cycript.hpp"
+#include "Pooling.hpp"
 
 struct CYUTF8String {
     const char *data;
@@ -69,62 +70,11 @@ struct CYUTF16String {
     }
 };
 
-JSStringRef CYCopyJSString(const char *value);
-JSStringRef CYCopyJSString(JSStringRef value);
-JSStringRef CYCopyJSString(CYUTF8String value);
-JSStringRef CYCopyJSString(JSContextRef context, JSValueRef value);
-
-class CYJSString {
-  private:
-    JSStringRef string_;
-
-    void Clear_() {
-        if (string_ != NULL)
-            JSStringRelease(string_);
-    }
-
-  public:
-    CYJSString(const CYJSString &rhs) :
-        string_(CYCopyJSString(rhs.string_))
-    {
-    }
-
-    template <typename Arg0_>
-    CYJSString(Arg0_ arg0) :
-        string_(CYCopyJSString(arg0))
-    {
-    }
-
-    template <typename Arg0_, typename Arg1_>
-    CYJSString(Arg0_ arg0, Arg1_ arg1) :
-        string_(CYCopyJSString(arg0, arg1))
-    {
-    }
-
-    CYJSString &operator =(const CYJSString &rhs) {
-        Clear_();
-        string_ = CYCopyJSString(rhs.string_);
-        return *this;
-    }
-
-    ~CYJSString() {
-        Clear_();
-    }
-
-    void Clear() {
-        Clear_();
-        string_ = NULL;
-    }
-
-    operator JSStringRef() const {
-        return string_;
-    }
-};
-
 size_t CYGetIndex(const CYUTF8String &value);
 bool CYIsKey(CYUTF8String value);
 bool CYGetOffset(const char *value, ssize_t &index);
 
-const char *CYPoolCString(apr_pool_t *pool, JSContextRef context, JSValueRef value);
+CYUTF8String CYPoolUTF8String(apr_pool_t *pool, CYUTF16String utf16);
+CYUTF16String CYPoolUTF16String(apr_pool_t *pool, CYUTF8String utf8);
 
 #endif/*CYCRIPT_STRING_HPP*/

@@ -324,7 +324,6 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <literal_> ArrayLiteral
 %type <expression_> AssigneeExpression
 %type <expression_> AssigneeExpressionNoBF
-%type <expression_> AssigneeExpressionNoRE
 %type <expression_> AssignmentExpression
 %type <assignment_> AssignmentExpression_
 %type <expression_> AssignmentExpressionNoBF
@@ -344,7 +343,6 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <statement_> BreakStatement
 %type <expression_> CallExpression
 %type <expression_> CallExpressionNoBF
-%type <expression_> CallExpressionNoRE
 %type <clause_> CaseBlock
 %type <clause_> CaseClause
 %type <clause_> CaseClausesOpt
@@ -397,7 +395,6 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <statement_> LabelledStatement
 %type <expression_> LeftHandSideExpression
 %type <expression_> LeftHandSideExpressionNoBF
-%type <expression_> LeftHandSideExpressionNoRE
 //%type <statement_> LetStatement
 %type <literal_> Literal
 %type <literal_> LiteralNoRE
@@ -412,18 +409,15 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <expression_> MemberExpression
 %type <expression_> MemberExpression_
 %type <expression_> MemberExpressionNoBF
-%type <expression_> MemberExpressionNoRE
 %type <expression_> MultiplicativeExpression
 %type <expression_> MultiplicativeExpressionNoBF
 %type <expression_> NewExpression
 %type <expression_> NewExpression_
 %type <expression_> NewExpressionNoBF
-%type <expression_> NewExpressionNoRE
 %type <null_> NullLiteral
 %type <literal_> ObjectLiteral
 %type <expression_> PostfixExpression
 %type <expression_> PostfixExpressionNoBF
-%type <expression_> PostfixExpressionNoRE
 %type <expression_> PrimaryExpression
 %type <expression_> PrimaryExpressionNo
 %type <expression_> PrimaryExpressionNoBF
@@ -453,11 +447,9 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <statement_> SwitchStatement
 %type <statement_> ThrowStatement
 %type <statement_> TryStatement
-%type <expression_> UnaryAssigneeExpression
 %type <expression_> UnaryExpression
 %type <expression_> UnaryExpression_
 %type <expression_> UnaryExpressionNoBF
-%type <expression_> UnaryExpressionNoRE
 %type <declaration_> VariableDeclaration
 %type <declaration_> VariableDeclarationNoIn
 %type <declarations_> VariableDeclarationList
@@ -467,6 +459,17 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <statement_> VariableStatement
 %type <statement_> WhileStatement
 %type <statement_> WithStatement
+
+@begin C
+%type <expression_> AssigneeExpressionNoRE
+%type <expression_> CallExpressionNoRE
+%type <expression_> LeftHandSideExpressionNoRE
+%type <expression_> MemberExpressionNoRE
+%type <expression_> NewExpressionNoRE
+%type <expression_> PostfixExpressionNoRE
+%type <expression_> UnaryAssigneeExpression
+%type <expression_> UnaryExpressionNoRE
+@end
 
 @begin ObjectiveC
 %type <statement_> CategoryStatement
@@ -792,12 +795,14 @@ MemberExpressionNoBF
     | MemberExpression_ { $$ = $1; }
     ;
 
+@begin C
 MemberExpressionNoRE
     : PrimaryExpressionNoRE { $$ = $1; }
     | FunctionExpression { $$ = $1; }
     | MemberExpressionNoRE MemberAccess { $2->SetLeft($1); $$ = $2; }
     | MemberExpression_ { $$ = $1; }
     ;
+@end
 
 NewExpression_
     : "new" NewExpression { $$ = new(driver.pool_) CYNew($2, NULL); }
@@ -813,10 +818,12 @@ NewExpressionNoBF
     | NewExpression_ { $$ = $1; }
     ;
 
+@begin C
 NewExpressionNoRE
     : MemberExpressionNoRE { $$ = $1; }
     | NewExpression_ { $$ = $1; }
     ;
+@end
 
 CallExpression
     : MemberExpression Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
@@ -830,11 +837,13 @@ CallExpressionNoBF
     | CallExpressionNoBF MemberAccess { $2->SetLeft($1); $$ = $2; }
     ;
 
+@begin C
 CallExpressionNoRE
     : MemberExpressionNoRE Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
     | CallExpressionNoRE Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
     | CallExpressionNoRE MemberAccess { $2->SetLeft($1); $$ = $2; }
     ;
+@end
 
 ArgumentList_
     : "," ArgumentList { $$ = $2; }
@@ -864,10 +873,12 @@ LeftHandSideExpressionNoBF
     | CallExpressionNoBF { $$ = $1; }
     ;
 
+@begin C
 LeftHandSideExpressionNoRE
     : NewExpressionNoRE { $$ = $1; }
     | CallExpressionNoRE { $$ = $1; }
     ;
+@end
 /* }}} */
 /* 11.3 Postfix Expressions {{{ */
 PostfixExpression
@@ -882,11 +893,13 @@ PostfixExpressionNoBF
     | LeftHandSideExpressionNoBF "--" { $$ = new(driver.pool_) CYPostDecrement($1); }
     ;
 
+@begin C
 PostfixExpressionNoRE
     : AssigneeExpressionNoRE { $$ = $1; }
     | LeftHandSideExpressionNoRE "++" { $$ = new(driver.pool_) CYPostIncrement($1); }
     | LeftHandSideExpressionNoRE "--" { $$ = new(driver.pool_) CYPostDecrement($1); }
     ;
+@end
 /* }}} */
 /* 11.4 Unary Operators {{{ */
 UnaryExpression_
@@ -913,10 +926,12 @@ UnaryExpressionNoBF
     | UnaryExpression_ { $$ = $1; }
     ;
 
+@begin C
 UnaryExpressionNoRE
     : PostfixExpressionNoRE { $$ = $1; }
     | UnaryExpression_ { $$ = $1; }
     ;
+@end
 /* }}} */
 /* 11.5 Multiplicative Operators {{{ */
 MultiplicativeExpression
@@ -1126,18 +1141,24 @@ AssignmentExpression_
 
 AssigneeExpression
     : LeftHandSideExpression { $$ = $1; }
+@begin C
     | LexSetRegExp UnaryAssigneeExpression { $$ = $2; }
+@end
     ;
 
 AssigneeExpressionNoBF
     : LeftHandSideExpressionNoBF { $$ = $1; }
+@begin C
     | UnaryAssigneeExpression { $$ = $1; }
+@end
     ;
 
+@begin C
 AssigneeExpressionNoRE
     : LeftHandSideExpressionNoRE { $$ = $1; }
     | UnaryAssigneeExpression { $$ = $1; }
     ;
+@end
 
 AssignmentExpression
     : ConditionalExpression { $$ = $1; }

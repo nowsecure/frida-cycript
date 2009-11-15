@@ -40,7 +40,9 @@
 #ifndef CYCRIPT_EXCEPTION_HPP
 #define CYCRIPT_EXCEPTION_HPP
 
+#ifdef CY_EXECUTE
 #include <JavaScriptCore/JSBase.h>
+#endif
 
 #include <apr_pools.h>
 #include "Standard.hpp"
@@ -50,11 +52,16 @@ struct CYException {
     }
 
     virtual const char *PoolCString(apr_pool_t *pool) const = 0;
+#ifdef CY_EXECUTE
     virtual JSValueRef CastJSValue(JSContextRef context) const = 0;
+#endif
 };
 
 void CYThrow(const char *format, ...) _noreturn;
+
+#ifdef CY_EXECUTE
 void CYThrow(JSContextRef context, JSValueRef value);
+#endif
 
 #define CYTry \
     try

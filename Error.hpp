@@ -43,6 +43,7 @@
 #include "Pooling.hpp"
 #include "Exception.hpp"
 
+#ifdef CY_EXECUTE
 struct CYJSError :
     CYException
 {
@@ -60,6 +61,7 @@ struct CYJSError :
     virtual const char *PoolCString(apr_pool_t *pool) const;
     virtual JSValueRef CastJSValue(JSContextRef context) const;
 };
+#endif
 
 struct CYPoolError :
     CYException
@@ -71,7 +73,9 @@ struct CYPoolError :
     CYPoolError(const char *format, va_list args);
 
     virtual const char *PoolCString(apr_pool_t *pool) const;
+#ifdef CY_EXECUTE
     virtual JSValueRef CastJSValue(JSContextRef context) const;
+#endif
 };
 
 #endif/*CYCRIPT_ERROR_HPP*/

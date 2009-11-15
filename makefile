@@ -15,7 +15,7 @@ objc :=
 svn := $(shell svnversion)
 
 all:
-all := libcycript.db cycript
+all := cycript
 
 dpkg_architecture := $(shell which dpkg-architecture 2>/dev/null)
 ifneq ($(dpkg_architecture),)
@@ -23,7 +23,8 @@ arch := $(shell $(dpkg_architecture) -qDEB_HOST_ARCH 2>/dev/null)
 endif
 
 header := Cycript.tab.hh Parser.hpp Pooling.hpp cycript.hpp Internal.hpp Error.hpp String.hpp Exception.hpp Standard.hpp
-code := sig/ffi_type.o sig/parse.o sig/copy.o
+
+code := 
 code += Replace.o Output.o
 code += Cycript.tab.o lex.cy.o
 code += Network.o Parser.o
@@ -31,12 +32,12 @@ code += JavaScriptCore.o Library.o
 
 inject := 
 
-filters := C #E4X
+filters := #E4X
 ldid := true
 entitle := $(ldid)
 dll := so
 apr := -lapr-1
-library := $(apr) -lffi -lsqlite3
+library := 
 console := $(apr) -lreadline
 depends :=
 
@@ -47,9 +48,11 @@ uname_p ?= $(shell uname -p)
 -include $(uname_s).mk
 -include $(uname_s)-$(uname_p).mk
 
+ifdef CY_EXECUTE
 ifeq ($(filter ObjectiveC,$(filters)),)
 ifneq ($(shell which gnustep-config 2>/dev/null),)
 include GNUstep.mk
+endif
 endif
 endif
 
@@ -64,7 +67,7 @@ deb := $(shell grep ^Package: control.in | cut -d ' ' -f 2-)_$(shell grep ^Versi
 
 all: $(deb)
 
-extra:
+extra::
 
 ifeq ($(depends)$(dll),dylib)
 control: control.in cycript libcycript.dylib
@@ -83,28 +86,18 @@ $(deb): $(all) control
 	rm -rf package
 	mkdir -p package/DEBIAN
 	cp -pR control package/DEBIAN
-	$(restart) extra
 	mkdir -p package/usr/{bin,lib,sbin}
+	$(restart) extra
 	cp -pR libcycript.$(dll) package/usr/lib
 	cp -pR cycript package/usr/bin
 	#cp -pR cyrver package/usr/sbin
-	cp -pR libcycript.db package/usr/lib
 	dpkg-deb -b package $(deb)
 endif
 
 all: $(all)
 
 clean:
-	rm -f *.o libcycript.$(dll) cycript libcycript.db Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.y Cycript.l control
-
-libcycript.db: Bridge.def
-	rm -f libcycript.db
-	{ \
-	    echo 'create table "bridge" ("mode" int not null, "name" text not null, "value" text null);'; \
-	    grep '^[CFV]' Bridge.def | sed -e 's/^C/0/;s/^F/1/;s/^V/2/' | sed -e 's/"/\\"/g;s/^\([^ ]*\) \([^ ]*\) \(.*\)$$/insert into "bridge" ("mode", "name", "value") values (\1, '"'"'\2'"'"', '"'"'\3'"'"');/'; \
-	    grep '^:' Bridge.def | sed -e 's/^: \([^ ]*\) \(.*\)/insert into "bridge" ("mode", "name", "value") values (-1, '"'"'\1'"'"', '"'"'\2'"'"');/'; \
-	    grep '^[EST]' Bridge.def | sed -e 's/^S/3/;s/^T/4/;s/^E/5/' | sed -e 's/^5\(.*\)$$/4\1 i/' | sed -e 's/^\([^ ]*\) \([^ ]*\) \(.*\)$$/insert into "bridge" ("mode", "name", "value") values (\1, '"'"'\2'"'"', '"'"'\3'"'"');/'; \
-	} | tee libcycript.sql | sqlite3 libcycript.db
+	rm -f *.o libcycript.$(dll) $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.y Cycript.l control
 
 %.y: %.y.in
 	./Filter.sh <$< >$@ $(filters)

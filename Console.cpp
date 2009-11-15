@@ -39,6 +39,10 @@
 
 #include "cycript.hpp"
 
+#ifdef CY_EXECUTE
+#include "JavaScript.hpp"
+#endif
+
 #include <cstdio>
 #include <sstream>
 
