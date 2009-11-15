@@ -59,7 +59,7 @@ _finline CYFlags &operator |=(CYFlags &lhs, CYFlags rhs) {
 }
 
 _finline CYFlags CYLeft(CYFlags flags) {
-    return flags & ~CYNoDangle;
+    return flags & ~(CYNoDangle | CYNoInteger);
 }
 
 _finline CYFlags CYRight(CYFlags flags) {
@@ -513,7 +513,11 @@ void CYNull::Output(CYOutput &out, CYFlags flags) const {
 void CYNumber::Output(CYOutput &out, CYFlags flags) const {
     std::ostringstream str;
     CYNumerify(str, Value());
-    out << str.str().c_str();
+    std::string value(str.str());
+    out << value.c_str();
+    // XXX: this should probably also handle hex conversions and exponents
+    if ((flags & CYNoInteger) != 0 && value.find('.') == std::string::npos)
+        out << '.';
 }
 
 void CYNumber::PropertyName(CYOutput &out) const {

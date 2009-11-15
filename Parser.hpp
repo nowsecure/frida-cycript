@@ -141,6 +141,7 @@ enum CYFlags {
     CYNoCall =       (1 << 3),
     CYNoRightHand =  (1 << 4),
     CYNoDangle =     (1 << 5),
+    CYNoInteger =    (1 << 6),
     CYNoBF =         (CYNoBrace | CYNoFunction),
 };
 

@@ -23,3 +23,4 @@ figure out what to do about global context refs: I really really want to retain 
 the concept of NULL pooling is entirely incorrect and sad... bad... evil... need to work on this... really
 NSArray's .toString() and .toLocaleString() fail hard, as Array.prototype.to*String are Array-specific
 (4).toString() is legal, but I'm stripping the ()'s somehow in the serializer
+applyOnMainThread, when done at console, loops the cyonifier

@@ -11,6 +11,7 @@ T short s
 T int i
 T long l
 
+T byte C
 T uint I
 T ulong L
 T ushort S
@@ -21,7 +22,13 @@ T float f
 T double d
 
 T Boolean B
+
+T SInt8 {char}
+T UInt8 {byte}
+T SInt16 {short}
+T UInt16 {ushort}
 T SInt32 {int}
+T UInt32 {uint}
 
 S CGPoint "x"f"y"f
 S CGRect "origin"{CGPoint}"size"{CGSize}
@@ -441,6 +448,17 @@ V UIWebViewScalesToFitScale f
 
 f AddressBook
 
+# Private
+
+F CPPhoneNumberCopyNetworkCountryCode @
+F ABCGetSharedAddressBook @
+F ABCFindPersonMatchingPhoneNumberWithCountry @@@@^i^i
+F ABCRecordCopyCompositeName @@
+F ABCFindPersonMatchingPhoneNumber @@@^i^i
+F ABCCopyLocalizedPropertyOrLabel @i
+
+# Public
+
 F ABAddressBookAddRecord B@@^@
 F ABAddressBookCopyArrayOfAllGroups @@
 F ABAddressBookCopyArrayOfAllPeople @@
@@ -602,6 +620,15 @@ V kABPersonAssistantLabel @
 V kABWorkLabel @
 V kABHomeLabel @
 V kABOtherLabel @
+
+f Calendar
+
+F CalDatabaseCopyEventOccurrencesInDateRange {CFArrayRef}^{CalDatabase}^{CalFilter}{CFGregorianDate}{CFGregorianDate}{CFTimeZoneRef}
+F CalFilterCreateWithDatabase ^{CalFilter}^{CalDatabase}
+
+F CalEventOccurrenceGetEvent @@
+F CalEventCopySummary @@
+F CalEventOccurrenceGetDate I@
 
 f CoreAnimation
 
@@ -783,7 +810,15 @@ F CFRangeMake {CFRange}{CFIndex}{CFIndex}
 
 # Time Utilities
 
+F CFAbsoluteTimeAddGregorianUnits {CFAbsoluteTime}{CFAbsoluteTime}{CFTimeZoneRef}{CFGregorianUnits}
 F CFAbsoluteTimeGetCurrent {CFAbsoluteTime}
+F CFAbsoluteTimeGetDayOfWeek {SInt32}{CFAbsoluteTime}{CFTimeZoneRef}
+F CFAbsoluteTimeGetDayOfYear {SInt32}{CFAbsoluteTime}{CFTimeZoneRef}
+F CFAbsoluteTimeGetDifferenceAsGregorianUnits {CFGregorianUnits}{CFAbsoluteTime}{CFAbsoluteTime}{CFTimeZoneRef}{CFOptionFlags}
+F CFAbsoluteTimeGetGregorianDate {CFGregorianDate}{CFAbsoluteTime}{CFTimeZoneRef}
+F CFAbsoluteTimeGetWeekOfYear {SInt32}{CFAbsoluteTime}{CFTimeZoneRef}
+F CFGregorianDateGetAbsoluteTime {CFAbsoluteTime}{CFGregorianDate}{CFTimeZoneRef}
+F CFGregorianDateIsValid {Boolean}{CFGregorianDate}{CFOptionFlags}
 
 T CFAbsoluteTime {CFTimeInterval}
 S CFGregorianDate "year"{SInt32}"month"{SInt8}"day"{SInt8}"hour"{SInt8}"minute"{SInt8}"second"{double}
@@ -1132,6 +1167,43 @@ T CFRunLoopTimerRef @
 
 T CFStringRef @
 
+# CFTimeZone
+
+F CFTimeZoneCreateWithName {CFTimeZoneRef}{CFAllocatorRef}{CFStringRef}{Boolean}
+F CFTimeZoneCreateWithTimeIntervalFromGMT {CFTimeZoneRef}{CFAllocatorRef}{CFTimeInterval}
+F CFTimeZoneCreate {CFTimeZoneRef}{CFAllocatorRef}{CFStringRef}{CFDataRef}
+
+F CFTimeZoneCopyAbbreviationDictionary {CFDictionaryRef}
+F CFTimeZoneCopyAbbreviation {CFStringRef}{CFTimeZoneRef}{CFAbsoluteTime}
+F CFTimeZoneCopyDefault {CFTimeZoneRef}
+F CFTimeZoneCopySystem {CFTimeZoneRef}
+F CFTimeZoneSetDefault v{CFTimeZoneRef}
+F CFTimeZoneCopyKnownNames {CFArrayRef}
+F CFTimeZoneResetSystem v
+F CFTimeZoneSetAbbreviationDictionary v{CFDictionaryRef}
+
+F CFTimeZoneGetName {CFStringRef}{CFTimeZoneRef}
+F CFTimeZoneCopyLocalizedName {CFStringRef}{CFTimeZoneRef}{CFTimeZoneNameStyle}{CFLocaleRef}
+F CFTimeZoneGetSecondsFromGMT {CFTimeInterval}{CFTimeZoneRef}{CFAbsoluteTime}
+F CFTimeZoneGetData {CFDataRef}{CFTimeZoneRef}
+
+F CFTimeZoneIsDaylightSavingTime {Boolean}{CFTimeZoneRef}{CFAbsoluteTime}
+F CFTimeZoneGetDaylightSavingTimeOffset {CFTimeInterval}{CFTimeZoneRef}{CFAbsoluteTime}
+F CFTimeZoneGetNextDaylightSavingTimeTransition {CFAbsoluteTime}{CFTimeZoneRef}{CFAbsoluteTime}
+
+F CFTimeZoneGetTypeID {CFTypeID}
+
+T CFTimeZoneNameStyle {CFIndex}
+T CFTimeZoneRef @
+# CFTimeZoneRef ^r{__CFTimeZoneRef}
+
+V kCFTimeZoneSystemTimeZoneDidChangeNotification {CFStringRef}
+
+C kCFTimeZoneNameStyleStandard 0
+C kCFTimeZoneNameStyleShortStandard 1
+C kCFTimeZoneNameStyleDaylightSaving 2
+C kCFTimeZoneNameStyleShortDaylightSaving 3
+
 # CFType
 
 F CFGetAllocator {CFAllocatorRef}{CFTypeRef}
@@ -1280,9 +1352,6 @@ f CoreTelephony
 
 # most of this is garbage
 
-F _CTCallCopyAllMissedCallsAfterRowID {CFArrayRef}{CFAllocatorRef}l
-F _CTCallCopyAllMissedCallsSince {CFArrayRef}{CFAllocatorRef}{CFDateRef}
-
 T CTCallRef @
 
 # CTCallAddressBlocked
@@ -1294,8 +1363,8 @@ T CTCallRef @
 F CTCallCopyAddress {CFStringRef}{CFAllocatorRef}{CTCallRef}
 # CTCallCopyAllCallsSince
 # CTCallCopyAllIncomingCallsSince
-# CTCallCopyAllMissedCallsAfterRowID
-# CTCallCopyAllMissedCallsSince
+F CTCallCopyAllMissedCallsAfterRowID {CFArrayRef}{CFAllocatorRef}l
+F CTCallCopyAllMissedCallsSince {CFArrayRef}{CFAllocatorRef}{CFDateRef}
 # CTCallCopyAllOutgoingCallsSince
 # CTCallCopyName
 # CTCallCopyUUID

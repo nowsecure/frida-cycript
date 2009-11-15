@@ -1194,7 +1194,7 @@ static JSValueRef All_getProperty(JSContextRef context, JSObjectRef object, JSSt
 
     switch (mode) {
         default:
-            _assert(false);
+            CYThrow("invalid mode from bridge table: %d", mode);
         case -1:
             return NULL;
 
