@@ -83,6 +83,7 @@ struct CYOutput {
     std::ostream &out_;
     bool pretty_;
     unsigned indent_;
+    bool right_;
 
     enum {
         NoMode,
@@ -96,6 +97,7 @@ struct CYOutput {
         out_(out),
         pretty_(false),
         indent_(0),
+        right_(false),
         mode_(NoMode)
     {
     }
@@ -249,6 +251,20 @@ struct CYIdentifier :
         CYWord(word)
     {
     }
+};
+
+struct CYComment :
+    CYStatement
+{
+    const char *value_;
+
+    CYComment(const char *value) :
+        value_(value)
+    {
+    }
+
+    virtual CYStatement *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYLabel :

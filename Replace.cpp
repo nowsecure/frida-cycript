@@ -134,6 +134,10 @@ void CYClause::Replace(CYContext &context) { $T()
     next_->Replace(context);
 }
 
+CYStatement *CYComment::Replace(CYContext &context) {
+    return NULL;
+}
+
 CYExpression *CYCompound::Replace(CYContext &context) {
     expressions_ = expressions_->ReplaceAll(context);
     return NULL;

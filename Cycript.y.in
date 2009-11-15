@@ -67,6 +67,7 @@ typedef struct {
         CYBoolean *boolean_;
         CYClause *clause_;
         cy::Syntax::Catch *catch_;
+        CYComment *comment_;
         CYComprehension *comprehension_;
         CYCompound *compound_;
         CYDeclaration *declaration_;
@@ -208,6 +209,8 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %token Question "?"
 %token SemiColon ";"
 %token NewLine "\n"
+
+%token <comment_> Comment
 
 %token OpenParen "("
 %token CloseParen ")"
@@ -1600,6 +1603,12 @@ MemberAccess
     ;
 /* }}} */
 @end
+
+/* YUI: Documentation Comments {{{ */
+Statement_
+    : Comment { $$ = $1; }
+    ;
+/* }}} */
 
 @begin E4X
 /* Lexer State {{{ */

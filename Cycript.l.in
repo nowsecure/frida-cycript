@@ -161,6 +161,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 <RegExp>\/{RegularExpressionBody}\/{RegularExpressionFlags} E("")
 
 \/\/[^\n]* L
+\/\*!(\n|[^\*]|\*[^/])*\*\/ V() C yylval->comment_ = new(yyextra->pool_) CYComment(apr_pstrmemdup(yyextra->pool_, yytext, yyleng)); return tk::Comment;
 \/\*(\n|[^\*]|\*[^/])*\*\/ V(N)
 
 @begin E4X

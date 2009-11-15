@@ -85,14 +85,24 @@ CYOutput &CYOutput::operator <<(char rhs) {
             for (unsigned i(0); i != indent_; ++i)
                 out_ << "    ";
         else goto done;
-    else goto work;
+    else if (rhs == '\r') {
+        if (right_) {
+            out_ << '\n';
+            right_ = false;
+            goto mode;
+        }
+    } else goto work;
 
+    right_ = true;
+  mode:
     mode_ = NoMode;
     goto done;
 
   work:
-    if (mode_ == Terminated && rhs != '}')
+    if (mode_ == Terminated && rhs != '}') {
+        right_ = true;
         out_ << ';';
+    }
 
     if (rhs == ';') {
         if (pretty_)
@@ -116,6 +126,7 @@ CYOutput &CYOutput::operator <<(char rhs) {
     } else none:
         mode_ = NoMode;
 
+    right_ = true;
     out_ << rhs;
   done:
     return *this;
@@ -141,6 +152,7 @@ CYOutput &CYOutput::operator <<(const char *rhs) {
     else
         mode_ = NoMode;
 
+    right_ = true;
     out_ << rhs;
     return *this;
 }
@@ -221,6 +233,12 @@ void Catch::Output(CYOutput &out) const {
 }
 
 } }
+
+void CYComment::Output(CYOutput &out, CYFlags flags) const {
+    out << '\r';
+    out << value_;
+    out << '\r';
+}
 
 void CYCompound::Output(CYOutput &out, CYFlags flags) const {
     if (CYExpression *expression = expressions_)
