@@ -1279,7 +1279,13 @@ extern "C" void CydgetSetupContext(JSGlobalContextRef context) {
     CYSetupContext(context);
 }
 
+static bool initialized_ = false;
+
 void CYInitializeDynamic() {
+    if (!initialized_)
+        initialized_ = true;
+    else return;
+
     CYInitializeStatic();
 
     _sqlcall(sqlite3_open("/usr/lib/libcycript.db", &Bridge_));

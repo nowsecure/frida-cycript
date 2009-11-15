@@ -38,6 +38,7 @@
 /* }}} */
 
 #include "cycript.hpp"
+#include "JavaScript.hpp"
 
 #include "Pooling.hpp"
 #include "Parser.hpp"
@@ -173,7 +174,7 @@ extern "C" void CYHandleClient(apr_pool_t *pool, int socket) {
 }
 
 extern "C" void CYHandleServer(pid_t pid) {
-    CYInitialize();
+    CYInitializeDynamic();
 
     int socket(_syscall(::socket(PF_UNIX, SOCK_STREAM, 0))); try {
         struct sockaddr_un address;
