@@ -180,9 +180,9 @@ CYExpression *CYDeclaration::ForEachIn(CYContext &context) {
 }
 
 CYExpression *CYDeclaration::Replace(CYContext &context) {
-    CYIdentifier *identifier(identifier_->Replace(context));
-    context.scope_->internal_.insert(CYIdentifierAddressFlagsMap::value_type(identifier, CYIdentifierVariable));
-    return $ CYVariable(identifier);
+    context.Replace(identifier_);
+    context.scope_->Declare(context, identifier_, CYIdentifierVariable);
+    return $ CYVariable(identifier_);
 }
 
 CYProperty *CYDeclarations::Property(CYContext &context) { $T(NULL)
@@ -333,7 +333,7 @@ CYStatement *CYForEachInComprehension::Replace(CYContext &context, CYStatement *
 
 void CYFunction::Inject(CYContext &context) {
     name_ = name_->Replace(context);
-    context.scope_->internal_.insert(CYIdentifierAddressFlagsMap::value_type(name_, CYIdentifierOther));
+    context.scope_->Declare(context, name_, CYIdentifierOther);
 }
 
 void CYFunction::Replace_(CYContext &context, bool outer) {
@@ -360,7 +360,7 @@ CYExpression *CYFunctionExpression::Replace(CYContext &context) {
 
 void CYFunctionParameter::Replace(CYContext &context) { $T()
     name_ = name_->Replace(context);
-    context.scope_->internal_.insert(CYIdentifierAddressFlagsMap::value_type(name_, CYIdentifierArgument));
+    context.scope_->Declare(context, name_, CYIdentifierArgument);
     next_->Replace(context);
 }
 
@@ -370,16 +370,9 @@ CYStatement *CYFunctionStatement::Replace(CYContext &context) {
 }
 
 CYIdentifier *CYIdentifier::Replace(CYContext &context) {
-    if (replace_ != NULL)
-        return replace_;
-
-    CYIdentifierValueSet &identifiers(context.scope_->identifiers_);
-    std::pair<CYIdentifierValueSet::iterator, bool> insert(identifiers.insert(this));
-    if (!insert.second)
-        return *insert.first;
-
-    replace_ = this;
-    return this;
+    if (replace_ == NULL)
+        replace_ = context.scope_->Lookup(context, this);
+    return replace_;
 }
 
 CYStatement *CYIf::Replace(CYContext &context) {
@@ -475,8 +468,8 @@ void CYProgram::Replace(CYContext &context) {
     statements_ = statements_->ReplaceAll(context);
 
     context.scope_ = parent_;
-    Scope(context, statements_);
     context.program_ = program;
+    Scope(context, statements_);
 
     size_t offset(0);
 
@@ -523,7 +516,16 @@ CYStatement *CYReturn::Replace(CYContext &context) {
     return this;
 }
 
-void CYScope::Add(CYContext &context, CYIdentifierAddressVector &external) {
+void CYScope::Declare(CYContext &context, CYIdentifier *identifier, CYIdentifierFlags flags) {
+    internal_.insert(CYIdentifierAddressFlagsMap::value_type(identifier, flags));
+}
+
+CYIdentifier *CYScope::Lookup(CYContext &context, CYIdentifier *identifier) {
+    std::pair<CYIdentifierValueSet::iterator, bool> insert(identifiers_.insert(identifier));
+    return *insert.first;
+}
+
+void CYScope::Merge(CYContext &context, CYIdentifierAddressVector &external) {
     for (CYIdentifierAddressVector::const_iterator i(external.begin()); i != external.end(); ++i) {
         std::pair<CYIdentifierAddressSet::iterator, bool> insert(identifiers_.insert(*i));
         if (!insert.second)
@@ -570,7 +572,7 @@ void CYScope::Scope(CYContext &context, CYStatement *&statements) {
     if (parent_ != NULL) {
         if (parent_->offset_ < offset_)
             parent_->offset_ = offset_;
-        parent_->Add(context, external);
+        parent_->Merge(context, external);
     } else if (program != NULL)
         for (CYIdentifierAddressVector::const_iterator i(external.begin()); i != external.end(); ++i)
             program->external_.insert((*i)->Word());

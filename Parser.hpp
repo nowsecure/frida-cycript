@@ -315,8 +315,9 @@ typedef std::map<CYIdentifier *, CYIdentifierFlags> CYIdentifierAddressFlagsMap;
 
 struct CYScope {
     CYScope *parent_;
-    CYIdentifierValueSet identifiers_;
     CYIdentifierAddressFlagsMap internal_;
+
+    CYIdentifierValueSet identifiers_;
     size_t offset_;
 
     CYScope() :
@@ -325,7 +326,9 @@ struct CYScope {
     {
     }
 
-    void Add(CYContext &context, CYIdentifierAddressVector &external);
+    void Declare(CYContext &context, CYIdentifier *identifier, CYIdentifierFlags flags);
+    virtual CYIdentifier *Lookup(CYContext &context, CYIdentifier *identifier);
+    void Merge(CYContext &context, CYIdentifierAddressVector &external);
     void Scope(CYContext &context, CYStatement *&statements);
 };
 
