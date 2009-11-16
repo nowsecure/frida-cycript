@@ -140,7 +140,7 @@ package: $(deb)
 test: $(deb)
 	dpkg -i $(deb)
 	if [[ -e target.cy ]]; then cycript -c target.cy && echo; fi
-	if [[ -e jquery.js ]]; then /usr/bin/time cycript -c jquery.js >jquery.cyc.js; gzip -9c jquery.cyc.js >jquery.cyc.js.gz; ls -la jquery.{cyc,yui}.js{,.gz}; fi
+	if [[ -e jquery.js ]]; then /usr/bin/time cycript -c jquery.js >jquery.cyc.js; gzip -9c jquery.cyc.js >jquery.cyc.js.gz; ls -la jquery.{cyc,mam,yui}.js{,.gz}; fi
 	if [[ -e test.cy ]]; then cycript test.cy; fi
 
 .PHONY: all clean extra package control
