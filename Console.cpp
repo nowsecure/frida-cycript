@@ -38,6 +38,7 @@
 /* }}} */
 
 #include "cycript.hpp"
+#include "Context.hpp"
 
 #ifdef CY_EXECUTE
 #include "JavaScript.hpp"
@@ -115,7 +116,8 @@ void Setup(CYDriver &driver, cy::parser &parser) {
 void Setup(CYOutput &out, CYDriver &driver) {
     out.pretty_ = pretty_;
 
-    CYContext context(driver.pool_);
+    CYOptions options;
+    CYContext context(driver.pool_, options);
     driver.program_->Replace(context);
 }
 
@@ -324,7 +326,8 @@ static void Console(apr_pool_t *pool, int client) {
                 code = command;
             else {
                 std::ostringstream str;
-                CYOutput out(str);
+                CYOptions options;
+                CYOutput out(str, options);
                 Setup(out, driver);
                 out << *driver.program_;
                 code = str.str();
@@ -606,7 +609,8 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
                 Run(client, code, stdout);
             } else {
                 std::ostringstream str;
-                CYOutput out(str);
+                CYOptions options;
+                CYOutput out(str, options);
                 Setup(out, driver);
                 out << *driver.program_;
                 std::string code(str.str());

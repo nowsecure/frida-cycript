@@ -22,7 +22,7 @@ ifneq ($(dpkg_architecture),)
 arch := $(shell $(dpkg_architecture) -qDEB_HOST_ARCH 2>/dev/null)
 endif
 
-header := Cycript.tab.hh Parser.hpp Pooling.hpp cycript.hpp Internal.hpp Error.hpp String.hpp Exception.hpp Standard.hpp
+header := Cycript.tab.hh Parser.hpp Pooling.hpp cycript.hpp Internal.hpp Error.hpp String.hpp Exception.hpp Standard.hpp Context.hpp
 
 code := 
 code += Replace.o Output.o
@@ -139,6 +139,8 @@ package: $(deb)
 
 test: $(deb)
 	dpkg -i $(deb)
-	cycript test.cy
+	if [[ -e target.cy ]]; then cycript -c target.cy && echo; fi
+	if [[ -e jquery.js ]]; then cycript -c jquery.js >jquery.cyc.js; gzip -9c jquery.cyc.js >jquery.cyc.js.gz; ls -la jquery.{cyc,yui}.js{,.gz}; fi
+	if [[ -e test.cy ]]; then cycript test.cy; fi
 
 .PHONY: all clean extra package control

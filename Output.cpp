@@ -284,7 +284,7 @@ void CYClause::Output(CYOutput &out) const {
 }
 
 const char *CYDeclaration::ForEachIn() const {
-    return identifier_->Value();
+    return identifier_->Word();
 }
 
 void CYDeclaration::ForIn(CYOutput &out, CYFlags flags) const {
@@ -352,6 +352,7 @@ void CYElement::Output(CYOutput &out) const {
 }
 
 void CYEmpty::Output(CYOutput &out, CYFlags flags) const {
+    out << '`';
     out.Terminate();
 }
 
@@ -416,7 +417,8 @@ void CYForEachInComprehension::Output(CYOutput &out) const {
 
 void CYForIn::Output(CYOutput &out, CYFlags flags) const {
     out << "for" << ' ' << '(';
-    initialiser_->ForIn(out, CYNoIn);
+    if (initialiser_ != NULL)
+        initialiser_->ForIn(out, CYNoIn);
     out << "in" << *set_ << ')';
     code_->Single(out, CYRight(flags));
 }
@@ -431,6 +433,8 @@ void CYFunction::Output(CYOutput &out, CYFlags flags) const {
     if (protect)
         out << '(';
     out << "function";
+    if (out.options_.verbose_)
+        out.out_ << ':' << static_cast<const CYScope *>(this);
     if (name_ != NULL)
         out << ' ' << *name_;
     out << '(' << parameters_ << ')';
@@ -451,6 +455,10 @@ void CYFunctionParameter::Output(CYOutput &out) const {
     out << *name_;
     if (next_ != NULL)
         out << ',' << ' ' << *next_;
+}
+
+const char *CYIdentifier::Word() const {
+    return replace_ == NULL || replace_ == this ? CYWord::Word() : replace_->Word();
 }
 
 void CYIf::Output(CYOutput &out, CYFlags flags) const {
@@ -716,15 +724,21 @@ void CYWith::Output(CYOutput &out, CYFlags flags) const {
 void CYWord::ClassName(CYOutput &out, bool object) const {
     if (object)
         out << "objc_getClass(";
-    out << '"' << Value() << '"';
+    out << '"' << Word() << '"';
     if (object)
         out << ')';
 }
 
 void CYWord::Output(CYOutput &out) const {
-    out << Value();
+    out << Word();
+    if (out.options_.verbose_)
+        out.out_ << '@' << this;
 }
 
 void CYWord::PropertyName(CYOutput &out) const {
     Output(out);
+}
+
+const char *CYWord::Word() const {
+    return word_;
 }

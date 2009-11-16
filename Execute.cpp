@@ -181,14 +181,6 @@ void CYFinalize(JSObjectRef object) {
     delete reinterpret_cast<CYData *>(JSObjectGetPrivate(object));
 }
 
-struct CStringMapLess :
-    std::binary_function<const char *, const char *, bool>
-{
-    _finline bool operator ()(const char *lhs, const char *rhs) const {
-        return strcmp(lhs, rhs) < 0;
-    }
-};
-
 void Structor_(apr_pool_t *pool, sig::Type *&type) {
     if (
         type->primitive == sig::pointer_P &&
@@ -288,7 +280,7 @@ struct Struct_privateData :
     }
 };
 
-typedef std::map<const char *, Type_privateData *, CStringMapLess> TypeMap;
+typedef std::map<const char *, Type_privateData *, CStringLess> TypeMap;
 static TypeMap Types_;
 
 JSObjectRef CYMakeStruct(JSContextRef context, void *data, sig::Type *type, ffi_type *ffi, JSObjectRef owner) {

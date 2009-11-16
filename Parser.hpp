@@ -47,11 +47,16 @@
 
 #include <string>
 #include <vector>
+#include <map>
+#include <set>
 
 #include <cstdlib>
 
 #include "location.hh"
 #include "Pooling.hpp"
+#include "Options.hpp"
+
+class CYContext;
 
 template <typename Type_>
 struct CYNext {
@@ -81,6 +86,7 @@ struct CYThing {
 
 struct CYOutput {
     std::ostream &out_;
+    CYOptions &options_;
     bool pretty_;
     unsigned indent_;
     bool right_;
@@ -93,8 +99,9 @@ struct CYOutput {
         Terminated
     } mode_;
 
-    CYOutput(std::ostream &out) :
+    CYOutput(std::ostream &out, CYOptions &options) :
         out_(out),
+        options_(options),
         pretty_(false),
         indent_(0),
         right_(false),
@@ -147,22 +154,6 @@ enum CYFlags {
     CYNoBF =         (CYNoBrace | CYNoFunction),
 };
 
-struct CYContext {
-    apr_pool_t *pool_;
-
-    CYContext(apr_pool_t *pool) :
-        pool_(pool)
-    {
-    }
-
-    template <typename Type_>
-    void Replace(Type_ *&value) {
-        if (value != NULL)
-            while (Type_ *replace = value->Replace(*this))
-                value = replace;
-    }
-};
-
 struct CYStatement :
     CYNext<CYStatement>
 {
@@ -173,6 +164,7 @@ struct CYStatement :
     void Multiple(CYOutput &out, CYFlags flags = CYNoFlags) const;
 
     CYStatement *ReplaceAll(CYContext &context);
+    virtual CYStatement *Collapse(CYContext &context);
 
     virtual CYStatement *Replace(CYContext &context) = 0;
 
@@ -229,10 +221,11 @@ struct CYWord :
     {
     }
 
-    const char *Value() const {
-        return word_;
+    void Set(const char *value) {
+        word_ = value;
     }
 
+    virtual const char *Word() const;
     virtual void Output(CYOutput &out) const;
 
     virtual CYExpression *ClassName(CYContext &context, bool object);
@@ -241,16 +234,23 @@ struct CYWord :
 };
 
 _finline std::ostream &operator <<(std::ostream &lhs, const CYWord &rhs) {
-    return lhs << rhs.Value();
+    lhs << &rhs << '=';
+    return lhs << rhs.Word();
 }
 
 struct CYIdentifier :
     CYWord
 {
+    CYIdentifier *replace_;
+
     CYIdentifier(const char *word) :
-        CYWord(word)
+        CYWord(word),
+        replace_(NULL)
     {
     }
+
+    virtual const char *Word() const;
+    CYIdentifier *Replace(CYContext &context);
 };
 
 struct CYComment :
@@ -283,7 +283,50 @@ struct CYLabel :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
+struct CStringLess :
+    std::binary_function<const char *, const char *, bool>
+{
+    _finline bool operator ()(const char *lhs, const char *rhs) const {
+        return strcmp(lhs, rhs) < 0;
+    }
+};
+
+struct CYIdentifierValueLess :
+    std::binary_function<CYIdentifier *, CYIdentifier *, bool>
+{
+    _finline bool operator ()(CYIdentifier *lhs, CYIdentifier *rhs) const {
+        return CStringLess()(lhs->Word(), rhs->Word());
+    }
+};
+
+enum CYIdentifierFlags {
+    CYIdentifierArgument,
+    CYIdentifierInternal,
+    CYIdentifierVariable
+};
+
+typedef std::set<CYIdentifier *, CYIdentifierValueLess> CYIdentifierValueSet;
+typedef std::set<CYIdentifier *> CYIdentifierAddressSet;
+typedef std::map<CYIdentifier *, CYIdentifierFlags> CYIdentifierAddressFlagsMap;
+
+struct CYScope {
+    CYScope *parent_;
+    CYIdentifierValueSet identifiers_;
+    CYIdentifierAddressFlagsMap internal_;
+    unsigned offset_;
+
+    CYScope() :
+        parent_(NULL),
+        offset_(0)
+    {
+    }
+
+    void Add(CYContext &context, CYIdentifierAddressSet &external);
+    void Scope(CYContext &context, CYStatement *&statements);
+};
+
 struct CYProgram :
+    CYScope,
     CYThing
 {
     CYStatement *statements_;
@@ -303,14 +346,24 @@ struct CYBlock :
     CYThing
 {
     CYStatement *statements_;
+    CYScope *scope_;
 
-    CYBlock(CYStatement *statements) :
-        statements_(statements)
+    CYBlock(CYStatement *statements, CYScope *scope = NULL) :
+        statements_(statements),
+        scope_(scope)
     {
     }
 
     operator CYStatement *() const {
         return statements_;
+    }
+
+    void AddPrev(CYStatement *statement) {
+        CYStatement *last(statement);
+        while (last->next_ != NULL)
+            last = last->next_;
+        last->SetNext(statements_);
+        statements_ = statement;
     }
 
     virtual CYStatement *Replace(CYContext &context);
@@ -379,6 +432,7 @@ struct CYForInitialiser {
     }
 
     virtual void For(CYOutput &out) const = 0;
+    virtual CYExpression *Replace(CYContext &context) = 0;
 };
 
 struct CYForInInitialiser {
@@ -388,6 +442,7 @@ struct CYForInInitialiser {
     virtual void ForIn(CYOutput &out, CYFlags flags) const = 0;
     virtual const char *ForEachIn() const = 0;
     virtual CYExpression *ForEachIn(CYContext &out) = 0;
+    virtual CYExpression *Replace(CYContext &context) = 0;
 };
 
 struct CYNumber;
@@ -460,7 +515,7 @@ struct CYCompound :
 {
     CYExpression *expressions_;
 
-    CYCompound(CYExpression *expressions) :
+    CYCompound(CYExpression *expressions = NULL) :
         expressions_(expressions)
     {
     }
@@ -491,6 +546,7 @@ struct CYFunctionParameter :
     {
     }
 
+    void Replace(CYContext &context);
     virtual void Output(CYOutput &out) const;
 };
 
@@ -519,7 +575,7 @@ struct CYForInComprehension :
     }
 
     virtual const char *Name() const {
-        return name_->Value();
+        return name_->Word();
     }
 
     virtual CYFunctionParameter *Parameter(CYContext &context) const;
@@ -540,7 +596,7 @@ struct CYForEachInComprehension :
     }
 
     virtual const char *Name() const {
-        return name_->Value();
+        return name_->Word();
     }
 
     virtual CYFunctionParameter *Parameter(CYContext &context) const;
@@ -655,7 +711,7 @@ struct CYString :
     }
 
     CYString(const CYWord *word) :
-        value_(word->Value()),
+        value_(word->Word()),
         size_(strlen(value_))
     {
     }
@@ -999,15 +1055,16 @@ struct CYDeclaration :
     virtual const char *ForEachIn() const;
     virtual CYExpression *ForEachIn(CYContext &out);
 
-    void Replace(CYContext &context);
+    virtual CYExpression *Replace(CYContext &context);
+    virtual CYAssignment *Assignment(CYContext &context);
 
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYDeclarations :
     CYNext<CYDeclarations>,
-    CYForInitialiser,
-    CYThing
+    CYThing,
+    CYForInitialiser
 {
     CYDeclaration *declaration_;
 
@@ -1019,7 +1076,7 @@ struct CYDeclarations :
 
     virtual void For(CYOutput &out) const;
 
-    void Replace(CYContext &context);
+    virtual CYCompound *Replace(CYContext &context);
     CYProperty *Property(CYContext &context);
 
     virtual void Output(CYOutput &out) const;
@@ -1266,7 +1323,9 @@ struct CYWhile :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CYFunction {
+struct CYFunction :
+    CYScope
+{
     CYIdentifier *name_;
     CYFunctionParameter *parameters_;
     CYBlock code_;
@@ -1274,7 +1333,7 @@ struct CYFunction {
     CYFunction(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *statements) :
         name_(name),
         parameters_(parameters),
-        code_(statements)
+        code_(statements, this)
     {
     }
 
@@ -1322,8 +1381,11 @@ struct CYExpress :
     CYExpress(CYExpression *expression) :
         expression_(expression)
     {
+        if (expression == NULL)
+            throw;
     }
 
+    virtual CYStatement *Collapse(CYContext &context);
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -1373,6 +1435,7 @@ struct CYReturn :
 struct CYEmpty :
     CYStatement
 {
+    virtual CYStatement *Collapse(CYContext &context);
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };

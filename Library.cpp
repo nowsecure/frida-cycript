@@ -43,6 +43,7 @@
 #include "cycript.hpp"
 
 #include "Pooling.hpp"
+#include "Context.hpp"
 
 #include <sys/mman.h>
 
@@ -251,10 +252,11 @@ extern "C" void CydgetPoolParse(apr_pool_t *pool, const uint16_t **data, size_t 
     if (parser.parse() != 0 || !driver.errors_.empty())
         return;
 
-    CYContext context(driver.pool_);
+    CYOptions options;
+    CYContext context(driver.pool_, options);
     driver.program_->Replace(context);
     std::ostringstream str;
-    CYOutput out(str);
+    CYOutput out(str, options);
     out << *driver.program_;
     std::string code(str.str());
 
