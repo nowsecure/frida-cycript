@@ -331,9 +331,20 @@ CYStatement *CYForEachInComprehension::Replace(CYContext &context, CYStatement *
     )));
 }
 
-void CYFunction::Replace_(CYContext &context) {
+void CYFunction::Inject(CYContext &context) {
+    name_ = name_->Replace(context);
+    context.scope_->internal_.insert(CYIdentifierAddressFlagsMap::value_type(name_, CYIdentifierOther));
+}
+
+void CYFunction::Replace_(CYContext &context, bool outer) {
+    if (outer)
+        Inject(context);
+
     parent_ = context.scope_;
     context.scope_ = this;
+
+    if (!outer && name_ != NULL)
+        Inject(context);
 
     parameters_->Replace(context);
     code_.Replace(context);
@@ -343,7 +354,7 @@ void CYFunction::Replace_(CYContext &context) {
 }
 
 CYExpression *CYFunctionExpression::Replace(CYContext &context) {
-    Replace_(context);
+    Replace_(context, false);
     return this;
 }
 
@@ -354,7 +365,7 @@ void CYFunctionParameter::Replace(CYContext &context) { $T()
 }
 
 CYStatement *CYFunctionStatement::Replace(CYContext &context) {
-    Replace_(context);
+    Replace_(context, true);
     return this;
 }
 
@@ -456,10 +467,50 @@ CYExpression *CYPrefix::Replace(CYContext &context) {
 
 void CYProgram::Replace(CYContext &context) {
     parent_ = context.scope_;
+    CYProgram *program(context.program_);
+
     context.scope_ = this;
+    context.program_ = this;
+
     statements_ = statements_->ReplaceAll(context);
+
     context.scope_ = parent_;
     Scope(context, statements_);
+    context.program_ = program;
+
+    size_t offset(0);
+
+    // XXX: totalling the probable occurrences and sorting by them would improve the result
+    for (CYIdentifierAddressVector::const_iterator i(rename_.begin()); i != rename_.end(); ++i, ++offset) {
+        const char *name;
+
+        if (context.options_.verbose_)
+            name = apr_psprintf(context.pool_, "$%"APR_SIZE_T_FMT"", offset);
+        else {
+            char id[8];
+            id[7] = '\0';
+
+          id:
+            unsigned position(7), local(offset + 1);
+
+            do {
+                unsigned index(local % 53);
+                local /= 53;
+                id[--position] = index == 0 ? '0' : index < 27 ? index - 1 + 'a' : index - 27 + 'A';
+            } while (local != 0);
+
+            if (external_.find(id + position) != external_.end()) {
+                ++offset;
+                goto id;
+            }
+
+            name = apr_pstrmemdup(context.pool_, id + position, 7 - position);
+            // XXX: at some point, this could become a keyword
+        }
+
+        for (CYIdentifier *identifier(*i); identifier != NULL; identifier = identifier->next_)
+            identifier->Set(name);
+    }
 }
 
 void CYProperty::Replace(CYContext &context) { $T()
@@ -472,8 +523,8 @@ CYStatement *CYReturn::Replace(CYContext &context) {
     return this;
 }
 
-void CYScope::Add(CYContext &context, CYIdentifierAddressSet &external) {
-    for (CYIdentifierAddressSet::const_iterator i(external.begin()); i != external.end(); ++i) {
+void CYScope::Add(CYContext &context, CYIdentifierAddressVector &external) {
+    for (CYIdentifierAddressVector::const_iterator i(external.begin()); i != external.end(); ++i) {
         std::pair<CYIdentifierAddressSet::iterator, bool> insert(identifiers_.insert(*i));
         if (!insert.second)
             (*i)->replace_ = *insert.first;
@@ -481,36 +532,34 @@ void CYScope::Add(CYContext &context, CYIdentifierAddressSet &external) {
 }
 
 void CYScope::Scope(CYContext &context, CYStatement *&statements) {
-    CYIdentifierAddressSet external;
-
-    if (context.options_.verbose_)
-        std::cout << this << ':';
-
-    CYDeclarations *last(NULL), *curr(NULL);
+    CYIdentifierAddressVector external;
 
     for (CYIdentifierValueSet::const_iterator i(identifiers_.begin()); i != identifiers_.end(); ++i)
-        if (internal_.find(*i) == internal_.end()) {
-            if (context.options_.verbose_)
-                std::cout << ' ' << (*i)->Word() << '@' << static_cast<const CYWord *>(*i);
-            external.insert(*i);
-        } else {
-            if (context.options_.verbose_) {
-                std::cout << ' ' << offset_ << ':' << (*i)->Word() << '@' << static_cast<const CYWord *>(*i);
-                (*i)->Set(apr_psprintf(context.pool_, "$%u", offset_++));
-            } else {
-                (*i)->Set(apr_psprintf(context.pool_, "$%u", offset_++));
-            }
+        if (internal_.find(*i) == internal_.end())
+            external.push_back(*i);
 
-            CYDeclarations *next($ CYDeclarations($ CYDeclaration(*i)));
+    CYDeclarations *last(NULL), *curr(NULL);
+    CYProgram *program(context.program_);
+
+    // XXX: we don't want to do this in order, we want to sort it by probable occurrence
+    for (CYIdentifierAddressFlagsMap::const_iterator i(internal_.begin()); i != internal_.end(); ++i) {
+        if (program != NULL && i->second != CYIdentifierMagic) {
+            if (program->rename_.size() <= offset_)
+                program->rename_.resize(offset_ + 1);
+            CYIdentifier *&identifier(program->rename_[offset_++]);
+            i->first->SetNext(identifier);
+            identifier = i->first;
+        }
+
+        if (i->second == CYIdentifierVariable) {
+            CYDeclarations *next($ CYDeclarations($ CYDeclaration(i->first)));
             if (last == NULL)
                 last = next;
             if (curr != NULL)
                 curr->SetNext(next);
             curr = next;
         }
-
-    if (context.options_.verbose_)
-        std::cout << " ->" << parent_ << std::endl;
+    }
 
     if (last != NULL) {
         CYVar *var($ CYVar(last));
@@ -522,7 +571,9 @@ void CYScope::Scope(CYContext &context, CYStatement *&statements) {
         if (parent_->offset_ < offset_)
             parent_->offset_ = offset_;
         parent_->Add(context, external);
-    }
+    } else if (program != NULL)
+        for (CYIdentifierAddressVector::const_iterator i(external.begin()); i != external.end(); ++i)
+            program->external_.insert((*i)->Word());
 }
 
 CYStatement *CYStatement::Collapse(CYContext &context) {

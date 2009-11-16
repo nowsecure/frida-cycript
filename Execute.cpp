@@ -280,7 +280,7 @@ struct Struct_privateData :
     }
 };
 
-typedef std::map<const char *, Type_privateData *, CStringLess> TypeMap;
+typedef std::map<const char *, Type_privateData *, CYCStringLess> TypeMap;
 static TypeMap Types_;
 
 JSObjectRef CYMakeStruct(JSContextRef context, void *data, sig::Type *type, ffi_type *ffi, JSObjectRef owner) {

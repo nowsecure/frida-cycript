@@ -89,12 +89,10 @@ CYOutput &CYOutput::operator <<(char rhs) {
         if (right_) {
             out_ << '\n';
             right_ = false;
-            goto mode;
-        }
+        } goto done;
     } else goto work;
 
     right_ = true;
-  mode:
     mode_ = NoMode;
     goto done;
 
@@ -236,7 +234,8 @@ void Catch::Output(CYOutput &out) const {
 
 void CYComment::Output(CYOutput &out, CYFlags flags) const {
     out << '\r';
-    out << value_;
+    out.out_ << value_;
+    out.right_ = true;
     out << '\r';
 }
 
@@ -352,7 +351,6 @@ void CYElement::Output(CYOutput &out) const {
 }
 
 void CYEmpty::Output(CYOutput &out, CYFlags flags) const {
-    out << '`';
     out.Terminate();
 }
 

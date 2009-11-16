@@ -239,6 +239,7 @@ _finline std::ostream &operator <<(std::ostream &lhs, const CYWord &rhs) {
 }
 
 struct CYIdentifier :
+    CYNext<CYIdentifier>,
     CYWord
 {
     CYIdentifier *replace_;
@@ -283,7 +284,7 @@ struct CYLabel :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CStringLess :
+struct CYCStringLess :
     std::binary_function<const char *, const char *, bool>
 {
     _finline bool operator ()(const char *lhs, const char *rhs) const {
@@ -295,25 +296,28 @@ struct CYIdentifierValueLess :
     std::binary_function<CYIdentifier *, CYIdentifier *, bool>
 {
     _finline bool operator ()(CYIdentifier *lhs, CYIdentifier *rhs) const {
-        return CStringLess()(lhs->Word(), rhs->Word());
+        return CYCStringLess()(lhs->Word(), rhs->Word());
     }
 };
 
 enum CYIdentifierFlags {
     CYIdentifierArgument,
-    CYIdentifierInternal,
-    CYIdentifierVariable
+    CYIdentifierVariable,
+    CYIdentifierOther,
+    CYIdentifierMagic,
 };
 
+typedef std::set<const char *, CYCStringLess> CYCStringSet;
 typedef std::set<CYIdentifier *, CYIdentifierValueLess> CYIdentifierValueSet;
 typedef std::set<CYIdentifier *> CYIdentifierAddressSet;
+typedef std::vector<CYIdentifier *> CYIdentifierAddressVector;
 typedef std::map<CYIdentifier *, CYIdentifierFlags> CYIdentifierAddressFlagsMap;
 
 struct CYScope {
     CYScope *parent_;
     CYIdentifierValueSet identifiers_;
     CYIdentifierAddressFlagsMap internal_;
-    unsigned offset_;
+    size_t offset_;
 
     CYScope() :
         parent_(NULL),
@@ -321,7 +325,7 @@ struct CYScope {
     {
     }
 
-    void Add(CYContext &context, CYIdentifierAddressSet &external);
+    void Add(CYContext &context, CYIdentifierAddressVector &external);
     void Scope(CYContext &context, CYStatement *&statements);
 };
 
@@ -330,6 +334,8 @@ struct CYProgram :
     CYThing
 {
     CYStatement *statements_;
+    CYIdentifierAddressVector rename_;
+    CYCStringSet external_;
 
     CYProgram(CYStatement *statements) :
         statements_(statements)
@@ -337,7 +343,6 @@ struct CYProgram :
     }
 
     virtual void Replace(CYContext &context);
-
     virtual void Output(CYOutput &out) const;
 };
 
@@ -1340,7 +1345,8 @@ struct CYFunction :
     virtual ~CYFunction() {
     }
 
-    virtual void Replace_(CYContext &context);
+    void Inject(CYContext &context);
+    virtual void Replace_(CYContext &context, bool outer);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 

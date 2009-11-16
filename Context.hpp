@@ -42,17 +42,20 @@
 
 #include "Options.hpp"
 
+class CYProgram;
 class CYScope;
 
 struct CYContext {
     apr_pool_t *pool_;
     CYOptions &options_;
     CYScope *scope_;
+    CYProgram *program_;
 
     CYContext(apr_pool_t *pool, CYOptions &options) :
         pool_(pool),
         options_(options),
-        scope_(NULL)
+        scope_(NULL),
+        program_(NULL)
     {
     }
 
