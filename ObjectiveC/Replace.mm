@@ -127,7 +127,7 @@ CYString *CYSelectorPart::Replace(CYContext &context) {
     std::ostringstream str;
     for (const CYSelectorPart *part(this); part != NULL; part = part->next_) {
         if (part->name_ != NULL)
-            str << part->name_->Value();
+            str << part->name_->Word();
         if (part->value_)
             str << ':';
     }

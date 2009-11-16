@@ -131,10 +131,11 @@ struct CYClient :
             } else {
                 NSAutoreleasePool *ar = [[NSAutoreleasePool alloc] init];
 
-                CYContext context(driver.pool_);
+                CYOptions options;
+                CYContext context(driver.pool_, options);
                 driver.program_->Replace(context);
                 std::ostringstream str;
-                CYOutput out(str);
+                CYOutput out(str, options);
                 out << *driver.program_;
                 std::string code(str.str());
                 CYExecute_ execute = {pool, code.c_str()};
