@@ -340,7 +340,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 (\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?){Exponent}? L C yylval->number_ = new(yyextra->pool_) CYNumber(strtod(yytext, NULL)); return tk::NumericLiteral;
 
 0[xX][0-9a-fA-F]+ L C yylval->number_ = new(yyextra->pool_) CYNumber(strtoull(yytext + 2, NULL, 16)); return tk::NumericLiteral;
-
+0[0-7]+ L C yylval->number_ = new(yyextra->pool_) CYNumber(strtoull(yytext + 1, NULL, 8)); return tk::NumericLiteral;
 0[bB][0-1]+ L C yylval->number_ = new(yyextra->pool_) CYNumber(strtoull(yytext + 2, NULL, 2)); return tk::NumericLiteral;
 
 \"([^"\\\n]|{Escape})*\"|'([^'\\\n]|{Escape})*' L C {
