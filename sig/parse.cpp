@@ -81,7 +81,7 @@ void Parse_(apr_pool_t *pool, struct Signature *signature, const char **name, ch
         if (**name != '"')
             element->name = NULL;
         else {
-            char *quote = strchr(++*name, '"');
+            const char *quote = strchr(++*name, '"');
             element->name = apr_pstrmemdup(pool, *name, quote - *name);
             *name = quote + 1;
         }
@@ -126,7 +126,7 @@ struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named, C
 
         case '@':
             if (**name == '"') {
-                char *quote = strchr(*name + 1, '"');
+                const char *quote = strchr(*name + 1, '"');
                 if (!named || quote[1] == eos || quote[1] == '"') {
                     type->name = apr_pstrmemdup(pool, *name + 1, quote - *name - 1);
                     *name = quote + 1;
