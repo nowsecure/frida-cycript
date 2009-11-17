@@ -456,7 +456,9 @@ CYExpression *CYPrefix::Replace(CYContext &context) {
     return this;
 }
 
+// XXX: this is evil evil black magic. don't ask, don't tell... don't believe!
 #define MappingSet "0etnirsoalfucdphmgyvbxTwSNECAFjDLkMOIBPqzRH$_WXUVGYKQJZ"
+//#define MappingSet "0abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$_"
 
 void CYProgram::Replace(CYContext &context) {
     parent_ = context.scope_;
@@ -530,7 +532,7 @@ CYIdentifier *CYScope::Lookup(CYContext &context, CYIdentifier *identifier) {
 }
 
 void CYScope::Merge(CYContext &context, CYIdentifier *identifier) {
-    std::pair<CYIdentifierAddressSet::iterator, bool> insert(identifiers_.insert(identifier));
+    std::pair<CYIdentifierValueSet::iterator, bool> insert(identifiers_.insert(identifier));
     if (!insert.second) {
         if ((*insert.first)->offset_ < identifier->offset_)
             (*insert.first)->offset_ = identifier->offset_;
@@ -538,37 +540,66 @@ void CYScope::Merge(CYContext &context, CYIdentifier *identifier) {
     }
 }
 
+namespace {
+    struct IdentifierOffset {
+        size_t offset_;
+        CYIdentifierFlags flags_;
+        CYIdentifier *identifier_;
+
+        IdentifierOffset(size_t offset, CYIdentifierFlags flags, CYIdentifier *identifier) :
+            offset_(offset),
+            flags_(flags),
+            identifier_(identifier)
+        {
+        }
+    };
+
+    struct IdentifierOffsetLess :
+        std::binary_function<const IdentifierOffset &, const IdentifierOffset &, bool>
+    {
+        _finline bool operator ()(const IdentifierOffset &lhs, const IdentifierOffset &rhs) const {
+            if (lhs.offset_ != rhs.offset_)
+                return lhs.offset_ < rhs.offset_;
+            if (lhs.flags_ != rhs.flags_)
+                return lhs.flags_ < rhs.flags_;
+            return lhs.identifier_ < rhs.identifier_;
+        }
+    };
+
+    typedef std::set<IdentifierOffset, IdentifierOffsetLess> IdentifierOffsets;
+}
+
 void CYScope::Scope(CYContext &context, CYStatement *&statements) {
     CYDeclarations *last(NULL), *curr(NULL);
     CYProgram *program(context.program_);
 
-    typedef std::multimap<size_t, CYIdentifier *> IdentifierOffsetMap;
-    IdentifierOffsetMap offsetted;
+    IdentifierOffsets offsets;
 
     // XXX: we don't want to do this in order, we want to sort it by probable occurrence
-    for (CYIdentifierAddressFlagsMap::const_iterator i(internal_.begin()); i != internal_.end(); ++i) {
+    for (CYIdentifierAddressFlagsMap::const_iterator i(internal_.begin()); i != internal_.end(); ++i)
         if (program != NULL && i->second != CYIdentifierMagic)
-            offsetted.insert(IdentifierOffsetMap::value_type(i->first->offset_, i->first));
-        if (i->second == CYIdentifierVariable) {
-            CYDeclarations *next($ CYDeclarations($ CYDeclaration(i->first)));
+            offsets.insert(IdentifierOffset(i->first->offset_, i->second, i->first));
+
+    size_t offset(0);
+
+    for (IdentifierOffsets::const_iterator i(offsets.begin()); i != offsets.end(); ++i) {
+        if (i->flags_ == CYIdentifierVariable) {
+            CYDeclarations *next($ CYDeclarations($ CYDeclaration(i->identifier_)));
             if (last == NULL)
                 last = next;
             if (curr != NULL)
                 curr->SetNext(next);
             curr = next;
         }
-    }
 
-    size_t offset(0);
-
-    for (IdentifierOffsetMap::const_iterator i(offsetted.begin()); i != offsetted.end(); ++i) {
-        if (offset < i->first)
-            offset = i->first;
+        if (offset < i->offset_)
+            offset = i->offset_;
         if (program->rename_.size() <= offset)
             program->rename_.resize(offset + 1);
+
         CYIdentifier *&identifier(program->rename_[offset++]);
-        i->second->SetNext(identifier);
-        identifier = i->second;
+        i->identifier_->SetNext(identifier);
+        identifier = i->identifier_;
     }
 
     if (last != NULL) {

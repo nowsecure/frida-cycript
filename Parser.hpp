@@ -311,7 +311,6 @@ enum CYIdentifierFlags {
 
 typedef std::set<const char *, CYCStringLess> CYCStringSet;
 typedef std::set<CYIdentifier *, CYIdentifierValueLess> CYIdentifierValueSet;
-typedef std::set<CYIdentifier *> CYIdentifierAddressSet;
 typedef std::vector<CYIdentifier *> CYIdentifierAddressVector;
 typedef std::map<CYIdentifier *, CYIdentifierFlags> CYIdentifierAddressFlagsMap;
 
