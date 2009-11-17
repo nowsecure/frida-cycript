@@ -325,6 +325,9 @@ struct CYScope {
     {
     }
 
+    virtual ~CYScope() {
+    }
+
     void Declare(CYContext &context, CYIdentifier *identifier, CYIdentifierFlags flags);
     virtual CYIdentifier *Lookup(CYContext &context, CYIdentifier *identifier);
     void Merge(CYContext &context, CYIdentifier *identifier);
@@ -361,6 +364,9 @@ struct CYContext :
         scope_(this),
         program_(NULL)
     {
+    }
+
+    virtual ~CYContext() {
     }
 
     template <typename Type_>

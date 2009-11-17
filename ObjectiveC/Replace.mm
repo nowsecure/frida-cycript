@@ -38,7 +38,6 @@
 /* }}} */
 
 #include "Replace.hpp"
-#include "Context.hpp"
 #include "ObjectiveC/Syntax.hpp"
 
 #include <Foundation/Foundation.h>
