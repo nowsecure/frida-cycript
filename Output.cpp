@@ -655,8 +655,6 @@ static const char *Reserved_[] = {
 
     "let", "yield",
 
-    "each",
-
     NULL
 };
 
