@@ -456,6 +456,8 @@ CYExpression *CYPrefix::Replace(CYContext &context) {
     return this;
 }
 
+#define MappingSet "0etnirsoalfucdphmgyvbxTwSNECAFjDLkMOIBPqzRH$_WXUVGYKQJZ"
+
 void CYProgram::Replace(CYContext &context) {
     parent_ = context.scope_;
     CYProgram *program(context.program_);
@@ -489,9 +491,9 @@ void CYProgram::Replace(CYContext &context) {
             unsigned position(7), local(offset + 1);
 
             do {
-                unsigned index(local % 53);
-                local /= 53;
-                id[--position] = index == 0 ? '0' : index < 27 ? index - 1 + 'a' : index - 27 + 'A';
+                unsigned index(local % (sizeof(MappingSet) - 1));
+                local /= sizeof(MappingSet) - 1;
+                id[--position] = MappingSet[index];
             } while (local != 0);
 
             if (external.find(id + position) != external.end()) {
