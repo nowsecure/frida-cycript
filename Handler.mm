@@ -42,7 +42,6 @@
 
 #include "Pooling.hpp"
 #include "Parser.hpp"
-#include "Context.hpp"
 
 #include "Cycript.tab.hh"
 

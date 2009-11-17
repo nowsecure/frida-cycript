@@ -38,7 +38,6 @@
 /* }}} */
 
 #include "cycript.hpp"
-#include "Context.hpp"
 
 #ifdef CY_EXECUTE
 #include "JavaScript.hpp"

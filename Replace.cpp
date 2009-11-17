@@ -38,11 +38,9 @@
 /* }}} */
 
 #include "Parser.hpp"
-#include "Context.hpp"
+#include "Replace.hpp"
 
 #include <iomanip>
-
-#include "Replace.hpp"
 
 CYExpression *CYAdd::Replace(CYContext &context) {
     CYInfix::Replace(context);
@@ -332,7 +330,7 @@ CYStatement *CYForEachInComprehension::Replace(CYContext &context, CYStatement *
 }
 
 void CYFunction::Inject(CYContext &context) {
-    name_ = name_->Replace(context);
+    context.Replace(name_);
     context.scope_->Declare(context, name_, CYIdentifierOther);
 }
 
@@ -473,6 +471,10 @@ void CYProgram::Replace(CYContext &context) {
 
     size_t offset(0);
 
+    CYCStringSet external;
+    for (CYIdentifierValueSet::const_iterator i(identifiers_.begin()); i != identifiers_.end(); ++i)
+        external.insert((*i)->Word());
+
     // XXX: totalling the probable occurrences and sorting by them would improve the result
     for (CYIdentifierAddressVector::const_iterator i(rename_.begin()); i != rename_.end(); ++i, ++offset) {
         const char *name;
@@ -492,7 +494,7 @@ void CYProgram::Replace(CYContext &context) {
                 id[--position] = index == 0 ? '0' : index < 27 ? index - 1 + 'a' : index - 27 + 'A';
             } while (local != 0);
 
-            if (external_.find(id + position) != external_.end()) {
+            if (external.find(id + position) != external.end()) {
                 ++offset;
                 goto id;
             }
@@ -525,34 +527,26 @@ CYIdentifier *CYScope::Lookup(CYContext &context, CYIdentifier *identifier) {
     return *insert.first;
 }
 
-void CYScope::Merge(CYContext &context, CYIdentifierAddressVector &external) {
-    for (CYIdentifierAddressVector::const_iterator i(external.begin()); i != external.end(); ++i) {
-        std::pair<CYIdentifierAddressSet::iterator, bool> insert(identifiers_.insert(*i));
-        if (!insert.second)
-            (*i)->replace_ = *insert.first;
+void CYScope::Merge(CYContext &context, CYIdentifier *identifier) {
+    std::pair<CYIdentifierAddressSet::iterator, bool> insert(identifiers_.insert(identifier));
+    if (!insert.second) {
+        if ((*insert.first)->offset_ < identifier->offset_)
+            (*insert.first)->offset_ = identifier->offset_;
+        identifier->replace_ = *insert.first;
     }
 }
 
 void CYScope::Scope(CYContext &context, CYStatement *&statements) {
-    CYIdentifierAddressVector external;
-
-    for (CYIdentifierValueSet::const_iterator i(identifiers_.begin()); i != identifiers_.end(); ++i)
-        if (internal_.find(*i) == internal_.end())
-            external.push_back(*i);
-
     CYDeclarations *last(NULL), *curr(NULL);
     CYProgram *program(context.program_);
 
+    typedef std::multimap<size_t, CYIdentifier *> IdentifierOffsetMap;
+    IdentifierOffsetMap offsetted;
+
     // XXX: we don't want to do this in order, we want to sort it by probable occurrence
     for (CYIdentifierAddressFlagsMap::const_iterator i(internal_.begin()); i != internal_.end(); ++i) {
-        if (program != NULL && i->second != CYIdentifierMagic) {
-            if (program->rename_.size() <= offset_)
-                program->rename_.resize(offset_ + 1);
-            CYIdentifier *&identifier(program->rename_[offset_++]);
-            i->first->SetNext(identifier);
-            identifier = i->first;
-        }
-
+        if (program != NULL && i->second != CYIdentifierMagic)
+            offsetted.insert(IdentifierOffsetMap::value_type(i->first->offset_, i->first));
         if (i->second == CYIdentifierVariable) {
             CYDeclarations *next($ CYDeclarations($ CYDeclaration(i->first)));
             if (last == NULL)
@@ -563,19 +557,30 @@ void CYScope::Scope(CYContext &context, CYStatement *&statements) {
         }
     }
 
+    size_t offset(0);
+
+    for (IdentifierOffsetMap::const_iterator i(offsetted.begin()); i != offsetted.end(); ++i) {
+        if (offset < i->first)
+            offset = i->first;
+        if (program->rename_.size() <= offset)
+            program->rename_.resize(offset + 1);
+        CYIdentifier *&identifier(program->rename_[offset++]);
+        i->second->SetNext(identifier);
+        identifier = i->second;
+    }
+
     if (last != NULL) {
         CYVar *var($ CYVar(last));
         var->SetNext(statements);
         statements = var;
     }
 
-    if (parent_ != NULL) {
-        if (parent_->offset_ < offset_)
-            parent_->offset_ = offset_;
-        parent_->Merge(context, external);
-    } else if (program != NULL)
-        for (CYIdentifierAddressVector::const_iterator i(external.begin()); i != external.end(); ++i)
-            program->external_.insert((*i)->Word());
+    for (CYIdentifierValueSet::const_iterator i(identifiers_.begin()); i != identifiers_.end(); ++i)
+        if (internal_.find(*i) == internal_.end()) {
+            if ((*i)->offset_ < offset)
+                (*i)->offset_ = offset;
+            parent_->Merge(context, *i);
+        }
 }
 
 CYStatement *CYStatement::Collapse(CYContext &context) {

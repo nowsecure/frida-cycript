@@ -243,10 +243,12 @@ struct CYIdentifier :
     CYWord
 {
     CYIdentifier *replace_;
+    size_t offset_;
 
     CYIdentifier(const char *word) :
         CYWord(word),
-        replace_(NULL)
+        replace_(NULL),
+        offset_(0)
     {
     }
 
@@ -318,17 +320,15 @@ struct CYScope {
     CYIdentifierAddressFlagsMap internal_;
 
     CYIdentifierValueSet identifiers_;
-    size_t offset_;
 
     CYScope() :
-        parent_(NULL),
-        offset_(0)
+        parent_(NULL)
     {
     }
 
     void Declare(CYContext &context, CYIdentifier *identifier, CYIdentifierFlags flags);
     virtual CYIdentifier *Lookup(CYContext &context, CYIdentifier *identifier);
-    void Merge(CYContext &context, CYIdentifierAddressVector &external);
+    void Merge(CYContext &context, CYIdentifier *identifier);
     void Scope(CYContext &context, CYStatement *&statements);
 };
 
@@ -338,7 +338,6 @@ struct CYProgram :
 {
     CYStatement *statements_;
     CYIdentifierAddressVector rename_;
-    CYCStringSet external_;
 
     CYProgram(CYStatement *statements) :
         statements_(statements)
@@ -347,6 +346,35 @@ struct CYProgram :
 
     virtual void Replace(CYContext &context);
     virtual void Output(CYOutput &out) const;
+};
+
+struct CYContext :
+    CYScope
+{
+    apr_pool_t *pool_;
+    CYOptions &options_;
+    CYScope *scope_;
+    CYProgram *program_;
+
+    CYContext(apr_pool_t *pool, CYOptions &options) :
+        pool_(pool),
+        options_(options),
+        scope_(this),
+        program_(NULL)
+    {
+    }
+
+    template <typename Type_>
+    void Replace(Type_ *&value) {
+        for (;;) if (value == NULL)
+            break;
+        else {
+            Type_ *replace(value->Replace(*this));
+            if (replace != value)
+                value = replace;
+            else break;
+        }
+    }
 };
 
 struct CYBlock :

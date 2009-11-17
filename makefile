@@ -22,7 +22,7 @@ ifneq ($(dpkg_architecture),)
 arch := $(shell $(dpkg_architecture) -qDEB_HOST_ARCH 2>/dev/null)
 endif
 
-header := Cycript.tab.hh Parser.hpp Pooling.hpp cycript.hpp Internal.hpp Error.hpp String.hpp Exception.hpp Standard.hpp Context.hpp
+header := Cycript.tab.hh Parser.hpp Pooling.hpp cycript.hpp Internal.hpp Error.hpp String.hpp Exception.hpp Standard.hpp
 
 code := 
 code += Replace.o Output.o
