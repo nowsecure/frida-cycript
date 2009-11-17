@@ -83,7 +83,7 @@ endif
 endif
 
 control: control.tmp
-	[[ -e control ]] && diff control control.tmp &>/dev/null || cp -af control.tmp control
+	[[ -e control ]] && diff control control.tmp &>/dev/null || cp -pRf control.tmp control
 
 $(deb): $(all) control
 	rm -rf package
