@@ -112,10 +112,8 @@ void Setup(CYDriver &driver, cy::parser &parser) {
         driver.strict_ = true;
 }
 
-void Setup(CYOutput &out, CYDriver &driver) {
+void Setup(CYOutput &out, CYDriver &driver, CYOptions &options) {
     out.pretty_ = pretty_;
-
-    CYOptions options;
     CYContext context(driver.pool_, options);
     driver.program_->Replace(context);
 }
@@ -183,7 +181,7 @@ void Run(int client, std::string &code, FILE *fout = NULL, bool expand = false) 
 
 int (*append_history$)(int, const char *);
 
-static void Console(apr_pool_t *pool, int client) {
+static void Console(apr_pool_t *pool, int client, CYOptions &options) {
     passwd *passwd;
     if (const char *username = getenv("LOGNAME"))
         passwd = getpwnam(username);
@@ -325,9 +323,8 @@ static void Console(apr_pool_t *pool, int client) {
                 code = command;
             else {
                 std::ostringstream str;
-                CYOptions options;
                 CYOutput out(str, options);
-                Setup(out, driver);
+                Setup(out, driver, options);
                 out << *driver.program_;
                 code = str.str();
             }
@@ -375,6 +372,7 @@ void InjectLibrary(pid_t pid);
 int Main(int argc, char const * const argv[], char const * const envp[]) {
     bool tty(isatty(STDIN_FILENO));
     bool compile(false);
+    CYOptions options;
 
     append_history$ = reinterpret_cast<int (*)(int, const char *)>(dlsym(RTLD_DEFAULT, "append_history"));
 
@@ -422,6 +420,8 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
 
             case 'g':
                 if (false);
+                else if (strcmp(arg, "rename") == 0)
+                    options.verbose_ = true;
 #if YYDEBUG
                 else if (strcmp(arg, "bison") == 0)
                     bison_ = true;
@@ -568,7 +568,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
 #endif
 
     if (script == NULL && tty)
-        Console(pool, client);
+        Console(pool, client, options);
     else {
         CYDriver driver(script ?: "<stdin>");
         cy::parser parser(driver);
@@ -608,9 +608,8 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
                 Run(client, code, stdout);
             } else {
                 std::ostringstream str;
-                CYOptions options;
                 CYOutput out(str, options);
-                Setup(out, driver);
+                Setup(out, driver, options);
                 out << *driver.program_;
                 std::string code(str.str());
                 if (compile)

@@ -368,8 +368,9 @@ CYStatement *CYFunctionStatement::Replace(CYContext &context) {
 }
 
 CYIdentifier *CYIdentifier::Replace(CYContext &context) {
-    if (replace_ == NULL)
-        replace_ = context.scope_->Lookup(context, this);
+    if (replace_ != NULL && replace_ != this)
+        return replace_->Replace(context);
+    replace_ = context.scope_->Lookup(context, this);
     return replace_;
 }
 
@@ -481,6 +482,8 @@ void CYProgram::Replace(CYContext &context) {
 
     // XXX: totalling the probable occurrences and sorting by them would improve the result
     for (CYIdentifierAddressVector::const_iterator i(rename_.begin()); i != rename_.end(); ++i, ++offset) {
+        //std::cout << *i << ":" << (*i)->offset_ << std::endl;
+
         const char *name;
 
         if (context.options_.verbose_)
@@ -610,6 +613,7 @@ void CYScope::Scope(CYContext &context, CYStatement *&statements) {
 
     for (CYIdentifierValueSet::const_iterator i(identifiers_.begin()); i != identifiers_.end(); ++i)
         if (internal_.find(*i) == internal_.end()) {
+            //std::cout << *i << '=' << offset << std::endl;
             if ((*i)->offset_ < offset)
                 (*i)->offset_ = offset;
             parent_->Merge(context, *i);
