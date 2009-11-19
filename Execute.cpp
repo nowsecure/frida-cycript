@@ -177,6 +177,7 @@ void Structor_(apr_pool_t *pool, sig::Type *&type) {
         type->primitive == sig::pointer_P &&
         type->data.data.type != NULL &&
         type->data.data.type->primitive == sig::struct_P &&
+        type->data.data.type->name != NULL &&
         strcmp(type->data.data.type->name, "_objc_class") == 0
     ) {
         type->primitive = sig::typename_P;
