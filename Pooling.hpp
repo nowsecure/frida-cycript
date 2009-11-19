@@ -46,6 +46,8 @@
 #include "Exception.hpp"
 #include "Standard.hpp"
 
+#include <cstdlib>
+
 _finline void *operator new(size_t size, apr_pool_t *pool) {
     return apr_palloc(pool, size);
 }
@@ -106,6 +108,60 @@ struct CYData {
         apr_pool_destroy(reinterpret_cast<CYData *>(data)->pool_);
     }
 
+};
+
+template <typename Type_>
+struct CYPoolAllocator {
+    apr_pool_t *pool_;
+
+    typedef Type_ value_type;
+    typedef value_type *pointer;
+    typedef const value_type *const_pointer;
+    typedef value_type &reference;
+    typedef const value_type &const_reference;
+    typedef std::size_t size_type;
+    typedef std::ptrdiff_t difference_type;
+
+    CYPoolAllocator() :
+        pool_(NULL)
+    {
+    }
+
+    template <typename Right_>
+    CYPoolAllocator(const CYPoolAllocator<Right_> &rhs) :
+        pool_(rhs.pool_)
+    {
+    }
+
+    pointer allocate(size_type size, const void *hint = 0) {
+        return reinterpret_cast<pointer>(apr_palloc(pool_, size));
+    }
+
+    void deallocate(pointer data, size_type size) {
+    }
+
+    void construct(pointer address, const Type_ &rhs) {
+        new(address) Type_(rhs);
+    }
+
+    void destroy(pointer address) {
+        address->~Type_();
+    }
+
+    template <typename Right_>
+    inline bool operator==(const CYPoolAllocator<Right_> &rhs) {
+        return pool_ == rhs.pool_;
+    }
+
+    template <typename Right_>
+    inline bool operator!=(const CYPoolAllocator<Right_> &rhs) {
+        return !operator==(rhs);
+    }
+
+    template <typename Right_>
+    struct rebind {
+        typedef CYPoolAllocator<Right_> other;
+    };
 };
 
 #endif/*CYPOOLING_HPP*/

@@ -324,8 +324,8 @@ typedef std::vector<CYIdentifierUsage> CYIdentifierUsageVector;
 
 struct CYScope {
     CYScope *parent_;
-    CYIdentifierAddressFlagsMap internal_;
 
+    CYIdentifierAddressFlagsMap internal_;
     CYIdentifierValueSet identifiers_;
 
     CYScope() :
@@ -343,11 +343,9 @@ struct CYScope {
 };
 
 struct CYProgram :
-    CYScope,
     CYThing
 {
     CYStatement *statements_;
-    CYIdentifierUsageVector rename_;
 
     CYProgram(CYStatement *statements) :
         statements_(statements)
@@ -364,13 +362,12 @@ struct CYContext :
     apr_pool_t *pool_;
     CYOptions &options_;
     CYScope *scope_;
-    CYProgram *program_;
+    CYIdentifierUsageVector rename_;
 
     CYContext(apr_pool_t *pool, CYOptions &options) :
         pool_(pool),
         options_(options),
-        scope_(this),
-        program_(NULL)
+        scope_(this)
     {
     }
 
@@ -395,11 +392,9 @@ struct CYBlock :
     CYThing
 {
     CYStatement *statements_;
-    CYScope *scope_;
 
-    CYBlock(CYStatement *statements, CYScope *scope = NULL) :
-        statements_(statements),
-        scope_(scope)
+    CYBlock(CYStatement *statements) :
+        statements_(statements)
     {
     }
 
@@ -1372,9 +1367,7 @@ struct CYWhile :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CYFunction :
-    CYScope
-{
+struct CYFunction {
     CYIdentifier *name_;
     CYFunctionParameter *parameters_;
     CYBlock code_;
@@ -1382,7 +1375,7 @@ struct CYFunction :
     CYFunction(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *statements) :
         name_(name),
         parameters_(parameters),
-        code_(statements, this)
+        code_(statements)
     {
     }
 

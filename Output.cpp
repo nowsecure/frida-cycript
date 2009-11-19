@@ -432,8 +432,6 @@ void CYFunction::Output(CYOutput &out, CYFlags flags) const {
     if (protect)
         out << '(';
     out << "function";
-    if (out.options_.verbose_)
-        out.out_ << ':' << static_cast<const CYScope *>(this);
     if (name_ != NULL)
         out << ' ' << *name_;
     out << '(' << parameters_ << ')';

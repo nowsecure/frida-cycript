@@ -338,8 +338,9 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
     if (outer)
         Inject(context);
 
-    parent_ = context.scope_;
-    context.scope_ = this;
+    CYScope scope;
+    scope.parent_ = context.scope_;
+    context.scope_ = &scope;
 
     if (!outer && name_ != NULL)
         Inject(context);
@@ -347,8 +348,8 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
     parameters_->Replace(context);
     code_.Replace(context);
 
-    context.scope_ = parent_;
-    Scope(context, code_.statements_);
+    context.scope_ = scope.parent_;
+    scope.Scope(context, code_.statements_);
 }
 
 CYExpression *CYFunctionExpression::Replace(CYContext &context) {
@@ -368,11 +369,9 @@ CYStatement *CYFunctionStatement::Replace(CYContext &context) {
 }
 
 CYIdentifier *CYIdentifier::Replace(CYContext &context) {
-    if (replace_ == NULL) {
-        replace_ = context.scope_->Lookup(context, this);
-        ++replace_->usage_;
-    } else if (replace_ != this)
+    if (replace_ != NULL && replace_ != this)
         return replace_->Replace(context);
+    replace_ = context.scope_->Lookup(context, this);
     return replace_;
 }
 
@@ -478,32 +477,30 @@ namespace {
 }
 
 void CYProgram::Replace(CYContext &context) {
-    parent_ = context.scope_;
-    CYProgram *program(context.program_);
-
-    context.scope_ = this;
-    context.program_ = this;
+    CYScope scope;
+    scope.parent_ = context.scope_;
+    context.scope_ = &scope;
 
     statements_ = statements_->ReplaceAll(context);
 
-    context.scope_ = parent_;
-    context.program_ = program;
-    Scope(context, statements_);
+    context.scope_ = scope.parent_;
+
+    scope.Scope(context, statements_);
 
     size_t offset(0);
 
     CYCStringSet external;
-    for (CYIdentifierValueSet::const_iterator i(identifiers_.begin()); i != identifiers_.end(); ++i)
+    for (CYIdentifierValueSet::const_iterator i(scope.identifiers_.begin()); i != scope.identifiers_.end(); ++i)
         external.insert((*i)->Word());
 
     IdentifierUsages usages;
 
-    if (offset < rename_.size())
-        for (CYIdentifier *i(rename_[offset].identifier_); i != NULL; i = i->next_)
-            usages.insert(i);
+    if (offset < context.rename_.size())
+        for (CYIdentifier *i(context.rename_[offset].identifier_); i != NULL; i = i->next_)
+             usages.insert(i);
 
     // XXX: totalling the probable occurrences and sorting by them would improve the result
-    for (CYIdentifierUsageVector::const_iterator i(rename_.begin()); i != rename_.end(); ++i, ++offset) {
+    for (CYIdentifierUsageVector::const_iterator i(context.rename_.begin()); i != context.rename_.end(); ++i, ++offset) {
         //std::cout << *i << ":" << (*i)->offset_ << std::endl;
 
         const char *name;
@@ -591,7 +588,7 @@ namespace {
             if (lhs.flags_ != rhs.flags_)
                 return lhs.flags_ < rhs.flags_;
             /*if (lhs.usage_ != rhs.usage_)
-                return lhs.usage_ > rhs.usage_;*/
+                return lhs.usage_ < rhs.usage_;*/
             return lhs.identifier_ < rhs.identifier_;
         }
     };
@@ -601,12 +598,11 @@ namespace {
 
 void CYScope::Scope(CYContext &context, CYStatement *&statements) {
     CYDeclarations *last(NULL), *curr(NULL);
-    CYProgram *program(context.program_);
 
     IdentifierOffsets offsets;
 
     for (CYIdentifierAddressFlagsMap::const_iterator i(internal_.begin()); i != internal_.end(); ++i)
-        if (program != NULL && i->second != CYIdentifierMagic)
+        if (i->second != CYIdentifierMagic)
             offsets.insert(IdentifierOffset(i->first, i->second));
 
     size_t offset(0);
@@ -623,10 +619,10 @@ void CYScope::Scope(CYContext &context, CYStatement *&statements) {
 
         if (offset < i->offset_)
             offset = i->offset_;
-        if (program->rename_.size() <= offset)
-            program->rename_.resize(offset + 1);
+        if (context.rename_.size() <= offset)
+            context.rename_.resize(offset + 1);
 
-        CYIdentifierUsage &rename(program->rename_[offset++]);
+        CYIdentifierUsage &rename(context.rename_[offset++]);
         i->identifier_->SetNext(rename.identifier_);
         rename.identifier_ = i->identifier_;
         rename.usage_ += i->identifier_->usage_ + 1;
