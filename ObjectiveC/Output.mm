@@ -70,6 +70,11 @@ void CYClass::Output(CYOutput &out, CYFlags flags) const {
         fields_->Output(out);
     if (messages_ != NULL)
         messages_->Output(out, false);
+    if (protocols_ != NULL) {
+        out << '<';
+        out << *protocols_;
+        out << '>';
+    }
     out << "objc_registerClassPair($cyc);";
     out << "return $cyc;";
     out << "}(";
@@ -102,6 +107,12 @@ void CYMessage::Output(CYOutput &out, bool replace) const {
         }
 
     out << code_;
+}
+
+void CYProtocol::Output(CYOutput &out) const {
+    name_->Output(out, CYPA, CYNoFlags);
+    if (next_ != NULL)
+        out << ',' << ' ' << *next_;
 }
 
 void CYSelector::Output(CYOutput &out, CYFlags flags) const {

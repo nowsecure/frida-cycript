@@ -88,6 +88,7 @@ typedef struct {
         CYProgram *program_;
         CYProperty *property_;
         CYPropertyName *propertyName_;
+        CYProtocol *protocol_;
         CYStatement *statement_;
         CYString *string_;
         CYThis *this_;
@@ -481,6 +482,9 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %type <message_> ClassMessageDeclarationListOpt
 %type <className_> ClassName
 %type <className_> ClassNameOpt
+%type <protocol_> ClassProtocolListOpt
+%type <protocol_> ClassProtocols
+%type <protocol_> ClassProtocolsOpt
 %type <expression_> MessageExpression
 %type <messageParameter_> MessageParameter
 %type <messageParameter_> MessageParameters
@@ -1541,12 +1545,27 @@ ClassNameOpt
     | { $$ = NULL; }
     ;
 
+// XXX: this should be AssignmentExpressionNoRight
+ClassProtocols
+    : ShiftExpression ClassProtocolsOpt { $$ = new(driver.pool_) CYProtocol($1, $2); }
+    ;
+
+ClassProtocolsOpt
+    : "," ClassProtocols { $$ = $2; }
+    | { $$ = NULL; }
+    ;
+
+ClassProtocolListOpt
+    : "<" ClassProtocols ">" { $$ = $2; }
+    | { $$ = NULL; }
+    ;
+
 ClassExpression
-    : "@class" ClassNameOpt ClassSuperOpt ClassFieldList ClassMessageDeclarationListOpt "@end" { $$ = new(driver.pool_) CYClassExpression($2, $3, $4, $5); }
+    : "@class" ClassNameOpt ClassSuperOpt ClassProtocolListOpt ClassFieldList ClassMessageDeclarationListOpt "@end" { $$ = new(driver.pool_) CYClassExpression($2, $3, $4, $5, $6); }
     ;
 
 ClassStatement
-    : "@class" ClassName ClassSuperOpt ClassFieldList ClassMessageDeclarationListOpt "@end" { $$ = new(driver.pool_) CYClassStatement($2, $3, $4, $5); }
+    : "@class" ClassName ClassSuperOpt ClassProtocolListOpt ClassFieldList ClassMessageDeclarationListOpt "@end" { $$ = new(driver.pool_) CYClassStatement($2, $3, $4, $5, $6); }
     ;
 
 CategoryStatement

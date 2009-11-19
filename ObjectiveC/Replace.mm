@@ -63,6 +63,7 @@ CYExpression *CYClass::Replace_(CYContext &context) {
         $E($ CYAssign($V("$cyp"), $C1($V("object_getClass"), cys)))->*
         $E($ CYAssign(cyc, $C3($V("objc_allocateClassPair"), cys, name, $D(0))))->*
         $E($ CYAssign($V("$cym"), $C1($V("object_getClass"), cyc)))->*
+        protocols_->Replace(context)->*
         fields_->Replace(context)->*
         messages_->Replace(context, false)->*
         $E($C1($V("objc_registerClassPair"), cyc))->*
@@ -116,6 +117,15 @@ CYSelector *CYMessageParameter::Selector(CYContext &context) const {
 CYSelectorPart *CYMessageParameter::SelectorPart(CYContext &context) const { $T(NULL)
     CYSelectorPart *next(next_->SelectorPart(context));
     return tag_ == NULL ? next : $ CYSelectorPart(tag_, name_ != NULL, next);
+}
+
+CYStatement *CYProtocol::Replace(CYContext &context) const { $T(NULL)
+    return $ CYBlock($$->*
+        next_->Replace(context)->*
+        $E($C2($V("class_addProtocol"),
+            $V("$cyc"), name_
+        ))
+    );
 }
 
 CYExpression *CYSelector::Replace(CYContext &context) {

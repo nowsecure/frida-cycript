@@ -1332,6 +1332,8 @@ JSValueRef CYObjectiveC_RuntimeProperty(JSContextRef context, CYUTF8String name)
         return Instance::Make(context, nil);
     if (Class _class = objc_getClass(name.data))
         return CYMakeInstance(context, _class, true);
+    if (Protocol *protocol = objc_getProtocol(name.data))
+        return CYMakeInstance(context, protocol, true);
     return NULL;
 } CYPoolCatch(NULL) return /*XXX*/ NULL; }
 

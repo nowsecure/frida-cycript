@@ -122,15 +122,33 @@ struct CYMessage :
     void Output(CYOutput &out, bool replace) const;
 };
 
+struct CYProtocol :
+    CYNext<CYProtocol>,
+    CYThing
+{
+    CYExpression *name_;
+
+    CYProtocol(CYExpression *name, CYProtocol *next = NULL) :
+        CYNext<CYProtocol>(next),
+        name_(name)
+    {
+    }
+
+    CYStatement *Replace(CYContext &context) const;
+    void Output(CYOutput &out) const;
+};
+
 struct CYClass {
     CYClassName *name_;
     CYExpression *super_;
+    CYProtocol *protocols_;
     CYField *fields_;
     CYMessage *messages_;
 
-    CYClass(CYClassName *name, CYExpression *super, CYField *fields, CYMessage *messages) :
+    CYClass(CYClassName *name, CYExpression *super, CYProtocol *protocols, CYField *fields, CYMessage *messages) :
         name_(name),
         super_(super),
+        protocols_(protocols),
         fields_(fields),
         messages_(messages)
     {
@@ -147,8 +165,8 @@ struct CYClassExpression :
     CYClass,
     CYExpression
 {
-    CYClassExpression(CYClassName *name, CYExpression *super, CYField *fields, CYMessage *messages) :
-        CYClass(name, super, fields, messages)
+    CYClassExpression(CYClassName *name, CYExpression *super, CYProtocol *protocols, CYField *fields, CYMessage *messages) :
+        CYClass(name, super, protocols, fields, messages)
     {
     }
 
@@ -162,8 +180,8 @@ struct CYClassStatement :
     CYClass,
     CYStatement
 {
-    CYClassStatement(CYClassName *name, CYExpression *super, CYField *fields, CYMessage *messages) :
-        CYClass(name, super, fields, messages)
+    CYClassStatement(CYClassName *name, CYExpression *super, CYProtocol *protocols, CYField *fields, CYMessage *messages) :
+        CYClass(name, super, protocols, fields, messages)
     {
     }
 
