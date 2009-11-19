@@ -356,9 +356,7 @@ struct CYProgram :
     virtual void Output(CYOutput &out) const;
 };
 
-struct CYContext :
-    CYScope
-{
+struct CYContext {
     apr_pool_t *pool_;
     CYOptions &options_;
     CYScope *scope_;
@@ -367,7 +365,7 @@ struct CYContext :
     CYContext(apr_pool_t *pool, CYOptions &options) :
         pool_(pool),
         options_(options),
-        scope_(this)
+        scope_(NULL)
     {
     }
 

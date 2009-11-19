@@ -480,11 +480,8 @@ void CYProgram::Replace(CYContext &context) {
     CYScope scope;
     scope.parent_ = context.scope_;
     context.scope_ = &scope;
-
     statements_ = statements_->ReplaceAll(context);
-
     context.scope_ = scope.parent_;
-
     scope.Scope(context, statements_);
 
     size_t offset(0);
@@ -597,6 +594,9 @@ namespace {
 }
 
 void CYScope::Scope(CYContext &context, CYStatement *&statements) {
+    if (parent_ == NULL)
+        return;
+
     CYDeclarations *last(NULL), *curr(NULL);
 
     IdentifierOffsets offsets;
