@@ -1,4 +1,4 @@
-CY_EXECUTE :=
+CY_EXECUTE := 1
 flags += -DCY_EXECUTE
 code += sig/ffi_type.o sig/parse.o sig/copy.o
 code += Execute.o Bridge.o
