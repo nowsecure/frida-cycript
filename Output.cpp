@@ -293,6 +293,7 @@ void CYDeclaration::ForIn(CYOutput &out, CYFlags flags) const {
 
 void CYDeclaration::Output(CYOutput &out, CYFlags flags) const {
     out << *identifier_;
+    //out.out_ << ':' << identifier_->usage_ << '#' << identifier_->offset_;
     if (initialiser_ != NULL) {
         out << ' ' << '=' << ' ';
         initialiser_->Output(out, CYPA, CYRight(flags));

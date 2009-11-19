@@ -244,11 +244,13 @@ struct CYIdentifier :
 {
     CYIdentifier *replace_;
     size_t offset_;
+    size_t usage_;
 
     CYIdentifier(const char *word) :
         CYWord(word),
         replace_(NULL),
-        offset_(0)
+        offset_(0),
+        usage_(0)
     {
     }
 
@@ -311,8 +313,14 @@ enum CYIdentifierFlags {
 
 typedef std::set<const char *, CYCStringLess> CYCStringSet;
 typedef std::set<CYIdentifier *, CYIdentifierValueLess> CYIdentifierValueSet;
-typedef std::vector<CYIdentifier *> CYIdentifierAddressVector;
 typedef std::map<CYIdentifier *, CYIdentifierFlags> CYIdentifierAddressFlagsMap;
+
+struct CYIdentifierUsage {
+    CYIdentifier *identifier_;
+    size_t usage_;
+};
+
+typedef std::vector<CYIdentifierUsage> CYIdentifierUsageVector;
 
 struct CYScope {
     CYScope *parent_;
@@ -339,7 +347,7 @@ struct CYProgram :
     CYThing
 {
     CYStatement *statements_;
-    CYIdentifierAddressVector rename_;
+    CYIdentifierUsageVector rename_;
 
     CYProgram(CYStatement *statements) :
         statements_(statements)

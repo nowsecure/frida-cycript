@@ -368,9 +368,11 @@ CYStatement *CYFunctionStatement::Replace(CYContext &context) {
 }
 
 CYIdentifier *CYIdentifier::Replace(CYContext &context) {
-    if (replace_ != NULL && replace_ != this)
+    if (replace_ == NULL) {
+        replace_ = context.scope_->Lookup(context, this);
+        ++replace_->usage_;
+    } else if (replace_ != this)
         return replace_->Replace(context);
-    replace_ = context.scope_->Lookup(context, this);
     return replace_;
 }
 
@@ -461,6 +463,20 @@ CYExpression *CYPrefix::Replace(CYContext &context) {
 #define MappingSet "0etnirsoalfucdphmgyvbxTwSNECAFjDLkMOIBPqzRH$_WXUVGYKQJZ"
 //#define MappingSet "0abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$_"
 
+namespace {
+    struct IdentifierUsageLess :
+        std::binary_function<CYIdentifier *, CYIdentifier *, bool>
+    {
+        _finline bool operator ()(CYIdentifier *lhs, CYIdentifier *rhs) const {
+            if (lhs->usage_ != rhs->usage_)
+                return lhs->usage_ > rhs->usage_;
+            return lhs < rhs;
+        }
+    };
+
+    typedef std::set<CYIdentifier *, IdentifierUsageLess> IdentifierUsages;
+}
+
 void CYProgram::Replace(CYContext &context) {
     parent_ = context.scope_;
     CYProgram *program(context.program_);
@@ -480,8 +496,14 @@ void CYProgram::Replace(CYContext &context) {
     for (CYIdentifierValueSet::const_iterator i(identifiers_.begin()); i != identifiers_.end(); ++i)
         external.insert((*i)->Word());
 
+    IdentifierUsages usages;
+
+    if (offset < rename_.size())
+        for (CYIdentifier *i(rename_[offset].identifier_); i != NULL; i = i->next_)
+            usages.insert(i);
+
     // XXX: totalling the probable occurrences and sorting by them would improve the result
-    for (CYIdentifierAddressVector::const_iterator i(rename_.begin()); i != rename_.end(); ++i, ++offset) {
+    for (CYIdentifierUsageVector::const_iterator i(rename_.begin()); i != rename_.end(); ++i, ++offset) {
         //std::cout << *i << ":" << (*i)->offset_ << std::endl;
 
         const char *name;
@@ -510,7 +532,7 @@ void CYProgram::Replace(CYContext &context) {
             // XXX: at some point, this could become a keyword
         }
 
-        for (CYIdentifier *identifier(*i); identifier != NULL; identifier = identifier->next_)
+        for (CYIdentifier *identifier(i->identifier_); identifier != NULL; identifier = identifier->next_)
             identifier->Set(name);
     }
 }
@@ -540,6 +562,7 @@ void CYScope::Merge(CYContext &context, CYIdentifier *identifier) {
         if ((*insert.first)->offset_ < identifier->offset_)
             (*insert.first)->offset_ = identifier->offset_;
         identifier->replace_ = *insert.first;
+        (*insert.first)->usage_ += identifier->usage_ + 1;
     }
 }
 
@@ -547,11 +570,13 @@ namespace {
     struct IdentifierOffset {
         size_t offset_;
         CYIdentifierFlags flags_;
+        size_t usage_;
         CYIdentifier *identifier_;
 
-        IdentifierOffset(size_t offset, CYIdentifierFlags flags, CYIdentifier *identifier) :
-            offset_(offset),
+        IdentifierOffset(CYIdentifier *identifier, CYIdentifierFlags flags) :
+            offset_(identifier->offset_),
             flags_(flags),
+            usage_(identifier->usage_),
             identifier_(identifier)
         {
         }
@@ -565,6 +590,8 @@ namespace {
                 return lhs.offset_ < rhs.offset_;
             if (lhs.flags_ != rhs.flags_)
                 return lhs.flags_ < rhs.flags_;
+            /*if (lhs.usage_ != rhs.usage_)
+                return lhs.usage_ > rhs.usage_;*/
             return lhs.identifier_ < rhs.identifier_;
         }
     };
@@ -578,10 +605,9 @@ void CYScope::Scope(CYContext &context, CYStatement *&statements) {
 
     IdentifierOffsets offsets;
 
-    // XXX: we don't want to do this in order, we want to sort it by probable occurrence
     for (CYIdentifierAddressFlagsMap::const_iterator i(internal_.begin()); i != internal_.end(); ++i)
         if (program != NULL && i->second != CYIdentifierMagic)
-            offsets.insert(IdentifierOffset(i->first->offset_, i->second, i->first));
+            offsets.insert(IdentifierOffset(i->first, i->second));
 
     size_t offset(0);
 
@@ -600,9 +626,10 @@ void CYScope::Scope(CYContext &context, CYStatement *&statements) {
         if (program->rename_.size() <= offset)
             program->rename_.resize(offset + 1);
 
-        CYIdentifier *&identifier(program->rename_[offset++]);
-        i->identifier_->SetNext(identifier);
-        identifier = i->identifier_;
+        CYIdentifierUsage &rename(program->rename_[offset++]);
+        i->identifier_->SetNext(rename.identifier_);
+        rename.identifier_ = i->identifier_;
+        rename.usage_ += i->identifier_->usage_ + 1;
     }
 
     if (last != NULL) {
