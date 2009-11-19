@@ -74,6 +74,8 @@ void CYThrow(JSContextRef context, JSValueRef value);
         return NULL; \
     }
 
+// XXX: fix this: _ is not safe; this is /not/ Menes ;P
+#undef _assert
 #define _assert(test, args...) do { \
     if (!(test)) \
         CYThrow("*** _assert(%s):%s(%u):%s [errno=%d]", #test, __FILE__, __LINE__, __FUNCTION__, errno); \

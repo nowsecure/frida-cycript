@@ -50,6 +50,7 @@
 #include <map>
 #include <set>
 
+#include <cstdio>
 #include <cstdlib>
 
 #include "location.hh"

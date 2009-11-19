@@ -6,6 +6,7 @@ else
 target := $(PKG_TARG)-
 endif
 
+gcc := g++
 flags ?= -g3 -O0 -DYYDEBUG=1
 
 paths := $(foreach path,$(paths),$(wildcard $(path)))
@@ -118,24 +119,24 @@ lex.cy.c: Cycript.l
 #	./Parser.py <Parser.dat >$@
 
 Cycript.tab.o: Cycript.tab.cc $(header)
-	$(target)g++ $(flags) -c -o $@ $<
+	$(target)$(gcc) $(flags) -c -o $@ $<
 
 lex.cy.o: lex.cy.c $(header)
-	$(target)g++ $(flags) -c -o $@ $<
+	$(target)$(gcc) $(flags) -c -o $@ $<
 
 %.o: %.cpp $(header)
-	$(target)g++ $(flags) -c -o $@ $<
+	$(target)$(gcc) $(flags) -c -o $@ $<
 
 #objc := -x c++
 %.o: %.mm $(header)
-	$(target)g++ $(objc) $(flags) -c -o $@ $<
+	$(target)$(gcc) $(objc) $(flags) -c -o $@ $<
 
 libcycript.$(dll): $(code)
-	$(target)g++ $(flags) -shared -dynamiclib -o $@ $(filter %.o,$^) $(library) $(link)
+	$(target)$(gcc) $(flags) -shared -dynamiclib -o $@ $(filter %.o,$^) $(library) $(link)
 	$(ldid) $@
 
 cycript: Console.o libcycript.$(dll) $(inject)
-	$(target)g++ $(flags) -o $@ $(filter %.o,$^) -L. -lcycript $(console) $(link)
+	$(target)$(gcc) $(flags) -o $@ $(filter %.o,$^) -L. -lcycript $(console) $(link)
 	$(entitle) cycript
 
 package: $(deb)
