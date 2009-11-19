@@ -43,6 +43,7 @@
 struct CYBridgeEntry {
     int name_;
     const char *value_;
+    void *cache_;
 };
 
 extern "C" struct CYBridgeEntry *CYBridgeHash(const char *data, size_t size);

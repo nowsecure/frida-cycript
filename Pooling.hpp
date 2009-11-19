@@ -88,6 +88,12 @@ class CYPool {
 
 struct CYData {
     apr_pool_t *pool_;
+    unsigned count_;
+
+    CYData() :
+        count_(1)
+    {
+    }
 
     virtual ~CYData() {
     }
@@ -107,7 +113,6 @@ struct CYData {
     static void operator delete(void *data) {
         apr_pool_destroy(reinterpret_cast<CYData *>(data)->pool_);
     }
-
 };
 
 template <typename Type_>

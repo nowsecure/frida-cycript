@@ -169,7 +169,9 @@ JSStringRef toJSON_s;
 static JSStringRef Result_;
 
 void CYFinalize(JSObjectRef object) {
-    delete reinterpret_cast<CYData *>(JSObjectGetPrivate(object));
+    CYData *internal(reinterpret_cast<CYData *>(JSObjectGetPrivate(object)));
+    if (--internal->count_ == 0)
+        delete internal;
 }
 
 void Structor_(apr_pool_t *pool, sig::Type *&type) {
@@ -486,8 +488,21 @@ JSObjectRef CYMakePointer(JSContextRef context, void *pointer, size_t length, si
     return JSObjectMake(context, Pointer_, internal);
 }
 
-static JSObjectRef CYMakeFunctor(JSContextRef context, void (*function)(), const char *type) {
-    cy::Functor *internal(new cy::Functor(type, function));
+static JSObjectRef CYMakeFunctor(JSContextRef context, void (*function)(), const char *type, void **cache = NULL) {
+    cy::Functor *internal;
+
+    if (cache != NULL && *cache != NULL) {
+        internal = reinterpret_cast<cy::Functor *>(*cache);
+        ++internal->count_;
+    } else {
+        internal = new cy::Functor(type, function);
+
+        if (cache != NULL) {
+            *cache = internal;
+            ++internal->count_;
+        }
+    }
+
     return JSObjectMake(context, Functor_, internal);
 }
 
@@ -954,7 +969,7 @@ static JSValueRef All_getProperty(JSContextRef context, JSObjectRef object, JSSt
 
                 case '1':
                     if (void (*symbol)() = reinterpret_cast<void (*)()>(CYCastSymbol(name.data)))
-                        return CYMakeFunctor(context, symbol, entry->value_);
+                        return CYMakeFunctor(context, symbol, entry->value_, &entry->cache_);
                     else return NULL;
 
                 case '2':
