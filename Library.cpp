@@ -59,6 +59,7 @@
 
 #include "Error.hpp"
 #include "String.hpp"
+#include "Execute.hpp"
 
 /* C Strings {{{ */
 template <typename Type_>

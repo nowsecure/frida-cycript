@@ -66,6 +66,7 @@
 #include "Error.hpp"
 #include "JavaScript.hpp"
 #include "String.hpp"
+#include "Bridge.hpp"
 
 #include <cmath>
 #include <map>
@@ -144,8 +145,6 @@
 #endif
 
 JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, Class super, SEL _cmd, size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception);
-
-extern sqlite3 *Bridge_;
 
 /* Objective-C Pool Release {{{ */
 apr_status_t CYPoolRelease_(void *data) {
@@ -1406,36 +1405,16 @@ static const char *CYPoolTypeEncoding(apr_pool_t *pool, JSContextRef context, SE
         return method_getTypeEncoding(method);
 
     const char *name(sel_getName(sel));
+    size_t length(strlen(name));
 
-    sqlite3_stmt *statement;
+    char keyed[length + 2];
+    keyed[0] = '6';
+    keyed[length + 1] = '\0';
+    memcpy(keyed + 1, name, length);
 
-    _sqlcall(sqlite3_prepare(Bridge_,
-        "select "
-            "\"bridge\".\"value\" "
-        "from \"bridge\" "
-        "where"
-            " \"bridge\".\"mode\" = -1 and"
-            " \"bridge\".\"name\" = ?"
-        " limit 1"
-    , -1, &statement, NULL));
+    if (CYBridgeEntry *entry = CYBridgeHash(keyed, length + 1))
+        return entry->value_;
 
-    _trace();
-    _sqlcall(sqlite3_bind_text(statement, 1, name, -1, SQLITE_STATIC));
-
-    const char *value;
-    if (_sqlcall(sqlite3_step(statement)) == SQLITE_DONE) {
-    _trace();
-        value = NULL;}
-    else {
-    _trace();
-        value = sqlite3_column_pooled(pool, statement, 0);
-        }
-
-    _sqlcall(sqlite3_finalize(statement));
-
-    if (value != NULL)
-        return value;
-_trace();
     return NULL;
 }
 

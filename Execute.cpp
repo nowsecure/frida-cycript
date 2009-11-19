@@ -37,8 +37,6 @@
 */
 /* }}} */
 
-#include <sqlite3.h>
-
 #include "Internal.hpp"
 
 #include <dlfcn.h>
@@ -50,6 +48,7 @@
 #include "sig/ffi_type.hpp"
 
 #include "Pooling.hpp"
+#include "Execute.hpp"
 
 #include <sys/mman.h>
 
@@ -67,12 +66,6 @@
 #include "Error.hpp"
 #include "JavaScript.hpp"
 #include "String.hpp"
-
-char *sqlite3_column_pooled(apr_pool_t *pool, sqlite3_stmt *stmt, int n) {
-    if (const unsigned char *value = sqlite3_column_text(stmt, n))
-        return apr_pstrdup(pool, (const char *) value);
-    else return NULL;
-}
 
 struct CYHooks *hooks_;
 
@@ -175,8 +168,6 @@ JSStringRef toJSON_s;
 
 static JSStringRef Result_;
 
-sqlite3 *Bridge_;
-
 void CYFinalize(JSObjectRef object) {
     delete reinterpret_cast<CYData *>(JSObjectGetPrivate(object));
 }
@@ -196,49 +187,27 @@ void Structor_(apr_pool_t *pool, sig::Type *&type) {
     if (type->primitive != sig::struct_P || type->name == NULL)
         return;
 
-    sqlite3_stmt *statement;
+    size_t length(strlen(type->name));
+    char keyed[length + 2];
+    memcpy(keyed + 1, type->name, length + 1);
 
-    _sqlcall(sqlite3_prepare(Bridge_,
-        "select "
-            "\"bridge\".\"mode\", "
-            "\"bridge\".\"value\" "
-        "from \"bridge\" "
-        "where"
-            " \"bridge\".\"mode\" in (3, 4) and"
-            " \"bridge\".\"name\" = ?"
-        " limit 1"
-    , -1, &statement, NULL));
+    static const char *modes = "34";
+    for (size_t i(0); i != 2; ++i) {
+        char mode(modes[i]);
+        keyed[0] = mode;
 
-    _sqlcall(sqlite3_bind_text(statement, 1, type->name, -1, SQLITE_STATIC));
+        if (CYBridgeEntry *entry = CYBridgeHash(keyed, length + 1))
+            switch (mode) {
+                case '3':
+                    sig::Parse(pool, &type->data.signature, entry->value_, &Structor_);
+                break;
 
-    int mode;
-    const char *value;
-
-    if (_sqlcall(sqlite3_step(statement)) == SQLITE_DONE) {
-        mode = -1;
-        value = NULL;
-    } else {
-        mode = sqlite3_column_int(statement, 0);
-        value = sqlite3_column_pooled(pool, statement, 1);
-    }
-
-    _sqlcall(sqlite3_finalize(statement));
-
-    switch (mode) {
-        default:
-            _assert(false);
-        case -1:
-            break;
-
-        case 3: {
-            sig::Parse(pool, &type->data.signature, value, &Structor_);
-        } break;
-
-        case 4: {
-            sig::Signature signature;
-            sig::Parse(pool, &signature, value, &Structor_);
-            type = signature.elements[0].type;
-        } break;
+                case '4': {
+                    sig::Signature signature;
+                    sig::Parse(pool, &signature, entry->value_, &Structor_);
+                    type = signature.elements[0].type;
+                } break;
+            }
     }
 }
 
@@ -968,61 +937,42 @@ static JSValueRef All_getProperty(JSContextRef context, JSObjectRef object, JSSt
         if (JSValueRef value = (*hooks_->RuntimeProperty)(context, name))
             return value;
 
-    sqlite3_stmt *statement;
+    size_t length(name.size);
+    char keyed[length + 2];
+    memcpy(keyed + 1, name.data, length + 1);
 
-    _sqlcall(sqlite3_prepare(Bridge_,
-        "select "
-            "\"bridge\".\"mode\", "
-            "\"bridge\".\"value\" "
-        "from \"bridge\" "
-        "where"
-            " \"bridge\".\"name\" = ?"
-        " limit 1"
-    , -1, &statement, NULL));
+    static const char *modes = "0124";
+    for (size_t i(0); i != 4; ++i) {
+        char mode(modes[i]);
+        keyed[0] = mode;
 
-    _sqlcall(sqlite3_bind_text(statement, 1, name.data, name.size, SQLITE_STATIC));
+        if (CYBridgeEntry *entry = CYBridgeHash(keyed, length + 1))
+            switch (mode) {
+                case '0':
+                    return JSEvaluateScript(CYGetJSContext(context), CYJSString(entry->value_), NULL, NULL, 0, NULL);
 
-    int mode;
-    const char *value;
+                case '1':
+                    if (void (*symbol)() = reinterpret_cast<void (*)()>(CYCastSymbol(name.data)))
+                        return CYMakeFunctor(context, symbol, entry->value_);
+                    else return NULL;
 
-    if (_sqlcall(sqlite3_step(statement)) == SQLITE_DONE) {
-        mode = -1;
-        value = NULL;
-    } else {
-        mode = sqlite3_column_int(statement, 0);
-        value = sqlite3_column_pooled(pool, statement, 1);
+                case '2':
+                    if (void *symbol = CYCastSymbol(name.data)) {
+                        // XXX: this is horrendously inefficient
+                        sig::Signature signature;
+                        sig::Parse(pool, &signature, entry->value_, &Structor_);
+                        ffi_cif cif;
+                        sig::sig_ffi_cif(pool, &sig::ObjectiveC, &signature, &cif);
+                        return CYFromFFI(context, signature.elements[0].type, cif.rtype, symbol);
+                    } else return NULL;
+
+                // XXX: implement case 3
+                case '4':
+                    return CYMakeType(context, entry->value_);
+            }
     }
 
-    _sqlcall(sqlite3_finalize(statement));
-
-    switch (mode) {
-        default:
-            CYThrow("invalid mode from bridge table: %d", mode);
-        case -1:
-            return NULL;
-
-        case 0:
-            return JSEvaluateScript(CYGetJSContext(context), CYJSString(value), NULL, NULL, 0, NULL);
-
-        case 1:
-            if (void (*symbol)() = reinterpret_cast<void (*)()>(CYCastSymbol(name.data)))
-                return CYMakeFunctor(context, symbol, value);
-            else return NULL;
-
-        case 2:
-            if (void *symbol = CYCastSymbol(name.data)) {
-                // XXX: this is horrendously inefficient
-                sig::Signature signature;
-                sig::Parse(pool, &signature, value, &Structor_);
-                ffi_cif cif;
-                sig::sig_ffi_cif(pool, &sig::ObjectiveC, &signature, &cif);
-                return CYFromFFI(context, signature.elements[0].type, cif.rtype, symbol);
-            } else return NULL;
-
-        // XXX: implement case 3
-        case 4:
-            return CYMakeType(context, value);
-    }
+    return NULL;
 } CYCatch }
 
 static JSObjectRef Pointer_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -1279,8 +1229,6 @@ void CYInitializeDynamic() {
     else return;
 
     CYInitializeStatic();
-
-    _sqlcall(sqlite3_open("/usr/lib/libcycript.db", &Bridge_));
 
     JSObjectMakeArray$ = reinterpret_cast<JSObjectRef (*)(JSContextRef, size_t, const JSValueRef[], JSValueRef *)>(dlsym(RTLD_DEFAULT, "JSObjectMakeArray"));
 

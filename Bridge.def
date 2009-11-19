@@ -205,7 +205,7 @@ C UITableViewRowAnimationFade 0
 C UITableViewRowAnimationRight 1
 C UITableViewRowAnimationLeft 2
 C UITableViewRowAnimationTop 3
-C UITableViewRowAnimationTop 4
+C UITableViewRowAnimationBottom 4
 C UITableViewRowAnimationNone 5
 
 V UITableViewIndexSearch @
@@ -424,11 +424,6 @@ V kUIButtonBarButtonTitleVerticalHeight @
 V kUIButtonBarButtonTitleWidth @
 V kUIButtonBarButtonType @
 
-V UIKeyboardAnimationCurveUserInfoKey @
-V UIKeyboardAnimationDurationUserInfoKey @
-V UIKeyboardBoundsUserInfoKey @
-V UIKeyboardCenterBeginUserInfoKey @
-V UIKeyboardCenterEndUserInfoKey @
 V UIKeyboardRequiresInternationalKey @
 
 V UIKeyboardCandidateCorrectionDidChangeNotification @
@@ -678,7 +673,7 @@ V NSMigrationSourceObjectKey @
 V NSMigrationDestinationObjectKey @
 V NSMigrationEntityMappingKey @
 V NSMigrationPropertyMappingKey @
-V NSMigrationPropertyMappingKey @
+V NSMigrationEntityPolicyKey @
 
 C NSManagedObjectResultType 0x00
 C NSManagedObjectIDResultType 0x01
