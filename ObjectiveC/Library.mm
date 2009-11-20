@@ -66,7 +66,7 @@
 #include "Error.hpp"
 #include "JavaScript.hpp"
 #include "String.hpp"
-#include "Bridge.hpp"
+#include "Execute.hpp"
 
 #include <cmath>
 #include <map>
