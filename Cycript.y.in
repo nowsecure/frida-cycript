@@ -88,7 +88,6 @@ typedef struct {
         CYProgram *program_;
         CYProperty *property_;
         CYPropertyName *propertyName_;
-        CYProtocol *protocol_;
         CYStatement *statement_;
         CYString *string_;
         CYThis *this_;
@@ -100,6 +99,7 @@ typedef struct {
         CYField *field_;
         CYMessage *message_;
         CYMessageParameter *messageParameter_;
+        CYProtocol *protocol_;
         CYSelectorPart *selector_;
 @end
 
