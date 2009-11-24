@@ -101,7 +101,7 @@ endif
 all: $(all)
 
 clean:
-	rm -f *.o libcycript.$(dll) $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.y Cycript.l control
+	rm -f *.o libcycript.$(dll) $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.y Cycript.l control Bridge.hpp
 
 %.y: %.y.in
 	./Filter.sh <$< >$@ $(filters)
