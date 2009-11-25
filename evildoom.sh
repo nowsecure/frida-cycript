@@ -12,6 +12,7 @@ case `uname` in
 esac
 aclocal
 sed -e 's/AC_PROG_AWK/dnl &/' -i aclocal.m4
+cat `aclocal --print-ac-dir`/check_gnu_make.m4 find_apr.m4 >> aclocal.m4
 autoconf
 function filter()
 {

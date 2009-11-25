@@ -555,7 +555,8 @@ PACKAGE_BUGREPORT='saurik@saurik.com'
 PACKAGE_URL='http://www.cycript.org/'
 
 ac_unique_file="Console.cpp"
-ac_subst_vars='LIBFFI_LIBS
+ac_subst_vars='ifGNUmake
+LIBFFI_LIBS
 LIBFFI_CFLAGS
 WEBKIT_LIBS
 WEBKIT_CFLAGS
@@ -576,6 +577,7 @@ INSTALL_PROGRAM
 ac_ct_CXX
 CXXFLAGS
 CXX
+APR
 FLEX
 LEXLIB
 OBJEXT
@@ -633,6 +635,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+with_apr
 with_gnu_ld
 enable_rpath
 with_libiconv_prefix
@@ -1274,6 +1277,8 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-apr=PATH         prefix for installed APR or the full path to
+                             apr-config
   --with-gnu-ld           assume the C compiler uses GNU ld default=no
   --with-libiconv-prefix[=DIR]  search for libiconv in DIR/include and DIR/lib
   --without-libiconv-prefix     don't search for libiconv in includedir and libdir
@@ -3065,6 +3070,7 @@ if test "`echo \"$LEX\" | $SED 's/^.*\(flex\).*$/\1/'`" = "flex"; then :
 $as_echo "yes" >&6; }
 	FLEX=$LEX
 
+
 else
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -3073,6 +3079,144 @@ $as_echo "no" >&6; }
 
 fi
 
+  apr_found="no"
+
+  if test "$target_os" = "os2-emx"; then
+    # Scripts don't pass test -x on OS/2
+    TEST_X="test -f"
+  else
+    TEST_X="test -x"
+  fi
+
+  acceptable_majors="1"
+
+  apr_temp_acceptable_apr_config=""
+  for apr_temp_major in $acceptable_majors
+  do
+    case $apr_temp_major in
+      0)
+      apr_temp_acceptable_apr_config="$apr_temp_acceptable_apr_config apr-config"
+      ;;
+      *)
+      apr_temp_acceptable_apr_config="$apr_temp_acceptable_apr_config apr-$apr_temp_major-config"
+      ;;
+    esac
+  done
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for APR" >&5
+$as_echo_n "checking for APR... " >&6; }
+
+# Check whether --with-apr was given.
+if test "${with_apr+set}" = set; then :
+  withval=$with_apr;
+    if test "$withval" = "no" || test "$withval" = "yes"; then
+      as_fn_error "--with-apr requires a directory or file to be provided" "$LINENO" 5
+    fi
+
+    for apr_temp_apr_config_file in $apr_temp_acceptable_apr_config
+    do
+      for lookdir in "$withval/bin" "$withval"
+      do
+        if $TEST_X "$lookdir/$apr_temp_apr_config_file"; then
+          apr_config="$lookdir/$apr_temp_apr_config_file"
+
+          apr_found="yes"
+          break 2
+        fi
+      done
+    done
+
+    if test "$apr_found" != "yes" && $TEST_X "$withval" && $withval --help > /dev/null 2>&1 ; then
+      apr_config="$withval"
+      apr_found="yes"
+    fi
+
+            if test "$apr_found" != "yes"; then
+      as_fn_error "the --with-apr parameter is incorrect. It must specify an install prefix, a build directory, or an apr-config file." "$LINENO" 5
+    fi
+
+else
+
+        if test -n "1" && test "1" = "1"; then
+      for apr_temp_apr_config_file in $apr_temp_acceptable_apr_config
+      do
+        if $apr_temp_apr_config_file --help > /dev/null 2>&1 ; then
+          apr_config="$apr_temp_apr_config_file"
+
+          apr_found="yes"
+          break
+        else
+                    for lookdir in /usr /usr/local /usr/local/apr /opt/apr; do
+            if $TEST_X "$lookdir/bin/$apr_temp_apr_config_file"; then
+              apr_config="$lookdir/bin/$apr_temp_apr_config_file"
+
+              apr_found="yes"
+              break 2
+            fi
+          done
+        fi
+      done
+    fi
+        if test "$apr_found" = "no" && test -d ""; then
+      apr_temp_abs_srcdir="`cd  && pwd`"
+      apr_found="reconfig"
+      apr_bundled_major="`sed -n '/#define.*APR_MAJOR_VERSION/s/^[^0-9]*\([0-9]*\).*$/\1/p' \"/include/apr_version.h\"`"
+      case $apr_bundled_major in
+        "")
+          as_fn_error "failed to find major version of bundled APR" "$LINENO" 5
+        ;;
+        0)
+          apr_temp_apr_config_file="apr-config"
+        ;;
+        *)
+          apr_temp_apr_config_file="apr-$apr_bundled_major-config"
+        ;;
+      esac
+      if test -n ""; then
+        apr_config="/$apr_temp_apr_config_file"
+      else
+        apr_config="/$apr_temp_apr_config_file"
+      fi
+    fi
+
+fi
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $apr_found" >&5
+$as_echo "$apr_found" >&6; }
+
+case $apr_found in #(
+  yes) :
+
+
+  for element in `$apr_config --includes`; do
+    haveit=
+    for x in $CPPFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CPPFLAGS="${CPPFLAGS}${CPPFLAGS:+ }$element"
+    fi
+  done
+
+	APR=`$apr_config --link-ld`
+
+ ;; #(
+  *) :
+    as_fn_error "You need apr" "$LINENO" 5 ;;
+esac
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -4827,5 +4971,34 @@ fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: No JavaScript engine!" >&5
 $as_echo "$as_me: WARNING: No JavaScript engine!" >&2;} ;;
 esac
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking for GNU make" >&5
+$as_echo_n "checking for GNU make... " >&6; }
+if test "${_cv_gnu_make_command+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  _cv_gnu_make_command='' ;
+                for a in "$MAKE" make gmake gnumake ; do
+                        if test -z "$a" ; then continue ; fi ;
+                        if  ( sh -c "$a --version" 2> /dev/null | grep GNU  2>&1 > /dev/null ) ;  then
+                                _cv_gnu_make_command=$a ;
+                                break;
+                        fi
+                done ;
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $_cv_gnu_make_command" >&5
+$as_echo "$_cv_gnu_make_command" >&6; } ;
+        if test  "x$_cv_gnu_make_command" != "x"  ; then
+                ifGNUmake='' ;
+        else
+                ifGNUmake='#' ;
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"Not found\"" >&5
+$as_echo "\"Not found\"" >&6; };
+        fi
+
+
+if test x$_cv_gnu_make_command = x; then :
+  as_fn_error "You need GNU make" "$LINENO" 5
+fi
 # XXX: gnustep
-#AC_PROG_OBJCXX()
+#AC_PROG_OBJCXX
