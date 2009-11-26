@@ -2,7 +2,7 @@ CY_EXECUTE := 1
 flags += -DCY_EXECUTE
 code += sig/ffi_type.o sig/parse.o sig/copy.o
 code += Execute.o Bridge.o
-library += $(apr) -lffi
+library += -lffi
 filters += C
 
 Bridge.gperf: Bridge.def Bridge.sh

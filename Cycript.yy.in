@@ -37,13 +37,13 @@
 */
 /* }}} */
 
-%code top {
-#include "Cycript.tab.hh"
-#define scanner driver.scanner_
+%{
+#define cyscanner driver.scanner_
 #define YYSTACKEXPANDABLE 1
-}
+#define yyerrok (yyerrstatus_ = 0)
+%}
 
-%code requires {
+%{
 #include "Parser.hpp"
 
 @begin ObjectiveC
@@ -111,15 +111,17 @@ typedef struct {
     };
 } YYSTYPE;
 
-}
+#define YYSTYPE YYSTYPE
 
-%code provides {
-int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
-}
+%}
 
-%name-prefix "cy"
+%{
+int cylex(YYSTYPE *, cy::location *, void *);
+%}
 
-%language "C++"
+%name-prefix="cy"
+
+%skeleton "lalr1.cc"
 %locations
 
 %initial-action {
@@ -134,7 +136,7 @@ int cylex(YYSTYPE *lvalp, cy::location *llocp, void *scanner);
 %error-verbose
 
 %parse-param { CYDriver &driver }
-%lex-param { void *scanner }
+%lex-param { void *cyscanner }
 
 @begin E4X
 %token XMLCDATA

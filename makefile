@@ -36,9 +36,10 @@ inject :=
 filters := #E4X
 ldid := true
 entitle := $(ldid)
+lib := lib
 dll := so
 apr := $(shell apr-1-config --link-ld)
-library := 
+library := $(apr)
 console := $(apr) -lreadline
 depends :=
 
@@ -58,10 +59,10 @@ endif
 endif
 
 flags += -Wall -Werror -Wno-parentheses #-Wno-unused
-flags += -fPIC -fno-common
+flags += -fno-common
 flags += -I. -Iinclude -I$(shell apr-1-config --includedir)
 
-all += libcycript.$(dll)
+all += $(lib)cycript.$(dll)
 
 ifdef arch
 deb := $(shell grep ^Package: control.in | cut -d ' ' -f 2-)_$(shell grep ^Version: control.in | cut -d ' ' -f 2 | sed -e 's/\#/$(svn)/')_$(arch).deb
@@ -71,12 +72,12 @@ all: $(deb)
 extra::
 
 ifeq ($(depends)$(dll),dylib)
-control.tmp: control.in cycript libcycript.dylib
+control.tmp: control.in cycript $(lib)cycript.dylib
 	sed -e 's/&/'"$$(dpkg-query -S $$(otool -lah cycript *.dylib | grep dylib | grep -v ':$$' | sed -e 's/^ *name //;s/ (offset [0-9]*)$$//' | sort -u) 2>/dev/null | sed -e 's/:.*//; /^cycript$$/ d; s/$$/,/' | sort -u | tr '\n' ' ')"'/;s/, $$//;s/#/$(svn)/;s/%/$(arch)/' $< >$@
 else
 ifeq ($(depends)$(dll),so)
-control.tmp: control.in cycript libcycript.so
-	sed -e 's/&/'"$$(dpkg-query -S $$(ldd cycript libcycript.so | sed -e '/:$$/ d; s/^[ \t]*\([^ ]* => \)\?\([^ ]*\) .*/\2/' | sort -u) 2>/dev/null | sed -e 's/:.*//; /^cycript$$/ d; s/$$/,/' | sort -u | tr '\n' ' ')"'/;s/, $$//;s/#/$(svn)/;s/%/$(arch)/' $< >$@
+control.tmp: control.in cycript $(lib)cycript.so
+	sed -e 's/&/'"$$(dpkg-query -S $$(ldd cycript $(lib)cycript.so | sed -e '/:$$/ d; s/^[ \t]*\([^ ]* => \)\?\([^ ]*\) .*/\2/' | sort -u) 2>/dev/null | sed -e 's/:.*//; /^cycript$$/ d; s/$$/,/' | sort -u | tr '\n' ' ')"'/;s/, $$//;s/#/$(svn)/;s/%/$(arch)/' $< >$@
 else
 control.tmp: control.in
 	sed -e 's/&/$(foreach depend,$(depends),$(depend),)/;s/,$$//;s/#/$(svn)/;s/%/$(arch)/' $< >$@
@@ -92,7 +93,7 @@ $(deb): $(all) control
 	cp -pR control package/DEBIAN
 	mkdir -p package/usr/{bin,lib,sbin}
 	$(restart) extra
-	cp -pR libcycript.$(dll) package/usr/lib
+	cp -pR $(lib)cycript.$(dll) package/usr/lib
 	cp -pR cycript package/usr/bin
 	#cp -pR cyrver package/usr/sbin
 	dpkg-deb -b package $(deb)
@@ -101,15 +102,15 @@ endif
 all: $(all)
 
 clean:
-	rm -f *.o libcycript.$(dll) $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.y Cycript.l control Bridge.hpp
+	rm -f *.o $(lib)cycript.$(dll) $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.hpp
 
-%.y: %.y.in
+%.yy: %.yy.in
 	./Filter.sh <$< >$@ $(filters)
 
 %.l: %.l.in
 	./Filter.sh <$< >$@ $(filters)
 
-Cycript.tab.cc Cycript.tab.hh location.hh position.hh: Cycript.y
+Cycript.tab.cc Cycript.tab.hh location.hh position.hh: Cycript.yy
 	bison -v --report=state $<
 
 lex.cy.c: Cycript.l
@@ -131,11 +132,11 @@ lex.cy.o: lex.cy.c $(header)
 %.o: %.mm $(header)
 	$(target)$(gcc) $(objc) $(flags) -c -o $@ $<
 
-libcycript.$(dll): $(code)
+$(lib)cycript.$(dll): $(code)
 	$(target)$(gcc) $(flags) -shared -dynamiclib -o $@ $(filter %.o,$^) $(library) $(link)
 	$(ldid) $@
 
-cycript: Console.o libcycript.$(dll) $(inject)
+cycript: Console.o $(lib)cycript.$(dll) $(inject)
 	$(target)$(gcc) $(flags) -o $@ $(filter %.o,$^) -L. -lcycript $(console) $(link)
 	$(entitle) cycript
 
