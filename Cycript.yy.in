@@ -42,7 +42,7 @@
 @if Bison24 %code top {
 #define cyscanner driver.scanner_
 #define YYSTACKEXPANDABLE 1
-#define yyerrok (yyerrstatus_ = 0)
+@if Bison23 #define yyerrok (yyerrstatus_ = 0)
 @if Bison24 }
 
 @if Bison24 %code requires {
