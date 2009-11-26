@@ -64,6 +64,8 @@ flags += -I. -Iinclude -I$(shell apr-1-config --includedir)
 
 all += $(lib)cycript.$(dll)
 
+filters += $(shell bison <(echo '%code{}%%_:') -o/dev/null 2>/dev/null && echo Bison24 || echo Bison23)
+
 ifdef arch
 deb := $(shell grep ^Package: control.in | cut -d ' ' -f 2-)_$(shell grep ^Version: control.in | cut -d ' ' -f 2 | sed -e 's/\#/$(svn)/')_$(arch).deb
 
