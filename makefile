@@ -121,7 +121,7 @@ Cycript.tab.cc Cycript.tab.hh location.hh position.hh: Cycript.yy
 	bison -v --report=state $<
 
 lex.cy.c: Cycript.l
-	flex $<
+	flex -t $< | sed -e 's/int yyl;/yy_size_t yyl;/;s/int yyleng_r;/yy_size_t yyleng_r;/' >$@
 
 #Parser.hpp: Parser.py Parser.dat
 #	./Parser.py <Parser.dat >$@
