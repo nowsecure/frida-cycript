@@ -7,6 +7,7 @@ library += -framework JavaScriptCore
 # XXX: do I just need WebCore?
 library += -framework WebKit
 library += -liconv
+flags += -I/usr/include/ffi
 
 include Execute.mk
 include ObjectiveC.mk
