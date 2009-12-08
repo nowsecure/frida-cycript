@@ -69,7 +69,7 @@ filters += $(shell bison <(echo '%code{}%%_:') -o/dev/null 2>/dev/null && echo B
 ifdef arch
 deb := $(shell grep ^Package: control.in | cut -d ' ' -f 2-)_$(shell grep ^Version: control.in | cut -d ' ' -f 2 | sed -e 's/\#/$(svn)/')_$(arch).deb
 
-all: $(deb)
+all:
 
 extra::
 
@@ -149,5 +149,9 @@ test: $(deb)
 	if [[ -e target.cy ]]; then cycript -c target.cy && echo; fi
 	if [[ -e jquery.js ]]; then /usr/bin/time cycript -c jquery.js >jquery.cyc.js; gzip -9c jquery.cyc.js >jquery.cyc.js.gz; wc -c jquery.{mam,gcc,cyc,bak,yui}.js; wc -c jquery.{cyc,gcc,bak,mam,yui}.js.gz; fi
 	if [[ -e test.cy ]]; then cycript test.cy; fi
+
+install: cycript $(lib)cycript.$(dll)
+	cp -p cycript /usr/bin
+	cp -p $(lib)cycript.$(dll) /usr/lib
 
 .PHONY: all clean extra package control.tmp
