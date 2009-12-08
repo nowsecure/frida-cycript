@@ -46,9 +46,15 @@ depends :=
 restart ?= $(MAKE)
 uname_s ?= $(shell uname -s)
 uname_p ?= $(shell uname -p)
+uname_m ?= $(shell uname -m)
 
 -include $(uname_s).mk
 -include $(uname_s)-$(uname_p).mk
+-include $(uname_s)-$(uname_m).mk
+
+ifneq ($(shell pkg-config libffi --modversion 2>/dev/null),)
+flags += $(shell pkg-config --cflags libffi)
+endif
 
 ifdef CY_EXECUTE
 ifeq ($(filter ObjectiveC,$(filters)),)

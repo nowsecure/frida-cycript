@@ -1,2 +1,2 @@
 flags += -fPIC
-include PkgConfig.mk
+include WebKit.mk
