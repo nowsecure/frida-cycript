@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 shopt -s expand_aliases
 unalias -a
 case `uname` in
