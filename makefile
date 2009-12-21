@@ -46,7 +46,6 @@ depends :=
 restart ?= $(MAKE)
 uname_s ?= $(shell uname -s)
 uname_p ?= $(shell uname -p)
-uname_m ?= $(shell uname -m)
 
 -include $(uname_s).mk
 -include $(uname_s)-$(uname_p).mk
