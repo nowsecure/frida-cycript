@@ -107,7 +107,7 @@ endif
 
 all: $(all)
 
-clean:
+clean::
 	rm -f *.o $(lib)cycript.$(dll) $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.hpp
 
 %.yy: %.yy.in
