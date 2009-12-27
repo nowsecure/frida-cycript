@@ -8,6 +8,7 @@ library += -framework JavaScriptCore
 library += -framework WebKit
 library += -liconv
 flags += -I/usr/include/ffi
+apr_config := /usr/bin/apr-1-config
 
 ifeq ($(uname_p),i386)
 flags += -m32

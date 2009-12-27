@@ -38,9 +38,9 @@ ldid := true
 entitle := $(ldid)
 lib := lib
 dll := so
-apr := $(shell apr-1-config --link-ld)
-library := $(apr)
-console := $(apr) -lreadline
+apr_config := apr-1-config
+library := 
+console := -lreadline
 depends :=
 
 restart ?= $(MAKE)
@@ -62,9 +62,13 @@ endif
 endif
 endif
 
+apr := $(shell $(apr_config) --link-ld)
+library += $(apr)
+console += $(apr)
+
 flags += -Wall -Werror -Wno-parentheses #-Wno-unused
 flags += -fno-common
-flags += -I. -Iinclude -I$(shell apr-1-config --includedir)
+flags += -I. -Iinclude -I$(shell $(apr_config) --includedir)
 
 all += $(lib)cycript.$(dll)
 
