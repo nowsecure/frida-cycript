@@ -1,4 +1,5 @@
-SHELL := $(shell which bash 2>/dev/null)
+SHELL := @_BASH@
+VPATH := @srcdir@
 
 ifndef PKG_TARG
 target :=
@@ -6,12 +7,16 @@ else
 target := $(PKG_TARG)-
 endif
 
-gcc := g++
-flags ?= -g3 -O0 -DYYDEBUG=1
+srcdir := @srcdir@
+top_builddir := @top_builddir@
+flex := @FLEX@
+libtool := @LIBTOOL@
+cxx := @CXX@
+objcxx := @OBJCXX@
+flags := @CPPFLAGS@ @CXXFLAGS@ -DYYDEBUG=1
 
 paths := $(foreach path,$(paths),$(wildcard $(path)))
 flags += $(foreach path,$(paths),-I$(path) -L$(path))
-objc :=
 
 svn := $(shell svnversion)
 
@@ -68,14 +73,17 @@ console += $(apr)
 
 flags += -Wall -Werror -Wno-parentheses #-Wno-unused
 flags += -fno-common
-flags += -I. -Iinclude -I$(shell $(apr_config) --includedir)
+ifneq ($(srcdir),.)
+flags += -I.
+endif
+flags += -I$(srcdir) -I$(srcdir)/include -I$(shell $(apr_config) --includedir)
 
 all += $(lib)cycript.$(dll)
 
 filters += $(shell bison <(echo '%code{}%%_:') -o/dev/null 2>/dev/null && echo Bison24 || echo Bison23)
 
 ifdef arch
-deb := $(shell grep ^Package: control.in | cut -d ' ' -f 2-)_$(shell grep ^Version: control.in | cut -d ' ' -f 2 | sed -e 's/\#/$(svn)/')_$(arch).deb
+deb := $(shell grep ^Package: $(srcdir)/control.in | cut -d ' ' -f 2-)_$(shell grep ^Version: $(srcdir)/control.in | cut -d ' ' -f 2 | sed -e 's/\#/$(svn)/')_$(arch).deb
 
 all:
 
@@ -112,42 +120,44 @@ endif
 all: $(all)
 
 clean::
-	rm -f *.o $(lib)cycript.$(dll) $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.hpp Cycript.output
+	rm -f *.lo *.o $(lib)cycript.$(dll) $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.hpp Cycript.output
+
+distclean: clean
+	rm -f GNUmakefile config.log config.status libtool
 
 %.yy: %.yy.in
-	./Filter.sh <$< >$@ $(filters)
+	$(srcdir)/Filter.sh <$< >$@ $(filters)
 
 %.l: %.l.in
-	./Filter.sh <$< >$@ $(filters)
+	$(srcdir)/Filter.sh <$< >$@ $(filters)
 
 Cycript.tab.cc Cycript.tab.hh location.hh position.hh: Cycript.yy
 	bison -v --report=state $<
 
 lex.cy.c: Cycript.l
-	flex -t $< | sed -e 's/int yyl;/yy_size_t yyl;/;s/int yyleng_r;/yy_size_t yyleng_r;/' >$@
+	$(flex) -t $< | sed -e 's/int yyl;/yy_size_t yyl;/;s/int yyleng_r;/yy_size_t yyleng_r;/' >$@
 
 #Parser.hpp: Parser.py Parser.dat
 #	./Parser.py <Parser.dat >$@
 
 Cycript.tab.o: Cycript.tab.cc $(header)
-	$(target)$(gcc) $(flags) -c -o $@ $<
+	$(libtool) --mode=compile $(cxx) $(flags) -c -o $@ $<
 
 lex.cy.o: lex.cy.c $(header)
-	$(target)$(gcc) $(flags) -c -o $@ $<
+	$(libtool) --mode=compile $(cxx) $(flags) -c -o $@ $<
 
 %.o: %.cpp $(header)
-	$(target)$(gcc) $(flags) -c -o $@ $<
+	$(libtool) --mode=compile $(cxx) $(flags) -c -o $@ $<
 
-#objc := -x c++
 %.o: %.mm $(header)
-	$(target)$(gcc) $(objc) $(flags) -c -o $@ $<
+	$(libtool) --mode=compile $(objcxx) $(flags) -c -o $@ $<
 
 $(lib)cycript.$(dll): $(code)
-	$(target)$(gcc) $(flags) -shared -dynamiclib -o $@ $(filter %.o,$^) $(library) $(link)
+	$(libtool) --mode=link $(cxx) $(flags) -shared -dynamiclib -o $@ $(filter %.o,$^) $(library) $(link)
 	$(ldid) $@
 
 cycript: Console.o $(lib)cycript.$(dll) $(inject)
-	$(target)$(gcc) $(flags) -o $@ $(filter %.o,$^) -L. -lcycript $(console) $(link)
+	$(libtool) --mode=link $(cxx) $(flags) -o $@ $(filter %.o,$^) -L. -lcycript $(console) $(link)
 	$(entitle) cycript
 
 package: $(deb)

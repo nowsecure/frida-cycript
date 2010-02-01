@@ -1,7 +1,8 @@
-#AC_PREREQ([2.65])
+AC_PREREQ([2.65])
 AC_INIT([Cycript], [0.9], [saurik@saurik.com], [cycript], [http://www.cycript.org/])
 AC_CONFIG_SRCDIR([Console.cpp])
 AC_CONFIG_AUX_DIR([.])
+LT_INIT
 AX_PROG_BISON([
 	BISON=`echo $YACC | $SED -e 's/ -y//'`
 	BISON_VERSION=`$BISON -V | $SED -e 's/^bison (GNU Bison) \(.*\)$/\1/p;d'`
@@ -25,11 +26,14 @@ AS_VERSION_COMPARE([$FLEX_VERSION], [2.5.35], [
 	AC_MSG_ERROR([You need flex 2.5.35 or greater])
 ], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([yes])])
 AC_SUBST([FLEX])
+AC_CHECK_PROGS([_BASH], [bash])
+AC_CHECK_PROGS([GPERF], [gperf])
 APR_FIND_APR([], [], [1], [1])
 AS_CASE([$apr_found], [yes], [
 	AC_LIB_APPENDTOVAR([CPPFLAGS], [`$apr_config --includes`])
 	AC_SUBST([APR], [`$apr_config --link-ld`])
 ], [AC_MSG_ERROR([You need apr])])
+VL_LIB_READLINE
 AC_PROG_CXX
 AC_PROG_INSTALL
 AM_ICONV
@@ -52,4 +56,6 @@ AS_CASE([$WEBKIT], [yes], [
 CHECK_GNU_MAKE
 AS_IF([test "x$_cv_gnu_make_command" = x], [AC_MSG_ERROR([You need GNU make])])
 # XXX: gnustep
-#AC_PROG_OBJCXX
+AC_PROG_OBJCXX
+AC_CONFIG_FILES([GNUmakefile])
+AC_OUTPUT
