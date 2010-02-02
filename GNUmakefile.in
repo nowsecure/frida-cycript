@@ -13,10 +13,12 @@ flex := @FLEX@
 libtool := @LIBTOOL@
 cxx := @CXX@
 objcxx := @OBJCXX@
-flags := @CPPFLAGS@ @CXXFLAGS@ -DYYDEBUG=1
+cflags := @CPPFLAGS@ @CXXFLAGS@ -DYYDEBUG=1
+ldflags := @LDFLAGS@
+library := @LIBS@ @LTLIBAPR@ @LTLIBICONV@
 
 paths := $(foreach path,$(paths),$(wildcard $(path)))
-flags += $(foreach path,$(paths),-I$(path) -L$(path))
+cflags += $(foreach path,$(paths),-I$(path) -L$(path))
 
 svn := $(shell svnversion)
 
@@ -31,10 +33,10 @@ endif
 header := Cycript.tab.hh Parser.hpp Pooling.hpp cycript.hpp Internal.hpp Error.hpp String.hpp Exception.hpp Standard.hpp
 
 code := 
-code += Replace.o Output.o
-code += Cycript.tab.o lex.cy.o
-code += Network.o Parser.o
-code += JavaScriptCore.o Library.o
+code += Replace.lo Output.lo
+code += Cycript.tab.lo lex.cy.lo
+code += Network.lo Parser.lo
+code += JavaScriptCore.lo Library.lo
 
 inject := 
 
@@ -43,9 +45,6 @@ ldid := true
 entitle := $(ldid)
 lib := lib
 dll := so
-apr_config := apr-1-config
-library := 
-console := -lreadline
 depends :=
 
 restart ?= $(MAKE)
@@ -55,10 +54,6 @@ uname_p ?= $(shell uname -p)
 -include $(uname_s).mk
 -include $(uname_s)-$(uname_p).mk
 
-ifneq ($(shell pkg-config libffi --modversion 2>/dev/null),)
-flags += $(shell pkg-config --cflags libffi)
-endif
-
 ifdef CY_EXECUTE
 ifeq ($(filter ObjectiveC,$(filters)),)
 ifneq ($(shell which gnustep-config 2>/dev/null),)
@@ -67,18 +62,14 @@ endif
 endif
 endif
 
-apr := $(shell $(apr_config) --link-ld)
-library += $(apr)
-console += $(apr)
-
-flags += -Wall -Werror -Wno-parentheses #-Wno-unused
-flags += -fno-common
+cflags += -Wall -Werror -Wno-parentheses #-Wno-unused
+cflags += -fno-common
 ifneq ($(srcdir),.)
-flags += -I.
+cflags += -I.
 endif
-flags += -I$(srcdir) -I$(srcdir)/include -I$(shell $(apr_config) --includedir)
+cflags += -I$(srcdir) -I$(srcdir)/include
 
-all += $(lib)cycript.$(dll)
+all += $(lib)cycript.la
 
 filters += $(shell bison <(echo '%code{}%%_:') -o/dev/null 2>/dev/null && echo Bison24 || echo Bison23)
 
@@ -120,7 +111,7 @@ endif
 all: $(all)
 
 clean::
-	rm -f *.lo *.o $(lib)cycript.$(dll) $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.hpp Cycript.output
+	rm -rf *.lo *.o .libs $(lib)cycript.$(dll) $(lib)cycript.la $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.hpp Cycript.output
 
 distclean: clean
 	rm -f GNUmakefile config.log config.status libtool
@@ -140,24 +131,24 @@ lex.cy.c: Cycript.l
 #Parser.hpp: Parser.py Parser.dat
 #	./Parser.py <Parser.dat >$@
 
-Cycript.tab.o: Cycript.tab.cc $(header)
-	$(libtool) --mode=compile $(cxx) $(flags) -c -o $@ $<
+Cycript.tab.lo: Cycript.tab.cc $(header)
+	$(libtool) --mode=compile $(cxx) $(cflags) -c -o $@ $<
 
-lex.cy.o: lex.cy.c $(header)
-	$(libtool) --mode=compile $(cxx) $(flags) -c -o $@ $<
+lex.cy.lo: lex.cy.c $(header)
+	$(libtool) --mode=compile $(cxx) $(cflags) -c -o $@ $<
 
-%.o: %.cpp $(header)
-	$(libtool) --mode=compile $(cxx) $(flags) -c -o $@ $<
+%.lo: %.cpp $(header)
+	$(libtool) --mode=compile $(cxx) $(cflags) -c -o $@ $<
 
-%.o: %.mm $(header)
-	$(libtool) --mode=compile $(objcxx) $(flags) -c -o $@ $<
+%.lo: %.mm $(header)
+	$(libtool) --mode=compile $(objcxx) $(cflags) -c -o $@ $<
 
-$(lib)cycript.$(dll): $(code)
-	$(libtool) --mode=link $(cxx) $(flags) -shared -dynamiclib -o $@ $(filter %.o,$^) $(library) $(link)
+$(lib)cycript.la: $(code)
+	$(libtool) --mode=link $(cxx) $(ldflags) -o $@ $(filter %.lo,$^) $(library) $(link) -rpath /usr/lib
 	$(ldid) $@
 
-cycript: Console.o $(lib)cycript.$(dll) $(inject)
-	$(libtool) --mode=link $(cxx) $(flags) -o $@ $(filter %.o,$^) -L. -lcycript $(console) $(link)
+cycript: Console.lo $(lib)cycript.la $(inject)
+	$(libtool) --mode=link $(cxx) $(ldflags) -o $@ $(filter %.lo,$^) $(lib)cycript.la $(link) -rpath /usr/lib
 	$(entitle) cycript
 
 package: $(deb)

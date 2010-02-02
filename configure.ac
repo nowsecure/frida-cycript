@@ -2,7 +2,7 @@ AC_PREREQ([2.65])
 AC_INIT([Cycript], [0.9], [saurik@saurik.com], [cycript], [http://www.cycript.org/])
 AC_CONFIG_SRCDIR([Console.cpp])
 AC_CONFIG_AUX_DIR([.])
-LT_INIT
+LT_INIT([disable-static])
 AX_PROG_BISON([
 	BISON=`echo $YACC | $SED -e 's/ -y//'`
 	BISON_VERSION=`$BISON -V | $SED -e 's/^bison (GNU Bison) \(.*\)$/\1/p;d'`
@@ -31,7 +31,7 @@ AC_CHECK_PROGS([GPERF], [gperf])
 APR_FIND_APR([], [], [1], [1])
 AS_CASE([$apr_found], [yes], [
 	AC_LIB_APPENDTOVAR([CPPFLAGS], [`$apr_config --includes`])
-	AC_SUBST([APR], [`$apr_config --link-ld`])
+	AC_SUBST([LTLIBAPR], [`$apr_config --link-libtool`])
 ], [AC_MSG_ERROR([You need apr])])
 VL_LIB_READLINE
 AC_PROG_CXX
