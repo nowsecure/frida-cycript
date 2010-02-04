@@ -28,6 +28,7 @@ AS_VERSION_COMPARE([$FLEX_VERSION], [2.5.35], [
 AC_SUBST([FLEX])
 AC_CHECK_PROGS([_BASH], [bash])
 AC_CHECK_PROGS([GPERF], [gperf])
+AC_CHECK_PROGS([TIME], [time])
 APR_FIND_APR([], [], [1], [1])
 AS_CASE([$apr_found], [yes], [
 	AC_LIB_APPENDTOVAR([CPPFLAGS], [`$apr_config --includes`])

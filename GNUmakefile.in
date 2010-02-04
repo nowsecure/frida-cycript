@@ -1,3 +1,5 @@
+# @configure_input@
+
 SHELL := @_BASH@
 VPATH := @srcdir@
 
@@ -16,11 +18,39 @@ objcxx := @OBJCXX@
 cflags := @CPPFLAGS@ @CXXFLAGS@ -DYYDEBUG=1
 ldflags := @LDFLAGS@
 library := @LIBS@ @LTLIBAPR@ @LTLIBICONV@
+time := $(shell which @TIME@)
+
+INSTALL := @INSTALL@
+INSTALL_PROGRAM := @INSTALL_PROGRAM@
+INSTALL_DATA := @INSTALL_DATA@
+
+PACKAGE_TARNAME := @PACKAGE_TARNAME@
+prefix := @prefix@
+exec_prefix := @exec_prefix@
+bindir := @bindir@
+sbindir := @sbindir@
+libexecdir := @libexecdir@
+datarootdir := @datarootdir@
+datadir := @datadir@
+sysconfdir := @sysconfdir@
+sharedstatedir := @sharedstatedir@
+localstatedir := @localstatedir@
+includedir := @includedir@
+oldincludedir := @oldincludedir@
+docdir := @docdir@
+infodir := @infodir@
+htmldir := @htmldir@
+dvidir := @dvidir@
+pdfdir := @pdfdir@
+psdir := @psdir@
+libdir := @libdir@
+localedir := @localedir@
+mandir := @mandir@
 
 paths := $(foreach path,$(paths),$(wildcard $(path)))
 cflags += $(foreach path,$(paths),-I$(path) -L$(path))
 
-svn := $(shell svnversion)
+svn := $(shell svnversion $(srcdir))
 
 all:
 all := cycript
@@ -144,11 +174,11 @@ lex.cy.lo: lex.cy.c $(header)
 	$(libtool) --mode=compile $(objcxx) $(cflags) -c -o $@ $<
 
 $(lib)cycript.la: $(code)
-	$(libtool) --mode=link $(cxx) $(ldflags) -o $@ $(filter %.lo,$^) $(library) $(link) -rpath /usr/lib
+	$(libtool) --mode=link $(cxx) $(ldflags) -o $@ $(filter %.lo,$^) $(library) $(link) -rpath $(libdir)
 	$(ldid) $@
 
 cycript: Console.lo $(lib)cycript.la $(inject)
-	$(libtool) --mode=link $(cxx) $(ldflags) -o $@ $(filter %.lo,$^) $(lib)cycript.la $(link) -rpath /usr/lib
+	$(libtool) --mode=link $(cxx) $(ldflags) -o $@ $(filter %.lo,$^) $(lib)cycript.la $(link) -rpath $(libdir)
 	$(entitle) cycript
 
 package: $(deb)
@@ -156,7 +186,7 @@ package: $(deb)
 test: $(deb)
 	dpkg -i $(deb)
 	if [[ -e target.cy ]]; then cycript -c target.cy && echo; fi
-	if [[ -e jquery.js ]]; then /usr/bin/time cycript -c jquery.js >jquery.cyc.js; gzip -9c jquery.cyc.js >jquery.cyc.js.gz; wc -c jquery.{mam,gcc,cyc,bak,yui}.js; wc -c jquery.{cyc,gcc,bak,mam,yui}.js.gz; fi
+	if [[ -e jquery.js ]]; then $(time) cycript -c jquery.js >jquery.cyc.js; gzip -9c jquery.cyc.js >jquery.cyc.js.gz; wc -c jquery.{mam,gcc,cyc,bak,yui}.js; wc -c jquery.{cyc,gcc,bak,mam,yui}.js.gz; fi
 	if [[ -e test.cy ]]; then cycript test.cy; fi
 
 install: cycript $(lib)cycript.$(dll)
