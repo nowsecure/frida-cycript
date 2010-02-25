@@ -10346,22 +10346,22 @@ else
 
     :
 
-	as_fn_error "You need flex 2.5.35 or greater" "$LINENO" 5
+	as_fn_error "You need flex 2.5.33 or greater" "$LINENO" 5
 
 
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if flex is >= 2.5.35" >&5
-$as_echo_n "checking if flex is >= 2.5.35... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if flex is >= 2.5.33" >&5
+$as_echo_n "checking if flex is >= 2.5.33... " >&6; }
 as_arg_v1=$FLEX_VERSION
-as_arg_v2=2.5.35
+as_arg_v2=2.5.33
 awk "$as_awk_strverscmp" v1="$as_arg_v1" v2="$as_arg_v2" /dev/null
 case $? in #(
   1) :
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-	as_fn_error "You need flex 2.5.35 or greater" "$LINENO" 5
+	as_fn_error "You need flex 2.5.33 or greater" "$LINENO" 5
  ;; #(
   0) :
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5

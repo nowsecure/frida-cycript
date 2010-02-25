@@ -18,12 +18,12 @@ AX_PROG_FLEX([
 	FLEX=$LEX
 	FLEX_VERSION=`$FLEX --version | $SED -e 's/^.* \(.*\)$/\1/p;d'`
 ], [
-	AC_MSG_ERROR([You need flex 2.5.35 or greater])
+	AC_MSG_ERROR([You need flex 2.5.33 or greater])
 ])
-AC_MSG_CHECKING([if flex is >= 2.5.35])
-AS_VERSION_COMPARE([$FLEX_VERSION], [2.5.35], [
+AC_MSG_CHECKING([if flex is >= 2.5.33])
+AS_VERSION_COMPARE([$FLEX_VERSION], [2.5.33], [
 	AC_MSG_RESULT([no])
-	AC_MSG_ERROR([You need flex 2.5.35 or greater])
+	AC_MSG_ERROR([You need flex 2.5.33 or greater])
 ], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([yes])])
 AC_SUBST([FLEX])
 AC_CHECK_PROGS([_BASH], [bash])
