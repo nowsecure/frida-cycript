@@ -3,6 +3,7 @@ AC_INIT([Cycript], [0.9], [saurik@saurik.com], [cycript], [http://www.cycript.or
 AC_CONFIG_SRCDIR([Console.cpp])
 AC_CONFIG_AUX_DIR([.])
 LT_INIT([disable-static])
+PKG_PROG_PKG_CONFIG([0.22])
 AX_PROG_BISON([
 	BISON=`echo $YACC | $SED -e 's/ -y//'`
 	BISON_VERSION=`$BISON -V | $SED -e 's/^bison (GNU Bison) \(.*\)$/\1/p;d'`
@@ -16,10 +17,8 @@ AS_VERSION_COMPARE([$BISON_VERSION], [2.4], [
 AC_SUBST([BISON])
 AX_PROG_FLEX([
 	FLEX=$LEX
-	FLEX_VERSION=`$FLEX --version | $SED -e 's/^.* \(.*\)$/\1/p;d'`
-], [
-	AC_MSG_ERROR([You need flex 2.5.33 or greater])
-])
+	FLEX_VERSION=[`$FLEX --version | $SED -e 's/^.* \([0-9.]*\)$/\1/p;d'`]
+], [AC_MSG_ERROR([You need flex 2.5.33 or greater])])
 AC_MSG_CHECKING([if flex is >= 2.5.33])
 AS_VERSION_COMPARE([$FLEX_VERSION], [2.5.33], [
 	AC_MSG_RESULT([no])
@@ -28,6 +27,12 @@ AS_VERSION_COMPARE([$FLEX_VERSION], [2.5.33], [
 AC_SUBST([FLEX])
 AC_CHECK_PROGS([_BASH], [bash])
 AC_CHECK_PROGS([GPERF], [gperf])
+AC_MSG_CHECKING([if gperf >= 3.0.3])
+GPERF_VERSION=[`$GPERF --version | $SED -e 's/^.* \([0-9.]*\)$/\1/p;d'`]
+AS_VERSION_COMPARE([$GPERF_VERSION], [3.0.3], [
+	AC_MSG_RESULT([no])
+	AC_MSG_ERROR([You need gperf 3.0.3 or greater])
+], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([yes])])
 AC_CHECK_PROGS([TIME], [time])
 APR_FIND_APR([], [], [1], [1])
 AS_CASE([$apr_found], [yes], [
@@ -39,11 +44,23 @@ AC_PROG_CXX
 AC_PROG_INSTALL
 AM_ICONV
 AS_CASE([$am_cv_func_iconv], [yes], [], [AC_MSG_ERROR([You need iconv])])
-PKG_CHECK_MODULES([WEBKIT], [webkit-1.0], [WEBKIT=yes], [
-	PKG_CHECK_MODULES([WEBKIT], [WebKitGtk], [WEBKIT=yes], [WEBKIT=no])
+PKG_CHECK_MODULES([WEBKIT], [webkit-1.0], [
+	WEBKIT=yes
+	AC_LIB_APPENDTOVAR([CXXFLAGS], [`$PKG_CONFIG --cflags webkit-1.0`])
+	AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs webkit-1.0`])
+], [
+	PKG_CHECK_MODULES([WEBKIT], [WebKitGtk], [
+		WEBKIT=yes
+		AC_LIB_APPENDTOVAR([CXXFLAGS], [`$PKG_CONFIG --cflags WebKitGtk`])
+		AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs WebKitGtk`])
+	], [WEBKIT=no])
 ])
 AS_CASE([$WEBKIT], [yes], [
-	PKG_CHECK_MODULES([LIBFFI], [libffi], [], [
+	AC_SUBST([CY_EXECUTE], [1])
+	PKG_CHECK_MODULES([LIBFFI], [libffi], [
+		AC_LIB_APPENDTOVAR([CXXFLAGS], [`$PKG_CONFIG --cflags libffi`])
+		AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs libffi`])
+	], [
 		AC_CHECK_HEADERS([ffi.h ffi/ffi.h], [break])
 		AS_IF([test "x$ac_cv_header_ffi_h" = xno && test "x$ac_cv_header_ffi_ffi_h" = xno], [
 			AC_MSG_ERROR([You need libffi])
@@ -53,7 +70,10 @@ AS_CASE([$WEBKIT], [yes], [
 			AC_MSG_ERROR([You need libffi])
 		])
 	])
-], [AC_MSG_WARN(No JavaScript engine!)])
+], [
+	AC_SUBST([CY_EXECUTE], [0])
+	AC_MSG_WARN([No JavaScript engine!])
+])
 CHECK_GNU_MAKE
 AS_IF([test "x$_cv_gnu_make_command" = x], [AC_MSG_ERROR([You need GNU make])])
 # XXX: gnustep

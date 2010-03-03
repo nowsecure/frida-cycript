@@ -19,6 +19,7 @@ cflags := @CPPFLAGS@ @CXXFLAGS@ -DYYDEBUG=1
 ldflags := @LDFLAGS@
 library := @LIBS@ @LTLIBAPR@ @LTLIBICONV@
 time := $(shell which @TIME@)
+gperf := @GPERF@
 
 INSTALL := @INSTALL@
 INSTALL_PROGRAM := @INSTALL_PROGRAM@
@@ -46,6 +47,8 @@ psdir := @psdir@
 libdir := @libdir@
 localedir := @localedir@
 mandir := @mandir@
+
+CY_EXECUTE := @CY_EXECUTE@
 
 paths := $(foreach path,$(paths),$(wildcard $(path)))
 cflags += $(foreach path,$(paths),-I$(path) -L$(path))
@@ -81,15 +84,16 @@ restart ?= $(MAKE)
 uname_s ?= $(shell uname -s)
 uname_p ?= $(shell uname -p)
 
--include $(uname_s).mk
--include $(uname_s)-$(uname_p).mk
-
-ifdef CY_EXECUTE
-ifeq ($(filter ObjectiveC,$(filters)),)
-ifneq ($(shell which gnustep-config 2>/dev/null),)
-include GNUstep.mk
-endif
-endif
+ifeq ($(CY_EXECUTE),1)
+cflags += -DCY_EXECUTE
+code += sig/ffi_type.lo sig/parse.lo sig/copy.lo
+code += Execute.lo Bridge.lo
+filters += C
+#ifeq ($(filter ObjectiveC,$(filters)),)
+#ifneq ($(shell which gnustep-config 2>/dev/null),)
+#include GNUstep.mk
+#endif
+#endif
 endif
 
 cflags += -Wall -Werror -Wno-parentheses #-Wno-unused
@@ -138,10 +142,21 @@ $(deb): $(all) control
 	dpkg-deb -b package $(deb)
 endif
 
+ifeq ($(CY_EXECUTE),1)
+Bridge.gperf: Bridge.def Bridge.sh
+	$(srcdir)/Bridge.sh $< >$@
+
+Bridge.hpp: Bridge.gperf
+	$(gperf) $< | sed -e 's/defined __GNUC_STDC_INLINE__ || defined __GNUC_GNU_INLINE__/0/' >$@
+
+Bridge.lo: Bridge.hpp
+endif
+
 all: $(all)
 
 clean::
-	rm -rf *.lo *.o .libs $(lib)cycript.$(dll) $(lib)cycript.la $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.hpp Cycript.output
+	rm -rf *.lo *.o .libs $(lib)cycript.$(dll) $(lib)cycript.la $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.gperf Bridge.hpp Cycript.output sig/*.lo sig/.libs
+	-rmdir sig
 
 distclean: clean
 	rm -f GNUmakefile config.log config.status libtool
