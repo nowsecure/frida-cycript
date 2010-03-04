@@ -165,6 +165,7 @@ JSStringRef push_s;
 JSStringRef splice_s;
 JSStringRef toCYON_s;
 JSStringRef toJSON_s;
+JSStringRef toPointer_s;
 
 static JSStringRef Result_;
 
@@ -514,12 +515,19 @@ void *CYCastPointer_(JSContextRef context, JSValueRef value) {
     switch (JSValueGetType(context, value)) {
         case kJSTypeNull:
             return NULL;
-        /*case kJSTypeObject:
+        case kJSTypeObject: {
+            JSObjectRef object((JSObjectRef) value);
             if (JSValueIsObjectOfClass(context, value, Pointer_)) {
-                Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate((JSObjectRef) value)));
+                Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(object)));
                 return internal->value_;
-            }*/
-        default:
+            }
+            JSValueRef toPointer(CYGetProperty(context, object, toPointer_s));
+            if (CYIsCallable(context, toPointer)) {
+                JSValueRef value(CYCallAsFunction(context, (JSObjectRef) toPointer, object, 0, NULL));
+                _assert(value != NULL);
+                return CYCastPointer_(context, value);
+            }
+        } default:
             double number(CYCastDouble(context, value));
             if (std::isnan(number))
                 throw CYJSError(context, "cannot convert value to pointer");
@@ -1308,6 +1316,7 @@ void CYInitializeDynamic() {
     splice_s = JSStringCreateWithUTF8CString("splice");
     toCYON_s = JSStringCreateWithUTF8CString("toCYON");
     toJSON_s = JSStringCreateWithUTF8CString("toJSON");
+    toPointer_s = JSStringCreateWithUTF8CString("toPointer");
 
     Result_ = JSStringCreateWithUTF8CString("_");
 

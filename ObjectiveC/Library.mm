@@ -2179,11 +2179,22 @@ static JSValueRef Instance_callAsFunction_toJSON(JSContextRef context, JSObjectR
     } CYPoolCatch(NULL)
 } CYCatch return /*XXX*/ NULL; }
 
+#if 0
 static JSValueRef Instance_callAsFunction_valueOf(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (!JSValueIsObjectOfClass(context, _this, Instance_))
         return NULL;
 
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
+    return CYCastJSValue(context, reinterpret_cast<uintptr_t>(internal->GetValue()));
+} CYCatch return /*XXX*/ NULL; }
+#endif
+
+static JSValueRef Instance_callAsFunction_toPointer(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    if (!JSValueIsObjectOfClass(context, _this, Instance_))
+        return NULL;
+
+    Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
+    // XXX: but... but... THIS ISN'T A POINTER! :(
     return CYCastJSValue(context, reinterpret_cast<uintptr_t>(internal->GetValue()));
 } CYCatch return /*XXX*/ NULL; }
 
@@ -2259,7 +2270,8 @@ static JSStaticFunction Instance_staticFunctions[6] = {
     {"$cya", &CYValue_callAsFunction_$cya, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toCYON", &Instance_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toJSON", &Instance_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
-    {"valueOf", &Instance_callAsFunction_valueOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    //{"valueOf", &Instance_callAsFunction_valueOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"toPointer", &Instance_callAsFunction_toPointer, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toString", &Instance_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
