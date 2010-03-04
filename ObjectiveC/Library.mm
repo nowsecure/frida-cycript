@@ -2179,6 +2179,14 @@ static JSValueRef Instance_callAsFunction_toJSON(JSContextRef context, JSObjectR
     } CYPoolCatch(NULL)
 } CYCatch return /*XXX*/ NULL; }
 
+static JSValueRef Instance_callAsFunction_valueOf(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    if (!JSValueIsObjectOfClass(context, _this, Instance_))
+        return NULL;
+
+    Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
+    return CYCastJSValue(context, reinterpret_cast<uintptr_t>(internal->GetValue()));
+} CYCatch return /*XXX*/ NULL; }
+
 static JSValueRef Instance_callAsFunction_toString(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (!JSValueIsObjectOfClass(context, _this, Instance_))
         return NULL;
@@ -2247,10 +2255,11 @@ static JSStaticValue Instance_staticValues[5] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction Instance_staticFunctions[5] = {
+static JSStaticFunction Instance_staticFunctions[6] = {
     {"$cya", &CYValue_callAsFunction_$cya, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toCYON", &Instance_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toJSON", &Instance_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"valueOf", &Instance_callAsFunction_valueOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toString", &Instance_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
