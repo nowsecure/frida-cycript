@@ -166,7 +166,7 @@ endif
 all: $(all)
 
 clean::
-	rm -rf *.lo *.o *.d .libs $(lib)cycript.$(dll) $(lib)cycript.la $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.gperf Bridge.hpp Cycript.output
+	rm -rf *.lo *.o *.d .libs */*.lo */.libs $(lib)cycript.$(dll) $(lib)cycript.la $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.gperf Bridge.hpp Cycript.output
 ifneq ($(srcdir),.)
 	rm -rf sig ObjectiveC
 endif
