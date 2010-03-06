@@ -43,7 +43,9 @@ AS_CASE([$apr_found], [yes], [
 ], [AC_MSG_ERROR([You need apr])])
 VL_LIB_READLINE
 AC_PROG_INSTALL
+AC_LANG_PUSH([C])
 AM_ICONV
+AC_LANG_POP([C])
 AS_CASE([$am_cv_func_iconv], [yes], [], [AC_MSG_ERROR([You need iconv])])
 PKG_CHECK_MODULES([WEBKIT], [webkit-1.0], [
 	WEBKIT=yes
