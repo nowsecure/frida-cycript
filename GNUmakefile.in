@@ -16,6 +16,7 @@ libtool := @LIBTOOL@
 cxx := @CXX@
 objcxx := @OBJCXX@
 cflags := @CPPFLAGS@ @CXXFLAGS@ -DYYDEBUG=1
+objcxxflags := @OBJCXXFLAGS@
 ldflags := @LDFLAGS@
 library := @LIBS@ @LTLIBAPR@ @LTLIBICONV@
 time := $(shell which @TIME@)
@@ -49,6 +50,7 @@ localedir := @localedir@
 mandir := @mandir@
 
 CY_EXECUTE := @CY_EXECUTE@
+CY_OBJECTIVEC := @CY_OBJECTIVEC@
 
 paths := $(foreach path,$(paths),$(wildcard $(path)))
 cflags += $(foreach path,$(paths),-I$(path) -L$(path))
@@ -152,11 +154,20 @@ Bridge.hpp: Bridge.gperf
 Bridge.lo: Bridge.hpp
 endif
 
+ifeq ($(CY_OBJECTIVEC),1)
+filters += ObjectiveC
+header += Struct.hpp ObjectiveC/Internal.hpp ObjectiveC/Syntax.hpp
+code += ObjectiveC/Output.lo ObjectiveC/Replace.lo ObjectiveC/Library.lo
+
+Struct.hpp:
+	$$($(objcxx) -print-prog-name=cc1obj) -print-objc-runtime-info </dev/null >$@
+endif
+
 all: $(all)
 
 clean::
-	rm -rf *.lo *.o .libs $(lib)cycript.$(dll) $(lib)cycript.la $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.gperf Bridge.hpp Cycript.output sig/*.lo sig/.libs
-	-rmdir sig
+	rm -rf *.lo *.o *.d .libs $(lib)cycript.$(dll) $(lib)cycript.la $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.gperf Bridge.hpp Cycript.output sig/*.lo sig/.libs ObjectiveC/*.lo ObjectiveC/.libs
+	-rmdir sig ObjectiveC
 
 distclean: clean
 	rm -f GNUmakefile config.log config.status libtool
@@ -186,7 +197,7 @@ lex.cy.lo: lex.cy.c $(header)
 	$(libtool) --mode=compile $(cxx) $(cflags) -c -o $@ $<
 
 %.lo: %.mm $(header)
-	$(libtool) --mode=compile $(objcxx) $(cflags) -c -o $@ $<
+	$(libtool) --mode=compile $(objcxx) $(objcxxflags) $(cflags) -c -o $@ $<
 
 $(lib)cycript.la: $(code)
 	$(libtool) --mode=link $(cxx) $(ldflags) -o $@ $(filter %.lo,$^) $(library) $(link) -rpath $(libdir)
