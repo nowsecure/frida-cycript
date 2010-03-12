@@ -105,7 +105,7 @@ cflags += -I.
 endif
 cflags += -I$(srcdir) -I$(srcdir)/include
 
-all += $(lib)cycript.la
+all += libcycript.la
 
 filters += $(shell bison <(echo '%code{}%%_:') -o/dev/null 2>/dev/null && echo Bison24 || echo Bison23)
 
@@ -166,7 +166,7 @@ endif
 all: $(all)
 
 clean::
-	rm -rf *.lo *.o *.d .libs */*.lo */.libs $(lib)cycript.$(dll) $(lib)cycript.la $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.gperf Bridge.hpp Cycript.output
+	rm -rf *.lo *.o *.d .libs */*.lo */.libs libcycript.la $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.gperf Bridge.hpp Cycript.output
 ifneq ($(srcdir),.)
 	rm -rf sig ObjectiveC
 endif
@@ -201,24 +201,27 @@ lex.cy.lo: lex.cy.c $(header)
 %.lo: %.mm $(header)
 	$(libtool) --mode=compile $(objcxx) $(objcxxflags) $(cflags) -c -o $@ $<
 
-$(lib)cycript.la: $(code)
+libcycript.la: $(code)
 	$(libtool) --mode=link $(cxx) $(ldflags) -o $@ $(filter %.lo,$^) $(library) $(link) -rpath $(libdir)
 	$(ldid) $@
 
-cycript: Console.lo $(lib)cycript.la $(inject)
-	$(libtool) --mode=link $(cxx) $(ldflags) -o $@ $(filter %.lo,$^) $(lib)cycript.la $(link) -rpath $(libdir)
+cycript: Console.lo libcycript.la $(inject)
+	$(libtool) --mode=link $(cxx) $(ldflags) -o $@ $(filter %.lo,$^) libcycript.la $(link) -rpath $(libdir)
 	$(entitle) cycript
 
 package: $(deb)
 
-test: $(deb)
-	dpkg -i $(deb)
-	if [[ -e target.cy ]]; then cycript -c target.cy && echo; fi
-	if [[ -e jquery.js ]]; then $(time) cycript -c jquery.js >jquery.cyc.js; gzip -9c jquery.cyc.js >jquery.cyc.js.gz; wc -c jquery.{mam,gcc,cyc,bak,yui}.js; wc -c jquery.{cyc,gcc,bak,mam,yui}.js.gz; fi
-	if [[ -e test.cy ]]; then cycript test.cy; fi
+test: cycript
+	if [[ -e target.cy ]]; then ./cycript -c target.cy && echo; fi
+	if [[ -e jquery.js ]]; then $(time) ./cycript -c jquery.js >jquery.cyc.js; gzip -9c jquery.cyc.js >jquery.cyc.js.gz; wc -c jquery.{mam,gcc,cyc,bak,yui}.js; wc -c jquery.{cyc,gcc,bak,mam,yui}.js.gz; fi
+	if [[ -e test.cy ]]; then ./cycript test.cy; fi
 
-install: cycript $(lib)cycript.$(dll)
-	cp -p cycript /usr/bin
-	cp -p $(lib)cycript.$(dll) /usr/lib
+install: cycript libcycript.la
+	$(libtool) --mode=install $(INSTALL_PROGRAM) libcycript.la $(DESTDIR)$(libdir)/libcycript.la
+	$(libtool) --mode=install $(INSTALL_PROGRAM) cycript $(DESTDIR)$(bindir)/cycript
 
-.PHONY: all clean extra package control.tmp
+uninstall:
+	$(libtool) --mode=uninstall rm -f $(DESTDIR)$(bindir)/cycript
+	$(libtool) --mode=uninstall rm -f $(DESTDIR)$(libdir)/libcycript.la
+
+.PHONY: all clean extra install uninstall package test control.tmp
