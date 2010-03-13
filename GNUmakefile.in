@@ -217,6 +217,7 @@ test: cycript
 	if [[ -e test.cy ]]; then ./cycript test.cy; fi
 
 install: cycript libcycript.la
+	$(INSTALL) -d $(DESTDIR)$(bindir) $(DESTDIR)$(libdir)
 	$(libtool) --mode=install $(INSTALL_PROGRAM) libcycript.la $(DESTDIR)$(libdir)/libcycript.la
 	$(libtool) --mode=install $(INSTALL_PROGRAM) cycript $(DESTDIR)$(bindir)/cycript
 
