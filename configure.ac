@@ -9,12 +9,12 @@ AC_LANG([C++])
 AX_PROG_BISON([
 	BISON=`echo $YACC | $SED -e 's/ -y//'`
 	BISON_VERSION=`$BISON -V | $SED -e 's/^bison (GNU Bison) \(.*\)$/\1/p;d'`
-], [AC_MSG_ERROR([You need bison 2.4 or greater])])
+], [AC_MSG_ERROR([You need bison 2.3 or greater])])
 AC_PROG_AWK
-AC_MSG_CHECKING([if bison is >= 2.4])
-AS_VERSION_COMPARE([$BISON_VERSION], [2.4], [
+AC_MSG_CHECKING([if bison is >= 2.3])
+AS_VERSION_COMPARE([$BISON_VERSION], [2.3], [
 	AC_MSG_RESULT([no])
-	AC_MSG_ERROR([You need bison 2.4 or greater])
+	AC_MSG_ERROR([You need bison 2.3 or greater])
 ], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([yes])])
 AC_SUBST([BISON])
 AX_PROG_FLEX([
@@ -28,6 +28,7 @@ AS_VERSION_COMPARE([$FLEX_VERSION], [2.5.33], [
 ], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([yes])])
 AC_SUBST([FLEX])
 AC_CHECK_PROGS([_BASH], [bash])
+AC_ARG_VAR([GPERF], [perfect hash function generator])
 AC_CHECK_PROGS([GPERF], [gperf])
 AC_MSG_CHECKING([if gperf >= 3.0.3])
 GPERF_VERSION=[`$GPERF --version | $SED -e 's/^.* \([0-9.]*\)$/\1/p;d'`]
