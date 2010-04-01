@@ -808,12 +808,12 @@ LIBOBJS
 ifGNUmake
 CY_OBJECTIVEC
 GNUSTEP_CONFIG
-ac_ct_OBJCXX
-OBJCXXFLAGS
-OBJCXX
 LIBFFI_LIBS
 LIBFFI_CFLAGS
 CY_EXECUTE
+ac_ct_OBJCXX
+OBJCXXFLAGS
+OBJCXX
 WEBKIT_LIBS
 WEBKIT_CFLAGS
 LTLIBICONV
@@ -944,10 +944,10 @@ YFLAGS
 GPERF
 WEBKIT_CFLAGS
 WEBKIT_LIBS
-LIBFFI_CFLAGS
-LIBFFI_LIBS
 OBJCXX
-OBJCXXFLAGS'
+OBJCXXFLAGS
+LIBFFI_CFLAGS
+LIBFFI_LIBS'
 
 
 # Initialize some variables set by options.
@@ -1603,11 +1603,11 @@ Some influential environment variables:
   WEBKIT_CFLAGS
               C compiler flags for WEBKIT, overriding pkg-config
   WEBKIT_LIBS linker flags for WEBKIT, overriding pkg-config
+  OBJCXX      Objective C++ compiler command
+  OBJCXXFLAGS Objective C++ compiler flags
   LIBFFI_CFLAGS
               C compiler flags for LIBFFI, overriding pkg-config
   LIBFFI_LIBS linker flags for LIBFFI, overriding pkg-config
-  OBJCXX      Objective C++ compiler command
-  OBJCXXFLAGS Objective C++ compiler flags
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -15529,16 +15529,16 @@ fi
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-                WEBKIT=no
+                CY_EXECUTE=0
 elif test $pkg_failed = untried; then
-	WEBKIT=no
+	CY_EXECUTE=0
 else
 	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
 	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
-		WEBKIT=yes
+		CY_EXECUTE=1
 
   for element in `$PKG_CONFIG --cflags WebKitGtk`; do
     haveit=
@@ -15651,16 +15651,16 @@ fi
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-                WEBKIT=no
+                CY_EXECUTE=0
 elif test $pkg_failed = untried; then
-	WEBKIT=no
+	CY_EXECUTE=0
 else
 	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
 	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
-		WEBKIT=yes
+		CY_EXECUTE=1
 
   for element in `$PKG_CONFIG --cflags WebKitGtk`; do
     haveit=
@@ -15716,7 +15716,7 @@ else
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
-	WEBKIT=yes
+	CY_EXECUTE=1
 
   for element in `$PKG_CONFIG --cflags webkit-1.0`; do
     haveit=
@@ -15765,10 +15765,261 @@ $as_echo "yes" >&6; }
 
 
 fi
-case $WEBKIT in #(
-  yes) :
+ac_ext=mm
+ac_cpp='$OBJCXXCPP $CPPFLAGS'
+ac_compile='$OBJCXX -c $OBJCXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$OBJCXX -o conftest$ac_exeext $OBJCXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_objcxx_compiler_gnu
+if test -n "$ac_tool_prefix"; then
+  for ac_prog in g++ objc++ objcxx c++ CXX
+  do
+    # Extract the first word of "$ac_tool_prefix$ac_prog", so it can be a program name with args.
+set dummy $ac_tool_prefix$ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_prog_OBJCXX+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$OBJCXX"; then
+  ac_cv_prog_OBJCXX="$OBJCXX" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_OBJCXX="$ac_tool_prefix$ac_prog"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
 
-	CY_EXECUTE=1
+fi
+fi
+OBJCXX=$ac_cv_prog_OBJCXX
+if test -n "$OBJCXX"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $OBJCXX" >&5
+$as_echo "$OBJCXX" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+    test -n "$OBJCXX" && break
+  done
+fi
+if test -z "$OBJCXX"; then
+  ac_ct_OBJCXX=$OBJCXX
+  for ac_prog in g++ objc++ objcxx c++ CXX
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_prog_ac_ct_OBJCXX+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_OBJCXX"; then
+  ac_cv_prog_ac_ct_OBJCXX="$ac_ct_OBJCXX" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_ac_ct_OBJCXX="$ac_prog"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_OBJCXX=$ac_cv_prog_ac_ct_OBJCXX
+if test -n "$ac_ct_OBJCXX"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_OBJCXX" >&5
+$as_echo "$ac_ct_OBJCXX" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  test -n "$ac_ct_OBJCXX" && break
+done
+
+  if test "x$ac_ct_OBJCXX" = x; then
+    OBJCXX="g++"
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    OBJCXX=$ac_ct_OBJCXX
+  fi
+fi
+
+# Provide some information about the compiler.
+$as_echo "$as_me:${as_lineno-$LINENO}: checking for Objective C++ compiler version" >&5
+set X $ac_compile
+ac_compiler=$2
+for ac_option in --version -v -V -qversion; do
+  { { ac_try="$ac_compiler $ac_option >&5"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
+$as_echo "$ac_try_echo"; } >&5
+  (eval "$ac_compiler $ac_option >&5") 2>conftest.err
+  ac_status=$?
+  if test -s conftest.err; then
+    sed '10a\
+... rest of stderr output deleted ...
+         10q' conftest.err >conftest.er1
+    cat conftest.er1 >&5
+  fi
+  rm -f conftest.er1 conftest.err
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }
+done
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we are using the GNU Objective C++ compiler" >&5
+$as_echo_n "checking whether we are using the GNU Objective C++ compiler... " >&6; }
+if test "${ac_cv_objcxx_compiler_gnu+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+#ifndef __GNUC__
+       choke me
+#endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_objcxx_try_compile "$LINENO"; then :
+  ac_compiler_gnu=yes
+else
+  ac_compiler_gnu=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+ac_cv_objcxx_compiler_gnu=$ac_compiler_gnu
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_objcxx_compiler_gnu" >&5
+$as_echo "$ac_cv_objcxx_compiler_gnu" >&6; }
+if test $ac_compiler_gnu = yes; then
+  GOBJCXX=yes
+else
+  GOBJCXX=
+fi
+ac_test_OBJCXXFLAGS=${OBJCXXFLAGS+set}
+ac_save_OBJCXXFLAGS=$OBJCXXFLAGS
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $OBJCXX accepts -g" >&5
+$as_echo_n "checking whether $OBJCXX accepts -g... " >&6; }
+if test "${ac_cv_prog_objcxx_g+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_save_objcxx_werror_flag=$ac_objcxx_werror_flag
+   ac_objcxx_werror_flag=yes
+   ac_cv_prog_objcxx_g=no
+   OBJCXXFLAGS="-g"
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_objcxx_try_compile "$LINENO"; then :
+  ac_cv_prog_objcxx_g=yes
+else
+  OBJCXXFLAGS=""
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_objcxx_try_compile "$LINENO"; then :
+
+else
+  ac_objcxx_werror_flag=$ac_save_objcxx_werror_flag
+	 OBJCXXFLAGS="-g"
+	 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_objcxx_try_compile "$LINENO"; then :
+  ac_cv_prog_objcxx_g=yes
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+   ac_objcxx_werror_flag=$ac_save_objcx_werror_flag
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_prog_objcxx_g" >&5
+$as_echo "$ac_cv_prog_objcxx_g" >&6; }
+if test "$ac_test_OBJCXXFLAGS" = set; then
+  OBJCXXFLAGS=$ac_save_OBJCXXFLAGS
+elif test $ac_cv_prog_objcxx_g = yes; then
+  if test "$GOBJCXX" = yes; then
+    OBJCXXFLAGS="-g -O2"
+  else
+    OBJCXXFLAGS="-g"
+  fi
+else
+  if test "$GOBJCXX" = yes; then
+    OBJCXXFLAGS="-O2"
+  else
+    OBJCXXFLAGS=
+  fi
+fi
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+case $CY_EXECUTE in #(
+  1) :
+
 
 
 pkg_failed=no
@@ -16056,283 +16307,24 @@ $as_echo "yes" >&6; }
 
 
 fi
- ;; #(
-  *) :
-
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: No JavaScript engine!" >&5
-$as_echo "$as_me: WARNING: No JavaScript engine!" >&2;}
- ;;
-esac
-ac_ext=mm
-ac_cpp='$OBJCXXCPP $CPPFLAGS'
-ac_compile='$OBJCXX -c $OBJCXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$OBJCXX -o conftest$ac_exeext $OBJCXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_objcxx_compiler_gnu
-if test -n "$ac_tool_prefix"; then
-  for ac_prog in g++ objc++ objcxx c++ CXX
-  do
-    # Extract the first word of "$ac_tool_prefix$ac_prog", so it can be a program name with args.
-set dummy $ac_tool_prefix$ac_prog; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if test "${ac_cv_prog_OBJCXX+set}" = set; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test -n "$OBJCXX"; then
-  ac_cv_prog_OBJCXX="$OBJCXX" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_prog_OBJCXX="$ac_tool_prefix$ac_prog"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-fi
-fi
-OBJCXX=$ac_cv_prog_OBJCXX
-if test -n "$OBJCXX"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $OBJCXX" >&5
-$as_echo "$OBJCXX" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-    test -n "$OBJCXX" && break
-  done
-fi
-if test -z "$OBJCXX"; then
-  ac_ct_OBJCXX=$OBJCXX
-  for ac_prog in g++ objc++ objcxx c++ CXX
-do
-  # Extract the first word of "$ac_prog", so it can be a program name with args.
-set dummy $ac_prog; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if test "${ac_cv_prog_ac_ct_OBJCXX+set}" = set; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test -n "$ac_ct_OBJCXX"; then
-  ac_cv_prog_ac_ct_OBJCXX="$ac_ct_OBJCXX" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_prog_ac_ct_OBJCXX="$ac_prog"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-fi
-fi
-ac_ct_OBJCXX=$ac_cv_prog_ac_ct_OBJCXX
-if test -n "$ac_ct_OBJCXX"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_OBJCXX" >&5
-$as_echo "$ac_ct_OBJCXX" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-  test -n "$ac_ct_OBJCXX" && break
-done
-
-  if test "x$ac_ct_OBJCXX" = x; then
-    OBJCXX="g++"
-  else
-    case $cross_compiling:$ac_tool_warned in
-yes:)
-{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
-$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
-ac_tool_warned=yes ;;
-esac
-    OBJCXX=$ac_ct_OBJCXX
-  fi
-fi
-
-# Provide some information about the compiler.
-$as_echo "$as_me:${as_lineno-$LINENO}: checking for Objective C++ compiler version" >&5
-set X $ac_compile
-ac_compiler=$2
-for ac_option in --version -v -V -qversion; do
-  { { ac_try="$ac_compiler $ac_option >&5"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
-$as_echo "$ac_try_echo"; } >&5
-  (eval "$ac_compiler $ac_option >&5") 2>conftest.err
-  ac_status=$?
-  if test -s conftest.err; then
-    sed '10a\
-... rest of stderr output deleted ...
-         10q' conftest.err >conftest.er1
-    cat conftest.er1 >&5
-  fi
-  rm -f conftest.er1 conftest.err
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-done
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we are using the GNU Objective C++ compiler" >&5
-$as_echo_n "checking whether we are using the GNU Objective C++ compiler... " >&6; }
-if test "${ac_cv_objcxx_compiler_gnu+set}" = set; then :
-  $as_echo_n "(cached) " >&6
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-#ifndef __GNUC__
-       choke me
-#endif
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_objcxx_try_compile "$LINENO"; then :
-  ac_compiler_gnu=yes
-else
-  ac_compiler_gnu=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-ac_cv_objcxx_compiler_gnu=$ac_compiler_gnu
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_objcxx_compiler_gnu" >&5
-$as_echo "$ac_cv_objcxx_compiler_gnu" >&6; }
-if test $ac_compiler_gnu = yes; then
-  GOBJCXX=yes
-else
-  GOBJCXX=
-fi
-ac_test_OBJCXXFLAGS=${OBJCXXFLAGS+set}
-ac_save_OBJCXXFLAGS=$OBJCXXFLAGS
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $OBJCXX accepts -g" >&5
-$as_echo_n "checking whether $OBJCXX accepts -g... " >&6; }
-if test "${ac_cv_prog_objcxx_g+set}" = set; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_save_objcxx_werror_flag=$ac_objcxx_werror_flag
-   ac_objcxx_werror_flag=yes
-   ac_cv_prog_objcxx_g=no
-   OBJCXXFLAGS="-g"
-   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_objcxx_try_compile "$LINENO"; then :
-  ac_cv_prog_objcxx_g=yes
-else
-  OBJCXXFLAGS=""
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_objcxx_try_compile "$LINENO"; then :
-
-else
-  ac_objcxx_werror_flag=$ac_save_objcxx_werror_flag
-	 OBJCXXFLAGS="-g"
-	 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_objcxx_try_compile "$LINENO"; then :
-  ac_cv_prog_objcxx_g=yes
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-   ac_objcxx_werror_flag=$ac_save_objcx_werror_flag
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_prog_objcxx_g" >&5
-$as_echo "$ac_cv_prog_objcxx_g" >&6; }
-if test "$ac_test_OBJCXXFLAGS" = set; then
-  OBJCXXFLAGS=$ac_save_OBJCXXFLAGS
-elif test $ac_cv_prog_objcxx_g = yes; then
-  if test "$GOBJCXX" = yes; then
-    OBJCXXFLAGS="-g -O2"
-  else
-    OBJCXXFLAGS="-g"
-  fi
-else
-  if test "$GOBJCXX" = yes; then
-    OBJCXXFLAGS="-O2"
-  else
-    OBJCXXFLAGS=
-  fi
-fi
-ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
-ac_ext=mm
+	ac_ext=mm
 ac_cpp='$OBJCXXCPP $CPPFLAGS'
 ac_compile='$OBJCXX -c $OBJCXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$OBJCXX -o conftest$ac_exeext $OBJCXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_objcxx_compiler_gnu
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if we really have Objective C++" >&5
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if we really have Objective C++" >&5
 $as_echo_n "checking if we really have Objective C++... " >&6; }
-
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-// This space intentionally left blank
+		// This space intentionally left blank
 
 _ACEOF
 if ac_fn_objcxx_try_compile "$LINENO"; then :
 
-	CY_OBJECTIVEC=1
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+		CY_OBJECTIVEC=1
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
 else
@@ -16340,16 +16332,16 @@ else
 $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-ac_ext=cpp
+	ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
-if test "x$CY_OBJECTIVEC" = x1; then :
+	if test "x$CY_OBJECTIVEC" = x1; then :
 
-	# TODO: Darwin
-	for ac_prog in gnustep-config
+		# TODO: Darwin
+		for ac_prog in gnustep-config
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -16391,7 +16383,7 @@ fi
   test -n "$GNUSTEP_CONFIG" && break
 done
 
-	if test "x$GNUSTEP_CONFIG" != x; then :
+		if test "x$GNUSTEP_CONFIG" != x; then :
 
 
 
@@ -16444,6 +16436,13 @@ done
 fi
 
 fi
+ ;; #(
+  *) :
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: No JavaScript engine!" >&5
+$as_echo "$as_me: WARNING: No JavaScript engine!" >&2;}
+ ;;
+esac
  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for GNU make" >&5
 $as_echo_n "checking for GNU make... " >&6; }
 if test "${_cv_gnu_make_command+set}" = set; then :

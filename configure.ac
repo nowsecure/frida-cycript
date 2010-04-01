@@ -49,18 +49,19 @@ AM_ICONV
 AC_LANG_POP([C])
 AS_CASE([$am_cv_func_iconv], [yes], [], [AC_MSG_ERROR([You need iconv])])
 PKG_CHECK_MODULES([WEBKIT], [webkit-1.0], [
-	WEBKIT=yes
+	CY_EXECUTE=1
 	AC_LIB_APPENDTOVAR([CXXFLAGS], [`$PKG_CONFIG --cflags webkit-1.0`])
 	AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs webkit-1.0`])
 ], [
 	PKG_CHECK_MODULES([WEBKIT], [WebKitGtk], [
-		WEBKIT=yes
+		CY_EXECUTE=1
 		AC_LIB_APPENDTOVAR([CXXFLAGS], [`$PKG_CONFIG --cflags WebKitGtk`])
 		AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs WebKitGtk`])
-	], [WEBKIT=no])
+	], [CY_EXECUTE=0])
 ])
-AS_CASE([$WEBKIT], [yes], [
-	AC_SUBST([CY_EXECUTE], [1])
+AC_PROG_OBJCXX
+AS_CASE([$CY_EXECUTE], [1], [
+	AC_SUBST([CY_EXECUTE])
 	PKG_CHECK_MODULES([LIBFFI], [libffi], [
 		AC_LIB_APPENDTOVAR([CXXFLAGS], [`$PKG_CONFIG --cflags libffi`])
 		AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs libffi`])
@@ -74,27 +75,26 @@ AS_CASE([$WEBKIT], [yes], [
 			AC_MSG_ERROR([You need libffi])
 		])
 	])
+	AC_LANG_PUSH([Objective C++])
+	AC_MSG_CHECKING([if we really have Objective C++])
+	AC_COMPILE_IFELSE([
+		// This space intentionally left blank
+	], [
+		CY_OBJECTIVEC=1
+		AC_MSG_RESULT([yes])
+	], [AC_MSG_RESULT([no])])
+	AC_LANG_POP([Objective C++])
+	AS_IF([test "x$CY_OBJECTIVEC" = x1], [
+		# TODO: Darwin
+		AC_CHECK_PROGS([GNUSTEP_CONFIG], [gnustep-config])
+		AS_IF([test "x$GNUSTEP_CONFIG" != x], [
+			AC_SUBST([CY_OBJECTIVEC])
+			AC_LIB_APPENDTOVAR([OBJCXXFLAGS], [`$GNUSTEP_CONFIG --objc-flags`])
+			AC_LIB_APPENDTOVAR([LIBS], [`$GNUSTEP_CONFIG --base-libs`])
+		])
+	])
 ], [
 	AC_MSG_WARN([No JavaScript engine!])
-])
-AC_PROG_OBJCXX
-AC_LANG_PUSH([Objective C++])
-AC_MSG_CHECKING([if we really have Objective C++])
-AC_COMPILE_IFELSE([
-// This space intentionally left blank
-], [
-	CY_OBJECTIVEC=1
-	AC_MSG_RESULT([yes])
-], [AC_MSG_RESULT([no])])
-AC_LANG_POP([Objective C++])
-AS_IF([test "x$CY_OBJECTIVEC" = x1], [
-	# TODO: Darwin
-	AC_CHECK_PROGS([GNUSTEP_CONFIG], [gnustep-config])
-	AS_IF([test "x$GNUSTEP_CONFIG" != x], [
-		AC_SUBST([CY_OBJECTIVEC])
-		AC_LIB_APPENDTOVAR([OBJCXXFLAGS], [`$GNUSTEP_CONFIG --objc-flags`])
-		AC_LIB_APPENDTOVAR([LIBS], [`$GNUSTEP_CONFIG --base-libs`])
-	])
 ])
 CHECK_GNU_MAKE
 AS_IF([test "x$_cv_gnu_make_command" = x], [AC_MSG_ERROR([You need GNU make])])
