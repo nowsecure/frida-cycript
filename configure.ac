@@ -57,7 +57,9 @@ PKG_CHECK_MODULES([WEBKIT], [webkit-1.0], [
 		CY_EXECUTE=1
 		AC_LIB_APPENDTOVAR([CXXFLAGS], [`$PKG_CONFIG --cflags WebKitGtk`])
 		AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs WebKitGtk`])
-	], [CY_EXECUTE=0])
+	], [
+		AC_CHECK_HEADERS([JavaScriptCore/JSBase.h], [CY_EXECUTE=1])
+	])
 ])
 AC_PROG_OBJCXX
 AS_CASE([$CY_EXECUTE], [1], [

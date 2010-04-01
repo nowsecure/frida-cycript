@@ -15,7 +15,7 @@ flex := @FLEX@
 libtool := @LIBTOOL@
 cxx := @CXX@
 objcxx := @OBJCXX@
-cflags := @CPPFLAGS@ @CXXFLAGS@ -DYYDEBUG=1
+cflags := @CPPFLAGS@ @CXXFLAGS@ -DYYDEBUG=1 @DEFS@
 objcxxflags := @OBJCXXFLAGS@
 ldflags := @LDFLAGS@
 library := @LIBS@ @LTLIBAPR@ @LTLIBICONV@

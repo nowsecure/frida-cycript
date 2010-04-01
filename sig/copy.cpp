@@ -44,7 +44,12 @@
 #include <apr_strings.h>
 #include "Pooling.hpp"
 #include "sig/parse.hpp"
+
+#ifdef HAVE_FFI_FFI_H
+#include <ffi/ffi.h>
+#else
 #include <ffi.h>
+#endif
 
 namespace sig {
 

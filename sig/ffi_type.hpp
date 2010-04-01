@@ -41,7 +41,12 @@
 #define SIG_FFI_TYPE_H
 
 #include <apr_pools.h>
+
+#ifdef HAVE_FFI_FFI_H
+#include <ffi/ffi.h>
+#else
 #include <ffi.h>
+#endif
 
 #include "sig/types.hpp"
 

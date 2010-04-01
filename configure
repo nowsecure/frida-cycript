@@ -15529,9 +15529,35 @@ fi
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-                CY_EXECUTE=0
+
+		for ac_header in JavaScriptCore/JSBase.h
+do :
+  ac_fn_cxx_check_header_mongrel "$LINENO" "JavaScriptCore/JSBase.h" "ac_cv_header_JavaScriptCore_JSBase_h" "$ac_includes_default"
+if test "x$ac_cv_header_JavaScriptCore_JSBase_h" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_JAVASCRIPTCORE_JSBASE_H 1
+_ACEOF
+ CY_EXECUTE=1
+fi
+
+done
+
+
 elif test $pkg_failed = untried; then
-	CY_EXECUTE=0
+
+		for ac_header in JavaScriptCore/JSBase.h
+do :
+  ac_fn_cxx_check_header_mongrel "$LINENO" "JavaScriptCore/JSBase.h" "ac_cv_header_JavaScriptCore_JSBase_h" "$ac_includes_default"
+if test "x$ac_cv_header_JavaScriptCore_JSBase_h" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_JAVASCRIPTCORE_JSBASE_H 1
+_ACEOF
+ CY_EXECUTE=1
+fi
+
+done
+
+
 else
 	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
 	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
@@ -15651,9 +15677,35 @@ fi
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-                CY_EXECUTE=0
+
+		for ac_header in JavaScriptCore/JSBase.h
+do :
+  ac_fn_cxx_check_header_mongrel "$LINENO" "JavaScriptCore/JSBase.h" "ac_cv_header_JavaScriptCore_JSBase_h" "$ac_includes_default"
+if test "x$ac_cv_header_JavaScriptCore_JSBase_h" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_JAVASCRIPTCORE_JSBASE_H 1
+_ACEOF
+ CY_EXECUTE=1
+fi
+
+done
+
+
 elif test $pkg_failed = untried; then
-	CY_EXECUTE=0
+
+		for ac_header in JavaScriptCore/JSBase.h
+do :
+  ac_fn_cxx_check_header_mongrel "$LINENO" "JavaScriptCore/JSBase.h" "ac_cv_header_JavaScriptCore_JSBase_h" "$ac_includes_default"
+if test "x$ac_cv_header_JavaScriptCore_JSBase_h" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_JAVASCRIPTCORE_JSBASE_H 1
+_ACEOF
+ CY_EXECUTE=1
+fi
+
+done
+
+
 else
 	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
 	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS

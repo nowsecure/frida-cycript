@@ -46,7 +46,11 @@
 #include <JavaScriptCore/JSObjectRef.h>
 #include <JavaScriptCore/JSValueRef.h>
 
+#ifdef HAVE_FFI_FFI_H
+#include <ffi/ffi.h>
+#else
 #include <ffi.h>
+#endif
 
 extern JSStringRef Array_s;
 extern JSStringRef cy_s;
