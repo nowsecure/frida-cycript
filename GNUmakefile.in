@@ -91,11 +91,6 @@ cflags += -DCY_EXECUTE
 code += sig/ffi_type.lo sig/parse.lo sig/copy.lo
 code += Execute.lo Bridge.lo
 filters += C
-#ifeq ($(filter ObjectiveC,$(filters)),)
-#ifneq ($(shell which gnustep-config 2>/dev/null),)
-#include GNUstep.mk
-#endif
-#endif
 endif
 
 cflags += -Wall -Werror -Wno-parentheses #-Wno-unused
