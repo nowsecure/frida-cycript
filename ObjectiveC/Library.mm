@@ -2455,5 +2455,7 @@ static CYHooks CYObjectiveCHooks = {
 struct CYObjectiveC {
     CYObjectiveC() {
         hooks_ = &CYObjectiveCHooks;
+        // XXX: evil magic juju to make this actually take effect on a Mac when compiled with autoconf/libtool doom!
+        _assert(hooks_ != NULL);
     }
 } CYObjectiveC;
