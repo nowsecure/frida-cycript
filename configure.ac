@@ -58,7 +58,9 @@ PKG_CHECK_MODULES([WEBKIT], [webkit-1.0], [
 		AC_LIB_APPENDTOVAR([CXXFLAGS], [`$PKG_CONFIG --cflags WebKitGtk`])
 		AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs WebKitGtk`])
 	], [
-		AC_CHECK_HEADERS([JavaScriptCore/JSBase.h], [CY_EXECUTE=1])
+		AC_CHECK_FRAMEWORK([JavaScriptCore], [
+			#include <JavaScriptCore/JSBase.h>
+		], [JSEvaluateScript(0, 0, 0, 0, 0, 0);], [CY_EXECUTE=1])
 	])
 ])
 AC_PROG_OBJCXX
@@ -85,16 +87,27 @@ AS_CASE([$CY_EXECUTE], [1], [
 		CY_OBJECTIVEC=1
 		AC_MSG_RESULT([yes])
 	], [AC_MSG_RESULT([no])])
-	AC_LANG_POP([Objective C++])
 	AS_IF([test "x$CY_OBJECTIVEC" = x1], [
-		# TODO: Darwin
-		AC_CHECK_PROGS([GNUSTEP_CONFIG], [gnustep-config])
-		AS_IF([test "x$GNUSTEP_CONFIG" != x], [
+		AC_CHECK_FRAMEWORK([CoreFoundation], [
+			#include <CoreFoundation/CFBase.h>
+		], [CFAllocatorGetDefault();], [
 			AC_SUBST([CY_OBJECTIVEC])
-			AC_LIB_APPENDTOVAR([OBJCXXFLAGS], [`$GNUSTEP_CONFIG --objc-flags`])
-			AC_LIB_APPENDTOVAR([LIBS], [`$GNUSTEP_CONFIG --base-libs`])
+			AC_CHECK_FRAMEWORK([Foundation], [
+				#include <Foundation/NSObject.h>
+			], [[[[NSObject alloc] init];]])
+			AC_CHECK_FRAMEWORK([WebKit], [
+				#include <WebKit/WebScriptObject.h>
+			], [[[[WebScriptObject alloc] init];]])
+		], [
+			AC_CHECK_PROGS([GNUSTEP_CONFIG], [gnustep-config])
+			AS_IF([test "x$GNUSTEP_CONFIG" != x], [
+				AC_SUBST([CY_OBJECTIVEC])
+				AC_LIB_APPENDTOVAR([OBJCXXFLAGS], [`$GNUSTEP_CONFIG --objc-flags`])
+				AC_LIB_APPENDTOVAR([LIBS], [`$GNUSTEP_CONFIG --base-libs`])
+			], [AC_SUBST([CY_OBJECTIVEC], [0])])
 		])
 	])
+	AC_LANG_POP([Objective C++])
 ], [
 	AC_MSG_WARN([No JavaScript engine!])
 ])
