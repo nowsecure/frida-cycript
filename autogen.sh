@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -e
-shopt -s expand_aliases
+shopt -s expand_aliases extglob
 unalias -a
 case `uname` in
 (Linux)
@@ -13,7 +13,7 @@ case `uname` in
 esac
 aclocal
 sed -e 's/AC_PROG_AWK/dnl &/' -i aclocal.m4
-cat `aclocal --print-ac-dir`/check_gnu_make.m4 find_apr.m4 >> aclocal.m4
+cat `aclocal --print-ac-dir`/check_gnu_make.m4 !(aclocal).m4 >> aclocal.m4
 function filter()
 {
 	sed -e '/no proper invocation of AM_INIT_AUTOMAKE was found\./d' \
