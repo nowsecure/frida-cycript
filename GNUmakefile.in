@@ -19,8 +19,11 @@ cflags := @CPPFLAGS@ @CXXFLAGS@ -DYYDEBUG=1 @DEFS@
 objcxxflags := @OBJCXXFLAGS@
 ldflags := @LDFLAGS@
 library := @LIBS@ @LTLIBAPR@ @LTLIBICONV@
+sed := @SED@
+bison := @BISON@
 time := $(shell which @TIME@)
 gperf := @GPERF@
+otool := @OTOOL@
 
 INSTALL := @INSTALL@
 INSTALL_PROGRAM := @INSTALL_PROGRAM@
@@ -51,6 +54,7 @@ mandir := @mandir@
 
 CY_EXECUTE := @CY_EXECUTE@
 CY_OBJECTIVEC := @CY_OBJECTIVEC@
+CY_OBJECTIVEC_MACH := @CY_OBJECTIVEC_MACH@
 
 paths := $(foreach path,$(paths),$(wildcard $(path)))
 cflags += $(foreach path,$(paths),-I$(path) -L$(path))
@@ -102,10 +106,10 @@ cflags += -I$(srcdir) -I$(srcdir)/include
 
 all += libcycript.la
 
-filters += $(shell bison <(echo '%code{}%%_:') -o/dev/null 2>/dev/null && echo Bison24 || echo Bison23)
+filters += $(shell $(bison) <(echo '%code{}%%_:') -o/dev/null 2>/dev/null && echo Bison24 || echo Bison23)
 
 ifdef arch
-deb := $(shell grep ^Package: $(srcdir)/control.in | cut -d ' ' -f 2-)_$(shell grep ^Version: $(srcdir)/control.in | cut -d ' ' -f 2 | sed -e 's/\#/$(svn)/')_$(arch).deb
+deb := $(shell grep ^Package: $(srcdir)/control.in | cut -d ' ' -f 2-)_$(shell grep ^Version: $(srcdir)/control.in | cut -d ' ' -f 2 | $(sed) -e 's/\#/$(svn)/')_$(arch).deb
 
 all:
 
@@ -113,14 +117,14 @@ extra::
 
 ifeq ($(depends)$(dll),dylib)
 control.tmp: control.in cycript $(lib)cycript.dylib
-	sed -e 's/&/'"$$(dpkg-query -S $$(otool -lah cycript *.dylib | grep dylib | grep -v ':$$' | sed -e 's/^ *name //;s/ (offset [0-9]*)$$//' | sort -u) 2>/dev/null | sed -e 's/:.*//; /^cycript$$/ d; s/$$/,/' | sort -u | tr '\n' ' ')"'/;s/, $$//;s/#/$(svn)/;s/%/$(arch)/' $< >$@
+	$(sed) -e 's/&/'"$$(dpkg-query -S $$(otool -lah cycript *.dylib | grep dylib | grep -v ':$$' | $(sed) -e 's/^ *name //;s/ (offset [0-9]*)$$//' | sort -u) 2>/dev/null | $(sed) -e 's/:.*//; /^cycript$$/ d; s/$$/,/' | sort -u | tr '\n' ' ')"'/;s/, $$//;s/#/$(svn)/;s/%/$(arch)/' $< >$@
 else
 ifeq ($(depends)$(dll),so)
 control.tmp: control.in cycript $(lib)cycript.so
-	sed -e 's/&/'"$$(dpkg-query -S $$(ldd cycript $(lib)cycript.so | sed -e '/:$$/ d; s/^[ \t]*\([^ ]* => \)\?\([^ ]*\) .*/\2/' | sort -u) 2>/dev/null | sed -e 's/:.*//; /^cycript$$/ d; s/$$/,/' | sort -u | tr '\n' ' ')"'/;s/, $$//;s/#/$(svn)/;s/%/$(arch)/' $< >$@
+	$(sed) -e 's/&/'"$$(dpkg-query -S $$(ldd cycript $(lib)cycript.so | $(sed) -e '/:$$/ d; s/^[ \t]*\([^ ]* => \)\?\([^ ]*\) .*/\2/' | sort -u) 2>/dev/null | $(sed) -e 's/:.*//; /^cycript$$/ d; s/$$/,/' | sort -u | tr '\n' ' ')"'/;s/, $$//;s/#/$(svn)/;s/%/$(arch)/' $< >$@
 else
 control.tmp: control.in
-	sed -e 's/&/$(foreach depend,$(depends),$(depend),)/;s/,$$//;s/#/$(svn)/;s/%/$(arch)/' $< >$@
+	$(sed) -e 's/&/$(foreach depend,$(depends),$(depend),)/;s/,$$//;s/#/$(svn)/;s/%/$(arch)/' $< >$@
 endif
 endif
 
@@ -144,7 +148,7 @@ Bridge.gperf: Bridge.def Bridge.sh
 	$(srcdir)/Bridge.sh $< >$@
 
 Bridge.hpp: Bridge.gperf
-	$(gperf) $< | sed -e 's/defined __GNUC_STDC_INLINE__ || defined __GNUC_GNU_INLINE__/0/' >$@
+	$(gperf) $< | $(sed) -e 's/defined __GNUC_STDC_INLINE__ || defined __GNUC_GNU_INLINE__/0/' >$@
 
 Bridge.lo: Bridge.hpp
 endif
@@ -153,15 +157,26 @@ ifeq ($(CY_OBJECTIVEC),1)
 filters += ObjectiveC
 header += Struct.hpp ObjectiveC/Internal.hpp ObjectiveC/Syntax.hpp
 code += ObjectiveC/Output.lo ObjectiveC/Replace.lo ObjectiveC/Library.lo
+code += Handler.lo
 
 Struct.hpp:
 	$$($(objcxx) -print-prog-name=cc1obj) -print-objc-runtime-info </dev/null >$@
+
+ifeq ($(CY_OBJECTIVEC_MACH),1)
+cflags += -DCY_ATTACH
+inject += Mach/Inject.lo
+
+Mach/Inject.lo: Trampoline.t.hpp Baton.hpp
+
+%.t.hpp: %.t.cpp
+	$(libtool) --mode=compile $(cxx) -c -fno-exceptions -I$(srcdir)/include -o $*.t.lo $< $(cflags) && { file=($$($(otool) -l .libs/$*.t.o | $(sed) -e 'x; /^1/ { x; /^ *filesize / { s/^.* //; p; }; /^ *fileoff / { s/^.* //; p; }; x; }; x; /^ *cmd LC_SEGMENT$$/ { s/.*/1/; x; }; d;')); od -t x1 -j $${file[0]} -N $${file[1]} .libs/$*.t.o | $(sed) -e 's/^[^ ]*//' | tr $$'\n' ' ' | $(sed) -e 's/  */ /g;s/^ *//;s/ $$//;s/ /,/g;s/\([^,][^,]\)/0x\1/g' | $(sed) -e 's/^/static const char $*_[] = {/;s/$$/};/' && echo && echo "/*" && $(otool) -vVt .libs/$*.t.o && echo "*/"; } >$@ && rm -f $*.t.lo .libs/$*.t.o
+endif
 endif
 
 all: $(all)
 
 clean::
-	rm -rf *.lo *.o *.d .libs */*.lo */.libs libcycript.la $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.gperf Bridge.hpp Cycript.output
+	rm -rf *.lo *.o *.d *.t.hpp .libs */*.lo */.libs libcycript.la $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.gperf Bridge.hpp Cycript.output
 ifneq ($(srcdir),.)
 	rm -rf sig ObjectiveC
 endif
@@ -176,10 +191,10 @@ distclean: clean
 	$(srcdir)/Filter.sh <$< >$@ $(filters)
 
 Cycript.tab.cc Cycript.tab.hh location.hh position.hh: Cycript.yy
-	bison -v --report=state $<
+	$(bison) -v --report=state $<
 
 lex.cy.c: Cycript.l
-	$(flex) -t $< | sed -e 's/int yyl;/yy_size_t yyl;/;s/int yyleng_r;/yy_size_t yyleng_r;/' >$@
+	$(flex) -t $< | $(sed) -e 's/int yyl;/yy_size_t yyl;/;s/int yyleng_r;/yy_size_t yyleng_r;/' >$@
 
 #Parser.hpp: Parser.py Parser.dat
 #	./Parser.py <Parser.dat >$@

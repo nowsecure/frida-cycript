@@ -6,6 +6,7 @@ LT_INIT([disable-static])
 PKG_PROG_PKG_CONFIG([0.22])
 AC_PROG_CXX
 AC_LANG([C++])
+AC_PROG_SED
 AX_PROG_BISON([
 	BISON=`echo $YACC | $SED -e 's/ -y//'`
 	BISON_VERSION=`$BISON -V | $SED -e 's/^bison (GNU Bison) \(.*\)$/\1/p;d'`
@@ -110,6 +111,11 @@ AS_CASE([$CY_EXECUTE], [1], [
 	AC_LANG_POP([Objective C++])
 ], [
 	AC_MSG_WARN([No JavaScript engine!])
+])
+AS_IF([test "x$CY_OBJECTIVEC" = x1], [
+	AC_CHECK_HEADER([mach/mach.h], [
+		AS_CASE([$OTOOL], [:], [AC_MSG_WARN([Missing otool?])], [AC_SUBST([CY_OBJECTIVEC_MACH], [1])])
+	])
 ])
 CHECK_GNU_MAKE
 AS_IF([test "x$_cv_gnu_make_command" = x], [AC_MSG_ERROR([You need GNU make])])
