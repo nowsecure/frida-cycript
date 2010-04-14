@@ -4,7 +4,20 @@ AC_CONFIG_SRCDIR([Console.cpp])
 AC_CONFIG_AUX_DIR([.])
 LT_INIT([disable-static])
 PKG_PROG_PKG_CONFIG([0.22])
+CHECK_GNU_MAKE
+AS_IF([test "x$_cv_gnu_make_command" = x], [AC_MSG_ERROR([You need GNU make])])
 AC_PROG_CXX
+AC_PROG_OBJCXX
+AC_ARG_WITH([frameworks], [AS_HELP_STRING(
+	[--with-frameworks=DIRS],
+	[add to DIRS (space separated) to the Darwin include path for frameworks with -F]
+)], [
+	for framework in $withval; do
+		AC_LIB_APPENDTOVAR([CFLAGS], [-F$framework])
+		AC_LIB_APPENDTOVAR([CXXFLAGS], [-F$framework])
+		AC_LIB_APPENDTOVAR([OBJCCXXFLAGS], [-F$framework])
+	done
+])
 AC_LANG([C++])
 AC_PROG_SED
 AX_PROG_BISON([
@@ -64,7 +77,6 @@ PKG_CHECK_MODULES([WEBKIT], [webkit-1.0], [
 		], [JSEvaluateScript(0, 0, 0, 0, 0, 0);], [CY_EXECUTE=1])
 	])
 ])
-AC_PROG_OBJCXX
 AS_CASE([$CY_EXECUTE], [1], [
 	AC_SUBST([CY_EXECUTE])
 	PKG_CHECK_MODULES([LIBFFI], [libffi], [
@@ -117,7 +129,5 @@ AS_IF([test "x$CY_OBJECTIVEC" = x1], [
 		AS_CASE([$OTOOL], [:], [AC_MSG_WARN([Missing otool?])], [AC_SUBST([CY_OBJECTIVEC_MACH], [1])])
 	])
 ])
-CHECK_GNU_MAKE
-AS_IF([test "x$_cv_gnu_make_command" = x], [AC_MSG_ERROR([You need GNU make])])
 AC_CONFIG_FILES([GNUmakefile])
 AC_OUTPUT
