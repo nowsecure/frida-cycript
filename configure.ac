@@ -62,21 +62,36 @@ AC_LANG_PUSH([C])
 AM_ICONV
 AC_LANG_POP([C])
 AS_CASE([$am_cv_func_iconv], [yes], [], [AC_MSG_ERROR([You need iconv])])
-PKG_CHECK_MODULES([WEBKIT], [webkit-1.0], [
-	CY_EXECUTE=1
-	AC_LIB_APPENDTOVAR([CXXFLAGS], [`$PKG_CONFIG --cflags webkit-1.0`])
-	AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs webkit-1.0`])
-], [
-	PKG_CHECK_MODULES([WEBKIT], [WebKitGtk], [
+AC_DEFUN([CY_CHECK_JAVASCRIPTCORE], [
+	PKG_CHECK_MODULES([WEBKIT], [webkit-1.0], [
 		CY_EXECUTE=1
-		AC_LIB_APPENDTOVAR([CXXFLAGS], [`$PKG_CONFIG --cflags WebKitGtk`])
-		AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs WebKitGtk`])
+		AC_LIB_APPENDTOVAR([CXXFLAGS], [`$PKG_CONFIG --cflags webkit-1.0`])
+		AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs webkit-1.0`])
 	], [
-		AC_CHECK_FRAMEWORK([JavaScriptCore], [
-			#include <JavaScriptCore/JSBase.h>
-		], [JSEvaluateScript(0, 0, 0, 0, 0, 0);], [CY_EXECUTE=1])
+		PKG_CHECK_MODULES([WEBKIT], [WebKitGtk], [
+			CY_EXECUTE=1
+			AC_LIB_APPENDTOVAR([CXXFLAGS], [`$PKG_CONFIG --cflags WebKitGtk`])
+			AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs WebKitGtk`])
+		], [
+			AC_CHECK_FRAMEWORK([JavaScriptCore], [
+				#include <JavaScriptCore/JSBase.h>
+			], [JSEvaluateScript(0, 0, 0, 0, 0, 0);], [CY_EXECUTE=1])
+		])
 	])
 ])
+AC_DEFUN([CY_CHECK_JAVASCRIPT], [
+	CY_CHECK_JAVASCRIPTCORE
+])
+AC_ARG_ENABLE([javascript], [AS_HELP_STRING(
+	[--enable-javascript@<:@=ENGINE@:>@],
+	[use a JavaScript runtime (currently the only available option for ENGINE is JavaScriptCore) @<:@default=yes@:>@]
+)], [
+	AS_CASE([$enableval], [yes], [CY_CHECK_JAVASCRIPT], [no], [
+		AC_SUBST([CY_EXECUTE], [0])
+	], [JavaScriptCore], [
+		CY_CHECK_JAVASCRIPTCORE
+	], [AC_MSG_ERROR([Unknown JavaScript engine: $enableval])])
+], [CY_CHECK_JAVASCRIPT])
 AS_CASE([$CY_EXECUTE], [1], [
 	AC_SUBST([CY_EXECUTE])
 	PKG_CHECK_MODULES([LIBFFI], [libffi], [
@@ -121,8 +136,6 @@ AS_CASE([$CY_EXECUTE], [1], [
 		])
 	])
 	AC_LANG_POP([Objective C++])
-], [
-	AC_MSG_WARN([No JavaScript engine!])
 ])
 AS_IF([test "x$CY_OBJECTIVEC" = x1], [
 	AC_CHECK_HEADER([mach/mach.h], [

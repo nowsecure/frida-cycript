@@ -926,6 +926,7 @@ with_frameworks
 with_apr
 enable_rpath
 with_libiconv_prefix
+enable_javascript
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1570,6 +1571,11 @@ Optional Features:
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --disable-rpath         do not hardcode runtime library paths
+  --enable-javascript[=ENGINE]
+                          Enable the JavaScript runtime (currently the only
+                          available option for ENGINE is JavaScriptCore)
+                          [default=yes]
+  --disable-javascript    Disable the JavaScript runtime
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -4098,13 +4104,13 @@ if test "${lt_cv_nm_interface+set}" = set; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:4101: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:4107: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4104: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:4110: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4107: output\"" >&5)
+  (eval echo "\"\$as_me:4113: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -5310,7 +5316,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5313 "configure"' > conftest.$ac_ext
+  echo '#line 5319 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -6835,11 +6841,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:6838: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:6844: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:6842: \$? = $ac_status" >&5
+   echo "$as_me:6848: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7174,11 +7180,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7177: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7183: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7181: \$? = $ac_status" >&5
+   echo "$as_me:7187: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7279,11 +7285,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7282: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7288: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7286: \$? = $ac_status" >&5
+   echo "$as_me:7292: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -7334,11 +7340,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7337: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7343: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7341: \$? = $ac_status" >&5
+   echo "$as_me:7347: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -9718,7 +9724,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 9721 "configure"
+#line 9727 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -9814,7 +9820,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 9817 "configure"
+#line 9823 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12591,11 +12597,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:12594: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:12600: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:12598: \$? = $ac_status" >&5
+   echo "$as_me:12604: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -12690,11 +12696,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:12693: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:12699: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:12697: \$? = $ac_status" >&5
+   echo "$as_me:12703: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -12742,11 +12748,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:12745: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:12751: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:12749: \$? = $ac_status" >&5
+   echo "$as_me:12755: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15884,6 +15890,15 @@ case $am_cv_func_iconv in #(
     as_fn_error "You need iconv" "$LINENO" 5 ;;
 esac
 
+
+# Check whether --enable-javascript was given.
+if test "${enable_javascript+set}" = set; then :
+  enableval=$enable_javascript;
+	case $enableval in #(
+  yes) :
+
+
+
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
 $as_echo_n "checking for WEBKIT... " >&6; }
@@ -16019,7 +16034,7 @@ else
 		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-			#include <JavaScriptCore/JSBase.h>
+				#include <JavaScriptCore/JSBase.h>
 
 int
 main ()
@@ -16086,7 +16101,7 @@ else
 		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-			#include <JavaScriptCore/JSBase.h>
+				#include <JavaScriptCore/JSBase.h>
 
 int
 main ()
@@ -16145,7 +16160,7 @@ else
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
-		CY_EXECUTE=1
+			CY_EXECUTE=1
 
   for element in `$PKG_CONFIG --cflags WebKitGtk`; do
     haveit=
@@ -16271,7 +16286,7 @@ else
 		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-			#include <JavaScriptCore/JSBase.h>
+				#include <JavaScriptCore/JSBase.h>
 
 int
 main ()
@@ -16338,7 +16353,7 @@ else
 		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-			#include <JavaScriptCore/JSBase.h>
+				#include <JavaScriptCore/JSBase.h>
 
 int
 main ()
@@ -16397,7 +16412,7 @@ else
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
-		CY_EXECUTE=1
+			CY_EXECUTE=1
 
   for element in `$PKG_CONFIG --cflags WebKitGtk`; do
     haveit=
@@ -16453,7 +16468,7 @@ else
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
-	CY_EXECUTE=1
+		CY_EXECUTE=1
 
   for element in `$PKG_CONFIG --cflags webkit-1.0`; do
     haveit=
@@ -16502,6 +16517,1267 @@ $as_echo "yes" >&6; }
 
 
 fi
+
+ ;; #(
+  no) :
+
+		CY_EXECUTE=0
+
+	 ;; #(
+  JavaScriptCore) :
+
+
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
+$as_echo_n "checking for WEBKIT... " >&6; }
+
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_CFLAGS"; then
+        pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
+    else
+        if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"webkit-1.0\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "webkit-1.0") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "webkit-1.0" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+    fi
+else
+	pkg_failed=untried
+fi
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_LIBS"; then
+        pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
+    else
+        if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"webkit-1.0\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "webkit-1.0") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "webkit-1.0" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+    fi
+else
+	pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "webkit-1.0"`
+        else
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "webkit-1.0"`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$WEBKIT_PKG_ERRORS" >&5
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
+$as_echo_n "checking for WEBKIT... " >&6; }
+
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_CFLAGS"; then
+        pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
+    else
+        if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "WebKitGtk" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+    fi
+else
+	pkg_failed=untried
+fi
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_LIBS"; then
+        pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
+    else
+        if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "WebKitGtk" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+    fi
+else
+	pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "WebKitGtk"`
+        else
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "WebKitGtk"`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$WEBKIT_PKG_ERRORS" >&5
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaScriptCore" >&5
+$as_echo_n "checking for framework JavaScriptCore... " >&6; }
+if test "${ac_cv_framework_JavaScriptCore+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+
+		ac_check_framework_save_LIBS=$LIBS
+		LIBS="-framework JavaScriptCore  $LIBS"
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+				#include <JavaScriptCore/JSBase.h>
+
+int
+main ()
+{
+JSEvaluateScript(0, 0, 0, 0, 0, 0);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+
+			ac_cv_framework_JavaScriptCore=yes
+
+else
+  ac_cv_framework_JavaScriptCore=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+		LIBS=$ac_check_framework_save_LIBS
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_framework_JavaScriptCore" >&5
+$as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
+	if test $ac_cv_framework_JavaScriptCore = yes; then :
+
+
+  for element in "-framework JavaScriptCore $LIBS"; do
+    haveit=
+    for x in $LIBS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LIBS="${LIBS}${LIBS:+ }$element"
+    fi
+  done
+
+		CY_EXECUTE=1
+
+fi
+
+elif test $pkg_failed = untried; then
+
+
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaScriptCore" >&5
+$as_echo_n "checking for framework JavaScriptCore... " >&6; }
+if test "${ac_cv_framework_JavaScriptCore+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+
+		ac_check_framework_save_LIBS=$LIBS
+		LIBS="-framework JavaScriptCore  $LIBS"
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+				#include <JavaScriptCore/JSBase.h>
+
+int
+main ()
+{
+JSEvaluateScript(0, 0, 0, 0, 0, 0);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+
+			ac_cv_framework_JavaScriptCore=yes
+
+else
+  ac_cv_framework_JavaScriptCore=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+		LIBS=$ac_check_framework_save_LIBS
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_framework_JavaScriptCore" >&5
+$as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
+	if test $ac_cv_framework_JavaScriptCore = yes; then :
+
+
+  for element in "-framework JavaScriptCore $LIBS"; do
+    haveit=
+    for x in $LIBS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LIBS="${LIBS}${LIBS:+ }$element"
+    fi
+  done
+
+		CY_EXECUTE=1
+
+fi
+
+else
+	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
+	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+			CY_EXECUTE=1
+
+  for element in `$PKG_CONFIG --cflags WebKitGtk`; do
+    haveit=
+    for x in $CXXFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }$element"
+    fi
+  done
+
+
+  for element in `$PKG_CONFIG --libs WebKitGtk`; do
+    haveit=
+    for x in $LIBS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LIBS="${LIBS}${LIBS:+ }$element"
+    fi
+  done
+
+
+fi
+
+elif test $pkg_failed = untried; then
+
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
+$as_echo_n "checking for WEBKIT... " >&6; }
+
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_CFLAGS"; then
+        pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
+    else
+        if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "WebKitGtk" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+    fi
+else
+	pkg_failed=untried
+fi
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_LIBS"; then
+        pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
+    else
+        if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "WebKitGtk" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+    fi
+else
+	pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "WebKitGtk"`
+        else
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "WebKitGtk"`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$WEBKIT_PKG_ERRORS" >&5
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaScriptCore" >&5
+$as_echo_n "checking for framework JavaScriptCore... " >&6; }
+if test "${ac_cv_framework_JavaScriptCore+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+
+		ac_check_framework_save_LIBS=$LIBS
+		LIBS="-framework JavaScriptCore  $LIBS"
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+				#include <JavaScriptCore/JSBase.h>
+
+int
+main ()
+{
+JSEvaluateScript(0, 0, 0, 0, 0, 0);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+
+			ac_cv_framework_JavaScriptCore=yes
+
+else
+  ac_cv_framework_JavaScriptCore=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+		LIBS=$ac_check_framework_save_LIBS
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_framework_JavaScriptCore" >&5
+$as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
+	if test $ac_cv_framework_JavaScriptCore = yes; then :
+
+
+  for element in "-framework JavaScriptCore $LIBS"; do
+    haveit=
+    for x in $LIBS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LIBS="${LIBS}${LIBS:+ }$element"
+    fi
+  done
+
+		CY_EXECUTE=1
+
+fi
+
+elif test $pkg_failed = untried; then
+
+
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaScriptCore" >&5
+$as_echo_n "checking for framework JavaScriptCore... " >&6; }
+if test "${ac_cv_framework_JavaScriptCore+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+
+		ac_check_framework_save_LIBS=$LIBS
+		LIBS="-framework JavaScriptCore  $LIBS"
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+				#include <JavaScriptCore/JSBase.h>
+
+int
+main ()
+{
+JSEvaluateScript(0, 0, 0, 0, 0, 0);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+
+			ac_cv_framework_JavaScriptCore=yes
+
+else
+  ac_cv_framework_JavaScriptCore=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+		LIBS=$ac_check_framework_save_LIBS
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_framework_JavaScriptCore" >&5
+$as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
+	if test $ac_cv_framework_JavaScriptCore = yes; then :
+
+
+  for element in "-framework JavaScriptCore $LIBS"; do
+    haveit=
+    for x in $LIBS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LIBS="${LIBS}${LIBS:+ }$element"
+    fi
+  done
+
+		CY_EXECUTE=1
+
+fi
+
+else
+	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
+	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+			CY_EXECUTE=1
+
+  for element in `$PKG_CONFIG --cflags WebKitGtk`; do
+    haveit=
+    for x in $CXXFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }$element"
+    fi
+  done
+
+
+  for element in `$PKG_CONFIG --libs WebKitGtk`; do
+    haveit=
+    for x in $LIBS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LIBS="${LIBS}${LIBS:+ }$element"
+    fi
+  done
+
+
+fi
+
+else
+	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
+	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+		CY_EXECUTE=1
+
+  for element in `$PKG_CONFIG --cflags webkit-1.0`; do
+    haveit=
+    for x in $CXXFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }$element"
+    fi
+  done
+
+
+  for element in `$PKG_CONFIG --libs webkit-1.0`; do
+    haveit=
+    for x in $LIBS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LIBS="${LIBS}${LIBS:+ }$element"
+    fi
+  done
+
+
+fi
+
+	 ;; #(
+  *) :
+    as_fn_error "Unknown JavaScript engine: $enableval" "$LINENO" 5 ;;
+esac
+
+else
+
+
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
+$as_echo_n "checking for WEBKIT... " >&6; }
+
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_CFLAGS"; then
+        pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
+    else
+        if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"webkit-1.0\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "webkit-1.0") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "webkit-1.0" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+    fi
+else
+	pkg_failed=untried
+fi
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_LIBS"; then
+        pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
+    else
+        if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"webkit-1.0\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "webkit-1.0") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "webkit-1.0" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+    fi
+else
+	pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "webkit-1.0"`
+        else
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "webkit-1.0"`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$WEBKIT_PKG_ERRORS" >&5
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
+$as_echo_n "checking for WEBKIT... " >&6; }
+
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_CFLAGS"; then
+        pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
+    else
+        if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "WebKitGtk" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+    fi
+else
+	pkg_failed=untried
+fi
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_LIBS"; then
+        pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
+    else
+        if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "WebKitGtk" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+    fi
+else
+	pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "WebKitGtk"`
+        else
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "WebKitGtk"`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$WEBKIT_PKG_ERRORS" >&5
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaScriptCore" >&5
+$as_echo_n "checking for framework JavaScriptCore... " >&6; }
+if test "${ac_cv_framework_JavaScriptCore+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+
+		ac_check_framework_save_LIBS=$LIBS
+		LIBS="-framework JavaScriptCore  $LIBS"
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+				#include <JavaScriptCore/JSBase.h>
+
+int
+main ()
+{
+JSEvaluateScript(0, 0, 0, 0, 0, 0);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+
+			ac_cv_framework_JavaScriptCore=yes
+
+else
+  ac_cv_framework_JavaScriptCore=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+		LIBS=$ac_check_framework_save_LIBS
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_framework_JavaScriptCore" >&5
+$as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
+	if test $ac_cv_framework_JavaScriptCore = yes; then :
+
+
+  for element in "-framework JavaScriptCore $LIBS"; do
+    haveit=
+    for x in $LIBS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LIBS="${LIBS}${LIBS:+ }$element"
+    fi
+  done
+
+		CY_EXECUTE=1
+
+fi
+
+elif test $pkg_failed = untried; then
+
+
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaScriptCore" >&5
+$as_echo_n "checking for framework JavaScriptCore... " >&6; }
+if test "${ac_cv_framework_JavaScriptCore+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+
+		ac_check_framework_save_LIBS=$LIBS
+		LIBS="-framework JavaScriptCore  $LIBS"
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+				#include <JavaScriptCore/JSBase.h>
+
+int
+main ()
+{
+JSEvaluateScript(0, 0, 0, 0, 0, 0);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+
+			ac_cv_framework_JavaScriptCore=yes
+
+else
+  ac_cv_framework_JavaScriptCore=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+		LIBS=$ac_check_framework_save_LIBS
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_framework_JavaScriptCore" >&5
+$as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
+	if test $ac_cv_framework_JavaScriptCore = yes; then :
+
+
+  for element in "-framework JavaScriptCore $LIBS"; do
+    haveit=
+    for x in $LIBS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LIBS="${LIBS}${LIBS:+ }$element"
+    fi
+  done
+
+		CY_EXECUTE=1
+
+fi
+
+else
+	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
+	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+			CY_EXECUTE=1
+
+  for element in `$PKG_CONFIG --cflags WebKitGtk`; do
+    haveit=
+    for x in $CXXFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }$element"
+    fi
+  done
+
+
+  for element in `$PKG_CONFIG --libs WebKitGtk`; do
+    haveit=
+    for x in $LIBS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LIBS="${LIBS}${LIBS:+ }$element"
+    fi
+  done
+
+
+fi
+
+elif test $pkg_failed = untried; then
+
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
+$as_echo_n "checking for WEBKIT... " >&6; }
+
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_CFLAGS"; then
+        pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
+    else
+        if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "WebKitGtk" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+    fi
+else
+	pkg_failed=untried
+fi
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_LIBS"; then
+        pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
+    else
+        if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "WebKitGtk" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+    fi
+else
+	pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "WebKitGtk"`
+        else
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "WebKitGtk"`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$WEBKIT_PKG_ERRORS" >&5
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaScriptCore" >&5
+$as_echo_n "checking for framework JavaScriptCore... " >&6; }
+if test "${ac_cv_framework_JavaScriptCore+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+
+		ac_check_framework_save_LIBS=$LIBS
+		LIBS="-framework JavaScriptCore  $LIBS"
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+				#include <JavaScriptCore/JSBase.h>
+
+int
+main ()
+{
+JSEvaluateScript(0, 0, 0, 0, 0, 0);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+
+			ac_cv_framework_JavaScriptCore=yes
+
+else
+  ac_cv_framework_JavaScriptCore=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+		LIBS=$ac_check_framework_save_LIBS
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_framework_JavaScriptCore" >&5
+$as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
+	if test $ac_cv_framework_JavaScriptCore = yes; then :
+
+
+  for element in "-framework JavaScriptCore $LIBS"; do
+    haveit=
+    for x in $LIBS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LIBS="${LIBS}${LIBS:+ }$element"
+    fi
+  done
+
+		CY_EXECUTE=1
+
+fi
+
+elif test $pkg_failed = untried; then
+
+
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaScriptCore" >&5
+$as_echo_n "checking for framework JavaScriptCore... " >&6; }
+if test "${ac_cv_framework_JavaScriptCore+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+
+		ac_check_framework_save_LIBS=$LIBS
+		LIBS="-framework JavaScriptCore  $LIBS"
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+				#include <JavaScriptCore/JSBase.h>
+
+int
+main ()
+{
+JSEvaluateScript(0, 0, 0, 0, 0, 0);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+
+			ac_cv_framework_JavaScriptCore=yes
+
+else
+  ac_cv_framework_JavaScriptCore=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+		LIBS=$ac_check_framework_save_LIBS
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_framework_JavaScriptCore" >&5
+$as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
+	if test $ac_cv_framework_JavaScriptCore = yes; then :
+
+
+  for element in "-framework JavaScriptCore $LIBS"; do
+    haveit=
+    for x in $LIBS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LIBS="${LIBS}${LIBS:+ }$element"
+    fi
+  done
+
+		CY_EXECUTE=1
+
+fi
+
+else
+	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
+	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+			CY_EXECUTE=1
+
+  for element in `$PKG_CONFIG --cflags WebKitGtk`; do
+    haveit=
+    for x in $CXXFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }$element"
+    fi
+  done
+
+
+  for element in `$PKG_CONFIG --libs WebKitGtk`; do
+    haveit=
+    for x in $LIBS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LIBS="${LIBS}${LIBS:+ }$element"
+    fi
+  done
+
+
+fi
+
+else
+	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
+	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+		CY_EXECUTE=1
+
+  for element in `$PKG_CONFIG --cflags webkit-1.0`; do
+    haveit=
+    for x in $CXXFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }$element"
+    fi
+  done
+
+
+  for element in `$PKG_CONFIG --libs webkit-1.0`; do
+    haveit=
+    for x in $LIBS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LIBS="${LIBS}${LIBS:+ }$element"
+    fi
+  done
+
+
+fi
+
+
+fi
+
 
 case $CY_EXECUTE in #(
   1) :
@@ -17131,10 +18407,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
  ;; #(
   *) :
-
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: No JavaScript engine!" >&5
-$as_echo "$as_me: WARNING: No JavaScript engine!" >&2;}
- ;;
+     ;;
 esac
 if test "x$CY_OBJECTIVEC" = x1; then :
 
