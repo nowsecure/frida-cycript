@@ -7,6 +7,47 @@ PKG_PROG_PKG_CONFIG([0.22])
 CHECK_GNU_MAKE
 AC_SUBST([GMAKE], [$_cv_gnu_make_command])
 AS_IF([test "x$GMAKE" = x], [AC_MSG_ERROR([You need GNU make])])
+AC_PATH_PROGS([_BASH], [bash])
+AS_IF([test "x$_BASH" = x], [AC_MSG_ERROR([You need GNU bash])])
+AC_PATH_PROGS([TIME], [time])
+AC_DEFUN([CY_CHECK_PROGS_VERSION], [
+	AC_MSG_CHECKING(for ]$2[ >= ]$5[)
+	AC_PATH_PROGS_FEATURE_CHECK(]$1[, ]$3[,
+		AS_VERSION_COMPARE(`$ac_path_]$1[ ]$4[`, ]$5[, ,
+			ac_cv_path_]$1[=$ac_path_]$1[
+		,
+			ac_cv_path_]$1[=$ac_path_]$1[
+		)
+	,
+		AC_MSG_RESULT(not found)
+		AC_MSG_ERROR(You need ]$2[ ]$5[ or greater)
+	)
+	AC_SUBST(]$1[, $ac_cv_path_]$1[)
+	AC_MSG_RESULT($]$1[)
+])
+AC_ARG_VAR([BISON], [GNU Project parser generator (yacc replacement)])
+CY_CHECK_PROGS_VERSION([BISON], [bison], [bison],
+	[-V | $SED -e '1 s/^bison (GNU Bison) \(.*\)$/\1/p;d'], [2.3])
+AC_ARG_VAR([FLEX], [the fast lexical analyser generator])
+CY_CHECK_PROGS_VERSION([FLEX], [flex], [flex],
+	[--version | $SED -e '1 s/^.* \(@<:@0-9.@:>@*\)$/\1/p;d'], [2.5.33])
+AC_ARG_VAR([GPERF], [perfect hash function generator])
+CY_CHECK_PROGS_VERSION([GPERF], [gperf], [gperf],
+	[--version | $SED -e '1 s/^.* \(@<:@0-9.@:>@*\)$/\1/p;d'], [3.0.3])
+AC_PROG_INSTALL
+AC_MSG_CHECKING([for GNU tar])
+AC_PATH_PROGS_FEATURE_CHECK([GNUTAR], [tar gtar gnutar], [
+	AS_IF([test "x`$ac_path_GNUTAR --version | $SED -e '1 s/^tar (GNU tar)/&/p;d'`" != x], [
+		ac_cv_path_GNUTAR=$ac_path_GNUTAR
+	])
+])
+AS_IF([test "x$ac_cv_path_GNUTAR" != x], [
+	AC_SUBST([GNUTAR], [$ac_cv_path_GNUTAR])
+	AC_MSG_RESULT([$GNUTAR])
+], [
+	AC_SUBST([GNUTAR], [:])
+	AC_MSG_RESULT([not found])
+])
 AC_PROG_CXX
 AC_PROG_OBJCXX
 AC_ARG_WITH([frameworks], [AS_HELP_STRING(
@@ -20,43 +61,12 @@ AC_ARG_WITH([frameworks], [AS_HELP_STRING(
 	done
 ])
 AC_LANG([C++])
-AC_ARG_VAR([BISON], [GNU Project parser generator (yacc replacement)])
-AS_IF([test "x$BISON" = x], [AX_PROG_BISON([
-	AC_SUBST([BISON], [`echo $YACC | $SED -e 's/ -y//'`])
-], [AC_MSG_ERROR([You need bison 2.3 or greater])])])
-AC_MSG_CHECKING([if bison is >= 2.3])
-BISON_VERSION=[`$BISON -V | $SED -e 's/^bison (GNU Bison) \(.*\)$/\1/p;d'`]
-AS_VERSION_COMPARE([$BISON_VERSION], [2.3], [
-	AC_MSG_RESULT([no])
-	AC_MSG_ERROR([You need bison 2.3 or greater])
-], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([yes])])
-AC_ARG_VAR([FLEX], [the fast lexical analyser generator])
-AS_IF([test "x$FLEX" = x], [AX_PROG_FLEX([
-	AC_SUBST([FLEX], [$LEX])
-], [AC_MSG_ERROR([You need flex 2.5.33 or greater])])])
-FLEX_VERSION=[`$FLEX --version | $SED -e 's/^.* \([0-9.]*\)$/\1/p;d'`]
-AC_MSG_CHECKING([if flex is >= 2.5.33])
-AS_VERSION_COMPARE([$FLEX_VERSION], [2.5.33], [
-	AC_MSG_RESULT([no])
-	AC_MSG_ERROR([You need flex 2.5.33 or greater])
-], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([yes])])
-AC_CHECK_PROGS([BASH], [bash])
-AC_ARG_VAR([GPERF], [perfect hash function generator])
-AC_CHECK_PROGS([GPERF], [gperf])
-AC_MSG_CHECKING([if gperf >= 3.0.3])
-GPERF_VERSION=[`$GPERF --version | $SED -e 's/^.* \([0-9.]*\)$/\1/p;d'`]
-AS_VERSION_COMPARE([$GPERF_VERSION], [3.0.3], [
-	AC_MSG_RESULT([no])
-	AC_MSG_ERROR([You need gperf 3.0.3 or greater])
-], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([yes])])
-AC_CHECK_PROGS([TIME], [time])
 APR_FIND_APR([], [], [1], [1])
 AS_CASE([$apr_found], [yes], [
 	AC_LIB_APPENDTOVAR([CPPFLAGS], [`$apr_config --includes`])
 	AC_SUBST([LTLIBAPR], [`$apr_config --link-libtool`])
 ], [AC_MSG_ERROR([You need apr])])
 VL_LIB_READLINE
-AC_PROG_INSTALL
 AC_LANG_PUSH([C])
 AM_ICONV
 AC_LANG_POP([C])

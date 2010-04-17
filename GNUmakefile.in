@@ -1,6 +1,6 @@
 # @configure_input@
 
-SHELL := $(shell which @BASH@)
+SHELL := @_BASH@
 VPATH := @srcdir@
 
 ifndef PKG_TARG
@@ -21,7 +21,7 @@ ldflags := @LDFLAGS@
 library := @LIBS@ @LTLIBAPR@ @LTLIBICONV@
 sed := @SED@
 bison := @BISON@
-time := $(shell which @TIME@)
+time := @TIME@
 gperf := @GPERF@
 otool := @OTOOL@
 
