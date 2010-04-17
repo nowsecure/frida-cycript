@@ -5,7 +5,8 @@ AC_CONFIG_AUX_DIR([.])
 LT_INIT([disable-static])
 PKG_PROG_PKG_CONFIG([0.22])
 CHECK_GNU_MAKE
-AS_IF([test "x$_cv_gnu_make_command" = x], [AC_MSG_ERROR([You need GNU make])])
+AC_SUBST([GMAKE], [$_cv_gnu_make_command])
+AS_IF([test "x$GMAKE" = x], [AC_MSG_ERROR([You need GNU make])])
 AC_PROG_CXX
 AC_PROG_OBJCXX
 AC_ARG_WITH([frameworks], [AS_HELP_STRING(
@@ -19,29 +20,27 @@ AC_ARG_WITH([frameworks], [AS_HELP_STRING(
 	done
 ])
 AC_LANG([C++])
-AC_PROG_SED
-AX_PROG_BISON([
-	BISON=`echo $YACC | $SED -e 's/ -y//'`
-	BISON_VERSION=`$BISON -V | $SED -e 's/^bison (GNU Bison) \(.*\)$/\1/p;d'`
-], [AC_MSG_ERROR([You need bison 2.3 or greater])])
-AC_PROG_AWK
+AC_ARG_VAR([BISON], [GNU Project parser generator (yacc replacement)])
+AS_IF([test "x$BISON" = x], [AX_PROG_BISON([
+	AC_SUBST([BISON], [`echo $YACC | $SED -e 's/ -y//'`])
+], [AC_MSG_ERROR([You need bison 2.3 or greater])])])
 AC_MSG_CHECKING([if bison is >= 2.3])
+BISON_VERSION=[`$BISON -V | $SED -e 's/^bison (GNU Bison) \(.*\)$/\1/p;d'`]
 AS_VERSION_COMPARE([$BISON_VERSION], [2.3], [
 	AC_MSG_RESULT([no])
 	AC_MSG_ERROR([You need bison 2.3 or greater])
 ], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([yes])])
-AC_SUBST([BISON])
-AX_PROG_FLEX([
-	FLEX=$LEX
-	FLEX_VERSION=[`$FLEX --version | $SED -e 's/^.* \([0-9.]*\)$/\1/p;d'`]
-], [AC_MSG_ERROR([You need flex 2.5.33 or greater])])
+AC_ARG_VAR([FLEX], [the fast lexical analyser generator])
+AS_IF([test "x$FLEX" = x], [AX_PROG_FLEX([
+	AC_SUBST([FLEX], [$LEX])
+], [AC_MSG_ERROR([You need flex 2.5.33 or greater])])])
+FLEX_VERSION=[`$FLEX --version | $SED -e 's/^.* \([0-9.]*\)$/\1/p;d'`]
 AC_MSG_CHECKING([if flex is >= 2.5.33])
 AS_VERSION_COMPARE([$FLEX_VERSION], [2.5.33], [
 	AC_MSG_RESULT([no])
 	AC_MSG_ERROR([You need flex 2.5.33 or greater])
 ], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([yes])])
-AC_SUBST([FLEX])
-AC_CHECK_PROGS([_BASH], [bash])
+AC_CHECK_PROGS([BASH], [bash])
 AC_ARG_VAR([GPERF], [perfect hash function generator])
 AC_CHECK_PROGS([GPERF], [gperf])
 AC_MSG_CHECKING([if gperf >= 3.0.3])
@@ -127,6 +126,7 @@ AS_CASE([$CY_EXECUTE], [1], [
 				#include <WebKit/WebScriptObject.h>
 			], [[[[WebScriptObject alloc] init];]])
 		], [
+			AC_ARG_VAR([GNUSTEP_CONFIG], [prints information about the current gnustep installation])
 			AC_CHECK_PROGS([GNUSTEP_CONFIG], [gnustep-config])
 			AS_IF([test "x$GNUSTEP_CONFIG" != x], [
 				AC_SUBST([CY_OBJECTIVEC])
@@ -141,6 +141,9 @@ AS_IF([test "x$CY_OBJECTIVEC" = x1], [
 	AC_CHECK_HEADER([mach/mach.h], [
 		AS_CASE([$OTOOL], [:], [AC_MSG_WARN([Missing otool?])], [AC_SUBST([CY_OBJECTIVEC_MACH], [1])])
 	])
+])
+AS_IF([test "x$GMAKE" != xmake], [
+	AC_CONFIG_FILES([Makefile])
 ])
 AC_CONFIG_FILES([GNUmakefile])
 AC_OUTPUT

@@ -1,0 +1,10 @@
+# @configure_input@
+# The real makefile is GNUmakefile
+
+gmake=@GMAKE@
+
+all:
+	$(gmake) $@
+
+.DEFAULT:
+	$(gmake) $@

@@ -1,6 +1,6 @@
 # @configure_input@
 
-SHELL := @_BASH@
+SHELL := $(shell which @BASH@)
 VPATH := @srcdir@
 
 ifndef PKG_TARG
@@ -15,7 +15,7 @@ flex := @FLEX@
 libtool := @LIBTOOL@
 cxx := @CXX@
 objcxx := @OBJCXX@
-cflags := @CPPFLAGS@ @CXXFLAGS@ -DYYDEBUG=1 @DEFS@
+cflags := @CPPFLAGS@ @CXXFLAGS@ -DYYDEBUG=1 $(filter -DHAVE_FFI%,@DEFS@)
 objcxxflags := @OBJCXXFLAGS@
 ldflags := @LDFLAGS@
 library := @LIBS@ @LTLIBAPR@ @LTLIBICONV@
@@ -178,11 +178,11 @@ all: $(all)
 clean::
 	rm -rf *.lo *.o *.d *.t.hpp .libs */*.lo */.libs libcycript.la $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.gperf Bridge.hpp Cycript.output
 ifneq ($(srcdir),.)
-	rm -rf sig ObjectiveC
+	rm -rf Mach ObjectiveC sig
 endif
 
 distclean: clean
-	rm -f GNUmakefile config.log config.status libtool
+	rm -f GNUmakefile Makefile config.log config.status libtool
 
 %.yy: %.yy.in
 	$(srcdir)/Filter.sh <$< >$@ $(filters)
