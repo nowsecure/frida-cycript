@@ -10323,8 +10323,8 @@ esac
   done
 IFS=$as_save_IFS
   if test -z "$ac_cv_path_BISON"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 		as_fn_error "You need bison 2.3 or greater" "$LINENO" 5
 
   fi
@@ -10375,8 +10375,8 @@ esac
   done
 IFS=$as_save_IFS
   if test -z "$ac_cv_path_FLEX"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 		as_fn_error "You need flex 2.5.33 or greater" "$LINENO" 5
 
   fi
@@ -10427,8 +10427,8 @@ esac
   done
 IFS=$as_save_IFS
   if test -z "$ac_cv_path_GPERF"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 		as_fn_error "You need gperf 3.0.3 or greater" "$LINENO" 5
 
   fi
@@ -10534,8 +10534,8 @@ test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL}'
 
 test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for GNU tar" >&5
-$as_echo_n "checking for GNU tar... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for GNU tar >=1.19" >&5
+$as_echo_n "checking for GNU tar >=1.19... " >&6; }
 if test -z "$GNUTAR"; then
   ac_path_GNUTAR_found=false
   # Loop through the user's path and test for each of PROGNAME-LIST
@@ -10551,7 +10551,23 @@ do
 
 	if test "x`$ac_path_GNUTAR --version | $SED -e '1 s/^tar (GNU tar)/&/p;d'`" != x; then :
 
-		ac_cv_path_GNUTAR=$ac_path_GNUTAR
+		as_arg_v1=`$ac_path_GNUTAR --version | $SED -e '1 s/^tar (GNU tar) \(.*\)$/\1/p;d'`
+as_arg_v2=1.19
+awk "$as_awk_strverscmp" v1="$as_arg_v1" v2="$as_arg_v2" /dev/null
+case $? in #(
+  1) :
+     ;; #(
+  0) :
+
+			ac_cv_path_GNUTAR=$ac_path_GNUTAR
+		 ;; #(
+  2) :
+
+			ac_cv_path_GNUTAR=$ac_path_GNUTAR
+		 ;; #(
+  *) :
+     ;;
+esac
 
 fi
 
@@ -10578,8 +10594,8 @@ else
 
 	GNUTAR=:
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 
 fi
 for ac_prog in svn
@@ -13071,11 +13087,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13074: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13090: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13078: \$? = $ac_status" >&5
+   echo "$as_me:13094: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13170,11 +13186,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13173: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13189: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13177: \$? = $ac_status" >&5
+   echo "$as_me:13193: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -13222,11 +13238,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13225: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13241: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13229: \$? = $ac_status" >&5
+   echo "$as_me:13245: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized

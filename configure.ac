@@ -19,7 +19,7 @@ AC_DEFUN([CY_CHECK_PROGS_VERSION], [
 			ac_cv_path_]$1[=$ac_path_]$1[
 		)
 	,
-		AC_MSG_RESULT(not found)
+		AC_MSG_RESULT(no)
 		AC_MSG_ERROR(You need ]$2[ ]$5[ or greater)
 	)
 	AC_SUBST(]$1[, $ac_cv_path_]$1[)
@@ -35,10 +35,14 @@ AC_ARG_VAR([GPERF], [perfect hash function generator])
 CY_CHECK_PROGS_VERSION([GPERF], [gperf], [gperf],
 	[--version | $SED -e '1 s/^.* \(@<:@0-9.@:>@*\)$/\1/p;d'], [3.0.3])
 AC_PROG_INSTALL
-AC_MSG_CHECKING([for GNU tar])
+AC_MSG_CHECKING([for GNU tar >=1.19])
 AC_PATH_PROGS_FEATURE_CHECK([GNUTAR], [tar gtar gnutar], [
 	AS_IF([test "x`$ac_path_GNUTAR --version | $SED -e '1 s/^tar (GNU tar)/&/p;d'`" != x], [
-		ac_cv_path_GNUTAR=$ac_path_GNUTAR
+		AS_VERSION_COMPARE([`$ac_path_GNUTAR --version | $SED -e '1 s/^tar (GNU tar) \(.*\)$/\1/p;d'`], [1.19], , [
+			ac_cv_path_GNUTAR=$ac_path_GNUTAR
+		], [
+			ac_cv_path_GNUTAR=$ac_path_GNUTAR
+		])
 	])
 ])
 AS_IF([test "x$ac_cv_path_GNUTAR" != x], [
@@ -46,7 +50,7 @@ AS_IF([test "x$ac_cv_path_GNUTAR" != x], [
 	AC_MSG_RESULT([$GNUTAR])
 ], [
 	AC_SUBST([GNUTAR], [:])
-	AC_MSG_RESULT([not found])
+	AC_MSG_RESULT([no])
 ])
 AC_CHECK_PROGS([SVN], [svn])
 AC_CHECK_PROGS([SVNVERSION], [svnversion])

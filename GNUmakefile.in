@@ -239,7 +239,7 @@ test: cycript
 	if [[ -e jquery.js ]]; then $(time) ./cycript -c jquery.js >jquery.cyc.js; gzip -9c jquery.cyc.js >jquery.cyc.js.gz; wc -c jquery.{mam,gcc,cyc,bak,yui}.js; wc -c jquery.{cyc,gcc,bak,mam,yui}.js.gz; fi
 	if [[ -e test.cy ]]; then ./cycript test.cy; fi
 
-ifneq ($(gnutar),)
+ifneq ($(gnutar),:)
 dist:
 	echo -n >> $(tarname).tar.gz
 	$(gnutar) -cC $(srcdir) -f $(tarname).tar.gz -vX <($(svn) propget svn:ignore $(srcdir)) -z --exclude-vcs --show-transformed-names --transform='s#^\.#$(tarname)#' .
