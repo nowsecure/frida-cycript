@@ -15,7 +15,7 @@ flex := @FLEX@
 libtool := @LIBTOOL@
 cxx := @CXX@
 objcxx := @OBJCXX@
-cflags := @CPPFLAGS@ @CXXFLAGS@ -DYYDEBUG=1 $(filter -DHAVE_FFI%,@DEFS@)
+cflags := @CPPFLAGS@ @CXXFLAGS@ -DYYDEBUG=1 $(filter -DHAVE_FFI% -DHAVE_READLINE% -DHAVE_HISTORY_H,@DEFS@)
 objcxxflags := @OBJCXXFLAGS@
 ldflags := @LDFLAGS@
 library := @LIBS@ @LTLIBAPR@ @LTLIBICONV@

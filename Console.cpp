@@ -48,8 +48,17 @@
 
 #include <setjmp.h>
 
+#ifdef HAVE_READLINE_H
+#include <readline.h>
+#else
 #include <readline/readline.h>
+#endif
+
+#ifdef HAVE_HISTORY_H
+#include <history.h>
+#else
 #include <readline/history.h>
+#endif
 
 #include <sys/mman.h>
 
