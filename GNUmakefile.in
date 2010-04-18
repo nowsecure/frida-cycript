@@ -241,6 +241,7 @@ test: cycript
 
 ifneq ($(gnutar),)
 dist:
+	echo -n >> $(tarname).tar.gz
 	$(gnutar) -cC $(srcdir) -f $(tarname).tar.gz -vX <($(svn) propget svn:ignore $(srcdir)) -z --exclude-vcs --show-transformed-names --transform='s#^\.#$(tarname)#' .
 endif
 
