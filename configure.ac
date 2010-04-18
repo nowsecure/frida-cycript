@@ -69,6 +69,7 @@ AS_CASE([$apr_found], [yes], [
 	AC_SUBST([LTLIBAPR], [`$apr_config --link-libtool`])
 ], [AC_MSG_ERROR([You need apr])])
 VL_LIB_READLINE
+AS_CASE([$vl_cv_lib_readline], [no], [AC_MSG_ERROR([You need readline])])
 AC_LANG_PUSH([C])
 AM_ICONV
 AC_LANG_POP([C])

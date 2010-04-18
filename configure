@@ -14774,6 +14774,12 @@ done
     fi
   fi
 
+case $vl_cv_lib_readline in #(
+  no) :
+    as_fn_error "You need readline" "$LINENO" 5 ;; #(
+  *) :
+     ;;
+esac
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
