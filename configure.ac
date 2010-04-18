@@ -48,6 +48,8 @@ AS_IF([test "x$ac_cv_path_GNUTAR" != x], [
 	AC_SUBST([GNUTAR], [:])
 	AC_MSG_RESULT([not found])
 ])
+AC_CHECK_PROGS([SVN], [svn])
+AC_CHECK_PROGS([SVNVERSION], [svnversion])
 AC_PROG_CXX
 AC_PROG_OBJCXX
 AC_ARG_WITH([frameworks], [AS_HELP_STRING(

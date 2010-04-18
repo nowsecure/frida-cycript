@@ -56,18 +56,31 @@ CY_EXECUTE := @CY_EXECUTE@
 CY_OBJECTIVEC := @CY_OBJECTIVEC@
 CY_OBJECTIVEC_MACH := @CY_OBJECTIVEC_MACH@
 
+svn := @SVN@
+svnversion := @SVNVERSION@
+
+ifneq ($(svnversion),)
+release := $(shell svnversion $(srcdir))
+
+ifneq ($(release),exported)
+gnutar := @GNUTAR@
+version := @PACKAGE_VERSION@.$(release)
+tarname := @PACKAGE_TARNAME@-$(version)
+endif
+endif
+
 paths := $(foreach path,$(paths),$(wildcard $(path)))
 cflags += $(foreach path,$(paths),-I$(path) -L$(path))
 
-svn := $(shell svnversion $(srcdir))
+#svn := $(shell svnversion $(srcdir))
 
 all:
 all := cycript
 
-dpkg_architecture := $(shell which dpkg-architecture 2>/dev/null)
-ifneq ($(dpkg_architecture),)
-arch := $(shell $(dpkg_architecture) -qDEB_HOST_ARCH 2>/dev/null)
-endif
+#dpkg_architecture := $(shell which dpkg-architecture 2>/dev/null)
+#ifneq ($(dpkg_architecture),)
+#arch := $(shell $(dpkg_architecture) -qDEB_HOST_ARCH 2>/dev/null)
+#endif
 
 header := Cycript.tab.hh Parser.hpp Pooling.hpp cycript.hpp Internal.hpp Error.hpp String.hpp Exception.hpp Standard.hpp
 
@@ -176,7 +189,7 @@ endif
 all: $(all)
 
 clean::
-	rm -rf *.lo *.o *.d *.t.hpp .libs */*.lo */.libs libcycript.la $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.gperf Bridge.hpp Cycript.output
+	rm -rf *.lo *.o *.d *.t.hpp .libs */*.d */*.lo */.libs libcycript.la $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.gperf Bridge.hpp Cycript.output
 ifneq ($(srcdir),.)
 	rm -rf Mach ObjectiveC sig
 endif
@@ -226,6 +239,11 @@ test: cycript
 	if [[ -e jquery.js ]]; then $(time) ./cycript -c jquery.js >jquery.cyc.js; gzip -9c jquery.cyc.js >jquery.cyc.js.gz; wc -c jquery.{mam,gcc,cyc,bak,yui}.js; wc -c jquery.{cyc,gcc,bak,mam,yui}.js.gz; fi
 	if [[ -e test.cy ]]; then ./cycript test.cy; fi
 
+ifneq ($(gnutar),)
+dist:
+	$(gnutar) -cC $(srcdir) -f $(tarname).tar.gz -vX <($(svn) propget svn:ignore $(srcdir)) -z --exclude-vcs --show-transformed-names --transform='s#^\.#$(tarname)#' .
+endif
+
 install: cycript libcycript.la
 	$(INSTALL) -d $(DESTDIR)$(bindir) $(DESTDIR)$(libdir)
 	$(libtool) --mode=install $(INSTALL_PROGRAM) libcycript.la $(DESTDIR)$(libdir)/libcycript.la
@@ -235,4 +253,4 @@ uninstall:
 	$(libtool) --mode=uninstall rm -f $(DESTDIR)$(bindir)/cycript
 	$(libtool) --mode=uninstall rm -f $(DESTDIR)$(libdir)/libcycript.la
 
-.PHONY: all clean extra install uninstall package test control.tmp
+.PHONY: all clean extra dist install uninstall package test control.tmp
