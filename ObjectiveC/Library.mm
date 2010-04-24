@@ -1343,6 +1343,8 @@ static void CYObjectiveC_CallFunction(JSContextRef context, ffi_cif *cif, void (
 
 static bool CYObjectiveC_PoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value) { CYSadTry {
     switch (type->primitive) {
+        // XXX: do something epic about blocks
+        case sig::block_P:
         case sig::object_P:
         case sig::typename_P:
             *reinterpret_cast<id *>(data) = CYCastNSObject(pool, context, value);
@@ -1361,6 +1363,8 @@ static bool CYObjectiveC_PoolFFI(apr_pool_t *pool, JSContextRef context, sig::Ty
 
 static JSValueRef CYObjectiveC_FromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) { CYPoolTry {
     switch (type->primitive) {
+        // XXX: do something epic about blocks
+        case sig::block_P:
         case sig::object_P:
             if (NSObject *object = *reinterpret_cast<NSObject **>(data)) {
                 JSValueRef value(CYCastJSValue(context, object));

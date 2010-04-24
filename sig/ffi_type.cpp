@@ -71,6 +71,7 @@ ffi_type *ObjectiveC(apr_pool_t *pool, struct Type *type) {
 
         case string_P: return &ffi_type_pointer;
         case selector_P: return &ffi_type_pointer;
+        case block_P: return &ffi_type_pointer;
         case object_P: return &ffi_type_pointer;
         case boolean_P: return &ffi_type_uchar;
         case uchar_P: return &ffi_type_uchar;
@@ -139,6 +140,7 @@ ffi_type *Java(apr_pool_t *pool, struct Type *type) {
         case union_P: return &ffi_type_pointer;
         case string_P: return &ffi_type_pointer;
         case selector_P: return &ffi_type_pointer;
+        case block_P: return &ffi_type_pointer;
         case object_P: return &ffi_type_pointer;
         case boolean_P: return &ffi_type_uchar;
         case uchar_P: return &ffi_type_uchar;

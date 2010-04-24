@@ -124,17 +124,25 @@ struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named, C
         case '*': type->primitive = string_P; break;
         case ':': type->primitive = selector_P; break;
 
-        case '@':
-            if (**name == '"') {
-                const char *quote = strchr(*name + 1, '"');
-                if (!named || quote[1] == eos || quote[1] == '"') {
-                    type->name = apr_pstrmemdup(pool, *name + 1, quote - *name - 1);
-                    *name = quote + 1;
+        case '@': {
+            char next(**name);
+
+            if (next == '?') {
+                type->primitive = block_P;
+                ++*name;
+            } else {
+                type->primitive = object_P;
+
+                if (next == '"') {
+                    const char *quote = strchr(*name + 1, '"');
+                    if (!named || quote[1] == eos || quote[1] == '"') {
+                        type->name = apr_pstrmemdup(pool, *name + 1, quote - *name - 1);
+                        *name = quote + 1;
+                    }
                 }
             }
 
-            type->primitive = object_P;
-        break;
+        } break;
 
         case 'B': type->primitive = boolean_P; break;
         case 'C': type->primitive = uchar_P; break;
@@ -255,6 +263,7 @@ const char *Unparse(apr_pool_t *pool, struct Type *type) {
         case union_P: return apr_psprintf(pool, "(%s)", Unparse(pool, &type->data.signature));
         case string_P: return "*";
         case selector_P: return ":";
+        case block_P: return "@?";
         case object_P: return type->name == NULL ? "@" : apr_psprintf(pool, "@\"%s\"", type->name);
         case boolean_P: return "B";
         case uchar_P: return "C";
