@@ -1437,6 +1437,7 @@ T NSMapTable {_NSMapTable}
 T NSMapTableOptions {NSUInteger}
 # NSMapTableValueCallBacks
 
+S _NSPoint "x"{CGFloat}"y"{CGFloat}
 T NSPoint {_NSPoint}
 T NSPointArray ^{NSPoint}
 T NSPointPointer ^{NSPoint}
