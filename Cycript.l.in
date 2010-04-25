@@ -161,8 +161,11 @@ XMLName {XMLNameStart}{XMLNamePart}*
 <RegExp>\/{RegularExpressionBody}\/{RegularExpressionFlags} E("")
 
 \/\/[^\n]* L
-\/\*!(\n|[^\*]|\*[^/])*\*\/ V() C yylval->comment_ = new(yyextra->pool_) CYComment(apr_pstrmemdup(yyextra->pool_, yytext, yyleng)); return tk::Comment;
-\/\*(\n|[^\*]|\*[^/])*\*\/ V(N)
+
+	/* http://ostermiller.org/findcomment.html */
+	/* XXX: unify these two rules using !? */
+\/\*!([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+\/ V() C yylval->comment_ = new(yyextra->pool_) CYComment(apr_pstrmemdup(yyextra->pool_, yytext, yyleng)); return tk::Comment;
+\/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+\/ V(N)
 
 @begin E4X
 <RegExp>"<>"      L return tk::LeftRight;
