@@ -82,8 +82,10 @@ void InjectLibrary(pid_t pid) {
 
     struct nlist nl[3];
     memset(nl, 0, sizeof(nl));
+#if defined(__i386__)
     nl[0].n_un.n_name = (char *) "__pthread_set_self";
     nl[1].n_un.n_name = (char *) "___pthread_set_self";
+#endif
     nlist("/usr/lib/libSystem.B.dylib", nl);
     nlset(set_self_internal, nl, 0);
     nlset(set_self_external, nl, 1);
