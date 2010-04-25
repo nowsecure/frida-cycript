@@ -74,10 +74,6 @@ AS_CASE([$apr_found], [yes], [
 ], [AC_MSG_ERROR([You need apr])])
 VL_LIB_READLINE
 AS_CASE([$vl_cv_lib_readline], [no], [AC_MSG_ERROR([You need readline])])
-AC_LANG_PUSH([C])
-AM_ICONV
-AC_LANG_POP([C])
-AS_CASE([$am_cv_func_iconv], [yes], [], [AC_MSG_ERROR([You need iconv])])
 AC_DEFUN([CY_CHECK_JAVASCRIPTCORE], [
 	PKG_CHECK_MODULES([WEBKIT], [webkit-1.0], [
 		CY_EXECUTE=1
@@ -154,6 +150,10 @@ AS_CASE([$CY_EXECUTE], [1], [
 	])
 	AC_LANG_POP([Objective C++])
 ])
+AC_LANG_PUSH([C])
+AM_ICONV
+AC_LANG_POP([C])
+AS_CASE([$am_cv_func_iconv], [yes], [], [AC_MSG_ERROR([You need iconv])])
 AS_IF([test "x$CY_OBJECTIVEC" = x1], [
 	AC_CHECK_HEADER([mach/mach.h], [
 		AS_CASE([$OTOOL], [:], [AC_MSG_WARN([Missing otool?])], [AC_SUBST([CY_OBJECTIVEC_MACH], [1])])
