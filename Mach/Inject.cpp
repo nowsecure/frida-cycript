@@ -80,15 +80,18 @@ void InjectLibrary(pid_t pid) {
     uintptr_t set_self_internal;
     uintptr_t set_self_external;
 
+#if defined(__i386__)
     struct nlist nl[3];
     memset(nl, 0, sizeof(nl));
-#if defined(__i386__)
     nl[0].n_un.n_name = (char *) "__pthread_set_self";
     nl[1].n_un.n_name = (char *) "___pthread_set_self";
-#endif
     nlist("/usr/lib/libSystem.B.dylib", nl);
     nlset(set_self_internal, nl, 0);
     nlset(set_self_external, nl, 1);
+#else
+    set_self_internal = 0;
+    set_self_external = 0;
+#endif
 
     baton->_pthread_set_self = reinterpret_cast<void (*)(pthread_t)>(reinterpret_cast<uintptr_t>(&__pthread_set_self) - set_self_external + set_self_internal);
 
