@@ -1302,6 +1302,7 @@ void CYInitializeDynamic() {
     Type_privateData::Class_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
+    definition.className = "Global";
     //definition.getProperty = &Global_getProperty;
     Global_ = JSClassCreate(&definition);
 
@@ -1422,20 +1423,22 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     JSObjectRef all(JSObjectMake(context, All_, NULL));
     CYSetProperty(context, cycript, CYJSString("all"), all);
 
-    JSObjectRef last(NULL), curr(global);
+    if (true) {
+        JSObjectRef last(NULL), curr(global);
 
-    goto next; for (JSValueRef next;;) {
-        if (JSValueIsNull(context, next))
-            break;
-        last = curr;
-        curr = CYCastJSObject(context, next);
-      next:
-        next = JSObjectGetPrototype(context, curr);
+        goto next; for (JSValueRef next;;) {
+            if (JSValueIsNull(context, next))
+                break;
+            last = curr;
+            curr = CYCastJSObject(context, next);
+          next:
+            next = JSObjectGetPrototype(context, curr);
+        }
+
+        JSObjectSetPrototype(context, last, all);
     }
 
-    JSObjectSetPrototype(context, last, all);
-
-    CYSetProperty(context, global, CYJSString("$cyq"), &$cyq);
+    CYSetProperty(context, global, CYJSString("$cyq"), &$cyq, kJSPropertyAttributeDontEnum);
 
     JSObjectRef System(JSObjectMake(context, NULL, NULL));
     CYSetProperty(context, cy, CYJSString("System"), System);
