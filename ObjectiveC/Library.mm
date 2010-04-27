@@ -281,6 +281,7 @@ static Class NSBoolNumber_;
 
 static Class NSArray_;
 static Class NSDictionary_;
+static Class NSString_;
 static Class Object_;
 
 static Type_privateData *Object_type;
@@ -293,6 +294,8 @@ Type_privateData *Instance::GetType() const {
 Type_privateData *Selector_privateData::GetType() const {
     return Selector_type;
 }
+
+static JSValueRef Instance_callAsFunction_toString(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception);
 
 JSValueRef CYGetClassPrototype(JSContextRef context, id self) {
     if (self == nil)
@@ -312,16 +315,22 @@ JSValueRef CYGetClassPrototype(JSContextRef context, id self) {
     JSClassRef _class(NULL);
     JSValueRef prototype;
 
+    JSObjectRef object(JSObjectMake(context, _class, NULL));
+
     if (self == NSArray_)
         prototype = CYGetCachedObject(context, CYJSString("Array_prototype"));
     else if (self == NSDictionary_)
         prototype = CYGetCachedObject(context, CYJSString("Object_prototype"));
-    else
+    else if (self == NSString_) {
+        prototype = CYGetCachedObject(context, CYJSString("String_prototype"));
+
+        CYSetProperty(context, object, toString_s, &Instance_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete);
+    } else
         prototype = CYGetClassPrototype(context, class_getSuperclass(self));
 
-    JSObjectRef object(JSObjectMake(context, _class, NULL));
     JSObjectSetPrototype(context, object, prototype);
     CYSetProperty(context, cy, name, object);
+
     return object;
 }
 
@@ -2403,6 +2412,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
 
     NSArray_ = objc_getClass("NSArray");
     NSDictionary_ = objc_getClass("NSDictionary");
+    NSString_ = objc_getClass("NSString");
     Object_ = objc_getClass("Object");
 
     JSClassDefinition definition;

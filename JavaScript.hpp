@@ -63,6 +63,8 @@ extern JSStringRef push_s;
 extern JSStringRef splice_s;
 extern JSStringRef toCYON_s;
 extern JSStringRef toJSON_s;
+extern JSStringRef toPointer_s;
+extern JSStringRef toString_s;
 
 void CYInitializeDynamic();
 JSGlobalContextRef CYGetJSContext();

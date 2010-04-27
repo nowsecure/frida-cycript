@@ -166,6 +166,7 @@ JSStringRef splice_s;
 JSStringRef toCYON_s;
 JSStringRef toJSON_s;
 JSStringRef toPointer_s;
+JSStringRef toString_s;
 
 static JSStringRef Result_;
 
@@ -479,6 +480,17 @@ static JSValueRef Array_callAsFunction_toCYON(JSContextRef context, JSObjectRef 
     }
 
     str << ']';
+
+    std::string value(str.str());
+    return CYCastJSValue(context, CYJSString(CYUTF8String(value.c_str(), value.size())));
+} CYCatch }
+
+static JSValueRef String_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    CYPool pool;
+    std::ostringstream str;
+
+    CYUTF8String string(CYPoolUTF8String(pool, context, CYJSString(context, _this)));
+    CYStringify(str, string.data, string.size);
 
     std::string value(str.str());
     return CYCastJSValue(context, CYJSString(CYUTF8String(value.c_str(), value.size())));
@@ -1318,6 +1330,7 @@ void CYInitializeDynamic() {
     toCYON_s = JSStringCreateWithUTF8CString("toCYON");
     toJSON_s = JSStringCreateWithUTF8CString("toJSON");
     toPointer_s = JSStringCreateWithUTF8CString("toPointer");
+    toString_s = JSStringCreateWithUTF8CString("toString");
 
     Result_ = JSStringCreateWithUTF8CString("_");
 
@@ -1405,9 +1418,13 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
 
     JSObjectRef String(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("String"))));
     CYSetProperty(context, cy, CYJSString("String"), String);
+
+    JSObjectRef String_prototype(CYCastJSObject(context, CYGetProperty(context, String, prototype_s)));
+    CYSetProperty(context, cy, CYJSString("String_prototype"), String_prototype);
 /* }}} */
 
     CYSetProperty(context, Array_prototype, toCYON_s, &Array_callAsFunction_toCYON, kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, String_prototype, toCYON_s, &String_callAsFunction_toCYON, kJSPropertyAttributeDontEnum);
 
     JSObjectRef cycript(JSObjectMake(context, NULL, NULL));
     CYSetProperty(context, global, CYJSString("Cycript"), cycript);
