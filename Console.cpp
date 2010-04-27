@@ -382,7 +382,7 @@ static char **Complete(const char *word, int start, int end) {
 
 // need char *, not const char *
 static char name_[] = "cycript";
-static char break_[] = " \t\n\"\\'`@$><=;|&{(" ".:";
+static char break_[] = " \t\n\"\\'`@$><=;|&{(" ")}" ".:[]";
 
 static void Console(apr_pool_t *pool, CYOptions &options) {
     passwd *passwd;
