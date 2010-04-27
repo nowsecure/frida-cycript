@@ -761,6 +761,10 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     }
 }
 
++ (bool) cy$hasImplicitProperties {
+    return false;
+}
+
 @end
 /* }}} */
 /* Bridge: NSBoolNumber {{{ */
