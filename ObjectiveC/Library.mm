@@ -260,6 +260,7 @@ static JSClassRef Internal_;
 static JSClassRef Message_;
 static JSClassRef Messages_;
 static JSClassRef Selector_;
+static JSClassRef StringInstance_;
 static JSClassRef Super_;
 
 static JSClassRef ObjectiveC_Classes_;
@@ -315,19 +316,16 @@ JSValueRef CYGetClassPrototype(JSContextRef context, id self) {
     JSClassRef _class(NULL);
     JSValueRef prototype;
 
-    JSObjectRef object(JSObjectMake(context, _class, NULL));
-
     if (self == NSArray_)
         prototype = CYGetCachedObject(context, CYJSString("Array_prototype"));
     else if (self == NSDictionary_)
         prototype = CYGetCachedObject(context, CYJSString("Object_prototype"));
-    else if (self == NSString_) {
-        prototype = CYGetCachedObject(context, CYJSString("String_prototype"));
-
-        CYSetProperty(context, object, toString_s, &Instance_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete);
-    } else
+    else if (self == NSString_)
+        prototype = CYGetCachedObject(context, CYJSString("StringInstance_prototype"));
+    else
         prototype = CYGetClassPrototype(context, class_getSuperclass(self));
 
+    JSObjectRef object(JSObjectMake(context, _class, NULL));
     JSObjectSetPrototype(context, object, prototype);
     CYSetProperty(context, cy, name, object);
 
@@ -2395,6 +2393,12 @@ static JSStaticFunction Selector_staticFunctions[5] = {
     {NULL, NULL, 0}
 };
 
+static JSStaticFunction StringInstance_staticFunctions[2] = {
+    //{"valueOf", &Instance_callAsFunction_valueOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"toString", &Instance_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {NULL, NULL, 0}
+};
+
 void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     apr_pool_t *pool(CYGetGlobalPool());
 
@@ -2469,6 +2473,11 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     Selector_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
+    definition.className = "StringInstance";
+    definition.staticFunctions = StringInstance_staticFunctions;
+    StringInstance_ = JSClassCreate(&definition);
+
+    definition = kJSClassDefinitionEmpty;
     definition.className = "Super";
     definition.staticFunctions = Internal_staticFunctions;
     definition.finalize = &CYFinalize;
@@ -2528,10 +2537,17 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     JSObjectRef Instance(JSObjectMakeConstructor(context, Instance_, &Instance_new));
     JSObjectRef Message(JSObjectMakeConstructor(context, Message_, NULL));
     JSObjectRef Selector(JSObjectMakeConstructor(context, Selector_, &Selector_new));
+    JSObjectRef StringInstance(JSObjectMakeConstructor(context, StringInstance_, NULL));
     JSObjectRef Super(JSObjectMakeConstructor(context, Super_, &Super_new));
 
     JSObjectRef Instance_prototype(CYCastJSObject(context, CYGetProperty(context, Instance, prototype_s)));
     CYSetProperty(context, cy, CYJSString("Instance_prototype"), Instance_prototype);
+
+    JSObjectRef StringInstance_prototype(CYCastJSObject(context, CYGetProperty(context, StringInstance, prototype_s)));
+    CYSetProperty(context, cy, CYJSString("StringInstance_prototype"), StringInstance_prototype);
+
+    JSObjectRef String_prototype(CYGetCachedObject(context, CYJSString("String_prototype")));
+    JSObjectSetPrototype(context, StringInstance_prototype, String_prototype);
 
     CYSetProperty(context, cycript, CYJSString("Instance"), Instance);
     CYSetProperty(context, cycript, CYJSString("Selector"), Selector);
