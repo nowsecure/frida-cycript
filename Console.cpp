@@ -290,18 +290,19 @@ static char **Complete(const char *word, int start, int end) {
             _assert(false);
     }
 
-    std::string begin(prefix.str() + word);
+    std::string begin(prefix.str());
 
-    driver.program_ = $ CYProgram($ CYExpress($C2(ParseExpression(pool,
-    "   function(object, prefix) {\n"
+    driver.program_ = $ CYProgram($ CYExpress($C3(ParseExpression(pool,
+    "   function(object, prefix, word) {\n"
     "       var names = [];\n"
-    "       var pattern = '^' + prefix;\n"
+    "       var pattern = '^' + prefix + word;\n"
+    "       var length = prefix.length;\n"
     "       for (name in object)\n"
     "           if (name.match(pattern) != null)\n"
-    "               names.push(name);\n"
+    "               names.push(name.substr(length));\n"
     "       return names;\n"
     "   }\n"
-    ), expression, $S(begin.c_str()))));
+    ), expression, $S(begin.c_str()), $S(word))));
 
     driver.program_->Replace(context);
 
