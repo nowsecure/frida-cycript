@@ -453,12 +453,39 @@ class CYDriver {
     CYProgram *program_;
     Errors errors_;
 
+    bool auto_;
+
+    struct Context {
+        CYExpression *context_;
+
+        Context(CYExpression *context) :
+            context_(context)
+        {
+        }
+
+        typedef std::vector<CYWord *> Words;
+        Words words_;
+    };
+
+    typedef std::vector<Context> Contexts;
+    Contexts contexts_;
+
+    CYExpression *context_;
+
+    enum Mode {
+        AutoNone,
+        AutoPrimary,
+        AutoDirect,
+        AutoIndirect,
+        AutoMessage
+    } mode_;
+
   private:
     void ScannerInit();
     void ScannerDestroy();
 
   public:
-    CYDriver(const std::string &filename);
+    CYDriver(apr_pool_t *pool = NULL, const std::string &filename = "");
     ~CYDriver();
 
     Condition GetCondition();

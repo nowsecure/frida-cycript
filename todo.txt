@@ -27,3 +27,4 @@ applyOnMainThread, when done at console, loops the cyonifier
 special work needs to be done to correctly handle the "arguments" symbol: Declare("arguments", ...Special)
 at the Program level I seem to be eating away all of the var statements
 function pointers are ?; note that blocks are currently block_P = '?'
+I should probably attempt to use the auto_ flag somehow to not do contexts_ push when compiling

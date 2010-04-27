@@ -61,8 +61,8 @@ class CYPool {
     apr_pool_t *pool_;
 
   public:
-    CYPool() {
-        _aprcall(apr_pool_create(&pool_, NULL));
+    CYPool(apr_pool_t *pool = NULL) {
+        _aprcall(apr_pool_create(&pool_, pool));
     }
 
     ~CYPool() {

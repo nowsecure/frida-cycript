@@ -241,7 +241,7 @@ double CYCastDouble(const char *value) {
 }
 
 extern "C" void CydgetPoolParse(apr_pool_t *pool, const uint16_t **data, size_t *size) {
-    CYDriver driver("");
+    CYDriver driver;
     cy::parser parser(driver);
 
     CYUTF8String utf8(CYPoolUTF8String(pool, CYUTF16String(*data, *size)));

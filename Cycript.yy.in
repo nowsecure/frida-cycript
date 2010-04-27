@@ -317,6 +317,8 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %token <identifier_> XML "xml"
 @end
 
+%token AutoComplete
+
 %token <identifier_> Identifier_
 %token <number_> NumericLiteral
 %token <string_> StringLiteral
@@ -503,6 +505,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <selector_> SelectorExpression_
 %type <selector_> SelectorExpressionOpt
 %type <argument_> SelectorList
+%type <word_> SelectorWordOpt
 %type <expression_> TypeOpt
 %type <argument_> VariadicCall
 %type <word_> Word
@@ -719,6 +722,7 @@ PrimaryExpressionNoRE
 PrimaryExpressionNo
     : "this" { $$ = $1; }
     | Identifier { $$ = new(driver.pool_) CYVariable($1); }
+    | AutoComplete { driver.mode_ = CYDriver::AutoPrimary; YYACCEPT; }
     | Literal { $$ = $1; }
     | ArrayLiteral { $$ = $1; }
     | "(" Expression ")" { $$ = $2; }
@@ -790,18 +794,19 @@ MemberExpression_
 MemberAccess
     : "[" Expression "]" { $$ = new(driver.pool_) CYDirectMember(NULL, $2); }
     | "." Identifier { $$ = new(driver.pool_) CYDirectMember(NULL, new(driver.pool_) CYString($2)); }
+    | "." AutoComplete { driver.mode_ = CYDriver::AutoDirect; YYACCEPT; }
     ;
 
 MemberExpression
     : PrimaryExpression { $$ = $1; }
     | LexSetRegExp FunctionExpression { $$ = $2; }
-    | MemberExpression MemberAccess { $2->SetLeft($1); $$ = $2; }
+    | MemberExpression { driver.context_ = $1; } MemberAccess { $3->SetLeft($1); $$ = $3; }
     | LexSetRegExp MemberExpression_ { $$ = $2; }
     ;
 
 MemberExpressionNoBF
     : PrimaryExpressionNoBF { $$ = $1; }
-    | MemberExpressionNoBF MemberAccess { $2->SetLeft($1); $$ = $2; }
+    | MemberExpressionNoBF { driver.context_ = $1; } MemberAccess { $3->SetLeft($1); $$ = $3; }
     | MemberExpression_ { $$ = $1; }
     ;
 
@@ -809,7 +814,7 @@ MemberExpressionNoBF
 MemberExpressionNoRE
     : PrimaryExpressionNoRE { $$ = $1; }
     | FunctionExpression { $$ = $1; }
-    | MemberExpressionNoRE MemberAccess { $2->SetLeft($1); $$ = $2; }
+    | MemberExpressionNoRE { driver.context_ = $1; } MemberAccess { $3->SetLeft($1); $$ = $3; }
     | MemberExpression_ { $$ = $1; }
     ;
 @end
@@ -838,20 +843,20 @@ NewExpressionNoRE
 CallExpression
     : MemberExpression Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
     | CallExpression Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
-    | CallExpression MemberAccess { $2->SetLeft($1); $$ = $2; }
+    | CallExpression { driver.context_ = $1; } MemberAccess { $3->SetLeft($1); $$ = $3; }
     ;
 
 CallExpressionNoBF
     : MemberExpressionNoBF Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
     | CallExpressionNoBF Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
-    | CallExpressionNoBF MemberAccess { $2->SetLeft($1); $$ = $2; }
+    | CallExpressionNoBF { driver.context_ = $1; } MemberAccess { $3->SetLeft($1); $$ = $3; }
     ;
 
 @begin C
 CallExpressionNoRE
     : MemberExpressionNoRE Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
     | CallExpressionNoRE Arguments { $$ = new(driver.pool_) CYCall($1, $2); }
-    | CallExpressionNoRE MemberAccess { $2->SetLeft($1); $$ = $2; }
+    | CallExpressionNoRE { driver.context_ = $1; } MemberAccess { $3->SetLeft($1); $$ = $3; }
     ;
 @end
 
@@ -1598,8 +1603,13 @@ SelectorCall_
     | VariadicCall { $$ = $1; }
     ;
 
+SelectorWordOpt
+    : WordOpt { driver.contexts_.back().words_.push_back($1); } { $$ = $1; }
+    | AutoComplete { driver.mode_ = CYDriver::AutoMessage; YYACCEPT; }
+    ;
+
 SelectorCall
-    : WordOpt ":" AssignmentExpression SelectorCall_ { $$ = new(driver.pool_) CYArgument($1 ?: new(driver.pool_) CYBlank(), $3, $4); }
+    : SelectorWordOpt ":" AssignmentExpression SelectorCall_ { $$ = new(driver.pool_) CYArgument($1 ?: new(driver.pool_) CYBlank(), $3, $4); }
     ;
 
 SelectorList
@@ -1608,8 +1618,8 @@ SelectorList
     ;
 
 MessageExpression
-    : "[" AssignmentExpression SelectorList "]" { $$ = new(driver.pool_) CYSendDirect($2, $3); }
-    | "[" LexSetRegExp "super" SelectorList "]" { $$ = new(driver.pool_) CYSendSuper($4); }
+    : "[" AssignmentExpression { driver.contexts_.push_back($2); } SelectorList "]" { driver.contexts_.pop_back(); } { $$ = new(driver.pool_) CYSendDirect($2, $4); }
+    | "[" LexSetRegExp "super" { driver.context_ = NULL; } SelectorList "]" { $$ = new(driver.pool_) CYSendSuper($5); }
     ;
 
 SelectorExpressionOpt
@@ -1646,6 +1656,7 @@ UnaryExpression_
 MemberAccess
     : "->" "[" Expression "]" { $$ = new(driver.pool_) CYIndirectMember(NULL, $3); }
     | "->" Identifier { $$ = new(driver.pool_) CYIndirectMember(NULL, new(driver.pool_) CYString($2)); }
+    | "->" AutoComplete { driver.mode_ = CYDriver::AutoIndirect; YYACCEPT; }
     ;
 /* }}} */
 @end

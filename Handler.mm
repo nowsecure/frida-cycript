@@ -117,7 +117,7 @@ struct CYClient :
                 return;
             data[size] = '\0';
 
-            CYDriver driver("");
+            CYDriver driver;
             cy::parser parser(driver);
 
             driver.data_ = data;

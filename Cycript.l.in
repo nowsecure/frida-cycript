@@ -384,7 +384,8 @@ XMLName {XMLNameStart}{XMLNamePart}*
 \r?\n yylloc->end.lines(); yylloc->step(); N
 
 [ \t] L
-<<EOF>> L yyterminate();
+
+<<EOF>> if (yyextra->auto_) { yyextra->auto_ = false; return tk::AutoComplete_; } L yyterminate();
 
 . L {
     CYDriver::Error error;

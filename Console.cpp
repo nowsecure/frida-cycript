@@ -81,6 +81,8 @@
 
 #include <dlfcn.h>
 
+#include "Replace.hpp"
+
 static volatile enum {
     Working,
     Parsing,
@@ -127,14 +129,14 @@ void Setup(CYOutput &out, CYDriver &driver, CYOptions &options) {
     driver.program_->Replace(context);
 }
 
-void Run(int client, const char *data, size_t size, FILE *fout = NULL, bool expand = false) {
-    CYPool pool;
-
+static CYUTF8String Run(CYPool &pool, int client, CYUTF8String code) {
     const char *json;
+    size_t size;
+
     if (client == -1) {
         mode_ = Running;
 #ifdef CY_EXECUTE
-        json = CYExecute(pool, data);
+        json = CYExecute(pool, code.data);
 #else
         json = NULL;
 #endif
@@ -144,7 +146,7 @@ void Run(int client, const char *data, size_t size, FILE *fout = NULL, bool expa
     } else {
         mode_ = Sending;
         CYSendAll(client, &size, sizeof(size));
-        CYSendAll(client, data, size);
+        CYSendAll(client, code.data, size);
         mode_ = Waiting;
         CYRecvAll(client, &size, sizeof(size));
         if (size == _not(size_t))
@@ -158,13 +160,27 @@ void Run(int client, const char *data, size_t size, FILE *fout = NULL, bool expa
         mode_ = Working;
     }
 
-    if (json != NULL && fout != NULL) {
-        if (!expand || json[0] != '"' && json[0] != '\'')
-            fputs(json, fout);
+    return CYUTF8String(json, size);
+}
+
+static CYUTF8String Run(CYPool &pool, int client, const std::string &code) {
+    return Run(pool, client, CYUTF8String(code.c_str(), code.size()));
+}
+
+void Run(int client, const char *data, size_t size, FILE *fout = NULL, bool expand = false) {
+    CYPool pool;
+    CYUTF8String json(Run(pool, client, CYUTF8String(data, size)));
+
+    data = json.data;
+    size = json.size;
+
+    if (data != NULL && fout != NULL) {
+        if (!expand || data[0] != '"' && data[0] != '\'')
+            fputs(data, fout);
         else for (size_t i(0); i != size; ++i)
-            if (json[i] != '\\')
-                fputc(json[i], fout);
-            else switch(json[++i]) {
+            if (data[i] != '\\')
+                fputc(data[i], fout);
+            else switch(data[++i]) {
                 case '\0': goto done;
                 case '\\': fputc('\\', fout); break;
                 case '\'': fputc('\'', fout); break;
@@ -184,13 +200,173 @@ void Run(int client, const char *data, size_t size, FILE *fout = NULL, bool expa
     }
 }
 
-void Run(int client, std::string &code, FILE *fout = NULL, bool expand = false) {
+static void Run(int client, std::string &code, FILE *fout = NULL, bool expand = false) {
     Run(client, code.c_str(), code.size(), fout, expand);
 }
 
 int (*append_history$)(int, const char *);
 
-static void Console(apr_pool_t *pool, int client, CYOptions &options) {
+static std::string command_;
+
+static CYExpression *ParseExpression(CYPool &pool, CYUTF8String code) {
+    std::ostringstream str;
+    str << '(' << code << ')';
+    std::string string(str.str());
+
+    CYDriver driver(pool);
+    driver.data_ = string.c_str();
+    driver.size_ = string.size();
+
+    cy::parser parser(driver);
+    Setup(driver, parser);
+
+    if (parser.parse() != 0 || !driver.errors_.empty())
+        _assert(false);
+
+    CYExpress *express(dynamic_cast<CYExpress *>(driver.program_->statements_));
+    _assert(express != NULL);
+    return express->expression_;
+}
+
+static int client_;
+
+static char **Complete(const char *word, int start, int end) {
+    rl_attempted_completion_over = TRUE;
+
+    CYPool pool;
+
+    CYDriver driver(pool);
+    cy::parser parser(driver);
+    Setup(driver, parser);
+
+    std::string line(rl_line_buffer, start);
+    std::string command(command_ + line);
+
+    driver.data_ = command.c_str();
+    driver.size_ = command.size();
+
+    driver.auto_ = true;
+
+    if (parser.parse() != 0 || !driver.errors_.empty())
+        return NULL;
+
+    if (driver.mode_ == CYDriver::AutoNone)
+        return NULL;
+
+    CYExpression *expression;
+
+    CYOptions options;
+    CYContext context(driver.pool_, options);
+
+    std::ostringstream prefix;
+
+    switch (driver.mode_) {
+        case CYDriver::AutoPrimary:
+            expression = $ CYThis();
+        break;
+
+        case CYDriver::AutoDirect:
+            expression = driver.context_;
+        break;
+
+        case CYDriver::AutoIndirect:
+            expression = $ CYIndirect(driver.context_);
+        break;
+
+        case CYDriver::AutoMessage: {
+            CYDriver::Context &thing(driver.contexts_.back());
+            expression = $M($M($ CYIndirect(thing.context_), $S("isa")), $S("messages"));
+            for (CYDriver::Context::Words::const_iterator part(thing.words_.begin()); part != thing.words_.end(); ++part)
+                prefix << (*part)->word_ << ':';
+        } break;
+
+        default:
+            _assert(false);
+    }
+
+    std::string begin(prefix.str() + word);
+
+    driver.program_ = $ CYProgram($ CYExpress($C2(ParseExpression(pool,
+    "   function(object, prefix) {\n"
+    "       var names = [];\n"
+    "       var pattern = '^' + prefix;\n"
+    "       for (name in object)\n"
+    "           if (name.match(pattern) != null)\n"
+    "               names.push(name);\n"
+    "       return names;\n"
+    "   }\n"
+    ), expression, $S(begin.c_str()))));
+
+    driver.program_->Replace(context);
+
+    std::ostringstream str;
+    CYOutput out(str, options);
+    out << *driver.program_;
+
+    std::string code(str.str());
+    CYUTF8String json(Run(pool, client_, code));
+
+    CYExpression *result(ParseExpression(pool, json));
+    CYArray *array(dynamic_cast<CYArray *>(result));
+    _assert(array != NULL);
+
+    // XXX: use an std::set?
+    typedef std::vector<std::string> Completions;
+    Completions completions;
+
+    std::string common;
+    bool rest(false);
+
+    for (CYElement *element(array->elements_); element != NULL; element = element->next_) {
+        CYString *string(dynamic_cast<CYString *>(element->value_));
+        _assert(string != NULL);
+
+        std::string completion(string->value_, string->size_);
+        completions.push_back(completion);
+
+        if (!rest) {
+            common = completion;
+            rest = true;
+        } else {
+            size_t limit(completion.size()), size(common.size());
+            if (size > limit)
+                common = common.substr(0, limit);
+            else
+                limit = size;
+            for (limit = 0; limit != size; ++limit)
+                if (common[limit] != completion[limit])
+                    break;
+            if (limit != size)
+                common = common.substr(0, limit);
+        }
+    }
+
+    size_t count(completions.size());
+    if (count == 0)
+        return NULL;
+
+    if (!common.empty()) {
+        size_t size(prefix.str().size());
+        _assert(common.size() >= size);
+        common = common.substr(size);
+    }
+
+    char **results(reinterpret_cast<char **>(malloc(sizeof(char *) * (count + 2))));
+
+    results[0] = strdup(common.c_str());
+    size_t index(0);
+    for (Completions::const_iterator i(completions.begin()); i != completions.end(); ++i)
+        results[++index] = strdup(i->c_str());
+    results[count + 1] = NULL;
+
+    return results;
+}
+
+// need char *, not const char *
+static char name_[] = "cycript";
+static char break_[] = " \t\n\"\\'`@$><=;|&{(" ".:";
+
+static void Console(apr_pool_t *pool, CYOptions &options) {
     passwd *passwd;
     if (const char *username = getenv("LOGNAME"))
         passwd = getpwnam(username);
@@ -201,6 +377,9 @@ static void Console(apr_pool_t *pool, int client, CYOptions &options) {
     const char *histfile(apr_psprintf(pool, "%s/history", basedir));
     size_t histlines(0);
 
+    rl_initialize();
+    rl_readline_name = name_;
+
     mkdir(basedir, 0700);
     read_history(histfile);
 
@@ -210,7 +389,10 @@ static void Console(apr_pool_t *pool, int client, CYOptions &options) {
 
     FILE *fout(stdout);
 
-    rl_bind_key('\t', rl_insert);
+    // rl_completer_word_break_characters is broken in libedit
+    rl_basic_word_break_characters = break_;
+    rl_attempted_completion_function = &Complete;
+    rl_bind_key('\t', rl_complete);
 
     struct sigaction action;
     sigemptyset(&action.sa_mask);
@@ -219,7 +401,7 @@ static void Console(apr_pool_t *pool, int client, CYOptions &options) {
     sigaction(SIGINT, &action, NULL);
 
     restart: for (;;) {
-        std::string command;
+        command_.clear();
         std::vector<std::string> lines;
 
         bool extra(false);
@@ -264,7 +446,7 @@ static void Console(apr_pool_t *pool, int client, CYOptions &options) {
             }
         }
 
-        command += line;
+        command_ += line;
 
         char *begin(line), *end(line + strlen(line));
         while (char *nl = reinterpret_cast<char *>(memchr(begin, '\n', end - begin))) {
@@ -280,14 +462,14 @@ static void Console(apr_pool_t *pool, int client, CYOptions &options) {
         std::string code;
 
         if (bypass)
-            code = command;
+            code = command_;
         else {
-            CYDriver driver("");
+            CYDriver driver;
             cy::parser parser(driver);
             Setup(driver, parser);
 
-            driver.data_ = command.c_str();
-            driver.size_ = command.size();
+            driver.data_ = command_.c_str();
+            driver.size_ = command_.size();
 
             if (parser.parse() != 0 || !driver.errors_.empty()) {
                 for (CYDriver::Errors::const_iterator error(driver.errors_.begin()); error != driver.errors_.end(); ++error) {
@@ -312,7 +494,7 @@ static void Console(apr_pool_t *pool, int client, CYOptions &options) {
                         std::cerr << "  | ";
                         std::cerr << error->message_ << std::endl;
 
-                        add_history(command.c_str());
+                        add_history(command_.c_str());
                         ++histlines;
                         goto restart;
                     }
@@ -320,7 +502,7 @@ static void Console(apr_pool_t *pool, int client, CYOptions &options) {
 
                 driver.errors_.clear();
 
-                command += '\n';
+                command_ += '\n';
                 prompt = "cy> ";
                 goto read;
             }
@@ -328,8 +510,8 @@ static void Console(apr_pool_t *pool, int client, CYOptions &options) {
             if (driver.program_ == NULL)
                 goto restart;
 
-            if (client != -1)
-                code = command;
+            if (client_ != -1)
+                code = command_;
             else {
                 std::ostringstream str;
                 CYOutput out(str, options);
@@ -339,13 +521,13 @@ static void Console(apr_pool_t *pool, int client, CYOptions &options) {
             }
         }
 
-        add_history(command.c_str());
+        add_history(command_.c_str());
         ++histlines;
 
         if (debug)
             std::cout << code << std::endl;
 
-        Run(client, code, fout, expand);
+        Run(client_, code, fout, expand);
     }
 
     if (append_history$ != NULL) {
@@ -542,11 +724,9 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
     }
 #endif
 
-    int client;
-
 #ifdef CY_ATTACH
     if (pid == _not(pid_t))
-        client = -1;
+        client_ = -1;
     else {
         int server(_syscall(socket(PF_UNIX, SOCK_STREAM, 0))); try {
             struct sockaddr_un address;
@@ -561,7 +741,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
             try {
                 _syscall(listen(server, 1));
                 InjectLibrary(pid);
-                client = _syscall(accept(server, NULL, NULL));
+                client_ = _syscall(accept(server, NULL, NULL));
             } catch (...) {
                 // XXX: exception?
                 unlink(address.sun_path);
@@ -573,13 +753,13 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
         }
     }
 #else
-    client = -1;
+    client_ = -1;
 #endif
 
     if (script == NULL && tty)
-        Console(pool, client, options);
+        Console(pool, options);
     else {
-        CYDriver driver(script ?: "<stdin>");
+        CYDriver driver(pool, script ?: "<stdin>");
         cy::parser parser(driver);
         Setup(driver, parser);
 
@@ -612,9 +792,9 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
             for (CYDriver::Errors::const_iterator i(driver.errors_.begin()); i != driver.errors_.end(); ++i)
                 std::cerr << i->location_.begin << ": " << i->message_ << std::endl;
         } else if (driver.program_ != NULL)
-            if (client != -1) {
+            if (client_ != -1) {
                 std::string code(start, end-start);
-                Run(client, code, stdout);
+                Run(client_, code, stdout);
             } else {
                 std::ostringstream str;
                 CYOutput out(str, options);
@@ -624,7 +804,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
                 if (compile)
                     std::cout << code;
                 else
-                    Run(client, code, stdout);
+                    Run(client_, code, stdout);
             }
     }
 

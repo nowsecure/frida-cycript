@@ -43,9 +43,17 @@
 #include "cycript.hpp"
 #include "Pooling.hpp"
 
+#include <iostream>
+
 struct CYUTF8String {
     const char *data;
     size_t size;
+
+    CYUTF8String(const char *data) :
+        data(data),
+        size(strlen(data))
+    {
+    }
 
     CYUTF8String(const char *data, size_t size) :
         data(data),
@@ -58,6 +66,11 @@ struct CYUTF8String {
         return length == size && memcmp(value, data, length) == 0;
     }
 };
+
+static inline std::ostream &operator <<(std::ostream &lhs, CYUTF8String &rhs) {
+    lhs.write(rhs.data, rhs.size);
+    return lhs;
+}
 
 struct CYUTF16String {
     const uint16_t *data;

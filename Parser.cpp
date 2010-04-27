@@ -44,14 +44,18 @@ CYRange DigitRange_    (0x3ff000000000000LLU, 0x000000000000000LLU); // 0-9
 CYRange WordStartRange_(0x000001000000000LLU, 0x7fffffe87fffffeLLU); // A-Za-z_$
 CYRange WordEndRange_  (0x3ff001000000000LLU, 0x7fffffe87fffffeLLU); // A-Za-z_$0-9
 
-CYDriver::CYDriver(const std::string &filename) :
+CYDriver::CYDriver(apr_pool_t *pool, const std::string &filename) :
+    pool_(pool),
     state_(CYClear),
     data_(NULL),
     size_(0),
     file_(NULL),
     strict_(false),
     filename_(filename),
-    program_(NULL)
+    program_(NULL),
+    auto_(false),
+    context_(NULL),
+    mode_(AutoNone)
 {
     ScannerInit();
 }
