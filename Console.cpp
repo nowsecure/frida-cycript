@@ -358,12 +358,6 @@ static char **Complete(const char *word, int start, int end) {
     if (count == 0)
         return NULL;
 
-    if (!common.empty()) {
-        size_t size(prefix.str().size());
-        _assert(common.size() >= size);
-        common = common.substr(size);
-    }
-
     size_t colon(common.find(':'));
     if (colon != std::string::npos)
         common = common.substr(0, colon + 1);
