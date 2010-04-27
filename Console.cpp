@@ -136,7 +136,7 @@ static CYUTF8String Run(CYPool &pool, int client, CYUTF8String code) {
     if (client == -1) {
         mode_ = Running;
 #ifdef CY_EXECUTE
-        json = CYExecute(pool, code.data);
+        json = CYExecute(pool, code);
 #else
         json = NULL;
 #endif
@@ -145,8 +145,9 @@ static CYUTF8String Run(CYPool &pool, int client, CYUTF8String code) {
             size = strlen(json);
     } else {
         mode_ = Sending;
+        size = code.size;
         CYSendAll(client, &size, sizeof(size));
-        CYSendAll(client, code.data, size);
+        CYSendAll(client, code.data, code.size);
         mode_ = Waiting;
         CYRecvAll(client, &size, sizeof(size));
         if (size == _not(size_t))

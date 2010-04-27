@@ -69,7 +69,7 @@ JSGlobalContextRef CYGetJSContext();
 JSObjectRef CYGetGlobalObject(JSContextRef context);
 
 extern "C" void CYSetupContext(JSGlobalContextRef context);
-const char *CYExecute(apr_pool_t *pool, const char *code);
+const char *CYExecute(apr_pool_t *pool, CYUTF8String code);
 
 void CYSetArgs(int argc, const char *argv[]);
 
