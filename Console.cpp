@@ -395,6 +395,8 @@ static void Console(apr_pool_t *pool, CYOptions &options) {
 
     // rl_completer_word_break_characters is broken in libedit
     rl_basic_word_break_characters = break_;
+
+    rl_completer_word_break_characters = break_;
     rl_attempted_completion_function = &Complete;
     rl_bind_key('\t', rl_complete);
 
