@@ -403,6 +403,8 @@ JSObjectRef CYMakeInstance(JSContextRef context, id object, bool transient) {
 - (bool) cy$deleteProperty:(NSString *)name;
 - (void) cy$getPropertyNames:(JSPropertyNameAccumulatorRef)names inContext:(JSContextRef)context;
 
++ (bool) cy$hasImplicitProperties;
+
 @end
 
 @protocol Cycript
@@ -833,6 +835,10 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     }
 }
 
++ (bool) cy$hasImplicitProperties {
+    return false;
+}
+
 @end
 /* }}} */
 /* Bridge: NSMutableArray {{{ */
@@ -992,6 +998,10 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 }
 
 - (void) cy$getPropertyNames:(JSPropertyNameAccumulatorRef)names inContext:(JSContextRef)context {
+}
+
++ (bool) cy$hasImplicitProperties {
+    return true;
 }
 
 @end
@@ -1556,6 +1566,13 @@ static void Messages_getPropertyNames(JSContextRef context, JSObjectRef object, 
 #endif
 }
 
+static bool CYHasImplicitProperties(Class _class) {
+    // XXX: this is an evil hack to deal with NSProxy; fix elsewhere
+    if (!CYImplements(_class, object_getClass(_class), @selector(cy$hasImplicitProperties), false))
+        return true;
+    return [_class cy$hasImplicitProperties];
+}
+
 static bool Instance_hasProperty(JSContextRef context, JSObjectRef object, JSStringRef property) {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
     id self(internal->GetValue());
@@ -1586,9 +1603,10 @@ static bool Instance_hasProperty(JSContextRef context, JSObjectRef object, JSStr
         return true;
 #endif
 
-    if (SEL sel = sel_getUid(string))
-        if (CYImplements(self, _class, sel, true))
-            return true;
+    if (CYHasImplicitProperties(_class))
+        if (SEL sel = sel_getUid(string))
+            if (CYImplements(self, _class, sel, true))
+                return true;
 
     return false;
 }
@@ -1623,10 +1641,10 @@ static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object,
     }
 #endif
 
-    // XXX: maybe this should only be messages that return something?
-    if (SEL sel = sel_getUid(string))
-        if (CYImplements(self, _class, sel, true))
-            return CYSendMessage(pool, context, self, NULL, sel, 0, NULL, false, exception);
+    if (CYHasImplicitProperties(_class))
+        if (SEL sel = sel_getUid(string))
+            if (CYImplements(self, _class, sel, true))
+                return CYSendMessage(pool, context, self, NULL, sel, 0, NULL, false, exception);
 
     return NULL;
 } CYCatch }
@@ -1729,17 +1747,19 @@ static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, 
     }
 #endif
 
+    if (CYHasImplicitProperties(_class)) {
 #if OBJC_API_VERSION >= 2
-    unsigned int size;
-    objc_method **data(class_copyMethodList(_class, &size));
-    for (size_t i(0); i != size; ++i)
-        Instance_getPropertyNames_message(names, data[i]);
-    free(data);
+        unsigned int size;
+        objc_method **data(class_copyMethodList(_class, &size));
+        for (size_t i(0); i != size; ++i)
+            Instance_getPropertyNames_message(names, data[i]);
+        free(data);
 #else
-    for (objc_method_list *methods(_class->methods); methods != NULL; methods = methods->method_next)
-        for (int i(0); i != methods->method_count; ++i)
-            Instance_getPropertyNames_message(names, &methods->method_list[i]);
+        for (objc_method_list *methods(_class->methods); methods != NULL; methods = methods->method_next)
+            for (int i(0); i != methods->method_count; ++i)
+                Instance_getPropertyNames_message(names, &methods->method_list[i]);
 #endif
+    }
 
     CYPoolTry {
         // XXX: this is an evil hack to deal with NSProxy; fix elsewhere
