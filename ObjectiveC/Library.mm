@@ -1623,6 +1623,7 @@ static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object,
     }
 #endif
 
+    // XXX: maybe this should only be messages that return something?
     if (SEL sel = sel_getUid(string))
         if (CYImplements(self, _class, sel, true))
             return CYSendMessage(pool, context, self, NULL, sel, 0, NULL, false, exception);
@@ -1699,6 +1700,18 @@ static bool Instance_deleteProperty(JSContextRef context, JSObjectRef object, JS
     } CYPoolCatch(NULL)
 } CYCatch return /*XXX*/ NULL; }
 
+static void Instance_getPropertyNames_message(JSPropertyNameAccumulatorRef names, objc_method *method) {
+    const char *name(sel_getName(method_getName(method)));
+    if (strchr(name, ':') != NULL)
+        return;
+
+    const char *type(method_getTypeEncoding(method));
+    if (type == NULL || *type == '\0' || *type == 'v')
+        return;
+
+    JSPropertyNameAccumulatorAddName(names, CYJSString(name));
+}
+
 static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
     id self(internal->GetValue());
@@ -1714,6 +1727,18 @@ static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, 
             JSPropertyNameAccumulatorAddName(names, CYJSString(property_getName(data[i])));
         free(data);
     }
+#endif
+
+#if OBJC_API_VERSION >= 2
+    unsigned int size;
+    objc_method **data(class_copyMethodList(_class, &size));
+    for (size_t i(0); i != size; ++i)
+        Instance_getPropertyNames_message(names, data[i]);
+    free(data);
+#else
+    for (objc_method_list *methods(_class->methods); methods != NULL; methods = methods->method_next)
+        for (int i(0); i != methods->method_count; ++i)
+            Instance_getPropertyNames_message(names, &methods->method_list[i]);
 #endif
 
     CYPoolTry {
