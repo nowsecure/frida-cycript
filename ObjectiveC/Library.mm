@@ -1048,6 +1048,49 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     return [self cy$toCYON];
 }
 
+- (bool) cy$hasProperty:(NSString *)name {
+    if ([name isEqualToString:@"length"])
+        return true;
+
+    size_t index(CYGetIndex(name));
+    if (index == _not(size_t) || index >= [self length])
+        return [super cy$hasProperty:name];
+    else
+        return true;
+}
+
+- (NSObject *) cy$getProperty:(NSString *)name {
+    if ([name isEqualToString:@"length"]) {
+        NSUInteger count([self length]);
+#ifdef __APPLE__
+        return [NSNumber numberWithUnsignedInteger:count];
+#else
+        return [NSNumber numberWithUnsignedInt:count];
+#endif
+    }
+
+    size_t index(CYGetIndex(name));
+    if (index == _not(size_t) || index >= [self length])
+        return [super cy$getProperty:name];
+    else
+        return [self substringWithRange:NSMakeRange(index, 1)];
+}
+
+- (void) cy$getPropertyNames:(JSPropertyNameAccumulatorRef)names inContext:(JSContextRef)context {
+    [super cy$getPropertyNames:names inContext:context];
+
+    for (size_t index(0), length([self length]); index != length; ++index) {
+        char name[32];
+        sprintf(name, "%zu", index);
+        JSPropertyNameAccumulatorAddName(names, CYJSString(name));
+    }
+}
+
+// XXX: this might be overly restrictive for NSString; I think I need a half-way between /injecting/ implicit properties and /accepting/ implicit properties
++ (bool) cy$hasImplicitProperties {
+    return false;
+}
+
 @end
 /* }}} */
 /* Bridge: WebUndefined {{{ */
