@@ -326,7 +326,7 @@ void CYDeclarations::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYDirectMember::Output(CYOutput &out, CYFlags flags) const {
-    object_->Output(out, Precedence(), CYLeft(flags));
+    object_->Output(out, Precedence(), CYLeft(flags) | CYNoInteger);
     if (const char *word = property_->Word())
         out << '.' << word;
     else
