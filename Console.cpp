@@ -366,6 +366,8 @@ static char **Complete(const char *word, int start, int end) {
     size_t colon(common.find(':'));
     if (colon != std::string::npos)
         common = common.substr(0, colon + 1);
+    if (completions.size() == 1)
+        common += ' ';
 
     char **results(reinterpret_cast<char **>(malloc(sizeof(char *) * (count + 2))));
 
