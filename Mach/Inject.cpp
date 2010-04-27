@@ -80,7 +80,7 @@ void InjectLibrary(pid_t pid) {
     uintptr_t set_self_internal;
     uintptr_t set_self_external;
 
-#if defined(__i386__)
+#if defined(__i386__) || defined(__arm__)
     struct nlist nl[3];
     memset(nl, 0, sizeof(nl));
     nl[0].n_un.n_name = (char *) "__pthread_set_self";
