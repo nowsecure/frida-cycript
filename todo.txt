@@ -1,12 +1,11 @@
 unicode identifier support (native and \u)
 support unions (right now 0-1 fields parsed as struct)
-\\\n escapes in strings aren't handled in the console
 look into what String is, and whether to bridge it
 think about bridging NSNumber with Number prototype
 some JS callbacks don't use exception pointers at all...
 a newline needs to not be allowed after a unary *
 finish implementing default xml namespace statement
-encode newlines in history for later reply (psql uses ^A)
+encode newlines in history for later replay (psql uses ^A)
 
 consider replacing regex literals with constructors
   https://bugzilla.mozilla.org/show_bug.cgi?id=98409
