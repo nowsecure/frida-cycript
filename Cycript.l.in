@@ -385,7 +385,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
 [ \t] L
 
-<<EOF>> if (yyextra->auto_) { yyextra->auto_ = false; return tk::AutoComplete_; } L yyterminate();
+<<EOF>> if (yyextra->auto_) { yyextra->auto_ = false; return tk::AutoComplete; } L yyterminate();
 
 . L {
     CYDriver::Error error;
