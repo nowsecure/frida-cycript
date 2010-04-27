@@ -28,3 +28,5 @@ special work needs to be done to correctly handle the "arguments" symbol: Declar
 at the Program level I seem to be eating away all of the var statements
 function pointers are ?; note that blocks are currently block_P = '?'
 I should probably attempt to use the auto_ flag somehow to not do contexts_ push when compiling
+
+autocompleting a selector should maybe add the space or not or something, but should make up its mind
