@@ -1747,19 +1747,20 @@ static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, 
     }
 #endif
 
-    if (CYHasImplicitProperties(_class)) {
+    if (CYHasImplicitProperties(_class))
+        for (Class current(_class); current != nil; current = class_getSuperclass(current)) {
 #if OBJC_API_VERSION >= 2
-        unsigned int size;
-        objc_method **data(class_copyMethodList(_class, &size));
-        for (size_t i(0); i != size; ++i)
-            Instance_getPropertyNames_message(names, data[i]);
-        free(data);
+            unsigned int size;
+            objc_method **data(class_copyMethodList(current, &size));
+            for (size_t i(0); i != size; ++i)
+                Instance_getPropertyNames_message(names, data[i]);
+            free(data);
 #else
-        for (objc_method_list *methods(_class->methods); methods != NULL; methods = methods->method_next)
-            for (int i(0); i != methods->method_count; ++i)
-                Instance_getPropertyNames_message(names, &methods->method_list[i]);
+            for (objc_method_list *methods(current->methods); methods != NULL; methods = methods->method_next)
+                for (int i(0); i != methods->method_count; ++i)
+                    Instance_getPropertyNames_message(names, &methods->method_list[i]);
 #endif
-    }
+        }
 
     CYPoolTry {
         // XXX: this is an evil hack to deal with NSProxy; fix elsewhere
