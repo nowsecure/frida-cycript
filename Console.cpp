@@ -168,37 +168,42 @@ static CYUTF8String Run(CYPool &pool, int client, const std::string &code) {
     return Run(pool, client, CYUTF8String(code.c_str(), code.size()));
 }
 
-void Run(int client, const char *data, size_t size, FILE *fout = NULL, bool expand = false) {
+FILE *fout_;
+
+static void Output(CYUTF8String json, FILE *fout, bool expand = false) {
+    const char *data(json.data);
+    size_t size(json.size);
+
+    if (data == NULL || fout == NULL)
+        return;
+
+    if (!expand || data[0] != '"' && data[0] != '\'')
+        fputs(data, fout);
+    else for (size_t i(0); i != size; ++i)
+        if (data[i] != '\\')
+            fputc(data[i], fout);
+        else switch(data[++i]) {
+            case '\0': goto done;
+            case '\\': fputc('\\', fout); break;
+            case '\'': fputc('\'', fout); break;
+            case '"': fputc('"', fout); break;
+            case 'b': fputc('\b', fout); break;
+            case 'f': fputc('\f', fout); break;
+            case 'n': fputc('\n', fout); break;
+            case 'r': fputc('\r', fout); break;
+            case 't': fputc('\t', fout); break;
+            case 'v': fputc('\v', fout); break;
+            default: fputc('\\', fout); --i; break;
+        }
+
+  done:
+    fputs("\n", fout);
+    fflush(fout);
+}
+
+static void Run(int client, const char *data, size_t size, FILE *fout = NULL, bool expand = false) {
     CYPool pool;
-    CYUTF8String json(Run(pool, client, CYUTF8String(data, size)));
-
-    data = json.data;
-    size = json.size;
-
-    if (data != NULL && fout != NULL) {
-        if (!expand || data[0] != '"' && data[0] != '\'')
-            fputs(data, fout);
-        else for (size_t i(0); i != size; ++i)
-            if (data[i] != '\\')
-                fputc(data[i], fout);
-            else switch(data[++i]) {
-                case '\0': goto done;
-                case '\\': fputc('\\', fout); break;
-                case '\'': fputc('\'', fout); break;
-                case '"': fputc('"', fout); break;
-                case 'b': fputc('\b', fout); break;
-                case 'f': fputc('\f', fout); break;
-                case 'n': fputc('\n', fout); break;
-                case 'r': fputc('\r', fout); break;
-                case 't': fputc('\t', fout); break;
-                case 'v': fputc('\v', fout); break;
-                default: fputc('\\', fout); --i; break;
-            }
-
-      done:
-        fputs("\n", fout);
-        fflush(fout);
-    }
+    Output(Run(pool, client, CYUTF8String(data, size)), fout, expand);
 }
 
 static void Run(int client, std::string &code, FILE *fout = NULL, bool expand = false) {
@@ -309,7 +314,13 @@ static char **Complete(const char *word, int start, int end) {
 
     CYExpression *result(ParseExpression(pool, json));
     CYArray *array(dynamic_cast<CYArray *>(result));
-    _assert(array != NULL);
+
+    if (array == NULL) {
+        fprintf(fout_, "\n");
+        Output(json, fout_);
+        rl_forced_update_display();
+        return NULL;
+    }
 
     // XXX: use an std::set?
     typedef std::vector<std::string> Completions;
@@ -392,7 +403,7 @@ static void Console(apr_pool_t *pool, CYOptions &options) {
     bool debug(false);
     bool expand(false);
 
-    FILE *fout(stdout);
+    fout_ = stdout;
 
     // rl_completer_word_break_characters is broken in libedit
     rl_basic_word_break_characters = break_;
@@ -416,8 +427,8 @@ static void Console(apr_pool_t *pool, CYOptions &options) {
 
         if (setjmp(ctrlc_) != 0) {
             mode_ = Working;
-            fputs("\n", fout);
-            fflush(fout);
+            fputs("\n", fout_);
+            fflush(fout_);
             goto restart;
         }
 
@@ -436,16 +447,16 @@ static void Console(apr_pool_t *pool, CYOptions &options) {
                 std::string data(line + 1);
                 if (data == "bypass") {
                     bypass = !bypass;
-                    fprintf(fout, "bypass == %s\n", bypass ? "true" : "false");
-                    fflush(fout);
+                    fprintf(fout_, "bypass == %s\n", bypass ? "true" : "false");
+                    fflush(fout_);
                 } else if (data == "debug") {
                     debug = !debug;
-                    fprintf(fout, "debug == %s\n", debug ? "true" : "false");
-                    fflush(fout);
+                    fprintf(fout_, "debug == %s\n", debug ? "true" : "false");
+                    fflush(fout_);
                 } else if (data == "expand") {
                     expand = !expand;
-                    fprintf(fout, "expand == %s\n", expand ? "true" : "false");
-                    fflush(fout);
+                    fprintf(fout_, "expand == %s\n", expand ? "true" : "false");
+                    fflush(fout_);
                 }
                 add_history(line);
                 ++histlines;
@@ -534,7 +545,7 @@ static void Console(apr_pool_t *pool, CYOptions &options) {
         if (debug)
             std::cout << code << std::endl;
 
-        Run(client_, code, fout, expand);
+        Run(client_, code, fout_, expand);
     }
 
     if (append_history$ != NULL) {
@@ -544,8 +555,8 @@ static void Console(apr_pool_t *pool, CYOptions &options) {
         write_history(histfile);
     }
 
-    fputs("\n", fout);
-    fflush(fout);
+    fputs("\n", fout_);
+    fflush(fout_);
 }
 
 static void *Map(const char *path, size_t *psize) {
