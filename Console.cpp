@@ -351,6 +351,10 @@ static char **Complete(const char *word, int start, int end) {
         common = common.substr(size);
     }
 
+    size_t colon(common.find(':'));
+    if (colon != std::string::npos)
+        common = common.substr(0, colon + 1);
+
     char **results(reinterpret_cast<char **>(malloc(sizeof(char *) * (count + 2))));
 
     results[0] = strdup(common.c_str());
