@@ -108,6 +108,7 @@ cflags += -DCY_EXECUTE
 code += sig/ffi_type.lo sig/parse.lo sig/copy.lo
 code += Execute.lo Bridge.lo
 filters += C
+header += JavaScript.hpp
 endif
 
 cflags += -Wall -Werror -Wno-parentheses #-Wno-unused

@@ -4,6 +4,7 @@ code += sig/ffi_type.o sig/parse.o sig/copy.o
 code += Execute.o Bridge.o
 library += -lffi
 filters += C
+header += JavaScript.hpp
 
 Bridge.gperf: Bridge.def Bridge.sh
 	./Bridge.sh Bridge.def >Bridge.gperf
