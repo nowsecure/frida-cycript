@@ -334,7 +334,14 @@ static char **Complete(const char *word, int start, int end) {
         CYString *string(dynamic_cast<CYString *>(element->value_));
         _assert(string != NULL);
 
-        std::string completion(string->value_, string->size_);
+        std::string completion;
+        if (string->size_ != 0)
+            completion.assign(string->value_, string->size_);
+        else if (driver.mode_ == CYDriver::AutoMessage)
+            completion = "]";
+        else
+            continue;
+
         completions.push_back(completion);
 
         if (!rest) {
