@@ -16551,8 +16551,26 @@ fi
 
 
 
+
 case $CY_EXECUTE in #(
   1) :
+
+
+	for ac_header in ffi.h ffi/ffi.h
+do :
+  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ac_fn_cxx_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
+eval as_val=\$$as_ac_Header
+   if test "x$as_val" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+ break
+fi
+
+done
+
+	if test "x$ac_cv_header_ffi_h" = xno && test "x$ac_cv_header_ffi_ffi_h" = xno; then :
 
 
 
@@ -16617,175 +16635,11 @@ fi
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
-		for ac_header in ffi.h ffi/ffi.h
-do :
-  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
-ac_fn_cxx_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
-eval as_val=\$$as_ac_Header
-   if test "x$as_val" = x""yes; then :
-  cat >>confdefs.h <<_ACEOF
-#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
-_ACEOF
- break
-fi
-
-done
-
-		if test "x$ac_cv_header_ffi_h" = xno && test "x$ac_cv_header_ffi_ffi_h" = xno; then :
-
-			as_fn_error "You need libffi" "$LINENO" 5
-
-fi
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing ffi_call" >&5
-$as_echo_n "checking for library containing ffi_call... " >&6; }
-if test "${ac_cv_search_ffi_call+set}" = set; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char ffi_call ();
-int
-main ()
-{
-return ffi_call ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ffi; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_ffi_call=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if test "${ac_cv_search_ffi_call+set}" = set; then :
-  break
-fi
-done
-if test "${ac_cv_search_ffi_call+set}" = set; then :
-
-else
-  ac_cv_search_ffi_call=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_ffi_call" >&5
-$as_echo "$ac_cv_search_ffi_call" >&6; }
-ac_res=$ac_cv_search_ffi_call
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
-fi
-
-		case $ac_cv_search_ffi_call in #(
-  no) :
-
-			as_fn_error "You need libffi" "$LINENO" 5
-		 ;; #(
-  *) :
-     ;;
-esac
+		as_fn_error "You need libffi" "$LINENO" 5
 
 elif test $pkg_failed = untried; then
 
-		for ac_header in ffi.h ffi/ffi.h
-do :
-  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
-ac_fn_cxx_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
-eval as_val=\$$as_ac_Header
-   if test "x$as_val" = x""yes; then :
-  cat >>confdefs.h <<_ACEOF
-#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
-_ACEOF
- break
-fi
-
-done
-
-		if test "x$ac_cv_header_ffi_h" = xno && test "x$ac_cv_header_ffi_ffi_h" = xno; then :
-
-			as_fn_error "You need libffi" "$LINENO" 5
-
-fi
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing ffi_call" >&5
-$as_echo_n "checking for library containing ffi_call... " >&6; }
-if test "${ac_cv_search_ffi_call+set}" = set; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char ffi_call ();
-int
-main ()
-{
-return ffi_call ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ffi; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_ffi_call=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if test "${ac_cv_search_ffi_call+set}" = set; then :
-  break
-fi
-done
-if test "${ac_cv_search_ffi_call+set}" = set; then :
-
-else
-  ac_cv_search_ffi_call=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_ffi_call" >&5
-$as_echo "$ac_cv_search_ffi_call" >&6; }
-ac_res=$ac_cv_search_ffi_call
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
-fi
-
-		case $ac_cv_search_ffi_call in #(
-  no) :
-
-			as_fn_error "You need libffi" "$LINENO" 5
-		 ;; #(
-  *) :
-     ;;
-esac
+		as_fn_error "You need libffi" "$LINENO" 5
 
 else
 	LIBFFI_CFLAGS=$pkg_cv_LIBFFI_CFLAGS
@@ -16839,6 +16693,197 @@ $as_echo "yes" >&6; }
     fi
   done
 
+
+fi
+
+
+else
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing ffi_call" >&5
+$as_echo_n "checking for library containing ffi_call... " >&6; }
+if test "${ac_cv_search_ffi_call+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char ffi_call ();
+int
+main ()
+{
+return ffi_call ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ffi; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_ffi_call=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if test "${ac_cv_search_ffi_call+set}" = set; then :
+  break
+fi
+done
+if test "${ac_cv_search_ffi_call+set}" = set; then :
+
+else
+  ac_cv_search_ffi_call=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_ffi_call" >&5
+$as_echo "$ac_cv_search_ffi_call" >&6; }
+ac_res=$ac_cv_search_ffi_call
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+		case $ac_cv_search_ffi_call in #(
+  no) :
+
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for LIBFFI" >&5
+$as_echo_n "checking for LIBFFI... " >&6; }
+
+if test -n "$PKG_CONFIG"; then
+    if test -n "$LIBFFI_CFLAGS"; then
+        pkg_cv_LIBFFI_CFLAGS="$LIBFFI_CFLAGS"
+    else
+        if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libffi\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libffi") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBFFI_CFLAGS=`$PKG_CONFIG --cflags "libffi" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+    fi
+else
+	pkg_failed=untried
+fi
+if test -n "$PKG_CONFIG"; then
+    if test -n "$LIBFFI_LIBS"; then
+        pkg_cv_LIBFFI_LIBS="$LIBFFI_LIBS"
+    else
+        if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libffi\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libffi") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBFFI_LIBS=`$PKG_CONFIG --libs "libffi" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+    fi
+else
+	pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        LIBFFI_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "libffi"`
+        else
+	        LIBFFI_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "libffi"`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$LIBFFI_PKG_ERRORS" >&5
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+		as_fn_error "You need libffi" "$LINENO" 5
+
+elif test $pkg_failed = untried; then
+
+		as_fn_error "You need libffi" "$LINENO" 5
+
+else
+	LIBFFI_CFLAGS=$pkg_cv_LIBFFI_CFLAGS
+	LIBFFI_LIBS=$pkg_cv_LIBFFI_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+
+  for element in `$PKG_CONFIG --cflags libffi`; do
+    haveit=
+    for x in $CXXFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }$element"
+    fi
+  done
+
+
+  for element in `$PKG_CONFIG --libs libffi`; do
+    haveit=
+    for x in $LIBS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LIBS="${LIBS}${LIBS:+ }$element"
+    fi
+  done
+
+
+fi
+ ;; #(
+  *) :
+     ;;
+esac
 
 fi
 	ac_ext=mm

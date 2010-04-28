@@ -102,20 +102,22 @@ AC_ARG_ENABLE([javascript], [AS_HELP_STRING(
 		CY_CHECK_JAVASCRIPTCORE
 	], [AC_MSG_ERROR([Unknown JavaScript engine: $enableval])])
 ], [CY_CHECK_JAVASCRIPT])
-AS_CASE([$CY_EXECUTE], [1], [
-	AC_SUBST([CY_EXECUTE])
+AC_DEFUN([CY_CHECK_PKG_CONFIG_LIBFFI], [
 	PKG_CHECK_MODULES([LIBFFI], [libffi], [
 		AC_LIB_APPENDTOVAR([CXXFLAGS], [`$PKG_CONFIG --cflags libffi`])
 		AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs libffi`])
 	], [
-		AC_CHECK_HEADERS([ffi.h ffi/ffi.h], [break])
-		AS_IF([test "x$ac_cv_header_ffi_h" = xno && test "x$ac_cv_header_ffi_ffi_h" = xno], [
-			AC_MSG_ERROR([You need libffi])
-		])
+		AC_MSG_ERROR([You need libffi])
+	])
+])
+AS_CASE([$CY_EXECUTE], [1], [
+	AC_SUBST([CY_EXECUTE])
+	AC_CHECK_HEADERS([ffi.h ffi/ffi.h], [break])
+	AS_IF([test "x$ac_cv_header_ffi_h" = xno && test "x$ac_cv_header_ffi_ffi_h" = xno], [
+		CY_CHECK_PKG_CONFIG_LIBFFI
+	], [
 		AC_SEARCH_LIBS([ffi_call], [ffi])
-		AS_CASE([$ac_cv_search_ffi_call], [no], [
-			AC_MSG_ERROR([You need libffi])
-		])
+		AS_CASE([$ac_cv_search_ffi_call], [no], [CY_CHECK_PKG_CONFIG_LIBFFI])
 	])
 	AC_LANG_PUSH([Objective C++])
 	AC_MSG_CHECKING([if we really have Objective C++])
