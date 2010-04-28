@@ -27,3 +27,5 @@ at the Program level I seem to be eating away all of the var statements
 function pointers are ?; note that blocks are currently block_P = '?'
 I should probably attempt to use the auto_ flag somehow to not do contexts_ push when compiling
 Object_callAsFunction_toCYON should be implemented
+
+[NSString stringWithString:""] crashes, on linux, not on mac
