@@ -141,7 +141,9 @@ static CYUTF8String Run(CYPool &pool, int client, CYUTF8String code) {
         json = NULL;
 #endif
         mode_ = Working;
-        if (json != NULL)
+        if (json == NULL)
+            size = 0;
+        else
             size = strlen(json);
     } else {
         mode_ = Sending;
