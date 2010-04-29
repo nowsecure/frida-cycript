@@ -860,6 +860,7 @@ with_pic
 enable_fast_install
 with_gnu_ld
 enable_libtool_lock
+enable_universal_binary
 with_frameworks
 with_apr
 enable_javascript
@@ -1509,6 +1510,8 @@ Optional Features:
   --enable-fast-install[=PKGS]
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
+  --disable-universal-binary
+                          do not build with universal binary support on Darwin
   --enable-javascript[=ENGINE]
                           use a JavaScript runtime (currently the only
                           available option for ENGINE is JavaScriptCore)
@@ -4041,13 +4044,13 @@ if test "${lt_cv_nm_interface+set}" = set; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:4044: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:4047: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4047: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:4050: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4050: output\"" >&5)
+  (eval echo "\"\$as_me:4053: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -4513,11 +4516,11 @@ irix5* | irix6* | nonstopux*)
   ;;
 
 # This must be Linux ELF.
-linux* | k*bsd*-gnu)
+linux* | k*bsd*-gnu | kopensolaris*-gnu)
   lt_cv_deplibs_check_method=pass_all
   ;;
 
-netbsd*)
+netbsd* | netbsdelf*-gnu)
   if echo __ELF__ | $CC -E - | $GREP __ELF__ > /dev/null; then
     lt_cv_deplibs_check_method='match_pattern /lib[^/]+(\.so\.[0-9]+\.[0-9]+|_pic\.a)$'
   else
@@ -5253,7 +5256,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5256 "configure"' > conftest.$ac_ext
+  echo '#line 5259 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -6778,11 +6781,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:6781: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:6784: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:6785: \$? = $ac_status" >&5
+   echo "$as_me:6788: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -6947,7 +6950,7 @@ $as_echo_n "checking for $compiler option to produce PIC... " >&6; }
       lt_prog_compiler_static='-non_shared'
       ;;
 
-    linux* | k*bsd*-gnu)
+    linux* | k*bsd*-gnu | kopensolaris*-gnu)
       case $cc_basename in
       # old Intel for x86_64 which still supported -KPIC.
       ecc*)
@@ -7117,11 +7120,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7120: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7123: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7124: \$? = $ac_status" >&5
+   echo "$as_me:7127: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7222,11 +7225,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7225: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7228: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7229: \$? = $ac_status" >&5
+   echo "$as_me:7232: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -7277,11 +7280,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7280: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7283: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7284: \$? = $ac_status" >&5
+   echo "$as_me:7287: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -7396,6 +7399,9 @@ $as_echo_n "checking whether the $compiler linker ($LD) supports shared librarie
   openbsd*)
     with_gnu_ld=no
     ;;
+  linux* | k*bsd*-gnu)
+    link_all_deplibs=no
+    ;;
   esac
 
   ld_shlibs=yes
@@ -7417,6 +7423,7 @@ $as_echo_n "checking whether the $compiler linker ($LD) supports shared librarie
     fi
     supports_anon_versioning=no
     case `$LD -v 2>&1` in
+      *GNU\ gold*) supports_anon_versioning=yes ;;
       *\ [01].* | *\ 2.[0-9].* | *\ 2.10.*) ;; # catch versions < 2.11
       *\ 2.11.93.0.2\ *) supports_anon_versioning=yes ;; # RH7.3 ...
       *\ 2.11.92.0.12\ *) supports_anon_versioning=yes ;; # Mandrake 8.2 ...
@@ -7508,7 +7515,7 @@ _LT_EOF
       archive_expsym_cmds='sed "s,^,_," $export_symbols >$output_objdir/$soname.expsym~$CC -shared $pic_flag $libobjs $deplibs $compiler_flags ${wl}-h,$soname ${wl}--retain-symbols-file,$output_objdir/$soname.expsym ${wl}--image-base,`expr ${RANDOM-$$} % 4096 / 2 \* 262144 + 1342177280` -o $lib'
       ;;
 
-    gnu* | linux* | tpf* | k*bsd*-gnu)
+    gnu* | linux* | tpf* | k*bsd*-gnu | kopensolaris*-gnu)
       tmp_diet=no
       if test "$host_os" = linux-dietlibc; then
 	case $cc_basename in
@@ -7578,7 +7585,7 @@ _LT_EOF
       fi
       ;;
 
-    netbsd*)
+    netbsd* | netbsdelf*-gnu)
       if echo __ELF__ | $CC -E - | $GREP __ELF__ >/dev/null; then
 	archive_cmds='$LD -Bshareable $libobjs $deplibs $linker_flags -o $lib'
 	wlarc=
@@ -7753,6 +7760,7 @@ _LT_EOF
 	if test "$aix_use_runtimelinking" = yes; then
 	  shared_flag="$shared_flag "'${wl}-G'
 	fi
+	link_all_deplibs=no
       else
 	# not using gcc
 	if test "$host_cpu" = ia64; then
@@ -8079,7 +8087,7 @@ rm -f core conftest.err conftest.$ac_objext \
       link_all_deplibs=yes
       ;;
 
-    netbsd*)
+    netbsd* | netbsdelf*-gnu)
       if echo __ELF__ | $CC -E - | $GREP __ELF__ >/dev/null; then
 	archive_cmds='$LD -Bshareable -o $lib $libobjs $deplibs $linker_flags'  # a.out
       else
@@ -8969,7 +8977,7 @@ linux*oldld* | linux*aout* | linux*coff*)
   ;;
 
 # This must be Linux ELF.
-linux* | k*bsd*-gnu)
+linux* | k*bsd*-gnu | kopensolaris*-gnu)
   version_type=linux
   need_lib_prefix=no
   need_version=no
@@ -9022,6 +9030,18 @@ rm -f core conftest.err conftest.$ac_objext \
   # people can always --disable-shared, the test was removed, and we
   # assume the GNU/Linux dynamic linker is in use.
   dynamic_linker='GNU/Linux ld.so'
+  ;;
+
+netbsdelf*-gnu)
+  version_type=linux
+  need_lib_prefix=no
+  need_version=no
+  library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major ${libname}${shared_ext}'
+  soname_spec='${libname}${release}${shared_ext}$major'
+  shlibpath_var=LD_LIBRARY_PATH
+  shlibpath_overrides_runpath=no
+  hardcode_into_libs=yes
+  dynamic_linker='NetBSD ld.elf_so'
   ;;
 
 netbsd*)
@@ -9644,7 +9664,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 9647 "configure"
+#line 9667 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -9740,7 +9760,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 9743 "configure"
+#line 9763 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12054,7 +12074,7 @@ if test -z "$aix_libpath"; then aix_libpath="/usr/lib:/lib"; fi
         inherit_rpath_CXX=yes
         ;;
 
-      linux* | k*bsd*-gnu)
+      linux* | k*bsd*-gnu | kopensolaris*-gnu)
         case $cc_basename in
           KCC*)
 	    # Kuck and Associates, Inc. (KAI) C++ Compiler
@@ -12882,7 +12902,7 @@ $as_echo_n "checking for $compiler option to produce PIC... " >&6; }
 	    ;;
 	esac
 	;;
-      linux* | k*bsd*-gnu)
+      linux* | k*bsd*-gnu | kopensolaris*-gnu)
 	case $cc_basename in
 	  KCC*)
 	    # KAI C++ Compiler
@@ -12946,7 +12966,7 @@ $as_echo_n "checking for $compiler option to produce PIC... " >&6; }
 	    ;;
 	esac
 	;;
-      netbsd*)
+      netbsd* | netbsdelf*-gnu)
 	;;
       *qnx* | *nto*)
         # QNX uses GNU C++, but need to define -shared option too, otherwise
@@ -13070,11 +13090,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13073: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13093: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13077: \$? = $ac_status" >&5
+   echo "$as_me:13097: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13169,11 +13189,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13172: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13192: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13176: \$? = $ac_status" >&5
+   echo "$as_me:13196: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -13221,11 +13241,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13224: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13244: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13228: \$? = $ac_status" >&5
+   echo "$as_me:13248: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -13296,6 +13316,9 @@ $as_echo_n "checking whether the $compiler linker ($LD) supports shared librarie
   ;;
   cygwin* | mingw* | cegcc*)
     export_symbols_cmds_CXX='$NM $libobjs $convenience | $global_symbol_pipe | $SED -e '\''/^[BCDGRS][ ]/s/.*[ ]\([^ ]*\)/\1 DATA/;/^.*[ ]__nm__/s/^.*[ ]__nm__\([^ ]*\)[ ][^ ]*/\1 DATA/;/^I[ ]/d;/^[AITW][ ]/s/.* //'\'' | sort | uniq > $export_symbols'
+  ;;
+  linux* | k*bsd*-gnu)
+    link_all_deplibs_CXX=no
   ;;
   *)
     export_symbols_cmds_CXX='$NM $libobjs $convenience | $global_symbol_pipe | $SED '\''s/.* //'\'' | sort | uniq > $export_symbols'
@@ -13796,7 +13819,7 @@ linux*oldld* | linux*aout* | linux*coff*)
   ;;
 
 # This must be Linux ELF.
-linux* | k*bsd*-gnu)
+linux* | k*bsd*-gnu | kopensolaris*-gnu)
   version_type=linux
   need_lib_prefix=no
   need_version=no
@@ -13849,6 +13872,18 @@ rm -f core conftest.err conftest.$ac_objext \
   # people can always --disable-shared, the test was removed, and we
   # assume the GNU/Linux dynamic linker is in use.
   dynamic_linker='GNU/Linux ld.so'
+  ;;
+
+netbsdelf*-gnu)
+  version_type=linux
+  need_lib_prefix=no
+  need_version=no
+  library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major ${libname}${shared_ext}'
+  soname_spec='${libname}${release}${shared_ext}$major'
+  shlibpath_var=LD_LIBRARY_PATH
+  shlibpath_overrides_runpath=no
+  hardcode_into_libs=yes
+  dynamic_linker='NetBSD ld.elf_so'
   ;;
 
 netbsd*)
@@ -14406,12 +14441,85 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
-# Check whether --with-frameworks was given.
-if test "${with_frameworks+set}" = set; then :
-  withval=$with_frameworks;
-	for framework in $withval; do
+# Check whether --enable-universal-binary was given.
+if test "${enable_universal_binary+set}" = set; then :
+  enableval=$enable_universal_binary;
+	case $enableval in #(
+  no) :
+     ;; #(
+  *) :
 
-  for element in -F$framework; do
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for universal binary support" >&5
+$as_echo_n "checking for universal binary support... " >&6; }
+	case $host_vendor in #(
+  apple) :
+
+		case $host_cpu in #(
+  i386|x86_64) :
+
+			for cy_arch in i386 x86_64; do
+				cy_save_CXXFLAGS=$CXXFLAGS
+
+  for element in "-arch $cy_arch"; do
+    haveit=
+    for x in $CXXFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }$element"
+    fi
+  done
+
+				cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+
+
+  for element in $cy_arch; do
+    haveit=
+    for x in $cy_arches; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      cy_arches="${cy_arches}${cy_arches:+ }$element"
+    fi
+  done
+
+
+  for element in "-arch $cy_arch"; do
     haveit=
     for x in $CFLAGS; do
 
@@ -14434,7 +14542,265 @@ if test "${with_frameworks+set}" = set; then :
   done
 
 
-  for element in -F$framework; do
+  for element in "-arch $cy_arch"; do
+    haveit=
+    for x in $LDFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LDFLAGS="${LDFLAGS}${LDFLAGS:+ }$element"
+    fi
+  done
+
+
+  for element in "-arch $cy_arch"; do
+    haveit=
+    for x in $OBJCXXFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      OBJCXXFLAGS="${OBJCXXFLAGS}${OBJCXXFLAGS:+ }$element"
+    fi
+  done
+
+
+else
+
+					CXXFLAGS=$cy_save_CXXFLAGS
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+			done
+		 ;; #(
+  *) :
+     ;;
+esac
+	 ;; #(
+  *) :
+     ;;
+esac
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${cy_arches-no}" >&5
+$as_echo "${cy_arches-no}" >&6; }
+ ;;
+esac
+
+else
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for universal binary support" >&5
+$as_echo_n "checking for universal binary support... " >&6; }
+	case $host_vendor in #(
+  apple) :
+
+		case $host_cpu in #(
+  i386|x86_64) :
+
+			for cy_arch in i386 x86_64; do
+				cy_save_CXXFLAGS=$CXXFLAGS
+
+  for element in "-arch $cy_arch"; do
+    haveit=
+    for x in $CXXFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }$element"
+    fi
+  done
+
+				cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+
+
+  for element in $cy_arch; do
+    haveit=
+    for x in $cy_arches; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      cy_arches="${cy_arches}${cy_arches:+ }$element"
+    fi
+  done
+
+
+  for element in "-arch $cy_arch"; do
+    haveit=
+    for x in $CFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CFLAGS="${CFLAGS}${CFLAGS:+ }$element"
+    fi
+  done
+
+
+  for element in "-arch $cy_arch"; do
+    haveit=
+    for x in $LDFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LDFLAGS="${LDFLAGS}${LDFLAGS:+ }$element"
+    fi
+  done
+
+
+  for element in "-arch $cy_arch"; do
+    haveit=
+    for x in $OBJCXXFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      OBJCXXFLAGS="${OBJCXXFLAGS}${OBJCXXFLAGS:+ }$element"
+    fi
+  done
+
+
+else
+
+					CXXFLAGS=$cy_save_CXXFLAGS
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+			done
+		 ;; #(
+  *) :
+     ;;
+esac
+	 ;; #(
+  *) :
+     ;;
+esac
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${cy_arches-no}" >&5
+$as_echo "${cy_arches-no}" >&6; }
+
+fi
+
+
+# Check whether --with-frameworks was given.
+if test "${with_frameworks+set}" = set; then :
+  withval=$with_frameworks;
+	for cy_framework in $withval; do
+
+  for element in -F$cy_framework; do
+    haveit=
+    for x in $CFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CFLAGS="${CFLAGS}${CFLAGS:+ }$element"
+    fi
+  done
+
+
+  for element in -F$cy_framework; do
     haveit=
     for x in $CXXFLAGS; do
 
@@ -14457,7 +14823,7 @@ if test "${with_frameworks+set}" = set; then :
   done
 
 
-  for element in -F$framework; do
+  for element in -F$cy_framework; do
     haveit=
     for x in $OBJCCXXFLAGS; do
 
@@ -14642,10 +15008,11 @@ pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
 $as_echo_n "checking for WEBKIT... " >&6; }
 
-if test -n "$WEBKIT_CFLAGS"; then
-    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_CFLAGS"; then
+        pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"webkit-1.0\""; } >&5
   ($PKG_CONFIG --exists --print-errors "webkit-1.0") 2>&5
   ac_status=$?
@@ -14655,13 +15022,15 @@ if test -n "$WEBKIT_CFLAGS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
-if test -n "$WEBKIT_LIBS"; then
-    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_LIBS"; then
+        pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"webkit-1.0\""; } >&5
   ($PKG_CONFIG --exists --print-errors "webkit-1.0") 2>&5
   ac_status=$?
@@ -14671,8 +15040,9 @@ if test -n "$WEBKIT_LIBS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
 
 
@@ -14685,9 +15055,9 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "webkit-1.0" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "webkit-1.0"`
         else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "webkit-1.0" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "webkit-1.0"`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$WEBKIT_PKG_ERRORS" >&5
@@ -14700,10 +15070,11 @@ pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
 $as_echo_n "checking for WEBKIT... " >&6; }
 
-if test -n "$WEBKIT_CFLAGS"; then
-    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_CFLAGS"; then
+        pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
   ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
   ac_status=$?
@@ -14713,13 +15084,15 @@ if test -n "$WEBKIT_CFLAGS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
-if test -n "$WEBKIT_LIBS"; then
-    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_LIBS"; then
+        pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
   ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
   ac_status=$?
@@ -14729,8 +15102,9 @@ if test -n "$WEBKIT_LIBS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
 
 
@@ -14743,9 +15117,9 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "WebKitGtk" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "WebKitGtk"`
         else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "WebKitGtk" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "WebKitGtk"`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$WEBKIT_PKG_ERRORS" >&5
@@ -14948,10 +15322,11 @@ pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
 $as_echo_n "checking for WEBKIT... " >&6; }
 
-if test -n "$WEBKIT_CFLAGS"; then
-    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_CFLAGS"; then
+        pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
   ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
   ac_status=$?
@@ -14961,13 +15336,15 @@ if test -n "$WEBKIT_CFLAGS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
-if test -n "$WEBKIT_LIBS"; then
-    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_LIBS"; then
+        pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
   ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
   ac_status=$?
@@ -14977,8 +15354,9 @@ if test -n "$WEBKIT_LIBS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
 
 
@@ -14991,9 +15369,9 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "WebKitGtk" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "WebKitGtk"`
         else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "WebKitGtk" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "WebKitGtk"`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$WEBKIT_PKG_ERRORS" >&5
@@ -15259,10 +15637,11 @@ pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
 $as_echo_n "checking for WEBKIT... " >&6; }
 
-if test -n "$WEBKIT_CFLAGS"; then
-    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_CFLAGS"; then
+        pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"webkit-1.0\""; } >&5
   ($PKG_CONFIG --exists --print-errors "webkit-1.0") 2>&5
   ac_status=$?
@@ -15272,13 +15651,15 @@ if test -n "$WEBKIT_CFLAGS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
-if test -n "$WEBKIT_LIBS"; then
-    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_LIBS"; then
+        pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"webkit-1.0\""; } >&5
   ($PKG_CONFIG --exists --print-errors "webkit-1.0") 2>&5
   ac_status=$?
@@ -15288,8 +15669,9 @@ if test -n "$WEBKIT_LIBS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
 
 
@@ -15302,9 +15684,9 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "webkit-1.0" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "webkit-1.0"`
         else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "webkit-1.0" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "webkit-1.0"`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$WEBKIT_PKG_ERRORS" >&5
@@ -15317,10 +15699,11 @@ pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
 $as_echo_n "checking for WEBKIT... " >&6; }
 
-if test -n "$WEBKIT_CFLAGS"; then
-    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_CFLAGS"; then
+        pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
   ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
   ac_status=$?
@@ -15330,13 +15713,15 @@ if test -n "$WEBKIT_CFLAGS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
-if test -n "$WEBKIT_LIBS"; then
-    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_LIBS"; then
+        pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
   ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
   ac_status=$?
@@ -15346,8 +15731,9 @@ if test -n "$WEBKIT_LIBS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
 
 
@@ -15360,9 +15746,9 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "WebKitGtk" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "WebKitGtk"`
         else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "WebKitGtk" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "WebKitGtk"`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$WEBKIT_PKG_ERRORS" >&5
@@ -15565,10 +15951,11 @@ pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
 $as_echo_n "checking for WEBKIT... " >&6; }
 
-if test -n "$WEBKIT_CFLAGS"; then
-    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_CFLAGS"; then
+        pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
   ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
   ac_status=$?
@@ -15578,13 +15965,15 @@ if test -n "$WEBKIT_CFLAGS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
-if test -n "$WEBKIT_LIBS"; then
-    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_LIBS"; then
+        pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
   ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
   ac_status=$?
@@ -15594,8 +15983,9 @@ if test -n "$WEBKIT_LIBS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
 
 
@@ -15608,9 +15998,9 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "WebKitGtk" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "WebKitGtk"`
         else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "WebKitGtk" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "WebKitGtk"`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$WEBKIT_PKG_ERRORS" >&5
@@ -15875,10 +16265,11 @@ pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
 $as_echo_n "checking for WEBKIT... " >&6; }
 
-if test -n "$WEBKIT_CFLAGS"; then
-    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_CFLAGS"; then
+        pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"webkit-1.0\""; } >&5
   ($PKG_CONFIG --exists --print-errors "webkit-1.0") 2>&5
   ac_status=$?
@@ -15888,13 +16279,15 @@ if test -n "$WEBKIT_CFLAGS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
-if test -n "$WEBKIT_LIBS"; then
-    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_LIBS"; then
+        pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"webkit-1.0\""; } >&5
   ($PKG_CONFIG --exists --print-errors "webkit-1.0") 2>&5
   ac_status=$?
@@ -15904,8 +16297,9 @@ if test -n "$WEBKIT_LIBS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
 
 
@@ -15918,9 +16312,9 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "webkit-1.0" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "webkit-1.0"`
         else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "webkit-1.0" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "webkit-1.0"`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$WEBKIT_PKG_ERRORS" >&5
@@ -15933,10 +16327,11 @@ pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
 $as_echo_n "checking for WEBKIT... " >&6; }
 
-if test -n "$WEBKIT_CFLAGS"; then
-    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_CFLAGS"; then
+        pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
   ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
   ac_status=$?
@@ -15946,13 +16341,15 @@ if test -n "$WEBKIT_CFLAGS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
-if test -n "$WEBKIT_LIBS"; then
-    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_LIBS"; then
+        pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
   ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
   ac_status=$?
@@ -15962,8 +16359,9 @@ if test -n "$WEBKIT_LIBS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
 
 
@@ -15976,9 +16374,9 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "WebKitGtk" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "WebKitGtk"`
         else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "WebKitGtk" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "WebKitGtk"`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$WEBKIT_PKG_ERRORS" >&5
@@ -16181,10 +16579,11 @@ pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
 $as_echo_n "checking for WEBKIT... " >&6; }
 
-if test -n "$WEBKIT_CFLAGS"; then
-    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_CFLAGS"; then
+        pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
   ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
   ac_status=$?
@@ -16194,13 +16593,15 @@ if test -n "$WEBKIT_CFLAGS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
-if test -n "$WEBKIT_LIBS"; then
-    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$WEBKIT_LIBS"; then
+        pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
   ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
   ac_status=$?
@@ -16210,8 +16611,9 @@ if test -n "$WEBKIT_LIBS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
 
 
@@ -16224,9 +16626,9 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "WebKitGtk" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "WebKitGtk"`
         else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "WebKitGtk" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "WebKitGtk"`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$WEBKIT_PKG_ERRORS" >&5
@@ -16510,10 +16912,11 @@ pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for LIBFFI" >&5
 $as_echo_n "checking for LIBFFI... " >&6; }
 
-if test -n "$LIBFFI_CFLAGS"; then
-    pkg_cv_LIBFFI_CFLAGS="$LIBFFI_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$LIBFFI_CFLAGS"; then
+        pkg_cv_LIBFFI_CFLAGS="$LIBFFI_CFLAGS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libffi\""; } >&5
   ($PKG_CONFIG --exists --print-errors "libffi") 2>&5
   ac_status=$?
@@ -16523,13 +16926,15 @@ if test -n "$LIBFFI_CFLAGS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
-if test -n "$LIBFFI_LIBS"; then
-    pkg_cv_LIBFFI_LIBS="$LIBFFI_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$LIBFFI_LIBS"; then
+        pkg_cv_LIBFFI_LIBS="$LIBFFI_LIBS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libffi\""; } >&5
   ($PKG_CONFIG --exists --print-errors "libffi") 2>&5
   ac_status=$?
@@ -16539,8 +16944,9 @@ if test -n "$LIBFFI_LIBS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
 
 
@@ -16553,9 +16959,9 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        LIBFFI_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "libffi" 2>&1`
+	        LIBFFI_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "libffi"`
         else
-	        LIBFFI_PKG_ERRORS=`$PKG_CONFIG --print-errors "libffi" 2>&1`
+	        LIBFFI_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "libffi"`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$LIBFFI_PKG_ERRORS" >&5
@@ -16691,10 +17097,11 @@ pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for LIBFFI" >&5
 $as_echo_n "checking for LIBFFI... " >&6; }
 
-if test -n "$LIBFFI_CFLAGS"; then
-    pkg_cv_LIBFFI_CFLAGS="$LIBFFI_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$LIBFFI_CFLAGS"; then
+        pkg_cv_LIBFFI_CFLAGS="$LIBFFI_CFLAGS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libffi\""; } >&5
   ($PKG_CONFIG --exists --print-errors "libffi") 2>&5
   ac_status=$?
@@ -16704,13 +17111,15 @@ if test -n "$LIBFFI_CFLAGS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
-if test -n "$LIBFFI_LIBS"; then
-    pkg_cv_LIBFFI_LIBS="$LIBFFI_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
+if test -n "$PKG_CONFIG"; then
+    if test -n "$LIBFFI_LIBS"; then
+        pkg_cv_LIBFFI_LIBS="$LIBFFI_LIBS"
+    else
+        if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libffi\""; } >&5
   ($PKG_CONFIG --exists --print-errors "libffi") 2>&5
   ac_status=$?
@@ -16720,8 +17129,9 @@ if test -n "$LIBFFI_LIBS"; then
 else
   pkg_failed=yes
 fi
- else
-    pkg_failed=untried
+    fi
+else
+	pkg_failed=untried
 fi
 
 
@@ -16734,9 +17144,9 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        LIBFFI_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "libffi" 2>&1`
+	        LIBFFI_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "libffi"`
         else
-	        LIBFFI_PKG_ERRORS=`$PKG_CONFIG --print-errors "libffi" 2>&1`
+	        LIBFFI_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "libffi"`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$LIBFFI_PKG_ERRORS" >&5

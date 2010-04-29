@@ -56,14 +56,40 @@ AC_CHECK_PROGS([SVN], [svn])
 AC_CHECK_PROGS([SVNVERSION], [svnversion])
 AC_PROG_CXX
 AC_PROG_OBJCXX
+AC_DEFUN([CY_CHECK_UNIVERSAL], [
+	AC_MSG_CHECKING([for universal binary support])
+	AS_CASE([$host_vendor], [apple], [
+		AS_CASE([$host_cpu], [i386|x86_64], [
+			for cy_arch in i386 x86_64; do
+				cy_save_CXXFLAGS=$CXXFLAGS
+				AC_LIB_APPENDTOVAR([CXXFLAGS], ["-arch $cy_arch"])
+				AC_TRY_LINK([], [], [
+					AC_LIB_APPENDTOVAR([cy_arches], [$cy_arch])
+					AC_LIB_APPENDTOVAR([CFLAGS], ["-arch $cy_arch"])
+					AC_LIB_APPENDTOVAR([LDFLAGS], ["-arch $cy_arch"])
+					AC_LIB_APPENDTOVAR([OBJCXXFLAGS], ["-arch $cy_arch"])
+				], [
+					CXXFLAGS=$cy_save_CXXFLAGS
+				])
+			done
+		])
+	])
+	AC_MSG_RESULT([${cy_arches-no}])
+])
+AC_ARG_ENABLE([universal-binary], [AS_HELP_STRING(
+	[--disable-universal-binary],
+	[do not build with universal binary support on Darwin]
+)], [
+	AS_CASE([$enableval], [no], [], [CY_CHECK_UNIVERSAL])
+], [CY_CHECK_UNIVERSAL])
 AC_ARG_WITH([frameworks], [AS_HELP_STRING(
 	[--with-frameworks=DIRS],
 	[add to DIRS (space separated) to the Darwin include path for frameworks with -F]
 )], [
-	for framework in $withval; do
-		AC_LIB_APPENDTOVAR([CFLAGS], [-F$framework])
-		AC_LIB_APPENDTOVAR([CXXFLAGS], [-F$framework])
-		AC_LIB_APPENDTOVAR([OBJCCXXFLAGS], [-F$framework])
+	for cy_framework in $withval; do
+		AC_LIB_APPENDTOVAR([CFLAGS], [-F$cy_framework])
+		AC_LIB_APPENDTOVAR([CXXFLAGS], [-F$cy_framework])
+		AC_LIB_APPENDTOVAR([OBJCCXXFLAGS], [-F$cy_framework])
 	done
 ])
 AC_LANG([C++])
