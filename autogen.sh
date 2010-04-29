@@ -2,13 +2,16 @@
 set -e
 shopt -s expand_aliases extglob
 unalias -a
+libdirs=()
 case `uname` in
 (Linux)
 	libdirs=('/usr/share/gettext')
 	;;
 (FreeBSD)
 	alias sed=gsed
-	libdirs=()
+	;;
+(Darwin)
+	alias sed=gsed libtoolize=glibtoolize
 	;;
 esac
 aclocal
@@ -22,7 +25,7 @@ function filter()
 		-e '/and that aclocal\.m4 was recently regenerated (using aclocal)\./d' \
 		-e "/no \`Makefile\.am' found for any configure output/d" \
 		-e "/Consider adding \`AC_CONFIG_MACRO_DIR(\[m4\])' to configure\.ac and/d" \
-		-e '/rerunning libtoolize, to keep the correct libtool macros in-tree\./d' \
+		-e '/rerunning g\?libtoolize, to keep the correct libtool macros in-tree\./d' \
 		-e "/Consider adding \`-I m4' to ACLOCAL_AMFLAGS in Makefile\.am\./d"
 }
 automake -acf 2>&1 | filter
