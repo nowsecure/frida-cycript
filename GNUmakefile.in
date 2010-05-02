@@ -184,7 +184,7 @@ Mach/Inject.lo: Trampoline.t.hpp Baton.hpp
 
 %.t.hpp: %.t.cpp trampoline.sh Baton.hpp Trampoline.hpp
 	# DOUG: abstract "lipo" and "nm" with configure?
-	./trampoline.sh $@ .libs/lib$*.t.dylib $* $(sed) $(otool) lipo nm $(libtool) --mode=compile $(cxx) -dynamiclib -fno-stack-protector -fno-exceptions -I$(srcdir)/include -o lib$*.t.la $< $(cflags)
+	./trampoline.sh $@ .libs/$*.t.o $* $(sed) $(otool) lipo nm $(libtool) --mode=compile $(cxx) -c -fno-stack-protector -fno-exceptions -I$(srcdir)/include -o $*.t.lo $< $(cflags)
 endif
 endif
 
