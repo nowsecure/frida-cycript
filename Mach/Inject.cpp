@@ -126,9 +126,11 @@ void InjectLibrary(pid_t pid) {
     vm_write(task, code, reinterpret_cast<vm_address_t>(trampoline->data_), trampoline->size_);
     _krncall(vm_protect(task, code, trampoline->size_, false, VM_PROT_READ | VM_PROT_EXECUTE));
 
+    /*
     printf("_ptss:%p\n", baton->__pthread_set_self);
     printf("dlsym:%p\n", baton->dlsym);
     printf("code:%zx\n", (size_t) code);
+    */
 
     uint32_t frame[push];
     if (sizeof(frame) != 0)
