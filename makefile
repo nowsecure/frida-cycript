@@ -159,7 +159,14 @@ test: $(deb)
 	if [[ -e test.cy ]]; then cycript test.cy; fi
 
 install: cycript $(lib)cycript.$(dll)
-	cp -p cycript /usr/bin
-	cp -p $(lib)cycript.$(dll) /usr/lib
+	sudo cp -p cycript /usr/bin
+	sudo cp -p $(lib)cycript.$(dll) /usr/lib
+	# DOUG: this needs to be ported to GNUmakefile
+	sudo chgrp procmod /usr/bin/cycript
+	sudo chmod g+s /usr/bin/cycript
+
+# DOUG: this needs to be ported to GNUmakefile
+uninstall:
+	sudo rm -f /usr/bin/cycript /usr/lib/libcycript.dylib
 
 .PHONY: all clean extra package control.tmp

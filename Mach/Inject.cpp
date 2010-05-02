@@ -40,9 +40,7 @@
 #include <dlfcn.h>
 #include <mach/mach.h>
 
-extern "C" {
-#include <mach-o/nlist.h>
-}
+#include <mach/i386/thread_status.h>
 
 #include <cstdio>
 #include <pthread.h>
@@ -55,18 +53,8 @@ extern "C" {
 
 extern "C" void __pthread_set_self(pthread_t);
 
-template <typename Type_>
-static void nlset(Type_ &function, struct nlist *nl, size_t index) {
-    struct nlist &name(nl[index]);
-    uintptr_t value(name.n_value);
-    _assert(value != 0);
-    if ((name.n_desc & N_ARM_THUMB_DEF) != 0)
-        value |= 0x00000001;
-    function = value;
-}
-
 void InjectLibrary(pid_t pid) {
-    // XXX: break this into the build environment
+    // DOUG: turn this into some kind of -D passed from configure
     const char *library("/usr/lib/libcycript.dylib");
 
     static const size_t Stack_(8 * 1024);
@@ -77,23 +65,7 @@ void InjectLibrary(pid_t pid) {
     uint8_t *local(reinterpret_cast<uint8_t *>(apr_palloc(pool, depth)));
     Baton *baton(reinterpret_cast<Baton *>(local));
 
-    uintptr_t set_self_internal;
-    uintptr_t set_self_external;
-
-#if defined(__i386__) || defined(__arm__)
-    struct nlist nl[3];
-    memset(nl, 0, sizeof(nl));
-    nl[0].n_un.n_name = (char *) "__pthread_set_self";
-    nl[1].n_un.n_name = (char *) "___pthread_set_self";
-    nlist("/usr/lib/libSystem.B.dylib", nl);
-    nlset(set_self_internal, nl, 0);
-    nlset(set_self_external, nl, 1);
-#else
-    set_self_internal = 0;
-    set_self_external = 0;
-#endif
-
-    baton->_pthread_set_self = reinterpret_cast<void (*)(pthread_t)>(reinterpret_cast<uintptr_t>(&__pthread_set_self) - set_self_external + set_self_internal);
+    baton->__pthread_set_self = &__pthread_set_self;
 
     baton->pthread_create = &pthread_create;
     baton->pthread_join = &pthread_join;
@@ -118,11 +90,6 @@ void InjectLibrary(pid_t pid) {
 
     vm_write(task, data, reinterpret_cast<vm_address_t>(baton), depth);
 
-    vm_address_t code;
-    _krncall(vm_allocate(task, &code, sizeof(Trampoline_), true));
-    vm_write(task, code, reinterpret_cast<vm_address_t>(Trampoline_), sizeof(Trampoline_));
-    _krncall(vm_protect(task, code, sizeof(Trampoline_), false, VM_PROT_READ | VM_PROT_EXECUTE));
-
     thread_act_t thread;
     _krncall(thread_create(task, &thread));
 
@@ -130,24 +97,42 @@ void InjectLibrary(pid_t pid) {
     mach_msg_type_number_t count;
     size_t push;
 
+    Trampoline *trampoline;
+
 #if defined(__arm__)
+    trampoline = &Trampoline_arm_;
     arm_thread_state_t state;
     flavor = ARM_THREAD_STATE;
     count = ARM_THREAD_STATE_COUNT;
     push = 0;
-#elif defined(__i386__) || defined(__x86_64__)
+#elif defined(__i386__)
+    trampoline = &Trampoline_i386_;
     i386_thread_state_t state;
     flavor = i386_THREAD_STATE;
     count = i386_THREAD_STATE_COUNT;
     push = 5;
+#elif defined(__x86_64__)
+    trampoline = &Trampoline_x86_64_;
+    x86_thread_state64_t state;
+    flavor = x86_THREAD_STATE64;
+    count = x86_THREAD_STATE64_COUNT;
+    push = 2;
 #else
     #error XXX: implement
 #endif
 
-    uintptr_t frame[push];
+    vm_address_t code;
+    _krncall(vm_allocate(task, &code, trampoline->size_, true));
+    vm_write(task, code, reinterpret_cast<vm_address_t>(trampoline->data_), trampoline->size_);
+    _krncall(vm_protect(task, code, trampoline->size_, false, VM_PROT_READ | VM_PROT_EXECUTE));
+
+    printf("_ptss:%p\n", baton->__pthread_set_self);
+    printf("dlsym:%p\n", baton->dlsym);
+    printf("code:%zx\n", (size_t) code);
+
+    uint32_t frame[push];
     if (sizeof(frame) != 0)
         memset(frame, 0, sizeof(frame));
-
     memset(&state, 0, sizeof(state));
 
     mach_msg_type_number_t read(count);
@@ -157,18 +142,22 @@ void InjectLibrary(pid_t pid) {
 #if defined(__arm__)
     state.r[0] = data;
     state.sp = stack + Stack_;
-    state.pc = code;
+    state.pc = code + trampoline->entry_;
 
     if ((state.pc & 0x1) != 0) {
         state.pc &= ~0x1;
         state.cpsr |= 0x20;
     }
-#elif defined(__i386__) || defined(__x86_64__)
-    frame[0] = 0;
+#elif defined(__i386__)
     frame[1] = data;
 
-    state.__eip = code;
+    state.__eip = code + trampoline->entry_;
     state.__esp = stack + Stack_ - sizeof(frame);
+#elif defined(__x86_64__)
+    frame[0] = 0xdeadbeef;
+    state.__rdi = data;
+    state.__rip = code + trampoline->entry_;
+    state.__rsp = stack + Stack_ - sizeof(frame);
 #else
     #error XXX: implement
 #endif

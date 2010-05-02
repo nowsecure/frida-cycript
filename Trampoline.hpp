@@ -1,5 +1,5 @@
 /* Cycript - Inlining/Optimizing JavaScript Compiler
- * Copyright (C) 2009  Jay Freeman (saurik)
+ * Copyright (C) 2010  Jay Freeman (saurik)
 */
 
 /* Modified BSD License {{{ */
@@ -37,22 +37,8 @@
 */
 /* }}} */
 
-#include <dlfcn.h>
-#include <mach/mach.h>
-#include <sys/types.h>
-
-struct Baton {
-    void (*__pthread_set_self)(pthread_t);
-
-    int (*pthread_create)(pthread_t *, const pthread_attr_t *, void *(*)(void *), void *);
-    int (*pthread_join)(pthread_t, void **);
-
-    void *(*dlopen)(const char *, int);
-    void *(*dlsym)(void *, const char *);
-
-    mach_port_t (*mach_thread_self)();
-    kern_return_t (*thread_terminate)(thread_act_t);
-
-    pid_t pid;
-    char library[];
+struct Trampoline {
+    const char *data_;
+    size_t size_;
+    size_t entry_;
 };

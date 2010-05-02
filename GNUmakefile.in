@@ -182,9 +182,9 @@ inject += Mach/Inject.lo
 
 Mach/Inject.lo: Trampoline.t.hpp Baton.hpp
 
-%.t.hpp: %.t.cpp
-	# LC_SEGMENT_64
-	$(libtool) --mode=compile $(cxx) -c -fno-stack-protector -fno-exceptions -I$(srcdir)/include -o $*.t.lo $< $(cflags) && { file=($$($(otool) -l .libs/$*.t.o | $(sed) -e 'x; /^1/ { x; /^ *filesize / { s/^.* //; p; }; /^ *fileoff / { s/^.* //; p; }; x; }; x; /^ *cmd LC_SEGMENT/ { s/.*/1/; x; }; d;')); od -t x1 -j $${file[0]} -N $${file[1]} .libs/$*.t.o | $(sed) -e 's/^[^ ]*//' | tr $$'\n' ' ' | $(sed) -e 's/  */ /g;s/^ *//;s/ $$//;s/ /,/g;s/\([^,][^,]\)/0x\1/g' | $(sed) -e 's/^/static const char $*_[] = {/;s/$$/};/' && echo && echo "/*" && $(otool) -vVt .libs/$*.t.o && echo "*/"; } >$@ && rm -f $*.t.lo .libs/$*.t.o
+%.t.hpp: %.t.cpp trampoline.sh Baton.hpp Trampoline.hpp
+	# DOUG: abstract "lipo" and "nm" with configure?
+	./trampoline.sh $@ .libs/lib$*.t.dylib $* $(sed) $(otool) lipo nm $(libtool) --mode=compile $(cxx) -dynamiclib -fno-stack-protector -fno-exceptions -I$(srcdir)/include -o lib$*.t.la $< $(cflags)
 endif
 endif
 
