@@ -48,6 +48,7 @@ struct Baton {
     int (*pthread_join)(pthread_t, void **);
 
     void *(*dlopen)(const char *, int);
+    char *(*dlerror)();
     void *(*dlsym)(void *, const char *);
 
     mach_port_t (*mach_thread_self)();

@@ -71,6 +71,7 @@ void InjectLibrary(pid_t pid) {
     baton->pthread_join = &pthread_join;
 
     baton->dlopen = &dlopen;
+    baton->dlerror = &dlerror;
     baton->dlsym = &dlsym;
 
     baton->mach_thread_self = &mach_thread_self;

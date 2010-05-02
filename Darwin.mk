@@ -3,9 +3,10 @@ link += -lobjc -framework CoreFoundation
 console += -framework Foundation
 library += -install_name /usr/lib/libcycript.$(dll)
 library += -framework Foundation
-library += -framework JavaScriptCore
+console += -framework JavaScriptCore
 # XXX: do I just need WebCore?
-library += -framework WebKit
+console += -framework WebKit
+library += -undefined dynamic_lookup
 library += -liconv
 flags += -I/usr/include/ffi
 apr_config := /usr/bin/apr-1-config

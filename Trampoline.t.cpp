@@ -46,6 +46,8 @@
 template <typename Type_>
 static _finline void dlset(Baton *baton, Type_ &function, const char *name, void *handle = RTLD_DEFAULT) {
     function = reinterpret_cast<Type_>(baton->dlsym(handle, name));
+    if (function == NULL)
+        baton->dlerror();
 }
 
 void *Routine(void *arg) {
@@ -55,13 +57,17 @@ void *Routine(void *arg) {
     dlset(baton, dlopen, "dlopen");
 
     void *handle(dlopen(baton->library, RTLD_LAZY | RTLD_LOCAL));
+    if (handle == NULL) {
+        baton->dlerror();
+        return NULL;
+    }
 
     void (*CYHandleServer)(pid_t);
     dlset(baton, CYHandleServer, "CYHandleServer", handle);
 
     CYHandleServer(baton->pid);
 
-    return arg;
+    return NULL;
 }
 
 static void $bzero(void *data, size_t size) {
