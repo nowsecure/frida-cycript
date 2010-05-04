@@ -52,7 +52,7 @@ for arch in $(echo "${detailed}" | "${sed}" -e '/^architecture / { s/^architectu
             s@^        @//  @;
             s/\(....\)/ \1/g;
             s@^ // @//@;
-            s/ *$//;
+            s/ *$/ /; # comments cannot end with \ (XXX: put something else there, line it up)
         };
 
         /^[0-7]/ {
