@@ -56,6 +56,15 @@ void *Routine(void *arg) {
     void *(*dlopen)(const char *, int);
     dlset(baton, dlopen, "dlopen");
 
+    if (baton->dlsym(RTLD_DEFAULT, "JSEvaluateScript") == NULL)
+        dlopen("/System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore", RTLD_GLOBAL | RTLD_LAZY);
+
+    void *(*objc_getClass)(const char *);
+    dlset(baton, objc_getClass, "objc_getClass");
+
+    if (objc_getClass("WebUndefined") == NULL)
+        dlopen("/System/Library/Frameworks/WebKit.framework/WebKit", RTLD_GLOBAL | RTLD_LAZY);
+
     void *handle(dlopen(baton->library, RTLD_LAZY | RTLD_LOCAL));
     if (handle == NULL) {
         baton->dlerror();
