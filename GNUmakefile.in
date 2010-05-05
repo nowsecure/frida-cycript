@@ -99,7 +99,7 @@ filters := #E4X
 ldid := true
 entitle := $(ldid)
 lib := lib
-dll := so
+dll := @SO@
 depends :=
 
 restart ?= $(MAKE)
@@ -180,20 +180,20 @@ Struct.hpp:
 
 ifeq ($(CY_OBJECTIVEC_MACH),1)
 code += Handler.lo
-cflags += -DCY_ATTACH -DCY_LIBRARY='"$(libdir)/libcycript.@SO@"'
+cflags += -DCY_ATTACH -DCY_LIBRARY='"$(libdir)/libcycript.$(dll)"'
 inject += Mach/Inject.lo
 
 Mach/Inject.lo: Trampoline.t.hpp Baton.hpp
 
 %.t.hpp: %.t.cpp trampoline.sh Baton.hpp Trampoline.hpp
-	$(srcdir)/trampoline.sh $@ .libs/$*.t.o $* $(sed) $(otool) $(lipo) $(nm) $(libtool) --mode=compile $(cxx) -c -fno-stack-protector -fno-exceptions -I$(srcdir)/include -o $*.t.lo $< $(cflags)
+	$(srcdir)/trampoline.sh $@ .libs/lib$*.t.$(dll) $* $(sed) $(otool) $(lipo) $(nm) $(libtool) --mode=link $(cxx) -c -fno-stack-protector -fno-exceptions -I$(srcdir)/include -o lib$*.t.la $< $(cflags) -rpath $(libdir)
 endif
 endif
 
 all: $(all)
 
 clean::
-	rm -rf *.lo *.o *.d *.t.hpp .libs */*.d */*.lo */.libs libcycript.la $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.gperf Bridge.hpp Cycript.output
+	rm -rf *.lo *.o *.d *.t.hpp .libs */*.d */*.lo */.libs lib*.la $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.gperf Bridge.hpp Cycript.output
 ifneq ($(srcdir),.)
 	rm -rf Mach ObjectiveC sig
 endif
