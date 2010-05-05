@@ -23,7 +23,9 @@ sed := @SED@
 bison := @BISON@
 time := @TIME@
 gperf := @GPERF@
-otool := @OTOOL@
+otool := @_OTOOL@
+lipo := @_LIPO@
+nm := @_NM@
 
 INSTALL := @INSTALL@
 INSTALL_PROGRAM := @INSTALL_PROGRAM@
@@ -55,6 +57,7 @@ mandir := @mandir@
 CY_EXECUTE := @CY_EXECUTE@
 CY_OBJECTIVEC := @CY_OBJECTIVEC@
 CY_OBJECTIVEC_MACH := @CY_OBJECTIVEC_MACH@
+CY_ATTACH_GROUP := @CY_ATTACH_GROUP@
 
 svn := @SVN@
 svnversion := @SVNVERSION@
@@ -177,14 +180,13 @@ Struct.hpp:
 
 ifeq ($(CY_OBJECTIVEC_MACH),1)
 code += Handler.lo
-cflags += -DCY_ATTACH
+cflags += -DCY_ATTACH -DCY_LIBRARY='"$(libdir)/libcycript.@SO@"'
 inject += Mach/Inject.lo
 
 Mach/Inject.lo: Trampoline.t.hpp Baton.hpp
 
 %.t.hpp: %.t.cpp trampoline.sh Baton.hpp Trampoline.hpp
-	# DOUG: abstract "lipo" and "nm" with configure?
-	./trampoline.sh $@ .libs/$*.t.o $* $(sed) $(otool) lipo nm $(libtool) --mode=compile $(cxx) -c -fno-stack-protector -fno-exceptions -I$(srcdir)/include -o $*.t.lo $< $(cflags)
+	$(srcdir)/trampoline.sh $@ .libs/$*.t.o $* $(sed) $(otool) $(lipo) $(nm) $(libtool) --mode=compile $(cxx) -c -fno-stack-protector -fno-exceptions -I$(srcdir)/include -o $*.t.lo $< $(cflags)
 endif
 endif
 
@@ -251,6 +253,10 @@ install: cycript libcycript.la
 	$(INSTALL) -d $(DESTDIR)$(bindir) $(DESTDIR)$(libdir)
 	$(libtool) --mode=install $(INSTALL_PROGRAM) libcycript.la $(DESTDIR)$(libdir)/libcycript.la
 	$(libtool) --mode=install $(INSTALL_PROGRAM) cycript $(DESTDIR)$(bindir)/cycript
+ifneq ($(CY_ATTACH_GROUP),)
+	chgrp $(CY_ATTACH_GROUP) $(DESTDIR)$(bindir)/cycript
+	chmod g+s $(DESTDIR)$(bindir)/cycript
+endif
 
 uninstall:
 	$(libtool) --mode=uninstall rm -f $(DESTDIR)$(bindir)/cycript

@@ -54,8 +54,7 @@
 extern "C" void __pthread_set_self(pthread_t);
 
 void InjectLibrary(pid_t pid) {
-    // DOUG: turn this into some kind of -D passed from configure
-    const char *library("/usr/lib/libcycript.dylib");
+    const char *library(CY_LIBRARY);
 
     static const size_t Stack_(8 * 1024);
     size_t length(strlen(library) + 1), depth(sizeof(Baton) + length);
