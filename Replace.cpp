@@ -114,6 +114,14 @@ CYStatement *CYBreak::Replace(CYContext &context) {
     return this;
 }
 
+CYExpression *CYCall::AddArgument(CYContext &context, CYExpression *value) {
+    CYArgument **argument(&arguments_);
+    while (*argument != NULL)
+        argument = &(*argument)->next_;
+    *argument = $ CYArgument(value);
+    return this;
+}
+
 CYExpression *CYCall::Replace(CYContext &context) {
     context.Replace(function_);
     arguments_->Replace(context);
@@ -246,6 +254,10 @@ CYStatement *CYExpress::Replace(CYContext &context) {
     return this;
 }
 
+CYExpression *CYExpression::AddArgument(CYContext &context, CYExpression *value) {
+    return $C1(this, value);
+}
+
 CYExpression *CYExpression::ClassName(CYContext &context, bool object) {
     return this;
 }
@@ -345,7 +357,8 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
     if (!outer && name_ != NULL)
         Inject(context);
 
-    parameters_ = parameters_->Replace(context, code_);
+    if (parameters_ != NULL)
+        parameters_ = parameters_->Replace(context, code_);
     code_.Replace(context);
 
     context.scope_ = scope.parent_;
@@ -420,6 +433,14 @@ CYStatement *CYLet::Replace(CYContext &context) {
 void CYMember::Replace_(CYContext &context) {
     context.Replace(object_);
     context.Replace(property_);
+}
+
+CYExpression *CYNew::AddArgument(CYContext &context, CYExpression *value) {
+    CYArgument **argument(&arguments_);
+    while (*argument != NULL)
+        argument = &(*argument)->next_;
+    *argument = $ CYArgument(value);
+    return this;
 }
 
 CYExpression *CYNew::Replace(CYContext &context) {
@@ -553,6 +574,15 @@ void CYProperty::Replace(CYContext &context) { $T()
 CYStatement *CYReturn::Replace(CYContext &context) {
     context.Replace(value_);
     return this;
+}
+
+CYExpression *CYRubyBlock::Replace(CYContext &context) {
+    // XXX: this needs to do something much more epic to handle return
+    return call_->AddArgument(context, proc_->Replace(context));
+}
+
+CYExpression *CYRubyProc::Replace(CYContext &context) {
+    return $ CYFunctionExpression(NULL, parameters_, code_);
 }
 
 void CYScope::Declare(CYContext &context, CYIdentifier *identifier, CYIdentifierFlags flags) {

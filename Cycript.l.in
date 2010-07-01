@@ -250,7 +250,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "("    L C return tk::OpenParen;
 ")"    L C return tk::CloseParen;
 
-"{"    L C return tk::OpenBrace;
+"{"    L C return yylval->newline_ ? tk::OpenBrace_ : tk::OpenBrace;
 "}"    L C return tk::CloseBrace;
 
 "["    L C return tk::OpenBracket;

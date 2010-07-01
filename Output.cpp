@@ -561,7 +561,7 @@ void CYObject::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYOptionalFunctionParameter::Output(CYOutput &out) const {
-    out << *name_ << ' ' << '=' << ' ';
+    out << *name_ << '=';
     initializer_->Output(out, CYPA, CYNoFlags);
     if (next_ != NULL)
         out << ',' << ' ' << *next_;
@@ -605,6 +605,17 @@ void CYReturn::Output(CYOutput &out, CYFlags flags) const {
     if (value_ != NULL)
         out << ' ' << *value_;
     out << ';';
+}
+
+void CYRubyBlock::Output(CYOutput &out, CYFlags flags) const {
+    call_->Output(out, CYLeft(flags));
+    out << ' ';
+    proc_->Output(out, CYRight(flags));
+}
+
+void CYRubyProc::Output(CYOutput &out, CYFlags flags) const {
+    // XXX: this is not outputting the parameters
+    out << code_;
 }
 
 void CYStatement::Multiple(CYOutput &out, CYFlags flags) const {

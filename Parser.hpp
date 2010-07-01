@@ -537,6 +537,8 @@ struct CYExpression :
     virtual const char *ForEachIn() const;
     virtual CYExpression *ForEachIn(CYContext &out);
 
+    virtual CYExpression *AddArgument(CYContext &context, CYExpression *value);
+
     virtual void Output(CYOutput &out) const;
     virtual void Output(CYOutput &out, CYFlags flags) const = 0;
     void Output(CYOutput &out, unsigned precedence, CYFlags flags) const;
@@ -1337,6 +1339,8 @@ struct CYNew :
 
     virtual CYExpression *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
+
+    virtual CYExpression *AddArgument(CYContext &context, CYExpression *value);
 };
 
 struct CYCall :
@@ -1348,6 +1352,29 @@ struct CYCall :
     CYCall(CYExpression *function, CYArgument *arguments = NULL) :
         function_(function),
         arguments_(arguments)
+    {
+    }
+
+    CYPrecedence(1)
+    CYRightHand(false)
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+
+    virtual CYExpression *AddArgument(CYContext &context, CYExpression *value);
+};
+
+struct CYRubyProc;
+
+struct CYRubyBlock :
+    CYExpression
+{
+    CYExpression *call_;
+    CYRubyProc *proc_;
+
+    CYRubyBlock(CYExpression *call, CYRubyProc *proc) :
+        call_(call),
+        proc_(proc)
     {
     }
 
@@ -1408,6 +1435,7 @@ struct CYWhile :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
+// XXX: this should be split up into CYAnonymousFunction and CYNamedFunction (subclass)
 struct CYFunction {
     CYIdentifier *name_;
     CYFunctionParameter *parameters_;
@@ -1428,6 +1456,7 @@ struct CYFunction {
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
+// XXX: this should be split up into CYAnonymousFunctionExpression and CYNamedFunctionExpression
 struct CYFunctionExpression :
     CYFunction,
     CYExpression
@@ -1444,6 +1473,20 @@ struct CYFunctionExpression :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
+// XXX: this should derive from CYAnonymousFunctionExpression
+struct CYRubyProc :
+    CYFunctionExpression
+{
+    CYRubyProc(CYFunctionParameter *parameters, CYStatement *statements) :
+        CYFunctionExpression(NULL, parameters, statements)
+    {
+    }
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+// XXX: this should derive from CYNamedFunction
 struct CYFunctionStatement :
     CYFunction,
     CYStatement
