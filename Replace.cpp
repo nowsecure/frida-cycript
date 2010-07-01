@@ -345,7 +345,7 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
     if (!outer && name_ != NULL)
         Inject(context);
 
-    parameters_->Replace(context);
+    parameters_ = parameters_->Replace(context, code_);
     code_.Replace(context);
 
     context.scope_ = scope.parent_;
@@ -357,10 +357,12 @@ CYExpression *CYFunctionExpression::Replace(CYContext &context) {
     return this;
 }
 
-void CYFunctionParameter::Replace(CYContext &context) { $T()
+CYFunctionParameter *CYFunctionParameter::Replace(CYContext &context, CYBlock &code) {
     name_ = name_->Replace(context);
     context.scope_->Declare(context, name_, CYIdentifierArgument);
-    next_->Replace(context);
+    if (next_ != NULL)
+        next_ = next_->Replace(context, code);
+    return this;
 }
 
 CYStatement *CYFunctionStatement::Replace(CYContext &context) {
@@ -446,6 +448,18 @@ CYString *CYNumber::String(CYContext &context) {
 CYExpression *CYObject::Replace(CYContext &context) {
     properties_->Replace(context);
     return this;
+}
+
+CYFunctionParameter *CYOptionalFunctionParameter::Replace(CYContext &context, CYBlock &code) {
+    CYFunctionParameter *parameter($ CYFunctionParameter(name_, next_));
+    parameter = parameter->Replace(context, code);
+
+    CYVariable *name($ CYVariable(name_));
+    code.AddPrev($ CYIf($ CYIdentical($ CYTypeOf(name), $S("undefined")), $$->*
+        $E($ CYAssign(name, initializer_))
+    ));
+
+    return parameter;
 }
 
 CYExpression *CYPostfix::Replace(CYContext &context) {

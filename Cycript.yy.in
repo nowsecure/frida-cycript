@@ -1843,6 +1843,7 @@ PropertyNameAndValueList_
     : "," { $$ = NULL; }
     ;
 /* }}} */
+
 /* JavaScript 1.7: Array Comprehensions {{{ */
 IfComprehension
     : "if" "(" Expression ")" { $$ = new(driver.pool_) CYIfComprehension($3); }
@@ -1881,9 +1882,15 @@ Statement_
     : LetStatement
     ;
 *//* }}} */
+
 /* JavaScript FTW: Function Statements {{{ */
 Statement
     : LexSetRegExp FunctionDeclaration { driver.Warning(yylloc, "warning, FunctionDeclaration is a SourceElement, not a Statement"); } { $$ = $2; }
+    ;
+/* }}} */
+/* JavaScript FTW: Optional Arguments {{{ */
+FormalParameterList
+    : Identifier "=" AssignmentExpression FormalParameterList_ { $$ = new(driver.pool_) CYOptionalFunctionParameter($1, $3, $4); }
     ;
 /* }}} */
 

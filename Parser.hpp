@@ -616,7 +616,22 @@ struct CYFunctionParameter :
     {
     }
 
-    void Replace(CYContext &context);
+    virtual CYFunctionParameter *Replace(CYContext &context, CYBlock &code);
+    virtual void Output(CYOutput &out) const;
+};
+
+struct CYOptionalFunctionParameter :
+    CYFunctionParameter
+{
+    CYExpression *initializer_;
+
+    CYOptionalFunctionParameter(CYIdentifier *name, CYExpression *initializer, CYFunctionParameter *next = NULL) :
+        CYFunctionParameter(name, next),
+        initializer_(initializer)
+    {
+    }
+
+    virtual CYFunctionParameter *Replace(CYContext &context, CYBlock &code);
     virtual void Output(CYOutput &out) const;
 };
 

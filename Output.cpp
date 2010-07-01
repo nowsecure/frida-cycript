@@ -560,6 +560,12 @@ void CYObject::Output(CYOutput &out, CYFlags flags) const {
         out << ')';
 }
 
+void CYOptionalFunctionParameter::Output(CYOutput &out) const {
+    out << *name_ << '=' << *initializer_;
+    if (next_ != NULL)
+        out << ',' << ' ' << *next_;
+}
+
 void CYPostfix::Output(CYOutput &out, CYFlags flags) const {
     lhs_->Output(out, Precedence(), CYLeft(flags));
     out << Operator();
