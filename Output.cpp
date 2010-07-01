@@ -561,7 +561,8 @@ void CYObject::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYOptionalFunctionParameter::Output(CYOutput &out) const {
-    out << *name_ << '=' << *initializer_;
+    out << *name_ << ' ' << '=' << ' ';
+    initializer_->Output(out, CYPA, CYNoFlags);
     if (next_ != NULL)
         out << ',' << ' ' << *next_;
 }
