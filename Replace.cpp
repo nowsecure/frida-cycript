@@ -511,6 +511,7 @@ CYExpression *CYObject::Replace(CYContext &context) {
 CYFunctionParameter *CYOptionalFunctionParameter::Replace(CYContext &context, CYBlock &code) {
     CYFunctionParameter *parameter($ CYFunctionParameter(name_, next_));
     parameter = parameter->Replace(context, code);
+    initializer_ = initializer_->Replace(context);
 
     CYVariable *name($ CYVariable(name_));
     code.AddPrev($ CYIf($ CYIdentical($ CYTypeOf(name), $S("undefined")), $$->*
