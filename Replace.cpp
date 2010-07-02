@@ -175,9 +175,9 @@ CYExpression *CYCondition::Replace(CYContext &context) {
 void CYContext::NonLocal(CYStatement *&statements) {
     CYContext &context(*this);
 
-    if (nonlocal_->identifier_ != NULL) {
+    if (nextlocal_ != NULL && nextlocal_->identifier_ != NULL) {
         CYVariable *cye($V("$cye"));
-        CYVariable *unique($ CYVariable(nonlocal_->identifier_));
+        CYVariable *unique($ CYVariable(nextlocal_->identifier_));
 
         statements = $$->*
             $E($ CYAssign(unique, $ CYObject()))->*
@@ -376,16 +376,18 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
     scope.parent_ = context.scope_;
     context.scope_ = &scope;
 
+    CYNonLocal *nonlocal(context.nonlocal_);
+    CYNonLocal *nextlocal(context.nextlocal_);
+
     bool localize;
-    if (nonlocal_ != NULL)
+    if (nonlocal_ != NULL) {
         localize = false;
-    else {
+        context.nonlocal_ = nonlocal_;
+    } else {
         localize = true;
         nonlocal_ = $ CYNonLocal();
+        context.nextlocal_ = nonlocal_;
     }
-
-    CYNonLocal *nonlocal(context.nonlocal_);
-    context.nonlocal_ = nonlocal_;
 
     if (!outer && name_ != NULL)
         Inject(context);
@@ -396,6 +398,8 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
 
     if (localize)
         context.NonLocal(code_.statements_);
+
+    context.nextlocal_ = nextlocal;
     context.nonlocal_ = nonlocal;
 
     context.scope_ = scope.parent_;
@@ -554,7 +558,8 @@ void CYProgram::Replace(CYContext &context) {
     scope.parent_ = context.scope_;
     context.scope_ = &scope;
 
-    context.nonlocal_ = $ CYNonLocal();
+    context.nextlocal_ = $ CYNonLocal();
+
     statements_ = statements_->ReplaceAll(context);
     context.NonLocal(statements_);
 
@@ -632,7 +637,7 @@ CYExpression *CYRubyBlock::Replace(CYContext &context) {
 
 CYExpression *CYRubyProc::Replace(CYContext &context) {
     CYFunctionExpression *function($ CYFunctionExpression(NULL, parameters_, code_));
-    function->nonlocal_ = context.nonlocal_;
+    function->nonlocal_ = context.nextlocal_;
     return function;
 }
 

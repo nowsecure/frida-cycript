@@ -367,6 +367,7 @@ struct CYContext {
     CYIdentifierUsageVector rename_;
 
     CYNonLocal *nonlocal_;
+    CYNonLocal *nextlocal_;
     unsigned unique_;
 
     CYContext(apr_pool_t *pool, CYOptions &options) :
@@ -374,6 +375,7 @@ struct CYContext {
         options_(options),
         scope_(NULL),
         nonlocal_(NULL),
+        nextlocal_(NULL),
         unique_(0)
     {
     }
