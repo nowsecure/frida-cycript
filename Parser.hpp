@@ -357,16 +357,24 @@ struct CYProgram :
     virtual void Output(CYOutput &out) const;
 };
 
+struct CYNonLocal;
+
 struct CYContext {
     apr_pool_t *pool_;
     CYOptions &options_;
+
     CYScope *scope_;
     CYIdentifierUsageVector rename_;
+
+    CYNonLocal *nonlocal_;
+    unsigned unique_;
 
     CYContext(apr_pool_t *pool, CYOptions &options) :
         pool_(pool),
         options_(options),
-        scope_(NULL)
+        scope_(NULL),
+        nonlocal_(NULL),
+        unique_(0)
     {
     }
 
@@ -383,6 +391,24 @@ struct CYContext {
                 value = replace;
             else break;
         }
+    }
+
+    void NonLocal(CYStatement *&statements);
+    CYIdentifier *Unique();
+};
+
+struct CYNonLocal {
+    CYIdentifier *identifier_;
+
+    CYNonLocal() :
+        identifier_(NULL)
+    {
+    }
+
+    CYIdentifier *Target(CYContext &context) {
+        if (identifier_ == NULL)
+            identifier_ = context.Unique();
+        return identifier_;
     }
 };
 
@@ -1261,7 +1287,7 @@ struct CYObject :
 {
     CYProperty *properties_;
 
-    CYObject(CYProperty *properties) :
+    CYObject(CYProperty *properties = NULL) :
         properties_(properties)
     {
     }
@@ -1440,11 +1466,13 @@ struct CYFunction {
     CYIdentifier *name_;
     CYFunctionParameter *parameters_;
     CYBlock code_;
+    CYNonLocal *nonlocal_;
 
     CYFunction(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *statements) :
         name_(name),
         parameters_(parameters),
-        code_(statements)
+        code_(statements),
+        nonlocal_(NULL)
     {
     }
 
@@ -1623,7 +1651,7 @@ struct Throw :
 {
     CYExpression *value_;
 
-    Throw(CYExpression *value) :
+    Throw(CYExpression *value = NULL) :
         value_(value)
     {
     }

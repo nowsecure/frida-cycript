@@ -172,6 +172,28 @@ CYExpression *CYCondition::Replace(CYContext &context) {
     return this;
 }
 
+void CYContext::NonLocal(CYStatement *&statements) {
+    CYContext &context(*this);
+
+    if (nonlocal_->identifier_ != NULL) {
+        CYVariable *cye($V("$cye"));
+        CYVariable *unique($ CYVariable(nonlocal_->identifier_));
+
+        statements = $$->*
+            $E($ CYAssign(unique, $ CYObject()))->*
+            $ cy::Syntax::Try(statements, $ cy::Syntax::Catch(cye->name_, $$->*
+                $ CYIf($ CYIdentical($M(cye, $S("$cyk")), unique), $$->*
+                    $ CYReturn($M(cye, $S("$cyv"))))->*
+                $ cy::Syntax::Throw(cye)
+            ), NULL);
+    }
+}
+
+CYIdentifier *CYContext::Unique() {
+    CYContext &context(*this);
+    return $ CYIdentifier(apr_psprintf(pool_, "$cy%u", unique_++));
+}
+
 CYStatement *CYContinue::Replace(CYContext &context) {
     return this;
 }
@@ -354,12 +376,27 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
     scope.parent_ = context.scope_;
     context.scope_ = &scope;
 
+    bool localize;
+    if (nonlocal_ != NULL)
+        localize = false;
+    else {
+        localize = true;
+        nonlocal_ = $ CYNonLocal();
+    }
+
+    CYNonLocal *nonlocal(context.nonlocal_);
+    context.nonlocal_ = nonlocal_;
+
     if (!outer && name_ != NULL)
         Inject(context);
 
     if (parameters_ != NULL)
         parameters_ = parameters_->Replace(context, code_);
     code_.Replace(context);
+
+    if (localize)
+        context.NonLocal(code_.statements_);
+    context.nonlocal_ = nonlocal;
 
     context.scope_ = scope.parent_;
     scope.Scope(context, code_.statements_);
@@ -515,7 +552,11 @@ void CYProgram::Replace(CYContext &context) {
     CYScope scope;
     scope.parent_ = context.scope_;
     context.scope_ = &scope;
+
+    context.nonlocal_ = $ CYNonLocal();
     statements_ = statements_->ReplaceAll(context);
+    context.NonLocal(statements_);
+
     context.scope_ = scope.parent_;
     scope.Scope(context, statements_);
 
@@ -572,6 +613,13 @@ void CYProperty::Replace(CYContext &context) { $T()
 }
 
 CYStatement *CYReturn::Replace(CYContext &context) {
+    if (context.nonlocal_ != NULL) {
+        CYProperty *value(value_ == NULL ? NULL : $ CYProperty($S("$cyv"), value_));
+        return $ cy::Syntax::Throw($ CYObject(
+            $ CYProperty($S("$cyk"), $ CYVariable(context.nonlocal_->Target(context)), value)
+        ));
+    }
+
     context.Replace(value_);
     return this;
 }
@@ -582,7 +630,9 @@ CYExpression *CYRubyBlock::Replace(CYContext &context) {
 }
 
 CYExpression *CYRubyProc::Replace(CYContext &context) {
-    return $ CYFunctionExpression(NULL, parameters_, code_);
+    CYFunctionExpression *function($ CYFunctionExpression(NULL, parameters_, code_));
+    function->nonlocal_ = context.nonlocal_;
+    return function;
 }
 
 void CYScope::Declare(CYContext &context, CYIdentifier *identifier, CYIdentifierFlags flags) {
