@@ -132,7 +132,13 @@ namespace cy {
 namespace Syntax {
 
 void Catch::Replace(CYContext &context) { $T()
+    CYScope scope(CYScopeCatch, context, code_.statements_);
+
+    context.Replace(name_);
+    context.scope_->Declare(context, name_, CYIdentifierCatch);
+
     code_.Replace(context);
+    scope.Close();
 }
 
 } }
@@ -176,16 +182,24 @@ void CYContext::NonLocal(CYStatement *&statements) {
     CYContext &context(*this);
 
     if (nextlocal_ != NULL && nextlocal_->identifier_ != NULL) {
-        CYVariable *cye($V("$cye"));
-        CYVariable *unique($ CYVariable(nextlocal_->identifier_));
+        CYIdentifier *cye($I("$cye")->Replace(context));
+        CYIdentifier *unique(nextlocal_->identifier_->Replace(context));
+
+        CYStatement *declare(
+            $ CYVar($L1($L(unique, $ CYObject()))));
+
+        cy::Syntax::Catch *rescue(
+            $ cy::Syntax::Catch(cye, $$->*
+                $ CYIf($ CYIdentical($M($ CYVariable(cye), $S("$cyk")), $ CYVariable(unique)), $$->*
+                    $ CYReturn($M($ CYVariable(cye), $S("$cyv"))))->*
+                $ cy::Syntax::Throw($ CYVariable(cye))));
+
+        declare = declare->Replace(context);
+        rescue->Replace(context);
 
         statements = $$->*
-            $E($ CYAssign(unique, $ CYObject()))->*
-            $ cy::Syntax::Try(statements, $ cy::Syntax::Catch(cye->name_, $$->*
-                $ CYIf($ CYIdentical($M(cye, $S("$cyk")), unique), $$->*
-                    $ CYReturn($M(cye, $S("$cyv"))))->*
-                $ cy::Syntax::Throw(cye)
-            ), NULL);
+            declare->*
+            $ cy::Syntax::Try(statements, rescue, NULL);
     }
 }
 
@@ -372,9 +386,7 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
     if (outer)
         Inject(context);
 
-    CYScope scope;
-    scope.parent_ = context.scope_;
-    context.scope_ = &scope;
+    CYScope scope(CYScopeFunction, context, code_.statements_);
 
     CYNonLocal *nonlocal(context.nonlocal_);
     CYNonLocal *nextlocal(context.nextlocal_);
@@ -394,6 +406,7 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
 
     if (parameters_ != NULL)
         parameters_ = parameters_->Replace(context, code_);
+
     code_.Replace(context);
 
     if (localize)
@@ -402,8 +415,7 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
     context.nextlocal_ = nextlocal;
     context.nonlocal_ = nonlocal;
 
-    context.scope_ = scope.parent_;
-    scope.Scope(context, code_.statements_);
+    scope.Close();
 }
 
 CYExpression *CYFunctionExpression::Replace(CYContext &context) {
@@ -554,17 +566,13 @@ namespace {
 }
 
 void CYProgram::Replace(CYContext &context) {
-    CYScope scope;
-    scope.parent_ = context.scope_;
-    context.scope_ = &scope;
+    CYScope scope(CYScopeProgram, context, statements_);
 
     context.nextlocal_ = $ CYNonLocal();
-
     statements_ = statements_->ReplaceAll(context);
     context.NonLocal(statements_);
 
-    context.scope_ = scope.parent_;
-    scope.Scope(context, statements_);
+    scope.Close();
 
     size_t offset(0);
 
@@ -641,8 +649,25 @@ CYExpression *CYRubyProc::Replace(CYContext &context) {
     return function;
 }
 
+CYScope::CYScope(CYScopeType type, CYContext &context, CYStatement *&statements) :
+    type_(type),
+    context_(context),
+    statements_(statements),
+    parent_(context.scope_)
+{
+    context_.scope_ = this;
+}
+
+void CYScope::Close() {
+    context_.scope_ = parent_;
+    Scope(context_, statements_);
+}
+
 void CYScope::Declare(CYContext &context, CYIdentifier *identifier, CYIdentifierFlags flags) {
-    internal_.insert(CYIdentifierAddressFlagsMap::value_type(identifier, flags));
+    if (type_ == CYScopeCatch && flags != CYIdentifierCatch)
+        parent_->Declare(context, identifier, flags);
+    else
+        internal_.insert(CYIdentifierAddressFlagsMap::value_type(identifier, flags));
 }
 
 CYIdentifier *CYScope::Lookup(CYContext &context, CYIdentifier *identifier) {

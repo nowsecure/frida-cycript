@@ -310,6 +310,7 @@ enum CYIdentifierFlags {
     CYIdentifierVariable,
     CYIdentifierOther,
     CYIdentifierMagic,
+    CYIdentifierCatch,
 };
 
 typedef std::set<const char *, CYCStringLess> CYCStringSet;
@@ -323,19 +324,27 @@ struct CYIdentifierUsage {
 
 typedef std::vector<CYIdentifierUsage> CYIdentifierUsageVector;
 
+// XXX: strategy pattern, maybe subclass
+enum CYScopeType {
+    CYScopeCatch,
+    CYScopeFunction,
+    CYScopeProgram,
+};
+
 struct CYScope {
+    CYScopeType type_;
+
+    CYContext &context_;
+    CYStatement *&statements_;
+
     CYScope *parent_;
 
     CYIdentifierAddressFlagsMap internal_;
     CYIdentifierValueSet identifiers_;
 
-    CYScope() :
-        parent_(NULL)
-    {
-    }
+    CYScope(CYScopeType type, CYContext &context, CYStatement *&statements);
 
-    virtual ~CYScope() {
-    }
+    void Close();
 
     void Declare(CYContext &context, CYIdentifier *identifier, CYIdentifierFlags flags);
     virtual CYIdentifier *Lookup(CYContext &context, CYIdentifier *identifier);
