@@ -29,5 +29,8 @@ I should probably attempt to use the auto_ flag somehow to not do contexts_ push
 Object_callAsFunction_toCYON should be implemented
 
 [NSString stringWithString:""] crashes, on linux, not on mac
+GS #defines should be _finline
 
 replace procmod g+s with gdb's macosx_get_task_for_pid_rights
+non-local return prologue is not being Replace()d: multipass compiler!
+interpretation of documentation comments should be compiler-only and off by default
