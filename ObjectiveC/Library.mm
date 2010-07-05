@@ -131,6 +131,7 @@
 
 #define object_getInstanceVariable(object, name, value) ({ \
     objc_ivar *ivar(class_getInstanceVariable(object_getClass(object), name)); \
+    _assert(value != NULL); \
     if (ivar != NULL) \
         GSObjCGetVariable(object, ivar_getOffset(ivar), sizeof(void *), value); \
     ivar; \
