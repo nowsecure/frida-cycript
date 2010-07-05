@@ -230,9 +230,16 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %token OpenBracket "["
 %token CloseBracket "]"
 
+@begin Java
 %token AtClass "@class"
-%token AtSelector "@selector"
+@end
+
+@begin ObjectiveC
+%token AtImplementation "@implementation"
+%token AtImport "@import"
 %token AtEnd "@end"
+%token AtSelector "@selector"
+@end
 
 %token <false_> False "false"
 %token <null_> Null "null"
@@ -1516,8 +1523,17 @@ ClassSuperOpt
     | { $$ = NULL; }
     ;
 
+ClassField
+    : Expression Identifier ";"
+    ;
+
+ClassFieldListOpt
+    : ClassFieldListOpt ClassField
+    |
+    ;
+
 ClassFieldList
-    : Brace "}" { $$ = NULL; }
+    : Brace ClassFieldListOpt "}" { $$ = NULL; }
     ;
 
 MessageScope
@@ -1527,6 +1543,7 @@ MessageScope
 
 TypeOpt
     : "(" Expression ")" { $$ = $2; }
+    | "(" LexSetRegExp "void" ")" { $$ = NULL; }
     | { $$ = NULL; }
     ;
 
@@ -1554,6 +1571,7 @@ ClassMessageDeclaration
 
 ClassMessageDeclarationListOpt
     : ClassMessageDeclarationListOpt ClassMessageDeclaration { $2->SetNext($1); $$ = $2; }
+    | ClassMessageDeclarationListOpt Comment { $$ = $1; }
     | { $$ = NULL; }
     ;
 
@@ -1583,15 +1601,19 @@ ClassProtocolListOpt
     ;
 
 ClassExpression
-    : "@class" ClassNameOpt ClassSuperOpt ClassProtocolListOpt ClassFieldList ClassMessageDeclarationListOpt "@end" { $$ = new(driver.pool_) CYClassExpression($2, $3, $4, $5, $6); }
+    : "@implementation" ClassNameOpt ClassSuperOpt ClassProtocolListOpt ClassFieldList ClassMessageDeclarationListOpt "@end" { $$ = new(driver.pool_) CYClassExpression($2, $3, $4, $5, $6); }
     ;
 
 ClassStatement
-    : "@class" ClassName ClassSuperOpt ClassProtocolListOpt ClassFieldList ClassMessageDeclarationListOpt "@end" { $$ = new(driver.pool_) CYClassStatement($2, $3, $4, $5, $6); }
+    : "@implementation" ClassName ClassSuperOpt ClassProtocolListOpt ClassFieldList ClassMessageDeclarationListOpt "@end" { $$ = new(driver.pool_) CYClassStatement($2, $3, $4, $5, $6); }
+    ;
+
+CategoryName
+    : "(" Word ")"
     ;
 
 CategoryStatement
-    : "@class" ClassName ClassMessageDeclarationListOpt "@end" { $$ = new(driver.pool_) CYCategory($2, $3); }
+    : "@implementation" ClassName CategoryName ClassMessageDeclarationListOpt "@end" { $$ = new(driver.pool_) CYCategory($2, $4); }
     ;
 
 PrimaryExpressionBF
@@ -1650,6 +1672,23 @@ SelectorExpression
 PrimaryExpressionNo
     : MessageExpression { $$ = $1; }
     | "@selector" "(" SelectorExpression ")" { $$ = new(driver.pool_) CYSelector($3); }
+    ;
+/* }}} */
+/* Cycript (Objective-C): @import Directive {{{ */
+PathName
+    : "/" PathName
+    | "." PathName
+    | Word PathName
+    |
+    ;
+
+ImportPath
+    : "<" PathName ">"
+    | StringLiteral
+    ;
+
+SourceElement_
+    : "@import" ImportPath { $$ = new(driver.pool_) CYImport(); }
     ;
 /* }}} */
 @end

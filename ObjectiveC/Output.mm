@@ -96,6 +96,10 @@ void CYClassStatement::Output(CYOutput &out, CYFlags flags) const {
 void CYField::Output(CYOutput &out) const {
 }
 
+void CYImport::Output(CYOutput &out, CYFlags flags) const {
+    out << "@import";
+}
+
 void CYMessage::Output(CYOutput &out, bool replace) const {
     out << (instance_ ? '-' : '+');
 

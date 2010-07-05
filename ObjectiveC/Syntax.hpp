@@ -138,6 +138,13 @@ struct CYProtocol :
     void Output(CYOutput &out) const;
 };
 
+struct CYImport :
+    CYStatement
+{
+    virtual CYStatement *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
 struct CYClass {
     CYClassName *name_;
     CYExpression *super_;

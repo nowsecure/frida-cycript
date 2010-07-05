@@ -256,10 +256,15 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "["    L C return tk::OpenBracket;
 "]"    L C return tk::CloseBracket;
 
+@begin Java
+"@class"          L C return tk::AtClass;
+@end
+
 @begin ObjectiveC
-"@class"       L C return tk::AtClass;
-"@end"         L C return tk::AtEnd;
-"@selector"    L C return tk::AtSelector;
+"@end"            L C return tk::AtEnd;
+"@implementation" L C return tk::AtImplementation;
+"@import"         L C return tk::AtImport;
+"@selector"       L C return tk::AtSelector;
 @end
 
 "false"        L C yylval->false_ = new(yyextra->pool_) CYFalse(); return tk::False;

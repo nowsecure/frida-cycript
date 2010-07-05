@@ -83,6 +83,10 @@ CYStatement *CYField::Replace(CYContext &context) const {
     return NULL;
 }
 
+CYStatement *CYImport::Replace(CYContext &context) {
+    return this;
+}
+
 CYStatement *CYMessage::Replace(CYContext &context, bool replace) const { $T(NULL)
     CYVariable *cyn($V("$cyn"));
     CYVariable *cyt($V("$cyt"));
