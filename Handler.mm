@@ -111,7 +111,7 @@ struct CYClient :
             if (!CYRecvAll(socket_, &size, sizeof(size)))
                 return;
 
-            CYPool pool;
+            CYLocalPool pool;
             char *data(new(pool) char[size + 1]);
             if (!CYRecvAll(socket_, data, size))
                 return;
@@ -131,7 +131,7 @@ struct CYClient :
                 NSAutoreleasePool *ar = [[NSAutoreleasePool alloc] init];
 
                 CYOptions options;
-                CYContext context(driver.pool_, options);
+                CYContext context(options);
                 driver.program_->Replace(context);
                 std::ostringstream str;
                 CYOutput out(str, options);
