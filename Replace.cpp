@@ -194,7 +194,7 @@ void CYContext::NonLocal(CYStatement *&statements) {
                     $ CYReturn($M($V(cye), $S("$cyv"))))->*
                 $ cy::Syntax::Throw($V(cye))));
 
-        declare = declare->Replace(context);
+        context.Replace(declare);
         rescue->Replace(context);
 
         statements = $$->*
@@ -423,7 +423,7 @@ CYExpression *CYFunctionExpression::Replace(CYContext &context) {
 }
 
 CYFunctionParameter *CYFunctionParameter::Replace(CYContext &context, CYBlock &code) {
-    name_ = name_->Replace(context);
+    context.Replace(name_);
     context.scope_->Declare(context, name_, CYIdentifierArgument);
     if (next_ != NULL)
         next_ = next_->Replace(context, code);
@@ -531,7 +531,7 @@ CYExpression *CYObject::Replace(CYContext &context) {
 CYFunctionParameter *CYOptionalFunctionParameter::Replace(CYContext &context, CYBlock &code) {
     CYFunctionParameter *parameter($ CYFunctionParameter(name_, next_));
     parameter = parameter->Replace(context, code);
-    initializer_ = initializer_->Replace(context);
+    context.Replace(initializer_);
 
     CYVariable *name($V(name_));
     code.AddPrev($ CYIf($ CYIdentical($ CYTypeOf(name), $S("undefined")), $$->*
@@ -850,7 +850,7 @@ CYStatement *CYVar::Replace(CYContext &context) {
 }
 
 CYExpression *CYVariable::Replace(CYContext &context) {
-    name_ = name_->Replace(context);
+    context.Replace(name_);
     return this;
 }
 
