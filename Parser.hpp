@@ -369,7 +369,6 @@ struct CYProgram :
 struct CYNonLocal;
 
 struct CYContext {
-    apr_pool_t *pool_;
     CYOptions &options_;
 
     CYScope *scope_;
@@ -379,8 +378,7 @@ struct CYContext {
     CYNonLocal *nextlocal_;
     unsigned unique_;
 
-    CYContext(apr_pool_t *pool, CYOptions &options) :
-        pool_(pool),
+    CYContext(CYOptions &options) :
         options_(options),
         scope_(NULL),
         nonlocal_(NULL),
@@ -460,8 +458,6 @@ enum CYState {
 
 class CYDriver {
   public:
-    CYPool pool_;
-
     CYState state_;
     void *scanner_;
 
@@ -522,7 +518,7 @@ class CYDriver {
     void ScannerDestroy();
 
   public:
-    CYDriver(apr_pool_t *pool = NULL, const std::string &filename = "");
+    CYDriver(const std::string &filename = "");
     ~CYDriver();
 
     Condition GetCondition();
@@ -972,6 +968,11 @@ struct CYVariable :
     {
     }
 
+    CYVariable(const char *name) :
+        name_(new($pool) CYIdentifier(name))
+    {
+    }
+
     CYPrecedence(0)
     CYRightHand(false)
 
@@ -1356,13 +1357,16 @@ struct CYIndirectMember :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CYNew :
+namespace cy {
+namespace Syntax {
+
+struct New :
     CYExpression
 {
     CYExpression *constructor_;
     CYArgument *arguments_;
 
-    CYNew(CYExpression *constructor, CYArgument *arguments) :
+    New(CYExpression *constructor, CYArgument *arguments) :
         constructor_(constructor),
         arguments_(arguments)
     {
@@ -1379,6 +1383,8 @@ struct CYNew :
 
     virtual CYExpression *AddArgument(CYContext &context, CYExpression *value);
 };
+
+} }
 
 struct CYCall :
     CYExpression

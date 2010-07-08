@@ -44,6 +44,7 @@
 #include <apr_strings.h>
 
 #include "Exception.hpp"
+#include "Local.hpp"
 #include "Standard.hpp"
 
 #include <cstdlib>
@@ -168,5 +169,22 @@ struct CYPoolAllocator {
         typedef CYPoolAllocator<Right_> other;
     };
 };
+
+class CYLocalPool :
+    public CYPool
+{
+  private:
+    CYLocal<apr_pool_t *> local_;
+
+  public:
+    CYLocalPool() :
+        CYPool(),
+        local_(operator apr_pool_t *())
+    {
+    }
+};
+
+#define $pool \
+    CYLocal<apr_pool_t *>::Top()
 
 #endif/*CYPOOLING_HPP*/

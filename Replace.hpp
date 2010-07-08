@@ -42,8 +42,7 @@
 
 #include "Parser.hpp"
 
-#define $ \
-    new(context.pool_)
+#define $ new($pool)
 
 #define $D(args...) \
     ($ CYNumber(args))
@@ -60,9 +59,9 @@
 #define $S(args...) \
     ($ CYString(args))
 #define $U \
-    $V("undefined")
+    $V($I("undefined"))
 #define $V(name) \
-    ($ CYVariable($I(name)))
+    ($ CYVariable(name))
 
 #define $T(value) \
     if (this == NULL) \
@@ -88,7 +87,7 @@
 #define $C_(args...) \
     ($ CYArgument(args))
 #define $N(args...) \
-    ($ CYNew(args))
+    ($ cy::Syntax::New(args))
 
 #define $C1_(arg0, args...) \
     $C_(arg0, ##args)

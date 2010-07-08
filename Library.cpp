@@ -240,11 +240,13 @@ double CYCastDouble(const char *value) {
     return CYCastDouble(value, strlen(value));
 }
 
-extern "C" void CydgetPoolParse(apr_pool_t *pool, const uint16_t **data, size_t *size) {
+extern "C" void CydgetPoolParse(apr_pool_t *remote, const uint16_t **data, size_t *size) {
+    CYLocalPool local;
+
     CYDriver driver;
     cy::parser parser(driver);
 
-    CYUTF8String utf8(CYPoolUTF8String(pool, CYUTF16String(*data, *size)));
+    CYUTF8String utf8(CYPoolUTF8String(local, CYUTF16String(*data, *size)));
 
     driver.data_ = utf8.data;
     driver.size_ = utf8.size;
@@ -253,14 +255,14 @@ extern "C" void CydgetPoolParse(apr_pool_t *pool, const uint16_t **data, size_t 
         return;
 
     CYOptions options;
-    CYContext context(driver.pool_, options);
+    CYContext context(options);
     driver.program_->Replace(context);
     std::ostringstream str;
     CYOutput out(str, options);
     out << *driver.program_;
     std::string code(str.str());
 
-    CYUTF16String utf16(CYPoolUTF16String(pool, CYUTF8String(code.c_str(), code.size())));
+    CYUTF16String utf16(CYPoolUTF16String(remote, CYUTF8String(code.c_str(), code.size())));
 
     *data = utf16.data;
     *size = utf16.size;

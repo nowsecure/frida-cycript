@@ -144,7 +144,7 @@ CYString *CYSelectorPart::Replace(CYContext &context) {
         if (part->value_)
             str << ':';
     }
-    return $S(apr_pstrdup(context.pool_, str.str().c_str()));
+    return $S(apr_pstrdup($pool, str.str().c_str()));
 }
 
 CYExpression *CYSendDirect::Replace(CYContext &context) {
@@ -173,5 +173,5 @@ CYExpression *CYSendDirect::Replace(CYContext &context) {
 }
 
 CYExpression *CYSendSuper::Replace(CYContext &context) {
-    return $ CYSendDirect($V("$cyr"), arguments_);
+    return $ CYSendDirect($V("cyr"), arguments_);
 }

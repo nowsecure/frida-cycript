@@ -521,13 +521,18 @@ void CYLet::Output(CYOutput &out, CYFlags flags) const {
     out << "let" << ' ' << '(' << *declarations_ << ')' << ' ' << code_;
 }
 
-void CYNew::Output(CYOutput &out, CYFlags flags) const {
+namespace cy {
+namespace Syntax {
+
+void New::Output(CYOutput &out, CYFlags flags) const {
     out << "new" << ' ';
     CYFlags jacks(CYNoCall | CYCenter(flags));
     constructor_->Output(out, Precedence(), jacks);
     if (arguments_ != NULL)
         out << '(' << *arguments_ << ')';
 }
+
+} }
 
 void CYNull::Output(CYOutput &out, CYFlags flags) const {
     CYWord::Output(out);

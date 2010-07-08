@@ -204,8 +204,7 @@ void CYContext::NonLocal(CYStatement *&statements) {
 }
 
 CYIdentifier *CYContext::Unique() {
-    CYContext &context(*this);
-    return $ CYIdentifier(apr_psprintf(pool_, "$cy%u", unique_++));
+    return $ CYIdentifier(apr_psprintf($pool, "$cy%u", unique_++));
 }
 
 CYStatement *CYContinue::Replace(CYContext &context) {
@@ -351,11 +350,11 @@ CYStatement *CYForInComprehension::Replace(CYContext &context, CYStatement *stat
 }
 
 CYStatement *CYForEachIn::Replace(CYContext &context) {
-    CYVariable *cys($V("$cys")), *cyt($V("$cyt"));
+    CYIdentifier *cys($I("$cys")), *cyt($I("$cyt"));
 
-    return $ CYLet($L2($L($I("$cys"), set_), $L($I("$cyt"))), $$->*
-        $ CYForIn(cyt, cys, $ CYBlock($$->*
-            $E($ CYAssign(initialiser_->ForEachIn(context), $M(cys, cyt)))->*
+    return $ CYLet($L2($L(cys, set_), $L(cyt)), $$->*
+        $ CYForIn($V(cyt), $V(cys), $ CYBlock($$->*
+            $E($ CYAssign(initialiser_->ForEachIn(context), $M($V(cys), $V(cyt))))->*
             code_
         ))
     );
@@ -366,12 +365,12 @@ CYFunctionParameter *CYForEachInComprehension::Parameter(CYContext &context) con
 }
 
 CYStatement *CYForEachInComprehension::Replace(CYContext &context, CYStatement *statement) const {
-    CYVariable *cys($V("$cys")), *name($ CYVariable(name_));
+    CYIdentifier *cys($I("cys"));
 
     return $E($C0($F(NULL, $P1("$cys"), $$->*
-        $E($ CYAssign(cys, set_))->*
-        $ CYForIn(name, cys, $ CYBlock($$->*
-            $E($ CYAssign(name, $M(cys, name)))->*
+        $E($ CYAssign($V(cys), set_))->*
+        $ CYForIn($V(name_), $V(cys), $ CYBlock($$->*
+            $E($ CYAssign($V(name_), $M($V(cys), $V(name_))))->*
             CYComprehension::Replace(context, statement)
         ))
     )));
@@ -488,7 +487,10 @@ void CYMember::Replace_(CYContext &context) {
     context.Replace(property_);
 }
 
-CYExpression *CYNew::AddArgument(CYContext &context, CYExpression *value) {
+namespace cy {
+namespace Syntax {
+
+CYExpression *New::AddArgument(CYContext &context, CYExpression *value) {
     CYArgument **argument(&arguments_);
     while (*argument != NULL)
         argument = &(*argument)->next_;
@@ -496,11 +498,13 @@ CYExpression *CYNew::AddArgument(CYContext &context, CYExpression *value) {
     return this;
 }
 
-CYExpression *CYNew::Replace(CYContext &context) {
+CYExpression *New::Replace(CYContext &context) {
     context.Replace(constructor_);
     arguments_->Replace(context);
     return this;
 }
+
+} }
 
 CYNumber *CYNull::Number(CYContext &context) {
     return $D(0);
@@ -516,7 +520,7 @@ CYNumber *CYNumber::Number(CYContext &context) {
 
 CYString *CYNumber::String(CYContext &context) {
     // XXX: there is a precise algorithm for this
-    return $S(apr_psprintf(context.pool_, "%.17g", Value()));
+    return $S(apr_psprintf($pool, "%.17g", Value()));
 }
 
 CYExpression *CYObject::Replace(CYContext &context) {
@@ -593,7 +597,7 @@ void CYProgram::Replace(CYContext &context) {
         const char *name;
 
         if (context.options_.verbose_)
-            name = apr_psprintf(context.pool_, "$%"APR_SIZE_T_FMT"", offset);
+            name = apr_psprintf($pool, "$%"APR_SIZE_T_FMT"", offset);
         else {
             char id[8];
             id[7] = '\0';
@@ -612,7 +616,7 @@ void CYProgram::Replace(CYContext &context) {
                 goto id;
             }
 
-            name = apr_pstrmemdup(context.pool_, id + position, 7 - position);
+            name = apr_pstrmemdup($pool, id + position, 7 - position);
             // XXX: at some point, this could become a keyword
         }
 
@@ -781,7 +785,7 @@ CYStatement *CYStatement::ReplaceAll(CYContext &context) { $T(NULL)
 
 CYString *CYString::Concat(CYContext &context, CYString *rhs) const {
     size_t size(size_ + rhs->size_);
-    char *value(new(context.pool_) char[size + 1]);
+    char *value($ char[size + 1]);
     memcpy(value, value_, size_);
     memcpy(value + size_, rhs->value_, rhs->size_);
     value[size] = '\0';

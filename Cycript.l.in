@@ -46,27 +46,34 @@ typedef cy::parser::token tk;
 
 #define YY_EXTRA_TYPE CYDriver *
 
+#define A new($pool)
+#define Y apr_pstrmemdup($pool, yytext, yyleng)
+
+#define I(type, Type, Name) do { \
+    yylval->type ## _ = A CY ## Type; \
+    return tk::Name; \
+} while (false)
+
 #define T yylval->newline_ = yyextra->state_ == CYNewLine; BEGIN(Div);
 #define C T yyextra->state_ = CYClear;
 #define R T yyextra->state_ = CYRestricted;
 
 #define E(prefix) L C { \
-    char *value(reinterpret_cast<char *>(apr_palloc(yyextra->pool_, yyleng + sizeof(prefix)))); \
+    char *value(A char[yyleng + sizeof(prefix)]); \
     memcpy(value, prefix, sizeof(prefix) - 1); \
     memcpy(value + sizeof(prefix) - 1, yytext, yyleng); \
     value[yyleng + sizeof(prefix) - 1] = '\0'; \
-    yylval->literal_ = new(yyextra->pool_) CYRegEx(value); \
-    return tk::RegularExpressionLiteral; \
+    I(literal, RegEx(value), RegularExpressionLiteral); \
 }
 
 #define N \
     if (yyextra->state_ != CYNewLine) { \
-        bool restricted(yyextra->state_ == CYRestricted); \
-        if (restricted) { \
+        if (yyextra->state_ != CYRestricted) \
+            yyextra->state_ = CYNewLine; \
+        else { \
             yyextra->state_ = CYClear; \
             return tk::NewLine; \
-        } else \
-            yyextra->state_ = CYNewLine; \
+        } \
     }
 
 #define V(more) { \
@@ -164,7 +171,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
 	/* http://ostermiller.org/findcomment.html */
 	/* XXX: unify these two rules using !? */
-\/\*!([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+\/ V() C yylval->comment_ = new(yyextra->pool_) CYComment(apr_pstrmemdup(yyextra->pool_, yytext, yyleng)); return tk::Comment;
+\/\*!([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+\/ V() C I(comment, Comment(Y), Comment);
 \/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+\/ V(N)
 
 @begin E4X
@@ -180,10 +187,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 <XMLTag>"/>" L return tk::SlashRight;
 <XMLTag>"{"  L return tk::OpenBrace;
 
-<XMLTag>\"(\n|[^"])*\"|'(\n|[^'])*' V() {
-    return tk::XMLAttributeValue;
-}
-
+<XMLTag>\"(\n|[^"])*\"|'(\n|[^'])*' V() return tk::XMLAttributeValue;
 <XMLTag>{XMLName} L return tk::XMLName;
 <XMLTag>[ \t\r\n] V() return tk::XMLWhitespace;
 
@@ -267,92 +271,92 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "@selector"       L C return tk::AtSelector;
 @end
 
-"false"        L C yylval->false_ = new(yyextra->pool_) CYFalse(); return tk::False;
-"null"         L C yylval->null_ = new(yyextra->pool_) CYNull(); return tk::Null;
-"true"         L C yylval->true_ = new(yyextra->pool_) CYTrue(); return tk::True;
+"false"        L C I(false, False(), False);
+"null"         L C I(null, Null(), Null);
+"true"         L C I(true, True(), True);
 
-"break"        L R yylval->word_ = new(yyextra->pool_) CYWord("break"); return tk::Break;
-"case"         L C yylval->word_ = new(yyextra->pool_) CYWord("case"); return tk::Case;
-"catch"        L C yylval->word_ = new(yyextra->pool_) CYWord("catch"); return tk::Catch;
-"continue"     L R yylval->word_ = new(yyextra->pool_) CYWord("continue"); return tk::Continue;
-"default"      L C yylval->word_ = new(yyextra->pool_) CYWord("default"); return tk::Default;
-"delete"       L C yylval->word_ = new(yyextra->pool_) CYWord("delete"); return tk::Delete;
-"do"           L C yylval->word_ = new(yyextra->pool_) CYWord("do"); return tk::Do;
-"else"         L C yylval->word_ = new(yyextra->pool_) CYWord("else"); return tk::Else;
-"finally"      L C yylval->word_ = new(yyextra->pool_) CYWord("finally"); return tk::Finally;
-"for"          L C yylval->word_ = new(yyextra->pool_) CYWord("for"); return tk::For;
-"function"     L C yylval->word_ = new(yyextra->pool_) CYWord("function"); return tk::Function;
-"if"           L C yylval->word_ = new(yyextra->pool_) CYWord("if"); return tk::If;
-"in"           L C yylval->word_ = new(yyextra->pool_) CYWord("in"); return tk::In;
-"instanceof"   L C yylval->word_ = new(yyextra->pool_) CYWord("instanceof"); return tk::InstanceOf;
-"new"          L C yylval->word_ = new(yyextra->pool_) CYWord("new"); return tk::New;
-"return"       L R yylval->word_ = new(yyextra->pool_) CYWord("return"); return tk::Return;
-"switch"       L C yylval->word_ = new(yyextra->pool_) CYWord("switch"); return tk::Switch;
-"this"         L C yylval->this_ = new(yyextra->pool_) CYThis(); return tk::This;
-"throw"        L R yylval->word_ = new(yyextra->pool_) CYWord("throw"); return tk::Throw;
-"try"          L C yylval->word_ = new(yyextra->pool_) CYWord("try"); return tk::Try;
-"typeof"       L C yylval->word_ = new(yyextra->pool_) CYWord("typeof"); return tk::TypeOf;
-"var"          L C yylval->word_ = new(yyextra->pool_) CYWord("var"); return tk::Var;
-"void"         L C yylval->word_ = new(yyextra->pool_) CYWord("void"); return tk::Void;
-"while"        L C yylval->word_ = new(yyextra->pool_) CYWord("while"); return tk::While;
-"with"         L C yylval->word_ = new(yyextra->pool_) CYWord("with"); return tk::With;
+"break"        L R I(word, Word("break"), Break);
+"case"         L C I(word, Word("case"), Case);
+"catch"        L C I(word, Word("catch"), Catch);
+"continue"     L R I(word, Word("continue"), Continue);
+"default"      L C I(word, Word("default"), Default);
+"delete"       L C I(word, Word("delete"), Delete);
+"do"           L C I(word, Word("do"), Do);
+"else"         L C I(word, Word("else"), Else);
+"finally"      L C I(word, Word("finally"), Finally);
+"for"          L C I(word, Word("for"), For);
+"function"     L C I(word, Word("function"), Function);
+"if"           L C I(word, Word("if"), If);
+"in"           L C I(word, Word("in"), In);
+"instanceof"   L C I(word, Word("instanceof"), InstanceOf);
+"new"          L C I(word, Word("new"), New);
+"return"       L R I(word, Word("return"), Return);
+"switch"       L C I(word, Word("switch"), Switch);
+"this"         L C I(this, This(), This);
+"throw"        L R I(word, Word("throw"), Throw);
+"try"          L C I(word, Word("try"), Try);
+"typeof"       L C I(word, Word("typeof"), TypeOf);
+"var"          L C I(word, Word("var"), Var);
+"void"         L C I(word, Word("void"), Void);
+"while"        L C I(word, Word("while"), While);
+"with"         L C I(word, Word("with"), With);
 
-"debugger"     L C yylval->word_ = new(yyextra->pool_) CYWord("debugger"); return tk::Debugger;
+"debugger"     L C I(word, Word("debugger"), Debugger);
 
-"const"        L C yylval->word_ = new(yyextra->pool_) CYWord("const"); return tk::Const;
+"const"        L C I(word, Word("const"), Const);
 
-"class"        L C yylval->word_ = new(yyextra->pool_) CYWord("class"); return tk::Class;
-"enum"         L C yylval->word_ = new(yyextra->pool_) CYWord("enum"); return tk::Enum;
-"export"       L C yylval->word_ = new(yyextra->pool_) CYWord("export"); return tk::Export;
-"extends"      L C yylval->word_ = new(yyextra->pool_) CYWord("extends"); return tk::Extends;
-"import"       L C yylval->word_ = new(yyextra->pool_) CYWord("import"); return tk::Import;
-"super"        L C yylval->word_ = new(yyextra->pool_) CYWord("super"); return tk::Super;
+"class"        L C I(word, Word("class"), Class);
+"enum"         L C I(word, Word("enum"), Enum);
+"export"       L C I(word, Word("export"), Export);
+"extends"      L C I(word, Word("extends"), Extends);
+"import"       L C I(word, Word("import"), Import);
+"super"        L C I(word, Word("super"), Super);
 
-"implements"   L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("implements"); return tk::Implements;
-"interface"    L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("interface"); return tk::Interface;
-"package"      L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("package"); return tk::Package;
-"private"      L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("private"); return tk::Private;
-"protected"    L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("protected"); return tk::Protected;
-"public"       L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("public"); return tk::Public;
-"static"       L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("static"); return tk::Static;
+"implements"   L C I(identifier, Identifier("implements"), Implements);
+"interface"    L C I(identifier, Identifier("interface"), Interface);
+"package"      L C I(identifier, Identifier("package"), Package);
+"private"      L C I(identifier, Identifier("private"), Private);
+"protected"    L C I(identifier, Identifier("protected"), Protected);
+"public"       L C I(identifier, Identifier("public"), Public);
+"static"       L C I(identifier, Identifier("static"), Static);
 
-"abstract"     L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("abstract"); return tk::Abstract;
-"boolean"      L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("boolean"); return tk::Boolean;
-"byte"         L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("byte"); return tk::Byte;
-"char"         L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("char"); return tk::Char;
-"double"       L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("double"); return tk::Double;
-"final"        L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("final"); return tk::Final;
-"float"        L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("float"); return tk::Float;
-"goto"         L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("goto"); return tk::Goto;
-"int"          L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("int"); return tk::Int;
-"long"         L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("long"); return tk::Long;
-"native"       L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("native"); return tk::Native;
-"short"        L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("short"); return tk::Short;
-"synchronized" L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("synchronized"); return tk::Synchronized;
-"throws"       L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("throws"); return tk::Throws;
-"transient"    L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("transient"); return tk::Transient;
-"volatile"     L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("volatile"); return tk::Volatile;
+"abstract"     L C I(identifier, Identifier("abstract"), Abstract);
+"boolean"      L C I(identifier, Identifier("boolean"), Boolean);
+"byte"         L C I(identifier, Identifier("byte"), Byte);
+"char"         L C I(identifier, Identifier("char"), Char);
+"double"       L C I(identifier, Identifier("double"), Double);
+"final"        L C I(identifier, Identifier("final"), Final);
+"float"        L C I(identifier, Identifier("float"), Float);
+"goto"         L C I(identifier, Identifier("goto"), Goto);
+"int"          L C I(identifier, Identifier("int"), Int);
+"long"         L C I(identifier, Identifier("long"), Long);
+"native"       L C I(identifier, Identifier("native"), Native);
+"short"        L C I(identifier, Identifier("short"), Short);
+"synchronized" L C I(identifier, Identifier("synchronized"), Synchronized);
+"throws"       L C I(identifier, Identifier("throws"), Throws);
+"transient"    L C I(identifier, Identifier("transient"), Transient);
+"volatile"     L C I(identifier, Identifier("volatile"), Volatile);
 
-"let"          L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("let"); return tk::Let;
-"yield"        L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("yield"); return tk::Yield;
+"let"          L C I(identifier, Identifier("let"), Let);
+"yield"        L C I(identifier, Identifier("yield"), Yield);
 
-"each"         L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("each"); return tk::Each;
+"each"         L C I(identifier, Identifier("each"), Each);
 
 @begin E4X
-"namespace"    L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("namespace"); return tk::Namespace;
-"xml"          L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier("xml"); return tk::XML;
+"namespace"    L C I(identifier, Identifier("namespace"), Namespace);
+"xml"          L C I(identifier, Identifier("xml"), XML);
 @end
 
-{IdentifierStart}{IdentifierPart}* L C yylval->identifier_ = new(yyextra->pool_) CYIdentifier(apr_pstrmemdup(yyextra->pool_, yytext, yyleng)); return tk::Identifier_;
+{IdentifierStart}{IdentifierPart}* L C I(identifier, Identifier(Y), Identifier_);
 
-(\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?){Exponent}? L C yylval->number_ = new(yyextra->pool_) CYNumber(strtod(yytext, NULL)); return tk::NumericLiteral;
+(\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?){Exponent}? L C I(number, Number(strtod(yytext, NULL)), NumericLiteral);
 
-0[xX][0-9a-fA-F]+ L C yylval->number_ = new(yyextra->pool_) CYNumber(strtoull(yytext + 2, NULL, 16)); return tk::NumericLiteral;
-0[0-7]+ L C yylval->number_ = new(yyextra->pool_) CYNumber(strtoull(yytext + 1, NULL, 8)); return tk::NumericLiteral;
-0[bB][0-1]+ L C yylval->number_ = new(yyextra->pool_) CYNumber(strtoull(yytext + 2, NULL, 2)); return tk::NumericLiteral;
+0[xX][0-9a-fA-F]+ L C I(number, Number(strtoull(yytext + 2, NULL, 16)), NumericLiteral);
+0[0-7]+ L C I(number, Number(strtoull(yytext + 1, NULL, 8)), NumericLiteral);
+0[bB][0-1]+ L C I(number, Number(strtoull(yytext + 2, NULL, 2)), NumericLiteral);
 
 \"([^"\\\n]|{Escape})*\"|'([^'\\\n]|{Escape})*' L C {
-    char *value(reinterpret_cast<char *>(apr_palloc(yyextra->pool_, yyleng)));
+    char *value(A char[yyleng]);
     char *local(value);
 
     for (yy_size_t i(1), e(yyleng - 1); i != e; ++i) {
@@ -382,8 +386,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
     }
 
     *local = '\0';
-    yylval->string_ = new(yyextra->pool_) CYString(value, local - value);
-    return tk::StringLiteral;
+    I(string, String(value, local - value), StringLiteral);
 }
 
 \r?\n yylloc->end.lines(); yylloc->step(); N

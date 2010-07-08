@@ -125,7 +125,7 @@ void Setup(CYDriver &driver, cy::parser &parser) {
 
 void Setup(CYOutput &out, CYDriver &driver, CYOptions &options) {
     out.pretty_ = pretty_;
-    CYContext context(driver.pool_, options);
+    CYContext context(options);
     driver.program_->Replace(context);
 }
 
@@ -216,12 +216,12 @@ int (*append_history$)(int, const char *);
 
 static std::string command_;
 
-static CYExpression *ParseExpression(CYPool &pool, CYUTF8String code) {
+static CYExpression *ParseExpression(CYUTF8String code) {
     std::ostringstream str;
     str << '(' << code << ')';
     std::string string(str.str());
 
-    CYDriver driver(pool);
+    CYDriver driver;
     driver.data_ = string.c_str();
     driver.size_ = string.size();
 
@@ -241,9 +241,8 @@ static int client_;
 static char **Complete(const char *word, int start, int end) {
     rl_attempted_completion_over = TRUE;
 
-    CYPool pool;
-
-    CYDriver driver(pool);
+    CYLocalPool pool;
+    CYDriver driver;
     cy::parser parser(driver);
     Setup(driver, parser);
 
@@ -264,7 +263,7 @@ static char **Complete(const char *word, int start, int end) {
     CYExpression *expression;
 
     CYOptions options;
-    CYContext context(driver.pool_, options);
+    CYContext context(options);
 
     std::ostringstream prefix;
 
@@ -294,7 +293,7 @@ static char **Complete(const char *word, int start, int end) {
 
     std::string begin(prefix.str());
 
-    driver.program_ = $ CYProgram($ CYExpress($C3(ParseExpression(pool,
+    driver.program_ = $ CYProgram($ CYExpress($C3(ParseExpression(
     "   function(object, prefix, word) {\n"
     "       var names = [];\n"
     "       var pattern = '^' + prefix + word;\n"
@@ -315,7 +314,7 @@ static char **Complete(const char *word, int start, int end) {
     std::string code(str.str());
     CYUTF8String json(Run(pool, client_, code));
 
-    CYExpression *result(ParseExpression(pool, json));
+    CYExpression *result(ParseExpression(json));
     CYArray *array(dynamic_cast<CYArray *>(result));
 
     if (array == NULL) {
@@ -388,7 +387,9 @@ static char **Complete(const char *word, int start, int end) {
 static char name_[] = "cycript";
 static char break_[] = " \t\n\"\\'`@$><=;|&{(" ")}" ".:[]";
 
-static void Console(apr_pool_t *pool, CYOptions &options) {
+static void Console(CYOptions &options) {
+    CYPool pool;
+
     passwd *passwd;
     if (const char *username = getenv("LOGNAME"))
         passwd = getpwnam(username);
@@ -488,6 +489,7 @@ static void Console(apr_pool_t *pool, CYOptions &options) {
         if (bypass)
             code = command_;
         else {
+            CYLocalPool pool;
             CYDriver driver;
             cy::parser parser(driver);
             Setup(driver, parser);
@@ -781,9 +783,10 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
 #endif
 
     if (script == NULL && tty)
-        Console(pool, options);
+        Console(options);
     else {
-        CYDriver driver(pool, script ?: "<stdin>");
+        CYLocalPool pool;
+        CYDriver driver(script ?: "<stdin>");
         cy::parser parser(driver);
         Setup(driver, parser);
 
