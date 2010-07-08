@@ -174,7 +174,7 @@ class CYLocalPool :
     public CYPool
 {
   private:
-    CYLocal<apr_pool_t *> local_;
+    CYLocal<apr_pool_t> local_;
 
   public:
     CYLocalPool() :
@@ -185,6 +185,6 @@ class CYLocalPool :
 };
 
 #define $pool \
-    CYLocal<apr_pool_t *>::Top()
+    CYLocal<apr_pool_t>::Get()
 
 #endif/*CYPOOLING_HPP*/

@@ -40,24 +40,42 @@
 #ifndef CYLOCAL_HPP
 #define CYLOCAL_HPP
 
+#include <pthread.h>
+
 template <typename Type_>
-struct CYLocal {
-    Type_ last_;
+class CYLocal {
+  private:
+    static ::pthread_key_t key_;
 
-    CYLocal(Type_ next) {
-        Type_ &top(Top());
-        last_ = top;
-        top = next;
+    Type_ *last_;
+
+  protected:
+    static _finline void Set(Type_ *value) {
+        _assert(::pthread_setspecific(key_, value) == 0);
     }
 
-    ~CYLocal() {
-        Top() = last_;
+    static ::pthread_key_t Key_() {
+        ::pthread_key_t key;
+        ::pthread_key_create(&key, NULL);
+        return key;
     }
 
-    static Type_ &Top() {
-        static __thread Type_ top;
-        return top;
+  public:
+    CYLocal(Type_ *next) {
+        last_ = Get();
+        Set(next);
+    }
+
+    _finline ~CYLocal() {
+        Set(last_);
+    }
+
+    static _finline Type_ *Get() {
+        return reinterpret_cast<Type_ *>(::pthread_getspecific(key_));
     }
 };
+
+template <typename Type_>
+::pthread_key_t CYLocal<Type_>::key_ = Key_();
 
 #endif/*CYLOCAL_HPP*/
