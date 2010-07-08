@@ -190,9 +190,9 @@ void CYContext::NonLocal(CYStatement *&statements) {
 
         cy::Syntax::Catch *rescue(
             $ cy::Syntax::Catch(cye, $$->*
-                $ CYIf($ CYIdentical($M($ CYVariable(cye), $S("$cyk")), $ CYVariable(unique)), $$->*
-                    $ CYReturn($M($ CYVariable(cye), $S("$cyv"))))->*
-                $ cy::Syntax::Throw($ CYVariable(cye))));
+                $ CYIf($ CYIdentical($M($V(cye), $S("$cyk")), $V(unique)), $$->*
+                    $ CYReturn($M($V(cye), $S("$cyv"))))->*
+                $ cy::Syntax::Throw($V(cye))));
 
         declare = declare->Replace(context);
         rescue->Replace(context);
@@ -217,13 +217,13 @@ CYAssignment *CYDeclaration::Assignment(CYContext &context) {
 }
 
 CYExpression *CYDeclaration::ForEachIn(CYContext &context) {
-    return $ CYVariable(identifier_);
+    return $V(identifier_);
 }
 
 CYExpression *CYDeclaration::Replace(CYContext &context) {
     context.Replace(identifier_);
     context.scope_->Declare(context, identifier_, CYIdentifierVariable);
-    return $ CYVariable(identifier_);
+    return $V(identifier_);
 }
 
 CYProperty *CYDeclarations::Property(CYContext &context) { $T(NULL)
@@ -346,7 +346,7 @@ CYFunctionParameter *CYForInComprehension::Parameter(CYContext &context) const {
 }
 
 CYStatement *CYForInComprehension::Replace(CYContext &context, CYStatement *statement) const {
-    return $ CYForIn($ CYVariable(name_), set_, CYComprehension::Replace(context, statement));
+    return $ CYForIn($V(name_), set_, CYComprehension::Replace(context, statement));
 }
 
 CYStatement *CYForEachIn::Replace(CYContext &context) {
@@ -533,7 +533,7 @@ CYFunctionParameter *CYOptionalFunctionParameter::Replace(CYContext &context, CY
     parameter = parameter->Replace(context, code);
     initializer_ = initializer_->Replace(context);
 
-    CYVariable *name($ CYVariable(name_));
+    CYVariable *name($V(name_));
     code.AddPrev($ CYIf($ CYIdentical($ CYTypeOf(name), $S("undefined")), $$->*
         $E($ CYAssign(name, initializer_))
     ));
@@ -634,7 +634,7 @@ CYStatement *CYReturn::Replace(CYContext &context) {
     if (context.nonlocal_ != NULL) {
         CYProperty *value(value_ == NULL ? NULL : $ CYProperty($S("$cyv"), value_));
         return $ cy::Syntax::Throw($ CYObject(
-            $ CYProperty($S("$cyk"), $ CYVariable(context.nonlocal_->Target(context)), value)
+            $ CYProperty($S("$cyk"), $V(context.nonlocal_->Target(context)), value)
         ));
     }
 
