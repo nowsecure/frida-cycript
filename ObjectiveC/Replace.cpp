@@ -40,7 +40,6 @@
 #include "Replace.hpp"
 #include "ObjectiveC/Syntax.hpp"
 
-#include <Foundation/Foundation.h>
 #include <sstream>
 
 CYStatement *CYCategory::Replace(CYContext &context) {
