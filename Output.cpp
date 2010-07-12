@@ -144,7 +144,7 @@ void CYArgument::Output(CYOutput &out) const {
             out << ':' << ' ';
     }
     if (value_ != NULL)
-        value_->Output(out, CYPA, CYNoFlags);
+        value_->Output(out, CYAssign::Precedence_, CYNoFlags);
     if (next_ != NULL) {
         if (next_->name_ == NULL)
             out << ',';
@@ -241,9 +241,9 @@ void CYCondition::Output(CYOutput &out, CYFlags flags) const {
     test_->Output(out, Precedence() - 1, CYLeft(flags));
     out << ' ' << '?' << ' ';
     if (true_ != NULL)
-        true_->Output(out, CYPA, CYNoFlags);
+        true_->Output(out, CYAssign::Precedence_, CYNoFlags);
     out << ' ' << ':' << ' ';
-    false_->Output(out, CYPA, CYRight(flags));
+    false_->Output(out, CYAssign::Precedence_, CYRight(flags));
 }
 
 void CYContinue::Output(CYOutput &out, CYFlags flags) const {
@@ -278,7 +278,7 @@ void CYDeclaration::Output(CYOutput &out, CYFlags flags) const {
     //out.out_ << ':' << identifier_->usage_ << '#' << identifier_->offset_;
     if (initialiser_ != NULL) {
         out << ' ' << '=' << ' ';
-        initialiser_->Output(out, CYPA, CYRight(flags));
+        initialiser_->Output(out, CYAssign::Precedence_, CYRight(flags));
     }
 }
 
@@ -323,7 +323,7 @@ void CYDoWhile::Output(CYOutput &out, CYFlags flags) const {
 
 void CYElement::Output(CYOutput &out) const {
     if (value_ != NULL)
-        value_->Output(out, CYPA, CYNoFlags);
+        value_->Output(out, CYAssign::Precedence_, CYNoFlags);
     if (next_ != NULL || value_ == NULL) {
         out << ',';
         if (next_ != NULL && next_->value_ != NULL)
@@ -343,7 +343,7 @@ void CYExpress::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYExpression::ClassName(CYOutput &out, bool object) const {
-    Output(out, CYPA, CYNoFlags);
+    Output(out, CYAssign::Precedence_, CYNoFlags);
 }
 
 const char *CYExpression::ForEachIn() const {
@@ -549,7 +549,7 @@ void CYObject::Output(CYOutput &out, CYFlags flags) const {
 
 void CYOptionalFunctionParameter::Output(CYOutput &out) const {
     out << *name_ << '=';
-    initializer_->Output(out, CYPA, CYNoFlags);
+    initializer_->Output(out, CYAssign::Precedence_, CYNoFlags);
     if (next_ != NULL)
         out << ',' << ' ' << *next_;
 }
@@ -576,7 +576,7 @@ void CYProperty::Output(CYOutput &out) const {
     out << '\t';
     name_->PropertyName(out);
     out << ':' << ' ';
-    value_->Output(out, CYPA, CYNoFlags);
+    value_->Output(out, CYAssign::Precedence_, CYNoFlags);
     if (next_ != NULL)
         out << ',' << '\n' << *next_;
     else

@@ -22,9 +22,6 @@
 #ifndef CYPARSER_HPP
 #define CYPARSER_HPP
 
-// XXX: wtf is this here?!
-#define CYPA 16
-
 #include <iostream>
 
 #include <string>
@@ -586,8 +583,9 @@ struct CYExpression :
     }
 
 #define CYPrecedence(value) \
+    static const unsigned Precedence_ = value; \
     virtual unsigned Precedence() const { \
-        return value; \
+        return Precedence_; \
     }
 
 #define CYRightHand(value) \

@@ -61,7 +61,7 @@ void CYClass::Output(CYOutput &out, CYFlags flags) const {
     out << "return $cyc;";
     out << "}(";
     if (super_ != NULL)
-        super_->Output(out, CYPA, CYNoFlags);
+        super_->Output(out, CYAssign::Precedence_, CYNoFlags);
     else
         out << "null";
     out << "))";
@@ -96,7 +96,7 @@ void CYMessage::Output(CYOutput &out, bool replace) const {
 }
 
 void CYProtocol::Output(CYOutput &out) const {
-    name_->Output(out, CYPA, CYNoFlags);
+    name_->Output(out, CYAssign::Precedence_, CYNoFlags);
     if (next_ != NULL)
         out << ',' << ' ' << *next_;
 }
@@ -123,7 +123,7 @@ void CYSend::Output(CYOutput &out, CYFlags flags) const {
 
 void CYSendDirect::Output(CYOutput &out, CYFlags flags) const {
     out << '[';
-    self_->Output(out, CYPA, CYNoFlags);
+    self_->Output(out, CYAssign::Precedence_, CYNoFlags);
     CYSend::Output(out, flags);
     out << ']';
 }
