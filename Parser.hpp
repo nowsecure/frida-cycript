@@ -57,6 +57,18 @@ struct CYNext {
     }
 };
 
+template <typename Type_>
+void CYSetLast(Type_ *&list, Type_ *item) {
+    if (list == NULL)
+        list = item;
+    else {
+        Type_ *next(list);
+        while (next->next_ != NULL)
+            next = next->next_;
+        next->next_ = item;
+    }
+}
+
 #define CYForEach(value, list) \
     for (__typeof__(*list) *value(list); value != NULL; value = value->next_)
 
@@ -426,10 +438,7 @@ struct CYBlock :
     }
 
     void AddPrev(CYStatement *statement) {
-        CYStatement *last(statement);
-        while (last->next_ != NULL)
-            last = last->next_;
-        last->SetNext(statements_);
+        CYSetLast(statement, statements_);
         statements_ = statement;
     }
 
@@ -614,10 +623,7 @@ struct CYCompound :
     }
 
     void AddPrev(CYExpression *expression) {
-        CYExpression *last(expression);
-        while (last->next_ != NULL)
-            last = last->next_;
-        last->SetNext(expressions_);
+        CYSetLast(expression, expressions_);
         expressions_ = expression;
     }
 

@@ -453,10 +453,7 @@ namespace cy {
 namespace Syntax {
 
 CYExpression *New::AddArgument(CYContext &context, CYExpression *value) {
-    CYArgument **argument(&arguments_);
-    while (*argument != NULL)
-        argument = &(*argument)->next_;
-    *argument = $ CYArgument(value);
+    CYSetLast(arguments_, $ CYArgument(value));
     return this;
 }
 
