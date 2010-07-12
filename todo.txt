@@ -35,3 +35,4 @@ GS #defines should be _finline
 replace procmod g+s with gdb's macosx_get_task_for_pid_rights
 non-local return prologue is not being Replace()d: multipass compiler!
 interpretation of documentation comments should be compiler-only and off by default
+don't ever generate $ CYWith, in particular for CYLet... use CYFunctionExpression
