@@ -1,3 +1,4 @@
+lol
 unicode identifier support (native and \u)
 support unions (right now 0-1 fields parsed as struct)
 look into what String is, and whether to bridge it
