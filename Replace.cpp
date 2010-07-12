@@ -213,15 +213,7 @@ CYProperty *CYDeclarations::Property(CYContext &context) { $T(NULL)
 }
 
 CYCompound *CYDeclarations::Replace(CYContext &context) {
-    CYCompound *compound;
-    if (next_ == NULL) compound:
-        compound = $ CYCompound();
-    else {
-        compound = next_->Replace(context);
-        if (compound == NULL)
-            goto compound;
-    }
-
+    CYCompound *compound(next_ == NULL ? $ CYCompound() : next_->Replace(context));
     if (CYAssignment *assignment = declaration_->Assignment(context))
         compound->AddPrev(assignment);
     return compound;
