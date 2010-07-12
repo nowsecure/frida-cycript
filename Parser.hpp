@@ -19,8 +19,8 @@
 **/
 /* }}} */
 
-#ifndef CYPARSER_HPP
-#define CYPARSER_HPP
+#ifndef CYCRIPT_PARSER_HPP
+#define CYCRIPT_PARSER_HPP
 
 #include <iostream>
 
@@ -1841,4 +1841,4 @@ CYAssignment_("&=", BitwiseAnd)
 CYAssignment_("^=", BitwiseXOr)
 CYAssignment_("|=", BitwiseOr)
 
-#endif/*CYPARSER_HPP*/
+#endif/*CYCRIPT_PARSER_HPP*/

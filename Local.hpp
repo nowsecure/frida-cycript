@@ -19,8 +19,8 @@
 **/
 /* }}} */
 
-#ifndef CYLOCAL_HPP
-#define CYLOCAL_HPP
+#ifndef CYCRIPT_LOCAL_HPP
+#define CYCRIPT_LOCAL_HPP
 
 #include <pthread.h>
 
@@ -60,4 +60,4 @@ class CYLocal {
 template <typename Type_>
 ::pthread_key_t CYLocal<Type_>::key_ = Key_();
 
-#endif/*CYLOCAL_HPP*/
+#endif/*CYCRIPT_LOCAL_HPP*/

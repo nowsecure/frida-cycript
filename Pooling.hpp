@@ -19,8 +19,8 @@
 **/
 /* }}} */
 
-#ifndef CYPOOLING_HPP
-#define CYPOOLING_HPP
+#ifndef CYCRIPT_POOLING_HPP
+#define CYCRIPT_POOLING_HPP
 
 #include <apr_pools.h>
 #include <apr_strings.h>
@@ -169,4 +169,4 @@ class CYLocalPool :
 #define $pool \
     CYLocal<apr_pool_t>::Get()
 
-#endif/*CYPOOLING_HPP*/
+#endif/*CYCRIPT_POOLING_HPP*/

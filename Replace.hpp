@@ -19,8 +19,8 @@
 **/
 /* }}} */
 
-#ifndef REPLACE_HPP
-#define REPLACE_HPP
+#ifndef CYCRIPT_REPLACE_HPP
+#define CYCRIPT_REPLACE_HPP
 
 #include "Parser.hpp"
 
@@ -123,4 +123,4 @@
 #define $L5(arg0, args...) \
     $ CYDeclarations(arg0, $L4(args))
 
-#endif/*REPLACE_HPP*/
+#endif/*CYCRIPT_REPLACE_HPP*/
