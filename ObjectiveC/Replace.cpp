@@ -119,7 +119,7 @@ CYExpression *CYSelector::Replace(CYContext &context) {
 
 CYString *CYSelectorPart::Replace(CYContext &context) {
     std::ostringstream str;
-    for (const CYSelectorPart *part(this); part != NULL; part = part->next_) {
+    CYForEach (part, this) {
         if (part->name_ != NULL)
             str << part->name_->Word();
         if (part->value_)

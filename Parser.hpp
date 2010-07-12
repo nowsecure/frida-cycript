@@ -57,6 +57,9 @@ struct CYNext {
     }
 };
 
+#define CYForEach(value, list) \
+    for (__typeof__(*list) *value(list); value != NULL; value = value->next_)
+
 struct CYThing {
     virtual ~CYThing() {
     }
@@ -370,7 +373,7 @@ struct CYContext {
     template <typename Type_>
     void ReplaceAll(Type_ *&values) {
         Type_ **last(&values);
-        for (Type_ *next(values); next != NULL; next = next->next_) {
+        CYForEach (next, values) {
             Replace(*last);
             last = &(*last)->next_;
         }

@@ -549,8 +549,8 @@ void CYProgram::Replace(CYContext &context) {
     IdentifierUsages usages;
 
     if (offset < context.rename_.size())
-        for (CYIdentifier *i(context.rename_[offset].identifier_); i != NULL; i = i->next_)
-             usages.insert(i);
+        CYForEach (i, context.rename_[offset].identifier_)
+            usages.insert(i);
 
     // XXX: totalling the probable occurrences and sorting by them would improve the result
     for (CYIdentifierUsageVector::const_iterator i(context.rename_.begin()); i != context.rename_.end(); ++i, ++offset) {
@@ -582,7 +582,7 @@ void CYProgram::Replace(CYContext &context) {
             // XXX: at some point, this could become a keyword
         }
 
-        for (CYIdentifier *identifier(i->identifier_); identifier != NULL; identifier = identifier->next_)
+        CYForEach (identifier, i->identifier_)
             identifier->Set(name);
     }
 }

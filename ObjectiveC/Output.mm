@@ -85,7 +85,7 @@ void CYImport::Output(CYOutput &out, CYFlags flags) const {
 void CYMessage::Output(CYOutput &out, bool replace) const {
     out << (instance_ ? '-' : '+');
 
-    for (CYMessageParameter *parameter(parameters_); parameter != NULL; parameter = parameter->next_)
+    CYForEach (parameter, parameters_)
         if (parameter->tag_ != NULL) {
             out << ' ' << *parameter->tag_;
             if (parameter->name_ != NULL)
@@ -113,7 +113,7 @@ void CYSelectorPart::Output(CYOutput &out) const {
 }
 
 void CYSend::Output(CYOutput &out, CYFlags flags) const {
-    for (CYArgument *argument(arguments_); argument != NULL; argument = argument->next_)
+    CYForEach (argument, arguments_)
         if (argument->name_ != NULL) {
             out << ' ' << *argument->name_;
             if (argument->value_ != NULL)

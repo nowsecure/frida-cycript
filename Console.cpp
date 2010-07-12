@@ -313,7 +313,7 @@ static char **Complete(const char *word, int start, int end) {
     std::string common;
     bool rest(false);
 
-    for (CYElement *element(array->elements_); element != NULL; element = element->next_) {
+    CYForEach (element, array->elements_) {
         CYString *string(dynamic_cast<CYString *>(element->value_));
         _assert(string != NULL);
 
