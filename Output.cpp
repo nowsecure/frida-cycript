@@ -609,7 +609,7 @@ void CYStatement::Multiple(CYOutput &out, CYFlags flags) const {
     bool first(true);
     for (const CYStatement *next(this); next != NULL; next = next->next_) {
         bool last(next->next_ == NULL);
-        CYFlags jacks(first ? last ? flags : CYLeft(flags) : last ? CYCenter(flags) : CYRight(flags));
+        CYFlags jacks(first ? last ? flags : CYLeft(flags) : last ? CYRight(flags) : CYCenter(flags));
         first = false;
         out << '\t';
         next->Output(out, jacks);
