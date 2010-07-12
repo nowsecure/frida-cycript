@@ -561,8 +561,6 @@ struct CYExpression :
     virtual CYExpression *ClassName(CYContext &context, bool object);
     virtual void ClassName(CYOutput &out, bool object) const;
 
-    CYExpression *ReplaceAll(CYContext &context);
-
     virtual CYExpression *Replace(CYContext &context) = 0;
 
     virtual CYExpression *Primitive(CYContext &context) {

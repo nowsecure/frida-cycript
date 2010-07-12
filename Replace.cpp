@@ -136,8 +136,10 @@ CYStatement *CYComment::Replace(CYContext &context) {
 }
 
 CYExpression *CYCompound::Replace(CYContext &context) {
-    expressions_ = expressions_->ReplaceAll(context);
-    return expressions_ == NULL ? NULL : this;
+    CYExpression **last(&expressions_);
+    for (CYExpression *next(expressions_); next != NULL; next = next->next_)
+        last = &(*last = next->Replace(context))->next_;
+    return this;
 }
 
 CYFunctionParameter *CYComprehension::Parameters(CYContext &context) const { $T(NULL)
@@ -281,18 +283,6 @@ CYExpression *CYExpression::ClassName(CYContext &context, bool object) {
 
 CYExpression *CYExpression::ForEachIn(CYContext &context) {
     return this;
-}
-
-CYExpression *CYExpression::ReplaceAll(CYContext &context) { $T(NULL)
-    CYExpression *replace(this);
-    context.Replace(replace);
-
-    if (CYExpression *next = next_->ReplaceAll(context))
-        replace->SetNext(next);
-    else
-        replace->SetNext(next_);
-
-    return replace;
 }
 
 CYNumber *CYFalse::Number(CYContext &context) {
