@@ -143,9 +143,7 @@ struct CYStatement :
     void Single(CYOutput &out, CYFlags flags) const;
     void Multiple(CYOutput &out, CYFlags flags = CYNoFlags) const;
 
-    CYStatement *ReplaceAll(CYContext &context);
     virtual CYStatement *Collapse(CYContext &context);
-
     virtual CYStatement *Replace(CYContext &context) = 0;
 
   private:
@@ -367,6 +365,15 @@ struct CYContext {
     }
 
     virtual ~CYContext() {
+    }
+
+    template <typename Type_>
+    void ReplaceAll(Type_ *&values) {
+        Type_ **last(&values);
+        for (Type_ *next(values); next != NULL; next = next->next_) {
+            Replace(*last);
+            last = &(*last)->next_;
+        }
     }
 
     template <typename Type_>

@@ -86,7 +86,7 @@ CYExpression *CYAssignment::Replace(CYContext &context) {
 }
 
 CYStatement *CYBlock::Replace(CYContext &context) {
-    statements_ = statements_->ReplaceAll(context);
+    context.ReplaceAll(statements_);
     if (statements_ == NULL)
         return $ CYEmpty();
     return this;
@@ -127,7 +127,7 @@ void Catch::Replace(CYContext &context) { $T()
 
 void CYClause::Replace(CYContext &context) { $T()
     context.Replace(case_);
-    statements_ = statements_->ReplaceAll(context);
+    context.ReplaceAll(statements_);
     next_->Replace(context);
 }
 
@@ -136,9 +136,7 @@ CYStatement *CYComment::Replace(CYContext &context) {
 }
 
 CYExpression *CYCompound::Replace(CYContext &context) {
-    CYExpression **last(&expressions_);
-    for (CYExpression *next(expressions_); next != NULL; next = next->next_)
-        last = &(*last = next->Replace(context))->next_;
+    context.ReplaceAll(expressions_);
     return this;
 }
 
@@ -545,7 +543,7 @@ void CYProgram::Replace(CYContext &context) {
     CYScope scope(CYScopeProgram, context, statements_);
 
     context.nextlocal_ = $ CYNonLocal();
-    statements_ = statements_->ReplaceAll(context);
+    context.ReplaceAll(statements_);
     context.NonLocal(statements_);
 
     scope.Close();
@@ -746,13 +744,6 @@ void CYScope::Scope(CYContext &context, CYStatement *&statements) {
 
 CYStatement *CYStatement::Collapse(CYContext &context) {
     return this;
-}
-
-CYStatement *CYStatement::ReplaceAll(CYContext &context) { $T(NULL)
-    CYStatement *replace(this);
-    context.Replace(replace);
-    replace->SetNext(next_->ReplaceAll(context));
-    return replace->Collapse(context);
 }
 
 CYString *CYString::Concat(CYContext &context, CYString *rhs) const {
