@@ -1264,7 +1264,7 @@ Block_
     ;
 
 Block
-    : Block_ { if ($1) $$ = CYNew CYBlock($1); else $$ = CYNew CYEmpty(); }
+    : Block_ { $$ = CYNew CYBlock($1); }
     ;
 
 StatementList
