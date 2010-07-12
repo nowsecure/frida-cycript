@@ -33,44 +33,12 @@
 #include <cstdlib>
 
 #include "location.hh"
+
+#include "List.hpp"
 #include "Pooling.hpp"
 #include "Options.hpp"
 
 class CYContext;
-
-template <typename Type_>
-struct CYNext {
-    Type_ *next_;
-
-    CYNext() :
-        next_(NULL)
-    {
-    }
-
-    CYNext(Type_ *next) :
-        next_(next)
-    {
-    }
-
-    void SetNext(Type_ *next) {
-        next_ = next;
-    }
-};
-
-template <typename Type_>
-void CYSetLast(Type_ *&list, Type_ *item) {
-    if (list == NULL)
-        list = item;
-    else {
-        Type_ *next(list);
-        while (next->next_ != NULL)
-            next = next->next_;
-        next->next_ = item;
-    }
-}
-
-#define CYForEach(value, list) \
-    for (__typeof__(*list) *value(list); value != NULL; value = value->next_)
 
 struct CYThing {
     virtual ~CYThing() {
