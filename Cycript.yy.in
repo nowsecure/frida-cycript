@@ -759,7 +759,7 @@ ElementList
 /* }}} */
 /* 11.1.5 Object Initialiser {{{ */
 ObjectLiteral
-    : OpenBrace PropertyNameAndValueListOpt "}" { $$ = CYNew CYObject($2); }
+    : Brace PropertyNameAndValueListOpt "}" { $$ = CYNew CYObject($2); }
     ;
 
 PropertyNameAndValueList_
