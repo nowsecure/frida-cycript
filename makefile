@@ -6,6 +6,8 @@ else
 target := $(PKG_TARG)-
 endif
 
+prefix := /usr
+
 gcc := g++
 flags ?= -g3 -O0 -DYYDEBUG=1
 
@@ -101,11 +103,11 @@ $(deb): $(all) control
 	rm -rf package
 	mkdir -p package/DEBIAN
 	cp -pR control package/DEBIAN
-	mkdir -p package/usr/{bin,lib,sbin}
+	mkdir -p package$(prefix)/{bin,lib,sbin}
 	$(restart) extra
-	cp -pR $(lib)cycript.$(dll) package/usr/lib
-	cp -pR cycript package/usr/bin
-	#cp -pR cyrver package/usr/sbin
+	cp -pR $(lib)cycript.$(dll) package$(prefix)/lib
+	cp -pR cycript package$(prefix)/bin
+	#cp -pR cyrver package$(prefix)/sbin
 	dpkg-deb -b package $(deb)
 endif
 

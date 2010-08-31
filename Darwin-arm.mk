@@ -2,6 +2,8 @@ flags += -F${PKG_ROOT}/System/Library/PrivateFrameworks
 
 all += #cyrver
 
+prefix := /usr
+
 arch := iphoneos-arm
 console += -framework UIKit
 depends += apr-lib readline libffi mobilesubstrate

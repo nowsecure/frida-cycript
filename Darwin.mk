@@ -1,7 +1,7 @@
 dll := dylib
 link += -lobjc -framework CoreFoundation
 console += -framework Foundation
-library += -install_name /usr/lib/libcycript.$(dll)
+library += -install_name $(prefix)/lib/libcycript.$(dll)
 library += -framework Foundation
 console += -framework JavaScriptCore
 # XXX: do I just need WebCore?
@@ -12,7 +12,9 @@ flags += -I/usr/include/ffi
 apr_config := /usr/bin/apr-1-config
 flags += -arch i386 -arch x86_64 #-arch armv6
 
-flags += -DCY_ATTACH -DCY_LIBRARY='"/usr/lib/libcycript.dylib"'
+prefix := /sw
+
+flags += -DCY_ATTACH -DCY_LIBRARY='"$(prefix)/lib/libcycript.dylib"'
 code += Handler.o
 inject += Mach/Inject.o
 Mach/Inject.o: Trampoline.t.hpp Baton.hpp
