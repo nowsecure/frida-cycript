@@ -14,6 +14,8 @@ flags += -arch i386 -arch x86_64 #-arch armv6
 
 prefix := /sw
 
+flags += -mmacosx-version-min=10.5
+
 flags += -DCY_ATTACH -DCY_LIBRARY='"$(prefix)/lib/libcycript.dylib"'
 code += Handler.o
 inject += Mach/Inject.o
