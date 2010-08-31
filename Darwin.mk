@@ -1,3 +1,5 @@
+prefix := /sw
+
 dll := dylib
 link += -lobjc -framework CoreFoundation
 console += -framework Foundation
@@ -11,8 +13,6 @@ library += -liconv
 flags += -I/usr/include/ffi
 apr_config := /usr/bin/apr-1-config
 flags += -arch i386 -arch x86_64 #-arch armv6
-
-prefix := /sw
 
 flags += -mmacosx-version-min=10.5
 
