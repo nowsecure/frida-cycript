@@ -154,5 +154,5 @@ CYExpression *CYSendDirect::Replace(CYContext &context) {
 }
 
 CYExpression *CYSendSuper::Replace(CYContext &context) {
-    return $ CYSendDirect($V("cyr"), arguments_);
+    return $ CYSendDirect($V("$cyr"), arguments_);
 }
