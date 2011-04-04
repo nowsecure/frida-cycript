@@ -24,17 +24,10 @@
 #include <sys/types.h>
 
 struct Baton {
-    void (*__pthread_set_self)(pthread_t);
+    void (*_pthread_start)(pthread_t, mach_port_t, void *(*)(void *), void *, size_t, unsigned int);
 
-    int (*pthread_create)(pthread_t *, const pthread_attr_t *, void *(*)(void *), void *);
-    int (*pthread_join)(pthread_t, void **);
-
-    void *(*dlopen)(const char *, int);
     char *(*dlerror)();
     void *(*dlsym)(void *, const char *);
-
-    mach_port_t (*mach_thread_self)();
-    kern_return_t (*thread_terminate)(thread_act_t);
 
     pid_t pid;
     char library[];
