@@ -6,6 +6,7 @@ LT_INIT([disable-static])
 PKG_PROG_PKG_CONFIG([0.22])
 CHECK_GNU_MAKE
 AC_SUBST([GMAKE], [$_cv_gnu_make_command])
+AC_SUBST([LTFLAGS])
 AS_IF([test "x$GMAKE" = x], [AC_MSG_ERROR([You need GNU make])])
 AC_PATH_PROGS([_BASH], [bash])
 AS_IF([test "x$_BASH" = x], [AC_MSG_ERROR([You need GNU bash])])
@@ -59,8 +60,8 @@ AC_PROG_OBJCXX
 AC_DEFUN([CY_CHECK_UNIVERSAL], [
 	AC_MSG_CHECKING([for universal binary support])
 	AS_CASE([$host_vendor], [apple], [
-		AS_CASE([$host_cpu], [i386|x86_64], [
-			for cy_arch in i386 x86_64; do
+		AS_CASE([$host_cpu], [armv6|i386|x86_64], [
+			for cy_arch in armv6 i386 x86_64; do
 				cy_save_CXXFLAGS=$CXXFLAGS
 				AC_LIB_APPENDTOVAR([CXXFLAGS], ["-arch $cy_arch"])
 				AC_TRY_LINK([], [], [

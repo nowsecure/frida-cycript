@@ -783,6 +783,7 @@ BISON
 TIME
 _BASH
 GMAKE
+LTFLAGS
 ifGNUmake
 PKG_CONFIG
 CPP
@@ -14463,9 +14464,9 @@ $as_echo_n "checking for universal binary support... " >&6; }
   apple) :
 
 		case $host_cpu in #(
-  i386|x86_64) :
+  armv6|i386|x86_64) :
 
-			for cy_arch in i386 x86_64; do
+			for cy_arch in armv6 i386 x86_64; do
 				cy_save_CXXFLAGS=$CXXFLAGS
 
   for element in "-arch $cy_arch"; do
@@ -14625,9 +14626,9 @@ $as_echo_n "checking for universal binary support... " >&6; }
   apple) :
 
 		case $host_cpu in #(
-  i386|x86_64) :
+  armv6|i386|x86_64) :
 
-			for cy_arch in i386 x86_64; do
+			for cy_arch in armv6 i386 x86_64; do
 				cy_save_CXXFLAGS=$CXXFLAGS
 
   for element in "-arch $cy_arch"; do

@@ -18,6 +18,7 @@ objcxx := @OBJCXX@
 cflags := @CPPFLAGS@ @CXXFLAGS@ -DYYDEBUG=1 $(filter -DHAVE_FFI% -DHAVE_READLINE% -DHAVE_HISTORY_H,@DEFS@)
 objcxxflags := @OBJCXXFLAGS@
 ldflags := @LDFLAGS@
+ltflags := @LTFLAGS@
 library := @LIBS@ @LTLIBAPR@ @LTLIBICONV@
 sed := @SED@
 bison := @BISON@
@@ -232,11 +233,11 @@ lex.cy.lo: lex.cy.c $(header)
 	$(libtool) --mode=compile $(objcxx) $(objcxxflags) $(cflags) -c -o $@ $<
 
 libcycript.la: $(code)
-	$(libtool) --mode=link $(cxx) $(ldflags) -o $@ $(filter %.lo,$^) $(library) $(link) -rpath $(libdir)
+	$(libtool) --mode=link $(cxx) $(ltflags) $(ldflags) -o $@ $(filter %.lo,$^) $(library) $(link) -rpath $(libdir)
 	$(ldid) $@
 
 cycript: Console.lo libcycript.la $(inject)
-	$(libtool) --mode=link $(cxx) $(ldflags) -o $@ $(filter %.lo,$^) libcycript.la $(link) -rpath $(libdir)
+	$(libtool) --mode=link $(cxx) $(ltflags) $(ldflags) -o $@ $(filter %.lo,$^) libcycript.la $(link) -rpath $(libdir)
 	$(entitle) cycript
 
 package: $(deb)
