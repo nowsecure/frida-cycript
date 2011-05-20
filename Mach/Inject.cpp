@@ -22,7 +22,7 @@
 #include <dlfcn.h>
 #include <mach/mach.h>
 
-#include <mach/i386/thread_status.h>
+#include <mach/machine/thread_status.h>
 
 #include <cstdio>
 #include <pthread.h>
@@ -75,7 +75,7 @@ void InjectLibrary(pid_t pid) {
     Trampoline *trampoline;
 
 #if defined(__arm__)
-    trampoline = &Trampoline_arm_;
+    trampoline = &Trampoline_armv6_;
     arm_thread_state_t state;
     flavor = ARM_THREAD_STATE;
     count = ARM_THREAD_STATE_COUNT;
@@ -117,13 +117,13 @@ void InjectLibrary(pid_t pid) {
     _assert(count == count);
 
 #if defined(__arm__)
-    state.r[0] = data;
-    state.sp = stack + Stack_;
-    state.pc = code + trampoline->entry_;
+    state.__r[0] = data;
+    state.__sp = stack + Stack_;
+    state.__pc = code + trampoline->entry_;
 
-    if ((state.pc & 0x1) != 0) {
-        state.pc &= ~0x1;
-        state.cpsr |= 0x20;
+    if ((state.__pc & 0x1) != 0) {
+        state.__pc &= ~0x1;
+        state.__cpsr |= 0x20;
     }
 #elif defined(__i386__)
     frame[1] = data;

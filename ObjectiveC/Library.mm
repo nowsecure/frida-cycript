@@ -19,12 +19,6 @@
 **/
 /* }}} */
 
-#if defined(__APPLE__) && defined(__arm__)
-#include <substrate.h>
-#else
-#include <objc/objc-api.h>
-#endif
-
 #ifdef __APPLE__
 #include "Struct.hpp"
 #endif
@@ -33,7 +27,8 @@
 
 #include "ObjectiveC/Internal.hpp"
 
-#include <objc/Protocol.h>
+#include <objc/objc-api.h>
+#include <objc/runtime.h>
 
 #include "cycript.hpp"
 
@@ -2116,7 +2111,7 @@ static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObje
 } CYCatch }
 
 /* Hook: objc_registerClassPair {{{ */
-#if defined(__APPLE__) && defined(__arm__)
+#if defined(__APPLE__) && defined(__arm__) && 0
 // XXX: replace this with associated objects
 
 MSHook(void, CYDealloc, id self, SEL sel) {
@@ -2492,7 +2487,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     definition.getPropertyNames = &ObjectiveC_Protocols_getPropertyNames;
     ObjectiveC_Protocols_ = JSClassCreate(&definition);
 
-#if defined(__APPLE__) && defined(__arm__)
+#if defined(__APPLE__) && defined(__arm__) && 0
     MSHookFunction(&objc_registerClassPair, MSHake(objc_registerClassPair));
 #endif
 
@@ -2536,7 +2531,7 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     CYSetProperty(context, cycript, CYJSString("Selector"), Selector);
     CYSetProperty(context, cycript, CYJSString("Super"), Super);
 
-#if defined(__APPLE__) && defined(__arm__)
+#if defined(__APPLE__) && defined(__arm__) && 0
     CYSetProperty(context, all, CYJSString("objc_registerClassPair"), &objc_registerClassPair_, kJSPropertyAttributeDontEnum);
 #endif
 

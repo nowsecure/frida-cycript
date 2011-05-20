@@ -76,8 +76,6 @@ endif
 paths := $(foreach path,$(paths),$(wildcard $(path)))
 cflags += $(foreach path,$(paths),-I$(path) -L$(path))
 
-#svn := $(shell svnversion $(srcdir))
-
 all:
 all := cycript
 
@@ -98,10 +96,10 @@ inject :=
 
 filters := #E4X
 ldid := true
-entitle := $(ldid)
+entitle = $(ldid) -Scycript.xml
 lib := lib
 dll := @SO@
-depends :=
+depends ?=
 
 restart ?= $(MAKE)
 uname_s ?= $(shell uname -s)
@@ -127,22 +125,20 @@ all += libcycript.la
 filters += $(shell $(bison) <(echo '%code{}%%_:') -o/dev/null 2>/dev/null && echo Bison24 || echo Bison23)
 
 ifdef arch
-deb := $(shell grep ^Package: $(srcdir)/control.in | cut -d ' ' -f 2-)_$(shell grep ^Version: $(srcdir)/control.in | cut -d ' ' -f 2 | $(sed) -e 's/\#/$(svn)/')_$(arch).deb
+deb := $(shell grep ^Package: $(srcdir)/control.in | cut -d ' ' -f 2-)_$(shell grep ^Version: $(srcdir)/control.in | cut -d ' ' -f 2 | $(sed) -e 's/\#/$(version)/')_$(arch).deb
 
 all:
 
-extra::
-
 ifeq ($(depends)$(dll),dylib)
-control.tmp: control.in cycript $(lib)cycript.dylib
-	$(sed) -e 's/&/'"$$(dpkg-query -S $$(otool -lah cycript *.dylib | grep dylib | grep -v ':$$' | $(sed) -e 's/^ *name //;s/ (offset [0-9]*)$$//' | sort -u) 2>/dev/null | $(sed) -e 's/:.*//; /^cycript$$/ d; s/$$/,/' | sort -u | tr '\n' ' ')"'/;s/, $$//;s/#/$(svn)/;s/%/$(arch)/' $< >$@
+control.tmp: control.in .libs/cycript .libs/$(lib)cycript.dylib
+	$(sed) -e 's/&/'"$$(dpkg-query -S $$(otool -lah .libs/cycript .libs/*.dylib | grep dylib | grep -v ':$$' | $(sed) -e 's/^ *name //;s/ (offset [0-9]*)$$//' | sort -u) 2>/dev/null | $(sed) -e 's/:.*//; /^cycript$$/ d; s/$$/,/' | sort -u | tr '\n' ' ')"'/;s/, $$//;s/#/$(version)/;s/%/$(arch)/' $< >$@
 else
 ifeq ($(depends)$(dll),so)
-control.tmp: control.in cycript $(lib)cycript.so
-	$(sed) -e 's/&/'"$$(dpkg-query -S $$(ldd cycript $(lib)cycript.so | $(sed) -e '/:$$/ d; s/^[ \t]*\([^ ]* => \)\?\([^ ]*\) .*/\2/' | sort -u) 2>/dev/null | $(sed) -e 's/:.*//; /^cycript$$/ d; s/$$/,/' | sort -u | tr '\n' ' ')"'/;s/, $$//;s/#/$(svn)/;s/%/$(arch)/' $< >$@
+control.tmp: control.in .libs/cycript .libs/$(lib)cycript.so
+	$(sed) -e 's/&/'"$$(dpkg-query -S $$(ldd cycript $(lib)cycript.so | $(sed) -e '/:$$/ d; s/^[ \t]*\([^ ]* => \)\?\([^ ]*\) .*/\2/' | sort -u) 2>/dev/null | $(sed) -e 's/:.*//; /^cycript$$/ d; s/$$/,/' | sort -u | tr '\n' ' ')"'/;s/, $$//;s/#/$(version)/;s/%/$(arch)/' $< >$@
 else
 control.tmp: control.in
-	$(sed) -e 's/&/$(foreach depend,$(depends),$(depend),)/;s/,$$//;s/#/$(svn)/;s/%/$(arch)/' $< >$@
+	$(sed) -e 's/&/$(foreach depend,$(depends),$(depend),)/;s/,$$//;s/#/$(version)/;s/%/$(arch)/' $< >$@
 endif
 endif
 
@@ -153,11 +149,11 @@ $(deb): $(all) control
 	rm -rf package
 	mkdir -p package/DEBIAN
 	cp -pR control package/DEBIAN
+	#sed -i -e '/^Depends: / s/\<mobilesubstrate\>/mobilesubstrate (>= 0.9.3072)/g' package/DEBIAN/control
 	mkdir -p package/usr/{bin,lib,sbin}
-	$(restart) extra
-	cp -pR $(lib)cycript.$(dll) package/usr/lib
-	cp -pR cycript package/usr/bin
-	#cp -pR cyrver package/usr/sbin
+	cp -pR .libs/$(lib)cycript.0.$(dll) package/usr/lib
+	cp -pR .libs/$(lib)cycript.$(dll) package/usr/lib
+	cp -pR .libs/cycript package/usr/bin
 	dpkg-deb -b package $(deb)
 endif
 
@@ -197,7 +193,7 @@ endif
 all: $(all)
 
 clean::
-	rm -rf *.lo *.o *.d *.t.hpp .libs */*.d */*.lo */.libs lib*.la $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh cyrver Cycript.yy Cycript.l control Bridge.gperf Bridge.hpp Cycript.output
+	rm -rf *.lo *.o *.d *.t.hpp .libs */*.d */*.lo */.libs lib*.la $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh Cycript.yy Cycript.l control Bridge.gperf Bridge.hpp Cycript.output
 ifneq ($(srcdir),.)
 	rm -rf Mach ObjectiveC sig
 endif
@@ -234,11 +230,11 @@ lex.cy.lo: lex.cy.c $(header)
 
 libcycript.la: $(code)
 	$(libtool) --mode=link $(cxx) $(ltflags) $(ldflags) -o $@ $(filter %.lo,$^) $(library) $(link) -rpath $(libdir)
-	$(ldid) $@
+	$(ldid) .libs/$(lib)cycript.$(dll)
 
 cycript: Console.lo libcycript.la $(inject)
 	$(libtool) --mode=link $(cxx) $(ltflags) $(ldflags) -o $@ $(filter %.lo,$^) libcycript.la $(link) -rpath $(libdir)
-	$(entitle) cycript
+	$(entitle) .libs/cycript
 
 package: $(deb)
 
@@ -266,4 +262,4 @@ uninstall:
 	$(libtool) --mode=uninstall rm -f $(DESTDIR)$(bindir)/cycript
 	$(libtool) --mode=uninstall rm -f $(DESTDIR)$(libdir)/libcycript.la
 
-.PHONY: all clean extra dist install uninstall package test control.tmp
+.PHONY: all clean dist install uninstall package test control.tmp
