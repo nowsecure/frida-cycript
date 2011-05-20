@@ -59,7 +59,8 @@ void *Routine(void *arg) {
     void (*CYHandleServer)(pid_t);
     dlset(baton, CYHandleServer, "CYHandleServer", handle);
 
-    CYHandleServer(baton->pid);
+    if (CYHandleServer != NULL)
+        CYHandleServer(baton->pid);
 
     return NULL;
 }
@@ -78,23 +79,23 @@ extern "C" void Start(Baton *baton) {
     self.tsd[0] = &self;
     baton->__pthread_set_self(&self);
 
-    int (*pthread_create)(pthread_t *, const pthread_attr_t *, void *(*)(void *), void *);
-    dlset(baton, pthread_create, "pthread_create");
+    //int (*pthread_create)(pthread_t *, const pthread_attr_t *, void *(*)(void *), void *);
+    //dlset(baton, pthread_create, "pthread_create");
 
     pthread_t thread;
-    pthread_create(&thread, NULL, &Routine, baton);
+    baton->pthread_create(&thread, NULL, &Routine, baton);
 
-    int (*pthread_join)(pthread_t, void **);
-    dlset(baton, pthread_join, "pthread_join");
+    //int (*pthread_join)(pthread_t, void **);
+    //dlset(baton, pthread_join, "pthread_join");
 
-    void *result;
-    pthread_join(thread, &result);
+    //void *result;
+    //baton->pthread_join(thread, &result);
 
-    mach_port_t (*mach_thread_self)();
-    dlset(baton, mach_thread_self, "mach_thread_self");
+    //mach_port_t (*mach_thread_self)();
+    //dlset(baton, mach_thread_self, "mach_thread_self");
 
-    kern_return_t (*thread_terminate)(thread_act_t);
-    dlset(baton, thread_terminate, "thread_terminate");
+    //kern_return_t (*thread_terminate)(thread_act_t);
+    //dlset(baton, thread_terminate, "thread_terminate");
 
-    thread_terminate(mach_thread_self());
+    baton->thread_terminate(baton->mach_thread_self());
 }

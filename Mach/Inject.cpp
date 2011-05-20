@@ -48,6 +48,12 @@ void InjectLibrary(pid_t pid) {
 
     baton->__pthread_set_self = &__pthread_set_self;
 
+    baton->pthread_create = &pthread_create;
+    baton->pthread_join = &pthread_join;
+
+    baton->mach_thread_self = &mach_thread_self;
+    baton->thread_terminate = &thread_terminate;
+
     baton->dlerror = &dlerror;
     baton->dlsym = &dlsym;
 
