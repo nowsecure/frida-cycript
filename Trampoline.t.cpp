@@ -35,7 +35,7 @@ static _finline void dlset(Baton *baton, Type_ &function, const char *name, void
 #define Framework(framework) \
     "/System/Library/Frameworks/" #framework ".framework/" #framework
 
-static void *Routine(void *arg) {
+void *Routine(void *arg) {
     Baton *baton(reinterpret_cast<Baton *>(arg));
 
     void *(*dlopen)(const char *, int);
@@ -64,25 +64,37 @@ static void *Routine(void *arg) {
     return NULL;
 }
 
-static void *Thread(void *arg) {
-    Baton *baton(reinterpret_cast<Baton *>(arg));
+static void $bzero(void *data, size_t size) {
+    char *bytes(reinterpret_cast<char *>(data));
+    for (size_t i(0); i != size; ++i)
+        bytes[i] = 0;
+}
+
+extern "C" void Start(Baton *baton) {
+    struct _pthread self;
+    $bzero(&self, sizeof(self));
+
+    // this code comes from _pthread_set_self
+    self.tsd[0] = &self;
+    baton->__pthread_set_self(&self);
 
     int (*pthread_create)(pthread_t *, const pthread_attr_t *, void *(*)(void *), void *);
     dlset(baton, pthread_create, "pthread_create");
 
     pthread_t thread;
-    pthread_create(&thread, NULL, &Routine, baton);
+    baton->pthread_create(&thread, NULL, &Routine, baton);
 
     int (*pthread_join)(pthread_t, void **);
     dlset(baton, pthread_join, "pthread_join");
 
     void *result;
-    pthread_join(thread, &result);
+    baton->pthread_join(thread, &result);
 
-    return NULL;
-}
+    mach_port_t (*mach_thread_self)();
+    dlset(baton, mach_thread_self, "mach_thread_self");
 
-extern "C" void Start(Baton *baton) {
-    struct _pthread self;
-    baton->_pthread_start(&self, NULL, &Thread, baton, 8 * 1024, 0);
+    kern_return_t (*thread_terminate)(thread_act_t);
+    dlset(baton, thread_terminate, "thread_terminate");
+
+    baton->thread_terminate(baton->mach_thread_self());
 }

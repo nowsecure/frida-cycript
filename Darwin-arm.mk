@@ -9,7 +9,6 @@ depends += apr-lib readline libffi mobilesubstrate
 library += -framework WebCore
 # XXX: all Darwin, maybe all device, should have this
 library += -lsubstrate
-console += -lsubstrate
 
 ldid := ldid -S
 entitle := ldid -Scycript.xml

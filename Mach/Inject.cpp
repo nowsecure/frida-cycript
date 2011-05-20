@@ -33,9 +33,7 @@
 #include "Pooling.hpp"
 #include "Trampoline.t.hpp"
 
-#include <substrate.h>
-
-extern "C" void _pthread_start(pthread_t, mach_port_t, void *(*)(void *), void *, size_t, unsigned int);
+extern "C" void __pthread_set_self(pthread_t);
 
 void InjectLibrary(pid_t pid) {
     const char *library(CY_LIBRARY);
@@ -48,9 +46,17 @@ void InjectLibrary(pid_t pid) {
     uint8_t *local(reinterpret_cast<uint8_t *>(apr_palloc(pool, depth)));
     Baton *baton(reinterpret_cast<Baton *>(local));
 
-    baton->_pthread_start = reinterpret_cast<void (*)(pthread_t, mach_port_t, void *(*)(void *), void *, size_t, unsigned int)>(MSFindSymbol(NULL, "__pthread_start"));
+    baton->__pthread_set_self = &__pthread_set_self;
+
+    baton->pthread_create = &pthread_create;
+    baton->pthread_join = &pthread_join;
+
+    baton->dlopen = &dlopen;
     baton->dlerror = &dlerror;
     baton->dlsym = &dlsym;
+
+    baton->mach_thread_self = &mach_thread_self;
+    baton->thread_terminate = &thread_terminate;
 
     baton->pid = getpid();
     memcpy(baton->library, library, length);
@@ -103,8 +109,7 @@ void InjectLibrary(pid_t pid) {
     _krncall(vm_protect(task, code, trampoline->size_, false, VM_PROT_READ | VM_PROT_EXECUTE));
 
     /*
-    printf("_pts:%p\n", baton->_pthread_start);
-    printf("dlerror:%p\n", baton->dlerror);
+    printf("_ptss:%p\n", baton->__pthread_set_self);
     printf("dlsym:%p\n", baton->dlsym);
     printf("code:%zx\n", (size_t) code);
     */
