@@ -47,9 +47,7 @@ void InjectLibrary(pid_t pid) {
     Baton *baton(reinterpret_cast<Baton *>(local));
 
     baton->__pthread_set_self = &__pthread_set_self;
-
     baton->pthread_create = &pthread_create;
-    baton->pthread_join = &pthread_join;
 
     baton->mach_thread_self = &mach_thread_self;
     baton->thread_terminate = &thread_terminate;
