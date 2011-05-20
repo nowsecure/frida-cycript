@@ -82,13 +82,13 @@ extern "C" void Start(Baton *baton) {
     dlset(baton, pthread_create, "pthread_create");
 
     pthread_t thread;
-    baton->pthread_create(&thread, NULL, &Routine, baton);
+    pthread_create(&thread, NULL, &Routine, baton);
 
     int (*pthread_join)(pthread_t, void **);
     dlset(baton, pthread_join, "pthread_join");
 
     void *result;
-    baton->pthread_join(thread, &result);
+    pthread_join(thread, &result);
 
     mach_port_t (*mach_thread_self)();
     dlset(baton, mach_thread_self, "mach_thread_self");
@@ -96,5 +96,5 @@ extern "C" void Start(Baton *baton) {
     kern_return_t (*thread_terminate)(thread_act_t);
     dlset(baton, thread_terminate, "thread_terminate");
 
-    baton->thread_terminate(baton->mach_thread_self());
+    thread_terminate(mach_thread_self());
 }
