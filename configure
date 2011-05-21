@@ -747,13 +747,13 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 CY_ATTACH_GROUP
 CY_OBJECTIVEC_MACH
-SO
 ac_ct__NM
 _NM
 ac_ct__LIPO
 _LIPO
 ac_ct__OTOOL
 _OTOOL
+SO
 LTLIBICONV
 LIBICONV
 GNUSTEP_CONFIG
@@ -19213,6 +19213,8 @@ ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
+SO=$acl_shlibext
+
 if test "x$CY_OBJECTIVEC" = x1; then :
 
 	ac_fn_cxx_check_header_mongrel "$LINENO" "mach/mach.h" "ac_cv_header_mach_mach_h" "$ac_includes_default"
@@ -19527,8 +19529,6 @@ fi
 		if test "x$_NM" = x; then :
   as_fn_error $? "You need nm" "$LINENO" 5
 fi
-		SO=$acl_shlibext
-
 		CY_OBJECTIVEC_MACH=1
 
 		CY_ATTACH_GROUP=procmod

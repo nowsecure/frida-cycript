@@ -197,6 +197,7 @@ AS_CASE([$am_cv_func_iconv], [yes], [], [
 ])
 AS_CASE([$am_cv_func_iconv], [yes], [], [AC_MSG_ERROR([You need iconv])])
 AC_LANG_POP([C])
+AC_SUBST([SO], [$acl_shlibext])
 AS_IF([test "x$CY_OBJECTIVEC" = x1], [
 	AC_CHECK_HEADER([mach/mach.h], [
 		AC_CHECK_TOOLS([_OTOOL], [otool])
@@ -205,7 +206,6 @@ AS_IF([test "x$CY_OBJECTIVEC" = x1], [
 		AS_IF([test "x$_LIPO" = x], [AC_MSG_ERROR([You need lipo])])
 		AC_CHECK_TOOLS([_NM], [nm])
 		AS_IF([test "x$_NM" = x], [AC_MSG_ERROR([You need nm])])
-		AC_SUBST([SO], [$acl_shlibext])
 		AC_SUBST([CY_OBJECTIVEC_MACH], [1])
 		AC_SUBST([CY_ATTACH_GROUP], [procmod])
 	])
