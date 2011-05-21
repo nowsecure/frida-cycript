@@ -57,6 +57,7 @@ AC_CHECK_PROGS([SVN], [svn])
 AC_CHECK_PROGS([SVNVERSION], [svnversion])
 AC_PROG_CXX
 AC_PROG_OBJCXX
+AC_LANG([C++])
 AC_DEFUN([CY_CHECK_UNIVERSAL], [
 	AC_MSG_CHECKING([for universal binary support])
 	AS_CASE([$host_vendor], [apple], [
@@ -93,7 +94,6 @@ AC_ARG_WITH([frameworks], [AS_HELP_STRING(
 		AC_LIB_APPENDTOVAR([OBJCCXXFLAGS], [-F$cy_framework])
 	done
 ])
-AC_LANG([C++])
 APR_FIND_APR([], [], [1], [1])
 AS_CASE([$apr_found], [yes], [
 	AC_LIB_APPENDTOVAR([CPPFLAGS], [`$apr_config --includes`])
