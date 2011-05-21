@@ -28,7 +28,6 @@
 #include "ObjectiveC/Internal.hpp"
 
 #include <objc/objc-api.h>
-#include <objc/runtime.h>
 
 #include "cycript.hpp"
 
@@ -38,6 +37,7 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <JavaScriptCore/JSStringRefCF.h>
 #include <WebKit/WebScriptObject.h>
+#include <objc/runtime.h>
 #endif
 
 #include "Error.hpp"
