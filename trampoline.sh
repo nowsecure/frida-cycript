@@ -16,7 +16,7 @@ shift 7
 
 "$@"
 
-detailed=$(lipo -detailed_info "${object}")
+detailed=$("${lipo}" -detailed_info "${object}")
 
 {
 
