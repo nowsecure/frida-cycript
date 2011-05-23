@@ -66,10 +66,12 @@ void *Routine(void *arg) {
 
     void (*CYHandleServer)(pid_t);
     dlset(baton, CYHandleServer, "CYHandleServer", handle);
+    if (CYHandleServer == NULL) {
+        baton->dlerror();
+        return NULL;
+    }
 
-    if (CYHandleServer != NULL)
-        CYHandleServer(baton->pid);
-
+    CYHandleServer(baton->pid);
     return NULL;
 }
 

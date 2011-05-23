@@ -39,3 +39,5 @@ don't ever generate $ CYWith, in particular for CYLet... use CYFunctionExpressio
 
 semi-colin insertion warings should mark after the previous token, not on the current one: makes a /lot/ more sense
 new for pools should take a reference, not a pointer
+
+output errors during Trampoline to some kind of log file
