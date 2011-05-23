@@ -437,8 +437,10 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <infix_> RelationalExpressionNoIn_
 %type <statement_> ReturnStatement
 %type <rubyProc_> RubyProcExpression
+%type <rubyProc_> RubyProcExpressionNoOA
 %type <functionParameter_> RubyProcParameterList
 %type <functionParameter_> RubyProcParameterList_
+%type <functionParameter_> RubyProcParameters
 %type <functionParameter_> RubyProcParametersOpt
 %type <expression_> ShiftExpression
 %type <expression_> ShiftExpressionNoBF
@@ -1937,13 +1939,26 @@ RubyProcParameterList
     | { $$ = NULL; }
     ;
 
-RubyProcParametersOpt
+RubyProcParameters
     : "|" RubyProcParameterList "|" { $$ = $2; }
+    | "||" { $$ = NULL; }
+    ;
+
+RubyProcParametersOpt
+    : RubyProcParameters
     | { $$ = NULL; }
     ;
 
 RubyProcExpression
     : "{" RubyProcParametersOpt StatementListOpt "}" { $$ = CYNew CYRubyProc($2, $3); }
+    ;
+
+RubyProcExpressionNoOA
+    : "{" RubyProcParameters StatementListOpt "}" { $$ = CYNew CYRubyProc($2, $3); }
+    ;
+
+PrimaryExpressionNo
+    : RubyProcExpressionNoOA { $$ = $1; }
     ;
 
 LeftHandSideExpression
