@@ -482,7 +482,7 @@ static void Console(CYOptions &options) {
             if (parser.parse() != 0 || !driver.errors_.empty()) {
                 for (CYDriver::Errors::const_iterator error(driver.errors_.begin()); error != driver.errors_.end(); ++error) {
                     cy::position begin(error->location_.begin);
-                    if (begin.line != lines.size() || begin.column - 1 != lines.back().size() || error->warning_) {
+                    if (begin.line != lines.size() || begin.column < lines.back().size() || error->warning_) {
                         cy::position end(error->location_.end);
 
                         if (begin.line != lines.size()) {
