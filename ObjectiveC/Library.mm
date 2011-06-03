@@ -252,6 +252,7 @@ static JSClassRef ObjectiveC_Images_;
 #ifdef __APPLE__
 static Class NSCFBoolean_;
 static Class NSCFType_;
+static Class NSGenericDeallocHandler_;
 static Class NSMessageBuilder_;
 static Class NSZombie_;
 #else
@@ -419,7 +420,7 @@ NSString *CYCastNSCYON(id value) {
             else if (_class == NSZombie_)
                 string = [NSString stringWithFormat:@"<_NSZombie_: %p>", value];
             // XXX: frowny /in/ the pants
-            else if (value == NSMessageBuilder_ || value == Object_)
+            else if (value == NSGenericDeallocHandler_ || value == NSMessageBuilder_ || value == Object_)
                 string = nil;
 #endif
             else
@@ -2386,6 +2387,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
 #ifdef __APPLE__
     NSCFBoolean_ = objc_getClass("NSCFBoolean");
     NSCFType_ = objc_getClass("NSCFType");
+    NSGenericDeallocHandler_ = objc_getClass("__NSGenericDeallocHandler");
     NSMessageBuilder_ = objc_getClass("NSMessageBuilder");
     NSZombie_ = objc_getClass("_NSZombie_");
 #else
