@@ -621,6 +621,9 @@ CYScope::CYScope(CYScopeType type, CYContext &context, CYStatement *&statements)
     context_.scope_ = this;
 }
 
+CYScope::~CYScope() {
+}
+
 void CYScope::Close() {
     context_.scope_ = parent_;
     Scope(context_, statements_);

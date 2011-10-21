@@ -40,13 +40,7 @@ typedef cy::parser::token tk;
 #define C T yyextra->state_ = CYClear;
 #define R T yyextra->state_ = CYRestricted;
 
-#define E(prefix) L C { \
-    char *value(A char[yyleng + sizeof(prefix)]); \
-    memcpy(value, prefix, sizeof(prefix) - 1); \
-    memcpy(value + sizeof(prefix) - 1, yytext, yyleng); \
-    value[yyleng + sizeof(prefix) - 1] = '\0'; \
-    I(literal, RegEx(value), RegularExpressionLiteral); \
-}
+#define E L C I(literal, RegEx(Y), RegularExpressionLiteral);
 
 #define N \
     if (yyextra->state_ != CYNewLine) { \
@@ -147,7 +141,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
 %%
 
-<RegExp>\/{RegularExpressionBody}\/{RegularExpressionFlags} E("")
+<RegExp>\/{RegularExpressionBody}\/{RegularExpressionFlags} E
 
 \/\/[^\n]* L
 

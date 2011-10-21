@@ -303,6 +303,7 @@ struct CYScope {
     CYIdentifierValueSet identifiers_;
 
     CYScope(CYScopeType type, CYContext &context, CYStatement *&statements);
+    virtual ~CYScope();
 
     void Close();
 

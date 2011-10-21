@@ -573,7 +573,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
     bool compile(false);
     CYOptions options;
 
-    append_history$ = reinterpret_cast<int (*)(int, const char *)>(dlsym(RTLD_DEFAULT, "append_history"));
+    append_history$ = (int (*)(int, const char *)) (dlsym(RTLD_DEFAULT, "append_history"));
 
 #ifdef CY_ATTACH
     pid_t pid(_not(pid_t));
