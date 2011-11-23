@@ -58,4 +58,4 @@ done
 lflags=${lflags[*]}
 export LTFLAGS=${lflags}
 
-./configure --prefix=/usr "$@"
+./configure "$@"
