@@ -16,8 +16,8 @@ mkdir -p sysroot.ios/usr/include/ffi
 mv -v sysroot.ios/usr/include/{,ffi/}ffi.h
 
 plt=iPhoneOS
-dev=/Developer/Platforms/$plt.platform/Developer
-sdk=${dev}/SDKs/$plt4.3.sdk
+dev=/Developer/Platforms/${plt}.platform/Developer
+sdk=${dev}/SDKs/${plt}5.0.sdk
 
 ln -s /System/Library/Frameworks/WebKit.framework/Versions/A/Headers sysroot.ios/usr/include/WebKit
 
