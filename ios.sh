@@ -10,7 +10,7 @@ for deb in apr-lib_1.3.3-2 libffi_130618-4 readline_6.0-7; do
     [[ -f "${deb}" ]] || wget http://apt.saurik.com/debs/"${deb}"
     tar=data.tar.lzma
     ar -x "${deb}" "${tar}"
-    tar -C sysroot.ios -xf "${tar}"
+    PATH=/sw/bin:$PATH tar -C sysroot.ios -xf "${tar}"
     rm -f "${tar}"
 done
 
@@ -64,4 +64,4 @@ export LTFLAGS=${lflags}
 
 make clean
 make -j ldid=ldid all
-make arch=iphoneos-arm version=432 dll=dylib depends='apr-lib readline libffi mobilesubstrate' package
+PATH=/sw/bin:$PATH make arch=iphoneos-arm version=432 dll=dylib depends='apr-lib readline libffi mobilesubstrate' package
