@@ -378,8 +378,12 @@ void CYFor::Output(CYOutput &out, CYFlags flags) const {
     if (initialiser_ != NULL)
         initialiser_->For(out);
     out.Terminate();
+    if (test_ != NULL)
+        out << ' ';
     out << test_;
     out.Terminate();
+    if (increment_ != NULL)
+        out << ' ';
     out << increment_;
     out << ')';
     code_->Single(out, CYRight(flags));
@@ -460,7 +464,7 @@ void CYIf::Output(CYOutput &out, CYFlags flags) const {
     true_->Single(out, jacks);
 
     if (false_ != NULL) {
-        out << "else";
+        out << '\t' << "else";
         false_->Single(out, right);
     }
 
