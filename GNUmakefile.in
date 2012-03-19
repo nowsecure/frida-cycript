@@ -138,7 +138,7 @@ control.tmp: control.in .libs/cycript .libs/$(lib)cycript.so
 	$(sed) -e 's/&/'"$$(dpkg-query -S $$(ldd cycript $(lib)cycript.so | $(sed) -e '/:$$/ d; s/^[ \t]*\([^ ]* => \)\?\([^ ]*\) .*/\2/' | sort -u) 2>/dev/null | $(sed) -e 's/:.*//; /^cycript$$/ d; s/$$/,/' | sort -u | tr '\n' ' ')"'/;s/, $$//;s/#/$(version)/;s/%/$(arch)/' $< >$@
 else
 control.tmp: control.in
-	$(sed) -e 's/&/$(foreach depend,$(depends),$(depend),)/;s/,$$//;s/#/$(version)/;s/%/$(arch)/' $< >$@
+	$(sed) -e 's/&/$(depends)/;s/,$$//;s/#/$(version)/;s/%/$(arch)/' $< >$@
 endif
 endif
 
