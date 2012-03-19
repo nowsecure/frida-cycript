@@ -491,7 +491,7 @@ static void Console(CYOptions &options) {
                         }
 
                         std::cerr << "....";
-                        for (size_t i(0); i != begin.column - 1; ++i)
+                        for (size_t i(0); i != begin.column; ++i)
                             std::cerr << '.';
                         if (begin.line != end.line || begin.column == end.column)
                             std::cerr << '^';
