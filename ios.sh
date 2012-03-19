@@ -5,7 +5,7 @@ set -e
 rm -rf sysroot.ios
 mkdir -p sysroot.ios
 
-for deb in apr-lib_1.3.3-2 libffi_130618-4 readline_6.0-7; do
+for deb in apr-lib_1.3.3-2 libffi_1:3.0.10-5 readline_6.0-7; do
     deb=${deb}_iphoneos-arm.deb
     [[ -f "${deb}" ]] || wget http://apt.saurik.com/debs/"${deb}"
     tar=data.tar.lzma
