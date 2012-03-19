@@ -695,6 +695,15 @@ Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, 
     // XXX: in point of fact, this may /need/ to leak :(
     Closure_privateData *internal(new Closure_privateData(context, function, type));
 
+#if defined(__APPLE__) && defined(__arm__)
+    void *executable;
+    ffi_closure *writable(reinterpret_cast<ffi_closure *>(ffi_closure_alloc(sizeof(ffi_closure), &executable)));
+
+    ffi_status status(ffi_prep_closure_loc(writable, &internal->cif_, callback, internal, executable));
+    _assert(status == FFI_OK);
+
+    internal->value_ = executable;
+#else
     ffi_closure *closure((ffi_closure *) _syscall(mmap(
         NULL, sizeof(ffi_closure),
         PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE,
@@ -707,6 +716,7 @@ Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, 
     _syscall(mprotect(closure, sizeof(*closure), PROT_READ | PROT_EXEC));
 
     internal->value_ = closure;
+#endif
 
     return internal;
 }
