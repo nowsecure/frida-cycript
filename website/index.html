@@ -42,6 +42,18 @@ cy# var a = ((0 + (1)) * (2 * 3)) + m['a']('\'')
 var a=(0+1)*(2*3)+m.a("'");
 ...</xmp>
 
+<p>Because Cycript is implemented as a Cycript->JavaScript compiler, it is able to add functionality that may be lacking in the underlying JavaScript implementation. Right now, Cycript supports array comprehensions and for each loops.</p>
+
+<xmp>cy# function range(b, e) { var q = []; for (var i = b; i != e; ++i) q.push(i); return q; }
+cy# ?debug
+debug == true
+cy# e = []; for each (var i in range(1, 4)) e.push(i); e
+e=[];with({$cys:0,$cyt:0}){$cys=range(1,4);for($cyt in $cys){i=$cys[$cyt];e.push(i);}}e;
+[1,2,3]
+cy# evens = [i for each (i in range(0, 21)) if (i % 2 == 0)]
+evens=(function($cyv,i){$cyv=[];(function($cys){$cys=range(0,21);for(i in $cys){i=$cys[i];if(i%2==0)$cyv.push(i);}}());return $cyv;}());
+[0,2,4,6,8,10,12,14,16,18,20]</xmp>
+
 <p>In addition to standard JavaScript, you an also access anything in the Objective-C runtime. Attempts have been made, sparingly, to bridge syntax when possible between the two environments. In particular, you may notice interesting properties of arrays, dictonaries, strings, and numbers. Care has been taken to minimize the damage to the object model.</p>
 
 <xmp>cy# var a = [NSMutableArray arrayWithCapacity:4]
