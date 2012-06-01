@@ -1594,7 +1594,7 @@ ClassStatement
     ;
 
 CategoryName
-    : "(" Word ")"
+    : "(" WordOpt ")"
     ;
 
 CategoryStatement
