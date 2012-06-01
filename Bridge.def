@@ -118,7 +118,7 @@ F property_getName *^{objc_property=}
 
 F protocol_conformsToProtocol B@@
 F protocol_copyMethodDescriptionList ^{objc_method_description=:*}@BB^I
-F protocol_copyPropertyList ^{objc_property=}@^I
+F protocol_copyPropertyList ^^{objc_property=}@^I
 F protocol_copyProtocolList ^@@^I
 F protocol_getMethodDescription {objc_method_description=:*}@:BB
 F protocol_getName *@
