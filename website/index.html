@@ -159,9 +159,9 @@ cy# view->_layer
 cy# (*view)._layer
 "<CALayer: 0x228f60>"</xmp>
 
-<p>Fully-fledged Objective-C classes can also be declared using @class, which blurs the line between Objective-C's @interface and @implementation. Right now, declaring instance variables are not supported, but will be in a future version: for now you must provide an empty variable block.</p>
+<p>Fully-fledged Objective-C classes can also be declared using @implementation, which also takes on functionality of Objective-C's @interface. Right now, declaring instance variables are not supported, but will be in a future version: for now you must provide an empty variable block.</p>
 
-<xmp>cy# @class TestClass : NSObject {
+<xmp>cy# @implementation TestClass : NSObject {
 cy> }
 cy> - description {
 cy>     return "test";
@@ -170,15 +170,15 @@ cy> @end
 cy# [new TestClass init]
 "test"</xmp>
 
-<p>The @class syntax can also be used to extend existing classes in a manner similar to categories. Note that type signatures, however, are not yet supported, so you end up heavily restricted in what you can add via this mechanism. In this case, one can also use a parenthesized expression as the class name.</p>
+<p>The @implementation syntax can also be used to extend existing classes in the form of an Objective-C category. Note that type signatures, however, are not yet supported, so you end up heavily restricted in what you can add via this mechanism. In this case, one can also use a parenthesized expression as the class name.</p>
 
-<xmp>cy# @class NSObject
+<xmp>cy# @implementation NSObject (MyStuff)
 cy> - description { return "replaced"; }
 cy> @end
 cy# var o = [new NSObject init]
 cy# o
 "replaced"
-cy# @class ([o class]) - description { return "again"; } @end
+cy# @implementation ([o class]) (MyStuff) - description { return "again"; } @end
 cy# o
 "again"</xmp>
 
