@@ -24,34 +24,6 @@
 
 #include <sstream>
 
-_finline CYFlags operator ~(CYFlags rhs) {
-    return static_cast<CYFlags>(~static_cast<unsigned>(rhs));
-}
-
-_finline CYFlags operator &(CYFlags lhs, CYFlags rhs) {
-    return static_cast<CYFlags>(static_cast<unsigned>(lhs) & static_cast<unsigned>(rhs));
-}
-
-_finline CYFlags operator |(CYFlags lhs, CYFlags rhs) {
-    return static_cast<CYFlags>(static_cast<unsigned>(lhs) | static_cast<unsigned>(rhs));
-}
-
-_finline CYFlags &operator |=(CYFlags &lhs, CYFlags rhs) {
-    return lhs = lhs | rhs;
-}
-
-_finline CYFlags CYLeft(CYFlags flags) {
-    return flags & ~(CYNoDangle | CYNoInteger);
-}
-
-_finline CYFlags CYRight(CYFlags flags) {
-    return flags & ~CYNoBF;
-}
-
-_finline CYFlags CYCenter(CYFlags flags) {
-    return CYLeft(CYRight(flags));
-}
-
 void CYOutput::Terminate() {
     out_ << ';';
     mode_ = NoMode;
