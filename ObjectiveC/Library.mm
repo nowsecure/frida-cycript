@@ -681,7 +681,7 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 
 - (NSString *) cy$toCYON {
     NSMutableString *json([[[NSMutableString alloc] init] autorelease]);
-    [json appendString:@"["];
+    [json appendString:@"@["];
 
     bool comma(false);
 #ifdef __APPLE__
@@ -766,7 +766,7 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 }
 
 - (NSString *) cy$toCYON {
-    return [self boolValue] ? @"true" : @"false";
+    return [self boolValue] ? @"@true" : @"@false";
 }
 
 - (JSValueRef) cy$JSValueInContext:(JSContextRef)context { CYObjectiveTry_(context) {
@@ -781,7 +781,7 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 
 - (NSString *) cy$toCYON {
     NSMutableString *json([[[NSMutableString alloc] init] autorelease]);
-    [json appendString:@"{"];
+    [json appendString:@"@{"];
 
     bool comma(false);
 #ifdef __APPLE__
@@ -922,7 +922,7 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 }
 
 - (NSString *) cy$toCYON {
-    return [self cy$JSType] != kJSTypeBoolean ? [self stringValue] : [self boolValue] ? @"true" : @"false";
+    return [self cy$JSType] != kJSTypeBoolean ? [NSString stringWithFormat:@"@%@", self] : [self boolValue] ? @"@true" : @"@false";
 }
 
 - (JSValueRef) cy$JSValueInContext:(JSContextRef)context { CYObjectiveTry_(context) {
@@ -943,7 +943,7 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 }
 
 - (NSString *) cy$toCYON {
-    return @"null";
+    return @"@null";
 }
 
 @end
@@ -1022,6 +1022,7 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 
 - (NSString *) cy$toCYON {
     std::ostringstream str;
+    str << '@';
     CYUTF8String string(CYCastUTF8String(self));
     CYStringify(str, string.data, string.size);
     std::string value(str.str());
