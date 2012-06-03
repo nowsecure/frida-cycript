@@ -952,7 +952,7 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 @implementation NSObject (Cycript)
 
 - (JSValueRef) cy$JSValueInContext:(JSContextRef)context { CYObjectiveTry_(context) {
-    return CYMakeInstance(context, self, false);
+    return NULL;
 } CYObjectiveCatch }
 
 - (JSType) cy$JSType {
@@ -1078,6 +1078,10 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     return false;
 }
 
+- (JSValueRef) cy$JSValueInContext:(JSContextRef)context { CYObjectiveTry_(context) {
+    return CYCastJSValue(context, CYJSString(context, self));
+} CYObjectiveCatch }
+
 @end
 /* }}} */
 /* Bridge: WebUndefined {{{ */
@@ -1131,8 +1135,6 @@ NSArray *CYCastNSArray(JSContextRef context, JSPropertyNameArrayRef names) {
 JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
     if (value == nil)
         return CYJSNull(context);
-    else if ([value respondsToSelector:@selector(cy$JSValueInContext:)])
-        return [value cy$JSValueInContext:context];
     else
         return CYMakeInstance(context, value, false);
 } CYPoolCatch(NULL) return /*XXX*/ NULL; }
@@ -2270,15 +2272,21 @@ static JSValueRef Instance_callAsFunction_toJSON(JSContextRef context, JSObjectR
     } CYPoolCatch(NULL)
 } CYCatch return /*XXX*/ NULL; }
 
-#if 0
 static JSValueRef Instance_callAsFunction_valueOf(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (!JSValueIsObjectOfClass(context, _this, Instance_))
         return NULL;
 
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
-    return CYCastJSValue(context, reinterpret_cast<uintptr_t>(internal->GetValue()));
+    id value(internal->GetValue());
+
+    if (![value respondsToSelector:@selector(cy$JSValueInContext:)])
+        return _this;
+
+    if (JSValueRef result = [value cy$JSValueInContext:context])
+        return result;
+
+    return _this;
 } CYCatch return /*XXX*/ NULL; }
-#endif
 
 static JSValueRef Instance_callAsFunction_toPointer(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (!JSValueIsObjectOfClass(context, _this, Instance_))
@@ -2357,11 +2365,11 @@ static JSStaticValue Instance_staticValues[5] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction Instance_staticFunctions[6] = {
+static JSStaticFunction Instance_staticFunctions[7] = {
     {"$cya", &CYValue_callAsFunction_$cya, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toCYON", &Instance_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toJSON", &Instance_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
-    //{"valueOf", &Instance_callAsFunction_valueOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"valueOf", &Instance_callAsFunction_valueOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toPointer", &Instance_callAsFunction_toPointer, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toString", &Instance_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
