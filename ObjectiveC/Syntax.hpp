@@ -24,6 +24,22 @@
 
 #include "Parser.hpp"
 
+struct CYBox :
+    CYExpression
+{
+    CYExpression *value_;
+
+    CYBox(CYExpression *value) :
+        value_(value)
+    {
+    }
+
+    CYPrecedence(1)
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
 struct CYSelectorPart :
     CYNext<CYSelectorPart>,
     CYThing

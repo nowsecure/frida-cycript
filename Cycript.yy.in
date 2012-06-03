@@ -641,6 +641,13 @@ Word
     | "while" { $$ = $1; }
     | "with" { $$ = $1; }
     ;
+
+PrimaryExpressionNo
+    : "@" LiteralNoRE { $$ = CYNew CYBox($2); }
+    | "@" ArrayLiteral { $$ = CYNew CYBox($2); }
+    | "@" ObjectLiteral { $$ = CYNew CYBox($2); }
+    | "@" "(" Expression ")" { $$ = CYNew CYBox($3); }
+    ;
 @end
 
 Identifier
@@ -687,7 +694,6 @@ LiteralNoRE
     | BooleanLiteral { $$ = $1; }
     | NumericLiteral { $$ = $1; }
     | StringLiteral { $$ = $1; }
-    | "@" StringLiteral { $$ = $2; }
     ;
 
 LiteralRE

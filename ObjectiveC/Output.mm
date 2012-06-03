@@ -95,6 +95,11 @@ void CYMessage::Output(CYOutput &out, bool replace) const {
     out << code_;
 }
 
+void CYBox::Output(CYOutput &out, CYFlags flags) const {
+    out << '@';
+    value_->Output(out, Precedence(), CYRight(flags));
+}
+
 void CYProtocol::Output(CYOutput &out) const {
     name_->Output(out, CYAssign::Precedence_, CYNoFlags);
     if (next_ != NULL)

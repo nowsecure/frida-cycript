@@ -104,6 +104,10 @@ CYSelectorPart *CYMessageParameter::SelectorPart(CYContext &context) const { $T(
     return tag_ == NULL ? next : $ CYSelectorPart(tag_, name_ != NULL, next);
 }
 
+CYExpression *CYBox::Replace(CYContext &context) {
+    return $C1($M($V("Instance"), $S("box")), value_);
+}
+
 CYStatement *CYProtocol::Replace(CYContext &context) const { $T(NULL)
     return $ CYBlock($$->*
         next_->Replace(context)->*

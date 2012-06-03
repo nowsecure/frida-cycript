@@ -394,6 +394,7 @@ JSObjectRef CYMakeInstance(JSContextRef context, id object, bool transient) {
 @end
 
 @protocol Cycript
+- (id) cy$box;
 - (JSValueRef) cy$JSValueInContext:(JSContextRef)context;
 @end
 
@@ -679,6 +680,10 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 /* Bridge: NSArray {{{ */
 @implementation NSArray (Cycript)
 
+- (id) cy$box {
+    return [[self mutableCopy] autorelease];
+}
+
 - (NSString *) cy$toCYON {
     NSMutableString *json([[[NSMutableString alloc] init] autorelease]);
     [json appendString:@"@["];
@@ -778,6 +783,10 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 /* }}} */
 /* Bridge: NSDictionary {{{ */
 @implementation NSDictionary (Cycript)
+
+- (id) cy$box {
+    return [[self mutableCopy] autorelease];
+}
 
 - (NSString *) cy$toCYON {
     NSMutableString *json([[[NSMutableString alloc] init] autorelease]);
@@ -951,6 +960,10 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 /* Bridge: NSObject {{{ */
 @implementation NSObject (Cycript)
 
+- (id) cy$box {
+    return self;
+}
+
 - (JSValueRef) cy$JSValueInContext:(JSContextRef)context { CYObjectiveTry_(context) {
     return NULL;
 } CYObjectiveCatch }
@@ -1011,6 +1024,10 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 /* }}} */
 /* Bridge: NSString {{{ */
 @implementation NSString (Cycript)
+
+- (id) cy$box {
+    return [[self copy] autorelease];
+}
 
 - (JSType) cy$JSType {
     return kJSTypeString;
@@ -1821,6 +1838,16 @@ static bool Instance_hasInstance(JSContextRef context, JSObjectRef constructor, 
     return false;
 } CYCatch }
 
+static JSValueRef Instance_box_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    if (count == 0)
+        throw CYJSError(context, "incorrect number of arguments to Instance");
+    CYPool pool;
+    id value(CYCastNSObject(pool, context, arguments[0]));
+    if (value == nil)
+        value = [NSNull null];
+    return CYCastJSValue(context, [value cy$box]);
+} CYCatch }
+
 static bool Internal_hasProperty(JSContextRef context, JSObjectRef object, JSStringRef property) {
     Internal *internal(reinterpret_cast<Internal *>(JSObjectGetPrivate(object)));
     CYPool pool;
@@ -2564,6 +2591,9 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     CYSetProperty(context, cycript, CYJSString("Instance"), Instance);
     CYSetProperty(context, cycript, CYJSString("Selector"), Selector);
     CYSetProperty(context, cycript, CYJSString("Super"), Super);
+
+    JSObjectRef box(JSObjectMakeFunctionWithCallback(context, CYJSString("box"), &Instance_box_callAsFunction));
+    CYSetProperty(context, Instance, CYJSString("box"), box);
 
 #if defined(__APPLE__) && defined(__arm__) && 0
     CYSetProperty(context, all, CYJSString("objc_registerClassPair"), &objc_registerClassPair_, kJSPropertyAttributeDontEnum);
