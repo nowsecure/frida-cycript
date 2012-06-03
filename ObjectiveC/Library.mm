@@ -2091,6 +2091,26 @@ JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, Class 
     sig::Signature signature;
     sig::Parse(pool, &signature, type, &Structor_);
 
+    size_t used(count + 3);
+    if (used > signature.count) {
+        sig::Element *elements(new (pool) sig::Element[used]);
+        memcpy(elements, signature.elements, used * sizeof(sig::Element));
+
+        for (size_t index(signature.count); index != used; ++index) {
+            sig::Element *element(&elements[index]);
+            element->name = NULL;
+            element->offset = _not(size_t);
+
+            sig::Type *type(new (pool) sig::Type);
+            memset(type, 0, sizeof(*type));
+            type->primitive = sig::object_P;
+            element->type = type;
+        }
+
+        signature.elements = elements;
+        signature.count = used;
+    }
+
     ffi_cif cif;
     sig::sig_ffi_cif(pool, &sig::ObjectiveC, &signature, &cif);
 
