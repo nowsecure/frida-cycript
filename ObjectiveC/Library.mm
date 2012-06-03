@@ -2302,14 +2302,14 @@ static JSValueRef Instance_callAsFunction_toString(JSContextRef context, JSObjec
         return NULL;
 
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
-
     id value(internal->GetValue());
+
     if (value == nil)
         return CYCastJSValue(context, "nil");
 
     CYPoolTry {
         // XXX: this seems like a stupid implementation; what if it crashes? why not use the CYONifier backend?
-        return CYCastJSValue(context, CYJSString(context, [internal->GetValue() description]));
+        return CYCastJSValue(context, CYJSString(context, [value description]));
     } CYPoolCatch(NULL)
 } CYCatch return /*XXX*/ NULL; }
 
