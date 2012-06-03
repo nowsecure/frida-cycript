@@ -125,6 +125,10 @@ JSObjectRef CYMakePointer(JSContextRef context, void *pointer, size_t length, si
 
 void CYFinalize(JSObjectRef object);
 
+size_t CYArrayLength(JSContextRef context, JSObjectRef array);
+JSValueRef CYArrayGet(JSContextRef context, JSObjectRef array, size_t index);
+void CYArrayPush(JSContextRef context, JSObjectRef array, JSValueRef value);
+
 const char *CYPoolCString(apr_pool_t *pool, JSContextRef context, JSValueRef value);
 
 JSStringRef CYCopyJSString(const char *value);

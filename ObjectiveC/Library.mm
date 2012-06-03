@@ -1227,7 +1227,7 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
 } CYObjectiveCatch }
 
 - (NSUInteger) count { CYObjectiveTry {
-    return CYCastDouble(context_, CYGetProperty(context_, object_, length_s));
+    return CYArrayLength(context_, object_);
 } CYObjectiveCatch }
 
 - (id) objectAtIndex:(NSUInteger)index { CYObjectiveTry {
@@ -1241,12 +1241,7 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
 } CYObjectiveCatch }
 
 - (void) addObject:(id)object { CYObjectiveTry {
-    JSValueRef exception(NULL);
-    JSValueRef arguments[1];
-    arguments[0] = CYCastJSValue(context_, (NSObject *) object);
-    JSObjectRef Array(CYGetCachedObject(context_, CYJSString("Array_prototype")));
-    JSObjectCallAsFunction(context_, CYCastJSObject(context_, CYGetProperty(context_, Array, push_s)), object_, 1, arguments, &exception);
-    CYThrow(context_, exception);
+    CYArrayPush(context_, object_, CYCastJSValue(context_, (NSObject *) object));
 } CYObjectiveCatch }
 
 - (void) insertObject:(id)object atIndex:(NSUInteger)index { CYObjectiveTry {
