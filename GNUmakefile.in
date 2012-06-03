@@ -60,17 +60,12 @@ CY_OBJECTIVEC := @CY_OBJECTIVEC@
 CY_OBJECTIVEC_MACH := @CY_OBJECTIVEC_MACH@
 CY_ATTACH_GROUP := @CY_ATTACH_GROUP@
 
-svn := @SVN@
-svnversion := @SVNVERSION@
+git := @GIT@
 
-ifneq ($(svnversion),)
-release := $(shell svnversion $(srcdir))
-
-ifneq ($(release),exported)
-gnutar := @GNUTAR@
-version := @PACKAGE_VERSION@.$(release)
-tarname := @PACKAGE_TARNAME@-$(version)
-endif
+ifneq ($(git),)
+version := $(shell $(git) describe --always --tags --dirty="+" --match="v*" | $(sed) -e 's@-\([^-]*\)-\([^-]*\)$$@+\1.\2@;s@^v@@')
+else
+version := @PACKAGE_VERSION@
 endif
 
 paths := $(foreach path,$(paths),$(wildcard $(path)))
@@ -242,12 +237,6 @@ test: cycript
 	if [[ -e target.cy ]]; then ./cycript -c target.cy && echo; fi
 	if [[ -e jquery.js ]]; then $(time) ./cycript -c jquery.js >jquery.cyc.js; gzip -9c jquery.cyc.js >jquery.cyc.js.gz; wc -c jquery.{mam,gcc,cyc,bak,yui}.js; wc -c jquery.{cyc,gcc,bak,mam,yui}.js.gz; fi
 	if [[ -e test.cy ]]; then ./cycript test.cy; fi
-
-ifneq ($(gnutar),:)
-dist:
-	echo -n >> $(tarname).tar.gz
-	$(gnutar) -cC $(srcdir) -f $(tarname).tar.gz -vX <($(svn) propget svn:ignore $(srcdir)) -z --exclude-vcs --show-transformed-names --transform='s#^\.#$(tarname)#' .
-endif
 
 install: cycript libcycript.la
 	$(INSTALL) -d $(DESTDIR)$(bindir) $(DESTDIR)$(libdir)

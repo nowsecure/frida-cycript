@@ -53,8 +53,7 @@ AS_IF([test "x$ac_cv_path_GNUTAR" != x], [
 	AC_SUBST([GNUTAR], [:])
 	AC_MSG_RESULT([no])
 ])
-AC_CHECK_PROGS([SVN], [svn])
-AC_CHECK_PROGS([SVNVERSION], [svnversion])
+AC_CHECK_PROGS([GIT], [git])
 AC_PROG_CXX
 AC_PROG_OBJCXX
 AC_LANG([C++])
