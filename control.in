@@ -3,7 +3,7 @@ Priority: optional
 Section: Development
 Maintainer: Jay Freeman (saurik) <saurik@saurik.com>
 Architecture: %
-Version: 0.9.#-1
+Version: #
 Description: runtime execution server and disassembler
 Name: Cycript
 Depends: &
