@@ -1235,10 +1235,8 @@ const char *CYExecute(apr_pool_t *pool, CYUTF8String code) {
         return error;
     }
 
-    if (exception != NULL) { error:
-        result = CYCastJSValue(context, CYJSString(context, exception));
-        exception = NULL;
-    }
+    if (exception != NULL) error:
+        return CYPoolCString(pool, context, CYJSString(context, exception));
 
     if (JSValueIsUndefined(context, result))
         return NULL;
