@@ -1222,7 +1222,7 @@ const char *CYExecute(apr_pool_t *pool, CYUTF8String code) {
     }
 
     if (exception != NULL) { error:
-        result = exception;
+        result = CYCastJSValue(context, CYJSString(context, exception));
         exception = NULL;
     }
 
