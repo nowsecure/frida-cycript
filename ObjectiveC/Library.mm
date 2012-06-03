@@ -242,6 +242,7 @@ static JSClassRef StringInstance_;
 static JSClassRef Super_;
 
 static JSClassRef ObjectiveC_Classes_;
+static JSClassRef ObjectiveC_Constants_;
 static JSClassRef ObjectiveC_Protocols_;
 
 #ifdef __APPLE__
@@ -2011,6 +2012,18 @@ static void ObjectiveC_Protocols_getPropertyNames(JSContextRef context, JSObject
 #endif
 }
 
+static JSValueRef ObjectiveC_Constants_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
+    CYPool pool;
+    CYUTF8String name(CYPoolUTF8String(pool, context, property));
+    if (name == "nil")
+        return Instance::Make(context, nil);
+    return NULL;
+} CYCatch }
+
+static void ObjectiveC_Constants_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
+    JSPropertyNameAccumulatorAddName(names, CYJSString("nil"));
+}
+
 #ifdef __APPLE__
 static bool stret(ffi_type *ffi_type) {
     return ffi_type->type == FFI_TYPE_STRUCT && (
@@ -2464,6 +2477,12 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     definition.getPropertyNames = &ObjectiveC_Classes_getPropertyNames;
     ObjectiveC_Classes_ = JSClassCreate(&definition);
 
+    definition = kJSClassDefinitionEmpty;
+    definition.className = "ObjectiveC::Constants";
+    definition.getProperty = &ObjectiveC_Constants_getProperty;
+    definition.getPropertyNames = &ObjectiveC_Constants_getPropertyNames;
+    ObjectiveC_Constants_ = JSClassCreate(&definition);
+
 #if OBJC_API_VERSION >= 2
     definition = kJSClassDefinitionEmpty;
     definition.className = "ObjectiveC::Images";
@@ -2498,12 +2517,22 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     JSObjectRef cy(CYCastJSObject(context, CYGetProperty(context, global, cy_s)));
     JSObjectRef cycript(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Cycript"))));
     JSObjectRef all(CYCastJSObject(context, CYGetProperty(context, cycript, CYJSString("all"))));
+    JSObjectRef alls(CYCastJSObject(context, CYGetProperty(context, cycript, CYJSString("alls"))));
 
     JSObjectRef ObjectiveC(JSObjectMake(context, NULL, NULL));
     CYSetProperty(context, cycript, CYJSString("ObjectiveC"), ObjectiveC);
 
-    CYSetProperty(context, ObjectiveC, CYJSString("classes"), JSObjectMake(context, ObjectiveC_Classes_, NULL));
-    CYSetProperty(context, ObjectiveC, CYJSString("protocols"), JSObjectMake(context, ObjectiveC_Protocols_, NULL));
+    JSObjectRef protocols(JSObjectMake(context, ObjectiveC_Protocols_, NULL));
+    CYSetProperty(context, ObjectiveC, CYJSString("protocols"), protocols);
+    CYArrayPush(context, alls, protocols);
+
+    JSObjectRef classes(JSObjectMake(context, ObjectiveC_Classes_, NULL));
+    CYSetProperty(context, ObjectiveC, CYJSString("classes"), classes);
+    CYArrayPush(context, alls, classes);
+
+    JSObjectRef constants(JSObjectMake(context, ObjectiveC_Constants_, NULL));
+    CYSetProperty(context, ObjectiveC, CYJSString("constants"), constants);
+    CYArrayPush(context, alls, constants);
 
 #if OBJC_API_VERSION >= 2
     CYSetProperty(context, ObjectiveC, CYJSString("images"), JSObjectMake(context, ObjectiveC_Images_, NULL));
@@ -2542,7 +2571,6 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
 static CYHooks CYObjectiveCHooks = {
     &CYObjectiveC_ExecuteStart,
     &CYObjectiveC_ExecuteEnd,
-    &CYObjectiveC_RuntimeProperty,
     &CYObjectiveC_CallFunction,
     &CYObjectiveC_Initialize,
     &CYObjectiveC_SetupContext,

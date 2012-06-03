@@ -954,16 +954,16 @@ static void *CYCastSymbol(const char *name) {
 static JSValueRef All_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     JSObjectRef global(CYGetGlobalObject(context));
     JSObjectRef cycript(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Cycript"))));
-    if (JSValueRef value = CYGetProperty(context, cycript, property))
-        if (!JSValueIsUndefined(context, value))
-            return value;
+    JSObjectRef alls(CYCastJSObject(context, CYGetProperty(context, cycript, CYJSString("alls"))));
+
+    for (size_t i(0), count(CYArrayLength(context, alls)); i != count; ++i)
+        if (JSObjectRef space = CYCastJSObject(context, CYArrayGet(context, alls, count - i - 1)))
+            if (JSValueRef value = CYGetProperty(context, space, property))
+                if (!JSValueIsUndefined(context, value))
+                    return value;
 
     CYPool pool;
     CYUTF8String name(CYPoolUTF8String(pool, context, property));
-
-    if (hooks_ != NULL && hooks_->RuntimeProperty != NULL)
-        if (JSValueRef value = (*hooks_->RuntimeProperty)(context, name))
-            return value;
 
     size_t length(name.size);
     char keyed[length + 2];
@@ -1002,6 +1002,20 @@ static JSValueRef All_getProperty(JSContextRef context, JSObjectRef object, JSSt
 
     return NULL;
 } CYCatch }
+
+static void All_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
+    JSObjectRef global(CYGetGlobalObject(context));
+    JSObjectRef cycript(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Cycript"))));
+    JSObjectRef alls(CYCastJSObject(context, CYGetProperty(context, cycript, CYJSString("alls"))));
+
+    for (size_t i(0), count(CYArrayLength(context, alls)); i != count; ++i)
+        if (JSObjectRef space = CYCastJSObject(context, CYArrayGet(context, alls, count - i - 1))) {
+            JSPropertyNameArrayRef subset(JSObjectCopyPropertyNames(context, space));
+            for (size_t index(0), count(JSPropertyNameArrayGetCount(subset)); index != count; ++index)
+                JSPropertyNameAccumulatorAddName(names, JSPropertyNameArrayGetNameAtIndex(subset, index));
+            JSPropertyNameArrayRelease(subset);
+        }
+}
 
 static JSObjectRef Pointer_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 2)
@@ -1265,6 +1279,7 @@ void CYInitializeDynamic() {
     definition = kJSClassDefinitionEmpty;
     definition.className = "All";
     definition.getProperty = &All_getProperty;
+    definition.getPropertyNames = &All_getPropertyNames;
     All_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
@@ -1379,6 +1394,8 @@ JSGlobalContextRef CYGetJSContext(JSContextRef context) {
 }
 
 extern "C" void CYSetupContext(JSGlobalContextRef context) {
+    JSValueRef exception(NULL);
+
     CYInitializeDynamic();
 
     JSObjectRef global(CYGetGlobalObject(context));
@@ -1432,6 +1449,10 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     JSObjectRef all(JSObjectMake(context, All_, NULL));
     CYSetProperty(context, cycript, CYJSString("all"), all);
 
+    JSObjectRef alls(JSObjectCallAsConstructor(context, Array, 0, NULL, &exception));
+    CYThrow(context, exception);
+    CYSetProperty(context, cycript, CYJSString("alls"), alls);
+
     if (true) {
         JSObjectRef last(NULL), curr(global);
 
@@ -1459,6 +1480,8 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
 
     if (hooks_ != NULL && hooks_->SetupContext != NULL)
         (*hooks_->SetupContext)(context);
+
+    CYArrayPush(context, alls, cycript);
 }
 
 JSGlobalContextRef CYGetJSContext() {

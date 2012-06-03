@@ -109,7 +109,6 @@ struct CYHooks {
     void *(*ExecuteStart)(JSContextRef);
     void (*ExecuteEnd)(JSContextRef, void *);
 
-    JSValueRef (*RuntimeProperty)(JSContextRef, CYUTF8String);
     void (*CallFunction)(JSContextRef, ffi_cif *, void (*)(), uint8_t *, void **);
 
     void (*Initialize)();
