@@ -1244,7 +1244,7 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
     JSValueRef exception(NULL);
     JSValueRef arguments[1];
     arguments[0] = CYCastJSValue(context_, (NSObject *) object);
-    JSObjectRef Array(CYGetCachedObject(context_, Array_s));
+    JSObjectRef Array(CYGetCachedObject(context_, CYJSString("Array_prototype")));
     JSObjectCallAsFunction(context_, CYCastJSObject(context_, CYGetProperty(context_, Array, push_s)), object_, 1, arguments, &exception);
     CYThrow(context_, exception);
 } CYObjectiveCatch }
@@ -1258,14 +1258,14 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
     arguments[0] = CYCastJSValue(context_, index);
     arguments[1] = CYCastJSValue(context_, 0);
     arguments[2] = CYCastJSValue(context_, (NSObject *) object);
-    JSObjectRef Array(CYGetCachedObject(context_, Array_s));
+    JSObjectRef Array(CYGetCachedObject(context_, CYJSString("Array_prototype")));
     JSObjectCallAsFunction(context_, CYCastJSObject(context_, CYGetProperty(context_, Array, splice_s)), object_, 3, arguments, &exception);
     CYThrow(context_, exception);
 } CYObjectiveCatch }
 
 - (void) removeLastObject { CYObjectiveTry {
     JSValueRef exception(NULL);
-    JSObjectRef Array(CYGetCachedObject(context_, Array_s));
+    JSObjectRef Array(CYGetCachedObject(context_, CYJSString("Array_prototype")));
     JSObjectCallAsFunction(context_, CYCastJSObject(context_, CYGetProperty(context_, Array, pop_s)), object_, 0, NULL, &exception);
     CYThrow(context_, exception);
 } CYObjectiveCatch }
@@ -1278,7 +1278,7 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
     JSValueRef arguments[2];
     arguments[0] = CYCastJSValue(context_, index);
     arguments[1] = CYCastJSValue(context_, 1);
-    JSObjectRef Array(CYGetCachedObject(context_, Array_s));
+    JSObjectRef Array(CYGetCachedObject(context_, CYJSString("Array_prototype")));
     JSObjectCallAsFunction(context_, CYCastJSObject(context_, CYGetProperty(context_, Array, splice_s)), object_, 2, arguments, &exception);
     CYThrow(context_, exception);
 } CYObjectiveCatch }
