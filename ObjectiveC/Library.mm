@@ -2221,7 +2221,7 @@ static JSValueRef Instance_getProperty_constructor(JSContextRef context, JSObjec
     return Instance::Make(context, (id) object_getClass(internal->GetValue()));
 }
 
-static JSValueRef Instance_getProperty_protocol(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
+static JSValueRef Instance_getProperty_prototype(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
     id self(internal->GetValue());
     if (!CYIsClass(self))
@@ -2344,7 +2344,7 @@ static JSStaticValue Selector_staticValues[2] = {
 static JSStaticValue Instance_staticValues[5] = {
     {"constructor", &Instance_getProperty_constructor, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"messages", &Instance_getProperty_messages, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
-    {"prototype", &Instance_getProperty_protocol, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"prototype", &Instance_getProperty_prototype, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"value", &CYValue_getProperty_value, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, NULL, 0}
 };
