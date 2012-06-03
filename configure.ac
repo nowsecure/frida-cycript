@@ -4,7 +4,7 @@ AC_CONFIG_SRCDIR([Console.cpp])
 AC_CONFIG_AUX_DIR([.])
 LT_INIT([disable-static])
 PKG_PROG_PKG_CONFIG([0.22])
-CHECK_GNU_MAKE
+AX_CHECK_GNU_MAKE
 AC_SUBST([GMAKE], [$_cv_gnu_make_command])
 AC_SUBST([LTFLAGS])
 AS_IF([test "x$GMAKE" = x], [AC_MSG_ERROR([You need GNU make])])
