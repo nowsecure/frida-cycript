@@ -64,4 +64,4 @@ export LTFLAGS=${lflags}
 
 make clean
 make -j ldid=ldid all
-PATH=/sw/bin:$PATH make arch=iphoneos-arm version=432 dll=dylib depends='apr-lib, readline, libffi (>= 1:3.0.10-5), mobilesubstrate, adv-cmds' package
+PATH=/sw/bin:$PATH make arch=iphoneos-arm dll=dylib depends='apr-lib, readline, libffi (>= 1:3.0.10-5), mobilesubstrate, adv-cmds' package
