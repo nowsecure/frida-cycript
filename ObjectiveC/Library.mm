@@ -298,7 +298,7 @@ JSValueRef CYGetClassPrototype(JSContextRef context, id self) {
     if (self == NSArray_)
         prototype = CYGetCachedObject(context, CYJSString("ArrayInstance_prototype"));
     else if (self == NSDictionary_)
-        prototype = CYGetCachedObject(context, CYJSString("Object_prototype"));
+        prototype = CYGetCachedObject(context, CYJSString("ObjectInstance_prototype"));
     else if (self == NSString_)
         prototype = CYGetCachedObject(context, CYJSString("StringInstance_prototype"));
     else
@@ -2548,6 +2548,12 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     CYSetProperty(context, cy, CYJSString("ArrayInstance_prototype"), ArrayInstance_prototype);
     JSObjectRef Array_prototype(CYGetCachedObject(context, CYJSString("Array_prototype")));
     JSObjectSetPrototype(context, ArrayInstance_prototype, Array_prototype);
+
+    JSObjectRef ObjectInstance(JSObjectMakeConstructor(context, Instance_, NULL));
+    JSObjectRef ObjectInstance_prototype(CYCastJSObject(context, CYGetProperty(context, ObjectInstance, prototype_s)));
+    CYSetProperty(context, cy, CYJSString("ObjectInstance_prototype"), ObjectInstance_prototype);
+    JSObjectRef Object_prototype(CYGetCachedObject(context, CYJSString("Object_prototype")));
+    JSObjectSetPrototype(context, ObjectInstance_prototype, Object_prototype);
 
     JSObjectRef StringInstance(JSObjectMakeConstructor(context, Instance_, NULL));
     JSObjectRef StringInstance_prototype(CYCastJSObject(context, CYGetProperty(context, StringInstance, prototype_s)));
