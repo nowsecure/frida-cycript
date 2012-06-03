@@ -1231,6 +1231,11 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
 
 @implementation CYJSArray
 
+- (NSString *) cy$toCYON {
+    CYPool pool;
+    return [NSString stringWithUTF8String:CYPoolCCYON(pool, context_, object_)];
+}
+
 - (id) initWithJSObject:(JSObjectRef)object inContext:(JSContextRef)context { CYObjectiveTry {
     if ((self = [super init]) != nil) {
         object_ = object;
