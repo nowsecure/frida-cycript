@@ -296,7 +296,7 @@ JSValueRef CYGetClassPrototype(JSContextRef context, id self) {
     JSValueRef prototype;
 
     if (self == NSArray_)
-        prototype = CYGetCachedObject(context, CYJSString("Array_prototype"));
+        prototype = CYGetCachedObject(context, CYJSString("ArrayInstance_prototype"));
     else if (self == NSDictionary_)
         prototype = CYGetCachedObject(context, CYJSString("Object_prototype"));
     else if (self == NSString_)
@@ -2538,15 +2538,20 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     JSObjectRef Instance(JSObjectMakeConstructor(context, Instance_, &Instance_new));
     JSObjectRef Message(JSObjectMakeConstructor(context, Message_, NULL));
     JSObjectRef Selector(JSObjectMakeConstructor(context, Selector_, &Selector_new));
-    JSObjectRef StringInstance(JSObjectMakeConstructor(context, Instance_, NULL));
     JSObjectRef Super(JSObjectMakeConstructor(context, Super_, &Super_new));
 
     JSObjectRef Instance_prototype(CYCastJSObject(context, CYGetProperty(context, Instance, prototype_s)));
     CYSetProperty(context, cy, CYJSString("Instance_prototype"), Instance_prototype);
 
+    JSObjectRef ArrayInstance(JSObjectMakeConstructor(context, Instance_, NULL));
+    JSObjectRef ArrayInstance_prototype(CYCastJSObject(context, CYGetProperty(context, ArrayInstance, prototype_s)));
+    CYSetProperty(context, cy, CYJSString("ArrayInstance_prototype"), ArrayInstance_prototype);
+    JSObjectRef Array_prototype(CYGetCachedObject(context, CYJSString("Array_prototype")));
+    JSObjectSetPrototype(context, ArrayInstance_prototype, Array_prototype);
+
+    JSObjectRef StringInstance(JSObjectMakeConstructor(context, Instance_, NULL));
     JSObjectRef StringInstance_prototype(CYCastJSObject(context, CYGetProperty(context, StringInstance, prototype_s)));
     CYSetProperty(context, cy, CYJSString("StringInstance_prototype"), StringInstance_prototype);
-
     JSObjectRef String_prototype(CYGetCachedObject(context, CYJSString("String_prototype")));
     JSObjectSetPrototype(context, StringInstance_prototype, String_prototype);
 
