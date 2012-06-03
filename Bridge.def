@@ -1,6 +1,5 @@
 C YES true
 C NO false
-C nil null
 C NULL null
 
 : applicationDidFinishLaunching: v12@0:4@8
