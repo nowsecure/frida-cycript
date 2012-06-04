@@ -22,15 +22,27 @@ detailed=$("${lipo}" -detailed_info "${object}")
 
 {
 
+regex=$'\nNon-fat file: .* is architecture: (.*)'
+if [[ ${detailed} =~ ${regex} ]]; then
+    archs=(${BASH_REMATCH[1]})
+    unset detailed
+else
+    archs=($(echo "${detailed}" | "${sed}" -e '/^architecture / { s/^architecture //; p; }; d;'))
+fi
+
 echo '#include "Trampoline.hpp"'
 
-for arch in $(echo "${detailed}" | "${sed}" -e '/^architecture / { s/^architecture //; p; }; d;'); do
-    offset=$(echo "${detailed}" | "${sed}" -e '
-        /^architecture / { x; s/.*/0/; x; };
-        /^architecture '${arch}'$/ { x; s/.*/1/; x; };
-        x; /^1$/ { x; /^ *offset / { s/^ *offset //; p; }; x; }; x;
-        d;
-    ')
+for arch in "${archs[@]}"; do
+    if [[ "${detailed+@}" ]]; then
+        offset=$(echo "${detailed}" | "${sed}" -e '
+            /^architecture / { x; s/.*/0/; x; };
+            /^architecture '${arch}'$/ { x; s/.*/1/; x; };
+            x; /^1$/ { x; /^ *offset / { s/^ *offset //; p; }; x; }; x;
+            d;
+        ')
+    else
+        offset=0
+    fi
 
     file=($("${otool}" -arch "${arch}" -l "${object}" | "${sed}" -e '
         x; /^1$/ { x;
