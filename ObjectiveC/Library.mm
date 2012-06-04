@@ -238,13 +238,6 @@ static JSClassRef ArrayInstance_;
 static JSClassRef ObjectInstance_;
 static JSClassRef StringInstance_;
 
-static JSClassRef *Instances_[] = {
-    &Instance_,
-    &ArrayInstance_,
-    &ObjectInstance_,
-    &StringInstance_,
-};
-
 static JSClassRef Internal_;
 static JSClassRef Message_;
 static JSClassRef Messages_;
@@ -277,13 +270,6 @@ static Class Object_;
 
 static Type_privateData *Object_type;
 static Type_privateData *Selector_type;
-
-static bool CYValueIsObjectOfClassInstance(JSContextRef context, JSValueRef value) {
-    for (size_t i(0); i != sizeof(Instances_) / sizeof(Instances_[0]); ++i)
-        if (JSValueIsObjectOfClass(context, value, *Instances_[i]))
-            return true;
-    return false;
-}
 
 Type_privateData *Instance::GetType() const {
     return Object_type;
@@ -615,7 +601,7 @@ NSObject *CYCastNSObject_(apr_pool_t *pool, JSContextRef context, JSObjectRef ob
 }
 
 NSObject *CYCastNSObject(apr_pool_t *pool, JSContextRef context, JSObjectRef object) {
-    if (!CYValueIsObjectOfClassInstance(context, object))
+    if (!JSValueIsObjectOfClass(context, object, Instance_))
         return CYCastNSObject_(pool, context, object);
     else {
         Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
@@ -1841,7 +1827,7 @@ static bool Instance_hasInstance(JSContextRef context, JSObjectRef constructor, 
     if (!CYIsClass(_class))
         return false;
 
-    if (CYValueIsObjectOfClassInstance(context, instance)) {
+    if (JSValueIsObjectOfClass(context, instance, Instance_)) {
         Instance *linternal(reinterpret_cast<Instance *>(JSObjectGetPrivate((JSObjectRef) instance)));
         // XXX: this isn't always safe
         return [linternal->GetValue() isKindOfClass:_class];
@@ -2159,7 +2145,7 @@ static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObje
         self = internal->GetValue();
         _class = internal->class_;;
         uninitialized = false;
-    } else if (CYValueIsObjectOfClassInstance(context, arguments[0])) {
+    } else if (JSValueIsObjectOfClass(context, arguments[0], Instance_)) {
         Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate((JSObjectRef) arguments[0])));
         self = internal->GetValue();
         _class = nil;
@@ -2307,7 +2293,7 @@ static JSValueRef Instance_getProperty_messages(JSContextRef context, JSObjectRe
 }
 
 static JSValueRef Instance_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    if (!CYValueIsObjectOfClassInstance(context, _this))
+    if (!JSValueIsObjectOfClass(context, _this, Instance_))
         return NULL;
 
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
@@ -2315,7 +2301,7 @@ static JSValueRef Instance_callAsFunction_toCYON(JSContextRef context, JSObjectR
 } CYCatch }
 
 static JSValueRef Instance_callAsFunction_toJSON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    if (!CYValueIsObjectOfClassInstance(context, _this))
+    if (!JSValueIsObjectOfClass(context, _this, Instance_))
         return NULL;
 
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
@@ -2332,7 +2318,7 @@ static JSValueRef Instance_callAsFunction_toJSON(JSContextRef context, JSObjectR
 } CYCatch return /*XXX*/ NULL; }
 
 static JSValueRef Instance_callAsFunction_valueOf(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    if (!CYValueIsObjectOfClassInstance(context, _this))
+    if (!JSValueIsObjectOfClass(context, _this, Instance_))
         return NULL;
 
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
@@ -2348,7 +2334,7 @@ static JSValueRef Instance_callAsFunction_valueOf(JSContextRef context, JSObject
 } CYCatch return /*XXX*/ NULL; }
 
 static JSValueRef Instance_callAsFunction_toPointer(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    if (!CYValueIsObjectOfClassInstance(context, _this))
+    if (!JSValueIsObjectOfClass(context, _this, Instance_))
         return NULL;
 
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
@@ -2357,7 +2343,7 @@ static JSValueRef Instance_callAsFunction_toPointer(JSContextRef context, JSObje
 } CYCatch return /*XXX*/ NULL; }
 
 static JSValueRef Instance_callAsFunction_toString(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    if (!CYValueIsObjectOfClassInstance(context, _this))
+    if (!JSValueIsObjectOfClass(context, _this, Instance_))
         return NULL;
 
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
