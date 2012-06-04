@@ -385,7 +385,7 @@ JSObjectRef CYMakeInstance(JSContextRef context, id object, bool transient) {
 
 @interface NSObject (Cycript)
 
-- (JSValueRef) cy$JSValueInContext:(JSContextRef)context;
+- (JSValueRef) cy$valueOfInContext:(JSContextRef)context;
 - (JSType) cy$JSType;
 
 - (NSObject *) cy$toJSON:(NSString *)key;
@@ -403,7 +403,7 @@ JSObjectRef CYMakeInstance(JSContextRef context, id object, bool transient) {
 
 @protocol Cycript
 - (id) cy$box;
-- (JSValueRef) cy$JSValueInContext:(JSContextRef)context;
+- (JSValueRef) cy$valueOfInContext:(JSContextRef)context;
 @end
 
 NSString *CYCastNSCYON(id value) {
@@ -789,7 +789,7 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     return [self boolValue] ? @"@true" : @"@false";
 }
 
-- (JSValueRef) cy$JSValueInContext:(JSContextRef)context { CYObjectiveTry_(context) {
+- (JSValueRef) cy$valueOfInContext:(JSContextRef)context { CYObjectiveTry_(context) {
     return CYCastJSValue(context, (bool) [self boolValue]);
 } CYObjectiveCatch }
 
@@ -949,7 +949,7 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     return [self cy$JSType] != kJSTypeBoolean ? [NSString stringWithFormat:@"@%@", self] : [self boolValue] ? @"@true" : @"@false";
 }
 
-- (JSValueRef) cy$JSValueInContext:(JSContextRef)context { CYObjectiveTry_(context) {
+- (JSValueRef) cy$valueOfInContext:(JSContextRef)context { CYObjectiveTry_(context) {
     return [self cy$JSType] != kJSTypeBoolean ? CYCastJSValue(context, [self doubleValue]) : CYCastJSValue(context, [self boolValue]);
 } CYObjectiveCatch }
 
@@ -979,7 +979,7 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     return self;
 }
 
-- (JSValueRef) cy$JSValueInContext:(JSContextRef)context { CYObjectiveTry_(context) {
+- (JSValueRef) cy$valueOfInContext:(JSContextRef)context { CYObjectiveTry_(context) {
     return NULL;
 } CYObjectiveCatch }
 
@@ -1100,7 +1100,7 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     return false;
 }
 
-- (JSValueRef) cy$JSValueInContext:(JSContextRef)context { CYObjectiveTry_(context) {
+- (JSValueRef) cy$valueOfInContext:(JSContextRef)context { CYObjectiveTry_(context) {
     return CYCastJSValue(context, CYJSString(context, self));
 } CYObjectiveCatch }
 
@@ -1121,7 +1121,7 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     return @"undefined";
 }
 
-- (JSValueRef) cy$JSValueInContext:(JSContextRef)context { CYObjectiveTry_(context) {
+- (JSValueRef) cy$valueOfInContext:(JSContextRef)context { CYObjectiveTry_(context) {
     return CYJSUndefined(context);
 } CYObjectiveCatch }
 
@@ -2412,10 +2412,10 @@ static JSValueRef Instance_callAsFunction_valueOf(JSContextRef context, JSObject
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
     id value(internal->GetValue());
 
-    if (![value respondsToSelector:@selector(cy$JSValueInContext:)])
+    if (![value respondsToSelector:@selector(cy$valueOfInContext:)])
         return _this;
 
-    if (JSValueRef result = [value cy$JSValueInContext:context])
+    if (JSValueRef result = [value cy$valueOfInContext:context])
         return result;
 
     return _this;
