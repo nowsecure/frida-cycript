@@ -198,8 +198,8 @@ CYAssignment *CYDeclaration::Assignment(CYContext &context) {
     return initialiser_ == NULL ? NULL : $ CYAssign(variable, initialiser_);
 }
 
-CYExpression *CYDeclaration::ForEachIn(CYContext &context) {
-    return $V(identifier_);
+CYStatement *CYDeclaration::ForEachIn(CYContext &context, CYExpression *value) {
+    return $ CYVar($L1($L(identifier_, value)));
 }
 
 CYExpression *CYDeclaration::Replace(CYContext &context) {
@@ -271,8 +271,8 @@ CYExpression *CYExpression::ClassName(CYContext &context, bool object) {
     return this;
 }
 
-CYExpression *CYExpression::ForEachIn(CYContext &context) {
-    return this;
+CYStatement *CYExpression::ForEachIn(CYContext &context, CYExpression *value) {
+    return $E($ CYAssign(this, value));
 }
 
 CYNumber *CYFalse::Number(CYContext &context) {
@@ -316,7 +316,7 @@ CYStatement *CYForEachIn::Replace(CYContext &context) {
 
     return $ CYLet($L2($L(cys, set_), $L(cyt)), $$->*
         $ CYForIn($V(cyt), $V(cys), $ CYBlock($$->*
-            $E($ CYAssign(initialiser_->ForEachIn(context), $M($V(cys), $V(cyt))))->*
+            initialiser_->ForEachIn(context, $M($V(cys), $V(cyt)))->*
             code_
         ))
     );
