@@ -234,7 +234,9 @@ bool CYGetOffset(apr_pool_t *pool, JSContextRef context, NSString *value, ssize_
 }
 
 static JSClassRef Instance_;
+
 static JSClassRef ArrayInstance_;
+static JSClassRef FunctionInstance_;
 static JSClassRef ObjectInstance_;
 static JSClassRef StringInstance_;
 
@@ -264,6 +266,7 @@ static Class NSBoolNumber_;
 #endif
 
 static Class NSArray_;
+static Class NSBlock_;
 static Class NSDictionary_;
 static Class NSString_;
 static Class Object_;
@@ -301,6 +304,8 @@ JSValueRef CYGetClassPrototype(JSContextRef context, id self) {
 
     if (self == NSArray_)
         prototype = CYGetCachedObject(context, CYJSString("ArrayInstance_prototype"));
+    else if (self == NSBlock_)
+        prototype = CYGetCachedObject(context, CYJSString("FunctionInstance_prototype"));
     else if (self == NSDictionary_)
         prototype = CYGetCachedObject(context, CYJSString("ObjectInstance_prototype"));
     else if (self == NSString_)
@@ -760,6 +765,13 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 }
 
 @end
+/* }}} */
+/* Bridge: NSBlock {{{ */
+#ifdef __APPLE__
+@interface NSBlock
+- (void) invoke;
+@end
+#endif
 /* }}} */
 /* Bridge: NSBoolNumber {{{ */
 #ifndef __APPLE__
@@ -1821,6 +1833,82 @@ static JSObjectRef Instance_callAsConstructor(JSContextRef context, JSObjectRef 
     return value;
 } CYCatch }
 
+static JSValueRef Instance_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
+    id self(internal->GetValue());
+
+    if (![self isKindOfClass:NSBlock_])
+        CYThrow("non-NSBlock object is not a function");
+
+    struct BlockDescriptor1 {
+        unsigned long int reserved;
+        unsigned long int size;
+    };
+
+    struct BlockDescriptor2 {
+        void (*copy_helper)(void *dst, void *src);
+        void (*dispose_helper)(void *src);
+    };
+
+    struct BlockDescriptor3 {
+        const char *signature;
+        const char *layout;
+    };
+
+    struct BlockLiteral {
+        Class isa;
+        int flags;
+        int reserved;
+        void (*invoke)(void *, ...);
+        void *descriptor;
+    } *literal = reinterpret_cast<BlockLiteral *>(self);
+
+    enum {
+        BLOCK_DEALLOCATING = 0x0001,
+        BLOCK_REFCOUNT_MASK = 0xfffe,
+        BLOCK_NEEDS_FREE = 1 << 24,
+        BLOCK_HAS_COPY_DISPOSE = 1 << 25,
+        BLOCK_HAS_CTOR = 1 << 26,
+        BLOCK_IS_GC = 1 << 27,
+        BLOCK_IS_GLOBAL = 1 << 28,
+        BLOCK_HAS_STRET = 1 << 29,
+        BLOCK_HAS_SIGNATURE = 1 << 30,
+    };
+
+    if ((literal->flags & BLOCK_HAS_SIGNATURE) != 0) {
+        uint8_t *descriptor(reinterpret_cast<uint8_t *>(literal->descriptor));
+        descriptor += sizeof(BlockDescriptor1);
+        if ((literal->flags & BLOCK_HAS_COPY_DISPOSE) != 0)
+            descriptor += sizeof(BlockDescriptor2);
+        BlockDescriptor3 *descriptor3(reinterpret_cast<BlockDescriptor3 *>(descriptor));
+
+        if (const char *type = descriptor3->signature) {
+            CYPool pool;
+
+            void *setup[1];
+            setup[0] = &self;
+
+            sig::Signature signature;
+            sig::Parse(pool, &signature, type, &Structor_);
+
+            ffi_cif cif;
+            sig::sig_ffi_cif(pool, &sig::ObjectiveC, &signature, &cif);
+
+            void (*function)() = reinterpret_cast<void (*)()>(literal->invoke);
+            return CYCallFunction(pool, context, 1, setup, count, arguments, false, exception, &signature, &cif, function);
+        }
+    }
+
+    if (count != 0)
+        CYThrow("NSBlock without signature field passed arguments");
+
+    CYPoolTry {
+        [self invoke];
+    } CYPoolCatch(NULL);
+
+    return NULL;
+} CYCatch }
+
 static bool Instance_hasInstance(JSContextRef context, JSObjectRef constructor, JSValueRef instance, JSValueRef *exception) { CYTry {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate((JSObjectRef) constructor)));
     Class _class(internal->GetValue());
@@ -2450,6 +2538,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
 #endif
 
     NSArray_ = objc_getClass("NSArray");
+    NSBlock_ = objc_getClass("NSBlock");
     NSDictionary_ = objc_getClass("NSDictionary");
     NSString_ = objc_getClass("NSString");
     Object_ = objc_getClass("Object");
@@ -2466,12 +2555,16 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     definition.deleteProperty = &Instance_deleteProperty;
     definition.getPropertyNames = &Instance_getPropertyNames;
     definition.callAsConstructor = &Instance_callAsConstructor;
+    definition.callAsFunction = &Instance_callAsFunction;
     definition.hasInstance = &Instance_hasInstance;
     definition.finalize = &CYFinalize;
     Instance_ = JSClassCreate(&definition);
 
     definition.className = "ArrayInstance";
     ArrayInstance_ = JSClassCreate(&definition);
+
+    definition.className = "FunctionInstance";
+    FunctionInstance_ = JSClassCreate(&definition);
 
     definition.className = "ObjectInstance";
     ObjectInstance_ = JSClassCreate(&definition);
@@ -2603,6 +2696,12 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     JSObjectRef Array_prototype(CYGetCachedObject(context, CYJSString("Array_prototype")));
     JSObjectSetPrototype(context, ArrayInstance_prototype, Array_prototype);
 
+    JSObjectRef FunctionInstance(JSObjectMakeConstructor(context, FunctionInstance_, NULL));
+    JSObjectRef FunctionInstance_prototype(CYCastJSObject(context, CYGetProperty(context, FunctionInstance, prototype_s)));
+    CYSetProperty(context, cy, CYJSString("FunctionInstance_prototype"), FunctionInstance_prototype);
+    JSObjectRef Function_prototype(CYGetCachedObject(context, CYJSString("Function_prototype")));
+    JSObjectSetPrototype(context, FunctionInstance_prototype, Function_prototype);
+
     JSObjectRef ObjectInstance(JSObjectMakeConstructor(context, ObjectInstance_, NULL));
     JSObjectRef ObjectInstance_prototype(CYCastJSObject(context, CYGetProperty(context, ObjectInstance, prototype_s)));
     CYSetProperty(context, cy, CYJSString("ObjectInstance_prototype"), ObjectInstance_prototype);
@@ -2628,7 +2727,6 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
 
     CYSetProperty(context, all, CYJSString("objc_msgSend"), &$objc_msgSend, kJSPropertyAttributeDontEnum);
 
-    JSObjectRef Function_prototype(CYGetCachedObject(context, CYJSString("Function_prototype")));
     JSObjectSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Message, prototype_s)), Function_prototype);
     JSObjectSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Selector, prototype_s)), Function_prototype);
 } CYPoolCatch() }
