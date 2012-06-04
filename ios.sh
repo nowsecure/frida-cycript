@@ -61,6 +61,7 @@ lflags=${lflags[*]}
 export LTFLAGS=${lflags}
 
 ./configure --prefix=/usr "$@"
+sed -i -e 's/\(-arch armv6\) -arch i386 -arch x86_64/\1/' GNUmakefile
 
 make clean
 make -j ldid=ldid all
