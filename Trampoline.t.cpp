@@ -32,6 +32,8 @@ static _finline void dlset(Baton *baton, Type_ &function, const char *name, void
         baton->dlerror();
 }
 
+// XXX: where you find this needs to be relative to CoreFoundation (or something)
+// XXX: this needs to check if the framework is under PrivateFrameworks instead
 #define Framework(framework) \
     "/System/Library/Frameworks/" #framework ".framework/" #framework
 
