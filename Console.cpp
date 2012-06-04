@@ -211,7 +211,7 @@ static CYExpression *ParseExpression(CYUTF8String code) {
     Setup(driver, parser);
 
     if (parser.parse() != 0 || !driver.errors_.empty())
-        _assert(false);
+        return NULL;
 
     CYExpress *express(dynamic_cast<CYExpress *>(driver.program_->statements_));
     _assert(express != NULL);
@@ -297,6 +297,9 @@ static char **Complete(const char *word, int start, int end) {
     CYUTF8String json(Run(pool, client_, code));
 
     CYExpression *result(ParseExpression(json));
+    if (result == NULL)
+        return NULL;
+
     CYArray *array(dynamic_cast<CYArray *>(result));
 
     if (array == NULL) {
