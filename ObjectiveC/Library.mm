@@ -2529,6 +2529,9 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
 
 #ifdef __APPLE__
     NSCFBoolean_ = objc_getClass("NSCFBoolean");
+    if (NSCFBoolean_ == nil)
+        NSCFBoolean_ = objc_getClass("__NSCFBoolean");
+
     NSCFType_ = objc_getClass("NSCFType");
     NSGenericDeallocHandler_ = objc_getClass("__NSGenericDeallocHandler");
     NSMessageBuilder_ = objc_getClass("NSMessageBuilder");
