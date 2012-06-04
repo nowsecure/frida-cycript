@@ -399,7 +399,6 @@ JSObjectRef CYMakeInstance(JSContextRef context, id object, bool transient) {
 
 - (NSObject *) cy$toJSON:(NSString *)key;
 - (NSString *) cy$toCYON;
-- (NSString *) cy$toKey;
 
 - (bool) cy$hasProperty:(NSString *)name;
 - (NSObject *) cy$getProperty:(NSString *)name;
@@ -821,7 +820,7 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
             [json appendString:@","];
         else
             comma = true;
-        [json appendString:[key cy$toKey]];
+        [json appendString:CYCastNSCYON(key)];
         [json appendString:@":"];
         NSObject *object([self objectForKey:key]);
         [json appendString:CYCastNSCYON(object)];
@@ -998,10 +997,6 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     return [[self cy$toJSON:@""] cy$toCYON];
 }
 
-- (NSString *) cy$toKey {
-    return [self cy$toCYON];
-}
-
 - (bool) cy$hasProperty:(NSString *)name {
     return false;
 }
@@ -1062,12 +1057,6 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     CYStringify(str, string.data, string.size);
     std::string value(str.str());
     return CYCastNSString(NULL, CYUTF8String(value.c_str(), value.size()));
-}
-
-- (NSString *) cy$toKey {
-    if (CYIsKey(CYCastUTF8String(self)))
-        return self;
-    return [self cy$toCYON];
 }
 
 - (bool) cy$hasProperty:(NSString *)name {
