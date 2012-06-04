@@ -42,7 +42,7 @@ flags_armv6+=(-F"${sdk}"/System/Library/PrivateFrameworks)
 flags_armv6+=(-framework WebCore)
 
 
-flags=()
+flags=(-O2)
 for flag in "${flags_armv6[@]}"; do
     flags+=(-Xarch_armv6 "${flag}")
 done

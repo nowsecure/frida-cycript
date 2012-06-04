@@ -178,7 +178,7 @@ inject += Mach/Inject.lo
 Mach/Inject.lo: Trampoline.t.hpp Baton.hpp
 
 %.t.lo: %.t.cpp Baton.hpp Trampoline.hpp
-	$(libtool) --mode=compile $(cxx) $(cflags) -c -o $@ $< -fno-stack-protector -fno-exceptions
+	$(libtool) --mode=compile $(cxx) $(cflags) -c -o $@ $< -fno-stack-protector -fno-exceptions -O0
 
 %.t.hpp: %.t.lo trampoline.sh
 	$(srcdir)/trampoline.sh $@ .libs/lib$*.t.$(dll) $* $(sed) $(otool) $(lipo) $(nm) $(libtool) --mode=link $(cxx) $(ldflags) -o lib$*.t.la $< -rpath $(libdir) -Xcompiler -nostdlib
