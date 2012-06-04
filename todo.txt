@@ -65,3 +65,17 @@ should WebUndefined be @undefined?
 if something is a function, it should be output differently
 evaluate usages of CYTry in ObjectiveC/Library for CYObjectiveTry
 verify name targets of "incorrect number of arguments to"
+maybe support __objc_{yes,no} intrinisic primitives
+
+support new objective-c subscript notation:
+  id key = ...;
+  id value = object[key];
+  -> id value = [object objectForKeyedSubscript:key];
+  object[key] = newValue;
+  -> [object setObject:newValue forKeyedSubscript:key];
+and:
+  NSUInteger idx = ...;
+  id value = object[idx];
+  -> id value = [object objectAtIndexedSubscript:idx];
+  object[idx] = newValue;
+  -> [object setObject:newValue atIndexedSubscript:idx];
