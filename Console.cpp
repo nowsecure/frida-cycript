@@ -264,7 +264,7 @@ static char **Complete(const char *word, int start, int end) {
 
         case CYDriver::AutoMessage: {
             CYDriver::Context &thing(driver.contexts_.back());
-            expression = $M($M($ CYIndirect(thing.context_), $S("isa")), $S("messages"));
+            expression = $M($C1($V("object_getClass"), thing.context_), $S("messages"));
             for (CYDriver::Context::Words::const_iterator part(thing.words_.begin()); part != thing.words_.end(); ++part)
                 prefix << (*part)->word_ << ':';
         } break;
