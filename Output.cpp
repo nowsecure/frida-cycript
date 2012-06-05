@@ -250,9 +250,9 @@ void CYDeclaration::Output(CYOutput &out, CYFlags flags) const {
     }
 }
 
-void CYDeclarations::For(CYOutput &out) const {
+void CYForDeclarations::Output(CYOutput &out, CYFlags flags) const {
     out << "var";
-    Output(out, CYNoIn);
+    Output(out, CYRight(flags));
 }
 
 void CYDeclarations::Output(CYOutput &out) const {
@@ -314,10 +314,6 @@ void CYExpression::ClassName(CYOutput &out, bool object) const {
     Output(out, CYAssign::Precedence_, CYNoFlags);
 }
 
-void CYExpression::For(CYOutput &out) const {
-    Output(out, CYNoIn);
-}
-
 void CYExpression::ForIn(CYOutput &out, CYFlags flags) const {
     Output(out, flags | CYNoRightHand);
 }
@@ -340,7 +336,7 @@ void CYFinally::Output(CYOutput &out) const {
 void CYFor::Output(CYOutput &out, CYFlags flags) const {
     out << "for" << ' ' << '(';
     if (initialiser_ != NULL)
-        initialiser_->For(out);
+        initialiser_->Output(out, CYNoIn);
     out.Terminate();
     if (test_ != NULL)
         out << ' ';
@@ -468,7 +464,8 @@ void CYLabel::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYLet::Output(CYOutput &out, CYFlags flags) const {
-    out << "let" << ' ' << '(' << *declarations_ << ')' << ' ' << code_;
+    out << "let" << ' ' << '(' << *declarations_ << ')';
+    code_->Single(out, CYRight(flags));
 }
 
 namespace cy {

@@ -196,10 +196,13 @@ CYStatement *CYContinue::Replace(CYContext &context) {
 }
 
 CYAssignment *CYDeclaration::Assignment(CYContext &context) {
-    context.Replace(identifier_);
-    CYExpression *variable(Replace(context));
-    context.scope_->Declare(context, identifier_, CYIdentifierVariable);
-    return initialiser_ == NULL ? NULL : $ CYAssign(variable, initialiser_);
+    if (initialiser_ == NULL)
+        return NULL;
+    return $ CYAssign(Variable(context), initialiser_);
+}
+
+CYVariable *CYDeclaration::Variable(CYContext &context) {
+    return $V(identifier_);
 }
 
 CYStatement *CYDeclaration::ForEachIn(CYContext &context, CYExpression *value) {
@@ -207,15 +210,30 @@ CYStatement *CYDeclaration::ForEachIn(CYContext &context, CYExpression *value) {
 }
 
 CYExpression *CYDeclaration::Replace(CYContext &context) {
-    return $V(identifier_);
+    context.Replace(identifier_);
+    context.scope_->Declare(context, identifier_, CYIdentifierVariable);
+    return Variable(context);
+}
+
+void CYDeclarations::Replace(CYContext &context) { $T()
+    declaration_->Replace(context);
+    next_->Replace(context);
 }
 
 CYProperty *CYDeclarations::Property(CYContext &context) { $T(NULL)
     return $ CYProperty(declaration_->identifier_, declaration_->initialiser_ ?: $U, next_->Property(context));
 }
 
-CYCompound *CYDeclarations::Replace(CYContext &context) {
-    CYCompound *compound(next_ == NULL ? $ CYCompound() : next_->Replace(context));
+CYFunctionParameter *CYDeclarations::Parameter(CYContext &context) { $T(NULL)
+    return $ CYFunctionParameter(declaration_->identifier_, next_->Parameter(context));
+}
+
+CYArgument *CYDeclarations::Argument(CYContext &context) { $T(NULL)
+    return $ CYArgument(declaration_->initialiser_ ?: $U, next_->Argument(context));
+}
+
+CYCompound *CYDeclarations::Compound(CYContext &context) { $T(NULL)
+    CYCompound *compound(next_->Compound(context) ?: $ CYCompound());
     if (CYAssignment *assignment = declaration_->Assignment(context))
         compound->AddPrev(assignment);
     return compound;
@@ -294,20 +312,26 @@ CYStatement *CYFor::Replace(CYContext &context) {
     return this;
 }
 
+CYCompound *CYForDeclarations::Replace(CYContext &context) {
+    declarations_->Replace(context);
+    return declarations_->Compound(context);
+}
+
+// XXX: this still feels highly suboptimal
 CYStatement *CYForIn::Replace(CYContext &context) {
-    CYAssignment *assignment(initialiser_->Assignment(context));
+    CYForInInitialiser *initialiser(initialiser_);
 
     context.Replace(initialiser_);
     context.Replace(set_);
     context.Replace(code_);
 
-    if (assignment == NULL)
-        return this;
+    if (CYAssignment *assignment = initialiser->Assignment(context))
+        return $ CYBlock($$->*
+            $E(assignment)->*
+            this
+        );
 
-    return $ CYBlock($$->*
-        $E(assignment)->*
-        this
-    );
+    return this;
 }
 
 CYFunctionParameter *CYForInComprehension::Parameter(CYContext &context) const {
@@ -448,7 +472,8 @@ CYStatement *CYLabel::Replace(CYContext &context) {
 }
 
 CYStatement *CYLet::Replace(CYContext &context) {
-    return $ CYWith($ CYObject(declarations_->Property(context)), &code_);
+    declarations_->Replace(context);
+    return $ CYWith($ CYObject(declarations_->Property(context)), code_);
 }
 
 void CYMember::Replace_(CYContext &context) {
@@ -804,7 +829,8 @@ CYStatement *Try::Replace(CYContext &context) {
 } }
 
 CYStatement *CYVar::Replace(CYContext &context) {
-    return $E(declarations_->Replace(context));
+    declarations_->Replace(context);
+    return $E(declarations_->Compound(context));
 }
 
 CYExpression *CYVariable::Replace(CYContext &context) {

@@ -530,8 +530,8 @@ struct CYForInitialiser {
     virtual ~CYForInitialiser() {
     }
 
-    virtual void For(CYOutput &out) const = 0;
     virtual CYExpression *Replace(CYContext &context) = 0;
+    virtual void Output(CYOutput &out, CYFlags flags) const = 0;
 };
 
 struct CYForInInitialiser {
@@ -561,7 +561,6 @@ struct CYExpression :
         return true;
     }
 
-    virtual void For(CYOutput &out) const;
     virtual void ForIn(CYOutput &out, CYFlags flags) const;
     virtual CYStatement *ForEachIn(CYContext &out, CYExpression *value);
 
@@ -1171,15 +1170,16 @@ struct CYDeclaration :
     virtual CYStatement *ForEachIn(CYContext &out, CYExpression *value);
 
     virtual CYExpression *Replace(CYContext &context);
+
     virtual CYAssignment *Assignment(CYContext &context);
+    CYVariable *Variable(CYContext &context);
 
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYDeclarations :
     CYNext<CYDeclarations>,
-    CYThing,
-    CYForInitialiser
+    CYThing
 {
     CYDeclaration *declaration_;
 
@@ -1189,12 +1189,28 @@ struct CYDeclarations :
     {
     }
 
-    virtual void For(CYOutput &out) const;
+    void Replace(CYContext &context);
 
-    virtual CYCompound *Replace(CYContext &context);
+    CYCompound *Compound(CYContext &context);
     CYProperty *Property(CYContext &context);
+    CYArgument *Argument(CYContext &context);
+    CYFunctionParameter *Parameter(CYContext &context);
 
     virtual void Output(CYOutput &out) const;
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYForDeclarations :
+    CYForInitialiser
+{
+    CYDeclarations *declarations_;
+
+    CYForDeclarations(CYDeclarations *declarations) :
+        declarations_(declarations)
+    {
+    }
+
+    virtual CYCompound *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
@@ -1216,11 +1232,11 @@ struct CYLet :
     CYStatement
 {
     CYDeclarations *declarations_;
-    CYBlock code_;
+    CYStatement *code_;
 
-    CYLet(CYDeclarations *declarations, CYStatement *statements) :
+    CYLet(CYDeclarations *declarations, CYStatement *code) :
         declarations_(declarations),
-        code_(statements)
+        code_(code)
     {
     }
 

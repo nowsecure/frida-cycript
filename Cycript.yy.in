@@ -396,7 +396,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <statement_> LabelledStatement
 %type <expression_> LeftHandSideExpression
 %type <expression_> LeftHandSideExpressionNoBF
-//%type <statement_> LetStatement
+%type <statement_> LetStatement
 %type <literal_> Literal
 %type <literal_> LiteralNoRE
 %type <literal_> LiteralRE
@@ -1379,7 +1379,7 @@ ForStatement
 
 ForStatementInitialiser
     : ExpressionNoInOpt { $$ = $1; }
-    | LexSetRegExp "var" VariableDeclarationListNoIn { $$ = $3; }
+    | LexSetRegExp "var" VariableDeclarationListNoIn { $$ = CYNew CYForDeclarations($3); }
     ;
 /* }}} */
 /* 12.6.4 The for-in Statement {{{ */
@@ -1914,15 +1914,15 @@ ForInStatement
     : "for" "each" "(" ForInStatementInitialiser "in" Expression ")" Statement { $$ = CYNew CYForEachIn($4, $6, $8); }
     ;
 /* }}} */
-/* JavaScript 1.7: let Statements {{{ *//*
+/* JavaScript 1.7: let Statements {{{ */
 LetStatement
-    : "let" "(" VariableDeclarationList ")" Block_ { $$ = CYNew CYLet($3, $5); }
+    : "let" "(" VariableDeclarationList ")" Statement { $$ = CYNew CYLet($3, $5); }
     ;
 
 Statement_
     : LetStatement
     ;
-*//* }}} */
+/* }}} */
 
 /* JavaScript FTW: Function Statements {{{ */
 Statement
