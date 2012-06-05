@@ -196,7 +196,9 @@ CYStatement *CYContinue::Replace(CYContext &context) {
 }
 
 CYAssignment *CYDeclaration::Assignment(CYContext &context) {
+    context.Replace(identifier_);
     CYExpression *variable(Replace(context));
+    context.scope_->Declare(context, identifier_, CYIdentifierVariable);
     return initialiser_ == NULL ? NULL : $ CYAssign(variable, initialiser_);
 }
 
@@ -205,8 +207,6 @@ CYStatement *CYDeclaration::ForEachIn(CYContext &context, CYExpression *value) {
 }
 
 CYExpression *CYDeclaration::Replace(CYContext &context) {
-    context.Replace(identifier_);
-    context.scope_->Declare(context, identifier_, CYIdentifierVariable);
     return $V(identifier_);
 }
 
