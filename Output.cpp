@@ -236,10 +236,6 @@ void CYClause::Output(CYOutput &out) const {
     out << next_;
 }
 
-const char *CYDeclaration::ForEachIn() const {
-    return identifier_->Word();
-}
-
 void CYDeclaration::ForIn(CYOutput &out, CYFlags flags) const {
     out << "var";
     Output(out, CYRight(flags));
@@ -316,10 +312,6 @@ void CYExpress::Output(CYOutput &out, CYFlags flags) const {
 
 void CYExpression::ClassName(CYOutput &out, bool object) const {
     Output(out, CYAssign::Precedence_, CYNoFlags);
-}
-
-const char *CYExpression::ForEachIn() const {
-    return NULL;
 }
 
 void CYExpression::For(CYOutput &out) const {

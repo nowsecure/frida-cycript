@@ -538,8 +538,8 @@ struct CYForInInitialiser {
     }
 
     virtual void ForIn(CYOutput &out, CYFlags flags) const = 0;
-    virtual const char *ForEachIn() const = 0;
     virtual CYStatement *ForEachIn(CYContext &out, CYExpression *value) = 0;
+
     virtual CYExpression *Replace(CYContext &context) = 0;
 };
 
@@ -561,8 +561,6 @@ struct CYExpression :
 
     virtual void For(CYOutput &out) const;
     virtual void ForIn(CYOutput &out, CYFlags flags) const;
-
-    virtual const char *ForEachIn() const;
     virtual CYStatement *ForEachIn(CYContext &out, CYExpression *value);
 
     virtual CYExpression *AddArgument(CYContext &context, CYExpression *value);
@@ -1167,8 +1165,6 @@ struct CYDeclaration :
     }
 
     virtual void ForIn(CYOutput &out, CYFlags flags) const;
-
-    virtual const char *ForEachIn() const;
     virtual CYStatement *ForEachIn(CYContext &out, CYExpression *value);
 
     virtual CYExpression *Replace(CYContext &context);
