@@ -240,7 +240,7 @@ CYStatement *CYEmpty::Collapse(CYContext &context) {
 }
 
 CYStatement *CYEmpty::Replace(CYContext &context) {
-    return this;
+    return NULL;
 }
 
 CYStatement *CYExpress::Collapse(CYContext &context) {

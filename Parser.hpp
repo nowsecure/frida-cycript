@@ -384,7 +384,8 @@ struct CYContext {
         Type_ **last(&values);
         CYForEach (next, values) {
             Replace(*last = next);
-            last = &(*last)->next_;
+            if (*last != NULL)
+                last = &(*last)->next_;
         }
     }
 
