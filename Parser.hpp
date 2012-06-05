@@ -98,6 +98,7 @@ struct CYPropertyName {
 };
 
 struct CYExpression;
+struct CYAssignment;
 
 enum CYNeeded {
     CYNever     = -1,
@@ -541,6 +542,7 @@ struct CYForInInitialiser {
     virtual CYStatement *ForEachIn(CYContext &out, CYExpression *value) = 0;
 
     virtual CYExpression *Replace(CYContext &context) = 0;
+    virtual CYAssignment *Assignment(CYContext &context) = 0;
 };
 
 struct CYNumber;
@@ -573,6 +575,7 @@ struct CYExpression :
     virtual void ClassName(CYOutput &out, bool object) const;
 
     virtual CYExpression *Replace(CYContext &context) = 0;
+    virtual CYAssignment *Assignment(CYContext &context);
 
     virtual CYExpression *Primitive(CYContext &context) {
         return this;

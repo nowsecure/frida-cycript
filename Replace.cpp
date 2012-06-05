@@ -270,6 +270,10 @@ CYStatement *CYExpression::ForEachIn(CYContext &context, CYExpression *value) {
     return $E($ CYAssign(this, value));
 }
 
+CYAssignment *CYExpression::Assignment(CYContext &context) {
+    return NULL;
+}
+
 CYNumber *CYFalse::Number(CYContext &context) {
     return $D(0);
 }
@@ -291,11 +295,19 @@ CYStatement *CYFor::Replace(CYContext &context) {
 }
 
 CYStatement *CYForIn::Replace(CYContext &context) {
-    // XXX: this actually might need a prefix statement
+    CYAssignment *assignment(initialiser_->Assignment(context));
+
     context.Replace(initialiser_);
     context.Replace(set_);
     context.Replace(code_);
-    return this;
+
+    if (assignment == NULL)
+        return this;
+
+    return $ CYBlock($$->*
+        $E(assignment)->*
+        this
+    );
 }
 
 CYFunctionParameter *CYForInComprehension::Parameter(CYContext &context) const {
