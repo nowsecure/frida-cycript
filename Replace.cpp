@@ -357,6 +357,12 @@ CYStatement *CYForInComprehension::Replace(CYContext &context, CYStatement *stat
 }
 
 CYStatement *CYForEachIn::Replace(CYContext &context) {
+    if (CYAssignment *assignment = initialiser_->Assignment(context))
+        return $ CYBlock($$->*
+            $E(assignment)->*
+            this
+        );
+
     CYIdentifier *cys($I("$cys")), *cyt($I("$cyt"));
 
     return $ CYLet($L2($L(cys, set_), $L(cyt)), $$->*
