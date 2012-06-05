@@ -1329,8 +1329,6 @@ struct CYMember :
     void SetLeft(CYExpression *object) {
         object_ = object;
     }
-
-    void Replace_(CYContext &context);
 };
 
 struct CYDirectMember :

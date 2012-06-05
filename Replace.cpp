@@ -55,7 +55,6 @@ CYExpression *CYAdd::Replace(CYContext &context) {
 }
 
 CYExpression *CYAddressOf::Replace(CYContext &context) {
-    CYPrefix::Replace(context);
     return $C0($M(rhs_, $S("$cya")));
 }
 
@@ -243,7 +242,8 @@ CYCompound *CYDeclarations::Compound(CYContext &context) { $T(NULL)
 }
 
 CYExpression *CYDirectMember::Replace(CYContext &context) {
-    Replace_(context);
+    context.Replace(object_);
+    context.Replace(property_);
     return this;
 }
 
@@ -451,12 +451,10 @@ CYStatement *CYIfComprehension::Replace(CYContext &context, CYStatement *stateme
 }
 
 CYExpression *CYIndirect::Replace(CYContext &context) {
-    CYPrefix::Replace(context);
     return $M(rhs_, $S("$cyi"));
 }
 
 CYExpression *CYIndirectMember::Replace(CYContext &context) {
-    Replace_(context);
     return $M($ CYIndirect(object_), property_);
 }
 
@@ -473,11 +471,6 @@ CYStatement *CYLabel::Replace(CYContext &context) {
 
 CYStatement *CYLet::Replace(CYContext &context) {
     return $E($ CYCall($ CYFunctionExpression(NULL, declarations_->Parameter(context), code_), declarations_->Argument(context)));
-}
-
-void CYMember::Replace_(CYContext &context) {
-    context.Replace(object_);
-    context.Replace(property_);
 }
 
 namespace cy {
