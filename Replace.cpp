@@ -237,31 +237,24 @@ void CYElement::Replace(CYContext &context) { $T()
     next_->Replace(context);
 }
 
-CYStatement *CYEmpty::Collapse(CYContext &context) {
-    return next_;
-}
-
 CYStatement *CYEmpty::Replace(CYContext &context) {
     return NULL;
 }
 
-CYStatement *CYExpress::Collapse(CYContext &context) {
-    if (CYExpress *express = dynamic_cast<CYExpress *>(next_)) {
-        CYCompound *next(dynamic_cast<CYCompound *>(express->expression_));
-        if (next == NULL)
-            next = $ CYCompound(express->expression_);
-        next->AddPrev(expression_);
-        expression_ = next;
+CYStatement *CYExpress::Replace(CYContext &context) {
+    while (CYExpress *express = dynamic_cast<CYExpress *>(next_)) {
+        CYCompound *compound(dynamic_cast<CYCompound *>(express->expression_));
+        if (compound == NULL)
+            compound = $ CYCompound(express->expression_);
+        compound->AddPrev(expression_);
+        expression_ = compound;
         SetNext(express->next_);
     }
 
-    return this;
-}
-
-CYStatement *CYExpress::Replace(CYContext &context) {
     context.Replace(expression_);
     if (expression_ == NULL)
         return $ CYEmpty();
+
     return this;
 }
 
@@ -734,10 +727,6 @@ void CYScope::Scope(CYContext &context, CYStatement *&statements) {
                 (*i)->offset_ = offset;
             parent_->Merge(context, *i);
         }
-}
-
-CYStatement *CYStatement::Collapse(CYContext &context) {
-    return this;
 }
 
 CYString *CYString::Concat(CYContext &context, CYString *rhs) const {

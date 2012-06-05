@@ -154,7 +154,6 @@ struct CYStatement :
     void Single(CYOutput &out, CYFlags flags) const;
     void Multiple(CYOutput &out, CYFlags flags = CYNoFlags) const;
 
-    virtual CYStatement *Collapse(CYContext &context);
     virtual CYStatement *Replace(CYContext &context) = 0;
 
   private:
@@ -1545,7 +1544,6 @@ struct CYExpress :
             throw;
     }
 
-    virtual CYStatement *Collapse(CYContext &context);
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -1595,7 +1593,6 @@ struct CYReturn :
 struct CYEmpty :
     CYStatement
 {
-    virtual CYStatement *Collapse(CYContext &context);
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
