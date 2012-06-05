@@ -137,6 +137,8 @@ CYStatement *CYComment::Replace(CYContext &context) {
 
 CYExpression *CYCompound::Replace(CYContext &context) {
     context.ReplaceAll(expressions_);
+    if (expressions_ == NULL)
+        return NULL;
     return this;
 }
 
