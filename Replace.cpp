@@ -472,8 +472,7 @@ CYStatement *CYLabel::Replace(CYContext &context) {
 }
 
 CYStatement *CYLet::Replace(CYContext &context) {
-    declarations_->Replace(context);
-    return $ CYWith($ CYObject(declarations_->Property(context)), code_);
+    return $E($ CYCall($ CYFunctionExpression(NULL, declarations_->Parameter(context), code_), declarations_->Argument(context)));
 }
 
 void CYMember::Replace_(CYContext &context) {
