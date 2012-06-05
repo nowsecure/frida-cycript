@@ -198,7 +198,10 @@ CYStatement *CYContinue::Replace(CYContext &context) {
 CYAssignment *CYDeclaration::Assignment(CYContext &context) {
     if (initialiser_ == NULL)
         return NULL;
-    return $ CYAssign(Variable(context), initialiser_);
+
+    CYAssignment *value($ CYAssign(Variable(context), initialiser_));
+    initialiser_ = NULL;
+    return value;
 }
 
 CYVariable *CYDeclaration::Variable(CYContext &context) {
@@ -319,18 +322,15 @@ CYCompound *CYForDeclarations::Replace(CYContext &context) {
 
 // XXX: this still feels highly suboptimal
 CYStatement *CYForIn::Replace(CYContext &context) {
-    CYForInInitialiser *initialiser(initialiser_);
-
-    context.Replace(initialiser_);
-    context.Replace(set_);
-    context.Replace(code_);
-
-    if (CYAssignment *assignment = initialiser->Assignment(context))
+    if (CYAssignment *assignment = initialiser_->Assignment(context))
         return $ CYBlock($$->*
             $E(assignment)->*
             this
         );
 
+    context.Replace(initialiser_);
+    context.Replace(set_);
+    context.Replace(code_);
     return this;
 }
 
