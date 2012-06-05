@@ -312,15 +312,8 @@ struct CYIdentifierUsage {
 
 typedef std::vector<CYIdentifierUsage> CYIdentifierUsageVector;
 
-// XXX: strategy pattern, maybe subclass
-enum CYScopeType {
-    CYScopeCatch,
-    CYScopeFunction,
-    CYScopeProgram,
-};
-
 struct CYScope {
-    CYScopeType type_;
+    bool transparent_;
 
     CYContext &context_;
     CYStatement *&statements_;
@@ -330,7 +323,7 @@ struct CYScope {
     CYIdentifierAddressFlagsMap internal_;
     CYIdentifierValueSet identifiers_;
 
-    CYScope(CYScopeType type, CYContext &context, CYStatement *&statements);
+    CYScope(bool transparent, CYContext &context, CYStatement *&statements);
     virtual ~CYScope();
 
     void Close();

@@ -24,6 +24,11 @@
 
 #include <iomanip>
 
+CYFunctionExpression *CYNonLocalize(CYContext &context, CYFunctionExpression *function) {
+    function->nonlocal_ = context.nextlocal_;
+    return function;
+}
+
 CYExpression *CYAdd::Replace(CYContext &context) {
     CYInfix::Replace(context);
 
@@ -113,7 +118,7 @@ namespace cy {
 namespace Syntax {
 
 void Catch::Replace(CYContext &context) { $T()
-    CYScope scope(CYScopeCatch, context, code_.statements_);
+    CYScope scope(true, context, code_.statements_);
 
     context.Replace(name_);
     context.scope_->Declare(context, name_, CYIdentifierCatch);
@@ -378,8 +383,6 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
     if (outer)
         Inject(context);
 
-    CYScope scope(CYScopeFunction, context, code_.statements_);
-
     CYNonLocal *nonlocal(context.nonlocal_);
     CYNonLocal *nextlocal(context.nextlocal_);
 
@@ -392,6 +395,8 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
         nonlocal_ = $ CYNonLocal();
         context.nextlocal_ = nonlocal_;
     }
+
+    CYScope scope(!localize, context, code_.statements_);
 
     if (!outer && name_ != NULL)
         Inject(context);
@@ -470,7 +475,7 @@ CYStatement *CYLabel::Replace(CYContext &context) {
 }
 
 CYStatement *CYLet::Replace(CYContext &context) {
-    return $E($ CYCall($ CYFunctionExpression(NULL, declarations_->Parameter(context), code_), declarations_->Argument(context)));
+    return $E($ CYCall(CYNonLocalize(context, $ CYFunctionExpression(NULL, declarations_->Parameter(context), code_)), declarations_->Argument(context)));
 }
 
 namespace cy {
@@ -553,7 +558,7 @@ namespace {
 }
 
 void CYProgram::Replace(CYContext &context) {
-    CYScope scope(CYScopeProgram, context, statements_);
+    CYScope scope(true, context, statements_);
 
     context.nextlocal_ = $ CYNonLocal();
     context.ReplaceAll(statements_);
@@ -631,13 +636,11 @@ CYExpression *CYRubyBlock::Replace(CYContext &context) {
 }
 
 CYExpression *CYRubyProc::Replace(CYContext &context) {
-    CYFunctionExpression *function($ CYFunctionExpression(NULL, parameters_, code_));
-    function->nonlocal_ = context.nextlocal_;
-    return function;
+    return CYNonLocalize(context, $ CYFunctionExpression(NULL, parameters_, code_));
 }
 
-CYScope::CYScope(CYScopeType type, CYContext &context, CYStatement *&statements) :
-    type_(type),
+CYScope::CYScope(bool transparent, CYContext &context, CYStatement *&statements) :
+    transparent_(transparent),
     context_(context),
     statements_(statements),
     parent_(context.scope_)
@@ -654,10 +657,10 @@ void CYScope::Close() {
 }
 
 void CYScope::Declare(CYContext &context, CYIdentifier *identifier, CYIdentifierFlags flags) {
-    if (type_ == CYScopeCatch && flags != CYIdentifierCatch)
-        parent_->Declare(context, identifier, flags);
-    else
+    if (!transparent_ || flags == CYIdentifierArgument || flags == CYIdentifierCatch)
         internal_.insert(CYIdentifierAddressFlagsMap::value_type(identifier, flags));
+    else if (parent_ != NULL)
+        parent_->Declare(context, identifier, flags);
 }
 
 CYIdentifier *CYScope::Lookup(CYContext &context, CYIdentifier *identifier) {
