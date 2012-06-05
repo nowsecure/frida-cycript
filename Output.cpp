@@ -583,6 +583,9 @@ void CYStatement::Multiple(CYOutput &out, CYFlags flags) const {
 }
 
 void CYStatement::Single(CYOutput &out, CYFlags flags) const {
+    if (this == NULL)
+        return out.Terminate();
+
     _assert(next_ == NULL);
     out << '\n';
     ++out.indent_;
