@@ -1069,7 +1069,7 @@ struct CYArgument :
     {
     }
 
-    void Replace(CYContext &context);
+    CYArgument *Replace(CYContext &context);
     void Output(CYOutput &out) const;
 };
 

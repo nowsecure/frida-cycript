@@ -63,9 +63,18 @@ CYExpression *CYAddressOf::Replace(CYContext &context) {
     return $C0($M(rhs_, $S("$cya")));
 }
 
-void CYArgument::Replace(CYContext &context) { $T()
+CYArgument *CYArgument::Replace(CYContext &context) { $T(NULL)
     context.Replace(value_);
-    next_->Replace(context);
+    next_ = next_->Replace(context);
+
+    if (value_ == NULL) {
+        if (next_ == NULL)
+            return NULL;
+        else
+            value_ = $U;
+    }
+
+    return this;
 }
 
 CYExpression *CYArray::Replace(CYContext &context) {
@@ -228,7 +237,7 @@ void CYDeclarations::Replace(CYContext &context) { $T()
 }
 
 CYProperty *CYDeclarations::Property(CYContext &context) { $T(NULL)
-    return $ CYProperty(declaration_->identifier_, declaration_->initialiser_ ?: $U, next_->Property(context));
+    return $ CYProperty(declaration_->identifier_, declaration_->initialiser_, next_->Property(context));
 }
 
 CYFunctionParameter *CYDeclarations::Parameter(CYContext &context) { $T(NULL)
@@ -236,7 +245,7 @@ CYFunctionParameter *CYDeclarations::Parameter(CYContext &context) { $T(NULL)
 }
 
 CYArgument *CYDeclarations::Argument(CYContext &context) { $T(NULL)
-    return $ CYArgument(declaration_->initialiser_ ?: $U, next_->Argument(context));
+    return $ CYArgument(declaration_->initialiser_, next_->Argument(context));
 }
 
 CYCompound *CYDeclarations::Compound(CYContext &context) { $T(NULL)
@@ -616,6 +625,8 @@ void CYProgram::Replace(CYContext &context) {
 void CYProperty::Replace(CYContext &context) { $T()
     context.Replace(value_);
     next_->Replace(context);
+    if (value_ == NULL)
+        value_ = $U;
 }
 
 CYStatement *CYReturn::Replace(CYContext &context) {
