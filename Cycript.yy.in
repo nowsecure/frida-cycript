@@ -362,7 +362,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <statement_> EmptyStatement
 %type <expression_> EqualityExpression
 %type <compound_> Expression_
-%type <expression_> Expression
+%type <compound_> Expression
 %type <expression_> ExpressionOpt
 %type <statement_> ExpressionStatement
 %type <finally_> FinallyOpt
@@ -928,12 +928,12 @@ AssignmentExpression
 /* }}} */
 /* 11.14 Comma Operator {{{ */
 Expression_
-    : "," Expression { $$ = CYNew CYCompound($2); }
-    | { $$ = NULL; }
+    : "," Expression { $$ = $2; }
+    | { $$ = CYNew CYCompound(); }
     ;
 
 Expression
-    : AssignmentExpression Expression_ { if ($2) { $2->AddPrev($1); $$ = $2; } else $$ = $1; }
+    : AssignmentExpression Expression_ { $2->AddPrev($1); $$ = $2; }
     ;
 
 ExpressionOpt
