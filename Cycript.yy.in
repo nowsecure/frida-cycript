@@ -440,10 +440,6 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <statement_> WhileStatement
 %type <statement_> WithStatement
 
-@begin C
-%type <expression_> UnaryAssigneeExpression
-@end
-
 @begin ObjectiveC
 %type <statement_> CategoryStatement
 %type <expression_> ClassExpression
@@ -934,12 +930,6 @@ AssignmentExpression_
     | "^=" AssignmentExpression { $$ = CYNew CYBitwiseXOrAssign(NULL, $2); }
     | "|=" AssignmentExpression { $$ = CYNew CYBitwiseOrAssign(NULL, $2); }
     ;
-
-@begin C
-LeftHandSideExpression
-    : LexSetRegExp UnaryAssigneeExpression { $$ = $2; }
-    ;
-@end
 
 AssignmentExpression
     : ConditionalExpression { $$ = $1; }
@@ -1451,8 +1441,8 @@ StatementListItem
 
 @begin C
 /* Cycript (C): Pointer Indirection/Addressing {{{ */
-UnaryAssigneeExpression
-    : "*" UnaryExpression { $$ = CYNew CYIndirect($2); }
+LeftHandSideExpression
+    : LexSetRegExp "*" UnaryExpression { $$ = CYNew CYIndirect($3); }
     ;
 
 UnaryExpression_
