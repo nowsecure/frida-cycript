@@ -529,13 +529,13 @@ LexSetStatement
         if (yychar == 0)
             driver.statement_ = true;
         else switch (yychar) {
-            case cy::parser::token::Function:
-                yychar = cy::parser::token::Function_;
+            case token::Function:
+                yychar = token::Function_;
             break;
 
-            case cy::parser::token::OpenBrace:
-            case cy::parser::token::OpenBrace_:
-                yychar = cy::parser::token::OpenBrace__;
+            case token::OpenBrace:
+            case token::OpenBrace_:
+                yychar = token::OpenBrace__;
             break;
         }
     }
@@ -558,7 +558,7 @@ Terminator_
 
 Terminator
     : Terminator_
-    | error { if (yychar != 0 && yychar != cy::parser::token::CloseBrace && !yylval.newline_) YYABORT; else { yyerrok; driver.errors_.pop_back(); } } StrictSemi
+    | error { if (yychar != 0 && yychar != token::CloseBrace && !yylval.newline_) YYABORT; else { yyerrok; driver.errors_.pop_back(); } } StrictSemi
     ;
 
 TerminatorOpt
