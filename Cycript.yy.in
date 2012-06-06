@@ -525,20 +525,16 @@ LexSetRegExp
     ;
 
 LexSetStatement
-    : {
-        if (yychar == 0)
-            driver.statement_ = true;
-        else switch (yychar) {
-            case token::Function:
-                yychar = token::Function_;
-            break;
+    : { switch (yychar) {
+        case token::Function:
+            yychar = token::Function_;
+        break;
 
-            case token::OpenBrace:
-            case token::OpenBrace_:
-                yychar = token::OpenBrace__;
-            break;
-        }
-    }
+        case token::OpenBrace:
+        case token::OpenBrace_:
+            yychar = token::OpenBrace__;
+        break;
+    } }
     ;
 /* }}} */
 

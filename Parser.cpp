@@ -28,7 +28,6 @@ CYRange WordEndRange_  (0x3ff001000000000LLU, 0x7fffffe87fffffeLLU); // A-Za-z_$
 
 CYDriver::CYDriver(const std::string &filename) :
     state_(CYClear),
-    statement_(false),
     data_(NULL),
     size_(0),
     file_(NULL),
