@@ -161,6 +161,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %token Equal "="
 %token EqualEqual "=="
 %token EqualEqualEqual "==="
+%token EqualRight "=>"
 %token Exclamation "!"
 %token ExclamationEqual "!="
 %token ExclamationEqualEqual "!=="
@@ -327,6 +328,8 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <argument_> ArgumentListOpt
 %type <argument_> Arguments
 %type <literal_> ArrayLiteral
+%type <expression_> ArrowFunction
+%type <functionParameter_> ArrowParameters
 %type <expression_> AssignmentExpression
 %type <identifier_> BindingIdentifier
 %type <expression_> BitwiseANDExpression
@@ -348,6 +351,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <comprehension_> ComprehensionListOpt
 %type <expression_> ConditionalExpression
 %type <statement_> ContinueStatement
+%type <statement_> ConciseBody
 %type <statement_> DebuggerStatement
 %type <statement_> Declaration__
 %type <statement_> Declaration_
@@ -400,7 +404,8 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <expression_> NewExpression
 %type <null_> NullLiteral
 %type <literal_> ObjectLiteral
-%type <expression_> Parenthetical
+%type <compound_> Parenthetical
+%type <compound_> ParentheticalOpt
 %type <expression_> PostfixExpression
 %type <expression_> PrimaryExpression
 %type <statement_> Program
@@ -518,17 +523,16 @@ LexSetRegExp
     : { driver.SetCondition(CYDriver::RegExpCondition); }
     ;
 
-LexSetStatement
-    : { switch (yychar) {
-        case token::Function:
-            yychar = token::Function_;
-        break;
+LexNoBrace
+    : { if (yychar == token::OpenBrace || yychar == token::OpenBrace_) yychar = token::OpenBrace__; }
+    ;
 
-        case token::OpenBrace:
-        case token::OpenBrace_:
-            yychar = token::OpenBrace__;
-        break;
-    } }
+LexNoFunction
+    : { if (yychar == token::Function) yychar = token::Function_; }
+    ;
+
+LexSetStatement
+    : LexNoBrace LexNoFunction
     ;
 /* }}} */
 
@@ -683,6 +687,11 @@ BooleanLiteral
 /* 11.1 Primary Expressions {{{ */
 Parenthetical
     : "(" LexPushInOff Expression LexPopIn ")" { $$ = $3; }
+    ;
+
+ParentheticalOpt
+    : Parenthetical { $$ = $1; }
+    | { $$ = NULL; }
     ;
 
 PrimaryExpression
@@ -912,6 +921,7 @@ ConditionalExpression
 /* 11.13 Assignment Operators {{{ */
 AssignmentExpression
     : ConditionalExpression { $$ = $1; }
+    | ArrowFunction { $$ = $1; }
     | LeftHandSideExpression "=" AssignmentExpression { $$ = CYNew CYAssign($1, $3); }
     | LeftHandSideExpression "*=" AssignmentExpression { $$ = CYNew CYMultiplyAssign($1, $3); }
     | LeftHandSideExpression "/=" AssignmentExpression { $$ = CYNew CYDivideAssign($1, $3); }
@@ -1200,7 +1210,7 @@ DebuggerStatement
     ;
 /* }}} */
 
-/* 13 Function Definition {{{ */
+/* 13.1 Function Definitions {{{ */
 FunctionDeclaration
     : ";function" Identifier "(" FormalParameterListOpt ")" BRACE FunctionBody "}" { $$ = CYNew CYFunctionStatement($2, $4, $7); }
     ;
@@ -1234,6 +1244,21 @@ FormalParameter
 
 FunctionBody
     : StatementListOpt { $$ = $1; }
+    ;
+/* }}} */
+/* 13.2 Arrow Function Definitions {{{ */
+ArrowFunction
+    : LexSetRegExp ArrowParameters "=>" LexNoBrace ConciseBody { $$ = CYNew CYFunctionExpression(NULL, $2, $5); }
+    ;
+
+ArrowParameters
+    : BindingIdentifier { $$ = CYNew CYFunctionParameter(CYNew CYDeclaration($1)); }
+    //| ParentheticalOpt { $$ = $1; }
+    ;
+
+ConciseBody
+    : AssignmentExpression { $$ = CYNew CYReturn($1); }
+    | ";{" LexPushInOff FunctionBody LexPopIn "}" { $$ = $3; }
     ;
 /* }}} */
 /* 14 Program {{{ */

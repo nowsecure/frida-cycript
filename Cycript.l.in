@@ -196,6 +196,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "="    L C F(tk::Equal);
 "=="   L C F(tk::EqualEqual);
 "==="  L C F(tk::EqualEqualEqual);
+"=>"   L C F(tk::EqualRight);
 "!"    L C F(tk::Exclamation);
 "!="   L C F(tk::ExclamationEqual);
 "!=="  L C F(tk::ExclamationEqualEqual);
