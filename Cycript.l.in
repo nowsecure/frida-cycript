@@ -172,6 +172,8 @@ XMLName {XMLNameStart}{XMLNamePart}*
 <XMLContent>"</" L return tk::LeftSlash;
 @end
 
+"..."  L C return tk::PeriodPeriodPeriod;
+
 @begin E4X
 "::"   L C return tk::ColonColon;
 ".."   L C return tk::PeriodPeriod;

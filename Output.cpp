@@ -236,6 +236,10 @@ void CYClause::Output(CYOutput &out) const {
     out << next_;
 }
 
+void CYDebugger::Output(CYOutput &out, CYFlags flags) const {
+    out << "debugger" << ';';
+}
+
 void CYDeclaration::ForIn(CYOutput &out, CYFlags flags) const {
     out << "var";
     Output(out, CYRight(flags));
@@ -262,16 +266,19 @@ void CYDeclarations::Output(CYOutput &out) const {
 void CYDeclarations::Output(CYOutput &out, CYFlags flags) const {
     const CYDeclarations *declaration(this);
     bool first(true);
-  output:
-    CYDeclarations *next(declaration->next_);
-    CYFlags jacks(first ? CYLeft(flags) : next == NULL ? CYRight(flags) : CYCenter(flags));
-    first = false;
-    declaration->declaration_->Output(out, jacks);
 
-    if (next != NULL) {
+    for (;;) {
+        CYDeclarations *next(declaration->next_);
+
+        CYFlags jacks(first ? CYLeft(flags) : next == NULL ? CYRight(flags) : CYCenter(flags));
+        first = false;
+        declaration->declaration_->Output(out, jacks);
+
+        if (next == NULL)
+            break;
+
         out << ',' << ' ';
         declaration = next;
-        goto output;
     }
 }
 
@@ -395,7 +402,7 @@ void CYFunctionStatement::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYFunctionParameter::Output(CYOutput &out) const {
-    out << *name_;
+    initialiser_->Output(out, CYNoFlags);
     if (next_ != NULL)
         out << ',' << ' ' << *next_;
 }
@@ -463,7 +470,7 @@ void CYLabel::Output(CYOutput &out, CYFlags flags) const {
     statement_->Single(out, CYRight(flags));
 }
 
-void CYLet::Output(CYOutput &out, CYFlags flags) const {
+void CYLetStatement::Output(CYOutput &out, CYFlags flags) const {
     out << "let" << ' ' << '(' << *declarations_ << ')';
     code_->Single(out, CYRight(flags));
 }
@@ -510,13 +517,6 @@ void CYObject::Output(CYOutput &out, CYFlags flags) const {
     out << '\t' << '}';
     if (protect)
         out << ')';
-}
-
-void CYOptionalFunctionParameter::Output(CYOutput &out) const {
-    out << *name_ << '=';
-    initializer_->Output(out, CYAssign::Precedence_, CYNoFlags);
-    if (next_ != NULL)
-        out << ',' << ' ' << *next_;
 }
 
 void CYPostfix::Output(CYOutput &out, CYFlags flags) const {

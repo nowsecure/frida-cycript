@@ -27,7 +27,7 @@
 CYStatement *CYCategory::Replace(CYContext &context) {
     CYVariable *cyc($V("$cyc")), *cys($V("$cys"));
 
-    return $E($C1($F(NULL, $P5("$cys", "$cyp", "$cyc", "$cyn", "$cyt"), $$->*
+    return $E($C1($F(NULL, $P5($L("$cys"), $L("$cyp"), $L("$cyc"), $L("$cyn"), $L("$cyt")), $$->*
         $E($ CYAssign($V("$cyp"), $C1($V("object_getClass"), cys)))->*
         $E($ CYAssign(cyc, cys))->*
         $E($ CYAssign($V("$cym"), $C1($V("object_getClass"), cyc)))->*
@@ -40,7 +40,7 @@ CYExpression *CYClass::Replace_(CYContext &context) {
 
     CYExpression *name(name_ != NULL ? name_->ClassName(context, false) : $C1($V("$cyq"), $S("CY$")));
 
-    return $C1($F(NULL, $P6("$cys", "$cyp", "$cyc", "$cyn", "$cyt", "$cym"), $$->*
+    return $C1($F(NULL, $P6($L("$cys"), $L("$cyp"), $L("$cyc"), $L("$cyn"), $L("$cyt"), $L("$cym")), $$->*
         $E($ CYAssign($V("$cyp"), $C1($V("object_getClass"), cys)))->*
         $E($ CYAssign(cyc, $C3($V("objc_allocateClassPair"), cys, name, $D(0))))->*
         $E($ CYAssign($V("$cym"), $C1($V("object_getClass"), cyc)))->*
@@ -81,8 +81,8 @@ CYStatement *CYMessage::Replace(CYContext &context, bool replace) const { $T(NUL
         $E($C4($V(replace ? "class_replaceMethod" : "class_addMethod"),
             $V(instance_ ? "$cyc" : "$cym"),
             cyn,
-            $N2($V("Functor"), $F(NULL, $P2("self", "_cmd", parameters_->Parameters(context)), $$->*
-                $ CYVar($L1($L($I("$cyr"), $N2($V("Super"), self, _class))))->*
+            $N2($V("Functor"), $F(NULL, $P2($L("self"), $L("_cmd"), parameters_->Parameters(context)), $$->*
+                $ CYVar($L1($L("$cyr", $N2($V("Super"), self, _class))))->*
                 $ CYReturn($C1($M($F(NULL, NULL, code_), $S("call")), self))
             ), cyt),
             cyt
@@ -92,7 +92,7 @@ CYStatement *CYMessage::Replace(CYContext &context, bool replace) const { $T(NUL
 
 CYFunctionParameter *CYMessageParameter::Parameters(CYContext &context) const { $T(NULL)
     CYFunctionParameter *next(next_->Parameters(context));
-    return name_ == NULL ? next : $ CYFunctionParameter(name_, next);
+    return name_ == NULL ? next : $ CYFunctionParameter($ CYDeclaration(name_), next);
 }
 
 CYSelector *CYMessageParameter::Selector(CYContext &context) const {

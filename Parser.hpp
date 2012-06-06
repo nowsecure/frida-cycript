@@ -536,6 +536,8 @@ struct CYForInInitialiser {
 
     virtual CYExpression *Replace(CYContext &context) = 0;
     virtual CYAssignment *Assignment(CYContext &context) = 0;
+
+    virtual void Output(CYOutput &out, CYFlags flags) const = 0;
 };
 
 struct CYNumber;
@@ -623,35 +625,22 @@ struct CYCompound :
     void Output(CYOutput &out, CYFlags flags) const;
 };
 
+struct CYDeclaration;
+
 struct CYFunctionParameter :
     CYNext<CYFunctionParameter>,
     CYThing
 {
-    CYIdentifier *name_;
+    CYForInInitialiser *initialiser_;
 
-    CYFunctionParameter(CYIdentifier *name, CYFunctionParameter *next = NULL) :
+    CYFunctionParameter(CYForInInitialiser *initialiser, CYFunctionParameter *next = NULL) :
         CYNext<CYFunctionParameter>(next),
-        name_(name)
+        initialiser_(initialiser)
     {
     }
 
-    virtual CYFunctionParameter *Replace(CYContext &context, CYBlock &code);
-    virtual void Output(CYOutput &out) const;
-};
-
-struct CYOptionalFunctionParameter :
-    CYFunctionParameter
-{
-    CYExpression *initializer_;
-
-    CYOptionalFunctionParameter(CYIdentifier *name, CYExpression *initializer, CYFunctionParameter *next = NULL) :
-        CYFunctionParameter(name, next),
-        initializer_(initializer)
-    {
-    }
-
-    virtual CYFunctionParameter *Replace(CYContext &context, CYBlock &code);
-    virtual void Output(CYOutput &out) const;
+    void Replace(CYContext &context, CYBlock &code);
+    void Output(CYOutput &out) const;
 };
 
 struct CYComprehension :
@@ -1221,13 +1210,13 @@ struct CYVar :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CYLet :
+struct CYLetStatement :
     CYStatement
 {
     CYDeclarations *declarations_;
     CYStatement *code_;
 
-    CYLet(CYDeclarations *declarations, CYStatement *code) :
+    CYLetStatement(CYDeclarations *declarations, CYStatement *code) :
         declarations_(declarations),
         code_(code)
     {
@@ -1699,6 +1688,17 @@ struct CYSwitch :
     CYSwitch(CYExpression *value, CYClause *clauses) :
         value_(value),
         clauses_(clauses)
+    {
+    }
+
+    virtual CYStatement *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYDebugger :
+    CYStatement
+{
+    CYDebugger()
     {
     }
 

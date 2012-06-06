@@ -176,6 +176,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %token Percent "%"
 %token PercentEqual "%="
 %token Period "."
+%token PeriodPeriodPeriod "..."
 %token Pipe "|"
 %token PipeEqual "|="
 %token PipePipe "||"
@@ -329,12 +330,14 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <assignment_> AssignmentExpression_
 %type <expression_> AssignmentExpressionNoBF
 %type <expression_> AssignmentExpressionNoIn
+%type <identifier_> BindingIdentifier
 %type <expression_> BitwiseANDExpression
 %type <expression_> BitwiseANDExpressionNoBF
 %type <expression_> BitwiseANDExpressionNoIn
 %type <statement_> Block
 %type <statement_> Block_
 %type <boolean_> BooleanLiteral
+%type <declaration_> BindingElement
 %type <expression_> BitwiseORExpression
 %type <expression_> BitwiseORExpressionNoBF
 %type <expression_> BitwiseORExpressionNoIn
@@ -342,6 +345,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <expression_> BitwiseXORExpressionNoBF
 %type <expression_> BitwiseXORExpressionNoIn
 %type <statement_> BreakStatement
+%type <statement_> BreakableStatement
 %type <expression_> CallExpression
 %type <expression_> CallExpressionNoBF
 %type <clause_> CaseBlock
@@ -354,6 +358,8 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <expression_> ConditionalExpressionNoBF
 %type <expression_> ConditionalExpressionNoIn
 %type <statement_> ContinueStatement
+%type <statement_> DebuggerStatement
+%type <statement_> Declaration
 %type <clause_> DefaultClause
 %type <statement_> DoWhileStatement
 %type <expression_> Element
@@ -379,8 +385,10 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <for_> ForStatementInitialiser
 %type <statement_> ForInStatement
 %type <forin_> ForInStatementInitialiser
+%type <declaration_> FormalParameter
 %type <functionParameter_> FormalParameterList
 %type <functionParameter_> FormalParameterList_
+%type <functionParameter_> FormalParameterListOpt
 %type <statement_> FunctionBody
 %type <statement_> FunctionDeclaration
 %type <expression_> FunctionExpression
@@ -396,7 +404,9 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <statement_> LabelledStatement
 %type <expression_> LeftHandSideExpression
 %type <expression_> LeftHandSideExpressionNoBF
+//%type <expression_> LetExpression
 %type <statement_> LetStatement
+%type <statement_> LexicalDeclaration
 %type <literal_> Literal
 %type <literal_> LiteralNoRE
 %type <literal_> LiteralRE
@@ -425,6 +435,8 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <expression_> PrimaryExpressionNoRE
 %type <expression_> PrimaryExpressionBF
 %type <statement_> Program
+%type <statement_> ProgramBody
+%type <statement_> ProgramBodyOpt
 %type <propertyName_> PropertyName
 %type <propertyName_> PropertyName_
 %type <property_> PropertyNameAndValueList
@@ -444,13 +456,12 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <functionParameter_> RubyProcParametersOpt
 %type <expression_> ShiftExpression
 %type <expression_> ShiftExpressionNoBF
-%type <statement_> SourceElement
-%type <statement_> SourceElement_
-%type <statement_> SourceElements
+%type <declaration_> SingleNameBinding
 %type <statement_> Statement
 %type <statement_> Statement_
 %type <statement_> StatementList
 %type <statement_> StatementListOpt
+%type <statement_> StatementListItem
 %type <statement_> SwitchStatement
 %type <statement_> ThrowStatement
 %type <statement_> TryStatement
@@ -678,7 +689,7 @@ Identifier
     | "transient" { $$ = $1; }
     | "volatile" { $$ = $1; }
 
-    | "let" { $$ = $1; }
+    // XXX: is this allowed?! | "let" { $$ = $1; }
     | "yield" { $$ = $1; }
 
     | "each" { $$ = $1; }
@@ -1251,19 +1262,29 @@ Statement_
     | EmptyStatement { $$ = $1; }
     | ExpressionStatement { $$ = $1; }
     | IfStatement { $$ = $1; }
-    | IterationStatement { $$ = $1; }
+    | BreakableStatement { $$ = $1; }
     | ContinueStatement { $$ = $1; }
     | BreakStatement { $$ = $1; }
     | ReturnStatement { $$ = $1; }
     | WithStatement { $$ = $1; }
     | LabelledStatement { $$ = $1; }
-    | SwitchStatement { $$ = $1; }
     | ThrowStatement { $$ = $1; }
     | TryStatement { $$ = $1; }
+    | DebuggerStatement { $$ = $1; }
     ;
 
 Statement
     : LexSetRegExp Statement_ { $$ = $2; }
+    ;
+
+Declaration
+    : FunctionDeclaration { $$ = $1; }
+    | LexicalDeclaration { $$ = $1; }
+    ;
+
+BreakableStatement
+    : IterationStatement { $$ = $1; }
+    | SwitchStatement { $$ = $1; }
     ;
 /* }}} */
 /* 12.1 Block {{{ */
@@ -1276,15 +1297,37 @@ Block
     ;
 
 StatementList
-    : Statement StatementListOpt { $1->SetNext($2); $$ = $1; }
+    : StatementListItem StatementListOpt { $1->SetNext($2); $$ = $1; }
     ;
 
 StatementListOpt
     : StatementList { $$ = $1; }
     | LexSetRegExp { $$ = NULL; }
     ;
+
+StatementListItem
+    : Statement { $$ = $1; }
+    | LexSetRegExp Declaration { $$ = $2; }
+    ;
 /* }}} */
-/* 12.2 Variable Statement {{{ */
+/* 12.2 Declarations {{{ */
+BindingIdentifier
+    : Identifier { $$ = $1; }
+    ;
+
+// XXX: BindingPattern
+/* }}} */
+/* 12.2.1 Let and Const Declarations {{{ */
+LexicalDeclaration
+    : LetOrConst VariableDeclarationList Terminator { $$ = CYNew CYVar($2); }
+    ;
+
+LetOrConst
+    : "let"
+    | "const"
+    ;
+/* }}} */
+/* 12.2.2 Variable Statement {{{ */
 VariableStatement
     : "var" VariableDeclarationList Terminator { $$ = CYNew CYVar($2); }
     ;
@@ -1308,11 +1351,13 @@ VariableDeclarationListNoIn
     ;
 
 VariableDeclaration
-    : Identifier InitialiserOpt { $$ = CYNew CYDeclaration($1, $2); }
+    : BindingIdentifier InitialiserOpt { $$ = CYNew CYDeclaration($1, $2); }
+    // XXX: | BindingPattern Initialiser { $$ = CYNew CYDeclaration($1, $2); }
     ;
 
 VariableDeclarationNoIn
-    : Identifier InitialiserNoInOpt { $$ = CYNew CYDeclaration($1, $2); }
+    : BindingIdentifier InitialiserNoInOpt { $$ = CYNew CYDeclaration($1, $2); }
+    // XXX: | BindingPattern InitialiserNoIn { $$ = CYNew CYDeclaration($1, $2); }
     ;
 
 InitialiserOpt
@@ -1331,6 +1376,17 @@ Initialiser
 
 InitialiserNoIn
     : "=" AssignmentExpressionNoIn { $$ = $2; }
+    ;
+/* }}} */
+/* 12.2.4 Destructuring Binding Patterns {{{ */
+// XXX: *
+
+BindingElement
+    : SingleNameBinding { $$ = $1; }
+    ;
+
+SingleNameBinding
+    : BindingIdentifier InitialiserOpt { $$ = CYNew CYDeclaration($1, $2); }
     ;
 /* }}} */
 /* 12.3 Empty Statement {{{ */
@@ -1462,14 +1518,19 @@ FinallyOpt
     | { $$ = NULL; }
     ;
 /* }}} */
+/* 12.14 The debugger Statement {{{ */
+DebuggerStatement
+    : "debugger" Terminator { $$ = CYNew CYDebugger(); }
+    ;
+/* }}} */
 
 /* 13 Function Definition {{{ */
 FunctionDeclaration
-    : "function" Identifier "(" FormalParameterList ")" Brace FunctionBody "}" { $$ = CYNew CYFunctionStatement($2, $4, $7); }
+    : "function" Identifier "(" FormalParameterListOpt ")" Brace FunctionBody "}" { $$ = CYNew CYFunctionStatement($2, $4, $7); }
     ;
 
 FunctionExpression
-    : "function" IdentifierOpt "(" FormalParameterList ")" Brace FunctionBody "}" { $$ = CYNew CYFunctionExpression($2, $4, $7); }
+    : "function" IdentifierOpt "(" FormalParameterListOpt ")" Brace FunctionBody "}" { $$ = CYNew CYFunctionExpression($2, $4, $7); }
     ;
 
 FormalParameterList_
@@ -1477,32 +1538,40 @@ FormalParameterList_
     | { $$ = NULL; }
     ;
 
-FormalParameterList
-    : Identifier FormalParameterList_ { $$ = CYNew CYFunctionParameter($1, $2); }
+FormalParameterListOpt
+    : FormalParameterList
     | { $$ = NULL; }
     ;
 
+FormalParameterList
+    // XXX: : FunctionRestParameter { $$ = $1; }
+    : FormalParameter FormalParameterList_ { $$ = CYNew CYFunctionParameter($1, $2); }
+    ;
+
+/* XXX: FunctionRestParameter
+    : "..." BindingIdentifier { $$ = CYNew CYFunctionRestParameter($2); }
+    ;*/
+
+FormalParameter
+    : BindingElement { $$ = $1; }
+    ;
+
 FunctionBody
-    : SourceElements { $$ = $1; }
+    : StatementListOpt { $$ = $1; }
     ;
 /* }}} */
 /* 14 Program {{{ */
 Program
-    : SourceElements { driver.program_ = CYNew CYProgram($1); }
+    : ProgramBodyOpt { driver.program_ = CYNew CYProgram($1); }
     ;
 
-SourceElements
-    : SourceElement SourceElements { $1->SetNext($2); $$ = $1; }
-    | LexSetRegExp { $$ = NULL; }
+ProgramBodyOpt
+    : ProgramBody { $$ = $1; }
+    | { $$ = NULL; }
     ;
 
-SourceElement_
-    : Statement_ { $$ = $1; }
-    | FunctionDeclaration { $$ = $1; }
-    ;
-
-SourceElement
-    : LexSetRegExp SourceElement_ { $$ = $2; }
+ProgramBody
+    : StatementList { $$ = $1; }
     ;
 /* }}} */
 
@@ -1678,7 +1747,7 @@ ImportPath
     | StringLiteral
     ;
 
-SourceElement_
+StatementListItem
     : "@import" ImportPath { $$ = CYNew CYImport(); }
     ;
 /* }}} */
@@ -1914,9 +1983,18 @@ ForInStatement
     : "for" "each" "(" ForInStatementInitialiser "in" Expression ")" Statement { $$ = CYNew CYForEachIn($4, $6, $8); }
     ;
 /* }}} */
+/* JavaScript 1.7: let Expressions {{{ */
+/*LetExpression
+    : "let" "(" VariableDeclarationList ")" Expression { $$ = CYNew CYLetExpression($3, $5); }
+    ;
+
+MemberExpression
+    : LexSetRegExp LetExpression { $$ = $2; }
+    ;*/
+/* }}} */
 /* JavaScript 1.7: let Statements {{{ */
 LetStatement
-    : "let" "(" VariableDeclarationList ")" Statement { $$ = CYNew CYLet($3, $5); }
+    : "let" "(" VariableDeclarationList ")" Statement { $$ = CYNew CYLetStatement($3, $5); }
     ;
 
 Statement_
@@ -1924,16 +2002,6 @@ Statement_
     ;
 /* }}} */
 
-/* JavaScript FTW: Function Statements {{{ */
-Statement
-    : LexSetRegExp FunctionDeclaration { driver.Warning(yylloc, "warning, FunctionDeclaration is a SourceElement, not a Statement"); } { $$ = $2; }
-    ;
-/* }}} */
-/* JavaScript FTW: Optional Arguments {{{ */
-FormalParameterList
-    : Identifier "=" AssignmentExpression FormalParameterList_ { $$ = CYNew CYOptionalFunctionParameter($1, $3, $4); }
-    ;
-/* }}} */
 /* JavaScript FTW: Ruby Blocks {{{ */
 RubyProcParameterList_
     : "," RubyProcParameterList { $$ = $2; }
@@ -1941,7 +2009,7 @@ RubyProcParameterList_
     ;
 
 RubyProcParameterList
-    : Identifier RubyProcParameterList_ { $$ = CYNew CYFunctionParameter($1, $2); }
+    : Identifier RubyProcParameterList_ { $$ = CYNew CYFunctionParameter(CYNew CYDeclaration($1), $2); }
     | { $$ = NULL; }
     ;
 

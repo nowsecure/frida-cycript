@@ -52,17 +52,17 @@
     CYStatements()
 
 #define $P1(arg0, args...) \
-    $P($I(arg0), ##args)
+    $P(arg0, ##args)
 #define $P2(arg0, arg1, args...) \
-    $P($I(arg0), $P1(arg1, ##args))
+    $P(arg0, $P1(arg1, ##args))
 #define $P3(arg0, arg1, arg2, args...) \
-    $P($I(arg0), $P2(arg1, arg2, ##args))
+    $P(arg0, $P2(arg1, arg2, ##args))
 #define $P4(arg0, arg1, arg2, arg3, args...) \
-    $P($I(arg0), $P3(arg1, arg2, arg3, ##args))
+    $P(arg0, $P3(arg1, arg2, arg3, ##args))
 #define $P5(arg0, arg1, arg2, arg3, arg4, args...) \
-    $P($I(arg0), $P4(arg1, arg2, arg3, arg4, ##args))
+    $P(arg0, $P4(arg1, arg2, arg3, arg4, ##args))
 #define $P6(arg0, arg1, arg2, arg3, arg4, arg5, args...) \
-    $P($I(arg0), $P5(arg1, arg2, arg3, arg4, arg5, ##args))
+    $P(arg0, $P5(arg1, arg2, arg3, arg4, arg5, ##args))
 
 #define $C(args...) \
     ($ CYCall(args))
@@ -110,8 +110,8 @@
 #define $N5(func, args...) \
     $N(func, $C5_(args))
 
-#define $L(args...) \
-    $ CYDeclaration(args)
+#define $L(arg0, args...) \
+    $ CYDeclaration($I(arg0), ##args)
 #define $L1(arg0) \
     $ CYDeclarations(arg0)
 #define $L2(arg0, args...) \
