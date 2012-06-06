@@ -327,7 +327,6 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <argument_> ArgumentListOpt
 %type <argument_> Arguments
 %type <literal_> ArrayLiteral
-%type <assignment_> AssignmentExpression_
 %type <expression_> AssignmentExpression
 %type <identifier_> BindingIdentifier
 %type <expression_> BitwiseANDExpression
@@ -916,24 +915,20 @@ ConditionalExpression
     ;
 /* }}} */
 /* 11.13 Assignment Operators {{{ */
-AssignmentExpression_
-    : "=" AssignmentExpression { $$ = CYNew CYAssign(NULL, $2); }
-    | "*=" AssignmentExpression { $$ = CYNew CYMultiplyAssign(NULL, $2); }
-    | "/=" AssignmentExpression { $$ = CYNew CYDivideAssign(NULL, $2); }
-    | "%=" AssignmentExpression { $$ = CYNew CYModulusAssign(NULL, $2); }
-    | "+=" AssignmentExpression { $$ = CYNew CYAddAssign(NULL, $2); }
-    | "-=" AssignmentExpression { $$ = CYNew CYSubtractAssign(NULL, $2); }
-    | "<<=" AssignmentExpression { $$ = CYNew CYShiftLeftAssign(NULL, $2); }
-    | ">>=" AssignmentExpression { $$ = CYNew CYShiftRightSignedAssign(NULL, $2); }
-    | ">>>=" AssignmentExpression { $$ = CYNew CYShiftRightUnsignedAssign(NULL, $2); }
-    | "&=" AssignmentExpression { $$ = CYNew CYBitwiseAndAssign(NULL, $2); }
-    | "^=" AssignmentExpression { $$ = CYNew CYBitwiseXOrAssign(NULL, $2); }
-    | "|=" AssignmentExpression { $$ = CYNew CYBitwiseOrAssign(NULL, $2); }
-    ;
-
 AssignmentExpression
     : ConditionalExpression { $$ = $1; }
-    | LeftHandSideExpression AssignmentExpression_ { $2->SetLeft($1); $$ = $2; }
+    | LeftHandSideExpression "=" AssignmentExpression { $$ = CYNew CYAssign($1, $3); }
+    | LeftHandSideExpression "*=" AssignmentExpression { $$ = CYNew CYMultiplyAssign($1, $3); }
+    | LeftHandSideExpression "/=" AssignmentExpression { $$ = CYNew CYDivideAssign($1, $3); }
+    | LeftHandSideExpression "%=" AssignmentExpression { $$ = CYNew CYModulusAssign($1, $3); }
+    | LeftHandSideExpression "+=" AssignmentExpression { $$ = CYNew CYAddAssign($1, $3); }
+    | LeftHandSideExpression "-=" AssignmentExpression { $$ = CYNew CYSubtractAssign($1, $3); }
+    | LeftHandSideExpression "<<=" AssignmentExpression { $$ = CYNew CYShiftLeftAssign($1, $3); }
+    | LeftHandSideExpression ">>=" AssignmentExpression { $$ = CYNew CYShiftRightSignedAssign($1, $3); }
+    | LeftHandSideExpression ">>>=" AssignmentExpression { $$ = CYNew CYShiftRightUnsignedAssign($1, $3); }
+    | LeftHandSideExpression "&=" AssignmentExpression { $$ = CYNew CYBitwiseAndAssign($1, $3); }
+    | LeftHandSideExpression "^=" AssignmentExpression { $$ = CYNew CYBitwiseXOrAssign($1, $3); }
+    | LeftHandSideExpression "|=" AssignmentExpression { $$ = CYNew CYBitwiseOrAssign($1, $3); }
     ;
 /* }}} */
 /* 11.14 Comma Operator {{{ */
