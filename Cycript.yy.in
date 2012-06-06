@@ -319,23 +319,23 @@ int cylex(YYSTYPE *, cy::location *, void *);
 
 %type <expression_> AdditiveExpression
 %type <expression_> AdditiveExpressionNoBF
-%type <argument_> ArgumentList
 %type <argument_> ArgumentList_
+%type <argument_> ArgumentList
 %type <argument_> ArgumentListOpt
 %type <argument_> Arguments
 %type <literal_> ArrayLiteral
 %type <expression_> AssigneeExpression
 %type <expression_> AssigneeExpressionNoBF
-%type <expression_> AssignmentExpression
 %type <assignment_> AssignmentExpression_
+%type <expression_> AssignmentExpression
 %type <expression_> AssignmentExpressionNoBF
 %type <expression_> AssignmentExpressionNoIn
 %type <identifier_> BindingIdentifier
 %type <expression_> BitwiseANDExpression
 %type <expression_> BitwiseANDExpressionNoBF
 %type <expression_> BitwiseANDExpressionNoIn
-%type <statement_> Block
 %type <statement_> Block_
+%type <statement_> Block
 %type <boolean_> BooleanLiteral
 %type <declaration_> BindingElement
 %type <expression_> BitwiseORExpression
@@ -371,12 +371,12 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <expression_> EqualityExpression
 %type <expression_> EqualityExpressionNoBF
 %type <expression_> EqualityExpressionNoIn
+%type <compound_> Expression_
 %type <expression_> Expression
 %type <expression_> ExpressionOpt
-%type <compound_> Expression_
 %type <expression_> ExpressionNoBF
-%type <expression_> ExpressionNoIn
 %type <compound_> ExpressionNoIn_
+%type <expression_> ExpressionNoIn
 %type <expression_> ExpressionNoInOpt
 %type <statement_> ExpressionStatement
 %type <finally_> FinallyOpt
@@ -386,8 +386,8 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <statement_> ForInStatement
 %type <forin_> ForInStatementInitialiser
 %type <declaration_> FormalParameter
-%type <functionParameter_> FormalParameterList
 %type <functionParameter_> FormalParameterList_
+%type <functionParameter_> FormalParameterList
 %type <functionParameter_> FormalParameterListOpt
 %type <statement_> FunctionBody
 %type <statement_> FunctionDeclaration
@@ -417,13 +417,13 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <expression_> LogicalORExpressionNoBF
 %type <expression_> LogicalORExpressionNoIn
 %type <member_> MemberAccess
-%type <expression_> MemberExpression
 %type <expression_> MemberExpression_
+%type <expression_> MemberExpression
 %type <expression_> MemberExpressionNoBF
 %type <expression_> MultiplicativeExpression
 %type <expression_> MultiplicativeExpressionNoBF
-%type <expression_> NewExpression
 %type <expression_> NewExpression_
+%type <expression_> NewExpression
 %type <expression_> NewExpressionNoBF
 %type <null_> NullLiteral
 %type <literal_> ObjectLiteral
@@ -437,43 +437,43 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <statement_> Program
 %type <statement_> ProgramBody
 %type <statement_> ProgramBodyOpt
-%type <propertyName_> PropertyName
 %type <propertyName_> PropertyName_
-%type <property_> PropertyNameAndValueList
+%type <propertyName_> PropertyName
 %type <property_> PropertyNameAndValueList_
+%type <property_> PropertyNameAndValueList
 %type <property_> PropertyNameAndValueListOpt
-%type <expression_> RelationalExpression
 %type <infix_> RelationalExpression_
+%type <expression_> RelationalExpression
 %type <expression_> RelationalExpressionNoBF
-%type <expression_> RelationalExpressionNoIn
 %type <infix_> RelationalExpressionNoIn_
+%type <expression_> RelationalExpressionNoIn
 %type <statement_> ReturnStatement
 %type <rubyProc_> RubyProcExpression
 %type <rubyProc_> RubyProcExpressionNoOA
-%type <functionParameter_> RubyProcParameterList
 %type <functionParameter_> RubyProcParameterList_
+%type <functionParameter_> RubyProcParameterList
 %type <functionParameter_> RubyProcParameters
 %type <functionParameter_> RubyProcParametersOpt
 %type <expression_> ShiftExpression
 %type <expression_> ShiftExpressionNoBF
 %type <declaration_> SingleNameBinding
-%type <statement_> Statement
 %type <statement_> Statement_
+%type <statement_> Statement
 %type <statement_> StatementList
 %type <statement_> StatementListOpt
 %type <statement_> StatementListItem
 %type <statement_> SwitchStatement
 %type <statement_> ThrowStatement
 %type <statement_> TryStatement
-%type <expression_> UnaryExpression
 %type <expression_> UnaryExpression_
+%type <expression_> UnaryExpression
 %type <expression_> UnaryExpressionNoBF
 %type <declaration_> VariableDeclaration
 %type <declaration_> VariableDeclarationNoIn
-%type <declarations_> VariableDeclarationList
 %type <declarations_> VariableDeclarationList_
-%type <declarations_> VariableDeclarationListNoIn
+%type <declarations_> VariableDeclarationList
 %type <declarations_> VariableDeclarationListNoIn_
+%type <declarations_> VariableDeclarationListNoIn
 %type <statement_> VariableStatement
 %type <statement_> WhileStatement
 %type <statement_> WithStatement
@@ -508,10 +508,10 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <messageParameter_> MessageParameterList
 %type <messageParameter_> MessageParameterListOpt
 %type <bool_> MessageScope
-%type <argument_> SelectorCall
 %type <argument_> SelectorCall_
-%type <selector_> SelectorExpression
+%type <argument_> SelectorCall
 %type <selector_> SelectorExpression_
+%type <selector_> SelectorExpression
 %type <selector_> SelectorExpressionOpt
 %type <argument_> SelectorList
 %type <word_> SelectorWordOpt
@@ -523,10 +523,10 @@ int cylex(YYSTYPE *, cy::location *, void *);
 
 @begin E4X
 %type <propertyIdentifier_> PropertyIdentifier_
-%type <selector_> PropertySelector
 %type <selector_> PropertySelector_
-%type <identifier_> QualifiedIdentifier
+%type <selector_> PropertySelector
 %type <identifier_> QualifiedIdentifier_
+%type <identifier_> QualifiedIdentifier
 %type <identifier_> WildcardIdentifier
 %type <identifier_> XMLComment
 %type <identifier_> XMLCDATA
@@ -587,14 +587,14 @@ Terminator_
     | "\n" StrictSemi
     ;
 
-TerminatorOpt
-    : Terminator_
-    | error { yyerrok; driver.errors_.pop_back(); } StrictSemi
-    ;
-
 Terminator
     : Terminator_
     | error { if (yychar != 0 && yychar != cy::parser::token::CloseBrace && !yylval.newline_) YYABORT; else { yyerrok; driver.errors_.pop_back(); } } StrictSemi
+    ;
+
+TerminatorOpt
+    : Terminator_
+    | error { yyerrok; driver.errors_.pop_back(); } StrictSemi
     ;
 
 /*CommaOpt
@@ -606,11 +606,6 @@ Terminator
 NewLineOpt
     : "\n"
     |
-    ;
-
-WordOpt
-    : Word { $$ = $1; }
-    | { $$ = NULL; }
     ;
 
 Word
@@ -651,6 +646,11 @@ Word
     | "void" { $$ = $1; }
     | "while" { $$ = $1; }
     | "with" { $$ = $1; }
+    ;
+
+WordOpt
+    : Word { $$ = $1; }
+    | { $$ = NULL; }
     ;
 
 PrimaryExpressionNo
@@ -766,14 +766,14 @@ ElementOpt
     | LexSetRegExp { $$ = NULL; }
     ;
 
-ElementListOpt
-    : ElementList { $$ = $1; }
-    | LexSetRegExp { $$ = NULL; }
-    ;
-
 ElementList
     : ElementOpt "," ElementListOpt { $$ = CYNew CYElement($1, $3); }
     | Element { $$ = CYNew CYElement($1, NULL); }
+    ;
+
+ElementListOpt
+    : ElementList { $$ = $1; }
+    | LexSetRegExp { $$ = NULL; }
     ;
 /* }}} */
 /* 11.1.5 Object Initialiser {{{ */
@@ -786,13 +786,13 @@ PropertyNameAndValueList_
     | { $$ = NULL; }
     ;
 
+PropertyNameAndValueList
+    : PropertyName ":" AssignmentExpression PropertyNameAndValueList_ { $$ = CYNew CYProperty($1, $3, $4); }
+    ;
+
 PropertyNameAndValueListOpt
     : PropertyNameAndValueList { $$ = $1; }
     | { $$ = NULL; }
-    ;
-
-PropertyNameAndValueList
-    : PropertyName ":" AssignmentExpression PropertyNameAndValueList_ { $$ = CYNew CYProperty($1, $3, $4); }
     ;
 
 PropertyName_
@@ -807,14 +807,14 @@ PropertyName
 /* }}} */
 
 /* 11.2 Left-Hand-Side Expressions {{{ */
-MemberExpression_
-    : "new" MemberExpression Arguments { $$ = CYNew cy::Syntax::New($2, $3); }
-    ;
-
 MemberAccess
     : "[" Expression "]" { $$ = CYNew CYDirectMember(NULL, $2); }
     | "." Identifier { $$ = CYNew CYDirectMember(NULL, CYNew CYString($2)); }
     | "." AutoComplete { driver.mode_ = CYDriver::AutoDirect; YYACCEPT; }
+    ;
+
+MemberExpression_
+    : "new" MemberExpression Arguments { $$ = CYNew cy::Syntax::New($2, $3); }
     ;
 
 MemberExpression
@@ -885,13 +885,13 @@ ArgumentList_
     | { $$ = NULL; }
     ;
 
+ArgumentList
+    : AssignmentExpression ArgumentList_ { $$ = CYNew CYArgument(NULL, $1, $2); }
+    ;
+
 ArgumentListOpt
     : ArgumentList { $$ = $1; }
     | LexSetRegExp { $$ = NULL; }
-    ;
-
-ArgumentList
-    : AssignmentExpression ArgumentList_ { $$ = CYNew CYArgument(NULL, $1, $2); }
     ;
 
 Arguments
@@ -1012,14 +1012,6 @@ ShiftExpressionNoBF
     ;
 /* }}} */
 /* 11.8 Relational Operators {{{ */
-RelationalExpressionNoIn_
-    : "<" ShiftExpression { $$ = CYNew CYLess(NULL, $2); }
-    | ">" ShiftExpression { $$ = CYNew CYGreater(NULL, $2); }
-    | "<=" ShiftExpression { $$ = CYNew CYLessOrEqual(NULL, $2); }
-    | ">=" ShiftExpression { $$ = CYNew CYGreaterOrEqual(NULL, $2); }
-    | "instanceof" ShiftExpression { $$ = CYNew CYInstanceOf(NULL, $2); }
-    ;
-
 RelationalExpression_
     : RelationalExpressionNoIn_ { $$ = $1; }
     | "in" ShiftExpression { $$ = CYNew CYIn(NULL, $2); }
@@ -1028,6 +1020,14 @@ RelationalExpression_
 RelationalExpression
     : ShiftExpression { $$ = $1; }
     | RelationalExpression RelationalExpression_ { $2->SetLeft($1); $$ = $2; }
+    ;
+
+RelationalExpressionNoIn_
+    : "<" ShiftExpression { $$ = CYNew CYLess(NULL, $2); }
+    | ">" ShiftExpression { $$ = CYNew CYGreater(NULL, $2); }
+    | "<=" ShiftExpression { $$ = CYNew CYLessOrEqual(NULL, $2); }
+    | ">=" ShiftExpression { $$ = CYNew CYGreaterOrEqual(NULL, $2); }
+    | "instanceof" ShiftExpression { $$ = CYNew CYInstanceOf(NULL, $2); }
     ;
 
 RelationalExpressionNoIn
@@ -1227,9 +1227,8 @@ Expression_
     | { $$ = NULL; }
     ;
 
-ExpressionNoIn_
-    : "," ExpressionNoIn { $$ = CYNew CYCompound($2); }
-    | { $$ = NULL; }
+Expression
+    : AssignmentExpression Expression_ { if ($2) { $2->AddPrev($1); $$ = $2; } else $$ = $1; }
     ;
 
 ExpressionOpt
@@ -1237,17 +1236,18 @@ ExpressionOpt
     | LexSetRegExp { $$ = NULL; }
     ;
 
-ExpressionNoInOpt
-    : ExpressionNoIn { $$ = $1; }
-    | LexSetRegExp { $$ = NULL; }
-    ;
-
-Expression
-    : AssignmentExpression Expression_ { if ($2) { $2->AddPrev($1); $$ = $2; } else $$ = $1; }
+ExpressionNoIn_
+    : "," ExpressionNoIn { $$ = CYNew CYCompound($2); }
+    | { $$ = NULL; }
     ;
 
 ExpressionNoIn
     : AssignmentExpressionNoIn ExpressionNoIn_ { if ($2) { $2->AddPrev($1); $$ = $2; } else $$ = $1; }
+    ;
+
+ExpressionNoInOpt
+    : ExpressionNoIn { $$ = $1; }
+    | LexSetRegExp { $$ = NULL; }
     ;
 
 ExpressionNoBF
@@ -1337,13 +1337,13 @@ VariableDeclarationList_
     | { $$ = NULL; }
     ;
 
+VariableDeclarationList
+    : VariableDeclaration VariableDeclarationList_ { $$ = CYNew CYDeclarations($1, $2); }
+    ;
+
 VariableDeclarationListNoIn_
     : "," VariableDeclarationListNoIn { $$ = $2; }
     | { $$ = NULL; }
-    ;
-
-VariableDeclarationList
-    : VariableDeclaration VariableDeclarationList_ { $$ = CYNew CYDeclarations($1, $2); }
     ;
 
 VariableDeclarationListNoIn
@@ -1360,22 +1360,22 @@ VariableDeclarationNoIn
     // XXX: | BindingPattern InitialiserNoIn { $$ = CYNew CYDeclaration($1, $2); }
     ;
 
+Initialiser
+    : "=" AssignmentExpression { $$ = $2; }
+    ;
+
 InitialiserOpt
     : Initialiser { $$ = $1; }
     | { $$ = NULL; }
     ;
 
+InitialiserNoIn
+    : "=" AssignmentExpressionNoIn { $$ = $2; }
+    ;
+
 InitialiserNoInOpt
     : InitialiserNoIn { $$ = $1; }
     | { $$ = NULL; }
-    ;
-
-Initialiser
-    : "=" AssignmentExpression { $$ = $2; }
-    ;
-
-InitialiserNoIn
-    : "=" AssignmentExpressionNoIn { $$ = $2; }
     ;
 /* }}} */
 /* 12.2.4 Destructuring Binding Patterns {{{ */
@@ -1479,14 +1479,14 @@ CaseBlock
     : Brace CaseClausesOpt "}" { $$ = $2; }
     ;
 
+CaseClause
+    : "case" Expression ":" StatementListOpt { $$ = CYNew CYClause($2, $4); }
+    ;
+
 CaseClausesOpt
     : CaseClause CaseClausesOpt { $1->SetNext($2); $$ = $1; }
     | DefaultClause CaseClausesOpt { $1->SetNext($2); $$ = $1; }
     | { $$ = NULL; }
-    ;
-
-CaseClause
-    : "case" Expression ":" StatementListOpt { $$ = CYNew CYClause($2, $4); }
     ;
 
 DefaultClause
@@ -1538,14 +1538,14 @@ FormalParameterList_
     | { $$ = NULL; }
     ;
 
-FormalParameterListOpt
-    : FormalParameterList
-    | { $$ = NULL; }
-    ;
-
 FormalParameterList
     // XXX: : FunctionRestParameter { $$ = $1; }
     : FormalParameter FormalParameterList_ { $$ = CYNew CYFunctionParameter($1, $2); }
+    ;
+
+FormalParameterListOpt
+    : FormalParameterList
+    | { $$ = NULL; }
     ;
 
 /* XXX: FunctionRestParameter
@@ -1565,13 +1565,13 @@ Program
     : ProgramBodyOpt { driver.program_ = CYNew CYProgram($1); }
     ;
 
+ProgramBody
+    : StatementList { $$ = $1; }
+    ;
+
 ProgramBodyOpt
     : ProgramBody { $$ = $1; }
     | { $$ = NULL; }
-    ;
-
-ProgramBody
-    : StatementList { $$ = $1; }
     ;
 /* }}} */
 
@@ -1587,13 +1587,13 @@ ClassField
     : Expression Identifier ";"
     ;
 
+ClassFieldList
+    : Brace ClassFieldListOpt "}" { $$ = NULL; }
+    ;
+
 ClassFieldListOpt
     : ClassFieldListOpt ClassField
     |
-    ;
-
-ClassFieldList
-    : Brace ClassFieldListOpt "}" { $$ = NULL; }
     ;
 
 MessageScope
@@ -1611,13 +1611,13 @@ MessageParameter
     : Word ":" TypeOpt Identifier { $$ = CYNew CYMessageParameter($1, $3, $4); }
     ;
 
+MessageParameterList
+    : MessageParameter MessageParameterListOpt { $1->SetNext($2); $$ = $1; }
+    ;
+
 MessageParameterListOpt
     : MessageParameterList { $$ = $1; }
     | { $$ = NULL; }
-    ;
-
-MessageParameterList
-    : MessageParameter MessageParameterListOpt { $1->SetNext($2); $$ = $1; }
     ;
 
 MessageParameters
@@ -1691,14 +1691,14 @@ VariadicCall
     | { $$ = NULL; }
     ;
 
-SelectorCall_
-    : SelectorCall { $$ = $1; }
-    | VariadicCall { $$ = $1; }
-    ;
-
 SelectorWordOpt
     : WordOpt { driver.contexts_.back().words_.push_back($1); } { $$ = $1; }
     | AutoComplete { driver.mode_ = CYDriver::AutoMessage; YYACCEPT; }
+    ;
+
+SelectorCall_
+    : SelectorCall { $$ = $1; }
+    | VariadicCall { $$ = $1; }
     ;
 
 SelectorCall
@@ -1715,11 +1715,6 @@ MessageExpression
     | "[" LexSetRegExp "super" { driver.context_ = NULL; } SelectorList "]" { $$ = CYNew CYSendSuper($5); }
     ;
 
-SelectorExpressionOpt
-    : SelectorExpression_ { $$ = $1; }
-    | { $$ = NULL; }
-    ;
-
 SelectorExpression_
     : WordOpt ":" SelectorExpressionOpt { $$ = CYNew CYSelectorPart($1, true, $3); }
     ;
@@ -1727,6 +1722,11 @@ SelectorExpression_
 SelectorExpression
     : SelectorExpression_ { $$ = $1; }
     | Word { $$ = CYNew CYSelectorPart($1, false, NULL); }
+    ;
+
+SelectorExpressionOpt
+    : SelectorExpression_ { $$ = $1; }
+    | { $$ = NULL; }
     ;
 
 PrimaryExpressionNo
@@ -1964,14 +1964,14 @@ ForComprehension
     | "for" "each" "(" Identifier "in" Expression ")" { $$ = CYNew CYForEachInComprehension($4, $6); }
     ;
 
+ComprehensionList
+    : ForComprehension ComprehensionListOpt { $1->SetNext($2); $$ = $1; }
+    ;
+
 ComprehensionListOpt
     : ComprehensionList { $$ = $1; }
     | IfComprehension { $$ = $1; }
     | { $$ = NULL; }
-    ;
-
-ComprehensionList
-    : ForComprehension ComprehensionListOpt { $1->SetNext($2); $$ = $1; }
     ;
 
 PrimaryExpressionNo
