@@ -24,6 +24,7 @@
 
 #include <iostream>
 
+#include <stack>
 #include <string>
 #include <vector>
 #include <map>
@@ -447,8 +448,11 @@ enum CYState {
 
 class CYDriver {
   public:
-    CYState state_;
     void *scanner_;
+
+    CYState state_;
+    bool statement_;
+    std::stack<bool> in_;
 
     const char *data_;
     size_t size_;
