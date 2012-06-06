@@ -411,7 +411,6 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <property_> PropertyNameAndValueList_
 %type <property_> PropertyNameAndValueList
 %type <property_> PropertyNameAndValueListOpt
-%type <expression_> RelationalExpression_
 %type <expression_> RelationalExpression
 %type <statement_> ReturnStatement
 %type <rubyProc_> RubyProcExpression
@@ -858,18 +857,14 @@ ShiftExpression
     ;
 /* }}} */
 /* 11.8 Relational Operators {{{ */
-RelationalExpression_
-    : ShiftExpression { $$ = $1; }
-    ;
-
 RelationalExpression
-    : RelationalExpression_ { $$ = $1; }
-    | RelationalExpression "<" RelationalExpression_ { $$ = CYNew CYLess($1, $3); }
-    | RelationalExpression ">" RelationalExpression_ { $$ = CYNew CYGreater($1, $3); }
-    | RelationalExpression "<=" RelationalExpression_ { $$ = CYNew CYLessOrEqual($1, $3); }
-    | RelationalExpression ">=" RelationalExpression_ { $$ = CYNew CYGreaterOrEqual($1, $3); }
-    | RelationalExpression "instanceof" RelationalExpression_ { $$ = CYNew CYInstanceOf($1, $3); }
-    | RelationalExpression "in" RelationalExpression_ { $$ = CYNew CYIn($1, $3); }
+    : ShiftExpression { $$ = $1; }
+    | RelationalExpression "<" ShiftExpression { $$ = CYNew CYLess($1, $3); }
+    | RelationalExpression ">" ShiftExpression { $$ = CYNew CYGreater($1, $3); }
+    | RelationalExpression "<=" ShiftExpression { $$ = CYNew CYLessOrEqual($1, $3); }
+    | RelationalExpression ">=" ShiftExpression { $$ = CYNew CYGreaterOrEqual($1, $3); }
+    | RelationalExpression "instanceof" ShiftExpression { $$ = CYNew CYInstanceOf($1, $3); }
+    | RelationalExpression "in" ShiftExpression { $$ = CYNew CYIn($1, $3); }
     ;
 /* }}} */
 /* 11.9 Equality Operators {{{ */
