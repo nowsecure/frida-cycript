@@ -412,9 +412,10 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <statement_> ProgramBodyOpt
 %type <propertyName_> PropertyName_
 %type <propertyName_> PropertyName
-%type <property_> PropertyNameAndValueList_
-%type <property_> PropertyNameAndValueList
-%type <property_> PropertyNameAndValueListOpt
+%type <property_> PropertyDefinition
+%type <property_> PropertyDefinitionList_
+%type <property_> PropertyDefinitionList
+%type <property_> PropertyDefinitionListOpt
 %type <expression_> RelationalExpression
 %type <statement_> ReturnStatement
 %type <rubyProc_> RubyProcExpression
@@ -736,21 +737,28 @@ ElementListOpt
 /* }}} */
 /* 11.1.5 Object Initialiser {{{ */
 ObjectLiteral
-    : BRACE LexPushInOff PropertyNameAndValueListOpt LexPopIn "}" { $$ = CYNew CYObject($3); }
+    : BRACE LexPushInOff PropertyDefinitionListOpt LexPopIn "}" { $$ = CYNew CYObject($3); }
     ;
 
-PropertyNameAndValueList_
-    : "," PropertyNameAndValueList { $$ = $2; }
+PropertyDefinitionList_
+    : "," PropertyDefinitionList { $$ = $2; }
+    | "," { $$ = NULL; }
     | { $$ = NULL; }
     ;
 
-PropertyNameAndValueList
-    : PropertyName ":" AssignmentExpression PropertyNameAndValueList_ { $$ = CYNew CYProperty($1, $3, $4); }
+PropertyDefinitionList
+    : PropertyDefinition PropertyDefinitionList_ { $1->SetNext($2); $$ = $1; }
     ;
 
-PropertyNameAndValueListOpt
-    : PropertyNameAndValueList { $$ = $1; }
+PropertyDefinitionListOpt
+    : PropertyDefinitionList { $$ = $1; }
     | { $$ = NULL; }
+    ;
+
+PropertyDefinition
+    //: IdentifierName { $$ = CYNew CYProperty($1, CYNew CYVariable($1)); }
+    : PropertyName ":" AssignmentExpression { $$ = CYNew CYProperty($1, $3); }
+    //| MethodDefinition
     ;
 
 PropertyName_
@@ -1650,12 +1658,6 @@ Statement__
     ; */
 /* }}} */
 @end
-
-/* ECMAScript5: Object Literal Trailing Comma {{{ */
-PropertyNameAndValueList_
-    : "," { $$ = NULL; }
-    ;
-/* }}} */
 
 /* JavaScript 1.7: Array Comprehensions {{{ */
 IfComprehension
