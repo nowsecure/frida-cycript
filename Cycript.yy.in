@@ -543,18 +543,13 @@ StrictSemi
     : { driver.Warning(yylloc, "warning, automatic semi-colon insertion required"); }
     ;
 
-Terminator_
-    : ";"
-    | "\n" StrictSemi
-    ;
-
 Terminator
-    : Terminator_
+    : ";"
     | error { if (yychar != yyeof_ && yychar != token::CloseBrace && !yylval.newline_) YYABORT; else { yyerrok; driver.errors_.pop_back(); } } StrictSemi
     ;
 
 TerminatorOpt
-    : Terminator_
+    : ";"
     | error { yyerrok; driver.errors_.pop_back(); } StrictSemi
     ;
 
@@ -772,7 +767,7 @@ PropertyName
 /* 11.2 Left-Hand-Side Expressions {{{ */
 MemberAccess
     : "[" LexPushInOff Expression LexPopIn "]" { $$ = CYNew CYDirectMember(NULL, $3); }
-    | "." Identifier { $$ = CYNew CYDirectMember(NULL, CYNew CYString($2)); }
+    | "." IdentifierName { $$ = CYNew CYDirectMember(NULL, CYNew CYString($2)); }
     | "." AutoComplete { driver.mode_ = CYDriver::AutoDirect; YYACCEPT; }
     ;
 
@@ -1140,17 +1135,20 @@ ForInStatementInitialiser
 
 /* 12.7 The continue Statement {{{ */
 ContinueStatement
-    : "continue" IdentifierOpt Terminator { $$ = CYNew CYContinue($2); }
+    : "continue" "\n" StrictSemi { $$ = CYNew CYContinue(NULL); }
+    | "continue" IdentifierOpt Terminator { $$ = CYNew CYContinue($2); }
     ;
 /* }}} */
 /* 12.8 The break Statement {{{ */
 BreakStatement
-    : "break" IdentifierOpt Terminator { $$ = CYNew CYBreak($2); }
+    : "break" "\n" StrictSemi { $$ = CYNew CYBreak(NULL); }
+    | "break" IdentifierOpt Terminator { $$ = CYNew CYBreak($2); }
     ;
 /* }}} */
 /* 12.9 The return Statement {{{ */
 ReturnStatement
-    : "return" ExpressionOpt Terminator { $$ = CYNew CYReturn($2); }
+    : "return" "\n" StrictSemi { $$ = CYNew CYReturn(NULL); }
+    | "return" ExpressionOpt Terminator { $$ = CYNew CYReturn($2); }
     ;
 /* }}} */
 /* 12.10 The with Statement {{{ */
@@ -1189,7 +1187,8 @@ LabelledStatement
 /* }}} */
 /* 12.13 The throw Statement {{{ */
 ThrowStatement
-    : "throw" Expression Terminator { $$ = CYNew cy::Syntax::Throw($2); }
+    : "throw" "\n" StrictSemi { YYABORT; }
+    | "throw" Expression Terminator { $$ = CYNew cy::Syntax::Throw($2); }
     ;
 /* }}} */
 /* 12.14 The try Statement {{{ */
@@ -1469,7 +1468,7 @@ UnaryExpression_
 
 MemberAccess
     : "->" "[" Expression "]" { $$ = CYNew CYIndirectMember(NULL, $3); }
-    | "->" Identifier { $$ = CYNew CYIndirectMember(NULL, CYNew CYString($2)); }
+    | "->" IdentifierName { $$ = CYNew CYIndirectMember(NULL, CYNew CYString($2)); }
     | "->" AutoComplete { driver.mode_ = CYDriver::AutoIndirect; YYACCEPT; }
     ;
 /* }}} */
