@@ -46,8 +46,6 @@ typedef cy::parser::token tk;
 #define C T yyextra->state_ = CYClear;
 #define R T yyextra->state_ = CYRestricted;
 
-#define E L C I(literal, RegEx(Y), tk::RegularExpressionLiteral);
-
 #define N \
     if (yyextra->state_ != CYNewLine) { \
         if (yyextra->state_ != CYRestricted) \
@@ -147,7 +145,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
 %%
 
-<RegExp>\/{RegularExpressionBody}\/{RegularExpressionFlags} E
+<RegExp>\/{RegularExpressionBody}\/{RegularExpressionFlags} L C I(literal, RegEx(Y), tk::RegularExpressionLiteral);
 
 \/\/[^\n]* L
 
