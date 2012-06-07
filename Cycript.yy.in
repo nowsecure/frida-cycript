@@ -382,6 +382,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <expression_> FunctionExpression
 %type <identifier_> Identifier
 %type <identifier_> IdentifierOpt
+%type <word_> IdentifierName
 %type <comprehension_> IfComprehension
 %type <statement_> IfStatement
 %type <expression_> Initialiser
@@ -439,6 +440,8 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <declarations_> VariableDeclarationList
 %type <statement_> VariableStatement
 %type <statement_> WithStatement
+%type <word_> Word
+%type <word_> WordOpt
 
 @begin ObjectiveC
 %type <statement_> CategoryStatement
@@ -468,8 +471,6 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <word_> SelectorWordOpt
 %type <expression_> TypeOpt
 %type <argument_> VariadicCall
-%type <word_> Word
-%type <word_> WordOpt
 @end
 
 @begin E4X
@@ -562,10 +563,13 @@ TerminatorOpt
     |
     ;*/
 
-@begin ObjectiveC
 NewLineOpt
     : "\n"
     |
+    ;
+
+IdentifierName
+    : Word { $$ = $1; }
     ;
 
 Word
@@ -591,6 +595,7 @@ Word
     | "if" { $$ = $1; }
     | "import" { $$ = $1; }
     /* XXX: | "in" { $$ = $1; } */
+    | "!in" { $$ = $1; }
     /* XXX: | "instanceof" { $$ = $1; } */
 
     // XXX: as it currently is not an Identifier
@@ -617,6 +622,7 @@ WordOpt
     | { $$ = NULL; }
     ;
 
+@begin ObjectiveC
 PrimaryExpression
     : "@" LiteralNoRE { $$ = CYNew CYBox($2); }
     | "@" ArrayLiteral { $$ = CYNew CYBox($2); }
@@ -753,7 +759,7 @@ PropertyNameAndValueListOpt
     ;
 
 PropertyName_
-    : Identifier { $$ = $1; }
+    : IdentifierName { $$ = $1; }
     | StringLiteral { $$ = $1; }
     | NumericLiteral { $$ = $1; }
     ;
