@@ -250,7 +250,6 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %token <word_> In_ "!in"
 %token <word_> InstanceOf "instanceof"
 %token <word_> New "new"
-%token <word_> Of "of"
 %token <word_> Return "return"
 %token <word_> Switch "switch"
 %token <this_> This "this"
@@ -309,6 +308,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 
 // Woah?!
 %token <identifier_> Each "each"
+%token <identifier_> Of "of"
 
 @begin E4X
 // E4X Conditional
@@ -598,7 +598,6 @@ Word
 
     | "new" { $$ = $1; }
     | "null" { $$ = $1; }
-    | "of" { $$ = $1; }
     | "return" NewLineOpt { $$ = $1; }
     | "super" { $$ = $1; }
     | "switch" { $$ = $1; }
@@ -660,6 +659,7 @@ Identifier
     | "yield" { $$ = $1; }
 
     | "each" { $$ = $1; }
+    | "of" { $$ = $1; }
     ;
 
 IdentifierOpt
