@@ -155,6 +155,15 @@ CYExpression *CYCompound::Replace(CYContext &context) {
     return this;
 }
 
+CYExpression *CYCompound::Primitive(CYContext &context) {
+    CYExpression *expression(expressions_);
+    if (expression == NULL)
+        return NULL;
+    while (expression->next_ != NULL)
+        expression = expression->next_;
+    return expression->Primitive(context);
+}
+
 CYFunctionParameter *CYComprehension::Parameters(CYContext &context) const { $T(NULL)
     CYFunctionParameter *next(next_->Parameters(context));
     if (CYFunctionParameter *parameter = Parameter(context)) {

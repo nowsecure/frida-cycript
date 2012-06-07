@@ -627,6 +627,8 @@ struct CYCompound :
 
     virtual CYExpression *Replace(CYContext &context);
     void Output(CYOutput &out, CYFlags flags) const;
+
+    virtual CYExpression *Primitive(CYContext &context);
 };
 
 struct CYDeclaration;

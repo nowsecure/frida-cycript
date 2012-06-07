@@ -213,9 +213,14 @@ static CYExpression *ParseExpression(CYUTF8String code) {
     if (parser.parse() != 0 || !driver.errors_.empty())
         return NULL;
 
-    CYExpress *express(dynamic_cast<CYExpress *>(driver.program_->statements_));
-    _assert(express != NULL);
-    return express->expression_;
+    CYOptions options;
+    CYContext context(options);
+
+    // XXX: this could be replaced with a CYStatement::Primitive()
+    if (CYExpress *express = dynamic_cast<CYExpress *>(driver.program_->statements_))
+        return express->expression_->Primitive(context);
+
+    return NULL;
 }
 
 static int client_;
