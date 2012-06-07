@@ -756,8 +756,9 @@ PropertyDefinitionListOpt
     ;
 
 PropertyDefinition
-    //: IdentifierName { $$ = CYNew CYProperty($1, CYNew CYVariable($1)); }
-    : PropertyName ":" AssignmentExpression { $$ = CYNew CYProperty($1, $3); }
+    // XXX: this should be IdentifierName
+    : LexSetRegExp Identifier { $$ = CYNew CYProperty($2, CYNew CYVariable($2)); }
+    | PropertyName ":" AssignmentExpression { $$ = CYNew CYProperty($1, $3); }
     //| MethodDefinition
     ;
 
