@@ -534,8 +534,12 @@ LexNoFunction
     : { if (yychar == token::Function) yychar = token::Function_; }
     ;
 
+LexNoAtImplementation
+    : { if (yychar == token::AtImplementation) yychar = token::AtImplementation_; }
+    ;
+
 LexSetStatement
-    : LexNoBrace LexNoFunction
+    : LexNoBrace LexNoFunction LexNoAtImplementation
     ;
 /* }}} */
 /* Virtual Tokens {{{ */
