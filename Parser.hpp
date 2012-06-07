@@ -680,13 +680,13 @@ struct CYForInComprehension :
     virtual void Output(CYOutput &out) const;
 };
 
-struct CYForEachInComprehension :
+struct CYForOfComprehension :
     CYComprehension
 {
     CYIdentifier *name_;
     CYExpression *set_;
 
-    CYForEachInComprehension(CYIdentifier *name, CYExpression *set) :
+    CYForOfComprehension(CYIdentifier *name, CYExpression *set) :
         name_(name),
         set_(set)
     {
@@ -1268,14 +1268,14 @@ struct CYForIn :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CYForEachIn :
+struct CYForOf :
     CYStatement
 {
     CYForInInitialiser *initialiser_;
     CYExpression *set_;
     CYStatement *code_;
 
-    CYForEachIn(CYForInInitialiser *initialiser, CYExpression *set, CYStatement *code) :
+    CYForOf(CYForInInitialiser *initialiser, CYExpression *set, CYStatement *code) :
         initialiser_(initialiser),
         set_(set),
         code_(code)

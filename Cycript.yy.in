@@ -358,7 +358,6 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <statement_> Declaration_
 %type <statement_> Declaration
 %type <clause_> DefaultClause
-%type <statement_> DoWhileStatement
 %type <expression_> Element
 %type <expression_> ElementOpt
 %type <element_> ElementList
@@ -372,9 +371,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <statement_> ExpressionStatement
 %type <finally_> FinallyOpt
 %type <comprehension_> ForComprehension
-%type <statement_> ForStatement
 %type <for_> ForStatementInitialiser
-%type <statement_> ForInStatement
 %type <forin_> ForInStatementInitialiser
 %type <declaration_> FormalParameter
 %type <functionParameter_> FormalParameterList_
@@ -441,7 +438,6 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <declarations_> VariableDeclarationList_
 %type <declarations_> VariableDeclarationList
 %type <statement_> VariableStatement
-%type <statement_> WhileStatement
 %type <statement_> WithStatement
 
 @begin ObjectiveC
@@ -1098,26 +1094,18 @@ IfStatement
     ;
 /* }}} */
 
-/* 12.6 Iteration Statements {{{ */
-IterationStatement
-    : DoWhileStatement { $$ = $1; }
-    | WhileStatement { $$ = $1; }
-    | ForStatement { $$ = $1; }
-    | ForInStatement { $$ = $1; }
-    ;
-/* }}} */
 /* 12.6.1 The do-while Statement {{{ */
-DoWhileStatement
+IterationStatement
     : "do" Statement "while" "(" Expression ")" TerminatorOpt { $$ = CYNew CYDoWhile($5, $2); }
     ;
 /* }}} */
 /* 12.6.2 The while Statement {{{ */
-WhileStatement
+IterationStatement
     : "while" "(" Expression ")" Statement { $$ = CYNew CYWhile($3, $5); }
     ;
 /* }}} */
 /* 12.6.3 The for Statement {{{ */
-ForStatement
+IterationStatement
     : "for" "(" LexPushInOn ForStatementInitialiser LexPopIn ";" ExpressionOpt ";" ExpressionOpt ")" Statement { $$ = CYNew CYFor($4, $7, $9, $11); }
     ;
 
@@ -1127,9 +1115,9 @@ ForStatementInitialiser
     ;
 /* }}} */
 /* 12.6.4 The for-in and for-of Statements {{{ */
-ForInStatement
+IterationStatement
     : "for" "(" LexPushInOn ForInStatementInitialiser LexPopIn "!in" Expression ")" Statement { $$ = CYNew CYForIn($4, $7, $9); }
-    | "for" "(" LexPushInOn ForInStatementInitialiser LexPopIn "of" Expression ")" Statement { $$ = CYNew CYForEachIn($4, $7, $9); }
+    | "for" "(" LexPushInOn ForInStatementInitialiser LexPopIn "of" Expression ")" Statement { $$ = CYNew CYForOf($4, $7, $9); }
     ;
 
 ForInStatementInitialiser
@@ -1665,7 +1653,7 @@ IfComprehension
 
 ForComprehension
     : "for" "(" LexPushInOn Identifier LexPopIn "!in" Expression ")" { $$ = CYNew CYForInComprehension($4, $7); }
-    | "for" "each" "(" LexPushInOn Identifier LexPopIn "!in" Expression ")" { $$ = CYNew CYForEachInComprehension($5, $8); }
+    | "for" "each" "(" LexPushInOn Identifier LexPopIn "!in" Expression ")" { $$ = CYNew CYForOfComprehension($5, $8); }
     ;
 
 ComprehensionList
@@ -1683,8 +1671,8 @@ PrimaryExpression
     ;
 /* }}} */
 /* JavaScript 1.7: for each {{{ */
-ForInStatement
-    : "for" "each" "(" LexPushInOn ForInStatementInitialiser LexPopIn "!in" Expression ")" Statement { $$ = CYNew CYForEachIn($5, $8, $10); }
+IterationStatement
+    : "for" "each" "(" LexPushInOn ForInStatementInitialiser LexPopIn "!in" Expression ")" Statement { $$ = CYNew CYForOf($5, $8, $10); }
     ;
 /* }}} */
 /* JavaScript 1.7: let Statements {{{ */

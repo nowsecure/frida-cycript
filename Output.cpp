@@ -356,14 +356,14 @@ void CYFor::Output(CYOutput &out, CYFlags flags) const {
     code_->Single(out, CYRight(flags));
 }
 
-void CYForEachIn::Output(CYOutput &out, CYFlags flags) const {
+void CYForOf::Output(CYOutput &out, CYFlags flags) const {
     out << "for" << ' ' << "each" << ' ' << '(';
     initialiser_->ForIn(out, CYNoIn);
     out << "in" << *set_ << ')';
     code_->Single(out, CYRight(flags));
 }
 
-void CYForEachInComprehension::Output(CYOutput &out) const {
+void CYForOfComprehension::Output(CYOutput &out) const {
     out << "for" << ' ' << "each" << ' ' << '(' << *name_ << ' ' << "in" << ' ' << *set_ << ')' << next_;
 }
 

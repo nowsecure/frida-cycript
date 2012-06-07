@@ -360,7 +360,7 @@ CYStatement *CYForInComprehension::Replace(CYContext &context, CYStatement *stat
     return $ CYForIn($V(name_), set_, CYComprehension::Replace(context, statement));
 }
 
-CYStatement *CYForEachIn::Replace(CYContext &context) {
+CYStatement *CYForOf::Replace(CYContext &context) {
     if (CYAssignment *assignment = initialiser_->Assignment(context))
         return $ CYBlock($$->*
             $E(assignment)->*
@@ -377,11 +377,11 @@ CYStatement *CYForEachIn::Replace(CYContext &context) {
     );
 }
 
-CYFunctionParameter *CYForEachInComprehension::Parameter(CYContext &context) const {
+CYFunctionParameter *CYForOfComprehension::Parameter(CYContext &context) const {
     return $ CYFunctionParameter($ CYDeclaration(name_));
 }
 
-CYStatement *CYForEachInComprehension::Replace(CYContext &context, CYStatement *statement) const {
+CYStatement *CYForOfComprehension::Replace(CYContext &context, CYStatement *statement) const {
     CYIdentifier *cys($I("cys"));
 
     return $E($C0($F(NULL, $P1($L("$cys")), $$->*
