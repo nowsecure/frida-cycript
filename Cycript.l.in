@@ -30,6 +30,7 @@ typedef cy::parser::token tk;
 
 #define F(value) do { \
     int token(value); \
+    yyextra->nobrace_ = false; \
     return token; \
 } while (false)
 
@@ -238,7 +239,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "("    L C F(tk::OpenParen);
 ")"    L C F(tk::CloseParen);
 
-"{"    L C F(yylval->newline_ ? tk::OpenBrace_ : tk::OpenBrace);
+"{"    L C F(yyextra->nobrace_ ? tk::OpenBrace__ : yylval->newline_ ? tk::OpenBrace_ : tk::OpenBrace);
 "}"    L C F(tk::CloseBrace);
 
 "["    L C F(tk::OpenBracket);

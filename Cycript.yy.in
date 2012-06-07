@@ -524,7 +524,7 @@ LexSetRegExp
     ;
 
 LexNoBrace
-    : { if (yychar == token::OpenBrace || yychar == token::OpenBrace_) yychar = token::OpenBrace__; }
+    : { if (yychar == yyempty_) driver.nobrace_ = true; else if (yychar == token::OpenBrace || yychar == token::OpenBrace_) yychar = token::OpenBrace__; }
     ;
 
 LexNoFunction

@@ -451,6 +451,7 @@ class CYDriver {
     void *scanner_;
 
     CYState state_;
+    bool nobrace_;
     std::stack<bool> in_;
 
     const char *data_;
