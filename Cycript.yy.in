@@ -552,7 +552,7 @@ Terminator_
 
 Terminator
     : Terminator_
-    | error { if (yychar != 0 && yychar != token::CloseBrace && !yylval.newline_) YYABORT; else { yyerrok; driver.errors_.pop_back(); } } StrictSemi
+    | error { if (yychar != yyeof_ && yychar != token::CloseBrace && !yylval.newline_) YYABORT; else { yyerrok; driver.errors_.pop_back(); } } StrictSemi
     ;
 
 TerminatorOpt
