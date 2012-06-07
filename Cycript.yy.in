@@ -126,6 +126,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %parse-param { CYDriver &driver }
 %lex-param { void *cyscanner }
 
+/* Token Declarations {{{ */
 @begin E4X
 %token XMLCDATA
 %token XMLComment
@@ -393,7 +394,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <statement_> LetStatement
 %type <statement_> LexicalDeclaration
 %type <literal_> Literal
-%type <literal_> LiteralNoRE
+%type <literal_> ValueLiteral
 %type <expression_> LogicalANDExpression
 %type <expression_> LogicalORExpression
 %type <member_> MemberAccess
@@ -445,6 +446,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <word_> WordOpt
 
 @begin ObjectiveC
+%type <expression_> BoxableExpression
 %type <statement_> CategoryStatement
 %type <expression_> ClassExpression
 %type <statement_> ClassStatement
@@ -494,12 +496,14 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <expression_> XMLListInitialiser
 %type <expression_> XMLInitialiser
 @end
-
+/* }}} */
+/* Token Priorities {{{ */
 %nonassoc ""
 %left "++" "--"
 
 %nonassoc "if"
 %nonassoc "else"
+/* }}} */
 
 %start Program
 
@@ -534,38 +538,21 @@ LexSetStatement
     : LexNoBrace LexNoFunction
     ;
 /* }}} */
-
+/* Virtual Tokens {{{ */
 BRACE
     : "{"
     | "\n{"
     ;
+/* }}} */
 
-StrictSemi
-    : { driver.Warning(yylloc, "warning, automatic semi-colon insertion required"); }
+/* 7.6 Identifier Names and Identifiers {{{ */
+IdentifierName
+    : Word { $$ = $1; }
     ;
-
-Terminator
-    : ";"
-    | error { if (yychar != yyeof_ && yychar != token::CloseBrace && !yylval.newline_) YYABORT; else { yyerrok; driver.errors_.pop_back(); } } StrictSemi
-    ;
-
-TerminatorOpt
-    : ";"
-    | error { yyerrok; driver.errors_.pop_back(); } StrictSemi
-    ;
-
-/*CommaOpt
-    : ","
-    |
-    ;*/
 
 NewLineOpt
     : "\n"
     |
-    ;
-
-IdentifierName
-    : Word { $$ = $1; }
     ;
 
 Word
@@ -618,15 +605,6 @@ WordOpt
     | { $$ = NULL; }
     ;
 
-@begin ObjectiveC
-PrimaryExpression
-    : "@" LiteralNoRE { $$ = CYNew CYBox($2); }
-    | "@" ArrayLiteral { $$ = CYNew CYBox($2); }
-    | "@" ObjectLiteral { $$ = CYNew CYBox($2); }
-    | "@" Parenthetical { $$ = CYNew CYBox($2); }
-    ;
-@end
-
 Identifier
     : Identifier_ { $$ = $1; }
 
@@ -668,27 +646,48 @@ IdentifierOpt
     : Identifier { $$ = $1; }
     | { $$ = NULL; }
     ;
+/* }}} */
 
-LiteralNoRE
+/* 7.8 Literals {{{ */
+Literal
     : NullLiteral { $$ = $1; }
-    | BooleanLiteral { $$ = $1; }
+    | ValueLiteral { $$ = $1; }
+    ;
+
+ValueLiteral
+    : BooleanLiteral { $$ = $1; }
     | NumericLiteral { $$ = $1; }
     | StringLiteral { $$ = $1; }
-    ;
-
-Literal
-    : LiteralNoRE { $$ = $1; }
     | RegularExpressionLiteral { $$ = $1; }
     ;
-
+/* }}} */
+/* 7.8.1 Null Literals {{{ */
 NullLiteral
     : "null" { $$ = $1; }
     ;
-
+/* }}} */
+/* 7.8.2 Boolean Literals {{{ */
 BooleanLiteral
     : "true" { $$ = $1; }
     | "false" { $$ = $1; }
     ;
+/* }}} */
+
+/* 7.9 Automatic Semicolon Insertion {{{ */
+StrictSemi
+    : { driver.Warning(yylloc, "warning, automatic semi-colon insertion required"); }
+    ;
+
+Terminator
+    : ";"
+    | error { if (yychar != yyeof_ && yychar != token::CloseBrace && !yylval.newline_) YYABORT; else { yyerrok; driver.errors_.pop_back(); } } StrictSemi
+    ;
+
+TerminatorOpt
+    : ";"
+    | error { yyerrok; driver.errors_.pop_back(); } StrictSemi
+    ;
+/* }}} */
 
 /* 11.1 Primary Expressions {{{ */
 Parenthetical
@@ -1033,6 +1032,7 @@ StatementListItem
     | Declaration { $$ = $1; }
     ;
 /* }}} */
+
 /* 12.2 Declarations {{{ */
 BindingIdentifier
     : Identifier { $$ = $1; }
@@ -1089,6 +1089,7 @@ SingleNameBinding
     : BindingIdentifier InitialiserOpt { $$ = CYNew CYDeclaration($1, $2); }
     ;
 /* }}} */
+
 /* 12.3 Empty Statement {{{ */
 EmptyStatement
     : ";" { $$ = CYNew CYEmpty(); }
@@ -1463,6 +1464,21 @@ StatementListItem
     : "@import" ImportPath { $$ = CYNew CYImport(); }
     ;
 /* }}} */
+/* Cycript (Objective-C): Boxed Expressions {{{ */
+BoxableExpression
+    : NullLiteral { $$ = $1; }
+    | BooleanLiteral { $$ = $1; }
+    | NumericLiteral { $$ = $1; }
+    | StringLiteral { $$ = $1; }
+    | ArrayLiteral { $$ = $1; }
+    | ObjectLiteral { $$ = $1; }
+    | Parenthetical { $$ = $1; }
+    ;
+
+PrimaryExpression
+    : "@" BoxableExpression { $$ = CYNew CYBox($2); }
+    ;
+/* }}} */
 @end
 
 @begin C
@@ -1515,11 +1531,12 @@ LexSetXMLTag
     : { driver.SetCondition(CYDriver::XMLTagCondition); }
     ;
 /* }}} */
-
+/* Virtual Tokens {{{ */
 XMLWhitespaceOpt
     : XMLWhitespace
     |
     ;
+/* }}} */
 
 /* 8.1 Context Keywords {{{ */
 Identifier
@@ -1534,6 +1551,7 @@ XMLMarkup
     | XMLPI { $$ = $1; }
     ;
 /* }}} */
+
 /* 11.1 Primary Expressions {{{ */
 PrimaryExpression
     : PropertyIdentifier { $$ = CYNew CYPropertyVariable($1); }
@@ -1637,6 +1655,7 @@ XMLListInitialiser
     : "<>" LexPushInOff LexPushXMLContent XMLElementContent LexPop LexPopIn "</>" { $$ = CYNew CYXMLList($4); }
     ;
 /* }}} */
+
 /* 11.2 Left-Hand-Side Expressions {{{ */
 PropertyIdentifier_
     : Identifier { $$ = $1; }
