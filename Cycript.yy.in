@@ -250,6 +250,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %token <word_> In_ "!in"
 %token <word_> InstanceOf "instanceof"
 %token <word_> New "new"
+%token <word_> Of "of"
 %token <word_> Return "return"
 %token <word_> Switch "switch"
 %token <this_> This "this"
@@ -597,6 +598,7 @@ Word
     /* XXX: | "instanceof" { $$ = $1; } */
     | "new" { $$ = $1; }
     | "null" { $$ = $1; }
+    | "of" { $$ = $1; }
     | "return" NewLineOpt { $$ = $1; }
     | "super" { $$ = $1; }
     | "switch" { $$ = $1; }
@@ -1124,9 +1126,10 @@ ForStatementInitialiser
     | LexSetRegExp "var" VariableDeclarationList { $$ = CYNew CYForDeclarations($3); }
     ;
 /* }}} */
-/* 12.6.4 The for-in Statement {{{ */
+/* 12.6.4 The for-in and for-of Statements {{{ */
 ForInStatement
     : "for" "(" LexPushInOn ForInStatementInitialiser LexPopIn "!in" Expression ")" Statement { $$ = CYNew CYForIn($4, $7, $9); }
+    | "for" "(" LexPushInOn ForInStatementInitialiser LexPopIn "of" Expression ")" Statement { $$ = CYNew CYForEachIn($4, $7, $9); }
     ;
 
 ForInStatementInitialiser

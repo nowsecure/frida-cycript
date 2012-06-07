@@ -275,6 +275,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "in"           L C I(word, Word("in"), yyextra->in_.top() ? tk::In_ : tk::In);
 "instanceof"   L C I(word, Word("instanceof"), tk::InstanceOf);
 "new"          L C I(word, Word("new"), tk::New);
+"of"           L C I(word, Word("of"), tk::Of);
 "return"       L R I(word, Word("return"), tk::Return);
 "switch"       L C I(word, Word("switch"), tk::Switch);
 "this"         L C I(this, This(), tk::This);
