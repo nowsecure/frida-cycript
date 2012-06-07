@@ -592,6 +592,10 @@ Word
     | "import" { $$ = $1; }
     /* XXX: | "in" { $$ = $1; } */
     /* XXX: | "instanceof" { $$ = $1; } */
+
+    // XXX: as it currently is not an Identifier
+    | "let" { $$ = $1; }
+
     | "new" { $$ = $1; }
     | "null" { $$ = $1; }
     | "of" { $$ = $1; }
@@ -650,7 +654,9 @@ Identifier
     | "transient" { $$ = $1; }
     | "volatile" { $$ = $1; }
 
-    // XXX: is this allowed?! | "let" { $$ = $1; }
+    // XXX: currently I only have this as Word
+    // | "let" { $$ = $1; }
+
     | "yield" { $$ = $1; }
 
     | "each" { $$ = $1; }
