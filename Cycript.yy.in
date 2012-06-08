@@ -1320,7 +1320,7 @@ MessageScope
 
 TypeOpt
     : "(" Expression ")" { $$ = $2; }
-    | "(" LexSetRegExp "void" ")" { $$ = NULL; }
+    | "(" LexSetRegExp "void" ")" { $$ = CYNew CYString("v"); }
     | { $$ = NULL; }
     ;
 

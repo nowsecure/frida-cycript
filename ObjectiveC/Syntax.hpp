@@ -98,6 +98,7 @@ struct CYMessageParameter :
     CYFunctionParameter *Parameters(CYContext &context) const;
     CYSelector *Selector(CYContext &context) const;
     CYSelectorPart *SelectorPart(CYContext &context) const;
+    CYExpression *TypeSignature(CYContext &context) const;
 };
 
 struct CYMessage :
@@ -118,6 +119,8 @@ struct CYMessage :
 
     CYStatement *Replace(CYContext &context, bool replace) const;
     void Output(CYOutput &out, bool replace) const;
+
+    CYExpression *TypeSignature(CYContext &context) const;
 };
 
 struct CYProtocol :
