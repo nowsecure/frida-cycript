@@ -653,6 +653,11 @@ struct CYComprehension :
     CYNext<CYComprehension>,
     CYThing
 {
+    CYComprehension(CYComprehension *next = NULL) :
+        CYNext<CYComprehension>(next)
+    {
+    }
+
     virtual const char *Name() const = 0;
 
     virtual CYFunctionParameter *Parameter(CYContext &context) const = 0;
@@ -667,7 +672,8 @@ struct CYForInComprehension :
     CYIdentifier *name_;
     CYExpression *set_;
 
-    CYForInComprehension(CYIdentifier *name, CYExpression *set) :
+    CYForInComprehension(CYIdentifier *name, CYExpression *set, CYComprehension *next = NULL) :
+        CYComprehension(next),
         name_(name),
         set_(set)
     {
@@ -688,7 +694,8 @@ struct CYForOfComprehension :
     CYIdentifier *name_;
     CYExpression *set_;
 
-    CYForOfComprehension(CYIdentifier *name, CYExpression *set) :
+    CYForOfComprehension(CYIdentifier *name, CYExpression *set, CYComprehension *next = NULL) :
+        CYComprehension(next),
         name_(name),
         set_(set)
     {
