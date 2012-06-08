@@ -449,9 +449,10 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <expression_> BoxableExpression
 %type <statement_> CategoryStatement
 %type <expression_> ClassExpression
+%type <field_> ClassFieldListOpt
+%type <field_> ClassFields
 %type <statement_> ClassStatement
 %type <expression_> ClassSuperOpt
-%type <field_> ClassFieldList
 %type <message_> ClassMessageDeclaration
 %type <message_> ClassMessageDeclarationListOpt
 %type <className_> ClassName
@@ -1300,17 +1301,13 @@ ClassSuperOpt
     | { $$ = NULL; }
     ;
 
-ClassField
-    : Expression Identifier ";"
-    ;
-
-ClassFieldList
-    : BRACE ClassFieldListOpt "}" { $$ = NULL; }
-    ;
-
 ClassFieldListOpt
-    : ClassFieldListOpt ClassField
-    |
+    : Expression Identifier ";" ClassFieldListOpt { $$ = CYNew CYField($1, $2, $4); }
+    | { $$ = NULL; }
+    ;
+
+ClassFields
+    : BRACE ClassFieldListOpt "}" { $$ = $2; }
     ;
 
 MessageScope
@@ -1378,11 +1375,11 @@ ClassProtocolListOpt
     ;
 
 ClassExpression
-    : "@implementation" LexPushInOff ClassNameOpt ClassSuperOpt ClassProtocolListOpt ClassFieldList ClassMessageDeclarationListOpt LexPopIn "@end" { $$ = CYNew CYClassExpression($3, $4, $5, $6, $7); }
+    : "@implementation" LexPushInOff ClassNameOpt ClassSuperOpt ClassProtocolListOpt ClassFields ClassMessageDeclarationListOpt LexPopIn "@end" { $$ = CYNew CYClassExpression($3, $4, $5, $6, $7); }
     ;
 
 ClassStatement
-    : ";@implementation" ClassName ClassSuperOpt ClassProtocolListOpt ClassFieldList ClassMessageDeclarationListOpt "@end" { $$ = CYNew CYClassStatement($2, $3, $4, $5, $6); }
+    : ";@implementation" ClassName ClassSuperOpt ClassProtocolListOpt ClassFields ClassMessageDeclarationListOpt "@end" { $$ = CYNew CYClassStatement($2, $3, $4, $5, $6); }
     ;
 
 CategoryName

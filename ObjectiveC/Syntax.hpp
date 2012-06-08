@@ -77,6 +77,16 @@ struct CYSelector :
 struct CYField :
     CYNext<CYField>
 {
+    CYExpression *type_;
+    CYIdentifier *name_;
+
+    CYField(CYExpression *type, CYIdentifier *name, CYField *next = NULL) :
+        CYNext<CYField>(next),
+        type_(type),
+        name_(name)
+    {
+    }
+
     CYStatement *Replace(CYContext &context) const;
     void Output(CYOutput &out) const;
 };
