@@ -42,14 +42,14 @@ struct CYNext {
 };
 
 template <typename Type_>
-void CYSetLast(Type_ *&list, Type_ *item) {
+Type_ *&CYLast(Type_ *&list) {
     if (list == NULL)
-        list = item;
+        return list;
     else {
         Type_ *next(list);
         while (next->next_ != NULL)
             next = next->next_;
-        next->next_ = item;
+        return next->next_;
     }
 }
 

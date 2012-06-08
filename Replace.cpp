@@ -513,7 +513,7 @@ namespace cy {
 namespace Syntax {
 
 CYExpression *New::AddArgument(CYContext &context, CYExpression *value) {
-    CYSetLast(arguments_, $ CYArgument(value));
+    CYLast(arguments_) = $ CYArgument(value);
     return this;
 }
 
