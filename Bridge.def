@@ -9,11 +9,13 @@ T id @
 T short s
 T int i
 T long l
+T longlong q
 
 T byte C
+T ushort S
 T uint I
 T ulong L
-T ushort S
+T ulonglong Q
 
 T char c
 T boolean B
@@ -22,12 +24,23 @@ T double d
 
 T Boolean B
 
-T SInt8 {char}
-T UInt8 {byte}
-T SInt16 {short}
-T UInt16 {ushort}
-T SInt32 {int}
-T UInt32 {uint}
+T int8_t {char}
+T uint8_t {byte}
+T int16_t {short}
+T uint16_t {ushort}
+T int32_t {int}
+T uint32_t {uint}
+T int64_t {longlong}
+T uint64_6 {ulonglong}
+
+T SInt8 {int8_t}
+T UInt8 {uint8_t}
+T SInt16 {int16_t}
+T UInt16 {uint16_t}
+T SInt32 {int32_t}
+T UInt32 {uint32_t}
+T SInt64 {int64_t}
+T UInt64 {uint64_t}
 
 S CGPoint "x"f"y"f
 S CGRect "origin"{CGPoint}"size"{CGSize}
