@@ -330,6 +330,12 @@ CYString *CYFalse::String(CYContext &context) {
     return $S("false");
 }
 
+CYExpression *CYFatArrow::Replace(CYContext &context) {
+    CYFunctionExpression *function($ CYFunctionExpression(NULL, parameters_, code_));
+    function->this_.SetNext(context.this_);
+    return function;
+}
+
 void CYFinally::Replace(CYContext &context) { $T()
     code_.Replace(context);
 }
@@ -411,6 +417,9 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
     if (outer)
         Inject(context);
 
+    CYThisScope *_this(context.this_);
+    context.this_ = CYGetLast(&this_);
+
     CYNonLocal *nonlocal(context.nonlocal_);
     CYNonLocal *nextlocal(context.nextlocal_);
 
@@ -432,11 +441,18 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
     parameters_->Replace(context, code_);
     code_.Replace(context);
 
+    if (CYIdentifier *identifier = this_.identifier_)
+        code_.statements_ = $$->*
+            $ CYVar($L1($ CYDeclaration(identifier, $ CYThis())))->*
+            code_.statements_;
+
     if (localize)
         context.NonLocal(code_.statements_);
 
     context.nextlocal_ = nextlocal;
     context.nonlocal_ = nonlocal;
+
+    context.this_ = _this;
 
     scope.Close();
 }
@@ -806,6 +822,8 @@ CYStatement *CYSwitch::Replace(CYContext &context) {
 }
 
 CYExpression *CYThis::Replace(CYContext &context) {
+    if (context.this_ != NULL)
+        return $V(context.this_->Identifier(context));
     return this;
 }
 

@@ -350,11 +350,14 @@ struct CYProgram :
 };
 
 struct CYNonLocal;
+struct CYThisScope;
 
 struct CYContext {
     CYOptions &options_;
 
     CYScope *scope_;
+    CYThisScope *this_;
+
     CYIdentifierUsageVector rename_;
 
     CYNonLocal *nonlocal_;
@@ -364,6 +367,7 @@ struct CYContext {
     CYContext(CYOptions &options) :
         options_(options),
         scope_(NULL),
+        this_(NULL),
         nonlocal_(NULL),
         nextlocal_(NULL),
         unique_(0)
@@ -408,6 +412,25 @@ struct CYNonLocal {
     }
 
     CYIdentifier *Target(CYContext &context) {
+        if (identifier_ == NULL)
+            identifier_ = context.Unique();
+        return identifier_;
+    }
+};
+
+struct CYThisScope :
+    CYNext<CYThisScope>
+{
+    CYIdentifier *identifier_;
+
+    CYThisScope() :
+        identifier_(NULL)
+    {
+    }
+
+    CYIdentifier *Identifier(CYContext &context) {
+        if (next_ != NULL)
+            return next_->Identifier(context);
         if (identifier_ == NULL)
             identifier_ = context.Unique();
         return identifier_;
@@ -1482,7 +1505,9 @@ struct CYFunction {
     CYIdentifier *name_;
     CYFunctionParameter *parameters_;
     CYBlock code_;
+
     CYNonLocal *nonlocal_;
+    CYThisScope this_;
 
     CYFunction(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *statements) :
         name_(name),
@@ -1507,6 +1532,23 @@ struct CYFunctionExpression :
 {
     CYFunctionExpression(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *statements) :
         CYFunction(name, parameters, statements)
+    {
+    }
+
+    CYPrecedence(0)
+    CYRightHand(false)
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+// XXX: this should derive from CYAnonymousFunction
+struct CYFatArrow :
+    CYFunction,
+    CYExpression
+{
+    CYFatArrow(CYFunctionParameter *parameters, CYStatement *statements) :
+        CYFunction(NULL, parameters, statements)
     {
     }
 

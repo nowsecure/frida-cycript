@@ -1288,7 +1288,7 @@ FunctionBody
 /* }}} */
 /* 13.2 Arrow Function Definitions {{{ */
 ArrowFunction
-    : LexSetRegExp ArrowParameters "=>" LexNoBrace ConciseBody { $$ = CYNew CYFunctionExpression(NULL, $2, $5); }
+    : LexSetRegExp ArrowParameters "=>" LexNoBrace ConciseBody { $$ = CYNew CYFatArrow($2, $5); }
     ;
 
 ArrowParameters

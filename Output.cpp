@@ -336,6 +336,10 @@ void CYExpression::Output(CYOutput &out, unsigned precedence, CYFlags flags) con
         Output(out, flags);
 }
 
+void CYFatArrow::Output(CYOutput &out, CYFlags flags) const {
+    out << '(' << parameters_ << ')' << ' ' << "=>" << ' ' << code_;
+}
+
 void CYFinally::Output(CYOutput &out) const {
     out << ' ' << "finally" << ' ' << code_;
 }
