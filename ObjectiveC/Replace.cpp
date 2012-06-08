@@ -45,7 +45,7 @@ static CYExpression *MessageType(CYContext &context, CYExpression *type, CYMessa
 CYStatement *CYCategory::Replace(CYContext &context) {
     CYVariable *cyc($V("$cyc")), *cys($V("$cys"));
 
-    return $E($C1($F(NULL, $P5($L("$cys"), $L("$cyp"), $L("$cyc"), $L("$cyn"), $L("$cyt")), $$->*
+    return $E($C1($F(NULL, $P6($L("$cys"), $L("$cyp"), $L("$cyc"), $L("$cyn"), $L("$cyt"), $L("$cym")), $$->*
         $E($ CYAssign($V("$cyp"), $C1($V("object_getClass"), cys)))->*
         $E($ CYAssign(cyc, cys))->*
         $E($ CYAssign($V("$cym"), $C1($V("object_getClass"), cyc)))->*
