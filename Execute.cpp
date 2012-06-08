@@ -1135,6 +1135,16 @@ static JSValueRef Pointer_callAsFunction_toCYON(JSContextRef context, JSObjectRe
     }
 } CYCatch }
 
+static JSValueRef Type_getProperty_alignment(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
+    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
+    return CYCastJSValue(context, internal->GetFFI()->alignment);
+}
+
+static JSValueRef Type_getProperty_size(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
+    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
+    return CYCastJSValue(context, internal->GetFFI()->size);
+}
+
 static JSValueRef Type_callAsFunction_toString(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
     CYPool pool;
@@ -1182,6 +1192,12 @@ static JSStaticFunction Functor_staticFunctions[4] = {
 namespace cy {
     JSStaticFunction const * const Functor::StaticFunctions = Functor_staticFunctions;
 }
+
+static JSStaticValue Type_staticValues[3] = {
+    {"alignment", &Type_getProperty_alignment, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"size", &Type_getProperty_size, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {NULL, NULL, NULL, 0}
+};
 
 static JSStaticFunction Type_staticFunctions[4] = {
     {"toCYON", &Type_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
@@ -1311,6 +1327,7 @@ void CYInitializeDynamic() {
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "Type";
+    definition.staticValues = Type_staticValues;
     definition.staticFunctions = Type_staticFunctions;
     definition.getProperty = &Type_getProperty;
     definition.callAsFunction = &Type_callAsFunction;
