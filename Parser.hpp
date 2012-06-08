@@ -430,7 +430,7 @@ struct CYBlock :
     }
 
     void AddPrev(CYStatement *statement) {
-        CYLast(statement) = statements_;
+        CYSetLast(statement) = statements_;
         statements_ = statement;
     }
 
@@ -619,7 +619,7 @@ struct CYCompound :
     }
 
     void AddPrev(CYExpression *expression) {
-        CYLast(expression) = expressions_;
+        CYSetLast(expression) = expressions_;
         expressions_ = expression;
     }
 

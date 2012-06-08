@@ -42,15 +42,25 @@ struct CYNext {
 };
 
 template <typename Type_>
-Type_ *&CYLast(Type_ *&list) {
+Type_ *&CYSetLast(Type_ *&list) {
     if (list == NULL)
         return list;
-    else {
-        Type_ *next(list);
-        while (next->next_ != NULL)
-            next = next->next_;
-        return next->next_;
-    }
+
+    Type_ *next(list);
+    while (next->next_ != NULL)
+        next = next->next_;
+    return next->next_;
+}
+
+template <typename Type_>
+Type_ *CYGetLast(Type_ *list) {
+    if (list == NULL)
+        return NULL;
+
+    Type_ *next(list);
+    while (next->next_ != NULL)
+        next = next->next_;
+    return next;
 }
 
 #define CYForEach(value, list) \
