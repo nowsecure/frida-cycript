@@ -1686,8 +1686,8 @@ IfComprehension
     ;
 
 ForComprehension
-    : "for" "(" LexPushInOn Identifier LexPopIn "!in" Expression ")" { $$ = CYNew CYForInComprehension($4, $7); }
-    | "for" "each" "(" LexPushInOn Identifier LexPopIn "!in" Expression ")" { $$ = CYNew CYForOfComprehension($5, $8); }
+    : "for" "(" Identifier "in" Expression ")" { $$ = CYNew CYForInComprehension($3, $5); }
+    | "for" "each" "(" Identifier "in" Expression ")" { $$ = CYNew CYForOfComprehension($4, $6); }
     ;
 
 ComprehensionList
