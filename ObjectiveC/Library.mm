@@ -48,6 +48,8 @@
 #include <cmath>
 #include <map>
 
+#include <dlfcn.h>
+
 #define CYObjectiveTry_(context) { \
     JSContextRef context_(context); \
     try
@@ -121,6 +123,10 @@
 
 #define protocol_getName(protocol) [(protocol) name]
 #endif
+
+static void (*$objc_setAssociatedObject)(id object, void *key, id value, objc_AssociationPolicy policy);
+static id (*$objc_getAssociatedObject)(id object, void *key);
+static void (*$objc_removeAssociatedObjects)(id object);
 
 JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, Class super, SEL _cmd, size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception);
 
@@ -1317,62 +1323,86 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
 
 @end
 
-// XXX: use objc_getAssociatedObject and objc_setAssociatedObject on 10.6
-struct CYInternal :
-    CYData
-{
+// XXX: inherit from or replace with CYJSObject
+@interface CYInternal : NSObject {
+    JSContextRef context_;
     JSObjectRef object_;
+}
 
-    CYInternal() :
-        object_(NULL)
-    {
-    }
+@end
 
-    ~CYInternal() {
-        // XXX: delete object_? ;(
-    }
+@implementation CYInternal
 
-    static CYInternal *Get(id self) {
-        CYInternal *internal(NULL);
-        if (object_getInstanceVariable(self, "cy$internal_", reinterpret_cast<void **>(&internal)) == NULL) {
-            // XXX: do something epic? ;P
-        }
+- (void) dealloc {
+    JSValueUnprotect(context_, object_);
+    //XXX:JSGlobalContextRelease(context_);
+    [super dealloc];
+}
 
-        return internal;
-    }
+- (id) initInContext:(JSContextRef)context {
+    if ((self = [super init]) != nil) {
+        context_ = CYGetJSContext(context);
+        //XXX:JSGlobalContextRetain(context_);
+    } return self;
+}
 
-    static CYInternal *Set(id self) {
-        CYInternal *internal(NULL);
-        if (objc_ivar *ivar = object_getInstanceVariable(self, "cy$internal_", reinterpret_cast<void **>(&internal))) {
-            if (internal == NULL) {
-                internal = new CYInternal();
-                object_setIvar(self, ivar, reinterpret_cast<id>(internal));
-            }
-        } else {
-            // XXX: do something epic? ;P
-        }
+- (bool) hasProperty:(JSStringRef)name inContext:(JSContextRef)context {
+    if (object_ == NULL)
+        return false;
 
-        return internal;
-    }
+    return JSObjectHasProperty(context, object_, name);
+}
 
-    bool HasProperty(JSContextRef context, JSStringRef name) {
-        if (object_ == NULL)
-            return false;
-        return JSObjectHasProperty(context, object_, name);
-    }
+- (JSValueRef) getProperty:(JSStringRef)name inContext:(JSContextRef)context {
+    if (object_ == NULL)
+        return NULL;
 
-    JSValueRef GetProperty(JSContextRef context, JSStringRef name) {
-        if (object_ == NULL)
-            return NULL;
-        return CYGetProperty(context, object_, name);
-    }
+    return CYGetProperty(context, object_, name);
+}
 
-    void SetProperty(JSContextRef context, JSStringRef name, JSValueRef value) {
-        if (object_ == NULL)
+- (void) setProperty:(JSStringRef)name toValue:(JSValueRef)value inContext:(JSContextRef)context {
+    @synchronized (self) {
+        if (object_ == NULL) {
             object_ = JSObjectMake(context, NULL, NULL);
-        CYSetProperty(context, object_, name, value);
+            JSValueProtect(context, object_);
+        }
     }
-};
+
+    CYSetProperty(context, object_, name, value);
+}
+
++ (CYInternal *) get:(id)object {
+    if ($objc_getAssociatedObject == NULL)
+        return nil;
+
+    @synchronized (object) {
+        if (CYInternal *internal = $objc_getAssociatedObject(object, @selector(cy$internal)))
+            return internal;
+    }
+
+    return nil;
+}
+
++ (CYInternal *) set:(id)object inContext:(JSContextRef)context {
+    if ($objc_getAssociatedObject == NULL)
+        return nil;
+
+    @synchronized (object) {
+        if (CYInternal *internal = $objc_getAssociatedObject(object, @selector(cy$internal)))
+            return internal;
+
+        if ($objc_setAssociatedObject == NULL)
+            return nil;
+
+        CYInternal *internal([[[CYInternal alloc] initInContext:context] autorelease]);
+        objc_setAssociatedObject(object, @selector(cy$internal), internal, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        return internal;
+    }
+
+    return nil;
+}
+
+@end
 
 static JSObjectRef CYMakeSelector(JSContextRef context, SEL sel) {
     Selector_privateData *internal(new Selector_privateData(sel));
@@ -1641,8 +1671,8 @@ static bool Instance_hasProperty(JSContextRef context, JSObjectRef object, JSStr
     CYPool pool;
     NSString *name(CYCastNSString(pool, context, property));
 
-    if (CYInternal *internal = CYInternal::Get(self))
-        if (internal->HasProperty(context, property))
+    if (CYInternal *internal = [CYInternal get:self])
+        if ([internal hasProperty:property inContext:context])
             return true;
 
     Class _class(object_getClass(self));
@@ -1679,8 +1709,8 @@ static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object,
     CYPool pool;
     NSString *name(CYCastNSString(pool, context, property));
 
-    if (CYInternal *internal = CYInternal::Get(self))
-        if (JSValueRef value = internal->GetProperty(context, property))
+    if (CYInternal *internal = [CYInternal get:self])
+        if (JSValueRef value = [internal getProperty:property inContext:context])
             return value;
 
     CYPoolTry {
@@ -1758,8 +1788,8 @@ static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStr
             CYSendMessage(pool, context, self, NULL, sel, 1, arguments, false, exception);
         }
 
-    if (CYInternal *internal = CYInternal::Set(self)) {
-        internal->SetProperty(context, property, value);
+    if (CYInternal *internal = [CYInternal set:self inContext:context]) {
+        [internal setProperty:property toValue:value inContext:context];
         return true;
     }
 
@@ -2254,42 +2284,6 @@ static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObje
     return CYSendMessage(pool, context, self, _class, _cmd, count - 2, arguments + 2, uninitialized, exception);
 } CYCatch }
 
-/* Hook: objc_registerClassPair {{{ */
-#if defined(__APPLE__) && defined(__arm__) && 0
-// XXX: replace this with associated objects
-
-MSHook(void, CYDealloc, id self, SEL sel) {
-    CYInternal *internal;
-    object_getInstanceVariable(self, "cy$internal_", reinterpret_cast<void **>(&internal));
-    if (internal != NULL)
-        delete internal;
-    _CYDealloc(self, sel);
-}
-
-MSHook(void, objc_registerClassPair, Class _class) {
-    Class super(class_getSuperclass(_class));
-    if (super == NULL || class_getInstanceVariable(super, "cy$internal_") == NULL) {
-        class_addIvar(_class, "cy$internal_", sizeof(CYInternal *), log2(sizeof(CYInternal *)), "^{CYInternal}");
-        MSHookMessage(_class, @selector(dealloc), MSHake(CYDealloc));
-    }
-
-    _objc_registerClassPair(_class);
-}
-
-static JSValueRef objc_registerClassPair_(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    if (count != 1)
-        throw CYJSError(context, "incorrect number of arguments to objc_registerClassPair");
-    CYPool pool;
-    NSObject *value(CYCastNSObject(pool, context, arguments[0]));
-    if (value == NULL || !CYIsClass(value))
-        throw CYJSError(context, "incorrect number of arguments to objc_registerClassPair");
-    Class _class((Class) value);
-    $objc_registerClassPair(_class);
-    return CYJSUndefined(context);
-} CYCatch }
-#endif
-/* }}} */
-
 static JSValueRef Selector_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     JSValueRef setup[count + 2];
     setup[0] = _this;
@@ -2522,6 +2516,10 @@ static JSStaticFunction Selector_staticFunctions[5] = {
 };
 
 void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
+    $objc_setAssociatedObject = reinterpret_cast<void (*)(id, void *, id value, objc_AssociationPolicy)>(dlsym(RTLD_DEFAULT, "objc_setAssociatedObject"));
+    $objc_getAssociatedObject = reinterpret_cast<id (*)(id, void *)>(dlsym(RTLD_DEFAULT, "objc_getAssociatedObject"));
+    $objc_removeAssociatedObjects = reinterpret_cast<void (*)(id)>(dlsym(RTLD_DEFAULT, "objc_removeAssociatedObjects"));
+
     apr_pool_t *pool(CYGetGlobalPool());
 
     Object_type = new(pool) Type_privateData("@");
@@ -2649,10 +2647,6 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     definition.getProperty = &ObjectiveC_Protocols_getProperty;
     definition.getPropertyNames = &ObjectiveC_Protocols_getPropertyNames;
     ObjectiveC_Protocols_ = JSClassCreate(&definition);
-
-#if defined(__APPLE__) && defined(__arm__) && 0
-    MSHookFunction(&objc_registerClassPair, MSHake(objc_registerClassPair));
-#endif
 
 #ifdef __APPLE__
     class_addMethod(NSCFType_, @selector(cy$toJSON:), reinterpret_cast<IMP>(&NSCFType$cy$toJSON), "@12@0:4@8");
