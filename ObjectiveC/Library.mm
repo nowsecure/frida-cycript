@@ -567,7 +567,7 @@ NSObject *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 /* Bridge: CYJSObject {{{ */
 @interface CYJSObject : NSMutableDictionary {
     JSObjectRef object_;
-    JSContextRef context_;
+    JSGlobalContextRef context_;
 }
 
 - (id) initWithJSObject:(JSObjectRef)object inContext:(JSContextRef)context;
@@ -585,7 +585,7 @@ NSObject *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 /* Bridge: CYJSArray {{{ */
 @interface CYJSArray : NSMutableArray {
     JSObjectRef object_;
-    JSContextRef context_;
+    JSGlobalContextRef context_;
 }
 
 - (id) initWithJSObject:(JSObjectRef)object inContext:(JSContextRef)context;
@@ -1173,14 +1173,14 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
     if ((self = [super init]) != nil) {
         object_ = object;
         context_ = CYGetJSContext(context);
-        //XXX:JSGlobalContextRetain(context_);
+        JSGlobalContextRetain(context_);
         JSValueProtect(context_, object_);
     } return self;
 } CYObjectiveCatch }
 
 - (void) dealloc { CYObjectiveTry {
     JSValueUnprotect(context_, object_);
-    //XXX:JSGlobalContextRelease(context_);
+    JSGlobalContextRelease(context_);
     [super dealloc];
 } CYObjectiveCatch }
 
@@ -1251,14 +1251,14 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
     if ((self = [super init]) != nil) {
         object_ = object;
         context_ = CYGetJSContext(context);
-        //XXX:JSGlobalContextRetain(context_);
+        JSGlobalContextRetain(context_);
         JSValueProtect(context_, object_);
     } return self;
 } CYObjectiveCatch }
 
 - (void) dealloc { CYObjectiveTry {
     JSValueUnprotect(context_, object_);
-    //XXX:JSGlobalContextRelease(context_);
+    JSGlobalContextRelease(context_);
     [super dealloc];
 } CYObjectiveCatch }
 
@@ -1325,7 +1325,7 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
 
 // XXX: inherit from or replace with CYJSObject
 @interface CYInternal : NSObject {
-    JSContextRef context_;
+    JSGlobalContextRef context_;
     JSObjectRef object_;
 }
 
@@ -1335,14 +1335,14 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
 
 - (void) dealloc {
     JSValueUnprotect(context_, object_);
-    //XXX:JSGlobalContextRelease(context_);
+    JSGlobalContextRelease(context_);
     [super dealloc];
 }
 
 - (id) initInContext:(JSContextRef)context {
     if ((self = [super init]) != nil) {
         context_ = CYGetJSContext(context);
-        //XXX:JSGlobalContextRetain(context_);
+        JSGlobalContextRetain(context_);
     } return self;
 }
 
