@@ -31,7 +31,7 @@ T uint16_t {ushort}
 T int32_t {int}
 T uint32_t {uint}
 T int64_t {longlong}
-T uint64_6 {ulonglong}
+T uint64_t {ulonglong}
 
 T SInt8 {int8_t}
 T UInt8 {uint8_t}
