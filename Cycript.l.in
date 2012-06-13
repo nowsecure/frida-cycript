@@ -258,6 +258,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "null"         L C I(null, Null(), tk::Null);
 "true"         L C I(true, True(), tk::True);
 
+"auto"         L C I(word, Word("auto"), tk::Auto);
 "break"        L R I(word, Word("break"), tk::Break);
 "case"         L C I(word, Word("case"), tk::Case);
 "catch"        L C I(word, Word("catch"), tk::Catch);

@@ -234,6 +234,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %token <true_> True "true"
 
 // ES3/ES5/WIE/JSC Reserved
+%token <word_> Auto "auto"
 %token <word_> Break "break"
 %token <word_> Case "case"
 %token <word_> Catch "catch"
@@ -551,6 +552,10 @@ BRACE
     : "{"
     | "\n{"
     ;
+
+Var_
+    : "var"
+    ;
 /* }}} */
 
 /* 7.6 Identifier Names and Identifiers {{{ */
@@ -565,6 +570,7 @@ NewLineOpt
 
 Word
     : Identifier { $$ = $1; }
+    | "auto" { $$ = $1; }
     | "break" NewLineOpt { $$ = $1; }
     | "case" { $$ = $1; }
     | "catch" { $$ = $1; }
@@ -1080,7 +1086,7 @@ LetOrConst
 /* }}} */
 /* 12.2.2 Variable Statement {{{ */
 VariableStatement
-    : "var" VariableDeclarationList Terminator { $$ = CYNew CYVar($2); }
+    : Var_ VariableDeclarationList Terminator { $$ = CYNew CYVar($2); }
     ;
 
 VariableDeclarationList_
@@ -1156,7 +1162,7 @@ IterationStatement
 
 ForStatementInitialiser
     : ExpressionOpt { $$ = $1; }
-    | LexSetRegExp "var" VariableDeclarationList { $$ = CYNew CYForDeclarations($3); }
+    | LexSetRegExp Var_ VariableDeclarationList { $$ = CYNew CYForDeclarations($3); }
     ;
 /* }}} */
 /* 12.6.4 The for-in and for-of Statements {{{ */
@@ -1167,7 +1173,7 @@ IterationStatement
 
 ForInStatementInitialiser
     : LeftHandSideExpression { $$ = $1; }
-    | LexSetRegExp "var" VariableDeclaration { $$ = $3; }
+    | LexSetRegExp Var_ VariableDeclaration { $$ = $3; }
     ;
 /* }}} */
 
@@ -1519,6 +1525,11 @@ MemberAccess
     : "->" "[" Expression "]" { $$ = CYNew CYIndirectMember(NULL, $3); }
     | "->" IdentifierName { $$ = CYNew CYIndirectMember(NULL, CYNew CYString($2)); }
     | "->" AutoComplete { driver.mode_ = CYDriver::AutoIndirect; YYACCEPT; }
+    ;
+/* }}} */
+/* Cycript (C): auto Compatibility {{{ */
+Var_
+    : "auto"
     ;
 /* }}} */
 @end
