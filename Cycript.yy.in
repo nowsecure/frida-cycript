@@ -1054,7 +1054,7 @@ StatementList
 
 StatementListOpt
     : StatementList { $$ = $1; }
-    | LexSetRegExp { $$ = NULL; }
+    | LexSetStatement LexSetRegExp { $$ = NULL; }
     ;
 
 StatementListItem
@@ -1318,7 +1318,7 @@ ProgramBody
 
 ProgramBodyOpt
     : ProgramBody { $$ = $1; }
-    | { $$ = NULL; }
+    | LexSetStatement LexSetRegExp { $$ = NULL; }
     ;
 /* }}} */
 
@@ -1491,7 +1491,7 @@ ImportPath
     ;
 
 StatementListItem
-    : "@import" ImportPath { $$ = CYNew CYImport(); }
+    : LexSetStatement LexSetRegExp "@import" ImportPath { $$ = CYNew CYImport(); }
     ;
 /* }}} */
 /* Cycript (Objective-C): Boxed Expressions {{{ */
