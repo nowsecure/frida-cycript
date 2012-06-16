@@ -30,7 +30,9 @@ typedef cy::parser::token tk;
 
 #define F(value) do { \
     int token(value); \
-    yyextra->nobrace_ = false; \
+    yyextra->no_.AtImplementation = false; \
+    yyextra->no_.Function = false; \
+    yyextra->no_.OpenBrace = false; \
     return token; \
 } while (false)
 
@@ -237,7 +239,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "("    L C F(tk::OpenParen);
 ")"    L C F(tk::CloseParen);
 
-"{"    L C F(yyextra->nobrace_ ? tk::OpenBrace__ : yylval->newline_ ? tk::OpenBrace_ : tk::OpenBrace);
+"{"    L C F(yyextra->no_.OpenBrace ? tk::OpenBrace__ : yylval->newline_ ? tk::OpenBrace_ : tk::OpenBrace);
 "}"    L C F(tk::CloseBrace);
 
 "["    L C F(tk::OpenBracket);
@@ -249,7 +251,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
 @begin ObjectiveC
 "@end"            L C F(tk::AtEnd);
-"@implementation" L C F(tk::AtImplementation);
+"@implementation" L C F(yyextra->no_.AtImplementation ? tk::AtImplementation_ : tk::AtImplementation);
 "@import"         L C F(tk::AtImport);
 "@selector"       L C F(tk::AtSelector);
 @end
@@ -269,7 +271,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "else"         L C I(word, Word("else"), tk::Else);
 "finally"      L C I(word, Word("finally"), tk::Finally);
 "for"          L C I(word, Word("for"), tk::For);
-"function"     L C I(word, Word("function"), tk::Function);
+"function"     L C I(word, Word("function"), yyextra->no_.Function ? tk::Function_ : tk::Function);
 "if"           L C I(word, Word("if"), tk::If);
 "in"           L C I(word, Word("in"), yyextra->in_.top() ? tk::In_ : tk::In);
 "instanceof"   L C I(word, Word("instanceof"), tk::InstanceOf);

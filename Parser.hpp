@@ -474,8 +474,13 @@ class CYDriver {
     void *scanner_;
 
     CYState state_;
-    bool nobrace_;
     std::stack<bool> in_;
+
+    struct {
+        bool AtImplementation;
+        bool Function;
+        bool OpenBrace;
+    } no_;
 
     const char *data_;
     size_t size_;

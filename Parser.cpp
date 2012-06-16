@@ -28,7 +28,6 @@ CYRange WordEndRange_  (0x3ff001000000000LLU, 0x7fffffe87fffffeLLU); // A-Za-z_$
 
 CYDriver::CYDriver(const std::string &filename) :
     state_(CYClear),
-    nobrace_(false),
     data_(NULL),
     size_(0),
     file_(NULL),
@@ -39,6 +38,7 @@ CYDriver::CYDriver(const std::string &filename) :
     context_(NULL),
     mode_(AutoNone)
 {
+    memset(&no_, 0, sizeof(no_));
     in_.push(false);
     ScannerInit();
 }

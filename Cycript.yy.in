@@ -532,15 +532,15 @@ LexSetRegExp
     ;
 
 LexNoBrace
-    : { if (yychar == yyempty_) driver.nobrace_ = true; else if (yychar == token::OpenBrace || yychar == token::OpenBrace_) yychar = token::OpenBrace__; }
+    : { if (yychar == yyempty_) driver.no_.OpenBrace = true; else if (yychar == token::OpenBrace || yychar == token::OpenBrace_) yychar = token::OpenBrace__; }
     ;
 
 LexNoFunction
-    : { if (yychar == token::Function) yychar = token::Function_; }
+    : { driver.no_.Function = true; }
     ;
 
 LexNoAtImplementation
-    : { if (yychar == token::AtImplementation) yychar = token::AtImplementation_; }
+    : { driver.no_.AtImplementation = true; }
     ;
 
 LexSetStatement
