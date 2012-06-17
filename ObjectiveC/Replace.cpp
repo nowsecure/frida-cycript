@@ -156,7 +156,7 @@ CYStatement *CYProtocol::Replace(CYContext &context) const { $T(NULL)
 }
 
 CYExpression *CYSelector::Replace(CYContext &context) {
-    return $N1($V("Selector"), name_->Replace(context));
+    return $C1($V("sel_registerName"), name_->Replace(context));
 }
 
 CYString *CYSelectorPart::Replace(CYContext &context) {
