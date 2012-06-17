@@ -283,11 +283,12 @@ static char **Complete(const char *word, int start, int end) {
     driver.program_ = $ CYProgram($ CYExpress($C3(ParseExpression(
     "   function(object, prefix, word) {\n"
     "       var names = [];\n"
-    "       var pattern = '^' + prefix + word;\n"
-    "       var length = prefix.length;\n"
+    "       var before = prefix.length;\n"
+    "       prefix += word;\n"
+    "       var entire = prefix.length;\n"
     "       for (name in object)\n"
-    "           if (name.match(pattern) != null)\n"
-    "               names.push(name.substr(length));\n"
+    "           if (name.substring(0, entire) == prefix)\n"
+    "               names.push(name.substr(before));\n"
     "       return names;\n"
     "   }\n"
     ), expression, $S(begin.c_str()), $S(word))));
