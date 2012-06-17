@@ -536,11 +536,11 @@ LexNoBrace
     ;
 
 LexNoFunction
-    : { driver.no_.Function = true; }
+    : { if (yychar == yyempty_) driver.no_.Function = true; else if (yychar == token::Function) yychar = token::Function_; }
     ;
 
 LexNoAtImplementation
-    : { driver.no_.AtImplementation = true; }
+    : { if (yychar == yyempty_) driver.no_.AtImplementation = true; else if (yychar == token::AtImplementation) yychar = token::AtImplementation_; }
     ;
 
 LexSetStatement
