@@ -144,7 +144,6 @@ $(deb): $(all) control
 	rm -rf package
 	mkdir -p package/DEBIAN
 	cp -pR control package/DEBIAN
-	#sed -i -e '/^Depends: / s/\<mobilesubstrate\>/mobilesubstrate (>= 0.9.3072)/g' package/DEBIAN/control
 	mkdir -p package/usr/{bin,lib,sbin}
 	cp -pR .libs/$(lib)cycript.0.$(dll) package/usr/lib
 	cp -pR .libs/$(lib)cycript.$(dll) package/usr/lib
