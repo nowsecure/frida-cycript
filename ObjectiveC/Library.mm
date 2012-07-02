@@ -1786,6 +1786,7 @@ static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStr
         if (CYImplements(self, _class, sel, false)) {
             JSValueRef arguments[1] = {value};
             CYSendMessage(pool, context, self, NULL, sel, 1, arguments, false, exception);
+            return true;
         }
 
     if (CYInternal *internal = [CYInternal set:self inContext:context]) {
