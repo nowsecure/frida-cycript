@@ -161,7 +161,10 @@ static void Output(CYUTF8String json, FILE *fout, bool expand = false) {
     if (data == NULL || fout == NULL)
         return;
 
-    if (!expand || data[0] != '"' && data[0] != '\'')
+    if (!expand ||
+        data[0] != '@' && data[0] != '"' && data[0] != '\'' ||
+        data[0] == '@' && data[1] != '"' && data[1] != '\''
+    )
         fputs(data, fout);
     else for (size_t i(0); i != size; ++i)
         if (data[i] != '\\')
