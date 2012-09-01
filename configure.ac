@@ -31,7 +31,7 @@ CY_CHECK_PROGS_VERSION([BISON], [bison], [bison],
 	[-V | $SED -e '1 s/^bison (GNU Bison) \(.*\)$/\1/p;d'], [2.3])
 AC_ARG_VAR([FLEX], [the fast lexical analyser generator])
 CY_CHECK_PROGS_VERSION([FLEX], [flex], [flex],
-	[--version | $SED -e '1 s/^.* \(@<:@0-9.@:>@*\)$/\1/p;d'], [2.5.33])
+	[--version | $SED -e '1 s/^@<:@^0-9.@:>@* \(@<:@0-9.@:>@*\).*$/\1/p;d'], [2.5.33])
 AC_ARG_VAR([GPERF], [perfect hash function generator])
 CY_CHECK_PROGS_VERSION([GPERF], [gperf], [gperf],
 	[--version | $SED -e '1 s/^.* \(@<:@0-9.@:>@*\)$/\1/p;d'], [3.0.3])
