@@ -304,6 +304,7 @@ static char **Complete(const char *word, int start, int end) {
 
     std::string code(str.str());
     CYUTF8String json(Run(pool, client_, code));
+    // XXX: if this fails we should not try to parse it
 
     CYExpression *result(ParseExpression(json));
     if (result == NULL)

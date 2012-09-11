@@ -37,23 +37,14 @@ non-local return prologue is not being Replace()d: multipass compiler!
 interpretation of documentation comments should be compiler-only and off by default
 don't ever generate $ CYWith, in particular for CYLet... use CYFunctionExpression
 
-semi-colin insertion warings should mark after the previous token, not on the current one: makes a /lot/ more sense
+semi-colon insertion warnings should mark after the previous token, not on the current one: makes a /lot/ more sense
 new for pools should take a reference, not a pointer
 
 output errors during Trampoline to some kind of log file
 
-cy# ["" <TAB> -> {message:"'undefined' is not an object (evaluating '\"\".$cyi.isa')",line:1,sourceId:30583072,name:"TypeError"}
-  now: cy# ["" <TAB> -> *** _assert(false):Console.cpp(214):ParseExpression [errno=12]
 there is a reinterpret_cast<> that I replaced with an old-style cast on the output of dladdr
 
 why do I never deallocate ffi closures?
-
-cy# (function() { for each (var index in [1, 3]) system.print(index); })()
-(function(){with({$cys:[1,3],$cyt:undefined})for($cyt in $cys){index=$cys[$cyt];system.print(index)}})()
-1
-3
-cy# (function() { var index; for each (var index in [1, 3]) system.print(index); })()
-(function(){var e;;with({$cys:[1,3],$cyt:undefined})for($cyt in $cys){e=$cys[$cyt];system.print(e)}})()
 
 make a reference holder for namearrays
 rename names to accumulator when it is a name accumulator, and retake names for subset
@@ -79,3 +70,36 @@ and:
   -> id value = [object objectAtIndexedSubscript:idx];
   object[idx] = newValue;
   -> [object setObject:newValue atIndexedSubscript:idx];
+
+use JSObjectMakeError to build exception objects
+replace cy$getProperty's return value with JSValueRef
+flatten compound expressions made up of compound expressions
+
+cy# {{5,6};6;{7;{8;5}}}
+got: {5,6;6;{7;8,5}}
+wanted: 5,6,6,7,8,5
+
+cy# for each (var i = 9 in [1, 2]) system.print(i);
+got: {i=9;(function(e,t){for(t in e){i=e[t];system.print(i)}})([1,2])}
+wanted: i=9,function(e,t){for(t in e)i=e[t],system.print(i)}([1,2])
+
+with is being translated in a manner that doesn't handle variables
+cy# function b() { for each (var t in a) {} }
+function b(){var e,t,n;with({t:a,n:undefined})for(n in t)e=t[n]}
+
+I feel like [[self toJSON] toCYON] might should be one or the other
+
+the non-local transform used for let is ludicrous... :( :(
+
+cy# function q(e) { }
+function q(e){var e}
+
+CYCompound needs to be able to replace itself away without causing multiple Replace
+fat arrows are currently output with too much verbosity
+
+CYJSString <- wrap JavaScript strings and provide them back to Objective-C
+ruby blocks need to return their last thing
+Objective-C strings might should be cyonified using double-quotes
+
+apparently you can have random escape sequences in strings, like \!
+cycript -p with processes that have spaces doesn't work
