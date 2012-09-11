@@ -602,22 +602,23 @@ NSObject *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 @end
 /* }}} */
 
-NSObject *CYCastNSObject_(apr_pool_t *pool, JSContextRef context, JSObjectRef object) {
-    JSObjectRef Array(CYGetCachedObject(context, Array_s));
+_finline bool CYJSValueIsInstanceOfCachedConstructor(JSContextRef context, JSValueRef value, JSStringRef cache) {
     JSValueRef exception(NULL);
-    bool array(JSValueIsInstanceOfConstructor(context, object, Array, &exception));
+    JSObjectRef constructor(CYGetCachedObject(context, cache));
+    bool is(JSValueIsInstanceOfConstructor(context, value, constructor, &exception));
     CYThrow(context, exception);
-    id value(array ? [CYJSArray alloc] : [CYJSObject alloc]);
-    return CYPoolRelease(pool, [value initWithJSObject:object inContext:context]);
+    return is;
 }
 
 NSObject *CYCastNSObject(apr_pool_t *pool, JSContextRef context, JSObjectRef object) {
-    if (!JSValueIsObjectOfClass(context, object, Instance_))
-        return CYCastNSObject_(pool, context, object);
-    else {
+    if (JSValueIsObjectOfClass(context, object, Instance_)) {
         Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
         return internal->GetValue();
     }
+
+    bool array(CYJSValueIsInstanceOfCachedConstructor(context, object, Array_s));
+    id value(array ? [CYJSArray alloc] : [CYJSObject alloc]);
+    return CYPoolRelease(pool, [value initWithJSObject:object inContext:context]);
 }
 
 NSNumber *CYCopyNSNumber(JSContextRef context, JSValueRef value) {
