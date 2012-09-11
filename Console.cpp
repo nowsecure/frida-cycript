@@ -154,7 +154,14 @@ static CYUTF8String Run(CYPool &pool, int client, const std::string &code) {
 
 static std::ostream *out_;
 
-static void Output(CYUTF8String json, std::ostream *out, bool expand = false) {
+static void Write(bool syntax, const char *data, size_t size, std::ostream &out) {
+    if (syntax)
+        CYLexerHighlight(data, size, out);
+    else
+        out.write(data, size);
+}
+
+static void Output(bool syntax, CYUTF8String json, std::ostream *out, bool expand = false) {
     const char *data(json.data);
     size_t size(json.size);
 
@@ -165,7 +172,7 @@ static void Output(CYUTF8String json, std::ostream *out, bool expand = false) {
         data[0] != '@' && data[0] != '"' && data[0] != '\'' ||
         data[0] == '@' && data[1] != '"' && data[1] != '\''
     )
-        out->write(data, size);
+        Write(syntax, data, size, *out);
     else for (size_t i(0); i != size; ++i)
         if (data[i] != '\\')
             *out << data[i];
@@ -187,13 +194,13 @@ static void Output(CYUTF8String json, std::ostream *out, bool expand = false) {
     *out << std::endl;
 }
 
-static void Run(int client, const char *data, size_t size, std::ostream *out = NULL, bool expand = false) {
+static void Run(int client, bool syntax, const char *data, size_t size, std::ostream *out = NULL, bool expand = false) {
     CYPool pool;
-    Output(Run(pool, client, CYUTF8String(data, size)), out, expand);
+    Output(syntax, Run(pool, client, CYUTF8String(data, size)), out, expand);
 }
 
-static void Run(int client, std::string &code, std::ostream *out = NULL, bool expand = false) {
-    Run(client, code.c_str(), code.size(), out, expand);
+static void Run(int client, bool syntax, std::string &code, std::ostream *out = NULL, bool expand = false) {
+    Run(client, syntax, code.c_str(), code.size(), out, expand);
 }
 
 int (*append_history$)(int, const char *);
@@ -307,7 +314,7 @@ static char **Complete(const char *word, int start, int end) {
 
     if (array == NULL) {
         *out_ << '\n';
-        Output(json, out_);
+        Output(false, json, out_);
         rl_forced_update_display();
         return NULL;
     }
@@ -397,6 +404,7 @@ static void Console(CYOptions &options) {
     bool bypass(false);
     bool debug(false);
     bool expand(false);
+    bool syntax(false);
 
     out_ = &std::cout;
 
@@ -448,6 +456,9 @@ static void Console(CYOptions &options) {
                 } else if (data == "expand") {
                     expand = !expand;
                     *out_ << "expand == " << (expand ? "true" : "false") << std::endl;
+                } else if (data == "syntax") {
+                    syntax = !syntax;
+                    *out_ << "syntax == " << (syntax ? "true" : "false") << std::endl;
                 }
                 add_history(line);
                 ++histlines;
@@ -534,10 +545,12 @@ static void Console(CYOptions &options) {
         add_history(command_.c_str());
         ++histlines;
 
-        if (debug)
-            std::cout << code << std::endl;
+        if (debug) {
+            Write(syntax, code.c_str(), code.size(), std::cout);
+            std::cout << std::endl;
+        }
 
-        Run(client_, code, out_, expand);
+        Run(client_, syntax, code, out_, expand);
     }
 
     if (append_history$ != NULL) {
@@ -808,7 +821,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
             if (client_ != -1) {
                 // XXX: this code means that you can't pipe to another process
                 std::string code(start, end-start);
-                Run(client_, code, &std::cout);
+                Run(client_, false, code, &std::cout);
             } else {
                 std::ostringstream str;
                 CYOutput out(str, options);
@@ -818,7 +831,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
                 if (compile)
                     std::cout << code;
                 else
-                    Run(client_, code, &std::cout);
+                    Run(client_, false, code, &std::cout);
             }
     }
 

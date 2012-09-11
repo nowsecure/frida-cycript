@@ -82,7 +82,7 @@ all := cycript
 header := Cycript.tab.hh Parser.hpp Pooling.hpp List.hpp Local.hpp cycript.hpp Internal.hpp Error.hpp String.hpp Exception.hpp Standard.hpp
 
 code := 
-code += Replace.lo Output.lo
+code += Replace.lo Output.lo Highlight.lo
 code += Cycript.tab.lo lex.cy.lo
 code += Network.lo Parser.lo
 code += JavaScriptCore.lo Library.lo

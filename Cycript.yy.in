@@ -39,8 +39,11 @@
 #include "E4X/Syntax.hpp"
 @end
 
+#include "Highlight.hpp"
+
 typedef struct {
     bool newline_;
+    hi::Value highlight_;
 
     union {
         bool bool_;

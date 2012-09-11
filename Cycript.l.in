@@ -26,22 +26,24 @@
 #include "Cycript.tab.hh"
 typedef cy::parser::token tk;
 
+#include "Highlight.hpp"
+
 #define YY_EXTRA_TYPE CYDriver *
 
-#define F(value) do { \
-    int token(value); \
+#define F(value, highlight) do { \
     yyextra->no_.AtImplementation = false; \
     yyextra->no_.Function = false; \
     yyextra->no_.OpenBrace = false; \
-    return token; \
+    yylval->highlight_ = highlight; \
+    return value; \
 } while (false)
 
 #define A new($pool)
 #define Y apr_pstrmemdup($pool, yytext, yyleng)
 
-#define I(type, Type, value) do { \
+#define I(type, Type, value, highlight) do { \
     yylval->type ## _ = A CY ## Type; \
-    F(value); \
+    F(value, highlight); \
 } while (false)
 
 #define T yylval->newline_ = yyextra->state_ == CYNewLine; BEGIN(Div);
@@ -54,7 +56,7 @@ typedef cy::parser::token tk;
             yyextra->state_ = CYNewLine; \
         else { \
             yyextra->state_ = CYClear; \
-            F(tk::NewLine); \
+            F(tk::NewLine, hi::Nothing); \
         } \
     }
 
@@ -141,200 +143,200 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
 %%
 
-<RegExp>\/{RegularExpressionBody}\/{RegularExpressionFlags} L C I(literal, RegEx(Y), tk::RegularExpressionLiteral);
+<RegExp>\/{RegularExpressionBody}\/{RegularExpressionFlags} L C I(literal, RegEx(Y), tk::RegularExpressionLiteral, hi::Constant);
 
 \/\/[^\n]* L
 
 	/* http://ostermiller.org/findcomment.html */
 	/* XXX: unify these two rules using !? */
-\/\*!([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+\/ V() C I(comment, Comment(Y), tk::Comment);
+\/\*!([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+\/ V() C I(comment, Comment(Y), tk::Comment, hi::Comment);
 \/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+\/ V(N)
 
 @begin E4X
-<RegExp>"<>"      L F(tk::LeftRight);
-<XMLContent>"</>" L F(tk::LeftSlashRight);
+<RegExp>"<>"      L F(tk::LeftRight, hi::Structure);
+<XMLContent>"</>" L F(tk::LeftSlashRight, hi::Structure);
 
-<RegExp,XMLContent>\<!\[CDATA\[(\n|[^[]|\[[^[]|\[\[[^>])*]]> V() F(tk::XMLCDATA);
-<RegExp,XMLContent>\<!--(\n|[^-]|-[^-])*--> V() F(tk::XMLComment);
-<RegExp,XMLContent>\<?(\n|[^?]|\?[^>])*?> V() F(tk::XMLPI);
+<RegExp,XMLContent>\<!\[CDATA\[(\n|[^[]|\[[^[]|\[\[[^>])*]]> V() F(tk::XMLCDATA, hi::Constant);
+<RegExp,XMLContent>\<!--(\n|[^-]|-[^-])*--> V() F(tk::XMLComment, hi::Comment);
+<RegExp,XMLContent>\<?(\n|[^?]|\?[^>])*?> V() F(tk::XMLPI, hi::Meta);
 
-<XMLTag>"="  L F(tk::Equal);
-<XMLTag>">"  L F(tk::Right);
-<XMLTag>"/>" L F(tk::SlashRight);
-<XMLTag>"{"  L F(tk::OpenBrace);
+<XMLTag>"="  L F(tk::Equal, hi::Structure);
+<XMLTag>">"  L F(tk::Right, hi::Structure);
+<XMLTag>"/>" L F(tk::SlashRight, hi::Structure);
+<XMLTag>"{"  L F(tk::OpenBrace, hi::Structure);
 
-<XMLTag>\"(\n|[^"])*\"|'(\n|[^'])*' V() F(tk::XMLAttributeValue);
-<XMLTag>{XMLName} L F(tk::XMLName);
-<XMLTag>[ \t\r\n] V() F(tk::XMLWhitespace);
+<XMLTag>\"(\n|[^"])*\"|'(\n|[^'])*' V() F(tk::XMLAttributeValue, hi::Constant);
+<XMLTag>{XMLName} L F(tk::XMLName, hi::Identifier);
+<XMLTag>[ \t\r\n] V() F(tk::XMLWhitespace, hi::Nothing);
 
-<XMLContent>"{"  L F(tk::OpenBrace);
-<XMLContent>"<"  L F(tk::Left);
-<XMLContent>"</" L F(tk::LeftSlash);
+<XMLContent>"{"  L F(tk::OpenBrace, hi::Structure);
+<XMLContent>"<"  L F(tk::Left, hi::Structure);
+<XMLContent>"</" L F(tk::LeftSlash, hi::Structure);
 @end
 
-"..."  L C F(tk::PeriodPeriodPeriod);
+"..."  L C F(tk::PeriodPeriodPeriod, hi::Meta);
 
 @begin E4X
-"::"   L C F(tk::ColonColon);
-".."   L C F(tk::PeriodPeriod);
+"::"   L C F(tk::ColonColon, hi::Operator);
+".."   L C F(tk::PeriodPeriod, hi::Operator);
 @end
 
 @begin E4X ObjectiveC
-"@"    L C F(tk::At);
+"@"    L C F(tk::At, hi::Operator);
 @end
 
-"&"    L C F(tk::Ampersand);
-"&&"   L C F(tk::AmpersandAmpersand);
-"&="   L C F(tk::AmpersandEqual);
-"^"    L C F(tk::Carrot);
-"^="   L C F(tk::CarrotEqual);
-"="    L C F(tk::Equal);
-"=="   L C F(tk::EqualEqual);
-"==="  L C F(tk::EqualEqualEqual);
-"=>"   L C F(tk::EqualRight);
-"!"    L C F(tk::Exclamation);
-"!="   L C F(tk::ExclamationEqual);
-"!=="  L C F(tk::ExclamationEqualEqual);
-"-"    L C F(tk::Hyphen);
-"-="   L C F(tk::HyphenEqual);
-"--"   L C F(yylval->newline_ ? tk::HyphenHyphen_ : tk::HyphenHyphen);
-"->"   L C F(tk::HyphenRight);
-"<"    L C F(tk::Left);
-"<="   L C F(tk::LeftEqual);
-"<<"   L C F(tk::LeftLeft);
-"<<="  L C F(tk::LeftLeftEqual);
-"%"    L C F(tk::Percent);
-"%="   L C F(tk::PercentEqual);
-"."    L C F(tk::Period);
-"|"    L C F(tk::Pipe);
-"|="   L C F(tk::PipeEqual);
-"||"   L C F(tk::PipePipe);
-"+"    L C F(tk::Plus);
-"+="   L C F(tk::PlusEqual);
-"++"   L C F(yylval->newline_ ? tk::PlusPlus_ : tk::PlusPlus);
-">"    L C F(tk::Right);
-">="   L C F(tk::RightEqual);
-">>"   L C F(tk::RightRight);
-">>="  L C F(tk::RightRightEqual);
-">>>"  L C F(tk::RightRightRight);
-">>>=" L C F(tk::RightRightRightEqual);
-"*"    L C F(tk::Star);
-"*="   L C F(tk::StarEqual);
-"~"    L C F(tk::Tilde);
+"&"    L C F(tk::Ampersand, hi::Operator);
+"&&"   L C F(tk::AmpersandAmpersand, hi::Operator);
+"&="   L C F(tk::AmpersandEqual, hi::Operator);
+"^"    L C F(tk::Carrot, hi::Operator);
+"^="   L C F(tk::CarrotEqual, hi::Operator);
+"="    L C F(tk::Equal, hi::Operator);
+"=="   L C F(tk::EqualEqual, hi::Operator);
+"==="  L C F(tk::EqualEqualEqual, hi::Operator);
+"=>"   L C F(tk::EqualRight, hi::Operator);
+"!"    L C F(tk::Exclamation, hi::Operator);
+"!="   L C F(tk::ExclamationEqual, hi::Operator);
+"!=="  L C F(tk::ExclamationEqualEqual, hi::Operator);
+"-"    L C F(tk::Hyphen, hi::Operator);
+"-="   L C F(tk::HyphenEqual, hi::Operator);
+"--"   L C F(yylval->newline_ ? tk::HyphenHyphen_ : tk::HyphenHyphen, hi::Operator);
+"->"   L C F(tk::HyphenRight, hi::Operator);
+"<"    L C F(tk::Left, hi::Operator);
+"<="   L C F(tk::LeftEqual, hi::Operator);
+"<<"   L C F(tk::LeftLeft, hi::Operator);
+"<<="  L C F(tk::LeftLeftEqual, hi::Operator);
+"%"    L C F(tk::Percent, hi::Operator);
+"%="   L C F(tk::PercentEqual, hi::Operator);
+"."    L C F(tk::Period, hi::Operator);
+"|"    L C F(tk::Pipe, hi::Operator);
+"|="   L C F(tk::PipeEqual, hi::Operator);
+"||"   L C F(tk::PipePipe, hi::Operator);
+"+"    L C F(tk::Plus, hi::Operator);
+"+="   L C F(tk::PlusEqual, hi::Operator);
+"++"   L C F(yylval->newline_ ? tk::PlusPlus_ : tk::PlusPlus, hi::Operator);
+">"    L C F(tk::Right, hi::Operator);
+">="   L C F(tk::RightEqual, hi::Operator);
+">>"   L C F(tk::RightRight, hi::Operator);
+">>="  L C F(tk::RightRightEqual, hi::Operator);
+">>>"  L C F(tk::RightRightRight, hi::Operator);
+">>>=" L C F(tk::RightRightRightEqual, hi::Operator);
+"*"    L C F(tk::Star, hi::Operator);
+"*="   L C F(tk::StarEqual, hi::Operator);
+"~"    L C F(tk::Tilde, hi::Operator);
 
-<Div>"/"  L C F(tk::Slash);
-<Div>"/=" L C F(tk::SlashEqual);
+<Div>"/"  L C F(tk::Slash, hi::Operator);
+<Div>"/=" L C F(tk::SlashEqual, hi::Operator);
 
-":"    L C F(tk::Colon);
-","    L C F(tk::Comma);
-"?"    L C F(tk::Question);
-";"    L C F(tk::SemiColon);
+":"    L C F(tk::Colon, hi::Structure);
+","    L C F(tk::Comma, hi::Structure);
+"?"    L C F(tk::Question, hi::Structure);
+";"    L C F(tk::SemiColon, hi::Structure);
 
-"("    L C F(tk::OpenParen);
-")"    L C F(tk::CloseParen);
+"("    L C F(tk::OpenParen, hi::Structure);
+")"    L C F(tk::CloseParen, hi::Structure);
 
-"{"    L C F(yyextra->no_.OpenBrace ? tk::OpenBrace__ : yylval->newline_ ? tk::OpenBrace_ : tk::OpenBrace);
-"}"    L C F(tk::CloseBrace);
+"{"    L C F(yyextra->no_.OpenBrace ? tk::OpenBrace__ : yylval->newline_ ? tk::OpenBrace_ : tk::OpenBrace, hi::Structure);
+"}"    L C F(tk::CloseBrace, hi::Structure);
 
-"["    L C F(tk::OpenBracket);
-"]"    L C F(tk::CloseBracket);
+"["    L C F(tk::OpenBracket, hi::Structure);
+"]"    L C F(tk::CloseBracket, hi::Structure);
 
 @begin Java
-"@class"          L C F(tk::AtClass);
+"@class"          L C F(tk::AtClass, hi::Meta);
 @end
 
 @begin ObjectiveC
-"@end"            L C F(tk::AtEnd);
-"@implementation" L C F(yyextra->no_.AtImplementation ? tk::AtImplementation_ : tk::AtImplementation);
-"@import"         L C F(tk::AtImport);
-"@selector"       L C F(tk::AtSelector);
+"@end"            L C F(tk::AtEnd, hi::Meta);
+"@implementation" L C F(yyextra->no_.AtImplementation ? tk::AtImplementation_ : tk::AtImplementation, hi::Meta);
+"@import"         L C F(tk::AtImport, hi::Meta);
+"@selector"       L C F(tk::AtSelector, hi::Meta);
 @end
 
-"false"        L C I(false, False(), tk::False);
-"null"         L C I(null, Null(), tk::Null);
-"true"         L C I(true, True(), tk::True);
+"false"        L C I(false, False(), tk::False, hi::Constant);
+"null"         L C I(null, Null(), tk::Null, hi::Constant);
+"true"         L C I(true, True(), tk::True, hi::Constant);
 
-"auto"         L C I(word, Word("auto"), tk::Auto);
-"break"        L R I(word, Word("break"), tk::Break);
-"case"         L C I(word, Word("case"), tk::Case);
-"catch"        L C I(word, Word("catch"), tk::Catch);
-"continue"     L R I(word, Word("continue"), tk::Continue);
-"default"      L C I(word, Word("default"), tk::Default);
-"delete"       L C I(word, Word("delete"), tk::Delete);
-"do"           L C I(word, Word("do"), tk::Do);
-"else"         L C I(word, Word("else"), tk::Else);
-"finally"      L C I(word, Word("finally"), tk::Finally);
-"for"          L C I(word, Word("for"), tk::For);
-"function"     L C I(word, Word("function"), yyextra->no_.Function ? tk::Function_ : tk::Function);
-"if"           L C I(word, Word("if"), tk::If);
-"in"           L C I(word, Word("in"), yyextra->in_.top() ? tk::In_ : tk::In);
-"instanceof"   L C I(word, Word("instanceof"), tk::InstanceOf);
-"new"          L C I(word, Word("new"), tk::New);
-"return"       L R I(word, Word("return"), tk::Return);
-"switch"       L C I(word, Word("switch"), tk::Switch);
-"this"         L C I(this, This(), tk::This);
-"throw"        L R I(word, Word("throw"), tk::Throw);
-"try"          L C I(word, Word("try"), tk::Try);
-"typeof"       L C I(word, Word("typeof"), tk::TypeOf);
-"var"          L C I(word, Word("var"), tk::Var);
-"void"         L C I(word, Word("void"), tk::Void);
-"while"        L C I(word, Word("while"), tk::While);
-"with"         L C I(word, Word("with"), tk::With);
+"auto"         L C I(word, Word("auto"), tk::Auto, hi::Meta);
+"break"        L R I(word, Word("break"), tk::Break, hi::Control);
+"case"         L C I(word, Word("case"), tk::Case, hi::Control);
+"catch"        L C I(word, Word("catch"), tk::Catch, hi::Control);
+"continue"     L R I(word, Word("continue"), tk::Continue, hi::Control);
+"default"      L C I(word, Word("default"), tk::Default, hi::Control);
+"delete"       L C I(word, Word("delete"), tk::Delete, hi::Operator);
+"do"           L C I(word, Word("do"), tk::Do, hi::Control);
+"else"         L C I(word, Word("else"), tk::Else, hi::Control);
+"finally"      L C I(word, Word("finally"), tk::Finally, hi::Control);
+"for"          L C I(word, Word("for"), tk::For, hi::Control);
+"function"     L C I(word, Word("function"), yyextra->no_.Function ? tk::Function_ : tk::Function, hi::Meta);
+"if"           L C I(word, Word("if"), tk::If, hi::Control);
+"in"           L C I(word, Word("in"), yyextra->in_.top() ? tk::In_ : tk::In, hi::Operator);
+"instanceof"   L C I(word, Word("instanceof"), tk::InstanceOf, hi::Operator);
+"new"          L C I(word, Word("new"), tk::New, hi::Operator);
+"return"       L R I(word, Word("return"), tk::Return, hi::Control);
+"switch"       L C I(word, Word("switch"), tk::Switch, hi::Control);
+"this"         L C I(this, This(), tk::This, hi::Constant);
+"throw"        L R I(word, Word("throw"), tk::Throw, hi::Control);
+"try"          L C I(word, Word("try"), tk::Try, hi::Control);
+"typeof"       L C I(word, Word("typeof"), tk::TypeOf, hi::Operator);
+"var"          L C I(word, Word("var"), tk::Var, hi::Meta);
+"void"         L C I(word, Word("void"), tk::Void, hi::Operator);
+"while"        L C I(word, Word("while"), tk::While, hi::Control);
+"with"         L C I(word, Word("with"), tk::With, hi::Control);
 
-"debugger"     L C I(word, Word("debugger"), tk::Debugger);
+"debugger"     L C I(word, Word("debugger"), tk::Debugger, hi::Meta);
 
-"const"        L C I(word, Word("const"), tk::Const);
+"const"        L C I(word, Word("const"), tk::Const, hi::Meta);
 
-"class"        L C I(word, Word("class"), tk::Class);
-"enum"         L C I(word, Word("enum"), tk::Enum);
-"export"       L C I(word, Word("export"), tk::Export);
-"extends"      L C I(word, Word("extends"), tk::Extends);
-"import"       L C I(word, Word("import"), tk::Import);
-"super"        L C I(word, Word("super"), tk::Super);
+"class"        L C I(word, Word("class"), tk::Class, hi::Meta);
+"enum"         L C I(word, Word("enum"), tk::Enum, hi::Meta);
+"export"       L C I(word, Word("export"), tk::Export, hi::Meta);
+"extends"      L C I(word, Word("extends"), tk::Extends, hi::Meta);
+"import"       L C I(word, Word("import"), tk::Import, hi::Meta);
+"super"        L C I(word, Word("super"), tk::Super, hi::Constant);
 
-"implements"   L C I(identifier, Identifier("implements"), tk::Implements);
-"interface"    L C I(identifier, Identifier("interface"), tk::Interface);
-"package"      L C I(identifier, Identifier("package"), tk::Package);
-"private"      L C I(identifier, Identifier("private"), tk::Private);
-"protected"    L C I(identifier, Identifier("protected"), tk::Protected);
-"public"       L C I(identifier, Identifier("public"), tk::Public);
-"static"       L C I(identifier, Identifier("static"), tk::Static);
+"implements"   L C I(identifier, Identifier("implements"), tk::Implements, hi::Meta);
+"interface"    L C I(identifier, Identifier("interface"), tk::Interface, hi::Meta);
+"package"      L C I(identifier, Identifier("package"), tk::Package, hi::Meta);
+"private"      L C I(identifier, Identifier("private"), tk::Private, hi::Meta);
+"protected"    L C I(identifier, Identifier("protected"), tk::Protected, hi::Meta);
+"public"       L C I(identifier, Identifier("public"), tk::Public, hi::Meta);
+"static"       L C I(identifier, Identifier("static"), tk::Static, hi::Meta);
 
-"abstract"     L C I(identifier, Identifier("abstract"), tk::Abstract);
-"boolean"      L C I(identifier, Identifier("boolean"), tk::Boolean);
-"byte"         L C I(identifier, Identifier("byte"), tk::Byte);
-"char"         L C I(identifier, Identifier("char"), tk::Char);
-"double"       L C I(identifier, Identifier("double"), tk::Double);
-"final"        L C I(identifier, Identifier("final"), tk::Final);
-"float"        L C I(identifier, Identifier("float"), tk::Float);
-"goto"         L C I(identifier, Identifier("goto"), tk::Goto);
-"int"          L C I(identifier, Identifier("int"), tk::Int);
-"long"         L C I(identifier, Identifier("long"), tk::Long);
-"native"       L C I(identifier, Identifier("native"), tk::Native);
-"short"        L C I(identifier, Identifier("short"), tk::Short);
-"synchronized" L C I(identifier, Identifier("synchronized"), tk::Synchronized);
-"throws"       L C I(identifier, Identifier("throws"), tk::Throws);
-"transient"    L C I(identifier, Identifier("transient"), tk::Transient);
-"volatile"     L C I(identifier, Identifier("volatile"), tk::Volatile);
+"abstract"     L C I(identifier, Identifier("abstract"), tk::Abstract, hi::Meta);
+"boolean"      L C I(identifier, Identifier("boolean"), tk::Boolean, hi::Type);
+"byte"         L C I(identifier, Identifier("byte"), tk::Byte, hi::Type);
+"char"         L C I(identifier, Identifier("char"), tk::Char, hi::Type);
+"double"       L C I(identifier, Identifier("double"), tk::Double, hi::Type);
+"final"        L C I(identifier, Identifier("final"), tk::Final, hi::Meta);
+"float"        L C I(identifier, Identifier("float"), tk::Float, hi::Type);
+"goto"         L C I(identifier, Identifier("goto"), tk::Goto, hi::Control);
+"int"          L C I(identifier, Identifier("int"), tk::Int, hi::Type);
+"long"         L C I(identifier, Identifier("long"), tk::Long, hi::Type);
+"native"       L C I(identifier, Identifier("native"), tk::Native, hi::Meta);
+"short"        L C I(identifier, Identifier("short"), tk::Short, hi::Type);
+"synchronized" L C I(identifier, Identifier("synchronized"), tk::Synchronized, hi::Meta);
+"throws"       L C I(identifier, Identifier("throws"), tk::Throws, hi::Meta);
+"transient"    L C I(identifier, Identifier("transient"), tk::Transient, hi::Meta);
+"volatile"     L C I(identifier, Identifier("volatile"), tk::Volatile, hi::Meta);
 
-"let"          L C I(identifier, Identifier("let"), tk::Let);
-"yield"        L C I(identifier, Identifier("yield"), tk::Yield);
+"let"          L C I(identifier, Identifier("let"), tk::Let, hi::Meta);
+"yield"        L C I(identifier, Identifier("yield"), tk::Yield, hi::Control);
 
-"each"         L C I(identifier, Identifier("each"), tk::Each);
-"of"           L C I(identifier, Identifier("of"), tk::Of);
+"each"         L C I(identifier, Identifier("each"), tk::Each, hi::Control);
+"of"           L C I(identifier, Identifier("of"), tk::Of, hi::Operator);
 
 @begin E4X
-"namespace"    L C I(identifier, Identifier("namespace"), tk::Namespace);
-"xml"          L C I(identifier, Identifier("xml"), tk::XML);
+"namespace"    L C I(identifier, Identifier("namespace"), tk::Namespace, hi::Meta);
+"xml"          L C I(identifier, Identifier("xml"), tk::XML, hi::Meta);
 @end
 
-{IdentifierStart}{IdentifierPart}* L C I(identifier, Identifier(Y), tk::Identifier_);
+{IdentifierStart}{IdentifierPart}* L C I(identifier, Identifier(Y), tk::Identifier_, hi::Identifier);
 
-(\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?){Exponent}? L C I(number, Number(strtod(yytext, NULL)), tk::NumericLiteral);
+(\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?){Exponent}? L C I(number, Number(strtod(yytext, NULL)), tk::NumericLiteral, hi::Constant);
 
-0[xX][0-9a-fA-F]+ L C I(number, Number(strtoull(yytext + 2, NULL, 16)), tk::NumericLiteral);
-0[0-7]+ L C I(number, Number(strtoull(yytext + 1, NULL, 8)), tk::NumericLiteral);
-0[bB][0-1]+ L C I(number, Number(strtoull(yytext + 2, NULL, 2)), tk::NumericLiteral);
+0[xX][0-9a-fA-F]+ L C I(number, Number(strtoull(yytext + 2, NULL, 16)), tk::NumericLiteral, hi::Constant);
+0[0-7]+ L C I(number, Number(strtoull(yytext + 1, NULL, 8)), tk::NumericLiteral, hi::Constant);
+0[bB][0-1]+ L C I(number, Number(strtoull(yytext + 2, NULL, 2)), tk::NumericLiteral, hi::Constant);
 
 \"([^"\\\n]|{Escape})*\"|'([^'\\\n]|{Escape})*' L C {
     char *value(A char[yyleng]);
@@ -367,14 +369,14 @@ XMLName {XMLNameStart}{XMLNamePart}*
     }
 
     *local = '\0';
-    I(string, String(value, local - value), tk::StringLiteral);
+    I(string, String(value, local - value), tk::StringLiteral, hi::Constant);
 }
 
 \r?\n|\r|\xe2\x80[\xa8\xa9] yylloc->end.lines(); yylloc->step(); N
 
 [ \t] L
 
-<<EOF>> if (yyextra->auto_) { yyextra->auto_ = false; F(tk::AutoComplete); } L yyterminate();
+<<EOF>> if (yyextra->auto_) { yyextra->auto_ = false; F(tk::AutoComplete, hi::Nothing); } L yyterminate();
 
 . L {
     CYDriver::Error error;
