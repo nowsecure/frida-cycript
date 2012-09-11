@@ -812,6 +812,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
                 std::cerr << i->location_.begin << ": " << i->message_ << std::endl;
         } else if (driver.program_ != NULL)
             if (client_ != -1) {
+                // XXX: this code means that you can't pipe to another process
                 std::string code(start, end-start);
                 Run(client_, code, stdout);
             } else {
