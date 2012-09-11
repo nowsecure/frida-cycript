@@ -1871,6 +1871,11 @@ static JSValueRef Instance_callAsFunction(JSContextRef context, JSObjectRef obje
 
     if (![self isKindOfClass:NSBlock_])
         CYThrow("non-NSBlock object is not a function");
+    // XXX: replace above logic with the following assertion
+    //_assert([self isKindOfClass:NSBlock_]);
+    // to do this, make it so FunctionInstance_ is the class of blocks
+    // to do /that/, generalize the various "is exactly Instance_" checks
+    // then, move Instance_callAsFunction to only be on FunctionInstance
 
     struct BlockDescriptor1 {
         unsigned long int reserved;
@@ -2566,14 +2571,14 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     definition.className = "ArrayInstance";
     ArrayInstance_ = JSClassCreate(&definition);
 
-    definition.className = "FunctionInstance";
-    FunctionInstance_ = JSClassCreate(&definition);
-
     definition.className = "ObjectInstance";
     ObjectInstance_ = JSClassCreate(&definition);
 
     definition.className = "StringInstance";
     StringInstance_ = JSClassCreate(&definition);
+
+    definition.className = "FunctionInstance";
+    FunctionInstance_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "Internal";
