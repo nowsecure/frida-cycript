@@ -469,6 +469,27 @@ enum CYState {
     CYNewLine
 };
 
+class CYStream :
+    public std::istream
+{
+  private:
+    class CYBuffer :
+        public std::streambuf
+    {
+      public:
+        CYBuffer(const char *start, const char *end) {
+            setg(const_cast<char *>(start), const_cast<char *>(start), const_cast<char *>(end));
+        }
+    } buffer_;
+
+  public:
+    CYStream(const char *start, const char *end) :
+        std::istream(&buffer_),
+        buffer_(start, end)
+    {
+    }
+};
+
 class CYDriver {
   public:
     void *scanner_;
@@ -482,9 +503,7 @@ class CYDriver {
         bool OpenBrace;
     } no_;
 
-    const char *data_;
-    size_t size_;
-    FILE *file_;
+    std::istream &data_;
 
     bool strict_;
 
@@ -539,7 +558,7 @@ class CYDriver {
     void ScannerDestroy();
 
   public:
-    CYDriver(const std::string &filename = "");
+    CYDriver(std::istream &data, const std::string &filename = "");
     ~CYDriver();
 
     Condition GetCondition();

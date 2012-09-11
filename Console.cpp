@@ -202,13 +202,9 @@ int (*append_history$)(int, const char *);
 static std::string command_;
 
 static CYExpression *ParseExpression(CYUTF8String code) {
-    std::ostringstream str;
-    str << '(' << code << ')';
-    std::string string(str.str());
-
-    CYDriver driver;
-    driver.data_ = string.c_str();
-    driver.size_ = string.size();
+    std::stringstream stream;
+    stream << '(' << code << ')';
+    CYDriver driver(stream);
 
     cy::parser parser(driver);
     Setup(driver, parser);
@@ -232,17 +228,15 @@ static char **Complete(const char *word, int start, int end) {
     rl_attempted_completion_over = TRUE;
 
     CYLocalPool pool;
-    CYDriver driver;
-    cy::parser parser(driver);
-    Setup(driver, parser);
 
     std::string line(rl_line_buffer, start);
-    std::string command(command_ + line);
-
-    driver.data_ = command.c_str();
-    driver.size_ = command.size();
+    std::istringstream stream(command_ + line);
+    CYDriver driver(stream);
 
     driver.auto_ = true;
+
+    cy::parser parser(driver);
+    Setup(driver, parser);
 
     if (parser.parse() != 0 || !driver.errors_.empty())
         return NULL;
@@ -485,12 +479,12 @@ static void Console(CYOptions &options) {
             code = command_;
         else {
             CYLocalPool pool;
-            CYDriver driver;
+
+            std::istringstream stream(command_);
+            CYDriver driver(stream);
+
             cy::parser parser(driver);
             Setup(driver, parser);
-
-            driver.data_ = command_.c_str();
-            driver.size_ = command_.size();
 
             if (parser.parse() != 0 || !driver.errors_.empty()) {
                 for (CYDriver::Errors::const_iterator error(driver.errors_.begin()); error != driver.errors_.end(); ++error) {
@@ -781,17 +775,14 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
         Console(options);
     else {
         CYLocalPool pool;
-        CYDriver driver(script ?: "<stdin>");
-        cy::parser parser(driver);
-        Setup(driver, parser);
 
         char *start, *end;
+        std::istream *indirect;
 
         if (script == NULL) {
             start = NULL;
             end = NULL;
-
-            driver.file_ = stdin;
+            indirect = &std::cin;
         } else {
             size_t size;
             start = reinterpret_cast<char *>(Map(script, &size));
@@ -806,9 +797,15 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
                     start = end;
             }
 
-            driver.data_ = start;
-            driver.size_ = end - start;
+            indirect = NULL;
         }
+
+        CYStream direct(start, end);
+        std::istream &stream(indirect == NULL ? direct : *indirect);
+        CYDriver driver(stream, script ?: "<stdin>");
+
+        cy::parser parser(driver);
+        Setup(driver, parser);
 
         if (parser.parse() != 0 || !driver.errors_.empty()) {
             for (CYDriver::Errors::const_iterator i(driver.errors_.begin()); i != driver.errors_.end(); ++i)

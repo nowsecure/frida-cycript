@@ -246,14 +246,11 @@ void CYArrayPush(JSContextRef context, JSObjectRef array, JSValueRef value) {
 extern "C" void CydgetPoolParse(apr_pool_t *remote, const uint16_t **data, size_t *size) {
     CYLocalPool local;
 
-    CYDriver driver;
-    cy::parser parser(driver);
-
     CYUTF8String utf8(CYPoolUTF8String(local, CYUTF16String(*data, *size)));
+    CYStream stream(utf8.data, utf8.data + utf8.size);
+    CYDriver driver(stream);
 
-    driver.data_ = utf8.data;
-    driver.size_ = utf8.size;
-
+    cy::parser parser(driver);
     if (parser.parse() != 0 || !driver.errors_.empty())
         return;
 

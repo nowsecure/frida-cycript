@@ -103,3 +103,4 @@ Objective-C strings might should be cyonified using double-quotes
 
 apparently you can have random escape sequences in strings, like \!
 cycript -p with processes that have spaces doesn't work
+CYDriver uses std::istream, but it should use std::streambuf

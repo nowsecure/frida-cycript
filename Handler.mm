@@ -99,11 +99,10 @@ struct CYClient :
                 return;
             data[size] = '\0';
 
-            CYDriver driver;
-            cy::parser parser(driver);
+            CYStream stream(data, data + size);
+            CYDriver driver(stream);
 
-            driver.data_ = data;
-            driver.size_ = size;
+            cy::parser parser(driver);
 
             const char *json;
             if (parser.parse() != 0 || !driver.errors_.empty()) {

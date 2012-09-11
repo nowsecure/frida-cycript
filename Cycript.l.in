@@ -90,18 +90,12 @@ int H(char c) {
 }
 
 #define YY_INPUT(data, value, size) { \
-    if (yyextra->file_ != NULL) { \
-        size_t copy(fread(data, 1, size, yyextra->file_)); \
-        value = copy == 0 ? YY_NULL : copy; \
-    } else if (yyextra->size_ == 0) \
+    if (yyextra->data_.eof()) \
         value = YY_NULL; \
     else { \
-        size_t copy(size); \
-        copy = (std::min(copy, yyextra->size_)); \
-        memcpy(data, yyextra->data_, copy); \
-        yyextra->data_ += copy; \
-        yyextra->size_ -= copy; \
-        value = copy; \
+        yyextra->data_.read(data, size); \
+        size_t copy(yyextra->data_.gcount()); \
+        value = copy == 0 ? YY_NULL : copy; \
     } \
 }
 

@@ -26,11 +26,9 @@ CYRange DigitRange_    (0x3ff000000000000LLU, 0x000000000000000LLU); // 0-9
 CYRange WordStartRange_(0x000001000000000LLU, 0x7fffffe87fffffeLLU); // A-Za-z_$
 CYRange WordEndRange_  (0x3ff001000000000LLU, 0x7fffffe87fffffeLLU); // A-Za-z_$0-9
 
-CYDriver::CYDriver(const std::string &filename) :
+CYDriver::CYDriver(std::istream &data, const std::string &filename) :
     state_(CYClear),
-    data_(NULL),
-    size_(0),
-    file_(NULL),
+    data_(data),
     strict_(false),
     filename_(filename),
     program_(NULL),
