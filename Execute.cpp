@@ -1019,7 +1019,7 @@ static void All_getPropertyNames(JSContextRef context, JSObjectRef object, JSPro
 
 static JSObjectRef Pointer_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 2)
-        throw CYJSError(context, "incorrect number of arguments to Functor constructor");
+        throw CYJSError(context, "incorrect number of arguments to Pointer constructor");
 
     CYPool pool;
 
