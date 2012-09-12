@@ -422,7 +422,7 @@ NSString *CYCastNSCYON(id value, bool objective) {
         SEL sel(@selector(cy$toCYON:));
 
         if (objc_method *toCYON = class_getInstanceMethod(_class, sel))
-            string = reinterpret_cast<NSString *(*)(id, SEL)>(method_getImplementation(toCYON))(value, sel);
+            string = reinterpret_cast<NSString *(*)(id, SEL, bool)>(method_getImplementation(toCYON))(value, sel, objective);
         else if (objc_method *methodSignatureForSelector = class_getInstanceMethod(_class, @selector(methodSignatureForSelector:))) {
             if (reinterpret_cast<NSMethodSignature *(*)(id, SEL, SEL)>(method_getImplementation(methodSignatureForSelector))(value, @selector(methodSignatureForSelector:), sel) != nil)
                 string = [value cy$toCYON:objective];
