@@ -64,6 +64,7 @@
 #include <dlfcn.h>
 
 #include "Replace.hpp"
+#include "Display.hpp"
 
 static volatile enum {
     Working,
@@ -397,6 +398,12 @@ static void Console(CYOptions &options) {
 
     rl_initialize();
     rl_readline_name = name_;
+
+#if RL_READLINE_VERSION >= 0x0600
+    rl_prep_term_function = CYDisplayStart;
+    rl_redisplay_function = CYDisplayUpdate;
+    rl_deprep_term_function = CYDisplayFinish;
+#endif
 
     mkdir(basedir, 0700);
     read_history(histfile);

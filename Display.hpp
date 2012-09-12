@@ -19,27 +19,11 @@
 **/
 /* }}} */
 
-#ifndef CYCRIPT_HIGHLIGHT_HPP
-#define CYCRIPT_HIGHLIGHT_HPP
+#ifndef CYCRIPT_DISPLAY_HPP
+#define CYCRIPT_DISPLAY_HPP
 
-#include <iostream>
+void CYDisplayStart(int meta);
+void CYDisplayUpdate();
+void CYDisplayFinish();
 
-namespace hi { enum Value {
-    Comment,
-    Constant,
-    Control,
-    Escape,
-    Identifier,
-    Meta,
-    Nothing,
-    Operator,
-    Structure,
-    Type,
-}; }
-
-void CYLexerHighlight(const char *data, size_t size, std::ostream &output, bool ignore = false);
-
-const char CYIgnoreStart = '\x01';
-const char CYIgnoreEnd = '\x02';
-
-#endif/*CYCRIPT_HIGHLIGHT_HPP*/
+#endif/*CYCRIPT_DISPLAY_HPP*/

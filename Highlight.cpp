@@ -53,7 +53,7 @@ struct CYColor {
     }
 };
 
-void CYLexerHighlight(const char *data, size_t size, std::ostream &output) {
+void CYLexerHighlight(const char *data, size_t size, std::ostream &output, bool ignore) {
     CYStream stream(data, data + size);
     CYDriver driver(stream);
 
@@ -82,11 +82,24 @@ void CYLexerHighlight(const char *data, size_t size, std::ostream &output) {
         }
 
         Skip(data, size, output, offset, current, location.begin);
-        if (color.code_ != 0)
+
+        if (color.code_ != 0) {
+            if (ignore)
+                output << CYIgnoreStart;
             output << "\e[" << (color.bold_ ? '1' : '0') << ";" << color.code_ << "m";
+            if (ignore)
+                output << CYIgnoreEnd;
+        }
+
         Skip(data, size, output, offset, current, location.end);
-        if (color.code_ != 0)
+
+        if (color.code_ != 0) {
+            if (ignore)
+                output << CYIgnoreStart;
             output << "\e[0m";
+            if (ignore)
+                output << CYIgnoreEnd;
+        }
     }
 
     output.write(data + offset, size - offset);

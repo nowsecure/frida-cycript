@@ -1,0 +1,152 @@
+/* Cycript - Optimizing JavaScript Compiler/Runtime
+ * Copyright (C) 2009-2012  Jay Freeman (saurik)
+*/
+
+/* GNU Lesser General Public License, Version 3 {{{ */
+/*
+ * Cycript is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU Lesser General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * Cycript is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Cycript.  If not, see <http://www.gnu.org/licenses/>.
+**/
+/* }}} */
+
+#include <complex>
+#include <sstream>
+
+#ifdef HAVE_READLINE_H
+#include <readline.h>
+#else
+#include <readline/readline.h>
+#endif
+
+#include <sys/ioctl.h>
+
+#include "Highlight.hpp"
+
+#include <term.h>
+
+typedef std::complex<int> CYCursor;
+
+CYCursor current_;
+int width_;
+size_t point_;
+
+const char *CYDisplayPrompt() {
+#if RL_READLINE_VERSION >= 0x0600
+    return rl_display_prompt;
+#else
+    return rl_prompt;
+#endif
+}
+
+unsigned CYDisplayWidth() {
+    struct winsize info;
+    if (ioctl(1, TIOCGWINSZ, &info) != -1)
+        return info.ws_col;
+    return tgetnum(const_cast<char *>("co"));
+}
+
+void CYDisplayOutput_(int (*put)(int), const char *&data) {
+    for (;; ++data) {
+        char next(*data);
+        if (next == '\0' || next == CYIgnoreEnd)
+            return;
+        if (put != NULL)
+            put(next);
+    }
+}
+
+CYCursor CYDisplayOutput(int (*put)(int), int width, const char *data, ssize_t offset = 0) {
+    CYCursor point(current_);
+
+    for (;;) {
+        if (offset-- == 0)
+            point = current_;
+
+        char next(*data++);
+        switch (next) {
+            case '\0':
+                return point;
+            break;
+
+            case CYIgnoreStart:
+                CYDisplayOutput_(put, data);
+                ++offset;
+            break;
+
+            case CYIgnoreEnd:
+                ++offset;
+            break;
+
+            default:
+                if (put != NULL)
+                    put(next);
+
+                current_ += CYCursor(0, 1);
+                if (current_.imag() == width)
+                    current_ = CYCursor(current_.real() + 1, 0);
+            break;
+        }
+    }
+
+    return point;
+}
+
+void CYDisplayMove(CYCursor target) {
+    int offset(target.real() - current_.real());
+
+    if (offset < 0)
+        putp(tparm(parm_up_cursor, -offset));
+    else if (offset > 0)
+        putp(tparm(parm_down_cursor, offset));
+
+    putp(tparm(column_address, target.imag()));
+    current_ = target;
+}
+
+void CYDisplayStart(int meta) {
+    rl_prep_terminal(meta);
+    current_ = CYCursor();
+}
+
+void CYDisplayUpdate() {
+    std::ostringstream stream;
+    CYLexerHighlight(rl_line_buffer, rl_end, stream, true);
+    std::string string(stream.str());
+    const char *buffer(string.c_str());
+
+    int width(CYDisplayWidth());
+    if (width_ != width) {
+        current_ = CYCursor();
+        CYDisplayOutput(NULL, width, CYDisplayPrompt());
+        CYDisplayOutput(NULL, width, buffer, point_);
+    }
+
+    CYDisplayMove(CYCursor());
+    CYDisplayOutput(putchar, width, CYDisplayPrompt());
+
+    CYCursor target(CYDisplayOutput(putchar, width, stream.str().c_str(), rl_point));
+    if (target.imag() == 0)
+        putp(cursor_down);
+
+    putp(clr_eos);
+    CYDisplayMove(target);
+
+    fflush(stdout);
+
+    width_ = width;
+    point_ = rl_point;
+}
+
+void CYDisplayFinish() {
+    rl_deprep_terminal();
+}
