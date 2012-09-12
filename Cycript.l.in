@@ -250,6 +250,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "@implementation" L C F(yyextra->no_.AtImplementation ? tk::AtImplementation_ : tk::AtImplementation, hi::Meta);
 "@import"         L C F(tk::AtImport, hi::Meta);
 "@selector"       L C F(tk::AtSelector, hi::Meta);
+"nil"             L C I(identifier, Identifier("nil"), tk::Identifier_, hi::Constant);
 @end
 
 "false"        L C I(false, False(), tk::False, hi::Constant);
