@@ -30,12 +30,14 @@ typedef cy::parser::token tk;
 
 #define YY_EXTRA_TYPE CYDriver *
 
+// do /not/ fold token to the return: this is a macro and the ordering is dependent
 #define F(value, highlight) do { \
+    int token(value); \
     yyextra->no_.AtImplementation = false; \
     yyextra->no_.Function = false; \
     yyextra->no_.OpenBrace = false; \
     yylval->highlight_ = highlight; \
-    return value; \
+    return token; \
 } while (false)
 
 #define A new($pool)
