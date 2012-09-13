@@ -95,7 +95,7 @@ struct Messages :
     {
     }
 
-    static JSObjectRef Make(JSContextRef context, Class _class, bool array = false);
+    static JSObjectRef Make(JSContextRef context, Class _class);
 
     _finline Class GetValue() const {
         return reinterpret_cast<Class>(value_);
