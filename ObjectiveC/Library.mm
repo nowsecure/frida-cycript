@@ -1115,8 +1115,7 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 
 static bool CYIsClass(id self) {
 #ifdef __APPLE__
-    // XXX: this is a lame object_isClass
-    return class_getInstanceMethod(object_getClass(self), @selector(alloc)) != NULL;
+    return class_isMetaClass(object_getClass(self));
 #else
     return GSObjCIsClass(self);
 #endif
