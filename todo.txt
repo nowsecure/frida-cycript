@@ -87,7 +87,8 @@ with is being translated in a manner that doesn't handle variables
 cy# function b() { for each (var t in a) {} }
 function b(){var e,t,n;with({t:a,n:undefined})for(n in t)e=t[n]}
 
-I feel like [[self toJSON] toCYON] might should be one or the other
+[[self description] cy$toCYON:] seems like a poor implementation of toCYON
+implement cy$toJSON:inContext: for NSDictionary and NSArray
 
 the non-local transform used for let is ludicrous... :( :(
 

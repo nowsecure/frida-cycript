@@ -394,7 +394,7 @@ JSObjectRef CYMakeInstance(JSContextRef context, id object, bool transient) {
 - (JSValueRef) cy$valueOfInContext:(JSContextRef)context;
 - (JSType) cy$JSType;
 
-- (NSObject *) cy$toJSON:(NSString *)key;
+- (JSValueRef) cy$toJSON:(NSString *)key inContext:(JSContextRef)context;
 - (NSString *) cy$toCYON:(bool)objective;
 
 - (bool) cy$hasProperty:(NSString *)name;
@@ -538,12 +538,6 @@ struct PropertyAttributes {
 };
 #endif
 
-#ifdef __APPLE__
-NSObject *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
-    return [(NSString *) CFCopyDescription((CFTypeRef) self) autorelease];
-}
-#endif
-
 #ifndef __APPLE__
 @interface CYWebUndefined : NSObject {
 }
@@ -571,8 +565,6 @@ NSObject *NSCFType$cy$toJSON(id self, SEL sel, NSString *key) {
 }
 
 - (id) initWithJSObject:(JSObjectRef)object inContext:(JSContextRef)context;
-
-- (NSObject *) cy$toJSON:(NSString *)key;
 
 - (NSUInteger) count;
 - (id) objectForKey:(id)key;
@@ -788,10 +780,6 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     return kJSTypeBoolean;
 }
 
-- (NSObject *) cy$toJSON:(NSString *)key {
-    return self;
-}
-
 - (NSString *) cy$toCYON:(bool)objective {
     NSString *value([self boolValue] ? @"true" : @"false");
     return objective ? value : [NSString stringWithFormat:@"@%@", value];
@@ -949,10 +937,6 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     return kJSTypeNumber;
 }
 
-- (NSObject *) cy$toJSON:(NSString *)key {
-    return self;
-}
-
 - (NSString *) cy$toCYON:(bool)objective {
     NSString *value([self cy$JSType] != kJSTypeBoolean ? [self stringValue] : [self boolValue] ? @"true" : @"false");
     return objective ? value : [NSString stringWithFormat:@"@%@", value];
@@ -971,14 +955,14 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     return kJSTypeNull;
 }
 
-- (NSObject *) cy$toJSON:(NSString *)key {
-    return self;
-}
-
 - (NSString *) cy$toCYON:(bool)objective {
     NSString *value(@"null");
     return objective ? value : [NSString stringWithFormat:@"@%@", value];
 }
+
+- (JSValueRef) cy$valueOfInContext:(JSContextRef)context { CYObjectiveTry_(context) {
+    return CYJSNull(context);
+} CYObjectiveCatch }
 
 @end
 /* }}} */
@@ -989,6 +973,10 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     return self;
 }
 
+- (JSValueRef) cy$toJSON:(NSString *)key inContext:(JSContextRef)context {
+    return [self cy$valueOfInContext:context];
+}
+
 - (JSValueRef) cy$valueOfInContext:(JSContextRef)context { CYObjectiveTry_(context) {
     return NULL;
 } CYObjectiveCatch }
@@ -997,12 +985,8 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     return kJSTypeObject;
 }
 
-- (NSObject *) cy$toJSON:(NSString *)key {
-    return [self description];
-}
-
 - (NSString *) cy$toCYON:(bool)objective {
-    return [[self cy$toJSON:@""] cy$toCYON:objective];
+    return [[self description] cy$toCYON:objective];
 }
 
 - (bool) cy$hasProperty:(NSString *)name {
@@ -1033,12 +1017,8 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 /* Bridge: NSProxy {{{ */
 @implementation NSProxy (Cycript)
 
-- (NSObject *) cy$toJSON:(NSString *)key {
-    return [self description];
-}
-
 - (NSString *) cy$toCYON:(bool)objective {
-    return [[self cy$toJSON:@""] cy$toCYON:objective];
+    return [[self description] cy$toCYON:objective];
 }
 
 @end
@@ -1052,10 +1032,6 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 
 - (JSType) cy$JSType {
     return kJSTypeString;
-}
-
-- (NSObject *) cy$toJSON:(NSString *)key {
-    return self;
 }
 
 - (NSString *) cy$toCYON:(bool)objective {
@@ -1124,10 +1100,6 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     return kJSTypeUndefined;
 }
 
-- (NSObject *) cy$toJSON:(NSString *)key {
-    return self;
-}
-
 - (NSString *) cy$toCYON {
     NSString *value(@"undefined");
     return value; // XXX: maybe use the below code, adding @undefined?
@@ -1189,18 +1161,6 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
     JSValueUnprotect(context_, object_);
     JSGlobalContextRelease(context_);
     [super dealloc];
-} CYObjectiveCatch }
-
-- (NSObject *) cy$toJSON:(NSString *)key { CYObjectiveTry {
-    JSValueRef toJSON(CYGetProperty(context_, object_, toJSON_s));
-    if (!CYIsCallable(context_, toJSON))
-        return [super cy$toJSON:key];
-    else {
-        JSValueRef arguments[1] = {CYCastJSValue(context_, key)};
-        JSValueRef value(CYCallAsFunction(context_, (JSObjectRef) toJSON, object_, 1, arguments));
-        // XXX: do I really want an NSNull here?!
-        return CYCastNSObject(NULL, context_, value) ?: [NSNull null];
-    }
 } CYObjectiveCatch }
 
 - (NSString *) cy$toCYON:(bool)objective { CYObjectiveTry {
@@ -2400,6 +2360,7 @@ static JSValueRef Instance_callAsFunction_toJSON(JSContextRef context, JSObjectR
         return NULL;
 
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
+    id value(internal->GetValue());
 
     CYPoolTry {
         NSString *key;
@@ -2407,8 +2368,13 @@ static JSValueRef Instance_callAsFunction_toJSON(JSContextRef context, JSObjectR
             key = nil;
         else
             key = CYCastNSString(NULL, context, CYJSString(context, arguments[0]));
-        // XXX: check for support of cy$toJSON?
-        return CYCastJSValue(context, CYJSString(context, [internal->GetValue() cy$toJSON:key]));
+
+        if (!CYImplements(value, object_getClass(value), @selector(cy$toJSON:inContext:)))
+            return CYJSUndefined(context);
+        else if (JSValueRef json = [value cy$toJSON:key inContext:context])
+            return json;
+        else
+            return CYCastJSValue(context, CYJSString(context, [value description]));
     } CYPoolCatch(NULL)
 } CYCatch return /*XXX*/ NULL; }
 
@@ -2527,6 +2493,12 @@ static JSStaticFunction Selector_staticFunctions[5] = {
     {"type", &Selector_callAsFunction_type, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
+
+#ifdef __APPLE__
+JSValueRef NSCFType$cy$toJSON$inContext$(id self, SEL sel, JSValueRef key, JSContextRef context) { CYObjectiveTry_(context) {
+    return CYCastJSValue(context, [(NSString *) CFCopyDescription((CFTypeRef) self) autorelease]);
+} CYObjectiveCatch }
+#endif
 
 void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     $objc_setAssociatedObject = reinterpret_cast<void (*)(id, void *, id value, objc_AssociationPolicy)>(dlsym(RTLD_DEFAULT, "objc_setAssociatedObject"));
@@ -2663,7 +2635,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     ObjectiveC_Protocols_ = JSClassCreate(&definition);
 
 #ifdef __APPLE__
-    class_addMethod(NSCFType_, @selector(cy$toJSON:), reinterpret_cast<IMP>(&NSCFType$cy$toJSON), "@12@0:4@8");
+    class_addMethod(NSCFType_, @selector(cy$toJSON:inContext:), reinterpret_cast<IMP>(&NSCFType$cy$toJSON$inContext$), "^{OpaqueJSValue=}16@0:4@8^{OpaqueJSContext=}12");
 #endif
 } CYPoolCatch() }
 
