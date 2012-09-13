@@ -1493,7 +1493,7 @@ static JSValueRef CYObjectiveC_FromFFI(JSContextRef context, sig::Type *type, ff
     }
 } CYPoolCatch(NULL) return /*XXX*/ NULL; }
 
-static bool CYImplements(id object, Class _class, SEL selector, bool devoid) {
+static bool CYImplements(id object, Class _class, SEL selector, bool devoid = false) {
     if (objc_method *method = class_getInstanceMethod(_class, selector)) {
         if (!devoid)
             return true;
@@ -1663,7 +1663,7 @@ static void Messages_getPropertyNames(JSContextRef context, JSObjectRef object, 
 
 static bool CYHasImplicitProperties(Class _class) {
     // XXX: this is an evil hack to deal with NSProxy; fix elsewhere
-    if (!CYImplements(_class, object_getClass(_class), @selector(cy$hasImplicitProperties), false))
+    if (!CYImplements(_class, object_getClass(_class), @selector(cy$hasImplicitProperties)))
         return true;
     return [_class cy$hasImplicitProperties];
 }
@@ -1686,7 +1686,7 @@ static bool Instance_hasProperty(JSContextRef context, JSObjectRef object, JSStr
 
     CYPoolTry {
         // XXX: this is an evil hack to deal with NSProxy; fix elsewhere
-        if (CYImplements(self, _class, @selector(cy$hasProperty:), false))
+        if (CYImplements(self, _class, @selector(cy$hasProperty:)))
             if ([self cy$hasProperty:name])
                 return true;
     } CYPoolCatch(false)
@@ -1790,7 +1790,7 @@ static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStr
     set[length + 4] = '\0';
 
     if (SEL sel = sel_getUid(set))
-        if (CYImplements(self, _class, sel, false)) {
+        if (CYImplements(self, _class, sel)) {
             JSValueRef arguments[1] = {value};
             CYSendMessage(pool, context, self, NULL, sel, 1, arguments, false, exception);
             return true;
@@ -1860,7 +1860,7 @@ static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, 
 
     CYPoolTry {
         // XXX: this is an evil hack to deal with NSProxy; fix elsewhere
-        if (CYImplements(self, _class, @selector(cy$getPropertyNames:inContext:), false))
+        if (CYImplements(self, _class, @selector(cy$getPropertyNames:inContext:)))
             [self cy$getPropertyNames:names inContext:context];
     } CYPoolCatch()
 }
