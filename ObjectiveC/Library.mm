@@ -959,7 +959,7 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 }
 
 - (JSValueRef) cy$valueOfInContext:(JSContextRef)context { CYObjectiveTry_(context) {
-    return [self cy$JSType] != kJSTypeBoolean ? CYCastJSValue(context, [self doubleValue]) : CYCastJSValue(context, [self boolValue]);
+    return [self cy$JSType] != kJSTypeBoolean ? CYCastJSValue(context, [self doubleValue]) : CYCastJSValue(context, static_cast<bool>([self boolValue]));
 } CYObjectiveCatch }
 
 @end
