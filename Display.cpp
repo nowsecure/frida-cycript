@@ -72,9 +72,6 @@ CYCursor CYDisplayOutput(int (*put)(int), int width, const char *data, ssize_t o
 
             case CYIgnoreStart:
                 CYDisplayOutput_(put, data);
-                ++offset;
-            break;
-
             case CYIgnoreEnd:
                 ++offset;
             break;
@@ -90,8 +87,6 @@ CYCursor CYDisplayOutput(int (*put)(int), int width, const char *data, ssize_t o
 
         }
     }
-
-    return point;
 }
 
 void CYDisplayMove_(char *negative, char *positive, int offset) {
