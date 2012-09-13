@@ -2539,9 +2539,10 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     Selector_type = new(pool) Type_privateData(":");
 
 #ifdef __APPLE__
-    NSCFBoolean_ = objc_getClass("NSCFBoolean");
+    // XXX: apparently, iOS now has both of these
+    NSCFBoolean_ = objc_getClass("__NSCFBoolean");
     if (NSCFBoolean_ == nil)
-        NSCFBoolean_ = objc_getClass("__NSCFBoolean");
+        NSCFBoolean_ = objc_getClass("NSCFBoolean");
 
     NSCFType_ = objc_getClass("NSCFType");
     NSGenericDeallocHandler_ = objc_getClass("__NSGenericDeallocHandler");
