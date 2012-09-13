@@ -40,14 +40,6 @@ CYCursor current_;
 int width_;
 size_t point_;
 
-const char *CYDisplayPrompt() {
-#if RL_READLINE_VERSION >= 0x0600
-    return rl_display_prompt;
-#else
-    return rl_prompt;
-#endif
-}
-
 unsigned CYDisplayWidth() {
     struct winsize info;
     if (ioctl(1, TIOCGWINSZ, &info) != -1)
@@ -119,6 +111,12 @@ void CYDisplayStart(int meta) {
 }
 
 void CYDisplayUpdate() {
+#if RL_READLINE_VERSION >= 0x0600
+    const char *prompt(rl_display_prompt);
+#else
+    const char *prompt(rl_prompt);
+#endif
+
     std::ostringstream stream;
     CYLexerHighlight(rl_line_buffer, rl_end, stream, true);
     std::string string(stream.str());
@@ -127,12 +125,12 @@ void CYDisplayUpdate() {
     int width(CYDisplayWidth());
     if (width_ != width) {
         current_ = CYCursor();
-        CYDisplayOutput(NULL, width, CYDisplayPrompt());
+        CYDisplayOutput(NULL, width, prompt);
         CYDisplayOutput(NULL, width, buffer, point_);
     }
 
     CYDisplayMove(CYCursor());
-    CYDisplayOutput(putchar, width, CYDisplayPrompt());
+    CYDisplayOutput(putchar, width, prompt);
 
     CYCursor target(CYDisplayOutput(putchar, width, stream.str().c_str(), rl_point));
     if (target.imag() == 0)
