@@ -399,19 +399,13 @@ static void Console(CYOptions &options) {
     rl_initialize();
     rl_readline_name = name_;
 
-#if RL_READLINE_VERSION >= 0x0600
-    rl_prep_term_function = CYDisplayStart;
-    rl_redisplay_function = CYDisplayUpdate;
-    rl_deprep_term_function = CYDisplayFinish;
-#endif
-
     mkdir(basedir, 0700);
     read_history(histfile);
 
     bool bypass(false);
     bool debug(false);
     bool expand(false);
-    bool syntax(false);
+    bool syntax(true);
 
     out_ = &std::cout;
 
@@ -442,9 +436,23 @@ static void Console(CYOptions &options) {
         }
 
       read:
+
+#if RL_READLINE_VERSION >= 0x0600
+        if (syntax) {
+            rl_prep_term_function = CYDisplayStart;
+            rl_redisplay_function = CYDisplayUpdate;
+            rl_deprep_term_function = CYDisplayFinish;
+        } else {
+            rl_prep_term_function = rl_prep_terminal;
+            rl_redisplay_function = rl_redisplay;
+            rl_deprep_term_function = rl_deprep_terminal;
+        }
+#endif
+
         mode_ = Parsing;
         char *line(readline(prompt));
         mode_ = Working;
+
         if (line == NULL)
             break;
         if (line[0] == '\0')
