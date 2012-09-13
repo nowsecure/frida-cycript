@@ -80,13 +80,14 @@ CYCursor CYDisplayOutput(int (*put)(int), int width, const char *data, ssize_t o
             break;
 
             default:
-                if (put != NULL)
-                    put(next);
-
                 current_ += CYCursor(0, 1);
                 if (current_.imag() == width)
+            case '\n':
                     current_ = CYCursor(current_.real() + 1, 0);
+                if (put != NULL)
+                    put(next);
             break;
+
         }
     }
 
