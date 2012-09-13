@@ -94,15 +94,23 @@ CYCursor CYDisplayOutput(int (*put)(int), int width, const char *data, ssize_t o
     return point;
 }
 
-void CYDisplayMove(CYCursor target) {
-    int offset(target.real() - current_.real());
-
+void CYDisplayMove_(char *negative, char *positive, int offset) {
     if (offset < 0)
-        putp(tparm(parm_up_cursor, -offset));
+        putp(tparm(negative, -offset));
     else if (offset > 0)
-        putp(tparm(parm_down_cursor, offset));
+        putp(tparm(positive, offset));
+}
 
-    putp(tparm(column_address, target.imag()));
+void CYDisplayMove(CYCursor target) {
+    CYCursor offset(target - current_);
+
+    CYDisplayMove_(parm_up_cursor, parm_down_cursor, offset.real());
+
+    if (char *parm = tparm(column_address, target.imag()))
+        putp(parm);
+    else
+        CYDisplayMove_(parm_left_cursor, parm_right_cursor, offset.imag());
+
     current_ = target;
 }
 
