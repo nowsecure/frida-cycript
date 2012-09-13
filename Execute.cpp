@@ -401,6 +401,16 @@ const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSObjectRef obje
         return cyon;
     }
 
+    if (JSObjectIsFunction(context, object)) {
+        JSValueRef toString(CYGetProperty(context, object, toString_s));
+        if (CYIsCallable(context, toString)) {
+            JSValueRef arguments[1] = {CYCastJSValue(context, CYJSString(""))};
+            JSValueRef value(CYCallAsFunction(context, (JSObjectRef) toString, object, 1, arguments));
+            _assert(value != NULL);
+            return CYPoolCString(pool, context, value);
+        }
+    }
+
     std::ostringstream str;
 
     str << '{';
