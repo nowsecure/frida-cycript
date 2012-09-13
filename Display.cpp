@@ -127,7 +127,7 @@ void CYDisplayUpdate() {
     if (width_ != width) {
         current_ = CYCursor();
         CYDisplayOutput(NULL, width, prompt);
-        CYDisplayOutput(NULL, width, buffer, point_);
+        current_ = CYDisplayOutput(NULL, width, buffer, point_);
     }
 
     CYDisplayMove(CYCursor());
