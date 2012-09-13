@@ -135,14 +135,13 @@ void CYDisplayUpdate() {
 
     CYDisplayMove(CYCursor());
     CYDisplayOutput(putchar, width, prompt);
-
     CYCursor target(CYDisplayOutput(putchar, width, stream.str().c_str(), rl_point));
-    if (target.imag() == 0)
-        putp(cursor_down);
 
+    if (current_.imag() == 0)
+        CYDisplayOutput(putchar, width, " ");
     putp(clr_eos);
-    CYDisplayMove(target);
 
+    CYDisplayMove(target);
     fflush(stdout);
 
     width_ = width;
