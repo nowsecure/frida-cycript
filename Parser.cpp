@@ -30,6 +30,7 @@ CYDriver::CYDriver(std::istream &data, const std::string &filename) :
     state_(CYClear),
     data_(data),
     strict_(false),
+    commented_(false),
     filename_(filename),
     program_(NULL),
     auto_(false),

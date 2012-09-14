@@ -83,6 +83,12 @@ typedef cy::parser::token tk;
     yylloc->columns(yyleng); \
 }
 
+#define M { \
+    if (yyextra->commented_) { \
+        I(comment, Comment(Y), tk::Comment, hi::Comment); \
+    } \
+}
+
 int H(char c) {
     if (c >= '0' && c <= '9')
         return c - '0';
@@ -147,12 +153,12 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
 <RegExp>\/{RegularExpressionBody}\/{RegularExpressionFlags} L C I(literal, RegEx(Y), tk::RegularExpressionLiteral, hi::Constant);
 
-\/\/[^\n]* L
+\/\/[^\n]* L M
 
 	/* http://ostermiller.org/findcomment.html */
 	/* XXX: unify these two rules using !? */
 \/\*!([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+\/ V() C I(comment, Comment(Y), tk::Comment, hi::Comment);
-\/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+\/ V(N)
+\/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+\/ V(N) M
 
 @begin E4X
 <RegExp>"<>"      L F(tk::LeftRight, hi::Structure);

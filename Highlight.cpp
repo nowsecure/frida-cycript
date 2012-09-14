@@ -56,6 +56,7 @@ struct CYColor {
 void CYLexerHighlight(const char *data, size_t size, std::ostream &output, bool ignore) {
     CYStream stream(data, data + size);
     CYDriver driver(stream);
+    driver.commented_ = true;
 
     size_t offset(0);
     cy::position current;

@@ -506,6 +506,7 @@ class CYDriver {
     std::istream &data_;
 
     bool strict_;
+    bool commented_;
 
     enum Condition {
         RegExpCondition,
