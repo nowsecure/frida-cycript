@@ -117,7 +117,10 @@ struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named, C
 
                 if (next == '"') {
                     const char *quote = strchr(*name + 1, '"');
-                    if (!named || quote[1] == eos || quote[1] == '"') {
+                    if (quote == NULL) {
+                        printf("unterminated specific id type {%s}\n", *name - 10);
+                        _assert(false);
+                    } else if (!named || quote[1] == eos || quote[1] == '"') {
                         type->name = apr_pstrmemdup(pool, *name + 1, quote - *name - 1);
                         *name = quote + 1;
                     }
