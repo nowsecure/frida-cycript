@@ -395,6 +395,7 @@ JSObjectRef CYMakeInstance(JSContextRef context, id object, bool transient) {
 
 - (bool) cy$hasProperty:(NSString *)name;
 - (NSObject *) cy$getProperty:(NSString *)name;
+- (JSValueRef) cy$getProperty:(NSString *)name inContext:(JSContextRef)context;
 - (bool) cy$setProperty:(NSString *)name to:(NSObject *)value;
 - (bool) cy$deleteProperty:(NSString *)name;
 - (void) cy$getPropertyNames:(JSPropertyNameAccumulatorRef)names inContext:(JSContextRef)context;
@@ -730,20 +731,20 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 }
 
 - (NSObject *) cy$getProperty:(NSString *)name {
-    if ([name isEqualToString:@"length"]) {
-        NSUInteger count([self count]);
-#ifdef __APPLE__
-        return [NSNumber numberWithUnsignedInteger:count];
-#else
-        return [NSNumber numberWithUnsignedInt:count];
-#endif
-    }
-
     size_t index(CYGetIndex(name));
     if (index == _not(size_t) || index >= [self count])
         return [super cy$getProperty:name];
     else
         return [self objectAtIndex:index];
+}
+
+- (JSValueRef) cy$getProperty:(NSString *)name inContext:(JSContextRef)context {
+    CYObjectiveTry_(context) {
+        if ([name isEqualToString:@"length"])
+            return CYCastJSValue(context, [self count]);
+    } CYObjectiveCatch
+
+    return [super cy$getProperty:name inContext:context];
 }
 
 - (void) cy$getPropertyNames:(JSPropertyNameAccumulatorRef)names inContext:(JSContextRef)context {
@@ -996,6 +997,12 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 - (NSObject *) cy$getProperty:(NSString *)name {
     return nil;
 }
+
+- (JSValueRef) cy$getProperty:(NSString *)name inContext:(JSContextRef)context { CYObjectiveTry_(context) {
+    if (NSObject *value = [self cy$getProperty:name])
+        return CYCastJSValue(context, value);
+    return NULL;
+} CYObjectiveCatch }
 
 - (bool) cy$setProperty:(NSString *)name to:(NSObject *)value {
     return false;
@@ -1663,8 +1670,8 @@ static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object,
             return value;
 
     CYPoolTry {
-        if (NSObject *data = [self cy$getProperty:name])
-            return CYCastJSValue(context, data);
+        if (JSValueRef value = [self cy$getProperty:name inContext:context])
+            return value;
     } CYPoolCatch(NULL)
 
     const char *string(CYPoolCString(pool, context, name));
