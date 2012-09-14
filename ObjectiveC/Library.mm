@@ -1100,7 +1100,7 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
     return kJSTypeUndefined;
 }
 
-- (NSString *) cy$toCYON {
+- (NSString *) cy$toCYON:(bool)objective {
     NSString *value(@"undefined");
     return value; // XXX: maybe use the below code, adding @undefined?
     //return objective ? value : [NSString stringWithFormat:@"@%@", value];
