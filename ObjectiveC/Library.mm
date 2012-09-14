@@ -2543,6 +2543,9 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     definition.className = "ArrayInstance";
     ArrayInstance_ = JSClassCreate(&definition);
 
+    definition.className = "FunctionInstance";
+    FunctionInstance_ = JSClassCreate(&definition);
+
     definition.className = "ObjectInstance";
     ObjectInstance_ = JSClassCreate(&definition);
 
@@ -2551,9 +2554,6 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
 
     definition.className = "TypeInstance";
     TypeInstance_ = JSClassCreate(&definition);
-
-    definition.className = "FunctionInstance";
-    FunctionInstance_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "Internal";
