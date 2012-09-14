@@ -2412,6 +2412,28 @@ static JSValueRef Instance_callAsFunction_toString(JSContextRef context, JSObjec
     } CYPoolCatch(NULL)
 } CYCatch return /*XXX*/ NULL; }
 
+static JSValueRef Instance_callAsFunction_typeOf(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    if (!CYJSValueIsNSObject(context, _this))
+        return NULL;
+
+    Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
+    id value(internal->GetValue());
+
+    if (!CYIsClass(value))
+        CYThrow("non-Class object cannot be used as Type");
+
+    // XXX: this is a very silly implementation
+
+    std::ostringstream type;
+    type << "@\"";
+    type << class_getName(value);
+    type << "\"";
+
+    CYPoolTry {
+        return CYMakeType(context, type.str().c_str());
+    } CYPoolCatch(NULL)
+} CYCatch return /*XXX*/ NULL; }
+
 static JSValueRef Selector_callAsFunction_toString(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     Selector_privateData *internal(reinterpret_cast<Selector_privateData *>(JSObjectGetPrivate(_this)));
     return CYCastJSValue(context, sel_getName(internal->GetValue()));
@@ -2464,13 +2486,14 @@ static JSStaticValue Instance_staticValues[5] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction Instance_staticFunctions[7] = {
+static JSStaticFunction Instance_staticFunctions[8] = {
     {"$cya", &CYValue_callAsFunction_$cya, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toCYON", &Instance_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toJSON", &Instance_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"valueOf", &Instance_callAsFunction_valueOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toPointer", &Instance_callAsFunction_toPointer, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toString", &Instance_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"typeOf", &Instance_callAsFunction_typeOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
 
