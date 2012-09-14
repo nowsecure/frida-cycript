@@ -1469,7 +1469,12 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     CYSetProperty(context, cycript, CYJSString("Functor"), Functor);
 
     CYSetProperty(context, cycript, CYJSString("Pointer"), JSObjectMakeConstructor(context, Pointer_, &Pointer_new));
-    CYSetProperty(context, cycript, CYJSString("Type"), JSObjectMakeConstructor(context, Type_privateData::Class_, &Type_new));
+
+    JSObjectRef Type(JSObjectMakeConstructor(context, Type_privateData::Class_, &Type_new));
+    CYSetProperty(context, cycript, CYJSString("Type"), Type);
+
+    JSObjectRef Type_prototype(CYCastJSObject(context, CYGetProperty(context, Type, prototype_s)));
+    CYSetProperty(context, cy, CYJSString("Type_prototype"), Type_prototype);
 
     JSObjectRef all(JSObjectMake(context, All_, NULL));
     CYSetProperty(context, cycript, CYJSString("all"), all);

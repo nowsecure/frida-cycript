@@ -245,6 +245,7 @@ static JSClassRef ArrayInstance_;
 static JSClassRef FunctionInstance_;
 static JSClassRef ObjectInstance_;
 static JSClassRef StringInstance_;
+static JSClassRef TypeInstance_;
 
 static JSClassRef Internal_;
 static JSClassRef Message_;
@@ -290,9 +291,11 @@ Type_privateData *Selector_privateData::GetType() const {
 
 static JSValueRef Instance_callAsFunction_toString(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception);
 
-JSValueRef CYGetClassPrototype(JSContextRef context, id self) {
+JSValueRef CYGetClassPrototype(JSContextRef context, Class self, bool meta) {
     if (self == nil)
         return CYGetCachedObject(context, CYJSString("Instance_prototype"));
+    else if (meta && !class_isMetaClass(self))
+        return CYGetCachedObject(context, CYJSString("TypeInstance_prototype"));
 
     JSObjectRef global(CYGetGlobalObject(context));
     JSObjectRef cy(CYCastJSObject(context, CYGetProperty(context, global, cy_s)));
@@ -317,13 +320,17 @@ JSValueRef CYGetClassPrototype(JSContextRef context, id self) {
     else if (self == NSString_)
         prototype = CYGetCachedObject(context, CYJSString("StringInstance_prototype"));
     else
-        prototype = CYGetClassPrototype(context, class_getSuperclass(self));
+        prototype = CYGetClassPrototype(context, class_getSuperclass(self), meta);
 
     JSObjectRef object(JSObjectMake(context, _class, NULL));
     JSObjectSetPrototype(context, object, prototype);
     CYSetProperty(context, cy, name, object);
 
     return object;
+}
+
+_finline JSValueRef CYGetClassPrototype(JSContextRef context, Class self) {
+    return CYGetClassPrototype(context, self, class_isMetaClass(self));
 }
 
 JSObjectRef Messages::Make(JSContextRef context, Class _class) {
@@ -2545,6 +2552,9 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     definition.className = "StringInstance";
     StringInstance_ = JSClassCreate(&definition);
 
+    definition.className = "TypeInstance";
+    TypeInstance_ = JSClassCreate(&definition);
+
     definition.className = "FunctionInstance";
     FunctionInstance_ = JSClassCreate(&definition);
 
@@ -2685,6 +2695,12 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     CYSetProperty(context, cy, CYJSString("StringInstance_prototype"), StringInstance_prototype);
     JSObjectRef String_prototype(CYGetCachedObject(context, CYJSString("String_prototype")));
     JSObjectSetPrototype(context, StringInstance_prototype, String_prototype);
+
+    JSObjectRef TypeInstance(JSObjectMakeConstructor(context, TypeInstance_, NULL));
+    JSObjectRef TypeInstance_prototype(CYCastJSObject(context, CYGetProperty(context, TypeInstance, prototype_s)));
+    CYSetProperty(context, cy, CYJSString("TypeInstance_prototype"), TypeInstance_prototype);
+    JSObjectRef Type_prototype(CYGetCachedObject(context, CYJSString("Type_prototype")));
+    JSObjectSetPrototype(context, TypeInstance_prototype, Type_prototype);
 
     CYSetProperty(context, cycript, CYJSString("Instance"), Instance);
     CYSetProperty(context, cycript, CYJSString("Selector"), Selector);
