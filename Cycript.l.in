@@ -253,11 +253,13 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "@import"         L C F(tk::AtImport, hi::Meta);
 "@selector"       L C F(tk::AtSelector, hi::Meta);
 
-"NULL"             L C I(identifier, Identifier("NULL"), tk::Identifier_, hi::Constant);
-"nil"             L C I(identifier, Identifier("nil"), tk::Identifier_, hi::Constant);
-"YES"             L C I(identifier, Identifier("YES"), tk::Identifier_, hi::Constant);
-"NO"             L C I(identifier, Identifier("NO"), tk::Identifier_, hi::Constant);
+"NULL"         L C I(identifier, Identifier("NULL"), tk::Identifier_, hi::Constant);
+"nil"          L C I(identifier, Identifier("nil"), tk::Identifier_, hi::Constant);
+"YES"          L C I(identifier, Identifier("YES"), tk::Identifier_, hi::Constant);
+"NO"           L C I(identifier, Identifier("NO"), tk::Identifier_, hi::Constant);
 @end
+
+"undefined"    L C I(identifier, Identifier("undefined"), tk::Identifier_, hi::Operator);
 
 "false"        L C I(false, False(), tk::False, hi::Constant);
 "null"         L C I(null, Null(), tk::Null, hi::Constant);
