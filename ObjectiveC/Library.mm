@@ -1045,9 +1045,6 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 }
 
 - (bool) cy$hasProperty:(NSString *)name {
-    if ([name isEqualToString:@"length"])
-        return true;
-
     size_t index(CYGetIndex(name));
     if (index == _not(size_t) || index >= [self length])
         return [super cy$hasProperty:name];
@@ -1056,15 +1053,6 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
 }
 
 - (NSObject *) cy$getProperty:(NSString *)name {
-    if ([name isEqualToString:@"length"]) {
-        NSUInteger count([self length]);
-#ifdef __APPLE__
-        return [NSNumber numberWithUnsignedInteger:count];
-#else
-        return [NSNumber numberWithUnsignedInt:count];
-#endif
-    }
-
     size_t index(CYGetIndex(name));
     if (index == _not(size_t) || index >= [self length])
         return [super cy$getProperty:name];
@@ -1080,11 +1068,6 @@ NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef valu
         sprintf(name, "%zu", index);
         JSPropertyNameAccumulatorAddName(names, CYJSString(name));
     }
-}
-
-// XXX: this might be overly restrictive for NSString; I think I need a half-way between /injecting/ implicit properties and /accepting/ implicit properties
-+ (bool) cy$hasImplicitProperties {
-    return false;
 }
 
 - (JSValueRef) cy$valueOfInContext:(JSContextRef)context { CYObjectiveTry_(context) {
