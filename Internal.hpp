@@ -35,6 +35,9 @@
 JSGlobalContextRef CYGetJSContext(JSContextRef context);
 void Structor_(apr_pool_t *pool, sig::Type *&type);
 
+JSObjectRef CYMakeType(JSContextRef context, const char *type);
+JSObjectRef CYMakeType(JSContextRef context, sig::Type *type);
+
 struct Type_privateData :
     CYData
 {

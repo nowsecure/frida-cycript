@@ -947,12 +947,12 @@ static JSValueRef Functor_callAsFunction(JSContextRef context, JSObjectRef objec
     return CYCallFunction(pool, context, 0, NULL, count, arguments, false, exception, &internal->signature_, &internal->cif_, internal->GetValue());
 }
 
-static JSObjectRef CYMakeType(JSContextRef context, const char *type) {
+JSObjectRef CYMakeType(JSContextRef context, const char *type) {
     Type_privateData *internal(new Type_privateData(type));
     return JSObjectMake(context, Type_privateData::Class_, internal);
 }
 
-static JSObjectRef CYMakeType(JSContextRef context, sig::Type *type) {
+JSObjectRef CYMakeType(JSContextRef context, sig::Type *type) {
     Type_privateData *internal(new Type_privateData(type));
     return JSObjectMake(context, Type_privateData::Class_, internal);
 }
