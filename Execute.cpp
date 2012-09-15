@@ -1091,7 +1091,7 @@ static JSValueRef Type_callAsFunction(JSContextRef context, JSObjectRef object, 
 
 static JSObjectRef Type_callAsConstructor(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 0)
-        throw CYJSError(context, "incorrect number of arguments to type cast function");
+        throw CYJSError(context, "incorrect number of arguments to Type allocator");
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
 
     sig::Type *type(internal->type_);
