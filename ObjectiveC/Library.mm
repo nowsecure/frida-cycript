@@ -128,27 +128,27 @@ static void (*$objc_setAssociatedObject)(id object, void *key, id value, objc_As
 static id (*$objc_getAssociatedObject)(id object, void *key);
 static void (*$objc_removeAssociatedObjects)(id object);
 
-struct BlockDescriptor1 {
-    unsigned long int reserved;
-    unsigned long int size;
-};
-
-struct BlockDescriptor2 {
-    void (*copy_helper)(void *dst, void *src);
-    void (*dispose_helper)(void *src);
-};
-
-struct BlockDescriptor3 {
-    const char *signature;
-    const char *layout;
-};
-
 struct BlockLiteral {
     Class isa;
     int flags;
     int reserved;
     void (*invoke)(void *, ...);
     void *descriptor;
+};
+
+struct BlockDescriptor1 {
+    unsigned long int reserved;
+    unsigned long int size;
+};
+
+struct BlockDescriptor2 {
+    void (*copy_helper)(BlockLiteral *dst, BlockLiteral *src);
+    void (*dispose_helper)(BlockLiteral *src);
+};
+
+struct BlockDescriptor3 {
+    const char *signature;
+    const char *layout;
 };
 
 enum {
