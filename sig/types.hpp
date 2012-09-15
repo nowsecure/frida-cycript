@@ -74,7 +74,7 @@ struct Signature {
 
 struct Type {
     enum Primitive primitive;
-    char *name;
+    const char *name;
     uint8_t flags;
 
     union {

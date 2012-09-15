@@ -478,6 +478,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <messageParameter_> MessageParameterListOpt
 %type <bool_> MessageScope
 %type <type_> ModifiedType
+%type <part_> NamedTypeOpt
 %type <part_> PrefixedType
 %type <argument_> SelectorCall_
 %type <argument_> SelectorCall
@@ -1339,8 +1340,13 @@ ProgramBodyOpt
 
 @begin ObjectiveC
 /* Cycript (Objective-C): Type Encoding {{{ */
+NamedTypeOpt
+    : Identifier { $$ = CYNew CYEncodedPart(NULL, "withName", CYNew CYArgument(CYNew CYString($1->word_))); }
+    | { $$ = NULL; }
+    ;
+
 SuffixedType
-    : { $$ = NULL; }
+    : NamedTypeOpt { $$ = $1; }
     | "(" PrefixedType ")" { $$ = $2; }
     | SuffixedType "[" NumericLiteral "]" { $$ = CYNew CYEncodedPart($1, "arrayOf", CYNew CYArgument($3)); }
     ;

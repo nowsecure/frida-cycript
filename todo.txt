@@ -111,3 +111,5 @@ constant flags on types are encoded using something horribly wrong
 http://developer.apple.com/library/ios/#documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtTypeEncodings.html
 http://gcc.gnu.org/onlinedocs/gcc/Type-encoding.html
 http://gcc.gnu.org/onlinedocs/gcc/Legacy-type-encoding.html
+
+using .withName from the grammar is a horrible hack that makes other uses impossible

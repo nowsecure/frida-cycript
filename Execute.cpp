@@ -1097,6 +1097,19 @@ static JSValueRef Type_callAsFunction_pointerTo(JSContextRef context, JSObjectRe
     return CYMakeType(context, &type);
 } CYCatch }
 
+static JSValueRef Type_callAsFunction_withName(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    if (count != 1)
+        throw CYJSError(context, "incorrect number of arguments to Type.withName");
+    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
+
+    CYPool pool;
+    const char *name(CYPoolCString(pool, context, arguments[0]));
+
+    sig::Type type(*internal->type_);
+    type.name = name;
+    return CYMakeType(context, &type);
+} CYCatch }
+
 static JSValueRef Type_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 1)
         throw CYJSError(context, "incorrect number of arguments to type cast function");
@@ -1172,6 +1185,11 @@ static JSValueRef Type_getProperty_alignment(JSContextRef context, JSObjectRef o
     return CYCastJSValue(context, internal->GetFFI()->alignment);
 }
 
+static JSValueRef Type_getProperty_name(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
+    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
+    return CYCastJSValue(context, internal->type_->name);
+}
+
 static JSValueRef Type_getProperty_size(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
     return CYCastJSValue(context, internal->GetFFI()->size);
@@ -1225,16 +1243,18 @@ namespace cy {
     JSStaticFunction const * const Functor::StaticFunctions = Functor_staticFunctions;
 }
 
-static JSStaticValue Type_staticValues[3] = {
+static JSStaticValue Type_staticValues[4] = {
     {"alignment", &Type_getProperty_alignment, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"name", &Type_getProperty_name, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"size", &Type_getProperty_size, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction Type_staticFunctions[7] = {
+static JSStaticFunction Type_staticFunctions[8] = {
     {"arrayOf", &Type_callAsFunction_arrayOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"constant", &Type_callAsFunction_constant, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"pointerTo", &Type_callAsFunction_pointerTo, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"withName", &Type_callAsFunction_withName, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toCYON", &Type_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toJSON", &Type_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toString", &Type_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
