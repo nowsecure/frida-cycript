@@ -245,8 +245,8 @@ static JSClassRef ArrayInstance_;
 static JSClassRef FunctionInstance_;
 static JSClassRef ObjectInstance_;
 static JSClassRef StringInstance_;
-static JSClassRef TypeInstance_;
 
+static JSClassRef Class_;
 static JSClassRef Internal_;
 static JSClassRef Message_;
 static JSClassRef Messages_;
@@ -295,7 +295,7 @@ JSValueRef CYGetClassPrototype(JSContextRef context, Class self, bool meta) {
     if (self == nil)
         return CYGetCachedObject(context, CYJSString("Instance_prototype"));
     else if (meta && !class_isMetaClass(self))
-        return CYGetCachedObject(context, CYJSString("TypeInstance_prototype"));
+        return CYGetCachedObject(context, CYJSString("Class_prototype"));
 
     JSObjectRef global(CYGetGlobalObject(context));
     JSObjectRef cy(CYCastJSObject(context, CYGetProperty(context, global, cy_s)));
@@ -2412,7 +2412,7 @@ static JSValueRef Instance_callAsFunction_toString(JSContextRef context, JSObjec
     } CYPoolCatch(NULL)
 } CYCatch return /*XXX*/ NULL; }
 
-static JSValueRef Instance_callAsFunction_typeOf(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+static JSValueRef Class_callAsFunction_pointerTo(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (!CYJSValueIsNSObject(context, _this))
         return NULL;
 
@@ -2486,14 +2486,18 @@ static JSStaticValue Instance_staticValues[5] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction Instance_staticFunctions[8] = {
+static JSStaticFunction Instance_staticFunctions[7] = {
     {"$cya", &CYValue_callAsFunction_$cya, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toCYON", &Instance_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toJSON", &Instance_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"valueOf", &Instance_callAsFunction_valueOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toPointer", &Instance_callAsFunction_toPointer, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toString", &Instance_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
-    {"typeOf", &Instance_callAsFunction_typeOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {NULL, NULL, 0}
+};
+
+static JSStaticFunction Class_staticFunctions[2] = {
+    {"pointerTo", &Class_callAsFunction_pointerTo, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
 
@@ -2575,8 +2579,10 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     definition.className = "StringInstance";
     StringInstance_ = JSClassCreate(&definition);
 
-    definition.className = "TypeInstance";
-    TypeInstance_ = JSClassCreate(&definition);
+    definition = kJSClassDefinitionEmpty;
+    definition.className = "Class";
+    definition.staticFunctions = Class_staticFunctions;
+    Class_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "Internal";
@@ -2684,6 +2690,7 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     CYSetProperty(context, ObjectiveC, CYJSString("images"), JSObjectMake(context, ObjectiveC_Images_, NULL));
 #endif
 
+    JSObjectRef Class(JSObjectMakeConstructor(context, Class_, NULL));
     JSObjectRef Instance(JSObjectMakeConstructor(context, Instance_, &Instance_new));
     JSObjectRef Message(JSObjectMakeConstructor(context, Message_, NULL));
     JSObjectRef Selector(JSObjectMakeConstructor(context, Selector_, &Selector_new));
@@ -2716,11 +2723,9 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     JSObjectRef String_prototype(CYGetCachedObject(context, CYJSString("String_prototype")));
     JSObjectSetPrototype(context, StringInstance_prototype, String_prototype);
 
-    JSObjectRef TypeInstance(JSObjectMakeConstructor(context, TypeInstance_, NULL));
-    JSObjectRef TypeInstance_prototype(CYCastJSObject(context, CYGetProperty(context, TypeInstance, prototype_s)));
-    CYSetProperty(context, cy, CYJSString("TypeInstance_prototype"), TypeInstance_prototype);
-    JSObjectRef Type_prototype(CYGetCachedObject(context, CYJSString("Type_prototype")));
-    JSObjectSetPrototype(context, TypeInstance_prototype, Type_prototype);
+    JSObjectRef Class_prototype(CYCastJSObject(context, CYGetProperty(context, Class, prototype_s)));
+    CYSetProperty(context, cy, CYJSString("Class_prototype"), Class_prototype);
+    JSObjectSetPrototype(context, Class_prototype, Instance_prototype);
 
     CYSetProperty(context, cycript, CYJSString("Instance"), Instance);
     CYSetProperty(context, cycript, CYJSString("Selector"), Selector);
