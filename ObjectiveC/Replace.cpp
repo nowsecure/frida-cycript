@@ -78,12 +78,24 @@ CYStatement *CYClassStatement::Replace(CYContext &context) {
     return $E(Replace_(context));
 }
 
-CYExpression *CYEncodedPart::Replace(CYContext &context, CYExpression *base) { $T(base)
-    return next_->Replace(context, $ CYCall($ CYDirectMember(base, $ CYString(name_)), arguments_));
+CYExpression *CYTypeArrayOf::Replace(CYContext &context) {
+    return $ CYCall($ CYDirectMember(next_->Replace(context), $ CYString("arrayOf")), $ CYArgument($ CYNumber(size_)));
+}
+
+CYExpression *CYTypeConstant::Replace(CYContext &context) {
+    return $ CYCall($ CYDirectMember(next_->Replace(context), $ CYString("constant")));
+}
+
+CYExpression *CYTypePointerTo::Replace(CYContext &context) {
+    return $ CYCall($ CYDirectMember(next_->Replace(context), $ CYString("pointerTo")));
+}
+
+CYExpression *CYTypeVariable::Replace(CYContext &context) {
+    return expression_;
 }
 
 CYExpression *CYEncodedType::Replace(CYContext &context) {
-    return parts_->Replace(context, base_);
+    return type_->Replace(context);
 }
 
 CYStatement *CYField::Replace(CYContext &context) const { $T(NULL)

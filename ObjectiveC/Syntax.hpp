@@ -24,31 +24,95 @@
 
 #include "Parser.hpp"
 
-struct CYEncodedPart :
-    CYNext<CYEncodedPart>
+struct CYTypeModifier :
+    CYNext<CYTypeModifier>
 {
-    const char *name_;
-    CYArgument *arguments_;
-
-    CYEncodedPart(CYEncodedPart *next, const char *name, CYArgument *arguments = NULL) :
-        CYNext<CYEncodedPart>(next),
-        name_(name),
-        arguments_(arguments)
+    CYTypeModifier(CYTypeModifier *next) :
+        CYNext<CYTypeModifier>(next)
     {
     }
 
-    CYExpression *Replace(CYContext &context, CYExpression *base);
+    virtual CYExpression *Replace(CYContext &context) = 0;
+};
+
+struct CYTypeArrayOf :
+    CYTypeModifier
+{
+    size_t size_;
+
+    CYTypeArrayOf(size_t size, CYTypeModifier *next = NULL) :
+        CYTypeModifier(next),
+        size_(size)
+    {
+    }
+
+    CYPrecedence(2)
+
+    virtual CYExpression *Replace(CYContext &context);
+};
+
+struct CYTypeConstant :
+    CYTypeModifier
+{
+    CYTypeConstant(CYTypeModifier *next = NULL) :
+        CYTypeModifier(next)
+    {
+    }
+
+    CYPrecedence(3)
+
+    virtual CYExpression *Replace(CYContext &context);
+};
+
+struct CYTypePointerTo :
+    CYTypeModifier
+{
+    CYTypePointerTo(CYTypeModifier *next = NULL) :
+        CYTypeModifier(next)
+    {
+    }
+
+    CYPrecedence(3)
+
+    virtual CYExpression *Replace(CYContext &context);
+};
+
+struct CYTypeVariable :
+    CYTypeModifier
+{
+    CYExpression *expression_;
+
+    CYTypeVariable(CYExpression *expression) :
+        CYTypeModifier(NULL),
+        expression_(expression)
+    {
+    }
+
+    CYPrecedence(1)
+
+    virtual CYExpression *Replace(CYContext &context);
+};
+
+struct CYTypedIdentifier :
+    CYNext<CYTypedIdentifier>
+{
+    CYIdentifier *identifier_;
+    CYTypeModifier *type_;
+
+    CYTypedIdentifier(CYIdentifier *identifier) :
+        identifier_(identifier),
+        type_(NULL)
+    {
+    }
 };
 
 struct CYEncodedType :
     CYExpression
 {
-    CYExpression *base_;
-    CYEncodedPart *parts_;
+    CYTypeModifier *type_;
 
-    CYEncodedType(CYExpression *base, CYEncodedPart *parts = NULL) :
-        base_(base),
-        parts_(parts)
+    CYEncodedType(CYTypeModifier *type) :
+        type_(type)
     {
     }
 
