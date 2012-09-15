@@ -106,6 +106,14 @@ void CYBox::Output(CYOutput &out, CYFlags flags) const {
     value_->Output(out, Precedence(), CYRight(flags));
 }
 
+void CYObjCBlock::Output(CYOutput &out, CYFlags flags) const {
+    // XXX: this is seriously wrong
+    out << "^(";
+    out << ")";
+    out << "{";
+    out << "}";
+}
+
 void CYProtocol::Output(CYOutput &out) const {
     name_->Output(out, CYAssign::Precedence_, CYNoFlags);
     if (next_ != NULL)

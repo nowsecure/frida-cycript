@@ -106,6 +106,41 @@ struct CYTypedIdentifier :
     }
 };
 
+struct CYTypedParameter :
+    CYNext<CYTypedParameter>
+{
+    CYTypedIdentifier *typed_;
+
+    CYTypedParameter(CYTypedIdentifier *typed, CYTypedParameter *next) :
+        CYNext<CYTypedParameter>(next),
+        typed_(typed)
+    {
+    }
+
+    CYFunctionParameter *Parameters(CYContext &context);
+    CYExpression *TypeSignature(CYContext &context, CYExpression *prefix);
+};
+
+struct CYObjCBlock :
+    CYExpression
+{
+    CYTypeModifier *type_;
+    CYTypedParameter *parameters_;
+    CYStatement *statements_;
+
+    CYObjCBlock(CYTypeModifier *type, CYTypedParameter *parameters, CYStatement *statements) :
+        type_(type),
+        parameters_(parameters),
+        statements_(statements)
+    {
+    }
+
+    CYPrecedence(1)
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
 struct CYEncodedType :
     CYExpression
 {

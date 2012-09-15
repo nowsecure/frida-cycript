@@ -113,3 +113,6 @@ http://gcc.gnu.org/onlinedocs/gcc/Type-encoding.html
 http://gcc.gnu.org/onlinedocs/gcc/Legacy-type-encoding.html
 
 using .withName from the grammar is a horrible hack that makes other uses impossible
+
+blocks should be allowed to return blocks/functions: ModifiedType needs to go
+  instead, TypedParameterList should be folded into a TypeModifier with the other types

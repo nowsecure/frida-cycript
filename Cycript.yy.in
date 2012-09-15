@@ -82,7 +82,8 @@ typedef struct {
         CYThis *this_;
         CYTrue *true_;
         CYTypeModifier *type_;
-        CYTypedIdentifier *typed_;
+        CYTypedIdentifier *typedIdentifier_;
+        CYTypedParameter *typedParameter_;
         CYWord *word_;
 
 @begin ObjectiveC
@@ -479,7 +480,8 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <messageParameter_> MessageParameterListOpt
 %type <bool_> MessageScope
 %type <type_> ModifiedType
-%type <typed_> PrefixedType
+%type <typedIdentifier_> PrefixedType
+%type <type_> QualifiedType
 %type <argument_> SelectorCall_
 %type <argument_> SelectorCall
 %type <selector_> SelectorExpression_
@@ -487,9 +489,12 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <selector_> SelectorExpressionOpt
 %type <argument_> SelectorList
 %type <word_> SelectorWordOpt
-%type <typed_> SuffixedType
+%type <typedIdentifier_> SuffixedType
 %type <expression_> TypeOpt
-%type <typed_> TypedIdentifier
+%type <typedIdentifier_> TypedIdentifier
+%type <typedParameter_> TypedParameterList_
+%type <typedParameter_> TypedParameterList
+%type <typedParameter_> TypedParameterListOpt
 %type <argument_> VariadicCall
 @end
 
@@ -1342,7 +1347,7 @@ ProgramBodyOpt
 /* Cycript (Objective-C): Type Encoding {{{ */
 SuffixedType
     : IdentifierOpt { $$ = CYNew CYTypedIdentifier($1); }
-    | "(" PrefixedType ")" { $$ = $2; }
+    | "(" LexPushInOff PrefixedType LexPopIn ")" { $$ = $3; }
     | SuffixedType "[" NumericLiteral "]" { CYSetLast($1->type_) = CYNew CYTypeArrayOf($3->Value()); $$ = $1; }
     ;
 
@@ -1352,13 +1357,19 @@ PrefixedType
     | "*" PrefixedType { CYSetLast($2->type_) = CYNew CYTypePointerTo(); $$ = $2; }
     ;
 
-ModifiedType
+QualifiedType
     : Variable { $$ = CYNew CYTypeVariable($1); }
-    | "const" ModifiedType { $$ = CYNew CYTypeConstant($2); }
+    | "const" QualifiedType { $$ = CYNew CYTypeConstant($2); }
+    ;
+
+ModifiedType
+    : QualifiedType { $$ = $1; }
+    | QualifiedType "*" { $$ = CYNew CYTypePointerTo($1); }
+    | QualifiedType "const" { $$ = CYNew CYTypeConstant($1); }
     ;
 
 TypedIdentifier
-    : ModifiedType PrefixedType { CYSetLast($2->type_) = $1; $$ = $2;}
+    : QualifiedType PrefixedType { CYSetLast($2->type_) = $1; $$ = $2;}
     ;
 
 EncodedType
@@ -1391,7 +1402,7 @@ MessageScope
     ;
 
 TypeOpt
-    : "(" EncodedType ")" { $$ = $2; }
+    : "(" LexSetRegExp EncodedType ")" { $$ = $3; }
     | "(" LexSetRegExp "void" ")" { $$ = CYNew CYString("v"); }
     | { $$ = NULL; }
     ;
@@ -1553,6 +1564,25 @@ BoxableExpression
 
 PrimaryExpression
     : "@" BoxableExpression { $$ = CYNew CYBox($2); }
+    ;
+/* }}} */
+/* Cycript (Objective-C): Block Expressions {{{ */
+TypedParameterList_
+    : "," TypedParameterList { $$ = $2; }
+    | { $$ = NULL; }
+    ;
+
+TypedParameterList
+    : TypedIdentifier TypedParameterList_ { $$ = CYNew CYTypedParameter($1, $2); }
+    ;
+
+TypedParameterListOpt
+    : TypedParameterList { $$ = $1; }
+    | { $$ = NULL; }
+    ;
+
+PrimaryExpression
+    : "^" ModifiedType "(" LexPushInOff TypedParameterListOpt LexPopIn ")" BRACE LexPushInOff FunctionBody LexPopIn "}" { $$ = CYNew CYObjCBlock($2, $5, $10); }
     ;
 /* }}} */
 @end

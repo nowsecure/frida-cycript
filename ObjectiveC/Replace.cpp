@@ -166,6 +166,10 @@ CYExpression *CYBox::Replace(CYContext &context) {
     return $C1($M($V("Instance"), $S("box")), value_);
 }
 
+CYExpression *CYObjCBlock::Replace(CYContext &context) {
+    return $N2($V("Functor"), $ CYFunctionExpression(NULL, parameters_->Parameters(context), statements_), parameters_->TypeSignature(context, type_->Replace(context)));
+}
+
 CYStatement *CYProtocol::Replace(CYContext &context) const { $T(NULL)
     return $ CYBlock($$->*
         next_->Replace(context)->*
@@ -217,4 +221,12 @@ CYExpression *CYSendDirect::Replace(CYContext &context) {
 
 CYExpression *CYSendSuper::Replace(CYContext &context) {
     return $ CYSendDirect($V("$cyr"), arguments_);
+}
+
+CYFunctionParameter *CYTypedParameter::Parameters(CYContext &context) { $T(NULL)
+    return $ CYFunctionParameter($ CYDeclaration(typed_->identifier_), next_->Parameters(context));
+}
+
+CYExpression *CYTypedParameter::TypeSignature(CYContext &context, CYExpression *prefix) { $T(prefix)
+    return next_->TypeSignature(context, $ CYAdd(prefix, typed_->type_->Replace(context)));
 }
