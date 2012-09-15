@@ -199,5 +199,6 @@ struct Closure_privateData :
 };
 
 Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, const char *type, void (*callback)(ffi_cif *, void *, void **, void *));
+void CYExecuteClosure(ffi_cif *cif, void *result, void **arguments, void *arg, JSValueRef (*adapter)(JSContextRef, size_t, JSValueRef[], JSObjectRef));
 
 #endif/*CYCRIPT_INTERNAL_HPP*/

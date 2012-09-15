@@ -1485,21 +1485,13 @@ static const char *CYPoolTypeEncoding(apr_pool_t *pool, JSContextRef context, SE
     return NULL;
 }
 
-static void MessageClosure_(ffi_cif *cif, void *result, void **arguments, void *arg) {
-    Closure_privateData *internal(reinterpret_cast<Closure_privateData *>(arg));
-
-    JSContextRef context(internal->context_);
-
-    size_t count(internal->cif_.nargs);
-    JSValueRef values[count];
-
-    for (size_t index(0); index != count; ++index)
-        values[index] = CYFromFFI(context, internal->signature_.elements[1 + index].type, internal->cif_.arg_types[index], arguments[index]);
-
+static JSValueRef MessageAdapter_(JSContextRef context, size_t count, JSValueRef values[], JSObjectRef function) {
     JSObjectRef _this(CYCastJSObject(context, values[0]));
+    return CYCallAsFunction(context, function, _this, count - 2, values + 2);
+}
 
-    JSValueRef value(CYCallAsFunction(context, internal->function_, _this, count - 2, values + 2));
-    CYPoolFFI(NULL, context, internal->signature_.elements[0].type, internal->cif_.rtype, result, value);
+static void MessageClosure_(ffi_cif *cif, void *result, void **arguments, void *arg) {
+    CYExecuteClosure(cif, result, arguments, arg, &MessageAdapter_);
 }
 
 static JSObjectRef CYMakeMessage(JSContextRef context, SEL sel, IMP imp, const char *type) {

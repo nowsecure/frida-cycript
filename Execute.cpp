@@ -685,7 +685,7 @@ JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void 
     }
 }
 
-static void FunctionClosure_(ffi_cif *cif, void *result, void **arguments, void *arg) {
+void CYExecuteClosure(ffi_cif *cif, void *result, void **arguments, void *arg, JSValueRef (*adapter)(JSContextRef, size_t, JSValueRef[], JSObjectRef)) {
     Closure_privateData *internal(reinterpret_cast<Closure_privateData *>(arg));
 
     JSContextRef context(internal->context_);
@@ -696,8 +696,16 @@ static void FunctionClosure_(ffi_cif *cif, void *result, void **arguments, void 
     for (size_t index(0); index != count; ++index)
         values[index] = CYFromFFI(context, internal->signature_.elements[1 + index].type, internal->cif_.arg_types[index], arguments[index]);
 
-    JSValueRef value(CYCallAsFunction(context, internal->function_, NULL, count, values));
+    JSValueRef value(adapter(context, count, values, internal->function_));
     CYPoolFFI(NULL, context, internal->signature_.elements[0].type, internal->cif_.rtype, result, value);
+}
+
+static JSValueRef FunctionAdapter_(JSContextRef context, size_t count, JSValueRef values[], JSObjectRef function) {
+    return CYCallAsFunction(context, function, NULL, count, values);
+}
+
+static void FunctionClosure_(ffi_cif *cif, void *result, void **arguments, void *arg) {
+    CYExecuteClosure(cif, result, arguments, arg, &FunctionAdapter_);
 }
 
 Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, const char *type, void (*callback)(ffi_cif *, void *, void **, void *)) {
