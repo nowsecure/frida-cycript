@@ -1050,27 +1050,39 @@ static JSObjectRef Type_new(JSContextRef context, JSObjectRef object, size_t cou
     return CYMakeType(context, type);
 } CYCatch }
 
-static JSValueRef Type_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
-    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
+static JSValueRef Type_callAsFunction_arrayOf(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    if (count != 1)
+        throw CYJSError(context, "incorrect number of arguments to Type.arrayOf");
+    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
+
+    CYPool pool;
+    size_t index(CYGetIndex(pool, context, CYJSString(context, arguments[0])));
+    if (index == _not(size_t))
+        throw CYJSError(context, "invalid array size used with Type.arrayOf");
 
     sig::Type type;
-
-    if (JSStringIsEqualToUTF8CString(property, "$cyi")) {
-        type.primitive = sig::pointer_P;
-        type.data.data.size = 0;
-    } else {
-        CYPool pool;
-        size_t index(CYGetIndex(pool, context, property));
-        if (index == _not(size_t))
-            return NULL;
-        type.primitive = sig::array_P;
-        type.data.data.size = index;
-    }
-
     type.name = NULL;
     type.flags = 0;
 
+    type.primitive = sig::array_P;
     type.data.data.type = internal->type_;
+    type.data.data.size = index;
+
+    return CYMakeType(context, &type);
+} CYCatch }
+
+static JSValueRef Type_callAsFunction_pointerTo(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    if (count != 0)
+        throw CYJSError(context, "incorrect number of arguments to Type.pointerTo");
+    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
+
+    sig::Type type;
+    type.name = NULL;
+    type.flags = 0;
+
+    type.primitive = sig::pointer_P;
+    type.data.data.type = internal->type_;
+    type.data.data.size = 0;
 
     return CYMakeType(context, &type);
 } CYCatch }
@@ -1209,7 +1221,9 @@ static JSStaticValue Type_staticValues[3] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction Type_staticFunctions[4] = {
+static JSStaticFunction Type_staticFunctions[6] = {
+    {"arrayOf", &Type_callAsFunction_arrayOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"pointerTo", &Type_callAsFunction_pointerTo, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toCYON", &Type_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toJSON", &Type_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toString", &Type_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
@@ -1339,7 +1353,6 @@ void CYInitializeDynamic() {
     definition.className = "Type";
     definition.staticValues = Type_staticValues;
     definition.staticFunctions = Type_staticFunctions;
-    definition.getProperty = &Type_getProperty;
     definition.callAsFunction = &Type_callAsFunction;
     definition.callAsConstructor = &Type_callAsConstructor;
     definition.finalize = &CYFinalize;
