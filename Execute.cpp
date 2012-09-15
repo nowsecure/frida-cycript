@@ -1076,10 +1076,10 @@ static JSValueRef Type_getProperty(JSContextRef context, JSObjectRef object, JSS
 } CYCatch }
 
 static JSValueRef Type_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
-
     if (count != 1)
         throw CYJSError(context, "incorrect number of arguments to type cast function");
+    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
+
     sig::Type *type(internal->type_);
     ffi_type *ffi(internal->GetFFI());
     // XXX: alignment?
