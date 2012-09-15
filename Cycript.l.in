@@ -265,6 +265,8 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "YES"          L C I(identifier, Identifier("YES"), tk::Identifier_, hi::Constant);
 "NO"           L C I(identifier, Identifier("NO"), tk::Identifier_, hi::Constant);
 
+"bool"         L C I(identifier, Identifier("bool"), tk::Identifier_, hi::Type);
+"BOOL"         L C I(identifier, Identifier("BOOL"), tk::Identifier_, hi::Type);
 "id"           L C I(identifier, Identifier("id"), tk::Identifier_, hi::Type);
 @end
 

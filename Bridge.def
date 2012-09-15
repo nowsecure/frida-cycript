@@ -23,6 +23,8 @@ T float f
 T double d
 
 T Boolean B
+T BOOL B
+T bool B
 
 T int8_t {char}
 T uint8_t {byte}
