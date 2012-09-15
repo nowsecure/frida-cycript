@@ -240,10 +240,8 @@ const char *Unparse(apr_pool_t *pool, struct Signature *signature) {
     return value;
 }
 
-const char *Unparse(apr_pool_t *pool, struct Type *type) {
-    if (type == NULL)
-        return "?";
-    else switch (type->primitive) {
+const char *Unparse_(apr_pool_t *pool, struct Type *type) {
+    switch (type->primitive) {
         case typename_P: return "#";
         case union_P: return apr_psprintf(pool, "(%s)", Unparse(pool, &type->data.signature));
         case string_P: return "*";
@@ -277,6 +275,39 @@ const char *Unparse(apr_pool_t *pool, struct Type *type) {
 
     _assert(false);
     return NULL;
+}
+
+const char *Unparse(apr_pool_t *pool, struct Type *type) {
+    if (type == NULL)
+        return "?";
+
+    const char *base(Unparse_(pool, type));
+    if (type->flags == 0)
+        return base;
+
+    #define iovec_(base, size) \
+        (struct iovec) {const_cast<char *>(base), size}
+
+    struct iovec parts[8];
+    memset(parts, 0, sizeof(parts));
+
+    if ((type->flags & JOC_TYPE_INOUT) != 0)
+        parts[0] = iovec_("N", 1);
+    if ((type->flags & JOC_TYPE_IN) != 0)
+        parts[1] = iovec_("n", 1);
+    if ((type->flags & JOC_TYPE_BYCOPY) != 0)
+        parts[2] = iovec_("O", 1);
+    if ((type->flags & JOC_TYPE_OUT) != 0)
+        parts[3] = iovec_("o", 1);
+    if ((type->flags & JOC_TYPE_BYREF) != 0)
+        parts[4] = iovec_("R", 1);
+    if ((type->flags & JOC_TYPE_CONST) != 0)
+        parts[5] = iovec_("r", 1);
+    if ((type->flags & JOC_TYPE_ONEWAY) != 0)
+        parts[6] = iovec_("V", 1);
+
+    parts[7] = iovec_(base, strlen(base));
+    return apr_pstrcatv(pool, parts, 8, NULL);
 }
 
 }
