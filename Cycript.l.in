@@ -254,6 +254,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 @end
 
 @begin ObjectiveC
+"@encode"         L C F(tk::AtEncode, hi::Meta);
 "@end"            L C F(tk::AtEnd, hi::Meta);
 "@implementation" L C F(yyextra->no_.AtImplementation ? tk::AtImplementation_ : tk::AtImplementation, hi::Meta);
 "@import"         L C F(tk::AtImport, hi::Meta);

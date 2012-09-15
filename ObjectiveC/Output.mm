@@ -75,6 +75,10 @@ void CYClassStatement::Output(CYOutput &out, CYFlags flags) const {
     CYClass::Output(out, flags);
 }
 
+void CYEncodedType::Output(CYOutput &out, CYFlags flags) const {
+    // XXX: this is seriously wrong
+}
+
 void CYField::Output(CYOutput &out) const {
 }
 

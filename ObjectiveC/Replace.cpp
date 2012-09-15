@@ -78,6 +78,14 @@ CYStatement *CYClassStatement::Replace(CYContext &context) {
     return $E(Replace_(context));
 }
 
+CYExpression *CYEncodedPart::Replace(CYContext &context, CYExpression *base) { $T(base)
+    return next_->Replace(context, $ CYCall($ CYDirectMember(base, $ CYString(name_)), arguments_));
+}
+
+CYExpression *CYEncodedType::Replace(CYContext &context) {
+    return parts_->Replace(context, base_);
+}
+
 CYStatement *CYField::Replace(CYContext &context) const { $T(NULL)
     CYVariable *cyn($V("$cyn"));
     CYVariable *cyt($V("$cyt"));

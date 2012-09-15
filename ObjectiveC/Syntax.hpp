@@ -24,6 +24,40 @@
 
 #include "Parser.hpp"
 
+struct CYEncodedPart :
+    CYNext<CYEncodedPart>
+{
+    const char *name_;
+    CYArgument *arguments_;
+
+    CYEncodedPart(CYEncodedPart *next, const char *name, CYArgument *arguments = NULL) :
+        CYNext<CYEncodedPart>(next),
+        name_(name),
+        arguments_(arguments)
+    {
+    }
+
+    CYExpression *Replace(CYContext &context, CYExpression *base);
+};
+
+struct CYEncodedType :
+    CYExpression
+{
+    CYExpression *base_;
+    CYEncodedPart *parts_;
+
+    CYEncodedType(CYExpression *base, CYEncodedPart *parts = NULL) :
+        base_(base),
+        parts_(parts)
+    {
+    }
+
+    CYPrecedence(1)
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
 struct CYBox :
     CYExpression
 {

@@ -73,6 +73,7 @@ typedef struct {
         CYMember *member_;
         CYNull *null_;
         CYNumber *number_;
+        CYEncodedPart *part_;
         CYProgram *program_;
         CYProperty *property_;
         CYPropertyName *propertyName_;
@@ -81,6 +82,7 @@ typedef struct {
         CYString *string_;
         CYThis *this_;
         CYTrue *true_;
+        CYEncodedType *type_;
         CYWord *word_;
 
 @begin ObjectiveC
@@ -228,6 +230,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %token AtImplementation "@implementation"
 %token AtImplementation_ ";@implementation"
 %token AtImport "@import"
+%token AtEncode "@encode"
 %token AtEnd "@end"
 %token AtSelector "@selector"
 @end
@@ -451,6 +454,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <statement_> WithStatement
 %type <word_> Word
 %type <word_> WordOpt
+%type <expression_> Variable
 
 @begin ObjectiveC
 %type <expression_> BoxableExpression
@@ -473,6 +477,8 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <messageParameter_> MessageParameterList
 %type <messageParameter_> MessageParameterListOpt
 %type <bool_> MessageScope
+%type <type_> ModifiedType
+%type <part_> PrefixedType
 %type <argument_> SelectorCall_
 %type <argument_> SelectorCall
 %type <selector_> SelectorExpression_
@@ -480,7 +486,9 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <selector_> SelectorExpressionOpt
 %type <argument_> SelectorList
 %type <word_> SelectorWordOpt
+%type <part_> SuffixedType
 %type <expression_> TypeOpt
+%type <type_> TypedIdentifier
 %type <argument_> VariadicCall
 @end
 
@@ -716,9 +724,13 @@ ParentheticalOpt
     | { $$ = NULL; }
     ;
 
+Variable
+    : Identifier { $$ = CYNew CYVariable($1); }
+    ;
+
 PrimaryExpression
     : "this" { $$ = $1; }
-    | Identifier { $$ = CYNew CYVariable($1); }
+    | Variable { $$ = $1; }
     | Literal { $$ = $1; }
     | ArrayLiteral { $$ = $1; }
     | ObjectLiteral { $$ = $1; }
@@ -1326,6 +1338,31 @@ ProgramBodyOpt
 /* }}} */
 
 @begin ObjectiveC
+/* Cycript (Objective-C): Type Encoding {{{ */
+SuffixedType
+    : { $$ = NULL; }
+    | "(" PrefixedType ")" { $$ = $2; }
+    | SuffixedType "[" NumericLiteral "]" { $$ = CYNew CYEncodedPart($1, "arrayOf", CYNew CYArgument($3)); }
+    ;
+
+PrefixedType
+    : SuffixedType { $$ = $1; }
+    | "*" PrefixedType { $$ = CYNew CYEncodedPart($2, "pointerTo"); }
+    ;
+
+ModifiedType
+    : Variable { $$ = CYNew CYEncodedType($1); }
+    | "const" ModifiedType { $2->base_ = CYNew CYCall(CYNew CYDirectMember($2->base_, CYNew CYString("constant"))); $$ = $2; }
+    ;
+
+TypedIdentifier
+    : ModifiedType PrefixedType { $1->parts_ = $2; $$ = $1;}
+    ;
+
+PrimaryExpression
+    : AtEncode "(" TypedIdentifier ")" { $$ = $3; }
+    ;
+/* }}} */
 /* Cycript (Objective-C): @class Declaration {{{ */
 ClassSuperOpt
     /* XXX: why the hell did I choose MemberExpression? */
@@ -1348,7 +1385,7 @@ MessageScope
     ;
 
 TypeOpt
-    : "(" Expression ")" { $$ = $2; }
+    : "(" TypedIdentifier ")" { $$ = $2; }
     | "(" LexSetRegExp "void" ")" { $$ = CYNew CYString("v"); }
     | { $$ = NULL; }
     ;
