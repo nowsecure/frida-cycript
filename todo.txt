@@ -106,3 +106,8 @@ apparently you can have random escape sequences in strings, like \!
 cycript -p with processes that have spaces doesn't work
 CYDriver uses std::istream, but it should use std::streambuf
 the mechanism I used to autodetect readline is horrible: use autoconf
+
+constant flags on types are encoded using something horribly wrong
+http://developer.apple.com/library/ios/#documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtTypeEncodings.html
+http://gcc.gnu.org/onlinedocs/gcc/Type-encoding.html
+http://gcc.gnu.org/onlinedocs/gcc/Legacy-type-encoding.html

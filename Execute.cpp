@@ -1071,6 +1071,16 @@ static JSValueRef Type_callAsFunction_arrayOf(JSContextRef context, JSObjectRef 
     return CYMakeType(context, &type);
 } CYCatch }
 
+static JSValueRef Type_callAsFunction_constant(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    if (count != 0)
+        throw CYJSError(context, "incorrect number of arguments to Type.constant");
+    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
+
+    sig::Type type(*internal->type_);
+    type.flags |= JOC_TYPE_CONST;
+    return CYMakeType(context, &type);
+} CYCatch }
+
 static JSValueRef Type_callAsFunction_pointerTo(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 0)
         throw CYJSError(context, "incorrect number of arguments to Type.pointerTo");
@@ -1221,8 +1231,9 @@ static JSStaticValue Type_staticValues[3] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction Type_staticFunctions[6] = {
+static JSStaticFunction Type_staticFunctions[7] = {
     {"arrayOf", &Type_callAsFunction_arrayOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"constant", &Type_callAsFunction_constant, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"pointerTo", &Type_callAsFunction_pointerTo, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toCYON", &Type_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toJSON", &Type_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
