@@ -128,6 +128,41 @@ static void (*$objc_setAssociatedObject)(id object, void *key, id value, objc_As
 static id (*$objc_getAssociatedObject)(id object, void *key);
 static void (*$objc_removeAssociatedObjects)(id object);
 
+struct BlockDescriptor1 {
+    unsigned long int reserved;
+    unsigned long int size;
+};
+
+struct BlockDescriptor2 {
+    void (*copy_helper)(void *dst, void *src);
+    void (*dispose_helper)(void *src);
+};
+
+struct BlockDescriptor3 {
+    const char *signature;
+    const char *layout;
+};
+
+struct BlockLiteral {
+    Class isa;
+    int flags;
+    int reserved;
+    void (*invoke)(void *, ...);
+    void *descriptor;
+};
+
+enum {
+    BLOCK_DEALLOCATING = 0x0001,
+    BLOCK_REFCOUNT_MASK = 0xfffe,
+    BLOCK_NEEDS_FREE = 1 << 24,
+    BLOCK_HAS_COPY_DISPOSE = 1 << 25,
+    BLOCK_HAS_CTOR = 1 << 26,
+    BLOCK_IS_GC = 1 << 27,
+    BLOCK_IS_GLOBAL = 1 << 28,
+    BLOCK_HAS_STRET = 1 << 29,
+    BLOCK_HAS_SIGNATURE = 1 << 30,
+};
+
 JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, Class super, SEL _cmd, size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception);
 
 /* Objective-C Pool Release {{{ */
@@ -1831,40 +1866,7 @@ static JSValueRef Instance_callAsFunction(JSContextRef context, JSObjectRef obje
     // to do /that/, generalize the various "is exactly Instance_" checks
     // then, move Instance_callAsFunction to only be on FunctionInstance
 
-    struct BlockDescriptor1 {
-        unsigned long int reserved;
-        unsigned long int size;
-    };
-
-    struct BlockDescriptor2 {
-        void (*copy_helper)(void *dst, void *src);
-        void (*dispose_helper)(void *src);
-    };
-
-    struct BlockDescriptor3 {
-        const char *signature;
-        const char *layout;
-    };
-
-    struct BlockLiteral {
-        Class isa;
-        int flags;
-        int reserved;
-        void (*invoke)(void *, ...);
-        void *descriptor;
-    } *literal = reinterpret_cast<BlockLiteral *>(self);
-
-    enum {
-        BLOCK_DEALLOCATING = 0x0001,
-        BLOCK_REFCOUNT_MASK = 0xfffe,
-        BLOCK_NEEDS_FREE = 1 << 24,
-        BLOCK_HAS_COPY_DISPOSE = 1 << 25,
-        BLOCK_HAS_CTOR = 1 << 26,
-        BLOCK_IS_GC = 1 << 27,
-        BLOCK_IS_GLOBAL = 1 << 28,
-        BLOCK_HAS_STRET = 1 << 29,
-        BLOCK_HAS_SIGNATURE = 1 << 30,
-    };
+    BlockLiteral *literal(reinterpret_cast<BlockLiteral *>(self));
 
     if ((literal->flags & BLOCK_HAS_SIGNATURE) != 0) {
         uint8_t *descriptor(reinterpret_cast<uint8_t *>(literal->descriptor));
