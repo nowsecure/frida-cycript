@@ -131,7 +131,7 @@ size_t CYGetIndex(apr_pool_t *pool, JSContextRef context, JSStringRef value) {
 
 static JSClassRef All_;
 static JSClassRef Context_;
-static JSClassRef Functor_;
+JSClassRef Functor_;
 static JSClassRef Global_;
 static JSClassRef Pointer_;
 static JSClassRef Struct_;

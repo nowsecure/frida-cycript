@@ -38,6 +38,8 @@ void Structor_(apr_pool_t *pool, sig::Type *&type);
 JSObjectRef CYMakeType(JSContextRef context, const char *type);
 JSObjectRef CYMakeType(JSContextRef context, sig::Type *type);
 
+extern JSClassRef Functor_;
+
 struct Type_privateData :
     CYData
 {

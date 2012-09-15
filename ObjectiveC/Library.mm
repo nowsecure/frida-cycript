@@ -645,10 +645,43 @@ _finline bool CYJSValueIsInstanceOfCachedConstructor(JSContextRef context, JSVal
     return is;
 }
 
+NSObject *CYMakeBlock(void (*invoke)(), sig::Signature &signature) {
+    BlockLiteral *literal(reinterpret_cast<BlockLiteral *>(malloc(sizeof(BlockLiteral))));
+
+    struct Descriptor {
+        struct {
+            BlockDescriptor1 one_;
+            BlockDescriptor2 two_;
+            BlockDescriptor3 three_;
+        } d_;
+
+        CYPool pool_;
+    };
+
+    Descriptor *descriptor(new Descriptor);
+    memset(&descriptor->d_, 0, sizeof(descriptor->d_));
+
+    literal->isa = objc_getClass("__NSGlobalBlock__");
+    literal->flags = BLOCK_HAS_SIGNATURE | BLOCK_HAS_COPY_DISPOSE | BLOCK_IS_GLOBAL;
+    literal->reserved = 0;
+    literal->invoke = reinterpret_cast<void (*)(void *, ...)>(invoke);
+    literal->descriptor = descriptor;
+
+    descriptor->d_.one_.size = sizeof(descriptor->d_);
+    descriptor->d_.three_.signature = sig::Unparse(descriptor->pool_, &signature);
+
+    return reinterpret_cast<NSObject *>(literal);
+}
+
 NSObject *CYCastNSObject(apr_pool_t *pool, JSContextRef context, JSObjectRef object) {
     if (CYJSValueIsNSObject(context, object)) {
         Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
         return internal->GetValue();
+    }
+
+    if (JSValueIsObjectOfClass(context, object, Functor_)) {
+        cy::Functor *internal(reinterpret_cast<cy::Functor *>(JSObjectGetPrivate(object)));
+        return CYMakeBlock(internal->GetValue(), internal->signature_);
     }
 
     bool array(CYJSValueIsInstanceOfCachedConstructor(context, object, Array_s));
