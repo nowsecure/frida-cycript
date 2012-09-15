@@ -481,6 +481,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <bool_> MessageScope
 %type <type_> ModifiedType
 %type <typedIdentifier_> PrefixedType
+%type <expression_> PrimitiveType
 %type <type_> QualifiedType
 %type <argument_> SelectorCall_
 %type <argument_> SelectorCall
@@ -1357,8 +1358,13 @@ PrefixedType
     | "*" PrefixedType { CYSetLast($2->type_) = CYNew CYTypePointerTo(); $$ = $2; }
     ;
 
+PrimitiveType
+    : Variable { $$ = $1; }
+    | "void" { $$  = CYNew cy::Syntax::New(CYNew CYVariable(CYNew CYIdentifier("Type")), CYNew CYArgument(CYNew CYString("v"))); }
+    ;
+
 QualifiedType
-    : Variable { $$ = CYNew CYTypeVariable($1); }
+    : PrimitiveType { $$ = CYNew CYTypeVariable($1); }
     | "const" QualifiedType { $$ = CYNew CYTypeConstant($2); }
     ;
 
@@ -1403,7 +1409,6 @@ MessageScope
 
 TypeOpt
     : "(" LexSetRegExp EncodedType ")" { $$ = $3; }
-    | "(" LexSetRegExp "void" ")" { $$ = CYNew CYString("v"); }
     | { $$ = NULL; }
     ;
 
