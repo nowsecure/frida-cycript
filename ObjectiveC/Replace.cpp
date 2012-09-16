@@ -224,7 +224,7 @@ CYExpression *CYSendSuper::Replace(CYContext &context) {
 }
 
 CYFunctionParameter *CYTypedParameter::Parameters(CYContext &context) { $T(NULL)
-    return $ CYFunctionParameter($ CYDeclaration(typed_->identifier_), next_->Parameters(context));
+    return $ CYFunctionParameter($ CYDeclaration(typed_->identifier_ ?: context.Unique()), next_->Parameters(context));
 }
 
 CYExpression *CYTypedParameter::TypeSignature(CYContext &context, CYExpression *prefix) { $T(prefix)
