@@ -1214,13 +1214,9 @@ static JSValueRef Type_callAsFunction_toCYON(JSContextRef context, JSObjectRef o
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
     CYPool pool;
     const char *type(sig::Unparse(pool, internal->type_));
-    size_t size(strlen(type));
-    char *cyon(new(pool) char[12 + size + 1]);
-    memcpy(cyon, "new Type(\"", 10);
-    cyon[12 + size] = '\0';
-    cyon[12 + size - 2] = '"';
-    cyon[12 + size - 1] = ')';
-    memcpy(cyon + 10, type, size);
+    std::ostringstream str;
+    CYStringify(str, type, strlen(type));
+    char *cyon(apr_pstrcat(pool, "new Type(", str.str().c_str(), ")", NULL));
     return CYCastJSValue(context, CYJSString(cyon));
 } CYCatch }
 
