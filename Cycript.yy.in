@@ -1466,7 +1466,7 @@ ClassProtocolListOpt
     ;
 
 ClassExpression
-    : "@implementation" LexPushInOff ClassNameOpt ClassSuperOpt ClassProtocolListOpt ClassFields ClassMessageDeclarationListOpt LexPopIn "@end" { $$ = CYNew CYClassExpression($3, $4, $5, $6, $7); }
+    : "@implementation" LexPushInOff ClassNameOpt ClassSuperOpt ClassProtocolListOpt ClassFields LexPopIn ClassMessageDeclarationListOpt "@end" { $$ = CYNew CYClassExpression($3, $4, $5, $6, $8); }
     ;
 
 ClassStatement
