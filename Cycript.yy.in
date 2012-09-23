@@ -723,7 +723,7 @@ TerminatorOpt
 
 /* 11.1 Primary Expressions {{{ */
 Parenthetical
-    : "(" LexPushInOff Expression LexPopIn ")" { $$ = $3; }
+    : "(" LexPushInOff Expression ")" LexPopIn { $$ = $3; }
     ;
 
 ParentheticalOpt
@@ -748,7 +748,7 @@ PrimaryExpression
 /* }}} */
 /* 11.1.4.1 Array Initialiser {{{ */
 ArrayLiteral
-    : "[" LexPushInOff ElementListOpt LexPopIn "]" { $$ = CYNew CYArray($3); }
+    : "[" LexPushInOff ElementListOpt "]" LexPopIn { $$ = CYNew CYArray($3); }
     ;
 
 Element
@@ -772,7 +772,7 @@ ElementListOpt
 /* }}} */
 /* 11.1.4.2 Array Comprehension {{{ */
 PrimaryExpression
-    : "[" LexPushInOff AssignmentExpression ComprehensionForList LexPopIn "]" { $$ = CYNew CYArrayComprehension($3, $4); }
+    : "[" LexPushInOff AssignmentExpression ComprehensionForList "]" LexPopIn { $$ = CYNew CYArrayComprehension($3, $4); }
     ;
 
 ComprehensionForList
@@ -788,7 +788,7 @@ ComprehensionForListOpt
 /* }}} */
 /* 11.1.5 Object Initialiser {{{ */
 ObjectLiteral
-    : BRACE LexPushInOff PropertyDefinitionListOpt LexPopIn "}" { $$ = CYNew CYObject($3); }
+    : BRACE LexPushInOff PropertyDefinitionListOpt "}" LexPopIn { $$ = CYNew CYObject($3); }
     ;
 
 PropertyDefinitionList_
@@ -826,7 +826,7 @@ PropertyName
 
 /* 11.2 Left-Hand-Side Expressions {{{ */
 MemberAccess
-    : "[" LexPushInOff Expression LexPopIn "]" { $$ = CYNew CYDirectMember(NULL, $3); }
+    : "[" LexPushInOff Expression "]" LexPopIn { $$ = CYNew CYDirectMember(NULL, $3); }
     | "." IdentifierName { $$ = CYNew CYDirectMember(NULL, CYNew CYString($2)); }
     | "." AutoComplete { driver.mode_ = CYDriver::AutoDirect; YYACCEPT; }
     ;
@@ -858,7 +858,7 @@ CallExpression
     ;
 
 Arguments
-    : "(" LexPushInOff ArgumentListOpt LexPopIn ")" { $$ = $3; }
+    : "(" LexPushInOff ArgumentListOpt ")" LexPopIn { $$ = $3; }
     ;
 
 ArgumentList_
@@ -980,7 +980,7 @@ LogicalORExpression
 /* 11.12 Conditional Operator ( ? : ) {{{ */
 ConditionalExpression
     : LogicalORExpression { $$ = $1; }
-    | LogicalORExpression "?" LexPushInOff AssignmentExpression LexPopIn ":" AssignmentExpression { $$ = CYNew CYCondition($1, $4, $7); }
+    | LogicalORExpression "?" LexPushInOff AssignmentExpression ":" LexPopIn AssignmentExpression { $$ = CYNew CYCondition($1, $4, $7); }
     ;
 /* }}} */
 /* 11.13 Assignment Operators {{{ */
@@ -1179,7 +1179,7 @@ IterationStatement
 /* }}} */
 /* 12.6.3 The for Statement {{{ */
 IterationStatement
-    : "for" "(" LexPushInOn ForStatementInitialiser LexPopIn ";" ExpressionOpt ";" ExpressionOpt ")" Statement { $$ = CYNew CYFor($4, $7, $9, $11); }
+    : "for" "(" LexPushInOn ForStatementInitialiser ";" LexPopIn ExpressionOpt ";" ExpressionOpt ")" Statement { $$ = CYNew CYFor($4, $7, $9, $11); }
     ;
 
 ForStatementInitialiser
@@ -1189,8 +1189,8 @@ ForStatementInitialiser
 /* }}} */
 /* 12.6.4 The for-in and for-of Statements {{{ */
 IterationStatement
-    : "for" "(" LexPushInOn ForInStatementInitialiser LexPopIn "!in" Expression ")" Statement { $$ = CYNew CYForIn($4, $7, $9); }
-    | "for" "(" LexPushInOn ForInStatementInitialiser LexPopIn "of" Expression ")" Statement { $$ = CYNew CYForOf($4, $7, $9); }
+    : "for" "(" LexPushInOn ForInStatementInitialiser "!in" LexPopIn Expression ")" Statement { $$ = CYNew CYForIn($4, $7, $9); }
+    | "for" "(" LexPushInOn ForInStatementInitialiser "of" LexPopIn Expression ")" Statement { $$ = CYNew CYForOf($4, $7, $9); }
     ;
 
 ForInStatementInitialiser
@@ -1284,7 +1284,7 @@ FunctionDeclaration
     ;
 
 FunctionExpression
-    : "function" IdentifierOpt "(" LexPushInOff FormalParameterListOpt LexPopIn ")" BRACE LexPushInOff FunctionBody LexPopIn "}" { $$ = CYNew CYFunctionExpression($2, $5, $10); }
+    : "function" IdentifierOpt "(" LexPushInOff FormalParameterListOpt ")" LexPopIn BRACE LexPushInOff FunctionBody "}" LexPopIn { $$ = CYNew CYFunctionExpression($2, $5, $10); }
     ;
 
 FormalParameterList_
@@ -1326,7 +1326,7 @@ ArrowParameters
 
 ConciseBody
     : AssignmentExpression { $$ = CYNew CYReturn($1); }
-    | LexSetRegExp ";{" LexPushInOff FunctionBody LexPopIn "}" { $$ = $4; }
+    | LexSetRegExp ";{" LexPushInOff FunctionBody "}" LexPopIn { $$ = $4; }
     ;
 /* }}} */
 /* 14 Program {{{ */
@@ -1348,7 +1348,7 @@ ProgramBodyOpt
 /* Cycript (Objective-C): Type Encoding {{{ */
 SuffixedType
     : IdentifierOpt { $$ = CYNew CYTypedIdentifier($1); }
-    | "(" LexPushInOff PrefixedType LexPopIn ")" { $$ = $3; }
+    | "(" LexPushInOff PrefixedType ")" LexPopIn { $$ = $3; }
     | SuffixedType "[" NumericLiteral "]" { CYSetLast($1->type_) = CYNew CYTypeArrayOf($3->Value()); $$ = $1; }
     ;
 
@@ -1466,7 +1466,7 @@ ClassProtocolListOpt
     ;
 
 ClassExpression
-    : "@implementation" LexPushInOff ClassNameOpt ClassSuperOpt ClassProtocolListOpt ClassFields LexPopIn ClassMessageDeclarationListOpt "@end" { $$ = CYNew CYClassExpression($3, $4, $5, $6, $8); }
+    : "@implementation" LexPushInOff ClassNameOpt ClassSuperOpt ClassProtocolListOpt ClassFields ClassMessageDeclarationListOpt "@end" LexPopIn { $$ = CYNew CYClassExpression($3, $4, $5, $6, $7); }
     ;
 
 ClassStatement
@@ -1516,8 +1516,8 @@ SelectorList
     ;
 
 MessageExpression
-    : "[" LexPushInOff AssignmentExpression { driver.contexts_.push_back($3); } SelectorList LexPopIn "]" { driver.contexts_.pop_back(); } { $$ = CYNew CYSendDirect($3, $5); }
-    | "[" LexPushInOff LexSetRegExp "super" { driver.context_ = NULL; } SelectorList LexPopIn "]" { $$ = CYNew CYSendSuper($6); }
+    : "[" LexPushInOff AssignmentExpression { driver.contexts_.push_back($3); } SelectorList "]" LexPopIn { driver.contexts_.pop_back(); } { $$ = CYNew CYSendDirect($3, $5); }
+    | "[" LexPushInOff LexSetRegExp "super" { driver.context_ = NULL; } SelectorList "]" LexPopIn { $$ = CYNew CYSendSuper($6); }
     ;
 
 SelectorExpression_
@@ -1536,7 +1536,7 @@ SelectorExpressionOpt
 
 PrimaryExpression
     : MessageExpression { $$ = $1; }
-    | "@selector" "(" LexPushInOff SelectorExpression LexPopIn ")" { $$ = CYNew CYSelector($4); }
+    | "@selector" "(" LexPushInOff SelectorExpression ")" LexPopIn { $$ = CYNew CYSelector($4); }
     ;
 /* }}} */
 /* Cycript (Objective-C): @import Directive {{{ */
@@ -1587,7 +1587,7 @@ TypedParameterListOpt
     ;
 
 PrimaryExpression
-    : "^" ModifiedType "(" LexPushInOff TypedParameterListOpt LexPopIn ")" BRACE LexPushInOff FunctionBody LexPopIn "}" { $$ = CYNew CYObjCBlock($2, $5, $10); }
+    : "^" ModifiedType "(" LexPushInOff TypedParameterListOpt ")" LexPopIn BRACE LexPushInOff FunctionBody "}" LexPopIn { $$ = CYNew CYObjCBlock($2, $5, $10); }
     ;
 /* }}} */
 @end
@@ -1688,7 +1688,7 @@ AttributeIdentifier
 
 PropertySelector_
     : PropertySelector { $$ = $1; }
-    | "[" LexPushInOff Expression LexPopIn "]" { $$ = CYNew CYSelector($3); }
+    | "[" LexPushInOff Expression "]" LexPopIn { $$ = CYNew CYSelector($3); }
     ;
 
 PropertySelector
@@ -1718,8 +1718,8 @@ XMLInitialiser
     ;
 
 XMLElement
-    : "<" LexPushInOff XMLTagContent LexPop LexPopIn "/>"
-    | "<" LexPushInOff XMLTagContent ">" LexSetXMLContent XMLElementContentOpt "</" LexSetXMLTag XMLTagName XMLWhitespaceOpt LexPop LexPopIn ">"
+    : "<" LexPushInOff XMLTagContent LexPop "/>" LexPopIn
+    | "<" LexPushInOff XMLTagContent ">" LexSetXMLContent XMLElementContentOpt "</" LexSetXMLTag XMLTagName XMLWhitespaceOpt LexPop ">" LexPopIn
     ;
 
 XMLTagContent
@@ -1768,7 +1768,7 @@ XMLElementContentOpt
 /* }}} */
 /* 11.1.5 XMLList Initialiser {{{ */
 XMLListInitialiser
-    : "<>" LexPushInOff LexPushXMLContent XMLElementContent LexPop LexPopIn "</>" { $$ = CYNew CYXMLList($4); }
+    : "<>" LexPushInOff LexPushXMLContent XMLElementContent LexPop "</>" LexPopIn { $$ = CYNew CYXMLList($4); }
     ;
 /* }}} */
 
@@ -1816,12 +1816,12 @@ ComprehensionListOpt
     ;
 
 PrimaryExpression
-    : "[" LexPushInOff AssignmentExpression ComprehensionList LexPopIn "]" { $$ = CYNew CYArrayComprehension($3, $4); }
+    : "[" LexPushInOff AssignmentExpression ComprehensionList "]" LexPopIn { $$ = CYNew CYArrayComprehension($3, $4); }
     ;
 /* }}} */
 /* JavaScript 1.7: for each {{{ */
 IterationStatement
-    : "for" "each" "(" LexPushInOn ForInStatementInitialiser LexPopIn "!in" Expression ")" Statement { $$ = CYNew CYForOf($5, $8, $10); }
+    : "for" "each" "(" LexPushInOn ForInStatementInitialiser "!in" LexPopIn Expression ")" Statement { $$ = CYNew CYForOf($5, $8, $10); }
     ;
 /* }}} */
 /* JavaScript 1.7: let Statements {{{ */
@@ -1860,7 +1860,7 @@ RubyProcExpression
     ;
 
 PrimaryExpression
-    : "{" LexPushInOff RubyProcParameters StatementListOpt LexPopIn "}" { $$ = CYNew CYRubyProc($3, $4); }
+    : "{" LexPushInOff RubyProcParameters StatementListOpt "}" LexPopIn { $$ = CYNew CYRubyProc($3, $4); }
     ;
 
 CallExpression
