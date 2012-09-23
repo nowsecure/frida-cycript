@@ -793,7 +793,7 @@ ObjectLiteral
 
 PropertyDefinitionList_
     : "," PropertyDefinitionList { $$ = $2; }
-    | "," { $$ = NULL; }
+    | "," LexSetRegExp { $$ = NULL; }
     | { $$ = NULL; }
     ;
 
@@ -803,7 +803,7 @@ PropertyDefinitionList
 
 PropertyDefinitionListOpt
     : PropertyDefinitionList { $$ = $1; }
-    | { $$ = NULL; }
+    | LexSetRegExp { $$ = NULL; }
     ;
 
 PropertyDefinition
@@ -1395,7 +1395,7 @@ ClassSuperOpt
 
 ClassFieldListOpt
     : Expression Identifier ";" ClassFieldListOpt { $$ = CYNew CYField($1, $2, $4); }
-    | { $$ = NULL; }
+    | LexSetRegExp { $$ = NULL; }
     ;
 
 ClassFields
