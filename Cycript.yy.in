@@ -1213,7 +1213,7 @@ BreakStatement
 /* }}} */
 /* 12.9 The return Statement {{{ */
 ReturnStatement
-    : "return" "\n" StrictSemi { $$ = CYNew CYReturn(NULL); }
+    : "return" LexSetRegExp "\n" StrictSemi { $$ = CYNew CYReturn(NULL); }
     | "return" ExpressionOpt Terminator { $$ = CYNew CYReturn($2); }
     ;
 /* }}} */
@@ -1253,7 +1253,7 @@ LabelledStatement
 /* }}} */
 /* 12.13 The throw Statement {{{ */
 ThrowStatement
-    : "throw" "\n" StrictSemi { YYABORT; }
+    : "throw" LexSetRegExp "\n" StrictSemi { YYABORT; }
     | "throw" Expression Terminator { $$ = CYNew cy::Syntax::Throw($2); }
     ;
 /* }}} */
@@ -1326,7 +1326,7 @@ ArrowParameters
 
 ConciseBody
     : AssignmentExpression { $$ = CYNew CYReturn($1); }
-    | ";{" LexPushInOff FunctionBody LexPopIn "}" { $$ = $3; }
+    | LexSetRegExp ";{" LexPushInOff FunctionBody LexPopIn "}" { $$ = $4; }
     ;
 /* }}} */
 /* 14 Program {{{ */
