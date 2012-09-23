@@ -204,8 +204,8 @@ distclean: clean
 
 Cycript.tab.cc Cycript.tab.hh location.hh position.hh: Cycript.yy
 	$(bison) -v --report=state $<
-	! grep '^ *$$default  reduce using rule [0-9]* (LexSetRegExp)$$' Cycript.output -B 2 | grep 'shift, and go to state [0-9]*$$'
-	! grep '^ *$$default  reduce using rule [0-9]* (LexSetRegExp)$$' Cycript.output -B 2 | grep -v '\$default' | grep 'reduce using rule [0-9]* ([^)]*)$$'
+	! grep -n '^ *$$default  reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Cycript.output -B 2 | grep 'shift, and go to state [0-9]*$$'
+	! grep -n '^ *$$default  reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Cycript.output -B 2 | grep -v '\$default' | grep 'reduce using rule [0-9]* ([^)]*)$$'
 
 lex.cy.c: Cycript.l
 	$(flex) -t $< | $(sed) -e 's/int yyl;/yy_size_t yyl;/;s/int yyleng_r;/yy_size_t yyleng_r;/' >$@
