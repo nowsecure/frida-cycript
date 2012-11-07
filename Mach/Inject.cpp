@@ -118,7 +118,7 @@ void InjectLibrary(pid_t pid) {
 
     mach_msg_type_number_t read(count);
     _krncall(thread_get_state(thread, flavor, reinterpret_cast<thread_state_t>(&state), &read));
-    _assert(count == count);
+    _assert(read == count);
 
 #if defined(__arm__)
     state.__r[0] = data;
