@@ -38,9 +38,9 @@ struct CYTypeModifier :
 struct CYTypeArrayOf :
     CYTypeModifier
 {
-    size_t size_;
+    CYExpression *size_;
 
-    CYTypeArrayOf(size_t size, CYTypeModifier *next = NULL) :
+    CYTypeArrayOf(CYExpression *size, CYTypeModifier *next = NULL) :
         CYTypeModifier(next),
         size_(size)
     {

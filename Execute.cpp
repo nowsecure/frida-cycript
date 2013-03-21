@@ -1178,7 +1178,7 @@ static JSValueRef CYValue_callAsFunction_toCYON(JSContextRef context, JSObjectRe
 static JSValueRef Pointer_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(_this)));
     if (internal->length_ != _not(size_t)) {
-        JSObjectRef Array(CYGetCachedObject(context, Array_s));
+        JSObjectRef Array(CYGetCachedObject(context, CYJSString("Array_prototype")));
         JSObjectRef toCYON(CYCastJSObject(context, CYGetProperty(context, Array, toCYON_s)));
         return CYCallAsFunction(context, toCYON, _this, count, arguments);
     } else {

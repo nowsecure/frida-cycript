@@ -79,7 +79,7 @@ CYStatement *CYClassStatement::Replace(CYContext &context) {
 }
 
 CYExpression *CYTypeArrayOf::Replace(CYContext &context) {
-    return $ CYCall($ CYDirectMember(next_->Replace(context), $ CYString("arrayOf")), $ CYArgument($ CYNumber(size_)));
+    return $ CYCall($ CYDirectMember(next_->Replace(context), $ CYString("arrayOf")), $ CYArgument(size_));
 }
 
 CYExpression *CYTypeConstant::Replace(CYContext &context) {
