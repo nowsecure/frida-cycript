@@ -1616,7 +1616,7 @@ C RTLD_NEXT -1
 C RTLD_DEFAULT -2
 C RTLD_SELF -3
 
-S dl_info "dli_fname"*"dli_fbase"v^"dli_sname"*"dli_saddr"^v
+S dl_info "dli_fname"*"dli_fbase"^v"dli_sname"*"dli_saddr"^v
 T Dl_info {dl_info}
 
 F dladdr i^rv^{dl_info}
