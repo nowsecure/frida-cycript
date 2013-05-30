@@ -257,6 +257,10 @@ JSObjectRef CYMakeStruct(JSContextRef context, void *data, sig::Type *type, ffi_
     return JSObjectMake(context, Struct_, internal);
 }
 
+static void *CYCastSymbol(const char *name) {
+    return dlsym(RTLD_DEFAULT, name);
+}
+
 JSValueRef CYCastJSValue(JSContextRef context, bool value) {
     return JSValueMakeBoolean(context, value);
 }
@@ -493,21 +497,24 @@ JSObjectRef CYMakePointer(JSContextRef context, void *pointer, size_t length, si
     return JSObjectMake(context, Pointer_, internal);
 }
 
-static JSObjectRef CYMakeFunctor(JSContextRef context, void (*function)(), const char *type, void **cache = NULL) {
+static JSObjectRef CYMakeFunctor(JSContextRef context, void (*function)(), const char *type) {
+    return JSObjectMake(context, Functor_, new cy::Functor(type, function));
+}
+
+static JSObjectRef CYMakeFunctor(JSContextRef context, const char *symbol, const char *type, void **cache) {
     cy::Functor *internal;
-
-    if (cache != NULL && *cache != NULL) {
+    if (*cache != NULL)
         internal = reinterpret_cast<cy::Functor *>(*cache);
-        ++internal->count_;
-    } else {
-        internal = new cy::Functor(type, function);
+    else {
+        void (*function)()(reinterpret_cast<void (*)()>(CYCastSymbol(symbol)));
+        if (function == NULL)
+            return NULL;
 
-        if (cache != NULL) {
-            *cache = internal;
-            ++internal->count_;
-        }
+        internal = new cy::Functor(type, function);
+        *cache = internal;
     }
 
+    ++internal->count_;
     return JSObjectMake(context, Functor_, internal);
 }
 
@@ -965,10 +972,6 @@ JSObjectRef CYMakeType(JSContextRef context, sig::Type *type) {
     return JSObjectMake(context, Type_privateData::Class_, internal);
 }
 
-static void *CYCastSymbol(const char *name) {
-    return dlsym(RTLD_DEFAULT, name);
-}
-
 static JSValueRef All_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     JSObjectRef global(CYGetGlobalObject(context));
     JSObjectRef cycript(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Cycript"))));
@@ -998,9 +1001,7 @@ static JSValueRef All_getProperty(JSContextRef context, JSObjectRef object, JSSt
                     return JSEvaluateScript(CYGetJSContext(context), CYJSString(entry->value_), NULL, NULL, 0, NULL);
 
                 case '1':
-                    if (void (*symbol)() = reinterpret_cast<void (*)()>(CYCastSymbol(name.data)))
-                        return CYMakeFunctor(context, symbol, entry->value_, &entry->cache_);
-                    else return NULL;
+                    return CYMakeFunctor(context, name.data, entry->value_, &entry->cache_);
 
                 case '2':
                     if (void *symbol = CYCastSymbol(name.data)) {
