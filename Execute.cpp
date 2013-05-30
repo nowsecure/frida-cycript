@@ -1552,6 +1552,9 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     //CYSetProperty(context, System, CYJSString("global"), global);
     CYSetProperty(context, System, CYJSString("print"), &System_print);
 
+    if (CYBridgeEntry *entry = CYBridgeHash("1dlerror", 8))
+        entry->cache_ = new cy::Functor(entry->value_, reinterpret_cast<void (*)()>(&dlerror));
+
     if (hooks_ != NULL && hooks_->SetupContext != NULL)
         (*hooks_->SetupContext)(context);
 
