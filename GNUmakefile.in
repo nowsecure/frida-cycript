@@ -188,7 +188,7 @@ endif
 all: $(all)
 
 clean::
-	rm -rf *.lo *.o *.d *.t.hpp .libs */*.d */*.lo */.libs lib*.la $(all) Struct.hpp lex.cy.c Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh Cycript.yy Cycript.l control Bridge.gperf Bridge.hpp Cycript.output
+	rm -rf *.lo *.o *.d *.t.hpp .libs */*.d */*.lo */.libs lib*.la $(all) Struct.hpp lex.cy.cpp Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh Cycript.yy Cycript.l control Bridge.gperf Bridge.hpp Cycript.output
 ifneq ($(srcdir),.)
 	rm -rf Mach ObjectiveC sig
 endif
@@ -207,7 +207,7 @@ Cycript.tab.cc Cycript.tab.hh location.hh position.hh: Cycript.yy
 	! grep -n '^ *$$default  reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Cycript.output -B 2 | grep 'shift, and go to state [0-9]*$$'
 	! grep -n '^ *$$default  reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Cycript.output -B 2 | grep -v '$$default' | grep 'reduce using rule [0-9]* ([^)]*)$$'
 
-lex.cy.c: Cycript.l
+lex.cy.cpp: Cycript.l
 	$(flex) -t $< | $(sed) -e 's/int yyl;/yy_size_t yyl;/;s/int yyleng_r;/yy_size_t yyleng_r;/' >$@
 
 #Parser.hpp: Parser.py Parser.dat
@@ -216,7 +216,7 @@ lex.cy.c: Cycript.l
 Cycript.tab.lo: Cycript.tab.cc $(header)
 	$(libtool) --mode=compile $(cxx) $(cflags) -c -o $@ $<
 
-lex.cy.lo: lex.cy.c $(header)
+lex.cy.lo: lex.cy.cpp $(header)
 	$(libtool) --mode=compile $(cxx) $(cflags) -c -o $@ $<
 
 %.lo: %.cpp $(header)
