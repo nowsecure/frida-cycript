@@ -109,7 +109,7 @@ filters += C
 header += JavaScript.hpp
 endif
 
-cflags += -Wall -Werror -Wno-parentheses #-Wno-unused
+cflags := -Wall -Werror -Wno-parentheses $(cflags)
 cflags += -fno-common
 ifneq ($(srcdir),.)
 cflags += -I.
