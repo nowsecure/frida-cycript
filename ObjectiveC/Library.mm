@@ -1758,7 +1758,7 @@ static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object,
                 return CYSendMessage(pool, context, self, NULL, sel, 0, NULL, false, exception);
 
     return NULL;
-} CYCatch }
+} CYCatch(NULL) }
 
 static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) { CYTry {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
@@ -1772,7 +1772,7 @@ static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStr
     CYPoolTry {
         if ([self cy$setProperty:name to:data])
             return true;
-    } CYPoolCatch(NULL)
+    } CYPoolCatch(false)
 
     const char *string(CYPoolCString(pool, context, name));
     Class _class(object_getClass(self));
@@ -1818,7 +1818,7 @@ static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStr
     }
 
     return false;
-} CYCatch }
+} CYCatch(false) }
 
 static bool Instance_deleteProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
@@ -1827,8 +1827,8 @@ static bool Instance_deleteProperty(JSContextRef context, JSObjectRef object, JS
     CYPoolTry {
         NSString *name(CYCastNSString(NULL, context, property));
         return [self cy$deleteProperty:name];
-    } CYPoolCatch(NULL)
-} CYCatch return /*XXX*/ NULL; }
+    } CYPoolCatch(false)
+} CYCatch(false) return /*XXX*/ false; }
 
 static void Instance_getPropertyNames_message(JSPropertyNameAccumulatorRef names, objc_method *method) {
     const char *name(sel_getName(method_getName(method)));
@@ -1885,7 +1885,7 @@ static JSObjectRef Instance_callAsConstructor(JSContextRef context, JSObjectRef 
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
     JSObjectRef value(Instance::Make(context, [internal->GetValue() alloc], Instance::Uninitialized));
     return value;
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSValueRef Instance_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
@@ -1933,7 +1933,7 @@ static JSValueRef Instance_callAsFunction(JSContextRef context, JSObjectRef obje
     } CYPoolCatch(NULL);
 
     return NULL;
-} CYCatch }
+} CYCatch(NULL) }
 
 static bool Instance_hasInstance(JSContextRef context, JSObjectRef constructor, JSValueRef instance, JSValueRef *exception) { CYTry {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate((JSObjectRef) constructor)));
@@ -1948,7 +1948,7 @@ static bool Instance_hasInstance(JSContextRef context, JSObjectRef constructor, 
     }
 
     return false;
-} CYCatch }
+} CYCatch(false) }
 
 static JSValueRef Instance_box_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count == 0)
@@ -1958,7 +1958,7 @@ static JSValueRef Instance_box_callAsFunction(JSContextRef context, JSObjectRef 
     if (value == nil)
         value = [NSNull null];
     return CYCastJSValue(context, [value cy$box]);
-} CYCatch }
+} CYCatch(NULL) }
 
 static bool Internal_hasProperty(JSContextRef context, JSObjectRef object, JSStringRef property) {
     Internal *internal(reinterpret_cast<Internal *>(JSObjectGetPrivate(object)));
@@ -1987,7 +1987,7 @@ static JSValueRef Internal_getProperty(JSContextRef context, JSObjectRef object,
     }
 
     return NULL;
-} CYCatch }
+} CYCatch(NULL) }
 
 static bool Internal_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) { CYTry {
     Internal *internal(reinterpret_cast<Internal *>(JSObjectGetPrivate(object)));
@@ -2003,7 +2003,7 @@ static bool Internal_setProperty(JSContextRef context, JSObjectRef object, JSStr
     }
 
     return false;
-} CYCatch }
+} CYCatch(false) }
 
 static void Internal_getPropertyNames_(Class _class, JSPropertyNameAccumulatorRef names) {
     if (Class super = class_getSuperclass(_class))
@@ -2043,7 +2043,7 @@ static JSValueRef ObjectiveC_Classes_getProperty(JSContextRef context, JSObjectR
     if (Class _class = NSClassFromString(name))
         return CYMakeInstance(context, _class, true);
     return NULL;
-} CYCatch }
+} CYCatch(NULL) }
 
 static void ObjectiveC_Classes_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
 #ifdef __APPLE__
@@ -2093,7 +2093,7 @@ static JSValueRef ObjectiveC_Image_Classes_getProperty(JSContextRef context, JSO
   free:
     free(data);
     return value;
-} CYCatch }
+} CYCatch(NULL) }
 
 static void ObjectiveC_Image_Classes_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
     const char *internal(reinterpret_cast<const char *>(JSObjectGetPrivate(object)));
@@ -2122,7 +2122,7 @@ static JSValueRef ObjectiveC_Images_getProperty(JSContextRef context, JSObjectRe
     JSObjectRef value(JSObjectMake(context, NULL, NULL));
     CYSetProperty(context, value, CYJSString("classes"), JSObjectMake(context, ObjectiveC_Image_Classes_, const_cast<char *>(name)));
     return value;
-} CYCatch }
+} CYCatch(NULL) }
 
 static void ObjectiveC_Images_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
     unsigned int size;
@@ -2139,7 +2139,7 @@ static JSValueRef ObjectiveC_Protocols_getProperty(JSContextRef context, JSObjec
     if (Protocol *protocol = objc_getProtocol(name))
         return CYMakeInstance(context, protocol, true);
     return NULL;
-} CYCatch }
+} CYCatch(NULL) }
 
 static void ObjectiveC_Protocols_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
 #if OBJC_API_VERSION >= 2
@@ -2159,7 +2159,7 @@ static JSValueRef ObjectiveC_Constants_getProperty(JSContextRef context, JSObjec
     if (name == "nil")
         return Instance::Make(context, nil);
     return NULL;
-} CYCatch }
+} CYCatch(NULL) }
 
 static void ObjectiveC_Constants_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
     JSPropertyNameAccumulatorAddName(names, CYJSString("nil"));
@@ -2240,7 +2240,7 @@ JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, Class 
 
     void (*function)() = reinterpret_cast<void (*)()>(imp);
     return CYCallFunction(pool, context, 2, setup, count, arguments, initialize, exception, &signature, &cif, function);
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count < 2)
@@ -2278,7 +2278,7 @@ static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObje
     _cmd = CYCastSEL(context, arguments[1]);
 
     return CYSendMessage(pool, context, self, _class, _cmd, count - 2, arguments + 2, uninitialized, exception);
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSValueRef Selector_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     JSValueRef setup[count + 2];
@@ -2309,7 +2309,7 @@ static JSObjectRef Super_new(JSContextRef context, JSObjectRef object, size_t co
     id self(CYCastNSObject(pool, context, arguments[0]));
     Class _class(CYCastClass(pool, context, arguments[1]));
     return cy::Super::Make(context, self, _class);
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSObjectRef Selector_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 1)
@@ -2317,14 +2317,14 @@ static JSObjectRef Selector_new(JSContextRef context, JSObjectRef object, size_t
     CYPool pool;
     const char *name(CYPoolCString(pool, context, arguments[0]));
     return CYMakeSelector(context, sel_registerName(name));
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSObjectRef Instance_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count > 1)
         throw CYJSError(context, "incorrect number of arguments to Instance constructor");
     id self(count == 0 ? nil : CYCastPointer<id>(context, arguments[0]));
     return CYMakeInstance(context, self, false);
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSValueRef CYValue_getProperty_value(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
     CYValue *internal(reinterpret_cast<CYValue *>(JSObjectGetPrivate(object)));
@@ -2360,7 +2360,7 @@ static JSValueRef Instance_getProperty_prototype(JSContextRef context, JSObjectR
     if (!CYIsClass(self))
         return CYJSUndefined(context);
     return CYGetClassPrototype(context, self);
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSValueRef Instance_getProperty_messages(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
@@ -2376,7 +2376,7 @@ static JSValueRef Instance_callAsFunction_toCYON(JSContextRef context, JSObjectR
 
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
     return CYCastJSValue(context, CYJSString(context, CYCastNSCYON(internal->GetValue(), false)));
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSValueRef Instance_callAsFunction_toJSON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (!CYJSValueIsNSObject(context, _this))
@@ -2399,7 +2399,7 @@ static JSValueRef Instance_callAsFunction_toJSON(JSContextRef context, JSObjectR
         else
             return CYCastJSValue(context, CYJSString(context, [value description]));
     } CYPoolCatch(NULL)
-} CYCatch return /*XXX*/ NULL; }
+} CYCatch(NULL) return /*XXX*/ NULL; }
 
 static JSValueRef Instance_callAsFunction_valueOf(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (!CYJSValueIsNSObject(context, _this))
@@ -2415,7 +2415,7 @@ static JSValueRef Instance_callAsFunction_valueOf(JSContextRef context, JSObject
         return result;
 
     return _this;
-} CYCatch return /*XXX*/ NULL; }
+} CYCatch(NULL) return /*XXX*/ NULL; }
 
 static JSValueRef Instance_callAsFunction_toPointer(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (!CYJSValueIsNSObject(context, _this))
@@ -2424,7 +2424,7 @@ static JSValueRef Instance_callAsFunction_toPointer(JSContextRef context, JSObje
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
     // XXX: but... but... THIS ISN'T A POINTER! :(
     return CYCastJSValue(context, reinterpret_cast<uintptr_t>(internal->GetValue()));
-} CYCatch return /*XXX*/ NULL; }
+} CYCatch(NULL) return /*XXX*/ NULL; }
 
 static JSValueRef Instance_callAsFunction_toString(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (!CYJSValueIsNSObject(context, _this))
@@ -2437,7 +2437,7 @@ static JSValueRef Instance_callAsFunction_toString(JSContextRef context, JSObjec
         // XXX: this seems like a stupid implementation; what if it crashes? why not use the CYONifier backend?
         return CYCastJSValue(context, CYJSString(context, [value description]));
     } CYPoolCatch(NULL)
-} CYCatch return /*XXX*/ NULL; }
+} CYCatch(NULL) return /*XXX*/ NULL; }
 
 static JSValueRef Class_callAsFunction_pointerTo(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (!CYJSValueIsNSObject(context, _this))
@@ -2459,12 +2459,12 @@ static JSValueRef Class_callAsFunction_pointerTo(JSContextRef context, JSObjectR
     CYPoolTry {
         return CYMakeType(context, type.str().c_str());
     } CYPoolCatch(NULL)
-} CYCatch return /*XXX*/ NULL; }
+} CYCatch(NULL) return /*XXX*/ NULL; }
 
 static JSValueRef Selector_callAsFunction_toString(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     Selector_privateData *internal(reinterpret_cast<Selector_privateData *>(JSObjectGetPrivate(_this)));
     return CYCastJSValue(context, sel_getName(internal->GetValue()));
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSValueRef Selector_callAsFunction_toJSON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     return Selector_callAsFunction_toString(context, object, _this, count, arguments, exception);
@@ -2478,7 +2478,7 @@ static JSValueRef Selector_callAsFunction_toCYON(JSContextRef context, JSObjectR
         NSString *string([NSString stringWithFormat:@"@selector(%s)", name]);
         return CYCastJSValue(context, CYJSString(context, string));
     } CYPoolCatch(NULL)
-} CYCatch return /*XXX*/ NULL; }
+} CYCatch(NULL) return /*XXX*/ NULL; }
 
 static JSValueRef Selector_callAsFunction_type(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 1)
@@ -2498,7 +2498,7 @@ static JSValueRef Selector_callAsFunction_type(JSContextRef context, JSObjectRef
         return CYCastJSValue(context, CYJSString(type));
 
     return CYJSNull(context);
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSStaticValue Selector_staticValues[2] = {
     {"value", &CYValue_getProperty_value, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete},

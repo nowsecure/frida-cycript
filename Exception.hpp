@@ -47,13 +47,13 @@ void CYThrow(JSContextRef context, JSValueRef value);
 
 #define CYTry \
     try
-#define CYCatch \
+#define CYCatch(value) \
     catch (const CYException &error) { \
         *exception = error.CastJSValue(context); \
-        return NULL; \
+        return value; \
     } catch (...) { \
         *exception = CYCastJSValue(context, "catch(...)"); \
-        return NULL; \
+        return value; \
     }
 
 // XXX: fix this: _ is not safe; this is /not/ Menes ;P

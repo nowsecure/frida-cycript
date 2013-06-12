@@ -335,7 +335,7 @@ static JSValueRef System_print(JSContextRef context, JSObjectRef object, JSObjec
     }
 
     return CYJSUndefined(context);
-} CYCatch }
+} CYCatch(NULL) }
 
 static size_t Nonce_(0);
 
@@ -379,7 +379,7 @@ const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSValueRef value
         default:
             throw CYJSError(context, "JSValueGetType() == 0x%x", type);
     }
-} CYCatch }
+} CYCatch(NULL) }
 
 const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
     JSValueRef exception(NULL);
@@ -479,7 +479,7 @@ static JSValueRef Array_callAsFunction_toCYON(JSContextRef context, JSObjectRef 
 
     std::string value(str.str());
     return CYCastJSValue(context, CYJSString(CYUTF8String(value.c_str(), value.size())));
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSValueRef String_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CYPool pool;
@@ -490,7 +490,7 @@ static JSValueRef String_callAsFunction_toCYON(JSContextRef context, JSObjectRef
 
     std::string value(str.str());
     return CYCastJSValue(context, CYJSString(CYUTF8String(value.c_str(), value.size())));
-} CYCatch }
+} CYCatch(NULL) }
 
 JSObjectRef CYMakePointer(JSContextRef context, void *pointer, size_t length, sig::Type *type, ffi_type *ffi, JSObjectRef owner) {
     Pointer *internal(new Pointer(pointer, context, owner, length, type));
@@ -842,7 +842,7 @@ static JSValueRef Pointer_getProperty(JSContextRef context, JSObjectRef object, 
 
     JSObjectRef owner(internal->GetOwner() ?: object);
     return CYFromFFI(context, typical->type_, ffi, base, false, owner);
-} CYCatch }
+} CYCatch(NULL) }
 
 static bool Pointer_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) { CYTry {
     CYPool pool;
@@ -850,13 +850,13 @@ static bool Pointer_setProperty(JSContextRef context, JSObjectRef object, JSStri
     Type_privateData *typical(internal->type_);
 
     if (typical->type_ == NULL)
-        return NULL;
+        return false;
 
     ssize_t offset;
     if (JSStringIsEqualToUTF8CString(property, "$cyi"))
         offset = 0;
     else if (!CYGetOffset(pool, context, property, offset))
-        return NULL;
+        return false;
 
     ffi_type *ffi(typical->GetFFI());
 
@@ -865,7 +865,7 @@ static bool Pointer_setProperty(JSContextRef context, JSObjectRef object, JSStri
 
     CYPoolFFI(NULL, context, typical->type_, ffi, base, value);
     return true;
-} CYCatch }
+} CYCatch(false) }
 
 static JSValueRef Struct_callAsFunction_$cya(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     Struct_privateData *internal(reinterpret_cast<Struct_privateData *>(JSObjectGetPrivate(_this)));
@@ -887,7 +887,7 @@ static JSValueRef Struct_getProperty(JSContextRef context, JSObjectRef object, J
     JSObjectRef owner(internal->GetOwner() ?: object);
 
     return CYFromFFI(context, typical->type_->data.signature.elements[index].type, typical->GetFFI()->elements[index], base, false, owner);
-} CYCatch }
+} CYCatch(NULL) }
 
 static bool Struct_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) { CYTry {
     CYPool pool;
@@ -902,7 +902,7 @@ static bool Struct_setProperty(JSContextRef context, JSObjectRef object, JSStrin
 
     CYPoolFFI(NULL, context, typical->type_->data.signature.elements[index].type, typical->GetFFI()->elements[index], base, value);
     return true;
-} CYCatch }
+} CYCatch(false) }
 
 static void Struct_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
     Struct_privateData *internal(reinterpret_cast<Struct_privateData *>(JSObjectGetPrivate(object)));
@@ -954,7 +954,7 @@ JSValueRef CYCallFunction(apr_pool_t *pool, JSContextRef context, size_t setups,
         ffi_call(cif, function, value, values);
 
     return CYFromFFI(context, signature->elements[0].type, cif->rtype, value, initialize);
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSValueRef Functor_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     CYPool pool;
@@ -1020,7 +1020,7 @@ static JSValueRef All_getProperty(JSContextRef context, JSObjectRef object, JSSt
     }
 
     return NULL;
-} CYCatch }
+} CYCatch(NULL) }
 
 static void All_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
     JSObjectRef global(CYGetGlobalObject(context));
@@ -1049,7 +1049,7 @@ static JSObjectRef Pointer_new(JSContextRef context, JSObjectRef object, size_t 
     sig::Parse(pool, &signature, type, &Structor_);
 
     return CYMakePointer(context, value, _not(size_t), signature.elements[0].type, NULL, NULL);
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSObjectRef Type_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 1)
@@ -1057,7 +1057,7 @@ static JSObjectRef Type_new(JSContextRef context, JSObjectRef object, size_t cou
     CYPool pool;
     const char *type(CYPoolCString(pool, context, arguments[0]));
     return CYMakeType(context, type);
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSValueRef Type_callAsFunction_arrayOf(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 1)
@@ -1078,7 +1078,7 @@ static JSValueRef Type_callAsFunction_arrayOf(JSContextRef context, JSObjectRef 
     type.data.data.size = index;
 
     return CYMakeType(context, &type);
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSValueRef Type_callAsFunction_constant(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 0)
@@ -1088,7 +1088,7 @@ static JSValueRef Type_callAsFunction_constant(JSContextRef context, JSObjectRef
     sig::Type type(*internal->type_);
     type.flags |= JOC_TYPE_CONST;
     return CYMakeType(context, &type);
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSValueRef Type_callAsFunction_pointerTo(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 0)
@@ -1104,7 +1104,7 @@ static JSValueRef Type_callAsFunction_pointerTo(JSContextRef context, JSObjectRe
     type.data.data.size = 0;
 
     return CYMakeType(context, &type);
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSValueRef Type_callAsFunction_withName(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 1)
@@ -1117,7 +1117,7 @@ static JSValueRef Type_callAsFunction_withName(JSContextRef context, JSObjectRef
     sig::Type type(*internal->type_);
     type.name = name;
     return CYMakeType(context, &type);
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSValueRef Type_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 1)
@@ -1131,7 +1131,7 @@ static JSValueRef Type_callAsFunction(JSContextRef context, JSObjectRef object, 
     CYPool pool;
     CYPoolFFI(pool, context, type, ffi, value, arguments[0]);
     return CYFromFFI(context, type, ffi, value);
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSObjectRef Type_callAsConstructor(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 0)
@@ -1150,7 +1150,7 @@ static JSObjectRef Type_callAsConstructor(JSContextRef context, JSObjectRef obje
 
     void *value(malloc(internal->GetFFI()->size));
     return CYMakePointer(context, value, length, type, NULL, NULL);
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSObjectRef Functor_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 2)
@@ -1158,12 +1158,12 @@ static JSObjectRef Functor_new(JSContextRef context, JSObjectRef object, size_t 
     CYPool pool;
     const char *type(CYPoolCString(pool, context, arguments[1]));
     return CYMakeFunctor(context, arguments[0], type);
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSValueRef CYValue_callAsFunction_valueOf(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CYValue *internal(reinterpret_cast<CYValue *>(JSObjectGetPrivate(_this)));
     return CYCastJSValue(context, reinterpret_cast<uintptr_t>(internal->value_));
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSValueRef CYValue_callAsFunction_toJSON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     return CYValue_callAsFunction_valueOf(context, object, _this, count, arguments, exception);
@@ -1174,7 +1174,7 @@ static JSValueRef CYValue_callAsFunction_toCYON(JSContextRef context, JSObjectRe
     char string[32];
     sprintf(string, "%p", internal->value_);
     return CYCastJSValue(context, string);
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSValueRef Pointer_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(_this)));
@@ -1187,7 +1187,7 @@ static JSValueRef Pointer_callAsFunction_toCYON(JSContextRef context, JSObjectRe
         sprintf(string, "%p", internal->value_);
         return CYCastJSValue(context, string);
     }
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSValueRef Type_getProperty_alignment(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
@@ -1209,7 +1209,7 @@ static JSValueRef Type_callAsFunction_toString(JSContextRef context, JSObjectRef
     CYPool pool;
     const char *type(sig::Unparse(pool, internal->type_));
     return CYCastJSValue(context, CYJSString(type));
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSValueRef Type_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
@@ -1219,7 +1219,7 @@ static JSValueRef Type_callAsFunction_toCYON(JSContextRef context, JSObjectRef o
     CYStringify(str, type, strlen(type));
     char *cyon(apr_pstrcat(pool, "new Type(", str.str().c_str(), ")", NULL));
     return CYCastJSValue(context, CYJSString(cyon));
-} CYCatch }
+} CYCatch(NULL) }
 
 static JSValueRef Type_callAsFunction_toJSON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     return Type_callAsFunction_toString(context, object, _this, count, arguments, exception);
