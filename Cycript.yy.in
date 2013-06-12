@@ -81,9 +81,6 @@ typedef struct {
         CYString *string_;
         CYThis *this_;
         CYTrue *true_;
-        CYTypeModifier *type_;
-        CYTypedIdentifier *typedIdentifier_;
-        CYTypedParameter *typedParameter_;
         CYWord *word_;
 
 @begin ObjectiveC
@@ -93,6 +90,9 @@ typedef struct {
         CYMessageParameter *messageParameter_;
         CYProtocol *protocol_;
         CYSelectorPart *selector_;
+        CYTypeModifier *type_;
+        CYTypedIdentifier *typedIdentifier_;
+        CYTypedParameter *typedParameter_;
 @end
 
 @begin E4X
@@ -557,8 +557,10 @@ LexNoFunction
     : { if (yychar == yyempty_) driver.no_.Function = true; else if (yychar == token::Function) yychar = token::Function_; }
     ;
 
-LexNoAtImplementation
-    : { if (yychar == yyempty_) driver.no_.AtImplementation = true; else if (yychar == token::AtImplementation) yychar = token::AtImplementation_; }
+LexNoAtImplementation :
+@begin ObjectiveC
+    { if (yychar == yyempty_) driver.no_.AtImplementation = true; else if (yychar == token::AtImplementation) yychar = token::AtImplementation_; }
+@end
     ;
 
 LexSetStatement

@@ -33,7 +33,9 @@ typedef cy::parser::token tk;
 // do /not/ fold token to the return: this is a macro and the ordering is dependent
 #define F(value, highlight) do { \
     int token(value); \
+@begin ObjectiveC
     yyextra->no_.AtImplementation = false; \
+@end
     yyextra->no_.Function = false; \
     yyextra->no_.OpenBrace = false; \
     yylval->highlight_ = highlight; \
