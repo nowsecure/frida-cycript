@@ -2,6 +2,7 @@ AC_PREREQ([2.65])
 AC_INIT([Cycript], [0.9], [saurik@saurik.com], [cycript], [http://www.cycript.org/])
 AC_CONFIG_SRCDIR([Console.cpp])
 AC_CONFIG_AUX_DIR([.])
+AM_INIT_AUTOMAKE
 LT_INIT([disable-static])
 PKG_PROG_PKG_CONFIG([0.22])
 AX_CHECK_GNU_MAKE
@@ -147,9 +148,9 @@ AS_CASE([$CY_EXECUTE], [1], [
 	])
 	AC_LANG_PUSH([Objective C++])
 	AC_MSG_CHECKING([if we really have Objective C++])
-	AC_COMPILE_IFELSE([
+	AC_COMPILE_IFELSE([AC_LANG_SOURCE([
 		// This space intentionally left blank
-	], [
+	])], [
 		CY_OBJECTIVEC=1
 		AC_MSG_RESULT([yes])
 	], [AC_MSG_RESULT([no])])
