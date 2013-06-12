@@ -1300,7 +1300,7 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
 - (id) objectAtIndex:(NSUInteger)index { CYObjectiveTry {
     size_t bounds([self count]);
     if (index >= bounds)
-        @throw [NSException exceptionWithName:NSRangeException reason:[NSString stringWithFormat:@"*** -[CYJSArray objectAtIndex:]: index (%zu) beyond bounds (%zu)", index, bounds] userInfo:nil];
+        @throw [NSException exceptionWithName:NSRangeException reason:[NSString stringWithFormat:@"*** -[CYJSArray objectAtIndex:]: index (%zu) beyond bounds (%zu)", static_cast<size_t>(index), bounds] userInfo:nil];
     JSValueRef exception(NULL);
     JSValueRef value(JSObjectGetPropertyAtIndex(context_, object_, index, &exception));
     CYThrow(context_, exception);
@@ -1314,7 +1314,7 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
 - (void) insertObject:(id)object atIndex:(NSUInteger)index { CYObjectiveTry {
     size_t bounds([self count] + 1);
     if (index >= bounds)
-        @throw [NSException exceptionWithName:NSRangeException reason:[NSString stringWithFormat:@"*** -[CYJSArray insertObject:atIndex:]: index (%zu) beyond bounds (%zu)", index, bounds] userInfo:nil];
+        @throw [NSException exceptionWithName:NSRangeException reason:[NSString stringWithFormat:@"*** -[CYJSArray insertObject:atIndex:]: index (%zu) beyond bounds (%zu)", static_cast<size_t>(index), bounds] userInfo:nil];
     JSValueRef exception(NULL);
     JSValueRef arguments[3];
     arguments[0] = CYCastJSValue(context_, index);
@@ -1335,7 +1335,7 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
 - (void) removeObjectAtIndex:(NSUInteger)index { CYObjectiveTry {
     size_t bounds([self count]);
     if (index >= bounds)
-        @throw [NSException exceptionWithName:NSRangeException reason:[NSString stringWithFormat:@"*** -[CYJSArray removeObjectAtIndex:]: index (%zu) beyond bounds (%zu)", index, bounds] userInfo:nil];
+        @throw [NSException exceptionWithName:NSRangeException reason:[NSString stringWithFormat:@"*** -[CYJSArray removeObjectAtIndex:]: index (%zu) beyond bounds (%zu)", static_cast<size_t>(index), bounds] userInfo:nil];
     JSValueRef exception(NULL);
     JSValueRef arguments[2];
     arguments[0] = CYCastJSValue(context_, index);
@@ -1348,7 +1348,7 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
 - (void) replaceObjectAtIndex:(NSUInteger)index withObject:(id)object { CYObjectiveTry {
     size_t bounds([self count]);
     if (index >= bounds)
-        @throw [NSException exceptionWithName:NSRangeException reason:[NSString stringWithFormat:@"*** -[CYJSArray replaceObjectAtIndex:withObject:]: index (%zu) beyond bounds (%zu)", index, bounds] userInfo:nil];
+        @throw [NSException exceptionWithName:NSRangeException reason:[NSString stringWithFormat:@"*** -[CYJSArray replaceObjectAtIndex:withObject:]: index (%zu) beyond bounds (%zu)", static_cast<size_t>(index), bounds] userInfo:nil];
     CYSetProperty(context_, object_, index, CYCastJSValue(context_, (NSObject *) object));
 } CYObjectiveCatch }
 
