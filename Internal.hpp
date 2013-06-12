@@ -172,7 +172,7 @@ struct Functor :
         sig::sig_ffi_cif(pool_, &sig::ObjectiveC, &signature_, &cif_);
     }
 
-    void (*GetValue())() const {
+    void (*GetValue() const)() {
         return reinterpret_cast<void (*)()>(value_);
     }
 

@@ -39,7 +39,7 @@
 #include "Pooling.hpp"
 #include "Options.hpp"
 
-class CYContext;
+struct CYContext;
 
 struct CYThing {
     virtual ~CYThing() {
