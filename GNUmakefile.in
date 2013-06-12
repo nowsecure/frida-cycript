@@ -210,13 +210,7 @@ Cycript.tab.cc Cycript.tab.hh location.hh position.hh: Cycript.yy
 lex.cy.cpp: Cycript.l
 	$(flex) -t $< | $(sed) -e 's/int yyl;/yy_size_t yyl;/;s/int yyleng_r;/yy_size_t yyleng_r;/' >$@
 
-#Parser.hpp: Parser.py Parser.dat
-#	./Parser.py <Parser.dat >$@
-
 Cycript.tab.lo: Cycript.tab.cc $(header)
-	$(libtool) --mode=compile $(cxx) $(cflags) -c -o $@ $<
-
-lex.cy.lo: lex.cy.cpp $(header)
 	$(libtool) --mode=compile $(cxx) $(cflags) -c -o $@ $<
 
 %.lo: %.cpp $(header)
