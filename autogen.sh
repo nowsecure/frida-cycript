@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-set -e
-aclocal
-automake -acf
-libtoolize -ci
+libtoolize -cif
+aclocal -I m4
 autoconf
+automake -acf

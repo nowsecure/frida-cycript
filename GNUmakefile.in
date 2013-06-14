@@ -109,7 +109,7 @@ filters += C
 header += JavaScript.hpp
 endif
 
-cflags := -Wall -Werror -Wno-parentheses $(cflags)
+cflags += -Werror
 cflags += -fno-common
 ifneq ($(srcdir),.)
 cflags += -I.
@@ -169,8 +169,9 @@ code += ObjectiveC/Output.lo ObjectiveC/Replace.lo ObjectiveC/Library.lo
 
 Struct.hpp:
 	$$($(objcxx) -print-prog-name=cc1obj) -print-objc-runtime-info </dev/null >$@
+endif
 
-ifeq ($(CY_OBJECTIVEC_MACH),1)
+ifeq ($(CY_MACH),1)
 code += Handler.lo
 cflags += -DCY_ATTACH -DCY_LIBRARY='"$(libdir)/libcycript.$(dll)"'
 inject += Mach/Inject.lo
@@ -182,7 +183,6 @@ Mach/Inject.lo: Trampoline.t.hpp Baton.hpp
 
 %.t.hpp: %.t.lo trampoline.sh
 	$(srcdir)/trampoline.sh $@ .libs/lib$*.t.$(dll) $* $(sed) $(otool) $(lipo) $(nm) $(libtool) --mode=link $(cxx) $(ldflags) -o lib$*.t.la $< -rpath $(libdir) -Xcompiler -nostdlib
-endif
 endif
 
 all: $(all)
