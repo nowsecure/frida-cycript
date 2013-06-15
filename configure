@@ -652,6 +652,8 @@ SO
 LTFLAGS
 LTLIBICONV
 LIBICONV
+LTLIBTERMCAP
+LTLIBREADLINE
 CY_OBJECTIVEC_FALSE
 CY_OBJECTIVEC_TRUE
 GNUSTEP_CONFIG
@@ -19958,6 +19960,11 @@ fi
 
 
 
+
+
+    cy_save=$LIBS
+    LIBS=
+
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a readline compatible library" >&5
 $as_echo_n "checking for a readline compatible library... " >&6; }
 if ${ax_cv_lib_readline+:} false; then :
@@ -20085,14 +20092,20 @@ done
     fi
   fi
 
-case $vl_cv_lib_readline in #(
+    LTLIBREADLINE=$LIBS
+    LIBS=$cy_save
+
+case $ax_cv_lib_readline in #(
   no) :
     as_fn_error $? "missing \"libreadline\"" "$LINENO" 5 ;; #(
   *) :
      ;;
 esac
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing cur_term" >&5
+
+    cy_save=$LIBS
+    LIBS=
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing cur_term" >&5
 $as_echo_n "checking for library containing cur_term... " >&6; }
 if ${ac_cv_search_cur_term+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -20147,6 +20160,9 @@ if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
 
 fi
+
+    LTLIBTERMCAP=$LIBS
+    LIBS=$cy_save
 
 
 ac_ext=c

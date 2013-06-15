@@ -20,7 +20,7 @@ libcycript_la_SOURCES += lex.cy.cpp
 
 bin_PROGRAMS = cycript
 cycript_SOURCES = Console.cpp Display.cpp
-cycript_LDFLAGS = $(LTLIBAPR) -ldl
+cycript_LDFLAGS = $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) -ldl
 cycript_LDADD = libcycript.la
 
 ldid = true

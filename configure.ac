@@ -236,12 +236,20 @@ AS_CASE([$CY_EXECUTE], [1], [
 
 AM_CONDITIONAL([CY_OBJECTIVEC], [test "x$CY_OBJECTIVEC" = x1])
 
-AX_LIB_READLINE
-AS_CASE([$vl_cv_lib_readline], [no], [AC_MSG_ERROR([missing "libreadline"])])
+AC_DEFUN([CY_LT_LIB], [
+    cy_save=$LIBS
+    LIBS=
+    ]$2[
+    ]$1[=$LIBS
+    LIBS=$cy_save
+    AC_SUBST(]$1[)
+])
+
+CY_LT_LIB([LTLIBREADLINE], [AX_LIB_READLINE])
+AS_CASE([$ax_cv_lib_readline], [no], [AC_MSG_ERROR([missing "libreadline"])])
 
 dnl XXX: AX_LIB_READLINE totally lied: it was suposed to figure this out :(
-dnl XXX: this should only be linked into the main binary (not the library)
-AC_SEARCH_LIBS([cur_term], [termcap])
+CY_LT_LIB([LTLIBTERMCAP], [AC_SEARCH_LIBS([cur_term], [termcap])])
 
 dnl XXX: saurik doesn't understand what this does
 dnl AM_ICONV {{{
