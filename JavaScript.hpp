@@ -34,6 +34,10 @@
 #include <ffi.h>
 #endif
 
+#include <apr_pools.h>
+
+#include <String.hpp>
+
 extern JSStringRef Array_s;
 extern JSStringRef cy_s;
 extern JSStringRef length_s;

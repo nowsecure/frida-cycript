@@ -19,8 +19,8 @@
 **/
 /* }}} */
 
-#include "Parser.hpp"
 #include "Cycript.tab.hh"
+#include "Parser.hpp"
 
 CYRange DigitRange_    (0x3ff000000000000LLU, 0x000000000000000LLU); // 0-9
 CYRange WordStartRange_(0x000001000000000LLU, 0x7fffffe87fffffeLLU); // A-Za-z_$

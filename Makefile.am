@@ -92,7 +92,7 @@ CLEANFILES += lex.cy.cpp
 lex.cy.cpp: Cycript.l
 	$(FLEX) -t $< | $(SED) -e 's/int yyl;/yy_size_t yyl;/;s/int yyleng_r;/yy_size_t yyleng_r;/' >$@
 
-Highlight.lo: Cycript.tab.hh
+Console.lo Execute.lo Highlight.lo Library.lo Parser.lo lex.cy.lo: Cycript.tab.hh
 
 CLEANFILES += Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh Cycript.output
 Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh Cycript.output: Cycript.yy
