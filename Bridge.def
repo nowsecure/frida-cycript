@@ -344,7 +344,7 @@ V UIKeyboardAnimationDurationUserInfoKey @
 
 F UIApplicationMain ii^^c@@
 
-F UIImageJPEGRepresentation @@
+F UIImageJPEGRepresentation @@f
 F UIImagePNGRepresentation @@
 F UIImageWriteToSavedPhotosAlbum v@@:^v
 
