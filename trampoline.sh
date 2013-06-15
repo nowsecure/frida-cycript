@@ -2,25 +2,17 @@
 
 set -e
 
-shopt -s extglob
-
 hpp=$1
 object=$2
 name=$3
 sed=$4
-otool=$5
-lipo=$6
-nm=$7
-shift 7
+lipo=$5
+nm=$6
+otool=$7
 
-#shift 1
-#set /Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/gcc-4.2 -I/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS3.1.3.sdk/usr/include "$@"
-
-"$@"
+exec >"${hpp}"
 
 detailed=$("${lipo}" -detailed_info "${object}")
-
-{
 
 regex=$'\nNon-fat file: .* is architecture: (.*)'
 if [[ ${detailed} =~ ${regex} ]]; then
@@ -51,7 +43,7 @@ for arch in "${archs[@]}"; do
         x; }; x;
 
         /^ *cmd LC_SEGMENT/ { x; s/.*/1/; x; };
-        
+
         d;
     '))
 
@@ -90,7 +82,7 @@ for arch in "${archs[@]}"; do
 
     echo
     echo "/*"
-    "${otool}" -vVt -arch "${arch}" "${object}"
+    "${otool}" -arch "${arch}" -vVt "${object}"
     echo "*/"
 
     echo
@@ -99,8 +91,5 @@ for arch in "${archs[@]}"; do
     echo "    sizeof(${name}_${arch}_data_),"
     echo "    ${name}_${arch}_entry_,"
     echo "};"
+
 done
-
-} >"${hpp}"
-
-#rm -f "${object}"

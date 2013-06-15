@@ -6,7 +6,13 @@ AC_CONFIG_SRCDIR([Console.cpp])
 AC_CONFIG_AUX_DIR([.])
 AC_CONFIG_MACRO_DIR([m4])
 
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([-Wall -Werror -Wno-portability foreign])
+
+AC_PROG_CXX
+AC_PROG_OBJCXX
+AM_PROG_AR
+AC_PROG_INSTALL
+
 LT_INIT([disable-static])
 
 AC_LANG([C++])
@@ -54,11 +60,6 @@ CY_CHECK_PROGS_VERSION([GPERF], [gperf], [perfect hash function generator],
 CY_CHECK_PROGS_VERSION([GNUTAR], [tar gtar gnutar], [a very sticky lump of files],
     [--version | $SED -e '1 s/^tar (GNU tar) \(.*\)$/\1/p;d'], [1.19])
 
-AC_PROG_INSTALL
-
-AC_PROG_CXX
-AC_PROG_OBJCXX
-
 dnl CY_TRY {{{
 AC_DEFUN([CY_SUCCESS], [cy_good=1])
 AC_DEFUN([CY_FAILURE], [cy_good=0])
@@ -102,10 +103,11 @@ for cy_arch in ppc ppc64 i386 x86_64 armv6; do
         AC_TRY_LINK([], [], [CY_SUCCESS], [CY_FAILURE])
     ], [
         AC_MSG_RESULT([yes])
-        CY_COMPILE_FLAG(["-arch $cy_arch"])
-        AC_LIB_APPENDTOVAR([LDFLAGS], ["-arch $cy_arch"])
+        AC_LIB_APPENDTOVAR([CY_ARCH], ["-arch $cy_arch"])
     ], [AC_MSG_RESULT([no])])
-done dnl }}}
+done
+AC_SUBST([CY_ARCH])
+dnl }}}
 
 dnl --with-frameworks {{{
 AC_ARG_WITH([frameworks], [AS_HELP_STRING(
@@ -161,7 +163,7 @@ dnl APR_FIND_APR {{{
 APR_FIND_APR([], [], [1], [1])
 AS_CASE([$apr_found], [yes], [
     AC_LIB_APPENDTOVAR([CPPFLAGS], [`$apr_config --includes`])
-    AC_SUBST([LTLIBAPR], [`$apr_config --link-libtool`])
+    AC_LIB_APPENDTOVAR([LIBS], [`$apr_config --link-libtool`])
 ], [AC_MSG_ERROR([missing "libapr"])])
 dnl }}}
 
@@ -170,6 +172,8 @@ AC_DEFUN([CY_CHECK_PKG_CONFIG_LIBFFI], [
         AC_LIB_APPENDTOVAR([CXXFLAGS], [`$PKG_CONFIG --cflags libffi`])
         AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs libffi`])
     ], [AC_MSG_ERROR([missing "libffi"])])])
+
+AM_CONDITIONAL([CY_EXECUTE], [test "x$CY_EXECUTE" = x1])
 
 AS_CASE([$CY_EXECUTE], [1], [
     AC_CHECK_HEADERS([ffi.h ffi/ffi.h], [break])
@@ -216,8 +220,14 @@ AS_CASE([$CY_EXECUTE], [1], [
     AC_LANG_POP([Objective C++])
 ])
 
-VL_LIB_READLINE
+AM_CONDITIONAL([CY_OBJECTIVEC], [test "x$CY_OBJECTIVEC" = x1])
+
+AX_LIB_READLINE
 AS_CASE([$vl_cv_lib_readline], [no], [AC_MSG_ERROR([missing "libreadline"])])
+
+dnl XXX: AX_LIB_READLINE totally lied: it was suposed to figure this out :(
+dnl XXX: this should only be linked into the main binary (not the library)
+AC_SEARCH_LIBS([cur_term], [termcap])
 
 dnl XXX: saurik doesn't understand what this does
 dnl AM_ICONV {{{
@@ -245,15 +255,14 @@ AC_SUBST([LTFLAGS])
 AC_SUBST([SO], [$acl_shlibext])
 
 AC_CHECK_HEADER([mach/mach.h], [
-    AC_CHECK_TOOLS([_OTOOL], [otool], [AC_MSG_ERROR([missing "otool"])])
     AC_CHECK_TOOLS([_LIPO], [lipo], [AC_MSG_ERROR([missing "lipo"])])
     AC_CHECK_TOOLS([_NM], [nm], [AC_MSG_ERROR([missing "nm"])])
+    AC_CHECK_TOOLS([_OTOOL], [otool], [AC_MSG_ERROR([missing "otool"])])
     AC_SUBST([CY_MACH], [1])
     AC_SUBST([CY_ATTACH_GROUP], [procmod])
 ])
 
-AS_IF([test "x$GMAKE" != xmake], [
-    AC_CONFIG_FILES([Makefile])])
-AC_CONFIG_FILES([GNUmakefile])
+AM_CONDITIONAL([CY_MACH], [test "x$CY_MACH" = x1])
 
+AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
