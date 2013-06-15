@@ -26,7 +26,7 @@ cycript_LDADD = libcycript.la
 ldid = true
 entitle = $(ldid) -Scycript.xml
 
-filters = $(shell $(bison) <(echo '%code{}%%_:') -o/dev/null 2>/dev/null && echo Bison24 || echo Bison23)
+filters = $(shell $(BISON) <(echo '%code{}%%_:') -o/dev/null 2>/dev/null && echo Bison24 || echo Bison23)
 
 if CY_EXECUTE
 libcycript_la_SOURCES += sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp
