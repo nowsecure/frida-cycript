@@ -660,6 +660,7 @@ LIBFFI_LIBS
 LIBFFI_CFLAGS
 CY_EXECUTE_FALSE
 CY_EXECUTE_TRUE
+LTLIBAPR
 CY_EXECUTE
 WEBKIT_LIBS
 WEBKIT_CFLAGS
@@ -19182,7 +19183,7 @@ case $apr_found in #(
 
   for element in `$apr_config --link-libtool`; do
     haveit=
-    for x in $LIBS; do
+    for x in $LTLIBAPR; do
 
   acl_save_prefix="$prefix"
   prefix="$acl_final_prefix"
@@ -19198,9 +19199,10 @@ case $apr_found in #(
       fi
     done
     if test -z "$haveit"; then
-      LIBS="${LIBS}${LIBS:+ }$element"
+      LTLIBAPR="${LTLIBAPR}${LTLIBAPR:+ }$element"
     fi
   done
+
 
  ;; #(
   *) :
