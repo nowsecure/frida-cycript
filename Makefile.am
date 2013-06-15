@@ -26,7 +26,7 @@ cycript_LDADD = libcycript.la
 ldid = true
 entitle = $(ldid) -Scycript.xml
 
-filters = $(shell $(BISON) <(echo '%code{}%%_:') -o/dev/null 2>/dev/null && echo Bison24 || echo Bison23)
+filters = $(CY_FILTERS)
 
 if CY_EXECUTE
 libcycript_la_SOURCES += sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp
@@ -68,27 +68,24 @@ AM_CPPFLAGS += -DCY_ATTACH -DCY_LIBRARY='"$(libdir)/libcycript.$(SO)"'
 Mach/Inject.$(OBJEXT): Trampoline.t.hpp
 
 CLEANFILES += Trampoline.t.lo
-%.t.lo: %.t.cpp Trampoline.hpp Baton.hpp Standard.hpp
+Trampoline.t.lo: Trampoline.t.cpp Trampoline.hpp Baton.hpp Standard.hpp
 	$(LTCXXCOMPILE) $(CY_ARCH) -c -o $@ $< -fno-stack-protector -fno-exceptions -O0
-.SECONDARY: Trampoline.t.lo
 
 CLEANFILES += libTrampoline.t.la
-lib%.t.la: %.t.lo
+libTrampoline.t.la: Trampoline.t.lo
 	$(CXXLINK) $(CY_ARCH) -rpath $(libdir) $^
-.SECONDARY: libTrampoline.t.la
 
 CLEANFILES += Trampoline.t.hpp
-%.t.hpp: lib%.t.la trampoline.sh
-	$(srcdir)/trampoline.sh $@ $(patsubst %.la,.libs/%.dylib,$<) $* $(SED) $(LIPO) $(NM) $(OTOOL)
-.SECONDARY: Trampoline.t.hpp
+Trampoline.t.hpp: libTrampoline.t.la trampoline.sh
+	$(srcdir)/trampoline.sh $@ .libs/libTrampoline.t.dylib Trampoline $(SED) $(LIPO) $(NM) $(OTOOL)
 endif
 
 CLEANFILES += Cycript.yy
-%.yy: %.yy.in
+Cycript.yy: Cycript.yy.in
 	$(srcdir)/Filter.sh <$< >$@ $(filters)
 
 CLEANFILES += Cycript.l
-%.l: %.l.in
+Cycript.l: Cycript.l.in
 	$(srcdir)/Filter.sh <$< >$@ $(filters)
 
 CLEANFILES += lex.cy.cpp

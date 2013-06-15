@@ -6,7 +6,7 @@ AC_CONFIG_SRCDIR([Console.cpp])
 AC_CONFIG_AUX_DIR([.])
 AC_CONFIG_MACRO_DIR([m4])
 
-AM_INIT_AUTOMAKE([-Wall -Werror -Wno-portability foreign])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 AC_PROG_CXX
 AC_PROG_OBJCXX
@@ -59,6 +59,19 @@ CY_CHECK_PROGS_VERSION([GPERF], [gperf], [perfect hash function generator],
     [--version | $SED -e '1 s/^.* \(@<:@0-9.@:>@*\)$/\1/p;d'], [3.0.3])
 CY_CHECK_PROGS_VERSION([GNUTAR], [tar gtar gnutar], [a very sticky lump of files],
     [--version | $SED -e '1 s/^tar (GNU tar) \(.*\)$/\1/p;d'], [1.19])
+
+AC_MSG_CHECKING([bison for %code{}])
+echo '%code{}%%_:' >conftest.y
+if $BISON conftest.y -o/dev/null 2>/dev/null; then
+    AC_LIB_APPENDTOVAR([CY_FILTERS], [Bison24])
+    AC_MSG_RESULT([yes])
+else
+    AC_LIB_APPENDTOVAR([CY_FILTERS], [Bison23])
+    AC_MSG_RESULT([no])
+fi
+
+rm -f conftest.y
+AC_SUBST([CY_FILTERS])
 
 dnl CY_TRY {{{
 AC_DEFUN([CY_SUCCESS], [cy_good=1])
