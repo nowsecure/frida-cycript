@@ -27,6 +27,5 @@ lex.cy.cpp
 cycript
 Trampoline.t.hpp
 Bridge.hpp
-Struct.hpp
 package
 aclocal.m4

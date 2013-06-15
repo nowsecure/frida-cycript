@@ -49,14 +49,6 @@ endif
 if CY_OBJECTIVEC
 filters += ObjectiveC
 libcycript_la_SOURCES += ObjectiveC/Output.mm ObjectiveC/Replace.cpp ObjectiveC/Library.mm
-
-ObjectiveC/Library.lo: Struct.hpp
-
-# XXX: this is not architecture-specific... isn't this just totally wrong?!
-# XXX: clang doesn't support this feature... that makes me really very sad.
-CLEANFILES += Struct.hpp
-Struct.hpp:
-	$$($(OBJCXX) -print-prog-name=cc1obj) -print-objc-runtime-info </dev/null >$@
 endif
 
 if CY_MACH

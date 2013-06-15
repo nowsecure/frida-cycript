@@ -19,10 +19,6 @@
 **/
 /* }}} */
 
-#ifdef __APPLE__
-#include "Struct.hpp"
-#endif
-
 #include <Foundation/Foundation.h>
 
 #include "ObjectiveC/Internal.hpp"
@@ -2166,6 +2162,18 @@ static void ObjectiveC_Constants_getPropertyNames(JSContextRef context, JSObject
 }
 
 #ifdef __APPLE__
+#if defined(__i386__) || defined(__x86_64__)
+#define OBJC_MAX_STRUCT_BY_VALUE 8
+static int struct_forward_array[] = {
+    0, 0, 0, 1, 0, 1, 1, 1, 0 };
+#elif defined(__arm__)
+#define OBJC_MAX_STRUCT_BY_VALUE 1
+static int struct_forward_array[] = {
+    0, 0 };
+#else
+#error missing objc-runtime-info
+#endif
+
 static bool stret(ffi_type *ffi_type) {
     return ffi_type->type == FFI_TYPE_STRUCT && (
         ffi_type->size > OBJC_MAX_STRUCT_BY_VALUE ||
