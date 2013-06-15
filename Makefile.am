@@ -13,14 +13,14 @@ AM_CPPFLAGS = -Werror -fno-common -I$(srcdir)/include -DYYDEBUG=1
 
 lib_LTLIBRARIES = libcycript.la
 libcycript_la_SOURCES = Highlight.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp
-libcycript_la_LDFLAGS = -no-undefined $(LTLIBICONV) -ldl
+libcycript_la_LDFLAGS = -no-undefined $(LTLIBAPR) $(LTLIBICONV) -ldl
 
 libcycript_la_SOURCES += Cycript.tab.cc
 libcycript_la_SOURCES += lex.cy.cpp
 
 bin_PROGRAMS = cycript
 cycript_SOURCES = Console.cpp Display.cpp
-cycript_LDFLAGS = -ldl
+cycript_LDFLAGS = $(LTLIBAPR) -ldl
 cycript_LDADD = libcycript.la
 
 ldid = true

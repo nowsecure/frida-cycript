@@ -163,7 +163,8 @@ dnl APR_FIND_APR {{{
 APR_FIND_APR([], [], [1], [1])
 AS_CASE([$apr_found], [yes], [
     AC_LIB_APPENDTOVAR([CPPFLAGS], [`$apr_config --includes`])
-    AC_LIB_APPENDTOVAR([LIBS], [`$apr_config --link-libtool`])
+    AC_LIB_APPENDTOVAR([LTLIBAPR], [`$apr_config --link-libtool`])
+    AC_SUBST([LTLIBAPR])
 ], [AC_MSG_ERROR([missing "libapr"])])
 dnl }}}
 
