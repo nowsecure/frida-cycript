@@ -248,7 +248,6 @@ AC_DEFUN([CY_LT_LIB], [
 CY_LT_LIB([LTLIBREADLINE], [AX_LIB_READLINE])
 AS_CASE([$ax_cv_lib_readline], [no], [AC_MSG_ERROR([missing "libreadline"])])
 
-dnl XXX: AX_LIB_READLINE totally lied: it was suposed to figure this out :(
 CY_LT_LIB([LTLIBTERMCAP], [AC_SEARCH_LIBS([cur_term], [termcap])])
 
 dnl XXX: saurik doesn't understand what this does

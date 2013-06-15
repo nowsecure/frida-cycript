@@ -20095,6 +20095,7 @@ done
     LTLIBREADLINE=$LIBS
     LIBS=$cy_save
 
+
 case $ax_cv_lib_readline in #(
   no) :
     as_fn_error $? "missing \"libreadline\"" "$LINENO" 5 ;; #(
@@ -20163,6 +20164,7 @@ fi
 
     LTLIBTERMCAP=$LIBS
     LIBS=$cy_save
+
 
 
 ac_ext=c
