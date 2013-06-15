@@ -80,6 +80,9 @@ void CYLexerHighlight(const char *data, size_t size, std::ostream &output, bool 
             case hi::Operator: color = CYColor(false, 36); break;
             case hi::Structure: color = CYColor(true, 34); break;
             case hi::Type: color = CYColor(true, 34); break;
+
+            // XXX: maybe I should use nodefault here?
+            default: color = CYColor(true, 0); break;
         }
 
         Skip(data, size, output, offset, current, location.begin);
