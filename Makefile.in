@@ -14,6 +14,25 @@
 
 @SET_MAKE@
 
+# Cycript - Optimizing JavaScript Compiler/Runtime
+# Copyright (C) 2009-2013  Jay Freeman (saurik)
+
+# GNU General Public License, Version 3 {{{
+#
+# Cycript is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published
+# by the Free Software Foundation, either version 3 of the License,
+# or (at your option) any later version.
+#
+# Cycript is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Cycript.  If not, see <http://www.gnu.org/licenses/>.
+# }}}
+
 
 VPATH = @srcdir@
 am__make_dryrun = \
@@ -68,8 +87,8 @@ bin_PROGRAMS = cycript$(EXEEXT)
 subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) depcomp COPYING \
-	COPYING.LESSER ar-lib config.guess config.rpath config.sub \
-	install-sh missing ltmain.sh
+	ar-lib config.guess config.rpath config.sub install-sh missing \
+	ltmain.sh
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/find_apr.m4 \
 	$(top_srcdir)/m4/framework.m4 $(top_srcdir)/m4/libtool.m4 \
