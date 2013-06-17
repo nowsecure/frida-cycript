@@ -12,7 +12,6 @@ control.tmp
 config.log
 config.status
 Makefile
-Makefile.in
 Cycript.yy
 Cycript.l
 Cycript.tab.*
