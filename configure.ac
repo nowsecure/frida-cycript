@@ -38,10 +38,6 @@ AC_LANG([C++])
 
 PKG_PROG_PKG_CONFIG([0.22])
 
-AX_CHECK_GNU_MAKE
-AC_SUBST([GMAKE], [$_cv_gnu_make_command])
-AS_IF([test "x$GMAKE" = x], [AC_MSG_ERROR([You need GNU make])])
-
 AC_PATH_PROG([_BASH], [bash], [AC_MSG_ERROR([missing "bash"])])
 AC_PATH_PROG([GIT], [git])
 AC_PATH_PROG([TIME], [time])
