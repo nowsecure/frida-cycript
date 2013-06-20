@@ -269,14 +269,13 @@ AC_LANG_POP([C])
 AC_SUBST([LTFLAGS])
 AC_SUBST([SO], [$acl_shlibext])
 
-AC_CHECK_HEADER([mach/mach.h], [
-    AC_CHECK_TOOLS([_LIPO], [lipo], [AC_MSG_ERROR([missing "lipo"])])
-    AC_CHECK_TOOLS([_NM], [nm], [AC_MSG_ERROR([missing "nm"])])
-    AC_CHECK_TOOLS([_OTOOL], [otool], [AC_MSG_ERROR([missing "otool"])])
-    AC_SUBST([CY_MACH], [1])
-    AC_SUBST([CY_ATTACH_GROUP], [procmod])
-])
-
+AS_IF([test "x$CY_EXECUTE" = x1], [
+    AC_CHECK_HEADER([mach/mach.h], [
+        AC_CHECK_TOOLS([_LIPO], [lipo], [AC_MSG_ERROR([missing "lipo"])])
+        AC_CHECK_TOOLS([_NM], [nm], [AC_MSG_ERROR([missing "nm"])])
+        AC_CHECK_TOOLS([_OTOOL], [otool], [AC_MSG_ERROR([missing "otool"])])
+        AC_SUBST([CY_ATTACH_GROUP], [procmod])
+        AC_SUBST([CY_MACH], [1])])])
 AM_CONDITIONAL([CY_MACH], [test "x$CY_MACH" = x1])
 
 AC_CONFIG_FILES([Makefile])
