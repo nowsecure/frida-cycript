@@ -148,24 +148,20 @@ AC_ARG_WITH([frameworks], [AS_HELP_STRING(
 ]) dnl }}}
 dnl --enable-javascript {{{
 AC_DEFUN([CY_CHECK_JAVASCRIPTCORE], [
-    PKG_CHECK_MODULES([WEBKIT], [webkit-1.0], [
-        AC_SUBST([CY_EXECUTE], [1])
-        CY_COMPILE_FLAG([`$PKG_CONFIG --cflags webkit-1.0`])
-        AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs webkit-1.0`])
+    AC_CHECK_FRAMEWORK([JavaScriptCore], [
+        #include <JavaScriptCore/JSBase.h>
     ], [
-        PKG_CHECK_MODULES([WEBKIT], [WebKitGtk], [
-            AC_SUBST([CY_EXECUTE], [1])
-            CY_COMPILE_FLAG([`$PKG_CONFIG --cflags WebKitGtk`])
-            AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs WebKitGtk`])
-        ], [
-            AC_CHECK_FRAMEWORK([JavaScriptCore], [
-                #include <JavaScriptCore/JSBase.h>
-            ], [
-                JSEvaluateScript(0, 0, 0, 0, 0, 0);
-            ], [
+        JSEvaluateScript(0, 0, 0, 0, 0, 0);
+    ], [
+        AC_SUBST([CY_EXECUTE], [1])
+    ], [
+        for cy_webkit_pkg in "webkit-1.0" "WebKitGtk"; do
+            PKG_CHECK_MODULES([WEBKIT], [$cy_webkit_pkg], [
                 AC_SUBST([CY_EXECUTE], [1])
-            ])
-        ])
+                CY_COMPILE_FLAG([`$PKG_CONFIG --cflags $cy_webkit_pkg`])
+                AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs $cy_webkit_pkg`])
+            ], [:]); if test "x$CY_EXECUTE" = x1; then break; fi
+        done
     ])
 ])
 
