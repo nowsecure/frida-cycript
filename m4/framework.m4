@@ -36,7 +36,7 @@ AC_DEFUN([AC_CHECK_FRAMEWORK], [
 		LIBS=$ac_check_framework_save_LIBS]
 	)
 	AS_IF([test AS_VAR_GET(ac_Framework) = yes], [
-		AC_LIB_APPENDTOVAR([LIBS], ["-framework $1 $LIBS"])
+		AC_LIB_APPENDTOVAR([LIBS], ["-framework $1"])
 		m4_default([$4], [AC_DEFINE_UNQUOTED(AS_TR_CPP(HAVE_FRAMEWORK_$1))])
 	], [$5])dnl
 	AS_VAR_POPDEF([ac_Framework])dnl
