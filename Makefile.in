@@ -132,7 +132,9 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-libcycript_la_LIBADD =
+am__DEPENDENCIES_1 =
+libcycript_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am__libcycript_la_SOURCES_DIST = Highlight.cpp Network.cpp Output.cpp \
 	Parser.cpp Replace.cpp Cycript.tab.cc lex.cy.cpp \
 	sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp Bridge.cpp \
@@ -164,10 +166,8 @@ am__cycript_SOURCES_DIST = Console.cpp Display.cpp Mach/Inject.cpp
 am_cycript_OBJECTS = Console.$(OBJEXT) Display.$(OBJEXT) \
 	$(am__objects_4)
 cycript_OBJECTS = $(am_cycript_OBJECTS)
-cycript_DEPENDENCIES = libcycript.la
-cycript_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
-	$(CXXFLAGS) $(cycript_LDFLAGS) $(LDFLAGS) -o $@
+cycript_DEPENDENCIES = libcycript.la $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -481,10 +481,10 @@ lib_LTLIBRARIES = libcycript.la
 libcycript_la_SOURCES = Highlight.cpp Network.cpp Output.cpp \
 	Parser.cpp Replace.cpp Cycript.tab.cc lex.cy.cpp \
 	$(am__append_1) $(am__append_6) $(am__append_7)
-libcycript_la_LDFLAGS = -no-undefined $(LTLIBAPR) $(LTLIBFFI) $(LTLIBICONV) -ldl
+libcycript_la_LDFLAGS = -no-undefined
+libcycript_la_LIBADD = $(LTLIBAPR) $(LTLIBFFI) $(LTLIBICONV) -ldl
 cycript_SOURCES = Console.cpp Display.cpp $(am__append_8)
-cycript_LDFLAGS = $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) -ldl
-cycript_LDADD = libcycript.la
+cycript_LDADD = libcycript.la $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) -ldl
 ldid = true
 entitle = $(ldid) -Scycript.xml
 filters = $(CY_FILTERS) $(am__append_3) $(am__append_5)
@@ -659,7 +659,7 @@ Mach/Inject.$(OBJEXT): Mach/$(am__dirstamp) \
 	Mach/$(DEPDIR)/$(am__dirstamp)
 cycript$(EXEEXT): $(cycript_OBJECTS) $(cycript_DEPENDENCIES) $(EXTRA_cycript_DEPENDENCIES) 
 	@rm -f cycript$(EXEEXT)
-	$(AM_V_CXXLD)$(cycript_LINK) $(cycript_OBJECTS) $(cycript_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(CXXLINK) $(cycript_OBJECTS) $(cycript_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
