@@ -19,7 +19,14 @@
 # along with Cycript.  If not, see <http://www.gnu.org/licenses/>.
 # }}}
 
-libtoolize -cif
+if which glibtoolize >/dev/null; then
+    libtoolize=glibtoolize
+else
+    libtoolize=libtoolize
+fi
+
+"${libtoolize}" -cif
+
 aclocal -I m4
 autoconf
 automake -acf
