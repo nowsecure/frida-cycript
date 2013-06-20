@@ -39,7 +39,6 @@ AC_LANG([C++])
 
 PKG_PROG_PKG_CONFIG([0.22])
 
-AC_PATH_PROG([_BASH], [bash], [AC_MSG_ERROR([missing "bash"])])
 AC_PATH_PROG([GIT], [git])
 AC_PATH_PROG([TIME], [time])
 

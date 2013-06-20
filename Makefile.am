@@ -17,8 +17,6 @@
 # along with Cycript.  If not, see <http://www.gnu.org/licenses/>.
 # }}}
 
-SHELL = @_BASH@
-
 .DELETE_ON_ERROR:
 
 AUTOMAKE_OPTIONS = subdir-objects
