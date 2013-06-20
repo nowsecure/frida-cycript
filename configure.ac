@@ -150,12 +150,12 @@ dnl --enable-javascript {{{
 AC_DEFUN([CY_CHECK_JAVASCRIPTCORE], [
     PKG_CHECK_MODULES([WEBKIT], [webkit-1.0], [
         AC_SUBST([CY_EXECUTE], [1])
-        AC_LIB_APPENDTOVAR([CXXFLAGS], [`$PKG_CONFIG --cflags webkit-1.0`])
+        CY_COMPILE_FLAG([`$PKG_CONFIG --cflags webkit-1.0`])
         AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs webkit-1.0`])
     ], [
         PKG_CHECK_MODULES([WEBKIT], [WebKitGtk], [
             AC_SUBST([CY_EXECUTE], [1])
-            AC_LIB_APPENDTOVAR([CXXFLAGS], [`$PKG_CONFIG --cflags WebKitGtk`])
+            CY_COMPILE_FLAG([`$PKG_CONFIG --cflags WebKitGtk`])
             AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs WebKitGtk`])
         ], [
             AC_CHECK_FRAMEWORK([JavaScriptCore], [
@@ -198,7 +198,7 @@ dnl }}}
 
 AC_DEFUN([CY_CHECK_PKG_CONFIG_LIBFFI], [
     PKG_CHECK_MODULES([LIBFFI], [libffi], [
-        AC_LIB_APPENDTOVAR([CXXFLAGS], [`$PKG_CONFIG --cflags libffi`])
+        CY_COMPILE_FLAG([`$PKG_CONFIG --cflags libffi`])
         AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs libffi`])
     ], [AC_MSG_ERROR([missing "libffi"])])])
 
@@ -265,27 +265,10 @@ AS_CASE([$ax_cv_lib_readline], [no], [AC_MSG_ERROR([missing "libreadline"])])
 
 CY_LT_LIB([LTLIBTERMCAP], [AC_SEARCH_LIBS([cur_term], [termcap])])
 
-dnl XXX: saurik doesn't understand what this does
-dnl AM_ICONV {{{
 AC_LANG_PUSH([C])
 AM_ICONV
-AS_CASE([$am_cv_func_iconv], [yes], [], [
-    for cy_iconv_prefix_arg in $CFLAGS $CXXFLAGS $OBJCXXFLAGS $LDFLAGS $LIBS; do
-        AS_CASE([$cy_iconv_prefix_arg], [-I*], [
-            AC_LIB_APPENDTOVAR([cy_iconv_prefixes], [`echo $cy_iconv_prefix_arg | sed -e 's/^-I//;s|/include$||'`])
-        ], [-L*], [
-            AC_LIB_APPENDTOVAR([cy_iconv_prefixes], [`echo $cy_iconv_prefix_arg | sed -e 's/^-L//;s|/lib$||'`])
-        ])
-    done
-    for with_libiconv_prefix in $cy_iconv_prefixes; do
-        AS_UNSET([am_cv_func_iconv])
-        AM_ICONV_LINKFLAGS_BODY
-        AM_ICONV
-    done
-])
 AS_CASE([$am_cv_func_iconv], [yes], [], [AC_MSG_ERROR([missing "libiconv"])])
 AC_LANG_POP([C])
-dnl }}}
 
 AC_SUBST([LTFLAGS])
 AC_SUBST([SO], [$acl_shlibext])
