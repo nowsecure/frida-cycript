@@ -107,15 +107,23 @@ AC_DEFUN([CY_COMPILE_FLAG], [
     AC_LIB_APPENDTOVAR([OBJCCXXFLAGS], ]$1[)
 ])
 
-AC_DEFUN([CY_TEST_FLAG], [
-    AC_MSG_CHECKING([for ]]$1[)
-    CY_TRY([CXXFLAGS], $1, [
+AC_DEFUN([CY_TEST_FLAG_], [
+    AC_LANG_PUSH(]$2[)
+    AC_MSG_CHECKING([for ]]$4[[ ]]$1[)
+    CY_TRY(]$3[, $1, [
         AC_COMPILE_IFELSE([AC_LANG_SOURCE([])],
             [CY_SUCCESS], [CY_FAILURE])
     ], [
         AC_MSG_RESULT([yes])
-        CY_COMPILE_FLAG($1)
+        AC_LIB_APPENDTOVAR(]$3[, ]$1[)
     ], [AC_MSG_RESULT([no])])
+    AC_LANG_POP(]$2[)
+])
+
+AC_DEFUN([CY_TEST_FLAG], [
+    CY_TEST_FLAG_(]$1[, [C], [CFLAGS], [cc])
+    CY_TEST_FLAG_(]$1[, [C++], [CXXFLAGS], [c++])
+    CY_TEST_FLAG_(]$1[, [Objective C++], [OBJCCXXFLAGS], [c++ -ObjC])
 ])
 
 AX_CFLAGS_WARN_ALL
