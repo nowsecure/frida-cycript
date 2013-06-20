@@ -129,6 +129,9 @@ AC_DEFUN([CY_TEST_FLAG], [
 AX_CFLAGS_WARN_ALL
 AX_CXXFLAGS_WARN_ALL
 
+dnl XXX: this is used to support GNU Objective-C struct objc_method
+CY_TEST_FLAG([-Wno-deprecated-declarations])
+
 CY_TEST_FLAG([-Wno-dangling-else])
 CY_TEST_FLAG([-Wno-overloaded-virtual])
 CY_TEST_FLAG([-Wno-parentheses])

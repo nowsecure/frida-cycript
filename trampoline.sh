@@ -105,7 +105,7 @@ for arch in "${archs[@]}"; do
     echo "*/"
 
     echo
-    echo "static Trampoline ${name}_${arch}_ = {"
+    echo "_disused static Trampoline ${name}_${arch}_ = {"
     echo "    ${name}_${arch}_data_,"
     echo "    sizeof(${name}_${arch}_data_),"
     echo "    ${name}_${arch}_entry_,"
