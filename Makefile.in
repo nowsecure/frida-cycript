@@ -87,8 +87,9 @@ bin_PROGRAMS = cycript$(EXEEXT)
 subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
-	$(srcdir)/config.h.in depcomp COPYING ar-lib config.guess \
-	config.rpath config.sub install-sh missing ltmain.sh
+	$(srcdir)/config.h.in depcomp COPYING INSTALL ar-lib \
+	config.guess config.rpath config.sub install-sh missing \
+	ltmain.sh
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/find_apr.m4 \
 	$(top_srcdir)/m4/framework.m4 $(top_srcdir)/m4/libtool.m4 \
