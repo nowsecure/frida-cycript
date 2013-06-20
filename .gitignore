@@ -7,6 +7,8 @@ libtool
 .dirstamp
 .libs
 autom4te.cache
+config.h
+config.h.in
 control
 control.tmp
 config.log
