@@ -104,7 +104,7 @@ AC_DEFUN([CY_TRY], [
 AC_DEFUN([CY_COMPILE_FLAG], [
     AC_LIB_APPENDTOVAR([CFLAGS], ]$1[)
     AC_LIB_APPENDTOVAR([CXXFLAGS], ]$1[)
-    AC_LIB_APPENDTOVAR([OBJCCXXFLAGS], ]$1[)
+    AC_LIB_APPENDTOVAR([OBJCXXFLAGS], ]$1[)
 ])
 
 AC_DEFUN([CY_TEST_FLAG_], [
@@ -123,7 +123,7 @@ AC_DEFUN([CY_TEST_FLAG_], [
 AC_DEFUN([CY_TEST_FLAG], [
     CY_TEST_FLAG_(]$1[, [C], [CFLAGS], [cc])
     CY_TEST_FLAG_(]$1[, [C++], [CXXFLAGS], [c++])
-    CY_TEST_FLAG_(]$1[, [Objective C++], [OBJCCXXFLAGS], [c++ -ObjC])
+    CY_TEST_FLAG_(]$1[, [Objective C++], [OBJCXXFLAGS], [c++ -ObjC])
 ])
 
 AX_CFLAGS_WARN_ALL
