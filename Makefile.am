@@ -33,7 +33,7 @@ AM_CPPFLAGS += -include $(srcdir)/config.h -include $(srcdir)/unconfig.h
 
 lib_LTLIBRARIES = libcycript.la
 libcycript_la_SOURCES = Highlight.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp
-libcycript_la_LDFLAGS = -no-undefined $(LTLIBAPR) $(LTLIBICONV) -ldl
+libcycript_la_LDFLAGS = -no-undefined $(LTLIBAPR) $(LTLIBFFI) $(LTLIBICONV) -ldl
 
 libcycript_la_SOURCES += Cycript.tab.cc
 libcycript_la_SOURCES += lex.cy.cpp

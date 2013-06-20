@@ -138,6 +138,15 @@ done
 AC_SUBST([CY_ARCH])
 dnl }}}
 
+AC_DEFUN([CY_LT_LIB], [
+    cy_save=$LIBS
+    LIBS=
+    ]$2[
+    ]$1[=$LIBS
+    LIBS=$cy_save
+    AC_SUBST(]$1[)
+])
+
 dnl --with-frameworks {{{
 AC_ARG_WITH([frameworks], [AS_HELP_STRING(
     [--with-frameworks=DIRS],
@@ -203,12 +212,13 @@ AM_CONDITIONAL([CY_EXECUTE], [test "x$CY_EXECUTE" = x1])
 
 AS_CASE([$CY_EXECUTE], [1], [
     AC_CHECK_HEADERS([ffi.h ffi/ffi.h], [break])
-    AS_IF([test "x$ac_cv_header_ffi_h" = xno && test "x$ac_cv_header_ffi_ffi_h" = xno], [
+
+    CY_LT_LIB([LTLIBFFI], AS_IF([test "x$ac_cv_header_ffi_h" = xno && test "x$ac_cv_header_ffi_ffi_h" = xno], [
         CY_CHECK_PKG_CONFIG_LIBFFI
     ], [
         AC_SEARCH_LIBS([ffi_call], [ffi])
         AS_CASE([$ac_cv_search_ffi_call], [no], [CY_CHECK_PKG_CONFIG_LIBFFI])
-    ])
+    ]))
 
     AC_LANG_PUSH([Objective C++])
 
@@ -247,15 +257,6 @@ AS_CASE([$CY_EXECUTE], [1], [
 ])
 
 AM_CONDITIONAL([CY_OBJECTIVEC], [test "x$CY_OBJECTIVEC" = x1])
-
-AC_DEFUN([CY_LT_LIB], [
-    cy_save=$LIBS
-    LIBS=
-    ]$2[
-    ]$1[=$LIBS
-    LIBS=$cy_save
-    AC_SUBST(]$1[)
-])
 
 CY_LT_LIB([LTLIBREADLINE], [AX_LIB_READLINE])
 AS_CASE([$ax_cv_lib_readline], [no], [AC_MSG_ERROR([missing "libreadline"])])
