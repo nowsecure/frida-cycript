@@ -129,6 +129,7 @@ AC_DEFUN([CY_TEST_FLAG], [
 AX_CFLAGS_WARN_ALL
 AX_CXXFLAGS_WARN_ALL
 
+CY_TEST_FLAG([-Wno-dangling-else])
 CY_TEST_FLAG([-Wno-overloaded-virtual])
 CY_TEST_FLAG([-Wno-parentheses])
 CY_TEST_FLAG([-Wno-unneeded-internal-declaration])
