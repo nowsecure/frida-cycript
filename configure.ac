@@ -101,12 +101,6 @@ AC_DEFUN([CY_TRY], [
     AS_IF([test "x$cy_good" = x1], ]$4[, ]$5[)
 ]) dnl }}}
 
-AC_DEFUN([CY_COMPILE_FLAG], [
-    AC_LIB_APPENDTOVAR([CFLAGS], ]$1[)
-    AC_LIB_APPENDTOVAR([CXXFLAGS], ]$1[)
-    AC_LIB_APPENDTOVAR([OBJCXXFLAGS], ]$1[)
-])
-
 AC_DEFUN([CY_TEST_FLAG_], [
     AC_LANG_PUSH(]$2[)
     AC_MSG_CHECKING([for ]]$4[[ ]]$1[)
@@ -171,7 +165,7 @@ AC_DEFUN([CY_CHECK_JAVASCRIPTCORE], [
         for cy_webkit_pkg in "webkit-1.0" "WebKitGtk"; do
             PKG_CHECK_MODULES([WEBKIT], [$cy_webkit_pkg], [
                 AC_SUBST([CY_EXECUTE], [1])
-                CY_COMPILE_FLAG([`$PKG_CONFIG --cflags $cy_webkit_pkg`])
+                AC_LIB_APPENDTOVAR([CPPFLAGS], [`$PKG_CONFIG --cflags $cy_webkit_pkg`])
                 AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs $cy_webkit_pkg`])
             ], [:]); if test "x$CY_EXECUTE" = x1; then break; fi
         done
@@ -207,7 +201,7 @@ dnl }}}
 
 AC_DEFUN([CY_CHECK_PKG_CONFIG_LIBFFI], [
     PKG_CHECK_MODULES([LIBFFI], [libffi], [
-        CY_COMPILE_FLAG([`$PKG_CONFIG --cflags libffi`])
+        AC_LIB_APPENDTOVAR([CPPFLAGS], [`$PKG_CONFIG --cflags libffi`])
         AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs libffi`])
     ], [AC_MSG_ERROR([missing "libffi"])])])
 
