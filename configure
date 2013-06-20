@@ -640,8 +640,8 @@ LTLIBOBJS
 LIBOBJS
 CY_MACH_FALSE
 CY_MACH_TRUE
-CY_ATTACH_GROUP
 CY_MACH
+CY_ATTACH_GROUP
 ac_ct__OTOOL
 _OTOOL
 ac_ct__NM
@@ -663,9 +663,9 @@ LIBFFI_CFLAGS
 CY_EXECUTE_FALSE
 CY_EXECUTE_TRUE
 LTLIBAPR
-CY_EXECUTE
 WEBKIT_LIBS
 WEBKIT_CFLAGS
+CY_EXECUTE
 CY_ARCH
 CY_FILTERS
 GNUTAR
@@ -17149,122 +17149,6 @@ if test "${enable_javascript+set}" = set; then :
 
 
 
-pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
-$as_echo_n "checking for WEBKIT... " >&6; }
-
-if test -n "$WEBKIT_CFLAGS"; then
-    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"webkit-1.0\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "webkit-1.0") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "webkit-1.0" 2>/dev/null`
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-if test -n "$WEBKIT_LIBS"; then
-    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"webkit-1.0\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "webkit-1.0") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "webkit-1.0" 2>/dev/null`
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-
-
-
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
-        _pkg_short_errors_supported=yes
-else
-        _pkg_short_errors_supported=no
-fi
-        if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "webkit-1.0" 2>&1`
-        else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "webkit-1.0" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$WEBKIT_PKG_ERRORS" >&5
-
-
-
-pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
-$as_echo_n "checking for WEBKIT... " >&6; }
-
-if test -n "$WEBKIT_CFLAGS"; then
-    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "WebKitGtk" 2>/dev/null`
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-if test -n "$WEBKIT_LIBS"; then
-    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "WebKitGtk" 2>/dev/null`
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-
-
-
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
-        _pkg_short_errors_supported=yes
-else
-        _pkg_short_errors_supported=no
-fi
-        if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "WebKitGtk" 2>&1`
-        else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "WebKitGtk" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$WEBKIT_PKG_ERRORS" >&5
-
-
-
 			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaScriptCore" >&5
 $as_echo_n "checking for framework JavaScriptCore... " >&6; }
 if ${ac_cv_framework_JavaScriptCore+:} false; then :
@@ -17276,13 +17160,13 @@ else
 		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-                #include <JavaScriptCore/JSBase.h>
+        #include <JavaScriptCore/JSBase.h>
 
 int
 main ()
 {
 
-                JSEvaluateScript(0, 0, 0, 0, 0, 0);
+        JSEvaluateScript(0, 0, 0, 0, 0, 0);
 
   ;
   return 0;
@@ -17305,7 +17189,7 @@ $as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
 	if test $ac_cv_framework_JavaScriptCore = yes; then :
 
 
-  for element in "-framework JavaScriptCore $LIBS"; do
+  for element in "-framework JavaScriptCore"; do
     haveit=
     for x in $LIBS; do
 
@@ -17327,417 +17211,110 @@ $as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
     fi
   done
 
-
-                CY_EXECUTE=1
-
-
-
-fi
-
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaScriptCore" >&5
-$as_echo_n "checking for framework JavaScriptCore... " >&6; }
-if ${ac_cv_framework_JavaScriptCore+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-		ac_check_framework_save_LIBS=$LIBS
-		LIBS="-framework JavaScriptCore  $LIBS"
-		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-                #include <JavaScriptCore/JSBase.h>
-
-int
-main ()
-{
-
-                JSEvaluateScript(0, 0, 0, 0, 0, 0);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-
-			ac_cv_framework_JavaScriptCore=yes
-
-else
-  ac_cv_framework_JavaScriptCore=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-		LIBS=$ac_check_framework_save_LIBS
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_framework_JavaScriptCore" >&5
-$as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
-	if test $ac_cv_framework_JavaScriptCore = yes; then :
-
-
-  for element in "-framework JavaScriptCore $LIBS"; do
-    haveit=
-    for x in $LIBS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      LIBS="${LIBS}${LIBS:+ }$element"
-    fi
-  done
-
-
-                CY_EXECUTE=1
-
-
-
-fi
-
-else
-	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
-	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-            CY_EXECUTE=1
-
-
-  for element in `$PKG_CONFIG --cflags WebKitGtk`; do
-    haveit=
-    for x in $CXXFLAGS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }$element"
-    fi
-  done
-
-
-  for element in `$PKG_CONFIG --libs WebKitGtk`; do
-    haveit=
-    for x in $LIBS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      LIBS="${LIBS}${LIBS:+ }$element"
-    fi
-  done
-
-
-fi
-
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-
-pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
-$as_echo_n "checking for WEBKIT... " >&6; }
-
-if test -n "$WEBKIT_CFLAGS"; then
-    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "WebKitGtk" 2>/dev/null`
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-if test -n "$WEBKIT_LIBS"; then
-    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "WebKitGtk" 2>/dev/null`
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-
-
-
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
-        _pkg_short_errors_supported=yes
-else
-        _pkg_short_errors_supported=no
-fi
-        if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "WebKitGtk" 2>&1`
-        else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "WebKitGtk" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$WEBKIT_PKG_ERRORS" >&5
-
-
-
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaScriptCore" >&5
-$as_echo_n "checking for framework JavaScriptCore... " >&6; }
-if ${ac_cv_framework_JavaScriptCore+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-		ac_check_framework_save_LIBS=$LIBS
-		LIBS="-framework JavaScriptCore  $LIBS"
-		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-                #include <JavaScriptCore/JSBase.h>
-
-int
-main ()
-{
-
-                JSEvaluateScript(0, 0, 0, 0, 0, 0);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-
-			ac_cv_framework_JavaScriptCore=yes
-
-else
-  ac_cv_framework_JavaScriptCore=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-		LIBS=$ac_check_framework_save_LIBS
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_framework_JavaScriptCore" >&5
-$as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
-	if test $ac_cv_framework_JavaScriptCore = yes; then :
-
-
-  for element in "-framework JavaScriptCore $LIBS"; do
-    haveit=
-    for x in $LIBS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      LIBS="${LIBS}${LIBS:+ }$element"
-    fi
-  done
-
-
-                CY_EXECUTE=1
-
-
-
-fi
-
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaScriptCore" >&5
-$as_echo_n "checking for framework JavaScriptCore... " >&6; }
-if ${ac_cv_framework_JavaScriptCore+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-		ac_check_framework_save_LIBS=$LIBS
-		LIBS="-framework JavaScriptCore  $LIBS"
-		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-                #include <JavaScriptCore/JSBase.h>
-
-int
-main ()
-{
-
-                JSEvaluateScript(0, 0, 0, 0, 0, 0);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-
-			ac_cv_framework_JavaScriptCore=yes
-
-else
-  ac_cv_framework_JavaScriptCore=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-		LIBS=$ac_check_framework_save_LIBS
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_framework_JavaScriptCore" >&5
-$as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
-	if test $ac_cv_framework_JavaScriptCore = yes; then :
-
-
-  for element in "-framework JavaScriptCore $LIBS"; do
-    haveit=
-    for x in $LIBS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      LIBS="${LIBS}${LIBS:+ }$element"
-    fi
-  done
-
-
-                CY_EXECUTE=1
-
-
-
-fi
-
-else
-	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
-	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-            CY_EXECUTE=1
-
-
-  for element in `$PKG_CONFIG --cflags WebKitGtk`; do
-    haveit=
-    for x in $CXXFLAGS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }$element"
-    fi
-  done
-
-
-  for element in `$PKG_CONFIG --libs WebKitGtk`; do
-    haveit=
-    for x in $LIBS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      LIBS="${LIBS}${LIBS:+ }$element"
-    fi
-  done
-
-
-fi
-
-else
-	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
-	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
 
         CY_EXECUTE=1
 
 
-  for element in `$PKG_CONFIG --cflags webkit-1.0`; do
+
+else
+
+        for cy_webkit_pkg in "webkit-1.0" "WebKitGtk"; do
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
+$as_echo_n "checking for WEBKIT... " >&6; }
+
+if test -n "$WEBKIT_CFLAGS"; then
+    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"\$cy_webkit_pkg\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "$cy_webkit_pkg") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "$cy_webkit_pkg" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$WEBKIT_LIBS"; then
+    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"\$cy_webkit_pkg\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "$cy_webkit_pkg") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "$cy_webkit_pkg" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "$cy_webkit_pkg" 2>&1`
+        else
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "$cy_webkit_pkg" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$WEBKIT_PKG_ERRORS" >&5
+
+	:
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	:
+else
+	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
+	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+                CY_EXECUTE=1
+
+
+
+  for element in `$PKG_CONFIG --cflags $cy_webkit_pkg`; do
+    haveit=
+    for x in $CFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CFLAGS="${CFLAGS}${CFLAGS:+ }$element"
+    fi
+  done
+
+
+  for element in `$PKG_CONFIG --cflags $cy_webkit_pkg`; do
     haveit=
     for x in $CXXFLAGS; do
 
@@ -17760,7 +17337,31 @@ $as_echo "yes" >&6; }
   done
 
 
-  for element in `$PKG_CONFIG --libs webkit-1.0`; do
+  for element in `$PKG_CONFIG --cflags $cy_webkit_pkg`; do
+    haveit=
+    for x in $OBJCCXXFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      OBJCCXXFLAGS="${OBJCCXXFLAGS}${OBJCCXXFLAGS:+ }$element"
+    fi
+  done
+
+
+
+  for element in `$PKG_CONFIG --libs $cy_webkit_pkg`; do
     haveit=
     for x in $LIBS; do
 
@@ -17782,6 +17383,9 @@ $as_echo "yes" >&6; }
     fi
   done
 
+
+fi; if test "x$CY_EXECUTE" = x1; then break; fi
+        done
 
 fi
  ;; #(
@@ -17793,122 +17397,6 @@ fi
 
 
 
-pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
-$as_echo_n "checking for WEBKIT... " >&6; }
-
-if test -n "$WEBKIT_CFLAGS"; then
-    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"webkit-1.0\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "webkit-1.0") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "webkit-1.0" 2>/dev/null`
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-if test -n "$WEBKIT_LIBS"; then
-    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"webkit-1.0\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "webkit-1.0") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "webkit-1.0" 2>/dev/null`
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-
-
-
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
-        _pkg_short_errors_supported=yes
-else
-        _pkg_short_errors_supported=no
-fi
-        if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "webkit-1.0" 2>&1`
-        else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "webkit-1.0" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$WEBKIT_PKG_ERRORS" >&5
-
-
-
-pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
-$as_echo_n "checking for WEBKIT... " >&6; }
-
-if test -n "$WEBKIT_CFLAGS"; then
-    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "WebKitGtk" 2>/dev/null`
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-if test -n "$WEBKIT_LIBS"; then
-    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "WebKitGtk" 2>/dev/null`
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-
-
-
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
-        _pkg_short_errors_supported=yes
-else
-        _pkg_short_errors_supported=no
-fi
-        if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "WebKitGtk" 2>&1`
-        else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "WebKitGtk" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$WEBKIT_PKG_ERRORS" >&5
-
-
-
 			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaScriptCore" >&5
 $as_echo_n "checking for framework JavaScriptCore... " >&6; }
 if ${ac_cv_framework_JavaScriptCore+:} false; then :
@@ -17920,13 +17408,13 @@ else
 		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-                #include <JavaScriptCore/JSBase.h>
+        #include <JavaScriptCore/JSBase.h>
 
 int
 main ()
 {
 
-                JSEvaluateScript(0, 0, 0, 0, 0, 0);
+        JSEvaluateScript(0, 0, 0, 0, 0, 0);
 
   ;
   return 0;
@@ -17949,7 +17437,7 @@ $as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
 	if test $ac_cv_framework_JavaScriptCore = yes; then :
 
 
-  for element in "-framework JavaScriptCore $LIBS"; do
+  for element in "-framework JavaScriptCore"; do
     haveit=
     for x in $LIBS; do
 
@@ -17971,417 +17459,110 @@ $as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
     fi
   done
 
-
-                CY_EXECUTE=1
-
-
-
-fi
-
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaScriptCore" >&5
-$as_echo_n "checking for framework JavaScriptCore... " >&6; }
-if ${ac_cv_framework_JavaScriptCore+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-		ac_check_framework_save_LIBS=$LIBS
-		LIBS="-framework JavaScriptCore  $LIBS"
-		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-                #include <JavaScriptCore/JSBase.h>
-
-int
-main ()
-{
-
-                JSEvaluateScript(0, 0, 0, 0, 0, 0);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-
-			ac_cv_framework_JavaScriptCore=yes
-
-else
-  ac_cv_framework_JavaScriptCore=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-		LIBS=$ac_check_framework_save_LIBS
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_framework_JavaScriptCore" >&5
-$as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
-	if test $ac_cv_framework_JavaScriptCore = yes; then :
-
-
-  for element in "-framework JavaScriptCore $LIBS"; do
-    haveit=
-    for x in $LIBS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      LIBS="${LIBS}${LIBS:+ }$element"
-    fi
-  done
-
-
-                CY_EXECUTE=1
-
-
-
-fi
-
-else
-	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
-	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-            CY_EXECUTE=1
-
-
-  for element in `$PKG_CONFIG --cflags WebKitGtk`; do
-    haveit=
-    for x in $CXXFLAGS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }$element"
-    fi
-  done
-
-
-  for element in `$PKG_CONFIG --libs WebKitGtk`; do
-    haveit=
-    for x in $LIBS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      LIBS="${LIBS}${LIBS:+ }$element"
-    fi
-  done
-
-
-fi
-
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-
-pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
-$as_echo_n "checking for WEBKIT... " >&6; }
-
-if test -n "$WEBKIT_CFLAGS"; then
-    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "WebKitGtk" 2>/dev/null`
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-if test -n "$WEBKIT_LIBS"; then
-    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "WebKitGtk" 2>/dev/null`
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-
-
-
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
-        _pkg_short_errors_supported=yes
-else
-        _pkg_short_errors_supported=no
-fi
-        if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "WebKitGtk" 2>&1`
-        else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "WebKitGtk" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$WEBKIT_PKG_ERRORS" >&5
-
-
-
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaScriptCore" >&5
-$as_echo_n "checking for framework JavaScriptCore... " >&6; }
-if ${ac_cv_framework_JavaScriptCore+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-		ac_check_framework_save_LIBS=$LIBS
-		LIBS="-framework JavaScriptCore  $LIBS"
-		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-                #include <JavaScriptCore/JSBase.h>
-
-int
-main ()
-{
-
-                JSEvaluateScript(0, 0, 0, 0, 0, 0);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-
-			ac_cv_framework_JavaScriptCore=yes
-
-else
-  ac_cv_framework_JavaScriptCore=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-		LIBS=$ac_check_framework_save_LIBS
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_framework_JavaScriptCore" >&5
-$as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
-	if test $ac_cv_framework_JavaScriptCore = yes; then :
-
-
-  for element in "-framework JavaScriptCore $LIBS"; do
-    haveit=
-    for x in $LIBS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      LIBS="${LIBS}${LIBS:+ }$element"
-    fi
-  done
-
-
-                CY_EXECUTE=1
-
-
-
-fi
-
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaScriptCore" >&5
-$as_echo_n "checking for framework JavaScriptCore... " >&6; }
-if ${ac_cv_framework_JavaScriptCore+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-		ac_check_framework_save_LIBS=$LIBS
-		LIBS="-framework JavaScriptCore  $LIBS"
-		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-                #include <JavaScriptCore/JSBase.h>
-
-int
-main ()
-{
-
-                JSEvaluateScript(0, 0, 0, 0, 0, 0);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-
-			ac_cv_framework_JavaScriptCore=yes
-
-else
-  ac_cv_framework_JavaScriptCore=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-		LIBS=$ac_check_framework_save_LIBS
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_framework_JavaScriptCore" >&5
-$as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
-	if test $ac_cv_framework_JavaScriptCore = yes; then :
-
-
-  for element in "-framework JavaScriptCore $LIBS"; do
-    haveit=
-    for x in $LIBS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      LIBS="${LIBS}${LIBS:+ }$element"
-    fi
-  done
-
-
-                CY_EXECUTE=1
-
-
-
-fi
-
-else
-	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
-	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-            CY_EXECUTE=1
-
-
-  for element in `$PKG_CONFIG --cflags WebKitGtk`; do
-    haveit=
-    for x in $CXXFLAGS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }$element"
-    fi
-  done
-
-
-  for element in `$PKG_CONFIG --libs WebKitGtk`; do
-    haveit=
-    for x in $LIBS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      LIBS="${LIBS}${LIBS:+ }$element"
-    fi
-  done
-
-
-fi
-
-else
-	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
-	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
 
         CY_EXECUTE=1
 
 
-  for element in `$PKG_CONFIG --cflags webkit-1.0`; do
+
+else
+
+        for cy_webkit_pkg in "webkit-1.0" "WebKitGtk"; do
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
+$as_echo_n "checking for WEBKIT... " >&6; }
+
+if test -n "$WEBKIT_CFLAGS"; then
+    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"\$cy_webkit_pkg\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "$cy_webkit_pkg") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "$cy_webkit_pkg" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$WEBKIT_LIBS"; then
+    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"\$cy_webkit_pkg\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "$cy_webkit_pkg") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "$cy_webkit_pkg" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "$cy_webkit_pkg" 2>&1`
+        else
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "$cy_webkit_pkg" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$WEBKIT_PKG_ERRORS" >&5
+
+	:
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	:
+else
+	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
+	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+                CY_EXECUTE=1
+
+
+
+  for element in `$PKG_CONFIG --cflags $cy_webkit_pkg`; do
+    haveit=
+    for x in $CFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CFLAGS="${CFLAGS}${CFLAGS:+ }$element"
+    fi
+  done
+
+
+  for element in `$PKG_CONFIG --cflags $cy_webkit_pkg`; do
     haveit=
     for x in $CXXFLAGS; do
 
@@ -18404,7 +17585,31 @@ $as_echo "yes" >&6; }
   done
 
 
-  for element in `$PKG_CONFIG --libs webkit-1.0`; do
+  for element in `$PKG_CONFIG --cflags $cy_webkit_pkg`; do
+    haveit=
+    for x in $OBJCCXXFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      OBJCCXXFLAGS="${OBJCCXXFLAGS}${OBJCCXXFLAGS:+ }$element"
+    fi
+  done
+
+
+
+  for element in `$PKG_CONFIG --libs $cy_webkit_pkg`; do
     haveit=
     for x in $LIBS; do
 
@@ -18426,6 +17631,9 @@ $as_echo "yes" >&6; }
     fi
   done
 
+
+fi; if test "x$CY_EXECUTE" = x1; then break; fi
+        done
 
 fi
  ;; #(
@@ -18437,122 +17645,6 @@ else
 
 
 
-pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
-$as_echo_n "checking for WEBKIT... " >&6; }
-
-if test -n "$WEBKIT_CFLAGS"; then
-    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"webkit-1.0\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "webkit-1.0") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "webkit-1.0" 2>/dev/null`
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-if test -n "$WEBKIT_LIBS"; then
-    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"webkit-1.0\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "webkit-1.0") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "webkit-1.0" 2>/dev/null`
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-
-
-
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
-        _pkg_short_errors_supported=yes
-else
-        _pkg_short_errors_supported=no
-fi
-        if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "webkit-1.0" 2>&1`
-        else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "webkit-1.0" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$WEBKIT_PKG_ERRORS" >&5
-
-
-
-pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
-$as_echo_n "checking for WEBKIT... " >&6; }
-
-if test -n "$WEBKIT_CFLAGS"; then
-    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "WebKitGtk" 2>/dev/null`
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-if test -n "$WEBKIT_LIBS"; then
-    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "WebKitGtk" 2>/dev/null`
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-
-
-
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
-        _pkg_short_errors_supported=yes
-else
-        _pkg_short_errors_supported=no
-fi
-        if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "WebKitGtk" 2>&1`
-        else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "WebKitGtk" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$WEBKIT_PKG_ERRORS" >&5
-
-
-
 			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaScriptCore" >&5
 $as_echo_n "checking for framework JavaScriptCore... " >&6; }
 if ${ac_cv_framework_JavaScriptCore+:} false; then :
@@ -18564,13 +17656,13 @@ else
 		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-                #include <JavaScriptCore/JSBase.h>
+        #include <JavaScriptCore/JSBase.h>
 
 int
 main ()
 {
 
-                JSEvaluateScript(0, 0, 0, 0, 0, 0);
+        JSEvaluateScript(0, 0, 0, 0, 0, 0);
 
   ;
   return 0;
@@ -18593,7 +17685,7 @@ $as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
 	if test $ac_cv_framework_JavaScriptCore = yes; then :
 
 
-  for element in "-framework JavaScriptCore $LIBS"; do
+  for element in "-framework JavaScriptCore"; do
     haveit=
     for x in $LIBS; do
 
@@ -18615,417 +17707,110 @@ $as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
     fi
   done
 
-
-                CY_EXECUTE=1
-
-
-
-fi
-
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaScriptCore" >&5
-$as_echo_n "checking for framework JavaScriptCore... " >&6; }
-if ${ac_cv_framework_JavaScriptCore+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-		ac_check_framework_save_LIBS=$LIBS
-		LIBS="-framework JavaScriptCore  $LIBS"
-		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-                #include <JavaScriptCore/JSBase.h>
-
-int
-main ()
-{
-
-                JSEvaluateScript(0, 0, 0, 0, 0, 0);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-
-			ac_cv_framework_JavaScriptCore=yes
-
-else
-  ac_cv_framework_JavaScriptCore=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-		LIBS=$ac_check_framework_save_LIBS
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_framework_JavaScriptCore" >&5
-$as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
-	if test $ac_cv_framework_JavaScriptCore = yes; then :
-
-
-  for element in "-framework JavaScriptCore $LIBS"; do
-    haveit=
-    for x in $LIBS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      LIBS="${LIBS}${LIBS:+ }$element"
-    fi
-  done
-
-
-                CY_EXECUTE=1
-
-
-
-fi
-
-else
-	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
-	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-            CY_EXECUTE=1
-
-
-  for element in `$PKG_CONFIG --cflags WebKitGtk`; do
-    haveit=
-    for x in $CXXFLAGS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }$element"
-    fi
-  done
-
-
-  for element in `$PKG_CONFIG --libs WebKitGtk`; do
-    haveit=
-    for x in $LIBS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      LIBS="${LIBS}${LIBS:+ }$element"
-    fi
-  done
-
-
-fi
-
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-
-pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
-$as_echo_n "checking for WEBKIT... " >&6; }
-
-if test -n "$WEBKIT_CFLAGS"; then
-    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "WebKitGtk" 2>/dev/null`
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-if test -n "$WEBKIT_LIBS"; then
-    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"WebKitGtk\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "WebKitGtk") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "WebKitGtk" 2>/dev/null`
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-
-
-
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
-        _pkg_short_errors_supported=yes
-else
-        _pkg_short_errors_supported=no
-fi
-        if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "WebKitGtk" 2>&1`
-        else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "WebKitGtk" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$WEBKIT_PKG_ERRORS" >&5
-
-
-
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaScriptCore" >&5
-$as_echo_n "checking for framework JavaScriptCore... " >&6; }
-if ${ac_cv_framework_JavaScriptCore+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-		ac_check_framework_save_LIBS=$LIBS
-		LIBS="-framework JavaScriptCore  $LIBS"
-		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-                #include <JavaScriptCore/JSBase.h>
-
-int
-main ()
-{
-
-                JSEvaluateScript(0, 0, 0, 0, 0, 0);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-
-			ac_cv_framework_JavaScriptCore=yes
-
-else
-  ac_cv_framework_JavaScriptCore=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-		LIBS=$ac_check_framework_save_LIBS
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_framework_JavaScriptCore" >&5
-$as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
-	if test $ac_cv_framework_JavaScriptCore = yes; then :
-
-
-  for element in "-framework JavaScriptCore $LIBS"; do
-    haveit=
-    for x in $LIBS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      LIBS="${LIBS}${LIBS:+ }$element"
-    fi
-  done
-
-
-                CY_EXECUTE=1
-
-
-
-fi
-
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaScriptCore" >&5
-$as_echo_n "checking for framework JavaScriptCore... " >&6; }
-if ${ac_cv_framework_JavaScriptCore+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-		ac_check_framework_save_LIBS=$LIBS
-		LIBS="-framework JavaScriptCore  $LIBS"
-		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-                #include <JavaScriptCore/JSBase.h>
-
-int
-main ()
-{
-
-                JSEvaluateScript(0, 0, 0, 0, 0, 0);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-
-			ac_cv_framework_JavaScriptCore=yes
-
-else
-  ac_cv_framework_JavaScriptCore=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-		LIBS=$ac_check_framework_save_LIBS
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_framework_JavaScriptCore" >&5
-$as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
-	if test $ac_cv_framework_JavaScriptCore = yes; then :
-
-
-  for element in "-framework JavaScriptCore $LIBS"; do
-    haveit=
-    for x in $LIBS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      LIBS="${LIBS}${LIBS:+ }$element"
-    fi
-  done
-
-
-                CY_EXECUTE=1
-
-
-
-fi
-
-else
-	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
-	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-            CY_EXECUTE=1
-
-
-  for element in `$PKG_CONFIG --cflags WebKitGtk`; do
-    haveit=
-    for x in $CXXFLAGS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }$element"
-    fi
-  done
-
-
-  for element in `$PKG_CONFIG --libs WebKitGtk`; do
-    haveit=
-    for x in $LIBS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      LIBS="${LIBS}${LIBS:+ }$element"
-    fi
-  done
-
-
-fi
-
-else
-	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
-	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
 
         CY_EXECUTE=1
 
 
-  for element in `$PKG_CONFIG --cflags webkit-1.0`; do
+
+else
+
+        for cy_webkit_pkg in "webkit-1.0" "WebKitGtk"; do
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
+$as_echo_n "checking for WEBKIT... " >&6; }
+
+if test -n "$WEBKIT_CFLAGS"; then
+    pkg_cv_WEBKIT_CFLAGS="$WEBKIT_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"\$cy_webkit_pkg\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "$cy_webkit_pkg") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "$cy_webkit_pkg" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$WEBKIT_LIBS"; then
+    pkg_cv_WEBKIT_LIBS="$WEBKIT_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"\$cy_webkit_pkg\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "$cy_webkit_pkg") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "$cy_webkit_pkg" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "$cy_webkit_pkg" 2>&1`
+        else
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "$cy_webkit_pkg" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$WEBKIT_PKG_ERRORS" >&5
+
+	:
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	:
+else
+	WEBKIT_CFLAGS=$pkg_cv_WEBKIT_CFLAGS
+	WEBKIT_LIBS=$pkg_cv_WEBKIT_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+                CY_EXECUTE=1
+
+
+
+  for element in `$PKG_CONFIG --cflags $cy_webkit_pkg`; do
+    haveit=
+    for x in $CFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CFLAGS="${CFLAGS}${CFLAGS:+ }$element"
+    fi
+  done
+
+
+  for element in `$PKG_CONFIG --cflags $cy_webkit_pkg`; do
     haveit=
     for x in $CXXFLAGS; do
 
@@ -19048,7 +17833,31 @@ $as_echo "yes" >&6; }
   done
 
 
-  for element in `$PKG_CONFIG --libs webkit-1.0`; do
+  for element in `$PKG_CONFIG --cflags $cy_webkit_pkg`; do
+    haveit=
+    for x in $OBJCCXXFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      OBJCCXXFLAGS="${OBJCCXXFLAGS}${OBJCCXXFLAGS:+ }$element"
+    fi
+  done
+
+
+
+  for element in `$PKG_CONFIG --libs $cy_webkit_pkg`; do
     haveit=
     for x in $LIBS; do
 
@@ -19070,6 +17879,9 @@ $as_echo "yes" >&6; }
     fi
   done
 
+
+fi; if test "x$CY_EXECUTE" = x1; then break; fi
+        done
 
 fi
 
@@ -19339,6 +18151,30 @@ else
 $as_echo "yes" >&6; }
 
 
+
+  for element in `$PKG_CONFIG --cflags libffi`; do
+    haveit=
+    for x in $CFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CFLAGS="${CFLAGS}${CFLAGS:+ }$element"
+    fi
+  done
+
+
   for element in `$PKG_CONFIG --cflags libffi`; do
     haveit=
     for x in $CXXFLAGS; do
@@ -19360,6 +18196,30 @@ $as_echo "yes" >&6; }
       CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }$element"
     fi
   done
+
+
+  for element in `$PKG_CONFIG --cflags libffi`; do
+    haveit=
+    for x in $OBJCCXXFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      OBJCCXXFLAGS="${OBJCCXXFLAGS}${OBJCCXXFLAGS:+ }$element"
+    fi
+  done
+
 
 
   for element in `$PKG_CONFIG --libs libffi`; do
@@ -19517,6 +18377,30 @@ else
 $as_echo "yes" >&6; }
 
 
+
+  for element in `$PKG_CONFIG --cflags libffi`; do
+    haveit=
+    for x in $CFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CFLAGS="${CFLAGS}${CFLAGS:+ }$element"
+    fi
+  done
+
+
   for element in `$PKG_CONFIG --cflags libffi`; do
     haveit=
     for x in $CXXFLAGS; do
@@ -19538,6 +18422,30 @@ $as_echo "yes" >&6; }
       CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }$element"
     fi
   done
+
+
+  for element in `$PKG_CONFIG --cflags libffi`; do
+    haveit=
+    for x in $OBJCCXXFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      OBJCCXXFLAGS="${OBJCCXXFLAGS}${OBJCCXXFLAGS:+ }$element"
+    fi
+  done
+
 
 
   for element in `$PKG_CONFIG --libs libffi`; do
@@ -19636,7 +18544,7 @@ $as_echo "$ac_cv_framework_CoreFoundation" >&6; }
 	if test $ac_cv_framework_CoreFoundation = yes; then :
 
 
-  for element in "-framework CoreFoundation $LIBS"; do
+  for element in "-framework CoreFoundation"; do
     haveit=
     for x in $LIBS; do
 
@@ -19701,7 +18609,7 @@ $as_echo "$ac_cv_framework_Foundation" >&6; }
 	if test $ac_cv_framework_Foundation = yes; then :
 
 
-  for element in "-framework Foundation $LIBS"; do
+  for element in "-framework Foundation"; do
     haveit=
     for x in $LIBS; do
 
@@ -19770,7 +18678,7 @@ $as_echo "$ac_cv_framework_WebKit" >&6; }
 	if test $ac_cv_framework_WebKit = yes; then :
 
 
-  for element in "-framework WebKit $LIBS"; do
+  for element in "-framework WebKit"; do
     haveit=
     for x in $LIBS; do
 
@@ -21143,541 +20051,6 @@ case $am_cv_func_iconv in #(
   yes) :
      ;; #(
   *) :
-
-    for cy_iconv_prefix_arg in $CFLAGS $CXXFLAGS $OBJCXXFLAGS $LDFLAGS $LIBS; do
-        case $cy_iconv_prefix_arg in #(
-  -I*) :
-
-
-  for element in `echo $cy_iconv_prefix_arg | sed -e 's/^-I//;s|/include$||'`; do
-    haveit=
-    for x in $cy_iconv_prefixes; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      cy_iconv_prefixes="${cy_iconv_prefixes}${cy_iconv_prefixes:+ }$element"
-    fi
-  done
-
-         ;; #(
-  -L*) :
-
-
-  for element in `echo $cy_iconv_prefix_arg | sed -e 's/^-L//;s|/lib$||'`; do
-    haveit=
-    for x in $cy_iconv_prefixes; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      cy_iconv_prefixes="${cy_iconv_prefixes}${cy_iconv_prefixes:+ }$element"
-    fi
-  done
-
-         ;; #(
-  *) :
-     ;;
-esac
-    done
-    for with_libiconv_prefix in $cy_iconv_prefixes; do
-        { am_cv_func_iconv=; unset am_cv_func_iconv;}
-
-
-
-
-
-
-
-
-
-
-
-    use_additional=yes
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-
-    eval additional_includedir=\"$includedir\"
-    eval additional_libdir=\"$libdir\"
-
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-
-# Check whether --with-libiconv-prefix was given.
-if test "${with_libiconv_prefix+set}" = set; then :
-  withval=$with_libiconv_prefix;
-    if test "X$withval" = "Xno"; then
-      use_additional=no
-    else
-      if test "X$withval" = "X"; then
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-
-          eval additional_includedir=\"$includedir\"
-          eval additional_libdir=\"$libdir\"
-
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      else
-        additional_includedir="$withval/include"
-        additional_libdir="$withval/$acl_libdirstem"
-        if test "$acl_libdirstem2" != "$acl_libdirstem" \
-           && ! test -d "$withval/$acl_libdirstem"; then
-          additional_libdir="$withval/$acl_libdirstem2"
-        fi
-      fi
-    fi
-
-fi
-
-      LIBICONV=
-  LTLIBICONV=
-  INCICONV=
-  LIBICONV_PREFIX=
-      HAVE_LIBICONV=
-  rpathdirs=
-  ltrpathdirs=
-  names_already_handled=
-  names_next_round='iconv '
-  while test -n "$names_next_round"; do
-    names_this_round="$names_next_round"
-    names_next_round=
-    for name in $names_this_round; do
-      already_handled=
-      for n in $names_already_handled; do
-        if test "$n" = "$name"; then
-          already_handled=yes
-          break
-        fi
-      done
-      if test -z "$already_handled"; then
-        names_already_handled="$names_already_handled $name"
-                        uppername=`echo "$name" | sed -e 'y|abcdefghijklmnopqrstuvwxyz./+-|ABCDEFGHIJKLMNOPQRSTUVWXYZ____|'`
-        eval value=\"\$HAVE_LIB$uppername\"
-        if test -n "$value"; then
-          if test "$value" = yes; then
-            eval value=\"\$LIB$uppername\"
-            test -z "$value" || LIBICONV="${LIBICONV}${LIBICONV:+ }$value"
-            eval value=\"\$LTLIB$uppername\"
-            test -z "$value" || LTLIBICONV="${LTLIBICONV}${LTLIBICONV:+ }$value"
-          else
-                                    :
-          fi
-        else
-                              found_dir=
-          found_la=
-          found_so=
-          found_a=
-          eval libname=\"$acl_libname_spec\"    # typically: libname=lib$name
-          if test -n "$acl_shlibext"; then
-            shrext=".$acl_shlibext"             # typically: shrext=.so
-          else
-            shrext=
-          fi
-          if test $use_additional = yes; then
-            dir="$additional_libdir"
-                                    if test -n "$acl_shlibext"; then
-              if test -f "$dir/$libname$shrext"; then
-                found_dir="$dir"
-                found_so="$dir/$libname$shrext"
-              else
-                if test "$acl_library_names_spec" = '$libname$shrext$versuffix'; then
-                  ver=`(cd "$dir" && \
-                        for f in "$libname$shrext".*; do echo "$f"; done \
-                        | sed -e "s,^$libname$shrext\\\\.,," \
-                        | sort -t '.' -n -r -k1,1 -k2,2 -k3,3 -k4,4 -k5,5 \
-                        | sed 1q ) 2>/dev/null`
-                  if test -n "$ver" && test -f "$dir/$libname$shrext.$ver"; then
-                    found_dir="$dir"
-                    found_so="$dir/$libname$shrext.$ver"
-                  fi
-                else
-                  eval library_names=\"$acl_library_names_spec\"
-                  for f in $library_names; do
-                    if test -f "$dir/$f"; then
-                      found_dir="$dir"
-                      found_so="$dir/$f"
-                      break
-                    fi
-                  done
-                fi
-              fi
-            fi
-                        if test "X$found_dir" = "X"; then
-              if test -f "$dir/$libname.$acl_libext"; then
-                found_dir="$dir"
-                found_a="$dir/$libname.$acl_libext"
-              fi
-            fi
-            if test "X$found_dir" != "X"; then
-              if test -f "$dir/$libname.la"; then
-                found_la="$dir/$libname.la"
-              fi
-            fi
-          fi
-          if test "X$found_dir" = "X"; then
-            for x in $LDFLAGS $LTLIBICONV; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-              case "$x" in
-                -L*)
-                  dir=`echo "X$x" | sed -e 's/^X-L//'`
-                                    if test -n "$acl_shlibext"; then
-                    if test -f "$dir/$libname$shrext"; then
-                      found_dir="$dir"
-                      found_so="$dir/$libname$shrext"
-                    else
-                      if test "$acl_library_names_spec" = '$libname$shrext$versuffix'; then
-                        ver=`(cd "$dir" && \
-                              for f in "$libname$shrext".*; do echo "$f"; done \
-                              | sed -e "s,^$libname$shrext\\\\.,," \
-                              | sort -t '.' -n -r -k1,1 -k2,2 -k3,3 -k4,4 -k5,5 \
-                              | sed 1q ) 2>/dev/null`
-                        if test -n "$ver" && test -f "$dir/$libname$shrext.$ver"; then
-                          found_dir="$dir"
-                          found_so="$dir/$libname$shrext.$ver"
-                        fi
-                      else
-                        eval library_names=\"$acl_library_names_spec\"
-                        for f in $library_names; do
-                          if test -f "$dir/$f"; then
-                            found_dir="$dir"
-                            found_so="$dir/$f"
-                            break
-                          fi
-                        done
-                      fi
-                    fi
-                  fi
-                                    if test "X$found_dir" = "X"; then
-                    if test -f "$dir/$libname.$acl_libext"; then
-                      found_dir="$dir"
-                      found_a="$dir/$libname.$acl_libext"
-                    fi
-                  fi
-                  if test "X$found_dir" != "X"; then
-                    if test -f "$dir/$libname.la"; then
-                      found_la="$dir/$libname.la"
-                    fi
-                  fi
-                  ;;
-              esac
-              if test "X$found_dir" != "X"; then
-                break
-              fi
-            done
-          fi
-          if test "X$found_dir" != "X"; then
-                        LTLIBICONV="${LTLIBICONV}${LTLIBICONV:+ }-L$found_dir -l$name"
-            if test "X$found_so" != "X"; then
-                                                        if test "$enable_rpath" = no \
-                 || test "X$found_dir" = "X/usr/$acl_libdirstem" \
-                 || test "X$found_dir" = "X/usr/$acl_libdirstem2"; then
-                                LIBICONV="${LIBICONV}${LIBICONV:+ }$found_so"
-              else
-                                                                                haveit=
-                for x in $ltrpathdirs; do
-                  if test "X$x" = "X$found_dir"; then
-                    haveit=yes
-                    break
-                  fi
-                done
-                if test -z "$haveit"; then
-                  ltrpathdirs="$ltrpathdirs $found_dir"
-                fi
-                                if test "$acl_hardcode_direct" = yes; then
-                                                      LIBICONV="${LIBICONV}${LIBICONV:+ }$found_so"
-                else
-                  if test -n "$acl_hardcode_libdir_flag_spec" && test "$acl_hardcode_minus_L" = no; then
-                                                            LIBICONV="${LIBICONV}${LIBICONV:+ }$found_so"
-                                                            haveit=
-                    for x in $rpathdirs; do
-                      if test "X$x" = "X$found_dir"; then
-                        haveit=yes
-                        break
-                      fi
-                    done
-                    if test -z "$haveit"; then
-                      rpathdirs="$rpathdirs $found_dir"
-                    fi
-                  else
-                                                                                haveit=
-                    for x in $LDFLAGS $LIBICONV; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-                      if test "X$x" = "X-L$found_dir"; then
-                        haveit=yes
-                        break
-                      fi
-                    done
-                    if test -z "$haveit"; then
-                      LIBICONV="${LIBICONV}${LIBICONV:+ }-L$found_dir"
-                    fi
-                    if test "$acl_hardcode_minus_L" != no; then
-                                                                                        LIBICONV="${LIBICONV}${LIBICONV:+ }$found_so"
-                    else
-                                                                                                                                                                                LIBICONV="${LIBICONV}${LIBICONV:+ }-l$name"
-                    fi
-                  fi
-                fi
-              fi
-            else
-              if test "X$found_a" != "X"; then
-                                LIBICONV="${LIBICONV}${LIBICONV:+ }$found_a"
-              else
-                                                LIBICONV="${LIBICONV}${LIBICONV:+ }-L$found_dir -l$name"
-              fi
-            fi
-                        additional_includedir=
-            case "$found_dir" in
-              */$acl_libdirstem | */$acl_libdirstem/)
-                basedir=`echo "X$found_dir" | sed -e 's,^X,,' -e "s,/$acl_libdirstem/"'*$,,'`
-                if test "$name" = 'iconv'; then
-                  LIBICONV_PREFIX="$basedir"
-                fi
-                additional_includedir="$basedir/include"
-                ;;
-              */$acl_libdirstem2 | */$acl_libdirstem2/)
-                basedir=`echo "X$found_dir" | sed -e 's,^X,,' -e "s,/$acl_libdirstem2/"'*$,,'`
-                if test "$name" = 'iconv'; then
-                  LIBICONV_PREFIX="$basedir"
-                fi
-                additional_includedir="$basedir/include"
-                ;;
-            esac
-            if test "X$additional_includedir" != "X"; then
-                                                                                                                if test "X$additional_includedir" != "X/usr/include"; then
-                haveit=
-                if test "X$additional_includedir" = "X/usr/local/include"; then
-                  if test -n "$GCC"; then
-                    case $host_os in
-                      linux* | gnu* | k*bsd*-gnu) haveit=yes;;
-                    esac
-                  fi
-                fi
-                if test -z "$haveit"; then
-                  for x in $CPPFLAGS $INCICONV; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-                    if test "X$x" = "X-I$additional_includedir"; then
-                      haveit=yes
-                      break
-                    fi
-                  done
-                  if test -z "$haveit"; then
-                    if test -d "$additional_includedir"; then
-                                            INCICONV="${INCICONV}${INCICONV:+ }-I$additional_includedir"
-                    fi
-                  fi
-                fi
-              fi
-            fi
-                        if test -n "$found_la"; then
-                                                        save_libdir="$libdir"
-              case "$found_la" in
-                */* | *\\*) . "$found_la" ;;
-                *) . "./$found_la" ;;
-              esac
-              libdir="$save_libdir"
-                            for dep in $dependency_libs; do
-                case "$dep" in
-                  -L*)
-                    additional_libdir=`echo "X$dep" | sed -e 's/^X-L//'`
-                                                                                                                                                                if test "X$additional_libdir" != "X/usr/$acl_libdirstem" \
-                       && test "X$additional_libdir" != "X/usr/$acl_libdirstem2"; then
-                      haveit=
-                      if test "X$additional_libdir" = "X/usr/local/$acl_libdirstem" \
-                         || test "X$additional_libdir" = "X/usr/local/$acl_libdirstem2"; then
-                        if test -n "$GCC"; then
-                          case $host_os in
-                            linux* | gnu* | k*bsd*-gnu) haveit=yes;;
-                          esac
-                        fi
-                      fi
-                      if test -z "$haveit"; then
-                        haveit=
-                        for x in $LDFLAGS $LIBICONV; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-                          if test "X$x" = "X-L$additional_libdir"; then
-                            haveit=yes
-                            break
-                          fi
-                        done
-                        if test -z "$haveit"; then
-                          if test -d "$additional_libdir"; then
-                                                        LIBICONV="${LIBICONV}${LIBICONV:+ }-L$additional_libdir"
-                          fi
-                        fi
-                        haveit=
-                        for x in $LDFLAGS $LTLIBICONV; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-                          if test "X$x" = "X-L$additional_libdir"; then
-                            haveit=yes
-                            break
-                          fi
-                        done
-                        if test -z "$haveit"; then
-                          if test -d "$additional_libdir"; then
-                                                        LTLIBICONV="${LTLIBICONV}${LTLIBICONV:+ }-L$additional_libdir"
-                          fi
-                        fi
-                      fi
-                    fi
-                    ;;
-                  -R*)
-                    dir=`echo "X$dep" | sed -e 's/^X-R//'`
-                    if test "$enable_rpath" != no; then
-                                                                  haveit=
-                      for x in $rpathdirs; do
-                        if test "X$x" = "X$dir"; then
-                          haveit=yes
-                          break
-                        fi
-                      done
-                      if test -z "$haveit"; then
-                        rpathdirs="$rpathdirs $dir"
-                      fi
-                                                                  haveit=
-                      for x in $ltrpathdirs; do
-                        if test "X$x" = "X$dir"; then
-                          haveit=yes
-                          break
-                        fi
-                      done
-                      if test -z "$haveit"; then
-                        ltrpathdirs="$ltrpathdirs $dir"
-                      fi
-                    fi
-                    ;;
-                  -l*)
-                                        names_next_round="$names_next_round "`echo "X$dep" | sed -e 's/^X-l//'`
-                    ;;
-                  *.la)
-                                                                                names_next_round="$names_next_round "`echo "X$dep" | sed -e 's,^X.*/,,' -e 's,^lib,,' -e 's,\.la$,,'`
-                    ;;
-                  *)
-                                        LIBICONV="${LIBICONV}${LIBICONV:+ }$dep"
-                    LTLIBICONV="${LTLIBICONV}${LTLIBICONV:+ }$dep"
-                    ;;
-                esac
-              done
-            fi
-          else
-                                                            LIBICONV="${LIBICONV}${LIBICONV:+ }-l$name"
-            LTLIBICONV="${LTLIBICONV}${LTLIBICONV:+ }-l$name"
-          fi
-        fi
-      fi
-    done
-  done
-  if test "X$rpathdirs" != "X"; then
-    if test -n "$acl_hardcode_libdir_separator"; then
-                        alldirs=
-      for found_dir in $rpathdirs; do
-        alldirs="${alldirs}${alldirs:+$acl_hardcode_libdir_separator}$found_dir"
-      done
-            acl_save_libdir="$libdir"
-      libdir="$alldirs"
-      eval flag=\"$acl_hardcode_libdir_flag_spec\"
-      libdir="$acl_save_libdir"
-      LIBICONV="${LIBICONV}${LIBICONV:+ }$flag"
-    else
-            for found_dir in $rpathdirs; do
-        acl_save_libdir="$libdir"
-        libdir="$found_dir"
-        eval flag=\"$acl_hardcode_libdir_flag_spec\"
-        libdir="$acl_save_libdir"
-        LIBICONV="${LIBICONV}${LIBICONV:+ }$flag"
-      done
-    fi
-  fi
-  if test "X$ltrpathdirs" != "X"; then
-            for found_dir in $ltrpathdirs; do
-      LTLIBICONV="${LTLIBICONV}${LTLIBICONV:+ }-R$found_dir"
-    done
-  fi
-
-
-
-
-
-
-
-
-    done
- ;;
-esac
-case $am_cv_func_iconv in #(
-  yes) :
-     ;; #(
-  *) :
     as_fn_error $? "missing \"libiconv\"" "$LINENO" 5 ;;
 esac
 ac_ext=cpp
@@ -21691,10 +20064,12 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 SO=$acl_shlibext
 
 
-ac_fn_cxx_check_header_mongrel "$LINENO" "mach/mach.h" "ac_cv_header_mach_mach_h" "$ac_includes_default"
+if test "x$CY_EXECUTE" = x1; then :
+
+    ac_fn_cxx_check_header_mongrel "$LINENO" "mach/mach.h" "ac_cv_header_mach_mach_h" "$ac_includes_default"
 if test "x$ac_cv_header_mach_mach_h" = xyes; then :
 
-    if test -n "$ac_tool_prefix"; then
+        if test -n "$ac_tool_prefix"; then
   for ac_prog in lipo
   do
     # Extract the first word of "$ac_tool_prefix$ac_prog", so it can be a program name with args.
@@ -21794,7 +20169,7 @@ esac
   fi
 fi
 
-    if test -n "$ac_tool_prefix"; then
+        if test -n "$ac_tool_prefix"; then
   for ac_prog in nm
   do
     # Extract the first word of "$ac_tool_prefix$ac_prog", so it can be a program name with args.
@@ -21894,7 +20269,7 @@ esac
   fi
 fi
 
-    if test -n "$ac_tool_prefix"; then
+        if test -n "$ac_tool_prefix"; then
   for ac_prog in otool
   do
     # Extract the first word of "$ac_tool_prefix$ac_prog", so it can be a program name with args.
@@ -21994,15 +20369,14 @@ esac
   fi
 fi
 
-    CY_MACH=1
+        CY_ATTACH_GROUP=procmod
 
-    CY_ATTACH_GROUP=procmod
-
+        CY_MACH=1
 
 fi
 
 
-
+fi
  if test "x$CY_MACH" = x1; then
   CY_MACH_TRUE=
   CY_MACH_FALSE='#'
