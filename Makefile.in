@@ -86,9 +86,9 @@ bin_PROGRAMS = cycript$(EXEEXT)
 @CY_MACH_TRUE@	Trampoline.t.hpp
 subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
-	$(top_srcdir)/configure $(am__configure_deps) depcomp COPYING \
-	ar-lib config.guess config.rpath config.sub install-sh missing \
-	ltmain.sh
+	$(top_srcdir)/configure $(am__configure_deps) \
+	$(srcdir)/config.h.in depcomp COPYING ar-lib config.guess \
+	config.rpath config.sub install-sh missing ltmain.sh
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/find_apr.m4 \
 	$(top_srcdir)/m4/framework.m4 $(top_srcdir)/m4/libtool.m4 \
@@ -100,6 +100,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
+CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
@@ -243,7 +244,8 @@ am__recursive_targets = \
   $(am__extra_recursive_targets)
 AM_RECURSIVE_TARGETS = $(am__recursive_targets:-recursive=) TAGS CTAGS \
 	cscope distdir dist dist-all distcheck
-am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
+am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) \
+	$(LISP)config.h.in
 # Read a list of newline-separated strings from the standard input,
 # and print each of them once, without duplicates.  Input order is
 # *not* preserved.
@@ -365,6 +367,7 @@ LIPO = @LIPO@
 LN_S = @LN_S@
 LTFLAGS = @LTFLAGS@
 LTLIBAPR = @LTLIBAPR@
+LTLIBFFI = @LTLIBFFI@
 LTLIBICONV = @LTLIBICONV@
 LTLIBOBJS = @LTLIBOBJS@
 LTLIBREADLINE = @LTLIBREADLINE@
@@ -472,19 +475,21 @@ ACLOCAL_AMFLAGS = -I m4
 
 # XXX: do I really need -fno-common?
 AM_CPPFLAGS = -Werror -fno-common -I$(srcdir)/include -DYYDEBUG=1 \
+	-include $(srcdir)/config.h -include $(srcdir)/unconfig.h \
 	$(am__append_2) $(am__append_9)
 lib_LTLIBRARIES = libcycript.la
 libcycript_la_SOURCES = Highlight.cpp Network.cpp Output.cpp \
 	Parser.cpp Replace.cpp Cycript.tab.cc lex.cy.cpp \
 	$(am__append_1) $(am__append_6) $(am__append_7)
-libcycript_la_LDFLAGS = -no-undefined $(LTLIBAPR) $(LTLIBICONV) -ldl
+libcycript_la_LDFLAGS = -no-undefined $(LTLIBAPR) $(LTLIBFFI) $(LTLIBICONV) -ldl
 cycript_SOURCES = Console.cpp Display.cpp $(am__append_8)
 cycript_LDFLAGS = $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) -ldl
 cycript_LDADD = libcycript.la
 ldid = true
 entitle = $(ldid) -Scycript.xml
 filters = $(CY_FILTERS) $(am__append_3) $(am__append_5)
-all: all-recursive
+all: config.h
+	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
 .SUFFIXES:
 .SUFFIXES: .cc .cpp .lo .mm .o .obj
@@ -522,6 +527,21 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	$(am__cd) $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
 $(am__aclocal_m4_deps):
+
+config.h: stamp-h1
+	@if test ! -f $@; then rm -f stamp-h1; else :; fi
+	@if test ! -f $@; then $(MAKE) $(AM_MAKEFLAGS) stamp-h1; else :; fi
+
+stamp-h1: $(srcdir)/config.h.in $(top_builddir)/config.status
+	@rm -f stamp-h1
+	cd $(top_builddir) && $(SHELL) ./config.status config.h
+$(srcdir)/config.h.in:  $(am__configure_deps) 
+	($(am__cd) $(top_srcdir) && $(AUTOHEADER))
+	rm -f stamp-h1
+	touch $@
+
+distclean-hdr:
+	-rm -f config.h stamp-h1
 
 install-libLTLIBRARIES: $(lib_LTLIBRARIES)
 	@$(NORMAL_INSTALL)
@@ -1047,7 +1067,7 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-recursive
-all-am: Makefile $(LTLIBRARIES) $(PROGRAMS)
+all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) config.h
 install-binPROGRAMS: install-libLTLIBRARIES
 
 installdirs: installdirs-recursive
@@ -1102,7 +1122,7 @@ distclean: distclean-recursive
 	-rm -rf ./$(DEPDIR) Mach/$(DEPDIR) ObjectiveC/$(DEPDIR) sig/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
-	distclean-libtool distclean-tags
+	distclean-hdr distclean-libtool distclean-tags
 
 dvi: dvi-recursive
 
@@ -1166,7 +1186,7 @@ ps-am:
 
 uninstall-am: uninstall-binPROGRAMS uninstall-libLTLIBRARIES
 
-.MAKE: $(am__recursive_targets) install-am install-strip
+.MAKE: $(am__recursive_targets) all install-am install-strip
 
 .PHONY: $(am__recursive_targets) CTAGS GTAGS TAGS all all-am \
 	am--refresh check check-am clean clean-binPROGRAMS \
@@ -1174,9 +1194,9 @@ uninstall-am: uninstall-binPROGRAMS uninstall-libLTLIBRARIES
 	cscope cscopelist-am ctags ctags-am dist dist-all dist-bzip2 \
 	dist-gzip dist-lzip dist-shar dist-tarZ dist-xz dist-zip \
 	distcheck distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags distcleancheck distdir \
-	distuninstallcheck dvi dvi-am html html-am info info-am \
-	install install-am install-binPROGRAMS install-data \
+	distclean-hdr distclean-libtool distclean-tags distcleancheck \
+	distdir distuninstallcheck dvi dvi-am html html-am info \
+	info-am install install-am install-binPROGRAMS install-data \
 	install-data-am install-dvi install-dvi-am install-exec \
 	install-exec-am install-html install-html-am install-info \
 	install-info-am install-libLTLIBRARIES install-man install-pdf \
