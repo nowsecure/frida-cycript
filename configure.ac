@@ -159,15 +159,6 @@ AC_DEFUN([CY_LT_LIB], [
     AC_SUBST(]$1[)
 ])
 
-dnl --with-frameworks {{{
-AC_ARG_WITH([frameworks], [AS_HELP_STRING(
-    [--with-frameworks=DIRS],
-    [add to DIRS (space separated) to the Darwin include path for frameworks with -F]
-)], [
-    for cy_framework in $withval; do
-        CY_COMPILE_FLAG([-F$cy_framework])
-    done
-]) dnl }}}
 dnl --enable-javascript {{{
 AC_DEFUN([CY_CHECK_JAVASCRIPTCORE], [
     AC_CHECK_FRAMEWORK([JavaScriptCore], [
