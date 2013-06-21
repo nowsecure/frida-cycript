@@ -243,7 +243,7 @@ void CYArrayPush(JSContextRef context, JSObjectRef array, JSValueRef value) {
     CYThrow(context, exception);
 }
 
-extern "C" void CydgetPoolParse(apr_pool_t *remote, const uint16_t **data, size_t *size) {
+extern "C" void CydgetMemoryParse(const uint16_t **data, size_t *size) {
     CYLocalPool local;
 
     CYUTF8String utf8(CYPoolUTF8String(local, CYUTF16String(*data, *size)));
@@ -262,10 +262,14 @@ extern "C" void CydgetPoolParse(apr_pool_t *remote, const uint16_t **data, size_
     out << *driver.program_;
     std::string code(str.str());
 
-    CYPool pool(remote);
+    CYPool pool;
     CYUTF16String utf16(CYPoolUTF16String(pool, CYUTF8String(code.c_str(), code.size())));
 
-    *data = utf16.data;
+    size_t bytes(utf16.size * sizeof(uint16_t));
+    uint16_t *copy(reinterpret_cast<uint16_t *>(malloc(bytes)));
+    memcpy(copy, utf16.data, bytes);
+
+    *data = copy;
     *size = utf16.size;
 }
 
