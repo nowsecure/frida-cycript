@@ -38,7 +38,7 @@
 #include <sys/un.h>
 
 struct CYExecute_ {
-    apr_pool_t *pool_;
+    CYPool &pool_;
     const char * volatile data_;
 };
 
@@ -148,11 +148,11 @@ static void * APR_THREAD_FUNC OnClient(apr_thread_t *thread, void *data) {
     return NULL;
 }
 
-extern "C" void CYHandleClient(apr_pool_t *pool, int socket) {
+extern "C" void CYHandleClient(CYPool &pool, int socket) {
     CYClient *client(new(pool) CYClient(socket));
     apr_threadattr_t *attr;
-    _aprcall(apr_threadattr_create(&attr, client->pool_));
-    _aprcall(apr_thread_create(&client->thread_, attr, &OnClient, client, client->pool_));
+    _aprcall(apr_threadattr_create(&attr, *client->pool_));
+    _aprcall(apr_thread_create(&client->thread_, attr, &OnClient, client, *client->pool_));
 }
 
 extern "C" void CYHandleServer(pid_t pid) {
@@ -166,10 +166,8 @@ extern "C" void CYHandleServer(pid_t pid) {
 
         _syscall(connect(socket, reinterpret_cast<sockaddr *>(&address), SUN_LEN(&address)));
 
-        apr_pool_t *pool;
-        apr_pool_create(&pool, NULL);
-
-        CYHandleClient(pool, socket);
+        // XXX: this leaks memory... really?
+        CYHandleClient(*new CYPool(), socket);
     } catch (const CYException &error) {
         CYPool pool;
         fprintf(stderr, "%s\n", error.PoolCString(pool));

@@ -56,7 +56,7 @@ _finline size_t iconv_(size_t (*iconv)(iconv_t, Type_, size_t *, char **, size_t
 #define UCS_2_INTERNAL "UCS-2-INTERNAL"
 #endif
 
-CYUTF8String CYPoolUTF8String(apr_pool_t *pool, CYUTF16String utf16) {
+CYUTF8String CYPoolUTF8String(CYPool &pool, CYUTF16String utf16) {
     _assert(pool != NULL);
 
     const char *in(reinterpret_cast<const char *>(utf16.data));
@@ -79,7 +79,7 @@ CYUTF8String CYPoolUTF8String(apr_pool_t *pool, CYUTF16String utf16) {
     return utf8;
 }
 
-CYUTF16String CYPoolUTF16String(apr_pool_t *pool, CYUTF8String utf8) {
+CYUTF16String CYPoolUTF16String(CYPool &pool, CYUTF8String utf8) {
     _assert(pool != NULL);
 
     const char *in(utf8.data);
@@ -262,13 +262,12 @@ extern "C" void CydgetPoolParse(apr_pool_t *remote, const uint16_t **data, size_
     out << *driver.program_;
     std::string code(str.str());
 
-    CYUTF16String utf16(CYPoolUTF16String(remote, CYUTF8String(code.c_str(), code.size())));
+    CYPool pool(remote);
+    CYUTF16String utf16(CYPoolUTF16String(pool, CYUTF8String(code.c_str(), code.size())));
 
     *data = utf16.data;
     *size = utf16.size;
 }
-
-static apr_pool_t *Pool_;
 
 static bool initialized_;
 
@@ -278,12 +277,12 @@ void CYInitializeStatic() {
     else return;
 
     _aprcall(apr_initialize());
-    _aprcall(apr_pool_create(&Pool_, NULL));
 }
 
-apr_pool_t *CYGetGlobalPool() {
+CYPool &CYGetGlobalPool() {
     CYInitializeStatic();
-    return Pool_;
+    static CYPool pool;
+    return pool;
 }
 
 void CYThrow(const char *format, ...) {
@@ -294,17 +293,17 @@ void CYThrow(const char *format, ...) {
     va_end(args);
 }
 
-const char *CYPoolError::PoolCString(apr_pool_t *pool) const {
-    return apr_pstrdup(pool, message_);
+const char *CYPoolError::PoolCString(CYPool &pool) const {
+    return pool.strdup(message_);
 }
 
 CYPoolError::CYPoolError(const char *format, ...) {
     va_list args;
     va_start(args, format);
-    message_ = apr_pvsprintf(pool_, format, args);
+    message_ = pool_.vsprintf(format, args);
     va_end(args);
 }
 
 CYPoolError::CYPoolError(const char *format, va_list args) {
-    message_ = apr_pvsprintf(pool_, format, args);
+    message_ = pool_.vsprintf(format, args);
 }

@@ -34,9 +34,8 @@
 #include <ffi.h>
 #endif
 
-#include <apr_pools.h>
-
-#include <String.hpp>
+#include "Pooling.hpp"
+#include "String.hpp"
 
 extern JSStringRef Array_s;
 extern JSStringRef cy_s;
@@ -57,15 +56,15 @@ JSGlobalContextRef CYGetJSContext();
 JSObjectRef CYGetGlobalObject(JSContextRef context);
 
 extern "C" void CYSetupContext(JSGlobalContextRef context);
-const char *CYExecute(apr_pool_t *pool, CYUTF8String code);
+const char *CYExecute(CYPool &pool, CYUTF8String code);
 
 void CYSetArgs(int argc, const char *argv[]);
 
 bool CYCastBool(JSContextRef context, JSValueRef value);
 double CYCastDouble(JSContextRef context, JSValueRef value);
 
-CYUTF8String CYPoolUTF8String(apr_pool_t *pool, JSContextRef context, JSStringRef value);
-const char *CYPoolCString(apr_pool_t *pool, JSContextRef context, JSStringRef value);
+CYUTF8String CYPoolUTF8String(CYPool &pool, JSContextRef context, JSStringRef value);
+const char *CYPoolCString(CYPool &pool, JSContextRef context, JSStringRef value);
 
 JSValueRef CYGetProperty(JSContextRef context, JSObjectRef object, size_t index);
 JSValueRef CYGetProperty(JSContextRef context, JSObjectRef object, JSStringRef name);
@@ -99,15 +98,15 @@ _finline Type_ CYCastPointer(JSContextRef context, JSValueRef value) {
     return reinterpret_cast<Type_>(CYCastPointer_(context, value));
 }
 
-void CYPoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value);
+void CYPoolFFI(CYPool *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value);
 JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, bool initialize = false, JSObjectRef owner = NULL);
 
-JSValueRef CYCallFunction(apr_pool_t *pool, JSContextRef context, size_t setups, void *setup[], size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception, sig::Signature *signature, ffi_cif *cif, void (*function)());
+JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, void *setup[], size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception, sig::Signature *signature, ffi_cif *cif, void (*function)());
 
 bool CYIsCallable(JSContextRef context, JSValueRef value);
 JSValueRef CYCallAsFunction(JSContextRef context, JSObjectRef function, JSObjectRef _this, size_t count, const JSValueRef arguments[]);
 
-const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSObjectRef object);
+const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSObjectRef object);
 
 struct CYHooks {
     void *(*ExecuteStart)(JSContextRef);
@@ -118,7 +117,7 @@ struct CYHooks {
     void (*Initialize)();
     void (*SetupContext)(JSContextRef);
 
-    bool (*PoolFFI)(apr_pool_t *, JSContextRef, sig::Type *, ffi_type *, void *, JSValueRef);
+    bool (*PoolFFI)(CYPool *, JSContextRef, sig::Type *, ffi_type *, void *, JSValueRef);
     JSValueRef (*FromFFI)(JSContextRef, sig::Type *, ffi_type *, void *, bool, JSObjectRef);
 };
 
@@ -132,7 +131,7 @@ size_t CYArrayLength(JSContextRef context, JSObjectRef array);
 JSValueRef CYArrayGet(JSContextRef context, JSObjectRef array, size_t index);
 void CYArrayPush(JSContextRef context, JSObjectRef array, JSValueRef value);
 
-const char *CYPoolCString(apr_pool_t *pool, JSContextRef context, JSValueRef value);
+const char *CYPoolCString(CYPool &pool, JSContextRef context, JSValueRef value);
 
 JSStringRef CYCopyJSString(const char *value);
 JSStringRef CYCopyJSString(JSStringRef value);

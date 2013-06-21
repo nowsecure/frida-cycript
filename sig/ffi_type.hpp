@@ -22,24 +22,23 @@
 #ifndef SIG_FFI_TYPE_H
 #define SIG_FFI_TYPE_H
 
-#include <apr_pools.h>
-
 #ifdef HAVE_FFI_FFI_H
 #include <ffi/ffi.h>
 #else
 #include <ffi.h>
 #endif
 
+#include "Pooling.hpp"
 #include "sig/types.hpp"
 
 namespace sig {
 
-ffi_type *ObjectiveC(apr_pool_t *pool, struct Type *type);
-ffi_type *Java(apr_pool_t *pool, struct Type *type);
+ffi_type *ObjectiveC(CYPool &pool, struct Type *type);
+ffi_type *Java(CYPool &pool, struct Type *type);
 
 void sig_ffi_cif(
-    apr_pool_t *pool,
-    ffi_type *(*sig_ffi_type)(apr_pool_t *, struct Type *),
+    CYPool &pool,
+    ffi_type *(*sig_ffi_type)(CYPool &, struct Type *),
     struct Signature *signature,
     ffi_cif *cif,
     size_t skip = 0,
@@ -47,7 +46,7 @@ void sig_ffi_cif(
     size_t offset = 0
 );
 
-void Copy(apr_pool_t *pool, ffi_type &lhs, ffi_type &rhs);
+void Copy(CYPool &pool, ffi_type &lhs, ffi_type &rhs);
 
 }
 

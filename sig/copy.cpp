@@ -23,7 +23,6 @@
 #define _GNU_SOURCE
 #endif
 
-#include <apr_strings.h>
 #include "Pooling.hpp"
 #include "sig/parse.hpp"
 
@@ -35,8 +34,8 @@
 
 namespace sig {
 
-void Copy(apr_pool_t *pool, Element &lhs, Element &rhs) {
-    lhs.name = apr_pstrdup(pool, rhs.name);
+void Copy(CYPool &pool, Element &lhs, Element &rhs) {
+    lhs.name = pool.strdup(rhs.name);
     if (rhs.type == NULL)
         lhs.type = NULL;
     else {
@@ -46,7 +45,7 @@ void Copy(apr_pool_t *pool, Element &lhs, Element &rhs) {
     lhs.offset = rhs.offset;
 }
 
-void Copy(apr_pool_t *pool, Signature &lhs, Signature &rhs) {
+void Copy(CYPool &pool, Signature &lhs, Signature &rhs) {
     size_t count(rhs.count);
     lhs.count = count;
     lhs.elements = new(pool) Element[count];
@@ -54,9 +53,9 @@ void Copy(apr_pool_t *pool, Signature &lhs, Signature &rhs) {
         Copy(pool, lhs.elements[index], rhs.elements[index]);
 }
 
-void Copy(apr_pool_t *pool, Type &lhs, Type &rhs) {
+void Copy(CYPool &pool, Type &lhs, Type &rhs) {
     lhs.primitive = rhs.primitive;
-    lhs.name = apr_pstrdup(pool, rhs.name);
+    lhs.name = pool.strdup(rhs.name);
     lhs.flags = rhs.flags;
 
     if (sig::IsAggregate(rhs.primitive))
@@ -76,7 +75,7 @@ void Copy(apr_pool_t *pool, Type &lhs, Type &rhs) {
     }
 }
 
-void Copy(apr_pool_t *pool, ffi_type &lhs, ffi_type &rhs) {
+void Copy(CYPool &pool, ffi_type &lhs, ffi_type &rhs) {
     lhs.size = rhs.size;
     lhs.alignment = rhs.alignment;
     lhs.type = rhs.type;

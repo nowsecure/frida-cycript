@@ -19,7 +19,6 @@
 **/
 /* }}} */
 
-#include <apr_strings.h>
 #include "sig/parse.hpp"
 #include "Error.hpp"
 
@@ -29,18 +28,18 @@
 
 namespace sig {
 
-void Parse_(apr_pool_t *pool, struct Signature *signature, const char **name, char eos, Callback callback);
-struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named, Callback callback);
+void Parse_(CYPool &pool, struct Signature *signature, const char **name, char eos, Callback callback);
+struct Type *Parse_(CYPool &pool, const char **name, char eos, bool named, Callback callback);
 
 
 /* XXX: I really screwed up this time */
-void *prealloc_(apr_pool_t *pool, void *odata, size_t osize, size_t nsize) {
-    void *ndata = apr_palloc(pool, nsize);
+void *prealloc_(CYPool &pool, void *odata, size_t osize, size_t nsize) {
+    void *ndata(pool(nsize));
     memcpy(ndata, odata, osize);
     return ndata;
 }
 
-void Parse_(apr_pool_t *pool, struct Signature *signature, const char **name, char eos, Callback callback) {
+void Parse_(CYPool &pool, struct Signature *signature, const char **name, char eos, Callback callback) {
     _assert(*name != NULL);
 
     // XXX: this is just a stupid check :(
@@ -64,7 +63,7 @@ void Parse_(apr_pool_t *pool, struct Signature *signature, const char **name, ch
             element->name = NULL;
         else {
             const char *quote = strchr(++*name, '"');
-            element->name = apr_pstrmemdup(pool, *name, quote - *name);
+            element->name = pool.strmemdup(*name, quote - *name);
             *name = quote + 1;
         }
 
@@ -82,14 +81,14 @@ void Parse_(apr_pool_t *pool, struct Signature *signature, const char **name, ch
     }
 }
 
-struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named, Callback callback) {
+Type *Parse_(CYPool &pool, const char **name, char eos, bool named, Callback callback) {
     char next = *(*name)++;
     if (next == '?')
         return NULL;
 
-    struct Type *type = (struct Type *) apr_palloc(pool, sizeof(struct Type));
+    Type *type(new(pool) Type());
     _assert(type != NULL);
-    memset(type, 0, sizeof(struct Type));
+    memset(type, 0, sizeof(Type));
 
   parse:
     switch (next) {
@@ -121,7 +120,7 @@ struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named, C
                         printf("unterminated specific id type {%s}\n", *name - 10);
                         _assert(false);
                     } else if (!named || quote[1] == eos || quote[1] == '"') {
-                        type->name = apr_pstrmemdup(pool, *name + 1, quote - *name - 1);
+                        type->name = pool.strmemdup(*name + 1, quote - *name - 1);
                         *name = quote + 1;
                     }
                 }
@@ -188,7 +187,7 @@ struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named, C
             );
             size_t length = *name - begin - 1;
             if (strncmp(begin, "?", length) != 0)
-                type->name = (char *) apr_pstrmemdup(pool, begin, length);
+                type->name = (char *) pool.strmemdup(begin, length);
             else
                 type->name = NULL;
 
@@ -222,13 +221,13 @@ struct Type *Parse_(apr_pool_t *pool, const char **name, char eos, bool named, C
     return type;
 }
 
-void Parse(apr_pool_t *pool, struct Signature *signature, const char *name, Callback callback) {
+void Parse(CYPool &pool, struct Signature *signature, const char *name, Callback callback) {
     const char *temp = name;
     Parse_(pool, signature, &temp, '\0', callback);
     _assert(temp[-1] == '\0');
 }
 
-const char *Unparse(apr_pool_t *pool, struct Signature *signature) {
+const char *Unparse(CYPool &pool, struct Signature *signature) {
     const char *value = "";
     size_t offset;
 
@@ -240,14 +239,14 @@ const char *Unparse(apr_pool_t *pool, struct Signature *signature) {
     return value;
 }
 
-const char *Unparse_(apr_pool_t *pool, struct Type *type) {
+const char *Unparse_(CYPool &pool, struct Type *type) {
     switch (type->primitive) {
         case typename_P: return "#";
-        case union_P: return apr_psprintf(pool, "(%s)", Unparse(pool, &type->data.signature));
+        case union_P: return pool.sprintf("(%s)", Unparse(pool, &type->data.signature));
         case string_P: return "*";
         case selector_P: return ":";
         case block_P: return "@?";
-        case object_P: return type->name == NULL ? "@" : apr_psprintf(pool, "@\"%s\"", type->name);
+        case object_P: return type->name == NULL ? "@" : pool.sprintf("@\"%s\"", type->name);
         case boolean_P: return "B";
         case uchar_P: return "C";
         case uint_P: return "I";
@@ -257,11 +256,11 @@ const char *Unparse_(apr_pool_t *pool, struct Type *type) {
 
         case array_P: {
             const char *value = Unparse(pool, type->data.data.type);
-            return apr_psprintf(pool, "[%"APR_SIZE_T_FMT"%s]", type->data.data.size, value);
+            return pool.sprintf("[%"APR_SIZE_T_FMT"%s]", type->data.data.size, value);
         } break;
 
-        case pointer_P: return apr_psprintf(pool, "^%s", type->data.data.type == NULL ? "v" : Unparse(pool, type->data.data.type));
-        case bit_P: return apr_psprintf(pool, "b%"APR_SIZE_T_FMT"", type->data.data.size);
+        case pointer_P: return pool.sprintf("^%s", type->data.data.type == NULL ? "v" : Unparse(pool, type->data.data.type));
+        case bit_P: return pool.sprintf("b%"APR_SIZE_T_FMT"", type->data.data.size);
         case char_P: return "c";
         case double_P: return "d";
         case float_P: return "f";
@@ -270,14 +269,14 @@ const char *Unparse_(apr_pool_t *pool, struct Type *type) {
         case longlong_P: return "q";
         case short_P: return "s";
         case void_P: return "v";
-        case struct_P: return apr_psprintf(pool, "{%s=%s}", type->name == NULL ? "?" : type->name, Unparse(pool, &type->data.signature));
+        case struct_P: return pool.sprintf("{%s=%s}", type->name == NULL ? "?" : type->name, Unparse(pool, &type->data.signature));
     }
 
     _assert(false);
     return NULL;
 }
 
-const char *Unparse(apr_pool_t *pool, struct Type *type) {
+const char *Unparse(CYPool &pool, struct Type *type) {
     if (type == NULL)
         return "?";
 

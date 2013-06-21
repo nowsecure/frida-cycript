@@ -22,10 +22,10 @@
 #ifndef CYCRIPT_HPP
 #define CYCRIPT_HPP
 
-#include <apr_pools.h>
 #include <sig/types.hpp>
 #include <sstream>
 
+#include "Pooling.hpp"
 #include "String.hpp"
 
 void CYInitializeStatic();
@@ -39,7 +39,7 @@ void CYStringify(std::ostringstream &str, const char *data, size_t size);
 double CYCastDouble(const char *value, size_t size);
 double CYCastDouble(const char *value);
 
-extern "C" void CYHandleClient(apr_pool_t *pool, int socket);
+extern "C" void CYHandleClient(CYPool &pool, int socket);
 
 template <typename Type_>
 bool CYRecvAll(int socket, Type_ *data, size_t size) {
@@ -51,6 +51,6 @@ bool CYSendAll(int socket, const Type_ *data, size_t size) {
     return CYSendAll_(socket, reinterpret_cast<const uint8_t *>(data), size);
 }
 
-apr_pool_t *CYGetGlobalPool();
+CYPool &CYGetGlobalPool();
 
 #endif/*CYCRIPT_HPP*/

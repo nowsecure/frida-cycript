@@ -22,22 +22,15 @@
 #ifndef CYCRIPT_POOLING_HPP
 #define CYCRIPT_POOLING_HPP
 
+#include <cstdarg>
+#include <cstdlib>
+
 #include <apr_pools.h>
 #include <apr_strings.h>
 
 #include "Exception.hpp"
 #include "Local.hpp"
 #include "Standard.hpp"
-
-#include <cstdlib>
-
-_finline void *operator new(size_t size, apr_pool_t *pool) {
-    return apr_palloc(pool, size);
-}
-
-_finline void *operator new [](size_t size, apr_pool_t *pool) {
-    return apr_palloc(pool, size);
-}
 
 class CYPool {
   private:
@@ -46,6 +39,11 @@ class CYPool {
   public:
     CYPool() {
         _aprcall(apr_pool_create(&pool_, NULL));
+    }
+
+    CYPool(apr_pool_t *pool) :
+        pool_(pool)
+    {
     }
 
     ~CYPool() {
@@ -60,17 +58,45 @@ class CYPool {
         return pool_;
     }
 
-    char *operator ()(const char *data) const {
+    void *operator()(size_t size) const {
+        return apr_palloc(pool_, size);
+    }
+
+    char *strdup(const char *data) const {
         return apr_pstrdup(pool_, data);
     }
 
-    char *operator ()(const char *data, size_t size) const {
+    char *strndup(const char *data, size_t size) const {
         return apr_pstrndup(pool_, data, size);
+    }
+
+    char *strmemdup(const char *data, size_t size) const {
+        return apr_pstrmemdup(pool_, data, size);
+    }
+
+    char *sprintf(const char *format, ...) const {
+        va_list args;
+        va_start(args, format);
+        char *data(vsprintf(format, args));
+        va_end(args);
+        return data;
+    }
+
+    char *vsprintf(const char *format, va_list args) const {
+        return apr_pvsprintf(pool_, format, args);
     }
 };
 
+_finline void *operator new(size_t size, CYPool &pool) {
+    return pool(size);
+}
+
+_finline void *operator new [](size_t size, CYPool &pool) {
+    return pool(size);
+}
+
 struct CYData {
-    apr_pool_t *pool_;
+    CYPool *pool_;
     unsigned count_;
 
     CYData() :
@@ -78,29 +104,33 @@ struct CYData {
     {
     }
 
+    CYData(CYPool &pool) :
+        pool_(&pool),
+        count_(_not(unsigned))
+    {
+    }
+
     virtual ~CYData() {
     }
 
-    static void *operator new(size_t size, apr_pool_t *pool) {
-        void *data(apr_palloc(pool, size));
-        reinterpret_cast<CYData *>(data)->pool_ = pool;
+    static void *operator new(size_t size, CYPool &pool) {
+        void *data(pool(size));
+        reinterpret_cast<CYData *>(data)->pool_ = &pool;
         return data;
     }
 
     static void *operator new(size_t size) {
-        apr_pool_t *pool;
-        _aprcall(apr_pool_create(&pool, NULL));
-        return operator new(size, pool);
+        return operator new(size, *new CYPool());
     }
 
     static void operator delete(void *data) {
-        apr_pool_destroy(reinterpret_cast<CYData *>(data)->pool_);
+        delete reinterpret_cast<CYData *>(data)->pool_;
     }
 };
 
 template <typename Type_>
 struct CYPoolAllocator {
-    apr_pool_t *pool_;
+    CYPool *pool_;
 
     typedef Type_ value_type;
     typedef value_type *pointer;
@@ -122,7 +152,7 @@ struct CYPoolAllocator {
     }
 
     pointer allocate(size_type size, const void *hint = 0) {
-        return reinterpret_cast<pointer>(apr_palloc(pool_, size));
+        return reinterpret_cast<pointer>((*pool_)(size));
     }
 
     void deallocate(pointer data, size_type size) {
@@ -156,17 +186,17 @@ class CYLocalPool :
     public CYPool
 {
   private:
-    CYLocal<apr_pool_t> local_;
+    CYLocal<CYPool> local_;
 
   public:
     CYLocalPool() :
         CYPool(),
-        local_(operator apr_pool_t *())
+        local_(this)
     {
     }
 };
 
 #define $pool \
-    CYLocal<apr_pool_t>::Get()
+    (*CYLocal<CYPool>::Get())
 
 #endif/*CYCRIPT_POOLING_HPP*/

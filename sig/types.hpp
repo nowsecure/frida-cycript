@@ -22,6 +22,9 @@
 #ifndef SIG_TYPES_H
 #define SIG_TYPES_H
 
+#include <cstdlib>
+#include <stdint.h>
+
 #include "Standard.hpp"
 
 namespace sig {
@@ -54,7 +57,7 @@ enum Primitive {
 };
 
 struct Element {
-    char *name;
+    const char *name;
     struct Type *type;
     size_t offset;
 };

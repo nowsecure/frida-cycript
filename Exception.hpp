@@ -26,14 +26,15 @@
 #include <JavaScriptCore/JSBase.h>
 #endif
 
-#include <apr_pools.h>
 #include "Standard.hpp"
+
+class CYPool;
 
 struct CYException {
     virtual ~CYException() {
     }
 
-    virtual const char *PoolCString(apr_pool_t *pool) const = 0;
+    virtual const char *PoolCString(CYPool &pool) const = 0;
 #ifdef CY_EXECUTE
     virtual JSValueRef CastJSValue(JSContextRef context) const = 0;
 #endif

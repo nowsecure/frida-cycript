@@ -159,7 +159,7 @@ enum {
     BLOCK_HAS_SIGNATURE = 1 << 30,
 };
 
-JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, Class super, SEL _cmd, size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception);
+JSValueRef CYSendMessage(CYPool &pool, JSContextRef context, id self, Class super, SEL _cmd, size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception);
 
 /* Objective-C Pool Release {{{ */
 apr_status_t CYPoolRelease_(void *data) {
@@ -168,24 +168,24 @@ apr_status_t CYPoolRelease_(void *data) {
     return APR_SUCCESS;
 }
 
-id CYPoolRelease_(apr_pool_t *pool, id object) {
+id CYPoolRelease_(CYPool *pool, id object) {
     if (object == nil)
         return nil;
     else if (pool == NULL)
         return [object autorelease];
     else {
-        apr_pool_cleanup_register(pool, object, &CYPoolRelease_, &apr_pool_cleanup_null);
+        apr_pool_cleanup_register(*pool, object, &CYPoolRelease_, &apr_pool_cleanup_null);
         return object;
     }
 }
 
 template <typename Type_>
-Type_ CYPoolRelease(apr_pool_t *pool, Type_ object) {
+Type_ CYPoolRelease(CYPool *pool, Type_ object) {
     return (Type_) CYPoolRelease_(pool, (id) object);
 }
 /* }}} */
 /* Objective-C Strings {{{ */
-const char *CYPoolCString(apr_pool_t *pool, JSContextRef context, NSString *value) {
+const char *CYPoolCString(CYPool &pool, JSContextRef context, NSString *value) {
     if (pool == NULL)
         return [value UTF8String];
     else {
@@ -235,16 +235,16 @@ NSString *CYCopyNSString(JSContextRef context, JSValueRef value) {
     return CYCopyNSString(context, CYJSString(context, value));
 }
 
-NSString *CYCastNSString(apr_pool_t *pool, const CYUTF8String &value) {
+NSString *CYCastNSString(CYPool *pool, const CYUTF8String &value) {
     return CYPoolRelease(pool, CYCopyNSString(value));
 }
 
-NSString *CYCastNSString(apr_pool_t *pool, SEL sel) {
+NSString *CYCastNSString(CYPool *pool, SEL sel) {
     const char *name(sel_getName(sel));
     return CYPoolRelease(pool, CYCopyNSString(CYUTF8String(name, strlen(name))));
 }
 
-NSString *CYCastNSString(apr_pool_t *pool, JSContextRef context, JSStringRef value) {
+NSString *CYCastNSString(CYPool *pool, JSContextRef context, JSStringRef value) {
     return CYPoolRelease(pool, CYCopyNSString(context, value));
 }
 
@@ -266,7 +266,7 @@ size_t CYGetIndex(NSString *value) {
     return CYGetIndex(CYCastUTF8String(value));
 }
 
-bool CYGetOffset(apr_pool_t *pool, JSContextRef context, NSString *value, ssize_t &index) {
+bool CYGetOffset(CYPool &pool, JSContextRef context, NSString *value, ssize_t &index) {
     return CYGetOffset(CYPoolCString(pool, context, value), index);
 }
 
@@ -519,7 +519,7 @@ struct PropertyAttributes {
         name = property_getName(property);
         const char *attributes(property_getAttributes(property));
 
-        for (char *state, *token(apr_strtok(apr_pstrdup(pool_, attributes), ",", &state)); token != NULL; token = apr_strtok(NULL, ",", &state)) {
+        for (char *state, *token(apr_strtok(pool_.strdup(attributes), ",", &state)); token != NULL; token = apr_strtok(NULL, ",", &state)) {
             switch (*token) {
                 case 'R': readonly = true; break;
                 case 'C': copy = true; break;
@@ -544,7 +544,7 @@ struct PropertyAttributes {
 
     const char *Getter() {
         if (getter_ == NULL)
-            getter_ = apr_pstrdup(pool_, name);
+            getter_ = pool_.strdup(name);
         return getter_;
     }
 
@@ -669,7 +669,7 @@ NSObject *CYMakeBlock(void (*invoke)(), sig::Signature &signature) {
     return reinterpret_cast<NSObject *>(literal);
 }
 
-NSObject *CYCastNSObject(apr_pool_t *pool, JSContextRef context, JSObjectRef object) {
+NSObject *CYCastNSObject(CYPool *pool, JSContextRef context, JSObjectRef object) {
     if (CYJSValueIsNSObject(context, object)) {
         Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
         return internal->GetValue();
@@ -695,7 +695,7 @@ NSNumber *CYCopyNSNumber(JSContextRef context, JSValueRef value) {
 @end
 #endif
 
-id CYNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef value, bool cast) {
+id CYNSObject(CYPool *pool, JSContextRef context, JSValueRef value, bool cast) {
     id object;
     bool copy;
 
@@ -748,12 +748,12 @@ id CYNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef value, bool cas
         return [object retain];
 }
 
-NSObject *CYCastNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
+NSObject *CYCastNSObject(CYPool *pool, JSContextRef context, JSValueRef value) {
     return CYNSObject(pool, context, value, true);
 }
 
-NSObject *CYCopyNSObject(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
-    return CYNSObject(pool, context, value, false);
+NSObject *CYCopyNSObject(CYPool &pool, JSContextRef context, JSValueRef value) {
+    return CYNSObject(&pool, context, value, false);
 }
 
 /* Bridge: NSArray {{{ */
@@ -1182,8 +1182,8 @@ static bool CYIsClass(id self) {
 #endif
 }
 
-Class CYCastClass(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
-    id self(CYCastNSObject(pool, context, value));
+Class CYCastClass(CYPool &pool, JSContextRef context, JSValueRef value) {
+    id self(CYCastNSObject(&pool, context, value));
     if (CYIsClass(self))
         return (Class) self;
     throw CYJSError(context, "got something that is not a Class");
@@ -1195,7 +1195,7 @@ NSArray *CYCastNSArray(JSContextRef context, JSPropertyNameArrayRef names) {
     size_t size(JSPropertyNameArrayGetCount(names));
     NSMutableArray *array([NSMutableArray arrayWithCapacity:size]);
     for (size_t index(0); index != size; ++index)
-        [array addObject:CYCastNSString(pool, context, JSPropertyNameArrayGetNameAtIndex(names, index))];
+        [array addObject:CYCastNSString(&pool, context, JSPropertyNameArrayGetNameAtIndex(names, index))];
     return array;
 }
 
@@ -1466,12 +1466,13 @@ static void CYObjectiveC_CallFunction(JSContextRef context, ffi_cif *cif, void (
     ffi_call(cif, function, value, values);
 } CYSadCatch() }
 
-static bool CYObjectiveC_PoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value) { CYSadTry {
+static bool CYObjectiveC_PoolFFI(CYPool *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value) { CYSadTry {
     switch (type->primitive) {
         // XXX: do something epic about blocks
         case sig::block_P:
         case sig::object_P:
         case sig::typename_P:
+            // XXX: this works for return values, but not for properties and fields
             *reinterpret_cast<id *>(data) = CYCastNSObject(pool, context, value);
         break;
 
@@ -1531,7 +1532,7 @@ static bool CYImplements(id object, Class _class, SEL selector, bool devoid = fa
     return false;
 }
 
-static const char *CYPoolTypeEncoding(apr_pool_t *pool, JSContextRef context, SEL sel, objc_method *method) {
+static const char *CYPoolTypeEncoding(CYPool &pool, JSContextRef context, SEL sel, objc_method *method) {
     if (method != NULL)
         return method_getTypeEncoding(method);
 
@@ -1688,7 +1689,7 @@ static bool Instance_hasProperty(JSContextRef context, JSObjectRef object, JSStr
         return true;
 
     CYPool pool;
-    NSString *name(CYCastNSString(pool, context, property));
+    NSString *name(CYCastNSString(&pool, context, property));
 
     if (CYInternal *internal = [CYInternal get:self])
         if ([internal hasProperty:property inContext:context])
@@ -1726,7 +1727,7 @@ static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object,
         return Internal::Make(context, self, object);
 
     CYPool pool;
-    NSString *name(CYCastNSString(pool, context, property));
+    NSString *name(CYCastNSString(&pool, context, property));
 
     if (CYInternal *internal = [CYInternal get:self])
         if (JSValueRef value = [internal getProperty:property inContext:context])
@@ -1762,8 +1763,8 @@ static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStr
 
     CYPool pool;
 
-    NSString *name(CYCastNSString(pool, context, property));
-    NSObject *data(CYCastNSObject(pool, context, value));
+    NSString *name(CYCastNSString(&pool, context, property));
+    NSObject *data(CYCastNSObject(&pool, context, value));
 
     CYPoolTry {
         if ([self cy$setProperty:name to:data])
@@ -1950,7 +1951,7 @@ static JSValueRef Instance_box_callAsFunction(JSContextRef context, JSObjectRef 
     if (count == 0)
         throw CYJSError(context, "incorrect number of arguments to Instance");
     CYPool pool;
-    id value(CYCastNSObject(pool, context, arguments[0]));
+    id value(CYCastNSObject(&pool, context, arguments[0]));
     if (value == nil)
         value = [NSNull null];
     return CYCastJSValue(context, [value cy$box]);
@@ -1994,7 +1995,7 @@ static bool Internal_setProperty(JSContextRef context, JSObjectRef object, JSStr
 
     if (objc_ivar *ivar = object_getInstanceVariable(self, name, NULL)) {
         Type_privateData type(pool, ivar_getTypeEncoding(ivar));
-        CYPoolFFI(pool, context, type.type_, type.GetFFI(), reinterpret_cast<uint8_t *>(self) + ivar_getOffset(ivar), value);
+        CYPoolFFI(&pool, context, type.type_, type.GetFFI(), reinterpret_cast<uint8_t *>(self) + ivar_getOffset(ivar), value);
         return true;
     }
 
@@ -2035,7 +2036,7 @@ static JSValueRef Internal_callAsFunction_$cya(JSContextRef context, JSObjectRef
 
 static JSValueRef ObjectiveC_Classes_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     CYPool pool;
-    NSString *name(CYCastNSString(pool, context, property));
+    NSString *name(CYCastNSString(&pool, context, property));
     if (Class _class = NSClassFromString(name))
         return CYMakeInstance(context, _class, true);
     return NULL;
@@ -2182,7 +2183,7 @@ static bool stret(ffi_type *ffi_type) {
 }
 #endif
 
-JSValueRef CYSendMessage(apr_pool_t *pool, JSContextRef context, id self, Class _class, SEL _cmd, size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception) { CYTry {
+JSValueRef CYSendMessage(CYPool &pool, JSContextRef context, id self, Class _class, SEL _cmd, size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception) { CYTry {
     const char *type;
 
     if (_class == NULL)
@@ -2275,7 +2276,7 @@ static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObje
         if (uninitialized)
             internal->value_ = nil;
     } else {
-        self = CYCastNSObject(pool, context, arguments[0]);
+        self = CYCastNSObject(&pool, context, arguments[0]);
         _class = nil;
         uninitialized = false;
     }
@@ -2301,7 +2302,7 @@ static JSValueRef Message_callAsFunction(JSContextRef context, JSObjectRef objec
     Message_privateData *internal(reinterpret_cast<Message_privateData *>(JSObjectGetPrivate(object)));
 
     // XXX: handle Instance::Uninitialized?
-    id self(CYCastNSObject(pool, context, _this));
+    id self(CYCastNSObject(&pool, context, _this));
 
     void *setup[2];
     setup[0] = &self;
@@ -2314,7 +2315,7 @@ static JSObjectRef Super_new(JSContextRef context, JSObjectRef object, size_t co
     if (count != 2)
         throw CYJSError(context, "incorrect number of arguments to Super constructor");
     CYPool pool;
-    id self(CYCastNSObject(pool, context, arguments[0]));
+    id self(CYCastNSObject(&pool, context, arguments[0]));
     Class _class(CYCastClass(pool, context, arguments[1]));
     return cy::Super::Make(context, self, _class);
 } CYCatch(NULL) }
@@ -2560,7 +2561,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     $objc_getAssociatedObject = reinterpret_cast<id (*)(id, void *)>(dlsym(RTLD_DEFAULT, "objc_getAssociatedObject"));
     $objc_removeAssociatedObjects = reinterpret_cast<void (*)(id)>(dlsym(RTLD_DEFAULT, "objc_removeAssociatedObjects"));
 
-    apr_pool_t *pool(CYGetGlobalPool());
+    CYPool &pool(CYGetGlobalPool());
 
     Object_type = new(pool) Type_privateData("@");
     Selector_type = new(pool) Type_privateData(":");

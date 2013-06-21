@@ -43,7 +43,7 @@ void InjectLibrary(pid_t pid) {
     depth = (depth + sizeof(uintptr_t) + 1) / sizeof(uintptr_t) * sizeof(uintptr_t);
 
     CYPool pool;
-    uint8_t *local(reinterpret_cast<uint8_t *>(apr_palloc(pool, depth)));
+    uint8_t *local(reinterpret_cast<uint8_t *>(pool(depth)));
     Baton *baton(reinterpret_cast<Baton *>(local));
 
     baton->__pthread_set_self = &__pthread_set_self;

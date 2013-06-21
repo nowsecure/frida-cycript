@@ -109,22 +109,22 @@ static CYUTF16String CYCastUTF16String(JSStringRef value) {
     return CYUTF16String(JSStringGetCharactersPtr(value), JSStringGetLength(value));
 }
 
-CYUTF8String CYPoolUTF8String(apr_pool_t *pool, JSContextRef context, JSStringRef value) {
+CYUTF8String CYPoolUTF8String(CYPool &pool, JSContextRef context, JSStringRef value) {
     return CYPoolUTF8String(pool, CYCastUTF16String(value));
 }
 
-const char *CYPoolCString(apr_pool_t *pool, JSContextRef context, JSStringRef value) {
+const char *CYPoolCString(CYPool &pool, JSContextRef context, JSStringRef value) {
     CYUTF8String utf8(CYPoolUTF8String(pool, context, value));
     _assert(memchr(utf8.data, '\0', utf8.size) == NULL);
     return utf8.data;
 }
 
-const char *CYPoolCString(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
+const char *CYPoolCString(CYPool &pool, JSContextRef context, JSValueRef value) {
     return JSValueIsNull(context, value) ? NULL : CYPoolCString(pool, context, CYJSString(context, value));
 }
 /* }}} */
 /* Index Offsets {{{ */
-size_t CYGetIndex(apr_pool_t *pool, JSContextRef context, JSStringRef value) {
+size_t CYGetIndex(CYPool &pool, JSContextRef context, JSStringRef value) {
     return CYGetIndex(CYPoolUTF8String(pool, context, value));
 }
 /* }}} */
@@ -154,11 +154,12 @@ static JSStringRef Result_;
 
 void CYFinalize(JSObjectRef object) {
     CYData *internal(reinterpret_cast<CYData *>(JSObjectGetPrivate(object)));
+    _assert(internal->count_ != _not(unsigned));
     if (--internal->count_ == 0)
         delete internal;
 }
 
-void Structor_(apr_pool_t *pool, sig::Type *&type) {
+void Structor_(CYPool &pool, sig::Type *&type) {
     if (
         type->primitive == sig::pointer_P &&
         type->data.data.type != NULL &&
@@ -219,7 +220,7 @@ struct Pointer :
 
     Pointer(void *value, JSContextRef context, JSObjectRef owner, size_t length, sig::Type *type) :
         CYOwned(value, context, owner),
-        type_(new(pool_) Type_privateData(type)),
+        type_(new(*pool_) Type_privateData(type)),
         length_(length)
     {
     }
@@ -241,7 +242,7 @@ static TypeMap Types_;
 
 JSObjectRef CYMakeStruct(JSContextRef context, void *data, sig::Type *type, ffi_type *ffi, JSObjectRef owner) {
     Struct_privateData *internal(new Struct_privateData(context, owner));
-    apr_pool_t *pool(internal->pool_);
+    CYPool &pool(*internal->pool_);
     Type_privateData *typical(new(pool) Type_privateData(type, ffi));
     internal->type_ = typical;
 
@@ -249,7 +250,7 @@ JSObjectRef CYMakeStruct(JSContextRef context, void *data, sig::Type *type, ffi_
         internal->value_ = data;
     else {
         size_t size(typical->GetFFI()->size);
-        void *copy(apr_palloc(internal->pool_, size));
+        void *copy((*internal->pool_)(size));
         memcpy(copy, data, size);
         internal->value_ = copy;
     }
@@ -341,7 +342,7 @@ static size_t Nonce_(0);
 
 static JSValueRef $cyq(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     CYPool pool;
-    const char *name(apr_psprintf(pool, "%s%"APR_SIZE_T_FMT"", CYPoolCString(pool, context, arguments[0]), Nonce_++));
+    const char *name(pool.sprintf("%s%"APR_SIZE_T_FMT"", CYPoolCString(pool, context, arguments[0]), Nonce_++));
     return CYCastJSValue(context, name);
 }
 
@@ -350,7 +351,7 @@ static JSValueRef Cycript_gc_callAsFunction(JSContextRef context, JSObjectRef ob
     return CYJSUndefined(context);
 }
 
-const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSValueRef value, JSValueRef *exception) { CYTry {
+const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSValueRef value, JSValueRef *exception) { CYTry {
     switch (JSType type = JSValueGetType(context, value)) {
         case kJSTypeUndefined:
             return "undefined";
@@ -363,7 +364,7 @@ const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSValueRef value
             std::ostringstream str;
             CYNumerify(str, CYCastDouble(context, value));
             std::string value(str.str());
-            return apr_pstrmemdup(pool, value.c_str(), value.size());
+            return pool.strmemdup(value.c_str(), value.size());
         } break;
 
         case kJSTypeString: {
@@ -371,7 +372,7 @@ const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSValueRef value
             CYUTF8String string(CYPoolUTF8String(pool, context, CYJSString(context, value)));
             CYStringify(str, string.data, string.size);
             std::string value(str.str());
-            return apr_pstrmemdup(pool, value.c_str(), value.size());
+            return pool.strmemdup(value.c_str(), value.size());
         } break;
 
         case kJSTypeObject:
@@ -381,14 +382,14 @@ const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSValueRef value
     }
 } CYCatch(NULL) }
 
-const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSValueRef value) {
+const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSValueRef value) {
     JSValueRef exception(NULL);
     const char *cyon(CYPoolCCYON(pool, context, value, &exception));
     CYThrow(context, exception);
     return cyon;
 }
 
-const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSObjectRef object) {
+const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSObjectRef object) {
     JSValueRef toCYON(CYGetProperty(context, object, toCYON_s));
     if (CYIsCallable(context, toCYON)) {
         JSValueRef value(CYCallAsFunction(context, (JSObjectRef) toCYON, object, 0, NULL));
@@ -447,7 +448,7 @@ const char *CYPoolCCYON(apr_pool_t *pool, JSContextRef context, JSObjectRef obje
     JSPropertyNameArrayRelease(names);
 
     std::string string(str.str());
-    return apr_pstrmemdup(pool, string.c_str(), string.size());
+    return pool.strmemdup(string.c_str(), string.size());
 }
 
 static JSValueRef Array_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -518,7 +519,7 @@ static JSObjectRef CYMakeFunctor(JSContextRef context, const char *symbol, const
     return JSObjectMake(context, Functor_, internal);
 }
 
-static bool CYGetOffset(apr_pool_t *pool, JSContextRef context, JSStringRef value, ssize_t &index) {
+static bool CYGetOffset(CYPool &pool, JSContextRef context, JSStringRef value, ssize_t &index) {
     return CYGetOffset(CYPoolCString(pool, context, value), index);
 }
 
@@ -546,7 +547,7 @@ void *CYCastPointer_(JSContextRef context, JSValueRef value) {
     }
 }
 
-void CYPoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value) {
+void CYPoolFFI(CYPool *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value) {
     switch (type->primitive) {
         case sig::boolean_P:
             *reinterpret_cast<bool *>(data) = JSValueToBoolean(context, value);
@@ -596,7 +597,8 @@ void CYPoolFFI(apr_pool_t *pool, JSContextRef context, sig::Type *type, ffi_type
         break;
 
         case sig::string_P:
-            *reinterpret_cast<const char **>(data) = CYPoolCString(pool, context, value);
+            _assert(pool != NULL);
+            *reinterpret_cast<const char **>(data) = CYPoolCString(*pool, context, value);
         break;
 
         case sig::struct_P: {
@@ -774,7 +776,7 @@ static JSObjectRef CYMakeFunctor(JSContextRef context, JSValueRef value, const c
     }
 }
 
-static bool Index_(apr_pool_t *pool, JSContextRef context, Struct_privateData *internal, JSStringRef property, ssize_t &index, uint8_t *&base) {
+static bool Index_(CYPool &pool, JSContextRef context, Struct_privateData *internal, JSStringRef property, ssize_t &index, uint8_t *&base) {
     Type_privateData *typical(internal->type_);
     sig::Type *type(typical->type_);
     if (type == NULL)
@@ -930,7 +932,7 @@ static void Struct_getPropertyNames(JSContextRef context, JSObjectRef object, JS
     }
 }
 
-JSValueRef CYCallFunction(apr_pool_t *pool, JSContextRef context, size_t setups, void *setup[], size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception, sig::Signature *signature, ffi_cif *cif, void (*function)()) { CYTry {
+JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, void *setup[], size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception, sig::Signature *signature, ffi_cif *cif, void (*function)()) { CYTry {
     if (setups + count != signature->count - 1)
         throw CYJSError(context, "incorrect number of arguments to ffi function");
 
@@ -943,7 +945,7 @@ JSValueRef CYCallFunction(apr_pool_t *pool, JSContextRef context, size_t setups,
         ffi_type *ffi(cif->arg_types[index]);
         // XXX: alignment?
         values[index] = new(pool) uint8_t[ffi->size];
-        CYPoolFFI(pool, context, element->type, ffi, values[index], arguments[index - setups]);
+        CYPoolFFI(&pool, context, element->type, ffi, values[index], arguments[index - setups]);
     }
 
     uint8_t value[cif->rtype->size];
@@ -1129,7 +1131,7 @@ static JSValueRef Type_callAsFunction(JSContextRef context, JSObjectRef object, 
     // XXX: alignment?
     uint8_t value[ffi->size];
     CYPool pool;
-    CYPoolFFI(pool, context, type, ffi, value, arguments[0]);
+    CYPoolFFI(&pool, context, type, ffi, value, arguments[0]);
     return CYFromFFI(context, type, ffi, value);
 } CYCatch(NULL) }
 
@@ -1293,7 +1295,7 @@ JSObjectRef CYGetGlobalObject(JSContextRef context) {
     return JSContextGetGlobalObject(context);
 }
 
-const char *CYExecute(apr_pool_t *pool, CYUTF8String code) {
+const char *CYExecute(CYPool &pool, CYUTF8String code) {
     JSContextRef context(CYGetJSContext());
     JSValueRef exception(NULL), result;
 
@@ -1424,7 +1426,7 @@ void CYThrow(JSContextRef context, JSValueRef value) {
         throw CYJSError(context, value);
 }
 
-const char *CYJSError::PoolCString(apr_pool_t *pool) const {
+const char *CYJSError::PoolCString(CYPool &pool) const {
     // XXX: this used to be CYPoolCString
     return CYPoolCCYON(pool, context_, value_);
 }
@@ -1457,7 +1459,7 @@ CYJSError::CYJSError(JSContextRef context, const char *format, ...) {
 
     va_list args;
     va_start(args, format);
-    const char *message(apr_pvsprintf(pool, format, args));
+    const char *message(pool.vsprintf(format, args));
     va_end(args);
 
     value_ = CYCastJSError(context, message);

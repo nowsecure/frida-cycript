@@ -22,21 +22,20 @@
 #ifndef SIG_PARSE_H
 #define SIG_PARSE_H
 
+#include "Pooling.hpp"
 #include "sig/types.hpp"
-
-#include <apr_pools.h>
 
 namespace sig {
 
-typedef void (*Callback)(apr_pool_t *pool, Type *&type);
-void Parse(apr_pool_t *pool, struct Signature *signature, const char *name, Callback callback);
+typedef void (*Callback)(CYPool &pool, Type *&type);
+void Parse(CYPool &pool, struct Signature *signature, const char *name, Callback callback);
 
-const char *Unparse(apr_pool_t *pool, struct Signature *signature);
-const char *Unparse(apr_pool_t *pool, struct Type *type);
+const char *Unparse(CYPool &pool, struct Signature *signature);
+const char *Unparse(CYPool &pool, struct Type *type);
 
-void Copy(apr_pool_t *pool, Type &lhs, Type &rhs);
-void Copy(apr_pool_t *pool, Signature &lhs, Signature &rhs);
-void Copy(apr_pool_t *pool, Type &lhs, Type &rhs);
+void Copy(CYPool &pool, Type &lhs, Type &rhs);
+void Copy(CYPool &pool, Signature &lhs, Signature &rhs);
+void Copy(CYPool &pool, Type &lhs, Type &rhs);
 
 }
 

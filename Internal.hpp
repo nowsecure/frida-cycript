@@ -22,18 +22,18 @@
 #ifndef CYCRIPT_INTERNAL_HPP
 #define CYCRIPT_INTERNAL_HPP
 
-#include "Pooling.hpp"
+#include <sig/parse.hpp>
+#include <sig/ffi_type.hpp>
 
 #include <JavaScriptCore/JSBase.h>
 #include <JavaScriptCore/JSContextRef.h>
 #include <JavaScriptCore/JSObjectRef.h>
 #include <JavaScriptCore/JSValueRef.h>
 
-#include <sig/parse.hpp>
-#include <sig/ffi_type.hpp>
+#include "Pooling.hpp"
 
 JSGlobalContextRef CYGetJSContext(JSContextRef context);
-void Structor_(apr_pool_t *pool, sig::Type *&type);
+void Structor_(CYPool &pool, sig::Type *&type);
 
 JSObjectRef CYMakeType(JSContextRef context, const char *type);
 JSObjectRef CYMakeType(JSContextRef context, sig::Type *type);
@@ -49,17 +49,16 @@ struct Type_privateData :
     sig::Type *type_;
 
     void Set(sig::Type *type) {
-        type_ = new(pool_) sig::Type;
-        sig::Copy(pool_, *type_, *type);
+        type_ = new(*pool_) sig::Type;
+        sig::Copy(*pool_, *type_, *type);
     }
 
-    Type_privateData(apr_pool_t *pool, const char *type) :
+    Type_privateData(CYPool &pool, const char *type) :
+        CYData(pool),
         ffi_(NULL)
     {
-        _assert(pool != NULL);
-        pool_ = pool;
         sig::Signature signature;
-        sig::Parse(pool_, &signature, type, &Structor_);
+        sig::Parse(*pool_, &signature, type, &Structor_);
         type_ = signature.elements[0].type;
     }
 
@@ -67,7 +66,7 @@ struct Type_privateData :
         ffi_(NULL)
     {
         sig::Signature signature;
-        sig::Parse(pool_, &signature, type, &Structor_);
+        sig::Parse(*pool_, &signature, type, &Structor_);
         type_ = signature.elements[0].type;
     }
 
@@ -79,14 +78,14 @@ struct Type_privateData :
     }
 
     Type_privateData(sig::Type *type, ffi_type *ffi) {
-        ffi_ = new(pool_) ffi_type;
-        sig::Copy(pool_, *ffi_, *ffi);
+        ffi_ = new(*pool_) ffi_type;
+        sig::Copy(*pool_, *ffi_, *ffi);
         Set(type);
     }
 
     ffi_type *GetFFI() {
         if (ffi_ == NULL) {
-            ffi_ = new(pool_) ffi_type;
+            ffi_ = new(*pool_) ffi_type;
 
             sig::Element element;
             element.name = NULL;
@@ -98,7 +97,7 @@ struct Type_privateData :
             signature.count = 1;
 
             ffi_cif cif;
-            sig::sig_ffi_cif(pool_, &sig::ObjectiveC, &signature, &cif);
+            sig::sig_ffi_cif(*pool_, &sig::ObjectiveC, &signature, &cif);
             *ffi_ = *cif.rtype;
         }
 
@@ -168,8 +167,8 @@ struct Functor :
     Functor(const char *type, void (*value)()) :
         CYValue(reinterpret_cast<void *>(value))
     {
-        sig::Parse(pool_, &signature_, type, &Structor_);
-        sig::sig_ffi_cif(pool_, &sig::ObjectiveC, &signature_, &cif_);
+        sig::Parse(*pool_, &signature_, type, &Structor_);
+        sig::sig_ffi_cif(*pool_, &sig::ObjectiveC, &signature_, &cif_);
     }
 
     void (*GetValue() const)() {

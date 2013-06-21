@@ -392,8 +392,8 @@ static void Console(CYOptions &options) {
     else
         passwd = getpwuid(getuid());
 
-    const char *basedir(apr_psprintf(pool, "%s/.cycript", passwd->pw_dir));
-    const char *histfile(apr_psprintf(pool, "%s/history", basedir));
+    const char *basedir(pool.sprintf("%s/.cycript", passwd->pw_dir));
+    const char *histfile(pool.sprintf("%s/history", basedir));
     size_t histlines(0);
 
     rl_initialize();
@@ -678,7 +678,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
                 pid = strtoul(arg, &end, 0);
                 if (arg + size != end) {
                     // XXX: arg needs to be escaped in some horrendous way of doom
-                    const char *command(apr_psprintf(pool, "ps axc|sed -e '/^ *[0-9]/{s/^ *\\([0-9]*\\)\\( *[^ ]*\\)\\{3\\} *-*\\([^ ]*\\)/\\3 \\1/;/^%s /{s/^[^ ]* //;q;};};d'", arg));
+                    const char *command(pool.sprintf("ps axc|sed -e '/^ *[0-9]/{s/^ *\\([0-9]*\\)\\( *[^ ]*\\)\\{3\\} *-*\\([^ ]*\\)/\\3 \\1/;/^%s /{s/^[^ ]* //;q;};};d'", arg));
 
                     if (FILE *pids = popen(command, "r")) {
                         char value[32];

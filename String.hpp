@@ -69,7 +69,7 @@ size_t CYGetIndex(const CYUTF8String &value);
 bool CYIsKey(CYUTF8String value);
 bool CYGetOffset(const char *value, ssize_t &index);
 
-CYUTF8String CYPoolUTF8String(apr_pool_t *pool, CYUTF16String utf16);
-CYUTF16String CYPoolUTF16String(apr_pool_t *pool, CYUTF8String utf8);
+CYUTF8String CYPoolUTF8String(CYPool &pool, CYUTF16String utf16);
+CYUTF16String CYPoolUTF16String(CYPool &pool, CYUTF8String utf8);
 
 #endif/*CYCRIPT_STRING_HPP*/

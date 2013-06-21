@@ -210,7 +210,7 @@ void CYContext::NonLocal(CYStatement *&statements) {
 }
 
 CYIdentifier *CYContext::Unique() {
-    return $ CYIdentifier(apr_psprintf($pool, "$cy%u", unique_++));
+    return $ CYIdentifier($pool.sprintf("$cy%u", unique_++));
 }
 
 CYStatement *CYContinue::Replace(CYContext &context) {
@@ -555,7 +555,7 @@ CYNumber *CYNumber::Number(CYContext &context) {
 
 CYString *CYNumber::String(CYContext &context) {
     // XXX: there is a precise algorithm for this
-    return $S(apr_psprintf($pool, "%.17g", Value()));
+    return $S($pool.sprintf("%.17g", Value()));
 }
 
 CYExpression *CYObject::Replace(CYContext &context) {
@@ -619,7 +619,7 @@ void CYProgram::Replace(CYContext &context) {
         const char *name;
 
         if (context.options_.verbose_)
-            name = apr_psprintf($pool, "$%"APR_SIZE_T_FMT"", offset);
+            name = $pool.sprintf("$%"APR_SIZE_T_FMT"", offset);
         else {
             char id[8];
             id[7] = '\0';
@@ -638,7 +638,7 @@ void CYProgram::Replace(CYContext &context) {
                 goto id;
             }
 
-            name = apr_pstrmemdup($pool, id + position, 7 - position);
+            name = $pool.strmemdup(id + position, 7 - position);
             // XXX: at some point, this could become a keyword
         }
 

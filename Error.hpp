@@ -40,7 +40,7 @@ struct CYJSError :
 
     CYJSError(JSContextRef context, const char *format, ...);
 
-    virtual const char *PoolCString(apr_pool_t *pool) const;
+    virtual const char *PoolCString(CYPool &pool) const;
     virtual JSValueRef CastJSValue(JSContextRef context) const;
 };
 #endif
@@ -54,7 +54,7 @@ struct CYPoolError :
     CYPoolError(const char *format, ...);
     CYPoolError(const char *format, va_list args);
 
-    virtual const char *PoolCString(apr_pool_t *pool) const;
+    virtual const char *PoolCString(CYPool &pool) const;
 #ifdef CY_EXECUTE
     virtual JSValueRef CastJSValue(JSContextRef context) const;
 #endif
