@@ -21,8 +21,6 @@
 
 #include <Pooling.hpp>
 
-#include <apr_thread_proc.h>
-
 #include <CoreFoundation/CFLogUtilities.h>
 #include <CFNetwork/CFNetwork.h>
 

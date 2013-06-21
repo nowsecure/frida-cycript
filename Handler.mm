@@ -28,7 +28,7 @@
 #include "Cycript.tab.hh"
 
 #include <Foundation/Foundation.h>
-#include <apr_thread_proc.h>
+#include <pthread.h>
 #include <unistd.h>
 #include <sstream>
 
@@ -65,7 +65,7 @@ struct CYClient :
     CYData
 {
     int socket_;
-    apr_thread_t *thread_;
+    pthread_t thread_;
 
     CYClient(int socket) :
         socket_(socket)
@@ -141,7 +141,7 @@ struct CYClient :
     }
 };
 
-static void * APR_THREAD_FUNC OnClient(apr_thread_t *thread, void *data) {
+static void * APR_THREAD_FUNC OnClient(void *data) {
     CYClient *client(reinterpret_cast<CYClient *>(data));
     client->Handle();
     delete client;
@@ -150,9 +150,7 @@ static void * APR_THREAD_FUNC OnClient(apr_thread_t *thread, void *data) {
 
 extern "C" void CYHandleClient(CYPool &pool, int socket) {
     CYClient *client(new(pool) CYClient(socket));
-    apr_threadattr_t *attr;
-    _aprcall(apr_threadattr_create(&attr, *client->pool_));
-    _aprcall(apr_thread_create(&client->thread_, attr, &OnClient, client, *client->pool_));
+    _assert(pthread_create(&client->thread_, NULL, &OnClient, client) == 0);
 }
 
 extern "C" void CYHandleServer(pid_t pid) {
