@@ -36,17 +36,29 @@ class CYPool {
   private:
     apr_pool_t *pool_;
 
+    struct Cleaner {
+        Cleaner *next_;
+        void (*code_)(void *);
+        void *data_;
+
+        Cleaner(Cleaner *next, void (*code)(void *), void *data) :
+            next_(next),
+            code_(code),
+            data_(data)
+        {
+        }
+    } *cleaner_;
+
   public:
-    CYPool() {
+    CYPool() :
+        cleaner_(NULL)
+    {
         _aprcall(apr_pool_create(&pool_, NULL));
     }
 
-    CYPool(apr_pool_t *pool) :
-        pool_(pool)
-    {
-    }
-
     ~CYPool() {
+        for (Cleaner *cleaner(cleaner_); cleaner_ != NULL; cleaner_ = cleaner_->next_)
+            (*cleaner->code_)(cleaner->data_);
         apr_pool_destroy(pool_);
     }
 
@@ -85,6 +97,8 @@ class CYPool {
     char *vsprintf(const char *format, va_list args) const {
         return apr_pvsprintf(pool_, format, args);
     }
+
+    void atexit(void (*code)(void *), void *data = NULL);
 };
 
 _finline void *operator new(size_t size, CYPool &pool) {
@@ -93,6 +107,10 @@ _finline void *operator new(size_t size, CYPool &pool) {
 
 _finline void *operator new [](size_t size, CYPool &pool) {
     return pool(size);
+}
+
+_finline void CYPool::atexit(void (*code)(void *), void *data) {
+    cleaner_ = new(*this) Cleaner(cleaner_, code, data);
 }
 
 struct CYData {

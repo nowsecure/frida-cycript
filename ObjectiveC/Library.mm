@@ -162,10 +162,9 @@ enum {
 JSValueRef CYSendMessage(CYPool &pool, JSContextRef context, id self, Class super, SEL _cmd, size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception);
 
 /* Objective-C Pool Release {{{ */
-apr_status_t CYPoolRelease_(void *data) {
+void CYPoolRelease_(void *data) {
     id object(reinterpret_cast<id>(data));
     [object release];
-    return APR_SUCCESS;
 }
 
 id CYPoolRelease_(CYPool *pool, id object) {
@@ -174,7 +173,7 @@ id CYPoolRelease_(CYPool *pool, id object) {
     else if (pool == NULL)
         return [object autorelease];
     else {
-        apr_pool_cleanup_register(*pool, object, &CYPoolRelease_, &apr_pool_cleanup_null);
+        pool->atexit(CYPoolRelease_);
         return object;
     }
 }
