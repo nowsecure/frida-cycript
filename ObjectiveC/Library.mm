@@ -519,7 +519,9 @@ struct PropertyAttributes {
         name = property_getName(property);
         const char *attributes(property_getAttributes(property));
 
-        for (char *state, *token(apr_strtok(pool_.strdup(attributes), ",", &state)); token != NULL; token = apr_strtok(NULL, ",", &state)) {
+        for (char *token(pool_.strdup(attributes)), *next; token != NULL; token = next) {
+            if ((next = strchr(token, ',')) != NULL)
+                *next++ = '\0';
             switch (*token) {
                 case 'R': readonly = true; break;
                 case 'C': copy = true; break;
