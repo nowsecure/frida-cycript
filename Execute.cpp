@@ -250,7 +250,7 @@ JSObjectRef CYMakeStruct(JSContextRef context, void *data, sig::Type *type, ffi_
         internal->value_ = data;
     else {
         size_t size(typical->GetFFI()->size);
-        void *copy((*internal->pool_)(size));
+        void *copy(internal->pool_->malloc<void>(size));
         memcpy(copy, data, size);
         internal->value_ = copy;
     }
@@ -342,7 +342,7 @@ static size_t Nonce_(0);
 
 static JSValueRef $cyq(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     CYPool pool;
-    const char *name(pool.sprintf("%s%"APR_SIZE_T_FMT"", CYPoolCString(pool, context, arguments[0]), Nonce_++));
+    const char *name(pool.strcat(CYPoolCString(pool, context, arguments[0]), pool.itoa(Nonce_++), NULL));
     return CYCastJSValue(context, name);
 }
 
@@ -1219,7 +1219,7 @@ static JSValueRef Type_callAsFunction_toCYON(JSContextRef context, JSObjectRef o
     const char *type(sig::Unparse(pool, internal->type_));
     std::ostringstream str;
     CYStringify(str, type, strlen(type));
-    char *cyon(apr_pstrcat(pool, "new Type(", str.str().c_str(), ")", NULL));
+    char *cyon(pool.strcat("new Type(", str.str().c_str(), ")", NULL));
     return CYCastJSValue(context, CYJSString(cyon));
 } CYCatch(NULL) }
 
@@ -1346,8 +1346,6 @@ void CYInitializeDynamic() {
         initialized_ = true;
     else return;
 
-    CYInitializeStatic();
-
     JSObjectMakeArray$ = reinterpret_cast<JSObjectRef (*)(JSContextRef, size_t, const JSValueRef[], JSValueRef *)>(dlsym(RTLD_DEFAULT, "JSObjectMakeArray"));
 
     JSClassDefinition definition;
@@ -1459,7 +1457,8 @@ CYJSError::CYJSError(JSContextRef context, const char *format, ...) {
 
     va_list args;
     va_start(args, format);
-    const char *message(pool.vsprintf(format, args));
+    // XXX: there might be a beter way to think about this
+    const char *message(pool.vsprintf(64, format, args));
     va_end(args);
 
     value_ = CYCastJSError(context, message);

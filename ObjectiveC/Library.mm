@@ -185,15 +185,11 @@ Type_ CYPoolRelease(CYPool *pool, Type_ object) {
 /* }}} */
 /* Objective-C Strings {{{ */
 const char *CYPoolCString(CYPool &pool, JSContextRef context, NSString *value) {
-    if (pool == NULL)
-        return [value UTF8String];
-    else {
-        size_t size([value maximumLengthOfBytesUsingEncoding:NSUTF8StringEncoding] + 1);
-        char *string(new(pool) char[size]);
-        if (![value getCString:string maxLength:size encoding:NSUTF8StringEncoding])
-            throw CYJSError(context, "[NSString getCString:maxLength:encoding:] == NO");
-        return string;
-    }
+    size_t size([value maximumLengthOfBytesUsingEncoding:NSUTF8StringEncoding] + 1);
+    char *string(new(pool) char[size]);
+    if (![value getCString:string maxLength:size encoding:NSUTF8StringEncoding])
+        throw CYJSError(context, "[NSString getCString:maxLength:encoding:] == NO");
+    return string;
 }
 
 JSStringRef CYCopyJSString(JSContextRef context, NSString *value) {

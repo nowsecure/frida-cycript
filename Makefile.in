@@ -135,7 +135,7 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libcycript_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1)
 am__libcycript_la_SOURCES_DIST = Highlight.cpp Network.cpp Output.cpp \
 	Parser.cpp Replace.cpp Cycript.tab.cc lex.cy.cpp \
 	sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp Bridge.cpp \
@@ -482,7 +482,7 @@ libcycript_la_SOURCES = Highlight.cpp Network.cpp Output.cpp \
 	Parser.cpp Replace.cpp Cycript.tab.cc lex.cy.cpp \
 	$(am__append_1) $(am__append_6) $(am__append_7)
 libcycript_la_LDFLAGS = -no-undefined -avoid-version -export-dynamic
-libcycript_la_LIBADD = $(LTLIBAPR) $(LTLIBFFI) $(LTLIBICONV) -ldl
+libcycript_la_LIBADD = $(LTLIBFFI) $(LTLIBICONV) -ldl
 cycript_SOURCES = Console.cpp Display.cpp $(am__append_8)
 cycript_LDADD = libcycript.la $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) -ldl
 ldid = true

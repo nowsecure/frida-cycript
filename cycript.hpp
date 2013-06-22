@@ -28,8 +28,6 @@
 #include "Pooling.hpp"
 #include "String.hpp"
 
-void CYInitializeStatic();
-
 bool CYRecvAll_(int socket, uint8_t *data, size_t size);
 bool CYSendAll_(int socket, const uint8_t *data, size_t size);
 

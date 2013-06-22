@@ -141,7 +141,7 @@ struct CYClient :
     }
 };
 
-static void * APR_THREAD_FUNC OnClient(void *data) {
+static void *OnClient(void *data) {
     CYClient *client(reinterpret_cast<CYClient *>(data));
     client->Handle();
     delete client;

@@ -51,6 +51,8 @@ struct CYPoolError :
     CYPool pool_;
     const char *message_;
 
+    CYPoolError(const CYPoolError &rhs);
+
     CYPoolError(const char *format, ...);
     CYPoolError(const char *format, va_list args);
 

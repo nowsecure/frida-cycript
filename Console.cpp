@@ -60,6 +60,8 @@
 #include <pwd.h>
 
 #include <apr_getopt.h>
+#include <apr_pools.h>
+#include <apr_strings.h>
 
 #include <dlfcn.h>
 
@@ -392,8 +394,8 @@ static void Console(CYOptions &options) {
     else
         passwd = getpwuid(getuid());
 
-    const char *basedir(pool.sprintf("%s/.cycript", passwd->pw_dir));
-    const char *histfile(pool.sprintf("%s/history", basedir));
+    const char *basedir(pool.strcat(passwd->pw_dir, "/.cycript", NULL));
+    const char *histfile(pool.strcat(basedir, "/history", NULL));
     size_t histlines(0);
 
     rl_initialize();
@@ -598,6 +600,11 @@ static void *Map(const char *path, size_t *psize) {
 void InjectLibrary(pid_t pid);
 
 int Main(int argc, char const * const argv[], char const * const envp[]) {
+    _aprcall(apr_initialize());
+
+    apr_pool_t *pool;
+    apr_pool_create(&pool, NULL);
+
     bool tty(isatty(STDIN_FILENO));
     bool compile(false);
     CYOptions options;
@@ -608,7 +615,6 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
     pid_t pid(_not(pid_t));
 #endif
 
-    CYPool pool;
     apr_getopt_t *state;
     _aprcall(apr_getopt_init(&state, pool, argc, argv));
 
@@ -678,7 +684,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
                 pid = strtoul(arg, &end, 0);
                 if (arg + size != end) {
                     // XXX: arg needs to be escaped in some horrendous way of doom
-                    const char *command(pool.sprintf("ps axc|sed -e '/^ *[0-9]/{s/^ *\\([0-9]*\\)\\( *[^ ]*\\)\\{3\\} *-*\\([^ ]*\\)/\\3 \\1/;/^%s /{s/^[^ ]* //;q;};};d'", arg));
+                    const char *command(apr_pstrcat(pool, "ps axc|sed -e '/^ *[0-9]/{s/^ *\\([0-9]*\\)\\( *[^ ]*\\)\\{3\\} *-*\\([^ ]*\\)/\\3 \\1/;/^", arg, " /{s/^[^ ]* //;q;};};d'", NULL));
 
                     if (FILE *pids = popen(command, "r")) {
                         char value[32];
@@ -849,6 +855,8 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
                     Run(client_, false, code, &std::cout);
             }
     }
+
+    apr_pool_destroy(pool);
 
     return 0;
 }

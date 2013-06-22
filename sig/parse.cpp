@@ -34,7 +34,7 @@ struct Type *Parse_(CYPool &pool, const char **name, char eos, bool named, Callb
 
 /* XXX: I really screwed up this time */
 void *prealloc_(CYPool &pool, void *odata, size_t osize, size_t nsize) {
-    void *ndata(pool(nsize));
+    void *ndata(pool.malloc<void>(nsize));
     memcpy(ndata, odata, osize);
     return ndata;
 }
@@ -233,7 +233,7 @@ const char *Unparse(CYPool &pool, struct Signature *signature) {
 
     for (offset = 0; offset != signature->count; ++offset) {
         const char *type = Unparse(pool, signature->elements[offset].type);
-        value = apr_pstrcat(pool, value, type, NULL);
+        value = pool.strcat(value, type, NULL);
     }
 
     return value;
@@ -242,11 +242,11 @@ const char *Unparse(CYPool &pool, struct Signature *signature) {
 const char *Unparse_(CYPool &pool, struct Type *type) {
     switch (type->primitive) {
         case typename_P: return "#";
-        case union_P: return pool.sprintf("(%s)", Unparse(pool, &type->data.signature));
+        case union_P: return pool.strcat("(", Unparse(pool, &type->data.signature), ")", NULL);
         case string_P: return "*";
         case selector_P: return ":";
         case block_P: return "@?";
-        case object_P: return type->name == NULL ? "@" : pool.sprintf("@\"%s\"", type->name);
+        case object_P: return type->name == NULL ? "@" : pool.strcat("@\"", type->name, "\"", NULL);
         case boolean_P: return "B";
         case uchar_P: return "C";
         case uint_P: return "I";
@@ -256,11 +256,11 @@ const char *Unparse_(CYPool &pool, struct Type *type) {
 
         case array_P: {
             const char *value = Unparse(pool, type->data.data.type);
-            return pool.sprintf("[%"APR_SIZE_T_FMT"%s]", type->data.data.size, value);
+            return pool.strcat("[", pool.itoa(type->data.data.size), value, "]", NULL);
         } break;
 
-        case pointer_P: return pool.sprintf("^%s", type->data.data.type == NULL ? "v" : Unparse(pool, type->data.data.type));
-        case bit_P: return pool.sprintf("b%"APR_SIZE_T_FMT"", type->data.data.size);
+        case pointer_P: return pool.strcat("^", type->data.data.type == NULL ? "v" : Unparse(pool, type->data.data.type), NULL);
+        case bit_P: return pool.strcat("b", pool.itoa(type->data.data.size), NULL);
         case char_P: return "c";
         case double_P: return "d";
         case float_P: return "f";
@@ -269,7 +269,7 @@ const char *Unparse_(CYPool &pool, struct Type *type) {
         case longlong_P: return "q";
         case short_P: return "s";
         case void_P: return "v";
-        case struct_P: return pool.sprintf("{%s=%s}", type->name == NULL ? "?" : type->name, Unparse(pool, &type->data.signature));
+        case struct_P: return pool.strcat("{", type->name == NULL ? "?" : type->name, "=", Unparse(pool, &type->data.signature), "}", NULL);
     }
 
     _assert(false);
@@ -287,26 +287,27 @@ const char *Unparse(CYPool &pool, struct Type *type) {
     #define iovec_(base, size) \
         (struct iovec) {const_cast<char *>(base), size}
 
-    struct iovec parts[8];
-    memset(parts, 0, sizeof(parts));
+    size_t size(strlen(base));
+    char buffer[7 + size];
+    size_t offset(0);
 
     if ((type->flags & JOC_TYPE_INOUT) != 0)
-        parts[0] = iovec_("N", 1);
+        buffer[offset++] = 'N';
     if ((type->flags & JOC_TYPE_IN) != 0)
-        parts[1] = iovec_("n", 1);
+        buffer[offset++] = 'n';
     if ((type->flags & JOC_TYPE_BYCOPY) != 0)
-        parts[2] = iovec_("O", 1);
+        buffer[offset++] = 'O';
     if ((type->flags & JOC_TYPE_OUT) != 0)
-        parts[3] = iovec_("o", 1);
+        buffer[offset++] = 'o';
     if ((type->flags & JOC_TYPE_BYREF) != 0)
-        parts[4] = iovec_("R", 1);
+        buffer[offset++] = 'R';
     if ((type->flags & JOC_TYPE_CONST) != 0)
-        parts[5] = iovec_("r", 1);
+        buffer[offset++] = 'r';
     if ((type->flags & JOC_TYPE_ONEWAY) != 0)
-        parts[6] = iovec_("V", 1);
+        buffer[offset++] = 'V';
 
-    parts[7] = iovec_(base, strlen(base));
-    return apr_pstrcatv(pool, parts, 8, NULL);
+    memcpy(buffer + offset, base, size);
+    return pool.strmemdup(buffer, offset + size);
 }
 
 }

@@ -26,6 +26,9 @@
 #include <JavaScriptCore/JSBase.h>
 #endif
 
+// XXX: does _assert really need this?
+#include <errno.h>
+
 #include "Standard.hpp"
 
 class CYPool;

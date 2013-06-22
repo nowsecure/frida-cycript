@@ -23,18 +23,26 @@
 #define CYCRIPT_POOLING_HPP
 
 #include <cstdarg>
+#include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
-#include <apr_pools.h>
-#include <apr_strings.h>
+#include <algorithm>
+
+#include <stdint.h>
 
 #include "Exception.hpp"
 #include "Local.hpp"
 #include "Standard.hpp"
 
+class CYPool;
+_finline void *operator new(size_t size, CYPool &pool);
+_finline void *operator new [](size_t size, CYPool &pool);
+
 class CYPool {
   private:
-    apr_pool_t *pool_;
+    uint8_t *data_;
+    size_t size_;
 
     struct Cleaner {
         Cleaner *next_;
@@ -49,64 +57,137 @@ class CYPool {
         }
     } *cleaner_;
 
+    static _finline size_t align(size_t size) {
+        // XXX: alignment is more complex than this
+        return (size + 7) & ~0x3;
+    }
+
+    CYPool(const CYPool &);
+
   public:
     CYPool() :
+        data_(NULL),
+        size_(0),
         cleaner_(NULL)
     {
-        _aprcall(apr_pool_create(&pool_, NULL));
     }
 
     ~CYPool() {
-        for (Cleaner *cleaner(cleaner_); cleaner_ != NULL; cleaner_ = cleaner_->next_)
+        for (Cleaner *cleaner(cleaner_); cleaner != NULL; ) {
+            Cleaner *next(cleaner->next_);
             (*cleaner->code_)(cleaner->data_);
-        apr_pool_destroy(pool_);
+            cleaner = next;
+        }
     }
 
-    void Clear() {
-        apr_pool_clear(pool_);
+    template <typename Type_>
+    Type_ *malloc(size_t size) {
+        size = align(size);
+
+        if (size > size_) {
+            // XXX: is this an optimal malloc size?
+            size_ = std::max<size_t>(size, size + align(sizeof(Cleaner)));
+            data_ = reinterpret_cast<uint8_t *>(::malloc(size_));
+            atexit(free, data_);
+            _assert(size <= size_);
+        }
+
+        void *data(data_);
+        data_ += size;
+        size_ -= size;
+        return reinterpret_cast<Type_ *>(data);
     }
 
-    operator apr_pool_t *() const {
-        return pool_;
+    char *strdup(const char *data) {
+        return reinterpret_cast<char *>(memdup(data, strlen(data) + 1));
     }
 
-    void *operator()(size_t size) const {
-        return apr_palloc(pool_, size);
-    }
-
-    char *strdup(const char *data) const {
-        return apr_pstrdup(pool_, data);
+    void *memdup(const void *data, size_t size) {
+        void *copy(malloc<void>(size));
+        memcpy(copy, data, size);
+        return copy;
     }
 
     char *strndup(const char *data, size_t size) const {
-        return apr_pstrndup(pool_, data, size);
+        return strmemdup(data, strnlen(data, size));
     }
 
     char *strmemdup(const char *data, size_t size) const {
-        return apr_pstrmemdup(pool_, data, size);
+        char *copy(new char[size + 1]);
+        memcpy(copy, data, size);
+        copy[size] = '\0';
+        return copy;
     }
 
-    char *sprintf(const char *format, ...) const {
+    // XXX: this could be made much more efficient
+    __attribute__((__sentinel__))
+    char *strcat(const char *data, ...) {
+        size_t size(strlen(data)); {
+            va_list args;
+            va_start(args, data);
+
+            while (const char *arg = va_arg(args, const char *))
+                size += strlen(arg);
+
+            va_end(args);
+        }
+
+        char *copy(malloc<char>(size + 1)); {
+            va_list args;
+            va_start(args, data);
+
+            size_t offset(strlen(data));
+            memcpy(copy, data, offset);
+
+            while (const char *arg = va_arg(args, const char *)) {
+                size_t size(strlen(arg));
+                memcpy(copy + offset, arg, size);
+                offset += size;
+            }
+
+            va_end(args);
+        }
+
+        copy[size] = '\0';
+        return copy;
+    }
+
+    // XXX: most people using this might should use sprintf
+    char *itoa(long value) {
+        return sprintf(16, "%ld", value);
+    }
+
+    __attribute__((__format__(__printf__, 3, 4)))
+    char *sprintf(size_t size, const char *format, ...) {
         va_list args;
         va_start(args, format);
-        char *data(vsprintf(format, args));
+        char *copy(vsprintf(size, format, args));
         va_end(args);
-        return data;
+        return copy;
     }
 
-    char *vsprintf(const char *format, va_list args) const {
-        return apr_pvsprintf(pool_, format, args);
+    char *vsprintf(size_t size, const char *format, va_list args) {
+        va_list copy;
+        va_copy(copy, args);
+        char buffer[size];
+        int writ(vsnprintf(buffer, size, format, copy));
+        va_end(copy);
+        _assert(writ >= 0);
+
+        if (size_t(writ) >= size)
+            return vsprintf(writ + 1, format, args);
+        return strmemdup(buffer, writ);
     }
 
     void atexit(void (*code)(void *), void *data = NULL);
 };
 
 _finline void *operator new(size_t size, CYPool &pool) {
-    return pool(size);
+    return pool.malloc<void>(size);
 }
 
 _finline void *operator new [](size_t size, CYPool &pool) {
-    return pool(size);
+    return pool.malloc<void>(size);
 }
 
 _finline void CYPool::atexit(void (*code)(void *), void *data) {
@@ -132,7 +213,7 @@ struct CYData {
     }
 
     static void *operator new(size_t size, CYPool &pool) {
-        void *data(pool(size));
+        void *data(pool.malloc<void>(size));
         reinterpret_cast<CYData *>(data)->pool_ = &pool;
         return data;
     }
@@ -170,7 +251,7 @@ struct CYPoolAllocator {
     }
 
     pointer allocate(size_type size, const void *hint = 0) {
-        return reinterpret_cast<pointer>((*pool_)(size));
+        return pool_->malloc<value_type>(size);
     }
 
     void deallocate(pointer data, size_type size) {

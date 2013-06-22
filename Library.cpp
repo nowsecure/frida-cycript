@@ -57,8 +57,6 @@ _finline size_t iconv_(size_t (*iconv)(iconv_t, Type_, size_t *, char **, size_t
 #endif
 
 CYUTF8String CYPoolUTF8String(CYPool &pool, CYUTF16String utf16) {
-    _assert(pool != NULL);
-
     const char *in(reinterpret_cast<const char *>(utf16.data));
 
     iconv_t conversion(_syscall(iconv_open("UTF-8", UCS_2_INTERNAL)));
@@ -80,8 +78,6 @@ CYUTF8String CYPoolUTF8String(CYPool &pool, CYUTF16String utf16) {
 }
 
 CYUTF16String CYPoolUTF16String(CYPool &pool, CYUTF8String utf8) {
-    _assert(pool != NULL);
-
     const char *in(utf8.data);
 
     iconv_t conversion(_syscall(iconv_open(UCS_2_INTERNAL, "UTF-8")));
@@ -273,18 +269,7 @@ extern "C" void CydgetMemoryParse(const uint16_t **data, size_t *size) {
     *size = utf16.size;
 }
 
-static bool initialized_;
-
-void CYInitializeStatic() {
-    if (!initialized_)
-        initialized_ = true;
-    else return;
-
-    _aprcall(apr_initialize());
-}
-
 CYPool &CYGetGlobalPool() {
-    CYInitializeStatic();
     static CYPool pool;
     return pool;
 }
@@ -301,13 +286,20 @@ const char *CYPoolError::PoolCString(CYPool &pool) const {
     return pool.strdup(message_);
 }
 
+CYPoolError::CYPoolError(const CYPoolError &rhs) :
+    message_(pool_.strdup(rhs.message_))
+{
+}
+
 CYPoolError::CYPoolError(const char *format, ...) {
     va_list args;
     va_start(args, format);
-    message_ = pool_.vsprintf(format, args);
+    // XXX: there might be a beter way to think about this
+    message_ = pool_.vsprintf(64, format, args);
     va_end(args);
 }
 
 CYPoolError::CYPoolError(const char *format, va_list args) {
-    message_ = pool_.vsprintf(format, args);
+    // XXX: there might be a beter way to think about this
+    message_ = pool_.vsprintf(64, format, args);
 }

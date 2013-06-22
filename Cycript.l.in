@@ -43,7 +43,7 @@ typedef cy::parser::token tk;
 } while (false)
 
 #define A new($pool)
-#define Y apr_pstrmemdup($pool, yytext, yyleng)
+#define Y $pool.strmemdup(yytext, yyleng)
 
 #define I(type, Type, value, highlight) do { \
     yylval->type ## _ = A CY ## Type; \
