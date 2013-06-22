@@ -74,28 +74,43 @@ void InjectLibrary(pid_t pid) {
 
     thread_state_flavor_t flavor;
     mach_msg_type_number_t count;
-    size_t push;
 
-    Trampoline *trampoline;
-
-#if defined(__arm__)
-    trampoline = &Trampoline_armv6_;
+#if defined (__i386__) || defined(__x86_64__)
+    x86_thread_state_t state;
+    flavor = x86_THREAD_STATE;
+    count = x86_THREAD_STATE_COUNT;
+#elif defined(__arm__)
     arm_thread_state_t state;
     flavor = ARM_THREAD_STATE;
     count = ARM_THREAD_STATE_COUNT;
+#else
+    #error XXX: implement
+#endif
+
+    memset(&state, 0, sizeof(state));
+    mach_msg_type_number_t read(count);
+    _krncall(thread_get_state(thread, flavor, reinterpret_cast<thread_state_t>(&state), &read));
+    _assert(read == count);
+
+    Trampoline *trampoline;
+    size_t push;
+
+#if defined(__i386__) || defined(__x86_64__)
+    switch (state.tsh.flavor) {
+        case i386_THREAD_STATE:
+            trampoline = &Trampoline_i386_;
+            push = 5;
+            break;
+        case x86_THREAD_STATE64:
+            trampoline = &Trampoline_x86_64_;
+            push = 2;
+            break;
+        default:
+            _assert(false);
+    }
+#elif defined(__arm__)
+    trampoline = &Trampoline_armv6_;
     push = 0;
-#elif defined(__i386__)
-    trampoline = &Trampoline_i386_;
-    i386_thread_state_t state;
-    flavor = i386_THREAD_STATE;
-    count = i386_THREAD_STATE_COUNT;
-    push = 5;
-#elif defined(__x86_64__)
-    trampoline = &Trampoline_x86_64_;
-    x86_thread_state64_t state;
-    flavor = x86_THREAD_STATE64;
-    count = x86_THREAD_STATE64_COUNT;
-    push = 2;
 #else
     #error XXX: implement
 #endif
@@ -105,22 +120,26 @@ void InjectLibrary(pid_t pid) {
     _krncall(vm_write(task, code, reinterpret_cast<vm_address_t>(trampoline->data_), trampoline->size_));
     _krncall(vm_protect(task, code, trampoline->size_, false, VM_PROT_READ | VM_PROT_EXECUTE));
 
-    /*
-    printf("_ptss:%p\n", baton->__pthread_set_self);
-    printf("dlsym:%p\n", baton->dlsym);
-    printf("code:%zx\n", (size_t) code);
-    */
-
     uint32_t frame[push];
     if (sizeof(frame) != 0)
         memset(frame, 0, sizeof(frame));
-    memset(&state, 0, sizeof(state));
 
-    mach_msg_type_number_t read(count);
-    _krncall(thread_get_state(thread, flavor, reinterpret_cast<thread_state_t>(&state), &read));
-    _assert(read == count);
-
-#if defined(__arm__)
+#if defined(__i386__) || defined(__x86_64__)
+    switch (state.tsh.flavor) {
+        case i386_THREAD_STATE:
+            frame[1] = data;
+            state.uts.ts32.__eip = code + trampoline->entry_;
+            state.uts.ts32.__esp = stack + Stack_ - sizeof(frame);
+            break;
+        case x86_THREAD_STATE64:
+            state.uts.ts64.__rdi = data;
+            state.uts.ts64.__rip = code + trampoline->entry_;
+            state.uts.ts64.__rsp = stack + Stack_ - sizeof(frame);
+            break;
+        default:
+            _assert(false);
+    }
+#elif defined(__arm__)
     state.__r[0] = data;
     state.__sp = stack + Stack_;
     state.__pc = code + trampoline->entry_;
@@ -129,16 +148,6 @@ void InjectLibrary(pid_t pid) {
         state.__pc &= ~0x1;
         state.__cpsr |= 0x20;
     }
-#elif defined(__i386__)
-    frame[1] = data;
-
-    state.__eip = code + trampoline->entry_;
-    state.__esp = stack + Stack_ - sizeof(frame);
-#elif defined(__x86_64__)
-    frame[0] = 0xdeadbeef;
-    state.__rdi = data;
-    state.__rip = code + trampoline->entry_;
-    state.__rsp = stack + Stack_ - sizeof(frame);
 #else
     #error XXX: implement
 #endif
