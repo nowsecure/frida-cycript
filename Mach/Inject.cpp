@@ -33,8 +33,6 @@
 #include "Pooling.hpp"
 #include "Trampoline.t.hpp"
 
-extern "C" void __pthread_set_self(pthread_t);
-
 void InjectLibrary(pid_t pid) {
     const char *library(CY_LIBRARY);
 
@@ -46,35 +44,32 @@ void InjectLibrary(pid_t pid) {
     uint8_t *local(pool.malloc<uint8_t>(depth));
     Baton *baton(reinterpret_cast<Baton *>(local));
 
-    baton->__pthread_set_self = &__pthread_set_self;
-    baton->pthread_create = &pthread_create;
-
-    baton->mach_thread_self = &mach_thread_self;
-    baton->thread_terminate = &thread_terminate;
-
-    baton->dlerror = &dlerror;
-    baton->dlsym = &dlsym;
-
     baton->pid = getpid();
     memcpy(baton->library, library, length);
-
-    vm_size_t size(depth + Stack_);
 
     mach_port_t self(mach_task_self()), task;
     _krncall(task_for_pid(self, pid, &task));
 
+    mach_msg_type_number_t count;
+
+    task_dyld_info info;
+    count = TASK_DYLD_INFO_COUNT;
+    _krncall(task_info(task, TASK_DYLD_INFO, reinterpret_cast<task_info_t>(&info), &count));
+    _assert(count == TASK_DYLD_INFO_COUNT);
+    _assert(info.all_image_info_addr != 0);
+    baton->dyld = info.all_image_info_addr;
+
+    vm_size_t size(depth + Stack_);
     vm_address_t stack;
     _krncall(vm_allocate(task, &stack, size, true));
-    vm_address_t data(stack + Stack_);
 
+    vm_address_t data(stack + Stack_);
     _krncall(vm_write(task, data, reinterpret_cast<vm_address_t>(baton), depth));
 
     thread_act_t thread;
     _krncall(thread_create(task, &thread));
 
     thread_state_flavor_t flavor;
-    mach_msg_type_number_t count;
-
 #if defined (__i386__) || defined(__x86_64__)
     x86_thread_state_t state;
     flavor = x86_THREAD_STATE;
