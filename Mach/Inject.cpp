@@ -141,8 +141,8 @@ void InjectLibrary(pid_t pid) {
     }
 #elif defined(__arm__)
     state.__r[0] = data;
-    state.__sp = stack + Stack_;
     state.__pc = code + trampoline->entry_;
+    state.__sp = stack + Stack_ - sizeof(frame);
 
     if ((state.__pc & 0x1) != 0) {
         state.__pc &= ~0x1;
