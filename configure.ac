@@ -274,11 +274,6 @@ AS_CASE([$ax_cv_lib_readline], [no], [AC_MSG_ERROR([missing "libreadline"])])
 
 CY_LT_LIB([LTLIBTERMCAP], [AC_SEARCH_LIBS([cur_term], [termcap])])
 
-AC_LANG_PUSH([C])
-AM_ICONV
-AS_CASE([$am_cv_func_iconv], [yes], [], [AC_MSG_ERROR([missing "libiconv"])])
-AC_LANG_POP([C])
-
 AC_SUBST([LTFLAGS])
 AC_SUBST([SO], [$acl_shlibext])
 

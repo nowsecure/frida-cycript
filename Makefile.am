@@ -29,6 +29,7 @@ ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -fno-common -I$(srcdir)/include -DYYDEBUG=1
 AM_CPPFLAGS += -include $(srcdir)/config.h -include $(srcdir)/unconfig.h
 
+AM_CFLAGS = $(CY_ARCH)
 AM_CXXFLAGS = $(CY_ARCH)
 AM_OBJCXXFLAGS = $(CY_ARCH)
 AM_LDFLAGS = $(CY_ARCH)
@@ -43,9 +44,9 @@ libcycript_la_LDFLAGS = $(AM_LDFLAGS) $(CY_LDFLAGS)
 libcycript_la_LIBADD = -ldl
 
 lib_LTLIBRARIES += libcycript-sys.la
-libcycript_sys_la_SOURCES = Highlight.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp
+libcycript_sys_la_SOURCES = ConvertUTF.c Highlight.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp
 libcycript_sys_la_LDFLAGS = $(AM_LDFLAGS) $(CY_LDFLAGS)
-libcycript_sys_la_LIBADD = $(LTLIBFFI) $(LTLIBICONV) -ldl
+libcycript_sys_la_LIBADD = $(LTLIBFFI) -ldl
 
 libcycript_sys_la_SOURCES += Cycript.tab.cc
 libcycript_sys_la_SOURCES += lex.cy.cpp
@@ -117,7 +118,7 @@ libcycript_sim_la_CXXFLAGS = $(CY_SIM_FLAGS)
 libcycript_sim_la_OBJCXXFLAGS = $(CY_SIM_FLAGS)
 libcycript_sim_la_LDFLAGS = $(CY_SIM_FLAGS) $(CY_LDFLAGS)
 
-libcycript_sim_la_LIBADD = $(LTOBJECTIVEC) $(LTLIBICONV) -ldl
+libcycript_sim_la_LIBADD = $(LTOBJECTIVEC) -ldl
 libcycript_sim_la_LIBADD += $(LTOBJECTIVEC) $(LTJAVASCRIPTCORE)
 
 libcycript_sim_la_CPPFLAGS += -idirafter /usr/include

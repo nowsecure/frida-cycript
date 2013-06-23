@@ -22,7 +22,6 @@
 #include "Internal.hpp"
 
 #include <dlfcn.h>
-#include <iconv.h>
 
 #include "cycript.hpp"
 

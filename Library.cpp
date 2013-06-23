@@ -20,7 +20,6 @@
 /* }}} */
 
 #include <dlfcn.h>
-#include <iconv.h>
 
 #include "cycript.hpp"
 
@@ -44,59 +43,33 @@
 #include "Execute.hpp"
 #include "JavaScript.hpp"
 
+#include "ConvertUTF.h"
+
 /* C Strings {{{ */
-template <typename Type_>
-_finline size_t iconv_(size_t (*iconv)(iconv_t, Type_, size_t *, char **, size_t *), iconv_t cd, char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft) {
-    return iconv(cd, const_cast<Type_>(inbuf), inbytesleft, outbuf, outbytesleft);
-}
-
-#ifdef __GLIBC__
-#define UCS_2_INTERNAL "UCS-2"
-#else
-#define UCS_2_INTERNAL "UCS-2-INTERNAL"
-#endif
-
 CYUTF8String CYPoolUTF8String(CYPool &pool, CYUTF16String utf16) {
-    const char *in(reinterpret_cast<const char *>(utf16.data));
-
-    iconv_t conversion(_syscall(iconv_open("UTF-8", UCS_2_INTERNAL)));
-
     // XXX: this is wrong
     size_t size(utf16.size * 5);
-    char *out(new(pool) char[size]);
-    CYUTF8String utf8(out, size);
+    char *temp(new(pool) char[size]);
 
-    size = utf16.size * 2;
-    _syscall(iconv_(&iconv, conversion, const_cast<char **>(&in), &size, &out, &utf8.size));
+    const uint16_t *lhs(utf16.data);
+    uint8_t *rhs(reinterpret_cast<uint8_t *>(temp));
+    _assert(ConvertUTF16toUTF8(&lhs, lhs + utf16.size, &rhs, rhs + size, lenientConversion) == conversionOK);
 
-    *out = '\0';
-    utf8.size = out - utf8.data;
-
-    _syscall(iconv_close(conversion));
-
-    return utf8;
+    *rhs = 0;
+    return CYUTF8String(temp, reinterpret_cast<char *>(rhs) - temp);
 }
 
 CYUTF16String CYPoolUTF16String(CYPool &pool, CYUTF8String utf8) {
-    const char *in(utf8.data);
-
-    iconv_t conversion(_syscall(iconv_open(UCS_2_INTERNAL, "UTF-8")));
-
     // XXX: this is wrong
     size_t size(utf8.size * 5);
     uint16_t *temp(new (pool) uint16_t[size]);
-    CYUTF16String utf16(temp, size * 2);
-    char *out(reinterpret_cast<char *>(temp));
 
-    size = utf8.size;
-    _syscall(iconv_(&iconv, conversion, const_cast<char **>(&in), &size, &out, &utf16.size));
+    const uint8_t *lhs(reinterpret_cast<const uint8_t *>(utf8.data));
+    uint16_t *rhs(temp);
+    _assert(ConvertUTF8toUTF16(&lhs, lhs + utf8.size, &rhs, rhs + size, lenientConversion) == conversionOK);
 
-    utf16.size = reinterpret_cast<uint16_t *>(out) - utf16.data;
-    temp[utf16.size] = 0;
-
-    _syscall(iconv_close(conversion));
-
-    return utf16;
+    *rhs = 0;
+    return CYUTF16String(temp, rhs - temp);
 }
 /* }}} */
 /* Index Offsets {{{ */
