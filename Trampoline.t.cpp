@@ -150,11 +150,6 @@ static _finline void cyset(Baton *baton, Type_ &function, const char *name, cons
     function = reinterpret_cast<Type_>(Symbol(infos, library, name));
 }
 
-// XXX: where you find this needs to be relative to CoreFoundation (or something)
-// XXX: this needs to check if the framework is under PrivateFrameworks instead
-#define Framework(framework) \
-    "/System/Library/Frameworks/" #framework ".framework/" #framework
-
 void *Routine(void *arg) {
     Baton *baton(reinterpret_cast<Baton *>(arg));
 
@@ -172,15 +167,6 @@ void *Routine(void *arg) {
 
     void *(*dlopen)(const char *, int);
     dlset(&dynamic, dlopen, "dlopen");
-
-    if (dynamic.dlsym(RTLD_DEFAULT, "JSEvaluateScript") == NULL)
-        dlopen(Framework(JavaScriptCore), RTLD_GLOBAL | RTLD_LAZY);
-
-    void *(*objc_getClass)(const char *);
-    dlset(&dynamic, objc_getClass, "objc_getClass");
-
-    if (objc_getClass("WebUndefined") == NULL)
-        dlopen(Framework(WebKit), RTLD_GLOBAL | RTLD_LAZY);
 
     void *handle(dlopen(baton->library, RTLD_LAZY | RTLD_LOCAL));
     if (handle == NULL) {
