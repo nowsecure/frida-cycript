@@ -26,7 +26,7 @@ SUBDIRS =
 ACLOCAL_AMFLAGS = -I m4
 
 # XXX: do I really need -fno-common?
-AM_CPPFLAGS = -Werror -fno-common -I$(srcdir)/include -DYYDEBUG=1
+AM_CPPFLAGS = -fno-common -I$(srcdir)/include -DYYDEBUG=1
 AM_CPPFLAGS += -include $(srcdir)/config.h -include $(srcdir)/unconfig.h
 
 AM_CXXFLAGS = $(CY_ARCH)
