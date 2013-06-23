@@ -27,6 +27,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
 
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AM_MAINTAINER_MODE([disable])
 
 AC_PROG_CXX
 AC_PROG_OBJCXX
