@@ -234,10 +234,6 @@ AS_CASE([$CY_EXECUTE], [1], [
             AC_CHECK_FRAMEWORK([Foundation], [
                 #include <Foundation/NSObject.h>
             ], [[[[NSObject alloc] init];]])
-
-            AC_CHECK_FRAMEWORK([WebKit], [
-                #include <WebKit/WebScriptObject.h>
-            ], [[[[WebScriptObject alloc] init];]])
         ], [
             AC_ARG_VAR([GNUSTEP_CONFIG], [prints information about the current gnustep installation])
             AC_CHECK_PROGS([GNUSTEP_CONFIG], [gnustep-config])

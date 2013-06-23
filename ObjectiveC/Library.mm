@@ -32,7 +32,6 @@
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
 #include <JavaScriptCore/JSStringRefCF.h>
-#include <WebKit/WebScriptObject.h>
 #include <objc/runtime.h>
 #endif
 
@@ -570,7 +569,6 @@ struct PropertyAttributes {
 };
 #endif
 
-#ifndef __APPLE__
 @interface CYWebUndefined : NSObject {
 }
 
@@ -588,7 +586,6 @@ struct PropertyAttributes {
 @end
 
 #define WebUndefined CYWebUndefined
-#endif
 
 /* Bridge: CYJSObject {{{ */
 @interface CYJSObject : NSMutableDictionary {
