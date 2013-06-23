@@ -79,22 +79,23 @@ static const uint32_t MH_MAGIC_XX = MH_MAGIC;
                 else if (const type *command = reinterpret_cast<const type *>(lcp))
 
 static void *Symbol(struct dyld_all_image_infos *infos, const char *library, const char *name) {
-    const dyld_image_info *info(NULL);
-    for (uint32_t i(0); i != infos->infoArrayCount; ++i)
-        if ($strcmp(infos->infoArray[i].imageFilePath, library) == 0)
-            info = &infos->infoArray[i];
-    if (info == NULL)
-        return NULL;
-
-    const mach_header_xx *mach(reinterpret_cast<const mach_header_xx *>(info->imageLoadAddress));
+for (uint32_t i(0); i != infos->infoArrayCount; ++i) {
+    const dyld_image_info &info(infos->infoArray[i]);
+    const mach_header_xx *mach(reinterpret_cast<const mach_header_xx *>(info.imageLoadAddress));
     if (mach->magic != MH_MAGIC_XX)
-        return NULL;
+        continue;
+
+    const char *path(info.imageFilePath);
+    forlc (dylib, mach, LC_ID_DYLIB, dylib_command)
+        path = reinterpret_cast<const char *>(dylib) + dylib->dylib.name.offset;
+    if ($strcmp(path, library) != 0)
+        continue;
 
     const struct symtab_command *stp(NULL);
     forlc (command, mach, LC_SYMTAB, struct symtab_command)
         stp = command;
     if (stp == NULL)
-        return NULL;
+        continue;
 
     size_t slide(_not(size_t));
     const nlist_xx *symbols(NULL);
@@ -110,7 +111,7 @@ static void *Symbol(struct dyld_all_image_infos *infos, const char *library, con
     }
 
     if (slide == _not(size_t) || symbols == NULL || strings == NULL)
-        return NULL;
+        continue;
 
     for (size_t i(0); i != stp->nsyms; ++i) {
         const nlist_xx *symbol(&symbols[i]);
@@ -128,9 +129,7 @@ static void *Symbol(struct dyld_all_image_infos *infos, const char *library, con
         value += slide;
         return reinterpret_cast<void *>(value);
     }
-
-    return NULL;
-}
+} return NULL; }
 
 struct Dynamic {
     char *(*dlerror)();
