@@ -29,9 +29,15 @@ ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -Werror -fno-common -I$(srcdir)/include -DYYDEBUG=1
 AM_CPPFLAGS += -include $(srcdir)/config.h -include $(srcdir)/unconfig.h
 
+AM_CXXFLAGS = $(CY_ARCH)
+AM_OBJCXXFLAGS = $(CY_ARCH)
+AM_LDFLAGS = $(CY_ARCH)
+
+CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
+
 lib_LTLIBRARIES = libcycript.la
 libcycript_la_SOURCES = Highlight.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp
-libcycript_la_LDFLAGS = -no-undefined -avoid-version -export-dynamic
+libcycript_la_LDFLAGS = $(AM_LDFLAGS) $(CY_LDFLAGS)
 libcycript_la_LIBADD = $(LTLIBFFI) $(LTLIBICONV) -ldl
 
 libcycript_la_SOURCES += Cycript.tab.cc
@@ -89,6 +95,25 @@ CLEANFILES += Trampoline.t.hpp
 Trampoline.t.hpp: libTrampoline.t.la trampoline.sh
 	$(srcdir)/trampoline.sh $@ .libs/libTrampoline.t.dylib Trampoline $(SED) $(LIPO) $(NM) $(OTOOL)
 	! grep '## symbol stub for:' $@
+endif
+
+libcycript_sim_la_SHORTNAME = sim
+if CY_IOS_SIMULATOR
+lib_LTLIBRARIES += libcycript-sim.la
+libcycript_sim_la_SOURCES = $(libcycript_la_SOURCES)
+libcycript_sim_la_CPPFLAGS = $(AM_CPPFLAGS)
+
+CY_SIM_FLAGS = -arch i386 -isysroot $(CY_IOS_SIMULATOR)
+libcycript_sim_la_CXXFLAGS = $(CY_SIM_FLAGS)
+libcycript_sim_la_OBJCXXFLAGS = $(CY_SIM_FLAGS)
+libcycript_sim_la_LDFLAGS = $(CY_SIM_FLAGS) $(CY_LDFLAGS)
+
+libcycript_sim_la_LIBADD = $(LTLIBICONV) -ldl
+
+libcycript_sim_la_CPPFLAGS += -idirafter /usr/include
+libcycript_sim_la_LDFLAGS += -Wl,/usr/lib/libffi.dylib
+
+libcycript_sim_la_OBJCXXFLAGS += -fobjc-abi-version=2 -fobjc-legacy-dispatch
 endif
 
 CLEANFILES += Cycript.yy

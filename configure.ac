@@ -29,8 +29,14 @@ AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_MAINTAINER_MODE([disable])
 
+dnl XXX: do this only on Mac OS X
+am_cv_CC_dependencies_compiler_type=none
+am_cv_CXX_dependencies_compiler_type=none
+am_cv_OBJCXX_dependencies_compiler_type=none
+
 AC_PROG_CXX
 AC_PROG_OBJCXX
+
 AM_PROG_AR
 AC_PROG_INSTALL
 
@@ -142,6 +148,15 @@ for cy_arch in ppc ppc64 i386 x86_64 armv6; do
     ], [AC_MSG_RESULT([no])])
 done
 AC_SUBST([CY_ARCH])
+dnl }}}
+dnl iOS SDK {{{
+AC_PATH_PROG([XCODEBUILD], [xcodebuild])
+
+AS_IF([test "x$XCODEBUILD" != x], [
+    AC_SUBST([CY_IOS_SIMULATOR], [`xcodebuild -sdk iphonesimulator -version Path`])
+])
+
+AM_CONDITIONAL([CY_IOS_SIMULATOR], [test "x$CY_IOS_SIMULATOR" != x])
 dnl }}}
 
 AC_DEFUN([CY_LT_LIB], [
