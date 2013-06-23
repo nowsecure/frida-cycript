@@ -88,6 +88,7 @@ libTrampoline.t.la: Trampoline.t.lo
 CLEANFILES += Trampoline.t.hpp
 Trampoline.t.hpp: libTrampoline.t.la trampoline.sh
 	$(srcdir)/trampoline.sh $@ .libs/libTrampoline.t.dylib Trampoline $(SED) $(LIPO) $(NM) $(OTOOL)
+	! grep '## symbol stub for:' $@
 endif
 
 CLEANFILES += Cycript.yy

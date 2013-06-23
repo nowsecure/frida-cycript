@@ -1223,6 +1223,7 @@ uninstall-am: uninstall-binPROGRAMS uninstall-libLTLIBRARIES
 @CY_MACH_TRUE@	$(CXXLINK) $(CY_ARCH) -rpath $(libdir) $^
 @CY_MACH_TRUE@Trampoline.t.hpp: libTrampoline.t.la trampoline.sh
 @CY_MACH_TRUE@	$(srcdir)/trampoline.sh $@ .libs/libTrampoline.t.dylib Trampoline $(SED) $(LIPO) $(NM) $(OTOOL)
+@CY_MACH_TRUE@	! grep '## symbol stub for:' $@
 Cycript.yy: Cycript.yy.in
 	$(srcdir)/Filter.sh <$< >$@ $(filters)
 Cycript.l: Cycript.l.in
