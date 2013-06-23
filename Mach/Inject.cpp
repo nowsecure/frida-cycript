@@ -35,8 +35,12 @@
 #include "Pooling.hpp"
 #include "Trampoline.t.hpp"
 
+extern "C" void CYHandleServer(pid_t);
+
 void InjectLibrary(pid_t pid) {
-    const char *library(CY_LIBRARY);
+    Dl_info addr;
+    _assert(dladdr(reinterpret_cast<void *>(&CYHandleServer), &addr) != 0);
+    const char *library(addr.dli_fname);
 
     mach_port_t self(mach_task_self()), task;
     _krncall(task_for_pid(self, pid, &task));

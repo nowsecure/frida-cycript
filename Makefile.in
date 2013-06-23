@@ -81,7 +81,7 @@ bin_PROGRAMS = cycript$(EXEEXT)
 @CY_OBJECTIVEC_TRUE@am__append_6 = ObjectiveC/Output.mm ObjectiveC/Replace.cpp ObjectiveC/Library.mm
 @CY_MACH_TRUE@am__append_7 = Handler.mm
 @CY_MACH_TRUE@am__append_8 = Mach/Inject.cpp
-@CY_MACH_TRUE@am__append_9 = -DCY_ATTACH -DCY_LIBRARY='"$(libdir)/libcycript.$(SO)"'
+@CY_MACH_TRUE@am__append_9 = -DCY_ATTACH
 @CY_MACH_TRUE@am__append_10 = Trampoline.t.lo libTrampoline.t.la \
 @CY_MACH_TRUE@	Trampoline.t.hpp
 subdir = .

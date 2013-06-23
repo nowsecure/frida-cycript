@@ -73,7 +73,7 @@ if CY_MACH
 libcycript_la_SOURCES += Handler.mm
 cycript_SOURCES += Mach/Inject.cpp
 
-AM_CPPFLAGS += -DCY_ATTACH -DCY_LIBRARY='"$(libdir)/libcycript.$(SO)"'
+AM_CPPFLAGS += -DCY_ATTACH
 
 Mach/Inject.$(OBJEXT): Trampoline.t.hpp
 
