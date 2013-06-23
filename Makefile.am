@@ -35,17 +35,24 @@ AM_LDFLAGS = $(CY_ARCH)
 
 CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
 
-lib_LTLIBRARIES = libcycript.la
-libcycript_la_SOURCES = Highlight.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp
-libcycript_la_LDFLAGS = $(AM_LDFLAGS) $(CY_LDFLAGS)
-libcycript_la_LIBADD = $(LTLIBFFI) $(LTLIBICONV) -ldl
+lib_LTLIBRARIES = 
 
-libcycript_la_SOURCES += Cycript.tab.cc
-libcycript_la_SOURCES += lex.cy.cpp
+lib_LTLIBRARIES += libcycript.la
+libcycript_la_SOURCES = Select.cpp
+libcycript_la_LDFLAGS = $(AM_LDFLAGS) $(CY_LDFLAGS)
+libcycript_la_LIBADD = -ldl
+
+lib_LTLIBRARIES += libcycript-sys.la
+libcycript_sys_la_SOURCES = Highlight.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp
+libcycript_sys_la_LDFLAGS = $(AM_LDFLAGS) $(CY_LDFLAGS)
+libcycript_sys_la_LIBADD = $(LTLIBFFI) $(LTLIBICONV) -ldl
+
+libcycript_sys_la_SOURCES += Cycript.tab.cc
+libcycript_sys_la_SOURCES += lex.cy.cpp
 
 bin_PROGRAMS = cycript
 cycript_SOURCES = Console.cpp Display.cpp
-cycript_LDADD = libcycript.la $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) -ldl
+cycript_LDADD = libcycript.la libcycript-sys.la $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) -ldl
 
 ldid = true
 entitle = $(ldid) -Scycript.xml
@@ -53,8 +60,9 @@ entitle = $(ldid) -Scycript.xml
 filters = $(CY_FILTERS)
 
 if CY_EXECUTE
-libcycript_la_SOURCES += sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp
-libcycript_la_SOURCES += Bridge.cpp Execute.cpp JavaScriptCore.cpp Library.cpp
+libcycript_sys_la_SOURCES += sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp
+libcycript_sys_la_SOURCES += Bridge.cpp Execute.cpp JavaScriptCore.cpp Library.cpp
+libcycript_sys_la_LIBADD += $(LTJAVASCRIPTCORE)
 
 AM_CPPFLAGS += -DCY_EXECUTE
 filters += C
@@ -72,11 +80,12 @@ endif
 
 if CY_OBJECTIVEC
 filters += ObjectiveC
-libcycript_la_SOURCES += ObjectiveC/Output.mm ObjectiveC/Replace.cpp ObjectiveC/Library.mm
+libcycript_sys_la_SOURCES += ObjectiveC/Output.mm ObjectiveC/Replace.cpp ObjectiveC/Library.mm
+libcycript_sys_la_LIBADD += $(LTOBJECTIVEC)
 endif
 
 if CY_MACH
-libcycript_la_SOURCES += Handler.mm
+libcycript_sys_la_SOURCES += Handler.mm
 cycript_SOURCES += Mach/Inject.cpp
 
 AM_CPPFLAGS += -DCY_ATTACH
@@ -100,7 +109,7 @@ endif
 libcycript_sim_la_SHORTNAME = sim
 if CY_IOS_SIMULATOR
 lib_LTLIBRARIES += libcycript-sim.la
-libcycript_sim_la_SOURCES = $(libcycript_la_SOURCES)
+libcycript_sim_la_SOURCES = $(libcycript_sys_la_SOURCES)
 libcycript_sim_la_CPPFLAGS = $(AM_CPPFLAGS)
 
 CY_SIM_FLAGS = -arch i386 -isysroot $(CY_IOS_SIMULATOR)
@@ -108,7 +117,8 @@ libcycript_sim_la_CXXFLAGS = $(CY_SIM_FLAGS)
 libcycript_sim_la_OBJCXXFLAGS = $(CY_SIM_FLAGS)
 libcycript_sim_la_LDFLAGS = $(CY_SIM_FLAGS) $(CY_LDFLAGS)
 
-libcycript_sim_la_LIBADD = $(LTLIBICONV) -ldl
+libcycript_sim_la_LIBADD = $(LTOBJECTIVEC) $(LTLIBICONV) -ldl
+libcycript_sim_la_LIBADD += $(LTOBJECTIVEC) $(LTJAVASCRIPTCORE)
 
 libcycript_sim_la_CPPFLAGS += -idirafter /usr/include
 libcycript_sim_la_LDFLAGS += -Wl,/usr/lib/libffi.dylib

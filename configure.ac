@@ -170,7 +170,7 @@ AC_DEFUN([CY_LT_LIB], [
 
 dnl --enable-javascript {{{
 AC_DEFUN([CY_CHECK_JAVASCRIPTCORE], [
-    AC_CHECK_FRAMEWORK([JavaScriptCore], [
+    CY_LT_LIB([LTJAVASCRIPTCORE], [AC_CHECK_FRAMEWORK([JavaScriptCore], [
         #include <JavaScriptCore/JSBase.h>
     ], [
         JSEvaluateScript(0, 0, 0, 0, 0, 0);
@@ -184,7 +184,7 @@ AC_DEFUN([CY_CHECK_JAVASCRIPTCORE], [
                 AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs $cy_webkit_pkg`])
             ], [:]); if test "x$CY_EXECUTE" = x1; then break; fi
         done
-    ])
+    ])])
 ])
 
 AC_DEFUN([CY_CHECK_JAVASCRIPT], [
@@ -241,7 +241,7 @@ AS_CASE([$CY_EXECUTE], [1], [
     ], [AC_MSG_RESULT([no])])
 
     AS_IF([test "x$CY_OBJECTIVEC" = x1], [
-        AC_CHECK_FRAMEWORK([CoreFoundation], [
+        CY_LT_LIB([LTOBJECTIVEC], [AC_CHECK_FRAMEWORK([CoreFoundation], [
             #include <CoreFoundation/CFBase.h>
         ], [CFAllocatorGetDefault();], [
             AC_SUBST([CY_OBJECTIVEC])
@@ -258,7 +258,7 @@ AS_CASE([$CY_EXECUTE], [1], [
                 AC_LIB_APPENDTOVAR([OBJCXXFLAGS], [`$GNUSTEP_CONFIG --objc-flags`])
                 AC_LIB_APPENDTOVAR([LIBS], [`$GNUSTEP_CONFIG --base-libs`])
             ], [AC_SUBST([CY_OBJECTIVEC], [0])])
-        ])
+        ])])
     ])
 
     AC_LANG_POP([Objective C++])
