@@ -74,16 +74,19 @@ bin_PROGRAMS = cycript$(EXEEXT)
 @CY_EXECUTE_TRUE@am__append_1 = sig/ffi_type.cpp sig/parse.cpp \
 @CY_EXECUTE_TRUE@	sig/copy.cpp Bridge.cpp Execute.cpp \
 @CY_EXECUTE_TRUE@	JavaScriptCore.cpp Library.cpp
-@CY_EXECUTE_TRUE@am__append_2 = -DCY_EXECUTE
-@CY_EXECUTE_TRUE@am__append_3 = C
-@CY_EXECUTE_TRUE@am__append_4 = Bridge.gperf Bridge.hpp
-@CY_OBJECTIVEC_TRUE@am__append_5 = ObjectiveC
-@CY_OBJECTIVEC_TRUE@am__append_6 = ObjectiveC/Output.mm ObjectiveC/Replace.cpp ObjectiveC/Library.mm
-@CY_MACH_TRUE@am__append_7 = Handler.mm
-@CY_MACH_TRUE@am__append_8 = Mach/Inject.cpp
-@CY_MACH_TRUE@am__append_9 = -DCY_ATTACH
-@CY_MACH_TRUE@am__append_10 = Trampoline.t.lo libTrampoline.t.la \
+@CY_EXECUTE_TRUE@am__append_2 = $(LTJAVASCRIPTCORE)
+@CY_EXECUTE_TRUE@am__append_3 = -DCY_EXECUTE
+@CY_EXECUTE_TRUE@am__append_4 = C
+@CY_EXECUTE_TRUE@am__append_5 = Bridge.gperf Bridge.hpp
+@CY_OBJECTIVEC_TRUE@am__append_6 = ObjectiveC
+@CY_OBJECTIVEC_TRUE@am__append_7 = ObjectiveC/Output.mm ObjectiveC/Replace.cpp ObjectiveC/Library.mm
+@CY_OBJECTIVEC_TRUE@am__append_8 = $(LTOBJECTIVEC)
+@CY_MACH_TRUE@am__append_9 = Handler.mm
+@CY_MACH_TRUE@am__append_10 = Mach/Inject.cpp
+@CY_MACH_TRUE@am__append_11 = -DCY_ATTACH
+@CY_MACH_TRUE@am__append_12 = Trampoline.t.lo libTrampoline.t.la \
 @CY_MACH_TRUE@	Trampoline.t.hpp
+@CY_IOS_SIMULATOR_TRUE@am__append_13 = libcycript-sim.la
 subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
@@ -134,41 +137,80 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-libcycript_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-am__libcycript_la_SOURCES_DIST = Highlight.cpp Network.cpp Output.cpp \
-	Parser.cpp Replace.cpp Cycript.tab.cc lex.cy.cpp \
-	sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp Bridge.cpp \
-	Execute.cpp JavaScriptCore.cpp Library.cpp \
+@CY_IOS_SIMULATOR_TRUE@libcycript_sim_la_DEPENDENCIES =  \
+@CY_IOS_SIMULATOR_TRUE@	$(am__DEPENDENCIES_1) \
+@CY_IOS_SIMULATOR_TRUE@	$(am__DEPENDENCIES_1) \
+@CY_IOS_SIMULATOR_TRUE@	$(am__DEPENDENCIES_1)
+am__libcycript_sim_la_SOURCES_DIST = ConvertUTF.c Highlight.cpp \
+	Network.cpp Output.cpp Parser.cpp Replace.cpp Cycript.tab.cc \
+	lex.cy.cpp sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp \
+	Bridge.cpp Execute.cpp JavaScriptCore.cpp Library.cpp \
 	ObjectiveC/Output.mm ObjectiveC/Replace.cpp \
 	ObjectiveC/Library.mm Handler.mm
 am__dirstamp = $(am__leading_dot)dirstamp
-@CY_EXECUTE_TRUE@am__objects_1 = sig/ffi_type.lo sig/parse.lo \
-@CY_EXECUTE_TRUE@	sig/copy.lo Bridge.lo Execute.lo \
-@CY_EXECUTE_TRUE@	JavaScriptCore.lo Library.lo
-@CY_OBJECTIVEC_TRUE@am__objects_2 = ObjectiveC/Output.lo \
-@CY_OBJECTIVEC_TRUE@	ObjectiveC/Replace.lo \
-@CY_OBJECTIVEC_TRUE@	ObjectiveC/Library.lo
-@CY_MACH_TRUE@am__objects_3 = Handler.lo
-am_libcycript_la_OBJECTS = Highlight.lo Network.lo Output.lo Parser.lo \
-	Replace.lo Cycript.tab.lo lex.cy.lo $(am__objects_1) \
-	$(am__objects_2) $(am__objects_3)
-libcycript_la_OBJECTS = $(am_libcycript_la_OBJECTS)
+@CY_EXECUTE_TRUE@am__objects_1 = sig/sim-ffi_type.lo sig/sim-parse.lo \
+@CY_EXECUTE_TRUE@	sig/sim-copy.lo sim-Bridge.lo sim-Execute.lo \
+@CY_EXECUTE_TRUE@	sim-JavaScriptCore.lo sim-Library.lo
+@CY_OBJECTIVEC_TRUE@am__objects_2 = ObjectiveC/sim-Output.lo \
+@CY_OBJECTIVEC_TRUE@	ObjectiveC/sim-Replace.lo \
+@CY_OBJECTIVEC_TRUE@	ObjectiveC/sim-Library.lo
+@CY_MACH_TRUE@am__objects_3 = sim-Handler.lo
+am__objects_4 = sim-ConvertUTF.lo sim-Highlight.lo sim-Network.lo \
+	sim-Output.lo sim-Parser.lo sim-Replace.lo sim-Cycript.tab.lo \
+	sim-lex.cy.lo $(am__objects_1) $(am__objects_2) \
+	$(am__objects_3)
+@CY_IOS_SIMULATOR_TRUE@am_libcycript_sim_la_OBJECTS =  \
+@CY_IOS_SIMULATOR_TRUE@	$(am__objects_4)
+libcycript_sim_la_OBJECTS = $(am_libcycript_sim_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-libcycript_la_LINK = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
+libcycript_sim_la_LINK = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(OBJCXXLD) \
+	$(libcycript_sim_la_OBJCXXFLAGS) $(OBJCXXFLAGS) \
+	$(libcycript_sim_la_LDFLAGS) $(LDFLAGS) -o $@
+@CY_IOS_SIMULATOR_TRUE@am_libcycript_sim_la_rpath = -rpath $(libdir)
+@CY_EXECUTE_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
+@CY_OBJECTIVEC_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
+libcycript_sys_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
+am__libcycript_sys_la_SOURCES_DIST = ConvertUTF.c Highlight.cpp \
+	Network.cpp Output.cpp Parser.cpp Replace.cpp Cycript.tab.cc \
+	lex.cy.cpp sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp \
+	Bridge.cpp Execute.cpp JavaScriptCore.cpp Library.cpp \
+	ObjectiveC/Output.mm ObjectiveC/Replace.cpp \
+	ObjectiveC/Library.mm Handler.mm
+@CY_EXECUTE_TRUE@am__objects_5 = sig/ffi_type.lo sig/parse.lo \
+@CY_EXECUTE_TRUE@	sig/copy.lo Bridge.lo Execute.lo \
+@CY_EXECUTE_TRUE@	JavaScriptCore.lo Library.lo
+@CY_OBJECTIVEC_TRUE@am__objects_6 = ObjectiveC/Output.lo \
+@CY_OBJECTIVEC_TRUE@	ObjectiveC/Replace.lo \
+@CY_OBJECTIVEC_TRUE@	ObjectiveC/Library.lo
+@CY_MACH_TRUE@am__objects_7 = Handler.lo
+am_libcycript_sys_la_OBJECTS = ConvertUTF.lo Highlight.lo Network.lo \
+	Output.lo Parser.lo Replace.lo Cycript.tab.lo lex.cy.lo \
+	$(am__objects_5) $(am__objects_6) $(am__objects_7)
+libcycript_sys_la_OBJECTS = $(am_libcycript_sys_la_OBJECTS)
+libcycript_sys_la_LINK = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(OBJCXXLD) $(AM_OBJCXXFLAGS) \
-	$(OBJCXXFLAGS) $(libcycript_la_LDFLAGS) $(LDFLAGS) -o $@
+	$(OBJCXXFLAGS) $(libcycript_sys_la_LDFLAGS) $(LDFLAGS) -o $@
+libcycript_la_DEPENDENCIES =
+am_libcycript_la_OBJECTS = Select.lo
+libcycript_la_OBJECTS = $(am_libcycript_la_OBJECTS)
+libcycript_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(AM_CXXFLAGS) $(CXXFLAGS) $(libcycript_la_LDFLAGS) $(LDFLAGS) \
+	-o $@
 PROGRAMS = $(bin_PROGRAMS)
 am__cycript_SOURCES_DIST = Console.cpp Display.cpp Mach/Inject.cpp
-@CY_MACH_TRUE@am__objects_4 = Mach/Inject.$(OBJEXT)
+@CY_MACH_TRUE@am__objects_8 = Mach/Inject.$(OBJEXT)
 am_cycript_OBJECTS = Console.$(OBJEXT) Display.$(OBJEXT) \
-	$(am__objects_4)
+	$(am__objects_8)
 cycript_OBJECTS = $(am_cycript_OBJECTS)
-cycript_DEPENDENCIES = libcycript.la $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+cycript_DEPENDENCIES = libcycript.la libcycript-sys.la \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -185,6 +227,24 @@ DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CFLAGS) $(CFLAGS)
+AM_V_CC = $(am__v_CC_@AM_V@)
+am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
+am__v_CC_0 = @echo "  CC      " $@;
+am__v_CC_1 = 
+CCLD = $(CC)
+LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+AM_V_CCLD = $(am__v_CCLD_@AM_V@)
+am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
+am__v_CCLD_0 = @echo "  CCLD    " $@;
+am__v_CCLD_1 = 
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -221,8 +281,10 @@ AM_V_OBJCXXLD = $(am__v_OBJCXXLD_@AM_V@)
 am__v_OBJCXXLD_ = $(am__v_OBJCXXLD_@AM_DEFAULT_V@)
 am__v_OBJCXXLD_0 = @echo "  OBJCXXLD" $@;
 am__v_OBJCXXLD_1 = 
-SOURCES = $(libcycript_la_SOURCES) $(cycript_SOURCES)
-DIST_SOURCES = $(am__libcycript_la_SOURCES_DIST) \
+SOURCES = $(libcycript_sim_la_SOURCES) $(libcycript_sys_la_SOURCES) \
+	$(libcycript_la_SOURCES) $(cycript_SOURCES)
+DIST_SOURCES = $(am__libcycript_sim_la_SOURCES_DIST) \
+	$(am__libcycript_sys_la_SOURCES_DIST) $(libcycript_la_SOURCES) \
 	$(am__cycript_SOURCES_DIST)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
@@ -332,6 +394,7 @@ CY_ARCH = @CY_ARCH@
 CY_ATTACH_GROUP = @CY_ATTACH_GROUP@
 CY_EXECUTE = @CY_EXECUTE@
 CY_FILTERS = @CY_FILTERS@
+CY_IOS_SIMULATOR = @CY_IOS_SIMULATOR@
 CY_MACH = @CY_MACH@
 CY_OBJECTIVEC = @CY_OBJECTIVEC@
 DEFS = @DEFS@
@@ -360,19 +423,20 @@ LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBFFI_CFLAGS = @LIBFFI_CFLAGS@
 LIBFFI_LIBS = @LIBFFI_LIBS@
-LIBICONV = @LIBICONV@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTFLAGS = @LTFLAGS@
+LTJAVASCRIPTCORE = @LTJAVASCRIPTCORE@
 LTLIBAPR = @LTLIBAPR@
 LTLIBFFI = @LTLIBFFI@
-LTLIBICONV = @LTLIBICONV@
 LTLIBOBJS = @LTLIBOBJS@
 LTLIBREADLINE = @LTLIBREADLINE@
 LTLIBTERMCAP = @LTLIBTERMCAP@
+LTOBJECTIVEC = @LTOBJECTIVEC@
+MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
@@ -406,6 +470,7 @@ TIME = @TIME@
 VERSION = @VERSION@
 WEBKIT_CFLAGS = @WEBKIT_CFLAGS@
 WEBKIT_LIBS = @WEBKIT_LIBS@
+XCODEBUILD = @XCODEBUILD@
 _LIPO = @_LIPO@
 _NM = @_NM@
 _OTOOL = @_OTOOL@
@@ -467,35 +532,57 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = subdir-objects
-CLEANFILES = $(am__append_4) $(am__append_10) Cycript.yy Cycript.l \
+CLEANFILES = $(am__append_5) $(am__append_12) Cycript.yy Cycript.l \
 	lex.cy.cpp Cycript.tab.cc Cycript.tab.hh location.hh \
 	position.hh stack.hh Cycript.output
 SUBDIRS = 
 ACLOCAL_AMFLAGS = -I m4
 
 # XXX: do I really need -fno-common?
-AM_CPPFLAGS = -Werror -fno-common -I$(srcdir)/include -DYYDEBUG=1 \
-	-include $(srcdir)/config.h -include $(srcdir)/unconfig.h \
-	$(am__append_2) $(am__append_9)
-lib_LTLIBRARIES = libcycript.la
-libcycript_la_SOURCES = Highlight.cpp Network.cpp Output.cpp \
-	Parser.cpp Replace.cpp Cycript.tab.cc lex.cy.cpp \
-	$(am__append_1) $(am__append_6) $(am__append_7)
-libcycript_la_LDFLAGS = -no-undefined -avoid-version -export-dynamic
-libcycript_la_LIBADD = $(LTLIBFFI) $(LTLIBICONV) -ldl
-cycript_SOURCES = Console.cpp Display.cpp $(am__append_8)
-cycript_LDADD = libcycript.la $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) -ldl
+AM_CPPFLAGS = -fno-common -I$(srcdir)/include -DYYDEBUG=1 -include \
+	$(srcdir)/config.h -include $(srcdir)/unconfig.h \
+	$(am__append_3) $(am__append_11)
+AM_CFLAGS = $(CY_ARCH)
+AM_CXXFLAGS = $(CY_ARCH)
+AM_OBJCXXFLAGS = $(CY_ARCH)
+AM_LDFLAGS = $(CY_ARCH)
+CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
+lib_LTLIBRARIES = libcycript.la libcycript-sys.la $(am__append_13)
+libcycript_la_SOURCES = Select.cpp
+libcycript_la_LDFLAGS = $(AM_LDFLAGS) $(CY_LDFLAGS)
+libcycript_la_LIBADD = -ldl
+libcycript_sys_la_SOURCES = ConvertUTF.c Highlight.cpp Network.cpp \
+	Output.cpp Parser.cpp Replace.cpp Cycript.tab.cc lex.cy.cpp \
+	$(am__append_1) $(am__append_7) $(am__append_9)
+libcycript_sys_la_LDFLAGS = $(AM_LDFLAGS) $(CY_LDFLAGS)
+libcycript_sys_la_LIBADD = $(LTLIBFFI) -ldl $(am__append_2) \
+	$(am__append_8)
+cycript_SOURCES = Console.cpp Display.cpp $(am__append_10)
+cycript_LDADD = libcycript.la libcycript-sys.la $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) -ldl
 ldid = true
 entitle = $(ldid) -Scycript.xml
-filters = $(CY_FILTERS) $(am__append_3) $(am__append_5)
+filters = $(CY_FILTERS) $(am__append_4) $(am__append_6)
+libcycript_sim_la_SHORTNAME = sim
+@CY_IOS_SIMULATOR_TRUE@libcycript_sim_la_SOURCES = $(libcycript_sys_la_SOURCES)
+@CY_IOS_SIMULATOR_TRUE@libcycript_sim_la_CPPFLAGS = $(AM_CPPFLAGS) \
+@CY_IOS_SIMULATOR_TRUE@	-idirafter /usr/include
+@CY_IOS_SIMULATOR_TRUE@CY_SIM_FLAGS = -arch i386 -isysroot $(CY_IOS_SIMULATOR)
+@CY_IOS_SIMULATOR_TRUE@libcycript_sim_la_CXXFLAGS = $(CY_SIM_FLAGS)
+@CY_IOS_SIMULATOR_TRUE@libcycript_sim_la_OBJCXXFLAGS =  \
+@CY_IOS_SIMULATOR_TRUE@	$(CY_SIM_FLAGS) -fobjc-abi-version=2 \
+@CY_IOS_SIMULATOR_TRUE@	-fobjc-legacy-dispatch
+@CY_IOS_SIMULATOR_TRUE@libcycript_sim_la_LDFLAGS = $(CY_SIM_FLAGS) \
+@CY_IOS_SIMULATOR_TRUE@	$(CY_LDFLAGS) -Wl,/usr/lib/libffi.dylib
+@CY_IOS_SIMULATOR_TRUE@libcycript_sim_la_LIBADD = $(LTOBJECTIVEC) -ldl \
+@CY_IOS_SIMULATOR_TRUE@	$(LTOBJECTIVEC) $(LTJAVASCRIPTCORE)
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
 .SUFFIXES:
-.SUFFIXES: .cc .cpp .lo .mm .o .obj
+.SUFFIXES: .c .cc .cpp .lo .mm .o .obj
 am--refresh: Makefile
 	@:
-$(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
+$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -522,9 +609,9 @@ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	$(SHELL) ./config.status --recheck
 
-$(top_srcdir)/configure:  $(am__configure_deps)
+$(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 	$(am__cd) $(srcdir) && $(AUTOCONF)
-$(ACLOCAL_M4):  $(am__aclocal_m4_deps)
+$(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	$(am__cd) $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
 $(am__aclocal_m4_deps):
 
@@ -535,7 +622,7 @@ config.h: stamp-h1
 stamp-h1: $(srcdir)/config.h.in $(top_builddir)/config.status
 	@rm -f stamp-h1
 	cd $(top_builddir) && $(SHELL) ./config.status config.h
-$(srcdir)/config.h.in:  $(am__configure_deps) 
+$(srcdir)/config.h.in: @MAINTAINER_MODE_TRUE@ $(am__configure_deps) 
 	($(am__cd) $(top_srcdir) && $(AUTOHEADER))
 	rm -f stamp-h1
 	touch $@
@@ -583,23 +670,36 @@ sig/$(am__dirstamp):
 sig/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) sig/$(DEPDIR)
 	@: > sig/$(DEPDIR)/$(am__dirstamp)
-sig/ffi_type.lo: sig/$(am__dirstamp) sig/$(DEPDIR)/$(am__dirstamp)
-sig/parse.lo: sig/$(am__dirstamp) sig/$(DEPDIR)/$(am__dirstamp)
-sig/copy.lo: sig/$(am__dirstamp) sig/$(DEPDIR)/$(am__dirstamp)
+sig/sim-ffi_type.lo: sig/$(am__dirstamp) sig/$(DEPDIR)/$(am__dirstamp)
+sig/sim-parse.lo: sig/$(am__dirstamp) sig/$(DEPDIR)/$(am__dirstamp)
+sig/sim-copy.lo: sig/$(am__dirstamp) sig/$(DEPDIR)/$(am__dirstamp)
 ObjectiveC/$(am__dirstamp):
 	@$(MKDIR_P) ObjectiveC
 	@: > ObjectiveC/$(am__dirstamp)
 ObjectiveC/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) ObjectiveC/$(DEPDIR)
 	@: > ObjectiveC/$(DEPDIR)/$(am__dirstamp)
+ObjectiveC/sim-Output.lo: ObjectiveC/$(am__dirstamp) \
+	ObjectiveC/$(DEPDIR)/$(am__dirstamp)
+ObjectiveC/sim-Replace.lo: ObjectiveC/$(am__dirstamp) \
+	ObjectiveC/$(DEPDIR)/$(am__dirstamp)
+ObjectiveC/sim-Library.lo: ObjectiveC/$(am__dirstamp) \
+	ObjectiveC/$(DEPDIR)/$(am__dirstamp)
+libcycript-sim.la: $(libcycript_sim_la_OBJECTS) $(libcycript_sim_la_DEPENDENCIES) $(EXTRA_libcycript_sim_la_DEPENDENCIES) 
+	$(AM_V_OBJCXXLD)$(libcycript_sim_la_LINK) $(am_libcycript_sim_la_rpath) $(libcycript_sim_la_OBJECTS) $(libcycript_sim_la_LIBADD) $(LIBS)
+sig/ffi_type.lo: sig/$(am__dirstamp) sig/$(DEPDIR)/$(am__dirstamp)
+sig/parse.lo: sig/$(am__dirstamp) sig/$(DEPDIR)/$(am__dirstamp)
+sig/copy.lo: sig/$(am__dirstamp) sig/$(DEPDIR)/$(am__dirstamp)
 ObjectiveC/Output.lo: ObjectiveC/$(am__dirstamp) \
 	ObjectiveC/$(DEPDIR)/$(am__dirstamp)
 ObjectiveC/Replace.lo: ObjectiveC/$(am__dirstamp) \
 	ObjectiveC/$(DEPDIR)/$(am__dirstamp)
 ObjectiveC/Library.lo: ObjectiveC/$(am__dirstamp) \
 	ObjectiveC/$(DEPDIR)/$(am__dirstamp)
+libcycript-sys.la: $(libcycript_sys_la_OBJECTS) $(libcycript_sys_la_DEPENDENCIES) $(EXTRA_libcycript_sys_la_DEPENDENCIES) 
+	$(AM_V_OBJCXXLD)$(libcycript_sys_la_LINK) -rpath $(libdir) $(libcycript_sys_la_OBJECTS) $(libcycript_sys_la_LIBADD) $(LIBS)
 libcycript.la: $(libcycript_la_OBJECTS) $(libcycript_la_DEPENDENCIES) $(EXTRA_libcycript_la_DEPENDENCIES) 
-	$(AM_V_OBJCXXLD)$(libcycript_la_LINK) -rpath $(libdir) $(libcycript_la_OBJECTS) $(libcycript_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(libcycript_la_LINK) -rpath $(libdir) $(libcycript_la_OBJECTS) $(libcycript_la_LIBADD) $(LIBS)
 install-binPROGRAMS: $(bin_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
@@ -674,6 +774,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Bridge.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Console.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ConvertUTF.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cycript.tab.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Display.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Execute.Plo@am__quote@
@@ -685,14 +786,65 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Output.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Parser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Replace.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Select.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lex.cy.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sim-Bridge.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sim-ConvertUTF.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sim-Cycript.tab.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sim-Execute.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sim-Handler.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sim-Highlight.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sim-JavaScriptCore.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sim-Library.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sim-Network.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sim-Output.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sim-Parser.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sim-Replace.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sim-lex.cy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@Mach/$(DEPDIR)/Inject.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/Library.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/Output.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/Replace.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/sim-Library.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/sim-Output.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/sim-Replace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sig/$(DEPDIR)/copy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sig/$(DEPDIR)/ffi_type.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sig/$(DEPDIR)/parse.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sig/$(DEPDIR)/sim-copy.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sig/$(DEPDIR)/sim-ffi_type.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sig/$(DEPDIR)/sim-parse.Plo@am__quote@
+
+.c.o:
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
+
+.c.obj:
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.c.lo:
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+sim-ConvertUTF.lo: ConvertUTF.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sim-ConvertUTF.lo -MD -MP -MF $(DEPDIR)/sim-ConvertUTF.Tpo -c -o sim-ConvertUTF.lo `test -f 'ConvertUTF.c' || echo '$(srcdir)/'`ConvertUTF.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/sim-ConvertUTF.Tpo $(DEPDIR)/sim-ConvertUTF.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ConvertUTF.c' object='sim-ConvertUTF.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sim-ConvertUTF.lo `test -f 'ConvertUTF.c' || echo '$(srcdir)/'`ConvertUTF.c
 
 .cc.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -717,6 +869,111 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
+
+sim-Highlight.lo: Highlight.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -MT sim-Highlight.lo -MD -MP -MF $(DEPDIR)/sim-Highlight.Tpo -c -o sim-Highlight.lo `test -f 'Highlight.cpp' || echo '$(srcdir)/'`Highlight.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/sim-Highlight.Tpo $(DEPDIR)/sim-Highlight.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Highlight.cpp' object='sim-Highlight.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -c -o sim-Highlight.lo `test -f 'Highlight.cpp' || echo '$(srcdir)/'`Highlight.cpp
+
+sim-Network.lo: Network.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -MT sim-Network.lo -MD -MP -MF $(DEPDIR)/sim-Network.Tpo -c -o sim-Network.lo `test -f 'Network.cpp' || echo '$(srcdir)/'`Network.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/sim-Network.Tpo $(DEPDIR)/sim-Network.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Network.cpp' object='sim-Network.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -c -o sim-Network.lo `test -f 'Network.cpp' || echo '$(srcdir)/'`Network.cpp
+
+sim-Output.lo: Output.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -MT sim-Output.lo -MD -MP -MF $(DEPDIR)/sim-Output.Tpo -c -o sim-Output.lo `test -f 'Output.cpp' || echo '$(srcdir)/'`Output.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/sim-Output.Tpo $(DEPDIR)/sim-Output.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Output.cpp' object='sim-Output.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -c -o sim-Output.lo `test -f 'Output.cpp' || echo '$(srcdir)/'`Output.cpp
+
+sim-Parser.lo: Parser.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -MT sim-Parser.lo -MD -MP -MF $(DEPDIR)/sim-Parser.Tpo -c -o sim-Parser.lo `test -f 'Parser.cpp' || echo '$(srcdir)/'`Parser.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/sim-Parser.Tpo $(DEPDIR)/sim-Parser.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Parser.cpp' object='sim-Parser.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -c -o sim-Parser.lo `test -f 'Parser.cpp' || echo '$(srcdir)/'`Parser.cpp
+
+sim-Replace.lo: Replace.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -MT sim-Replace.lo -MD -MP -MF $(DEPDIR)/sim-Replace.Tpo -c -o sim-Replace.lo `test -f 'Replace.cpp' || echo '$(srcdir)/'`Replace.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/sim-Replace.Tpo $(DEPDIR)/sim-Replace.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Replace.cpp' object='sim-Replace.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -c -o sim-Replace.lo `test -f 'Replace.cpp' || echo '$(srcdir)/'`Replace.cpp
+
+sim-Cycript.tab.lo: Cycript.tab.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -MT sim-Cycript.tab.lo -MD -MP -MF $(DEPDIR)/sim-Cycript.tab.Tpo -c -o sim-Cycript.tab.lo `test -f 'Cycript.tab.cc' || echo '$(srcdir)/'`Cycript.tab.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/sim-Cycript.tab.Tpo $(DEPDIR)/sim-Cycript.tab.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Cycript.tab.cc' object='sim-Cycript.tab.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -c -o sim-Cycript.tab.lo `test -f 'Cycript.tab.cc' || echo '$(srcdir)/'`Cycript.tab.cc
+
+sim-lex.cy.lo: lex.cy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -MT sim-lex.cy.lo -MD -MP -MF $(DEPDIR)/sim-lex.cy.Tpo -c -o sim-lex.cy.lo `test -f 'lex.cy.cpp' || echo '$(srcdir)/'`lex.cy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/sim-lex.cy.Tpo $(DEPDIR)/sim-lex.cy.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='lex.cy.cpp' object='sim-lex.cy.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -c -o sim-lex.cy.lo `test -f 'lex.cy.cpp' || echo '$(srcdir)/'`lex.cy.cpp
+
+sig/sim-ffi_type.lo: sig/ffi_type.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -MT sig/sim-ffi_type.lo -MD -MP -MF sig/$(DEPDIR)/sim-ffi_type.Tpo -c -o sig/sim-ffi_type.lo `test -f 'sig/ffi_type.cpp' || echo '$(srcdir)/'`sig/ffi_type.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) sig/$(DEPDIR)/sim-ffi_type.Tpo sig/$(DEPDIR)/sim-ffi_type.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sig/ffi_type.cpp' object='sig/sim-ffi_type.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -c -o sig/sim-ffi_type.lo `test -f 'sig/ffi_type.cpp' || echo '$(srcdir)/'`sig/ffi_type.cpp
+
+sig/sim-parse.lo: sig/parse.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -MT sig/sim-parse.lo -MD -MP -MF sig/$(DEPDIR)/sim-parse.Tpo -c -o sig/sim-parse.lo `test -f 'sig/parse.cpp' || echo '$(srcdir)/'`sig/parse.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) sig/$(DEPDIR)/sim-parse.Tpo sig/$(DEPDIR)/sim-parse.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sig/parse.cpp' object='sig/sim-parse.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -c -o sig/sim-parse.lo `test -f 'sig/parse.cpp' || echo '$(srcdir)/'`sig/parse.cpp
+
+sig/sim-copy.lo: sig/copy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -MT sig/sim-copy.lo -MD -MP -MF sig/$(DEPDIR)/sim-copy.Tpo -c -o sig/sim-copy.lo `test -f 'sig/copy.cpp' || echo '$(srcdir)/'`sig/copy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) sig/$(DEPDIR)/sim-copy.Tpo sig/$(DEPDIR)/sim-copy.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sig/copy.cpp' object='sig/sim-copy.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -c -o sig/sim-copy.lo `test -f 'sig/copy.cpp' || echo '$(srcdir)/'`sig/copy.cpp
+
+sim-Bridge.lo: Bridge.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -MT sim-Bridge.lo -MD -MP -MF $(DEPDIR)/sim-Bridge.Tpo -c -o sim-Bridge.lo `test -f 'Bridge.cpp' || echo '$(srcdir)/'`Bridge.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/sim-Bridge.Tpo $(DEPDIR)/sim-Bridge.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Bridge.cpp' object='sim-Bridge.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -c -o sim-Bridge.lo `test -f 'Bridge.cpp' || echo '$(srcdir)/'`Bridge.cpp
+
+sim-Execute.lo: Execute.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -MT sim-Execute.lo -MD -MP -MF $(DEPDIR)/sim-Execute.Tpo -c -o sim-Execute.lo `test -f 'Execute.cpp' || echo '$(srcdir)/'`Execute.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/sim-Execute.Tpo $(DEPDIR)/sim-Execute.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Execute.cpp' object='sim-Execute.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -c -o sim-Execute.lo `test -f 'Execute.cpp' || echo '$(srcdir)/'`Execute.cpp
+
+sim-JavaScriptCore.lo: JavaScriptCore.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -MT sim-JavaScriptCore.lo -MD -MP -MF $(DEPDIR)/sim-JavaScriptCore.Tpo -c -o sim-JavaScriptCore.lo `test -f 'JavaScriptCore.cpp' || echo '$(srcdir)/'`JavaScriptCore.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/sim-JavaScriptCore.Tpo $(DEPDIR)/sim-JavaScriptCore.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='JavaScriptCore.cpp' object='sim-JavaScriptCore.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -c -o sim-JavaScriptCore.lo `test -f 'JavaScriptCore.cpp' || echo '$(srcdir)/'`JavaScriptCore.cpp
+
+sim-Library.lo: Library.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -MT sim-Library.lo -MD -MP -MF $(DEPDIR)/sim-Library.Tpo -c -o sim-Library.lo `test -f 'Library.cpp' || echo '$(srcdir)/'`Library.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/sim-Library.Tpo $(DEPDIR)/sim-Library.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Library.cpp' object='sim-Library.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -c -o sim-Library.lo `test -f 'Library.cpp' || echo '$(srcdir)/'`Library.cpp
+
+ObjectiveC/sim-Replace.lo: ObjectiveC/Replace.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -MT ObjectiveC/sim-Replace.lo -MD -MP -MF ObjectiveC/$(DEPDIR)/sim-Replace.Tpo -c -o ObjectiveC/sim-Replace.lo `test -f 'ObjectiveC/Replace.cpp' || echo '$(srcdir)/'`ObjectiveC/Replace.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ObjectiveC/$(DEPDIR)/sim-Replace.Tpo ObjectiveC/$(DEPDIR)/sim-Replace.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='ObjectiveC/Replace.cpp' object='ObjectiveC/sim-Replace.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_CXXFLAGS) $(CXXFLAGS) -c -o ObjectiveC/sim-Replace.lo `test -f 'ObjectiveC/Replace.cpp' || echo '$(srcdir)/'`ObjectiveC/Replace.cpp
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -765,6 +1022,27 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepOBJCXX_FALSE@	$(AM_V_OBJCXX)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepOBJCXX_FALSE@	DEPDIR=$(DEPDIR) $(OBJCXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepOBJCXX_FALSE@	$(AM_V_OBJCXX@am__nodep@)$(LTOBJCXXCOMPILE) -c -o $@ $<
+
+ObjectiveC/sim-Output.lo: ObjectiveC/Output.mm
+@am__fastdepOBJCXX_TRUE@	$(AM_V_OBJCXX)$(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(OBJCXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_OBJCXXFLAGS) $(OBJCXXFLAGS) -MT ObjectiveC/sim-Output.lo -MD -MP -MF ObjectiveC/$(DEPDIR)/sim-Output.Tpo -c -o ObjectiveC/sim-Output.lo `test -f 'ObjectiveC/Output.mm' || echo '$(srcdir)/'`ObjectiveC/Output.mm
+@am__fastdepOBJCXX_TRUE@	$(AM_V_at)$(am__mv) ObjectiveC/$(DEPDIR)/sim-Output.Tpo ObjectiveC/$(DEPDIR)/sim-Output.Plo
+@AMDEP_TRUE@@am__fastdepOBJCXX_FALSE@	$(AM_V_OBJCXX)source='ObjectiveC/Output.mm' object='ObjectiveC/sim-Output.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepOBJCXX_FALSE@	DEPDIR=$(DEPDIR) $(OBJCXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepOBJCXX_FALSE@	$(AM_V_OBJCXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(OBJCXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_OBJCXXFLAGS) $(OBJCXXFLAGS) -c -o ObjectiveC/sim-Output.lo `test -f 'ObjectiveC/Output.mm' || echo '$(srcdir)/'`ObjectiveC/Output.mm
+
+ObjectiveC/sim-Library.lo: ObjectiveC/Library.mm
+@am__fastdepOBJCXX_TRUE@	$(AM_V_OBJCXX)$(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(OBJCXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_OBJCXXFLAGS) $(OBJCXXFLAGS) -MT ObjectiveC/sim-Library.lo -MD -MP -MF ObjectiveC/$(DEPDIR)/sim-Library.Tpo -c -o ObjectiveC/sim-Library.lo `test -f 'ObjectiveC/Library.mm' || echo '$(srcdir)/'`ObjectiveC/Library.mm
+@am__fastdepOBJCXX_TRUE@	$(AM_V_at)$(am__mv) ObjectiveC/$(DEPDIR)/sim-Library.Tpo ObjectiveC/$(DEPDIR)/sim-Library.Plo
+@AMDEP_TRUE@@am__fastdepOBJCXX_FALSE@	$(AM_V_OBJCXX)source='ObjectiveC/Library.mm' object='ObjectiveC/sim-Library.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepOBJCXX_FALSE@	DEPDIR=$(DEPDIR) $(OBJCXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepOBJCXX_FALSE@	$(AM_V_OBJCXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(OBJCXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_OBJCXXFLAGS) $(OBJCXXFLAGS) -c -o ObjectiveC/sim-Library.lo `test -f 'ObjectiveC/Library.mm' || echo '$(srcdir)/'`ObjectiveC/Library.mm
+
+sim-Handler.lo: Handler.mm
+@am__fastdepOBJCXX_TRUE@	$(AM_V_OBJCXX)$(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(OBJCXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_OBJCXXFLAGS) $(OBJCXXFLAGS) -MT sim-Handler.lo -MD -MP -MF $(DEPDIR)/sim-Handler.Tpo -c -o sim-Handler.lo `test -f 'Handler.mm' || echo '$(srcdir)/'`Handler.mm
+@am__fastdepOBJCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/sim-Handler.Tpo $(DEPDIR)/sim-Handler.Plo
+@AMDEP_TRUE@@am__fastdepOBJCXX_FALSE@	$(AM_V_OBJCXX)source='Handler.mm' object='sim-Handler.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepOBJCXX_FALSE@	DEPDIR=$(DEPDIR) $(OBJCXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepOBJCXX_FALSE@	$(AM_V_OBJCXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(OBJCXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcycript_sim_la_CPPFLAGS) $(CPPFLAGS) $(libcycript_sim_la_OBJCXXFLAGS) $(OBJCXXFLAGS) -c -o sim-Handler.lo `test -f 'Handler.mm' || echo '$(srcdir)/'`Handler.mm
 
 mostlyclean-libtool:
 	-rm -f *.lo
