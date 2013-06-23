@@ -19,6 +19,8 @@
 **/
 /* }}} */
 
+#include "Standard.hpp"
+
 #include <dlfcn.h>
 #include <mach/mach.h>
 #include <sys/types.h>
@@ -27,4 +29,4 @@ struct Baton {
     mach_vm_address_t dyld;
     pid_t pid;
     char library[];
-};
+} _packed;

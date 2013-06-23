@@ -116,7 +116,7 @@ void Setup(CYOutput &out, CYDriver &driver, CYOptions &options) {
 
 static CYUTF8String Run(CYPool &pool, int client, CYUTF8String code) {
     const char *json;
-    size_t size;
+    uint32_t size;
 
     if (client == -1) {
         mode_ = Running;
@@ -137,7 +137,7 @@ static CYUTF8String Run(CYPool &pool, int client, CYUTF8String code) {
         CYSendAll(client, code.data, code.size);
         mode_ = Waiting;
         CYRecvAll(client, &size, sizeof(size));
-        if (size == _not(size_t))
+        if (size == _not(uint32_t))
             json = NULL;
         else {
             char *temp(new(pool) char[size + 1]);

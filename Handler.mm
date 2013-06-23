@@ -89,7 +89,7 @@ struct CYClient :
             dispatch = false;
 
         for (;;) {
-            size_t size;
+            uint32_t size;
             if (!CYRecvAll(socket_, &size, sizeof(size)))
                 return;
 
@@ -107,7 +107,7 @@ struct CYClient :
             const char *json;
             if (parser.parse() != 0 || !driver.errors_.empty()) {
                 json = NULL;
-                size = _not(size_t);
+                size = _not(uint32_t);
             } else {
                 NSAutoreleasePool *ar = [[NSAutoreleasePool alloc] init];
 
@@ -125,7 +125,7 @@ struct CYClient :
                 else
                     [client execute:value];
                 json = execute.data_;
-                size = json == NULL ? _not(size_t) : strlen(json);
+                size = json == NULL ? _not(uint32_t) : strlen(json);
 
                 [ar release];
             }

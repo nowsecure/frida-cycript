@@ -20,7 +20,9 @@
 /* }}} */
 
 #include <dlfcn.h>
+
 #include <mach/mach.h>
+#include <mach/mach_vm.h>
 
 #include <mach/machine/thread_status.h>
 
@@ -36,17 +38,6 @@
 void InjectLibrary(pid_t pid) {
     const char *library(CY_LIBRARY);
 
-    static const size_t Stack_(8 * 1024);
-    size_t length(strlen(library) + 1), depth(sizeof(Baton) + length);
-    depth = (depth + sizeof(uintptr_t) + 1) / sizeof(uintptr_t) * sizeof(uintptr_t);
-
-    CYPool pool;
-    uint8_t *local(pool.malloc<uint8_t>(depth));
-    Baton *baton(reinterpret_cast<Baton *>(local));
-
-    baton->pid = getpid();
-    memcpy(baton->library, library, length);
-
     mach_port_t self(mach_task_self()), task;
     _krncall(task_for_pid(self, pid, &task));
 
@@ -57,14 +48,6 @@ void InjectLibrary(pid_t pid) {
     _krncall(task_info(task, TASK_DYLD_INFO, reinterpret_cast<task_info_t>(&info), &count));
     _assert(count == TASK_DYLD_INFO_COUNT);
     _assert(info.all_image_info_addr != 0);
-    baton->dyld = info.all_image_info_addr;
-
-    vm_size_t size(depth + Stack_);
-    vm_address_t stack;
-    _krncall(vm_allocate(task, &stack, size, true));
-
-    vm_address_t data(stack + Stack_);
-    _krncall(vm_write(task, data, reinterpret_cast<vm_address_t>(baton), depth));
 
     thread_act_t thread;
     _krncall(thread_create(task, &thread));
@@ -88,16 +71,19 @@ void InjectLibrary(pid_t pid) {
     _assert(read == count);
 
     Trampoline *trampoline;
+    size_t align;
     size_t push;
 
 #if defined(__i386__) || defined(__x86_64__)
     switch (state.tsh.flavor) {
         case i386_THREAD_STATE:
             trampoline = &Trampoline_i386_;
+            align = 4;
             push = 5;
             break;
         case x86_THREAD_STATE64:
             trampoline = &Trampoline_x86_64_;
+            align = 8;
             push = 2;
             break;
         default:
@@ -105,15 +91,35 @@ void InjectLibrary(pid_t pid) {
     }
 #elif defined(__arm__)
     trampoline = &Trampoline_armv6_;
+    align = 4;
     push = 0;
 #else
     #error XXX: implement
 #endif
 
-    vm_address_t code;
-    _krncall(vm_allocate(task, &code, trampoline->size_, true));
-    _krncall(vm_write(task, code, reinterpret_cast<vm_address_t>(trampoline->data_), trampoline->size_));
-    _krncall(vm_protect(task, code, trampoline->size_, false, VM_PROT_READ | VM_PROT_EXECUTE));
+    static const size_t Stack_(8 * 1024);
+    size_t length(strlen(library) + 1), depth(sizeof(Baton) + length);
+    depth = (depth + align + 1) / align * align;
+
+    CYPool pool;
+    uint8_t *local(pool.malloc<uint8_t>(depth));
+    Baton *baton(reinterpret_cast<Baton *>(local));
+
+    baton->dyld = info.all_image_info_addr;
+    baton->pid = getpid();
+    memcpy(baton->library, library, length);
+
+    mach_vm_size_t size(depth + Stack_);
+    mach_vm_address_t stack;
+    _krncall(mach_vm_allocate(task, &stack, size, true));
+
+    mach_vm_address_t data(stack + Stack_);
+    _krncall(mach_vm_write(task, data, reinterpret_cast<mach_vm_address_t>(baton), depth));
+
+    mach_vm_address_t code;
+    _krncall(mach_vm_allocate(task, &code, trampoline->size_, true));
+    _krncall(mach_vm_write(task, code, reinterpret_cast<mach_vm_address_t>(trampoline->data_), trampoline->size_));
+    _krncall(mach_vm_protect(task, code, trampoline->size_, false, VM_PROT_READ | VM_PROT_EXECUTE));
 
     uint32_t frame[push];
     if (sizeof(frame) != 0)
@@ -148,7 +154,7 @@ void InjectLibrary(pid_t pid) {
 #endif
 
     if (sizeof(frame) != 0)
-        _krncall(vm_write(task, stack + Stack_ - sizeof(frame), reinterpret_cast<vm_address_t>(frame), sizeof(frame)));
+        _krncall(mach_vm_write(task, stack + Stack_ - sizeof(frame), reinterpret_cast<mach_vm_address_t>(frame), sizeof(frame)));
 
     _krncall(thread_set_state(thread, flavor, reinterpret_cast<thread_state_t>(&state), count));
     _krncall(thread_resume(thread));
