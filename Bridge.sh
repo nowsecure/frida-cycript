@@ -21,6 +21,7 @@
 
 cat << EOF
 %{
+#include <cstddef>
 #include <cstring>
 #include "Execute.hpp"
 %}
