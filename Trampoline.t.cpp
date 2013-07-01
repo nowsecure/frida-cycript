@@ -78,24 +78,31 @@ static const uint32_t MH_MAGIC_XX = MH_MAGIC;
                     return NULL; \
                 else if (const type *command = reinterpret_cast<const type *>(lcp))
 
-static void *Symbol(struct dyld_all_image_infos *infos, const char *library, const char *name) {
-for (uint32_t i(0); i != infos->infoArrayCount; ++i) {
-    const dyld_image_info &info(infos->infoArray[i]);
-    const mach_header_xx *mach(reinterpret_cast<const mach_header_xx *>(info.imageLoadAddress));
-    if (mach->magic != MH_MAGIC_XX)
-        continue;
+static const mach_header_xx *Library(struct dyld_all_image_infos *infos, const char *name) {
+    for (uint32_t i(0); i != infos->infoArrayCount; ++i) {
+        const dyld_image_info &info(infos->infoArray[i]);
+        const mach_header_xx *mach(reinterpret_cast<const mach_header_xx *>(info.imageLoadAddress));
+        if (mach->magic != MH_MAGIC_XX)
+            continue;
 
-    const char *path(info.imageFilePath);
-    forlc (dylib, mach, LC_ID_DYLIB, dylib_command)
-        path = reinterpret_cast<const char *>(dylib) + dylib->dylib.name.offset;
-    if ($strcmp(path, library) != 0)
-        continue;
+        const char *path(info.imageFilePath);
+        forlc (dylib, mach, LC_ID_DYLIB, dylib_command)
+            path = reinterpret_cast<const char *>(dylib) + dylib->dylib.name.offset;
+        if ($strcmp(path, name) != 0)
+            continue;
 
+        return mach;
+    }
+
+    return NULL;
+}
+
+static void *Symbol(const mach_header_xx *mach, const char *name) {
     const struct symtab_command *stp(NULL);
     forlc (command, mach, LC_SYMTAB, struct symtab_command)
         stp = command;
     if (stp == NULL)
-        continue;
+        return NULL;
 
     size_t slide(_not(size_t));
     const nlist_xx *symbols(NULL);
@@ -111,7 +118,7 @@ for (uint32_t i(0); i != infos->infoArrayCount; ++i) {
     }
 
     if (slide == _not(size_t) || symbols == NULL || strings == NULL)
-        continue;
+        return NULL;
 
     for (size_t i(0); i != stp->nsyms; ++i) {
         const nlist_xx *symbol(&symbols[i]);
@@ -129,7 +136,9 @@ for (uint32_t i(0); i != infos->infoArrayCount; ++i) {
         value += slide;
         return reinterpret_cast<void *>(value);
     }
-} return NULL; }
+
+    return NULL;
+}
 
 struct Dynamic {
     char *(*dlerror)();
@@ -144,17 +153,23 @@ static _finline void dlset(Dynamic *dynamic, Type_ &function, const char *name, 
 }
 
 template <typename Type_>
-static _finline void cyset(Baton *baton, Type_ &function, const char *name, const char *library) {
+static _finline void cyset(Type_ &function, const char *name, const mach_header_xx *mach) {
+    function = reinterpret_cast<Type_>(Symbol(mach, name));
+}
+
+static _finline const mach_header_xx *Library(Baton *baton, const char *name) {
     struct dyld_all_image_infos *infos(reinterpret_cast<struct dyld_all_image_infos *>(baton->dyld));
-    function = reinterpret_cast<Type_>(Symbol(infos, library, name));
+    return Library(infos, name);
 }
 
 void *Routine(void *arg) {
     Baton *baton(reinterpret_cast<Baton *>(arg));
 
+    const mach_header_xx *dyld(Library(baton, "/usr/lib/system/libdyld.dylib"));
+
     Dynamic dynamic;
-    cyset(baton, dynamic.dlerror, "_dlerror", "/usr/lib/system/libdyld.dylib");
-    cyset(baton, dynamic.dlsym, "_dlsym", "/usr/lib/system/libdyld.dylib");
+    cyset(dynamic.dlerror, "_dlerror", dyld);
+    cyset(dynamic.dlsym, "_dlsym", dyld);
 
     int (*pthread_detach)(pthread_t);
     dlset(&dynamic, pthread_detach, "pthread_detach");
@@ -188,23 +203,29 @@ extern "C" void Start(Baton *baton) {
     struct _pthread self;
     $bzero(&self, sizeof(self));
 
+    const mach_header_xx *pthread(Library(baton, "/usr/lib/system/libsystem_pthread.dylib"));
+    if (pthread == NULL)
+        pthread = Library(baton, "/usr/lib/system/libsystem_c.dylib");
+
     void (*$__pthread_set_self)(pthread_t);
-    cyset(baton, $__pthread_set_self, "___pthread_set_self", "/usr/lib/system/libsystem_c.dylib");
+    cyset($__pthread_set_self, "___pthread_set_self", pthread);
 
     self.tsd[0] = &self;
     $__pthread_set_self(&self);
 
     int (*$pthread_create)(pthread_t *, const pthread_attr_t *, void *(*)(void *), void *);
-    cyset(baton, $pthread_create, "_pthread_create", "/usr/lib/system/libsystem_c.dylib");
+    cyset($pthread_create, "_pthread_create", pthread);
 
     pthread_t thread;
     $pthread_create(&thread, NULL, &Routine, baton);
 
+    const mach_header_xx *kernel(Library(baton, "/usr/lib/system/libsystem_kernel.dylib"));
+
     mach_port_t (*$mach_thread_self)();
-    cyset(baton, $mach_thread_self, "_mach_thread_self", "/usr/lib/system/libsystem_kernel.dylib");
+    cyset($mach_thread_self, "_mach_thread_self", kernel);
 
     kern_return_t (*$thread_terminate)(thread_act_t);
-    cyset(baton, $thread_terminate, "_thread_terminate", "/usr/lib/system/libsystem_kernel.dylib");
+    cyset($thread_terminate, "_thread_terminate", kernel);
 
     $thread_terminate($mach_thread_self());
 }
