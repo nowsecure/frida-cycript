@@ -669,7 +669,8 @@ WEBKIT_CFLAGS
 CY_EXECUTE
 CY_IOS_SIMULATOR_FALSE
 CY_IOS_SIMULATOR_TRUE
-CY_IOS_SIMULATOR
+CY_XCODE_IOSSIMSDK
+CY_XCODE_MACOSXSDK
 XCODEBUILD
 CY_ARCH
 CY_FILTERS
@@ -18342,12 +18343,14 @@ fi
 
 if test "x$XCODEBUILD" != x; then :
 
-    CY_IOS_SIMULATOR=`xcodebuild -sdk iphonesimulator -version Path`
+    CY_XCODE_MACOSXSDK=`xcodebuild -sdk macosx -version Path`
+
+    CY_XCODE_IOSSIMSDK=`xcodebuild -sdk iphonesimulator -version Path`
 
 
 fi
 
- if test "x$CY_IOS_SIMULATOR" != x; then
+ if test "x$CY_XCODE_IOSSIMSDK" != x; then
   CY_IOS_SIMULATOR_TRUE=
   CY_IOS_SIMULATOR_FALSE='#'
 else

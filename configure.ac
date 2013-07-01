@@ -156,10 +156,11 @@ dnl iOS SDK {{{
 AC_PATH_PROG([XCODEBUILD], [xcodebuild])
 
 AS_IF([test "x$XCODEBUILD" != x], [
-    AC_SUBST([CY_IOS_SIMULATOR], [`xcodebuild -sdk iphonesimulator -version Path`])
+    AC_SUBST([CY_XCODE_MACOSXSDK], [`xcodebuild -sdk macosx -version Path`])
+    AC_SUBST([CY_XCODE_IOSSIMSDK], [`xcodebuild -sdk iphonesimulator -version Path`])
 ])
 
-AM_CONDITIONAL([CY_IOS_SIMULATOR], [test "x$CY_IOS_SIMULATOR" != x])
+AM_CONDITIONAL([CY_IOS_SIMULATOR], [test "x$CY_XCODE_IOSSIMSDK" != x])
 dnl }}}
 
 AC_DEFUN([CY_LT_LIB], [

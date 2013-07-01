@@ -113,7 +113,7 @@ lib_LTLIBRARIES += libcycript-sim.la
 libcycript_sim_la_SOURCES = $(libcycript_sys_la_SOURCES)
 libcycript_sim_la_CPPFLAGS = $(AM_CPPFLAGS)
 
-CY_SIM_FLAGS = -arch i386 -isysroot $(CY_IOS_SIMULATOR)
+CY_SIM_FLAGS = -arch i386 -isysroot $(CY_XCODE_IOSSIMSDK)
 libcycript_sim_la_CXXFLAGS = $(CY_SIM_FLAGS)
 libcycript_sim_la_OBJCXXFLAGS = $(CY_SIM_FLAGS)
 libcycript_sim_la_LDFLAGS = $(CY_SIM_FLAGS) $(CY_LDFLAGS)
@@ -121,7 +121,7 @@ libcycript_sim_la_LDFLAGS = $(CY_SIM_FLAGS) $(CY_LDFLAGS)
 libcycript_sim_la_LIBADD = $(LTOBJECTIVEC) -ldl
 libcycript_sim_la_LIBADD += $(LTOBJECTIVEC) $(LTJAVASCRIPTCORE)
 
-libcycript_sim_la_CPPFLAGS += -idirafter /usr/include
+libcycript_sim_la_CPPFLAGS += -idirafter $(CY_XCODE_MACOSXSDK)/usr/include
 libcycript_sim_la_LDFLAGS += -Wl,/usr/lib/libffi.dylib
 
 libcycript_sim_la_OBJCXXFLAGS += -fobjc-abi-version=2 -fobjc-legacy-dispatch
