@@ -32,3 +32,4 @@ aclocal.m4
 stamp-h1
 readline-6.2
 readline-6.2.tar.gz
+libffi.arm*
