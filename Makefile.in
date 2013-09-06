@@ -574,7 +574,8 @@ libcycript_sim_la_SHORTNAME = sim
 @CY_IOS_SIMULATOR_TRUE@	$(CY_SIM_FLAGS) -fobjc-abi-version=2 \
 @CY_IOS_SIMULATOR_TRUE@	-fobjc-legacy-dispatch
 @CY_IOS_SIMULATOR_TRUE@libcycript_sim_la_LDFLAGS = $(CY_SIM_FLAGS) \
-@CY_IOS_SIMULATOR_TRUE@	$(CY_LDFLAGS) -Wl,/usr/lib/libffi.dylib
+@CY_IOS_SIMULATOR_TRUE@	$(CY_LDFLAGS) -Wl,/usr/lib/libffi.dylib \
+@CY_IOS_SIMULATOR_TRUE@	-mios-simulator-version-min=2.0
 @CY_IOS_SIMULATOR_TRUE@libcycript_sim_la_LIBADD = $(LTOBJECTIVEC) -ldl \
 @CY_IOS_SIMULATOR_TRUE@	$(LTOBJECTIVEC) $(LTJAVASCRIPTCORE)
 all: config.h

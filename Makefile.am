@@ -122,7 +122,7 @@ libcycript_sim_la_LIBADD = $(LTOBJECTIVEC) -ldl
 libcycript_sim_la_LIBADD += $(LTOBJECTIVEC) $(LTJAVASCRIPTCORE)
 
 libcycript_sim_la_CPPFLAGS += -idirafter $(CY_XCODE_MACOSXSDK)/usr/include
-libcycript_sim_la_LDFLAGS += -Wl,/usr/lib/libffi.dylib
+libcycript_sim_la_LDFLAGS += -Wl,/usr/lib/libffi.dylib -mios-simulator-version-min=2.0
 
 libcycript_sim_la_OBJCXXFLAGS += -fobjc-abi-version=2 -fobjc-legacy-dispatch
 endif
