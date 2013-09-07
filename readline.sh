@@ -21,20 +21,9 @@
 
 set -e
 
-version=$1
-# XXX: verify version
-
-readline=readline-${version}
 arch="-arch i386 -arch x86_64"
 
-rm -f "${readline}".tar.gz
-rm -rf "${readline}"
-
-curl -O ftp://ftp.cwru.edu/pub/bash/"${readline}".tar.gz
-tar -zxf "${readline}".tar.gz
-
-cd "${readline}"
-
+cd readline
 CFLAGS="-g -O2 ${arch}" ./configure --disable-shared --enable-static
 make
 ln -s . readline
