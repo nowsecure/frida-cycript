@@ -22,7 +22,15 @@
 #include <dlfcn.h>
 
 #include <mach/mach.h>
+
+#ifdef __arm__
+#include <mach/vm_map.h>
+#define mach_vm_allocate vm_allocate
+#define mach_vm_protect vm_protect
+#define mach_vm_write vm_write
+#else
 #include <mach/mach_vm.h>
+#endif
 
 #include <mach/machine/thread_status.h>
 
