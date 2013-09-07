@@ -22,7 +22,6 @@
 #include "Replace.hpp"
 #include "ObjectiveC/Syntax.hpp"
 
-#include <Foundation/Foundation.h>
 #include <sstream>
 
 void CYCategory::Output(CYOutput &out, CYFlags flags) const {

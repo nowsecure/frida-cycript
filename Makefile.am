@@ -81,7 +81,7 @@ endif
 
 if CY_OBJECTIVEC
 filters += ObjectiveC
-libcycript_sys_la_SOURCES += ObjectiveC/Output.mm ObjectiveC/Replace.cpp ObjectiveC/Library.mm
+libcycript_sys_la_SOURCES += ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm
 libcycript_sys_la_LIBADD += $(LTOBJECTIVEC)
 endif
 
