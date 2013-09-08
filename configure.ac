@@ -34,6 +34,7 @@ am_cv_CC_dependencies_compiler_type=none
 am_cv_CXX_dependencies_compiler_type=none
 am_cv_OBJCXX_dependencies_compiler_type=none
 
+AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_OBJCXX
 
