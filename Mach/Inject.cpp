@@ -23,11 +23,16 @@
 
 #include <mach/mach.h>
 
-#ifdef __arm__
+#ifdef __APPLE__
+#include "TargetConditionals.h"
+#endif
+
+#ifdef TARGET_OS_IPHONE
 #include <mach/vm_map.h>
 #define mach_vm_allocate vm_allocate
 #define mach_vm_protect vm_protect
 #define mach_vm_write vm_write
+#define mach_vm_address_t vm_address_t
 #else
 #include <mach/mach_vm.h>
 #endif
