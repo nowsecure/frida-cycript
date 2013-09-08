@@ -279,7 +279,7 @@ AM_CONDITIONAL([CY_OBJECTIVEC], [test "x$CY_OBJECTIVEC" = x1])
 CY_LT_LIB([LTLIBREADLINE], [AX_LIB_READLINE])
 AS_CASE([$ax_cv_lib_readline], [no], [AC_MSG_ERROR([missing "libreadline"])])
 
-CY_LT_LIB([LTLIBTERMCAP], [AC_SEARCH_LIBS([cur_term], [termcap])])
+CY_LT_LIB([LTLIBTERMCAP], [AC_SEARCH_LIBS([cur_term], [termcap ncurses])])
 
 AC_SUBST([LTFLAGS])
 AC_SUBST([SO], [$acl_shlibext])
