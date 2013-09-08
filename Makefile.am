@@ -27,29 +27,30 @@ ACLOCAL_AMFLAGS = -I m4
 
 # XXX: do I really need -fno-common?
 AM_CPPFLAGS = -fno-common -I$(srcdir)/include -DYYDEBUG=1
-AM_CPPFLAGS += -include $(srcdir)/config.h -include $(srcdir)/unconfig.h
-
-AM_CFLAGS = $(CY_ARCH)
-AM_CXXFLAGS = $(CY_ARCH)
-AM_OBJCXXFLAGS = $(CY_ARCH)
-AM_LDFLAGS = $(CY_ARCH)
+AM_CPPFLAGS += -include config.h -include $(srcdir)/unconfig.h
 
 CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
 
+noinst_LTLIBRARIES = 
 lib_LTLIBRARIES = 
 
-lib_LTLIBRARIES += libcycript.la
-libcycript_la_SOURCES = Select.cpp
-libcycript_la_LDFLAGS = $(AM_LDFLAGS) $(CY_LDFLAGS)
-libcycript_la_LIBADD = -ldl
+noinst_LTLIBRARIES += libcycript.la
+
+lib_LTLIBRARIES += libcycript-any.la
+libcycript_any_la_SOURCES = Select.cpp
+libcycript_any_la_LDFLAGS = $(CY_LDFLAGS)
+libcycript_any_la_LIBADD = -ldl
+
+libcycript_la_SOURCES = ConvertUTF.c Highlight.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp
+libcycript_la_SOURCES += Cycript.tab.cc
+libcycript_la_SOURCES += lex.cy.cpp
 
 lib_LTLIBRARIES += libcycript-sys.la
-libcycript_sys_la_SOURCES = ConvertUTF.c Highlight.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp
-libcycript_sys_la_LDFLAGS = $(AM_LDFLAGS) $(CY_LDFLAGS)
-libcycript_sys_la_LIBADD = $(LTLIBFFI) -ldl
+libcycript_sys_la_SOURCES = 
+libcycript_sys_la_LDFLAGS = $(CY_LDFLAGS)
+libcycript_sys_la_LIBADD = libcycript.la $(LTLIBFFI) -ldl
 
-libcycript_sys_la_SOURCES += Cycript.tab.cc
-libcycript_sys_la_SOURCES += lex.cy.cpp
+filters = $(CY_FILTERS)
 
 if CY_CONSOLE
 bin_PROGRAMS = cycript
@@ -57,9 +58,7 @@ cycript_SOURCES = Console.cpp Display.cpp
 cycript_LDADD = libcycript.la libcycript-sys.la $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) -ldl
 
 ldid = true
-entitle = $(ldid) -Scycript.xml
-
-filters = $(CY_FILTERS)
+entitle = $(ldid) -S$(srcdir)/cycript.xml
 endif
 
 if CY_EXECUTE
@@ -83,7 +82,7 @@ endif
 
 if CY_OBJECTIVEC
 filters += ObjectiveC
-libcycript_sys_la_SOURCES += ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm
+libcycript_la_SOURCES += ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm
 libcycript_sys_la_LIBADD += $(LTOBJECTIVEC)
 endif
 
@@ -99,37 +98,17 @@ Mach/Inject.$(OBJEXT): Trampoline.t.hpp
 
 CLEANFILES += Trampoline.t.lo
 Trampoline.t.lo: Trampoline.t.cpp Trampoline.hpp Baton.hpp Standard.hpp
-	$(LTCXXCOMPILE) $(CY_ARCH) -c -o $@ $< -fno-stack-protector -fno-exceptions -O0
+	$(LTCXXCOMPILE) -c -o $@ $< -fno-stack-protector -fno-exceptions -O0
 
 CLEANFILES += libTrampoline.t.la
 libTrampoline.t.la: Trampoline.t.lo
-	$(CXXLINK) $(CY_ARCH) -rpath $(libdir) $^
+	$(CXXLINK) -rpath $(libdir) $^
 
 CLEANFILES += Trampoline.t.hpp
 Trampoline.t.hpp: libTrampoline.t.la trampoline.sh
 	$(srcdir)/trampoline.sh $@ .libs/libTrampoline.t.dylib Trampoline $(SED) $(LIPO) $(NM) $(OTOOL)
 	! grep '## symbol stub for:' $@
 endif
-endif
-
-libcycript_sim_la_SHORTNAME = sim
-if CY_IOS_SIMULATOR
-lib_LTLIBRARIES += libcycript-sim.la
-libcycript_sim_la_SOURCES = $(libcycript_sys_la_SOURCES)
-libcycript_sim_la_CPPFLAGS = $(AM_CPPFLAGS)
-
-CY_SIM_FLAGS = -arch i386 -isysroot $(CY_XCODE_IOSSIMSDK)
-libcycript_sim_la_CXXFLAGS = $(CY_SIM_FLAGS)
-libcycript_sim_la_OBJCXXFLAGS = $(CY_SIM_FLAGS)
-libcycript_sim_la_LDFLAGS = $(CY_SIM_FLAGS) $(CY_LDFLAGS)
-
-libcycript_sim_la_LIBADD = $(LTOBJECTIVEC) -ldl
-libcycript_sim_la_LIBADD += $(LTOBJECTIVEC) $(LTJAVASCRIPTCORE)
-
-libcycript_sim_la_CPPFLAGS += -idirafter $(CY_XCODE_MACOSXSDK)/usr/include
-libcycript_sim_la_LDFLAGS += -Wl,/usr/lib/libffi.dylib -mios-simulator-version-min=2.0
-
-libcycript_sim_la_OBJCXXFLAGS += -fobjc-abi-version=2 -fobjc-legacy-dispatch
 endif
 
 CLEANFILES += Cycript.yy

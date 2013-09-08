@@ -141,29 +141,6 @@ CY_TEST_FLAG([-Wno-overloaded-virtual])
 CY_TEST_FLAG([-Wno-parentheses])
 CY_TEST_FLAG([-Wno-unneeded-internal-declaration])
 
-dnl -arch * {{{
-for cy_arch in ppc ppc64 i386 x86_64 armv6; do
-    AC_MSG_CHECKING([for -arch $cy_arch])
-    CY_TRY([CXXFLAGS], ["-arch $cy_arch"], [
-        AC_TRY_LINK([], [], [CY_SUCCESS], [CY_FAILURE])
-    ], [
-        AC_MSG_RESULT([yes])
-        AC_LIB_APPENDTOVAR([CY_ARCH], ["-arch $cy_arch"])
-    ], [AC_MSG_RESULT([no])])
-done
-AC_SUBST([CY_ARCH])
-dnl }}}
-dnl iOS SDK {{{
-AC_PATH_PROG([XCODEBUILD], [xcodebuild])
-
-AS_IF([test "x$XCODEBUILD" != x], [
-    AC_SUBST([CY_XCODE_MACOSXSDK], [`xcodebuild -sdk macosx -version Path`])
-    AC_SUBST([CY_XCODE_IOSSIMSDK], [`xcodebuild -sdk iphonesimulator -version Path`])
-])
-
-AM_CONDITIONAL([CY_IOS_SIMULATOR], [test "x$CY_XCODE_IOSSIMSDK" != x])
-dnl }}}
-
 AC_DEFUN([CY_LT_LIB], [
     cy_save=$LIBS
     LIBS=
