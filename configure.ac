@@ -211,12 +211,17 @@ AC_ARG_ENABLE([javascript], [AS_HELP_STRING(
 dnl }}}
 
 dnl APR_FIND_APR {{{
-APR_FIND_APR([], [], [1], [1])
+AS_IF([test "x$LTLIBAPR" != x], [
+    AC_SUBST([LTLIBAPR])
+], [
+    APR_FIND_APR([], [], [1], [1])
 AS_CASE([$apr_found], [yes], [
     AC_LIB_APPENDTOVAR([CPPFLAGS], [`$apr_config --includes`])
     AC_LIB_APPENDTOVAR([LTLIBAPR], [`$apr_config --link-libtool`])
     AC_SUBST([LTLIBAPR])
-], [AC_MSG_ERROR([missing "libapr"])])
+], [
+    AC_MSG_ERROR([missing "libapr"])
+])])
 dnl }}}
 
 AC_DEFUN([CY_CHECK_PKG_CONFIG_LIBFFI], [
