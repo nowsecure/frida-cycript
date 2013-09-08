@@ -51,6 +51,7 @@ libcycript_sys_la_LIBADD = $(LTLIBFFI) -ldl
 libcycript_sys_la_SOURCES += Cycript.tab.cc
 libcycript_sys_la_SOURCES += lex.cy.cpp
 
+if CY_CONSOLE
 bin_PROGRAMS = cycript
 cycript_SOURCES = Console.cpp Display.cpp
 cycript_LDADD = libcycript.la libcycript-sys.la $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) -ldl
@@ -59,6 +60,7 @@ ldid = true
 entitle = $(ldid) -Scycript.xml
 
 filters = $(CY_FILTERS)
+endif
 
 if CY_EXECUTE
 libcycript_sys_la_SOURCES += sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp
@@ -87,6 +89,8 @@ endif
 
 if CY_MACH
 libcycript_sys_la_SOURCES += Handler.mm
+
+if CY_CONSOLE
 cycript_SOURCES += Mach/Inject.cpp
 
 AM_CPPFLAGS += -DCY_ATTACH
@@ -105,6 +109,7 @@ CLEANFILES += Trampoline.t.hpp
 Trampoline.t.hpp: libTrampoline.t.la trampoline.sh
 	$(srcdir)/trampoline.sh $@ .libs/libTrampoline.t.dylib Trampoline $(SED) $(LIPO) $(NM) $(OTOOL)
 	! grep '## symbol stub for:' $@
+endif
 endif
 
 libcycript_sim_la_SHORTNAME = sim

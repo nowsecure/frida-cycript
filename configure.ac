@@ -210,6 +210,10 @@ AC_ARG_ENABLE([javascript], [AS_HELP_STRING(
 ], [CY_CHECK_JAVASCRIPT])
 dnl }}}
 
+AC_ARG_ENABLE([console], AS_HELP_STRING([--disable-console], [disable console]))
+AM_CONDITIONAL([CY_CONSOLE], [test "x$enable_console" != "xno"])
+
+AM_COND_IF([CY_CONSOLE], [
 dnl APR_FIND_APR {{{
 AS_IF([test "x$LTLIBAPR" != x], [
     AC_SUBST([LTLIBAPR])
@@ -223,6 +227,7 @@ AS_CASE([$apr_found], [yes], [
     AC_MSG_ERROR([missing "libapr"])
 ])])
 dnl }}}
+])
 
 AC_DEFUN([CY_CHECK_PKG_CONFIG_LIBFFI], [
     PKG_CHECK_MODULES([LIBFFI], [libffi], [
