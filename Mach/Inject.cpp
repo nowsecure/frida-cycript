@@ -69,23 +69,18 @@ void InjectLibrary(pid_t pid) {
     thread_act_t thread;
     _krncall(thread_create(task, &thread));
 
-    thread_state_flavor_t flavor;
 #if defined (__i386__) || defined(__x86_64__)
     x86_thread_state_t state;
-    flavor = x86_THREAD_STATE;
-    count = x86_THREAD_STATE_COUNT;
 #elif defined(__arm__)
     arm_thread_state_t state;
-    flavor = ARM_THREAD_STATE;
-    count = ARM_THREAD_STATE_COUNT;
 #else
     #error XXX: implement
 #endif
 
     memset(&state, 0, sizeof(state));
-    mach_msg_type_number_t read(count);
-    _krncall(thread_get_state(thread, flavor, reinterpret_cast<thread_state_t>(&state), &read));
-    _assert(read == count);
+    mach_msg_type_number_t read(MACHINE_THREAD_STATE_COUNT);
+    _krncall(thread_get_state(thread, MACHINE_THREAD_STATE, reinterpret_cast<thread_state_t>(&state), &read));
+    _assert(read == MACHINE_THREAD_STATE_COUNT);
 
     Trampoline *trampoline;
     size_t align;
@@ -173,7 +168,7 @@ void InjectLibrary(pid_t pid) {
     if (sizeof(frame) != 0)
         _krncall(mach_vm_write(task, stack + Stack_ - sizeof(frame), reinterpret_cast<mach_vm_address_t>(frame), sizeof(frame)));
 
-    _krncall(thread_set_state(thread, flavor, reinterpret_cast<thread_state_t>(&state), count));
+    _krncall(thread_set_state(thread, MACHINE_THREAD_STATE, reinterpret_cast<thread_state_t>(&state), MACHINE_THREAD_STATE_COUNT));
     _krncall(thread_resume(thread));
 
     _krncall(mach_port_deallocate(self, task));
