@@ -52,8 +52,8 @@ function configure() {
     local flg=$3
     shift 3
 
-    cc=$(xcrun --sdk "${sdk}" -f gcc)
-    cxx=$(xcrun --sdk "${sdk}" -f g++)
+    cc=$(xcrun --sdk "${sdk}" -f clang)
+    cxx=$(xcrun --sdk "${sdk}" -f clang++)
     flg+=" -isysroot $(path "${sdk}")"
 
     rm -rf build."${dir}"
