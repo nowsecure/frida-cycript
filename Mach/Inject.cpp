@@ -53,7 +53,13 @@ extern "C" void CYHandleServer(pid_t);
 void InjectLibrary(pid_t pid) {
     Dl_info addr;
     _assert(dladdr(reinterpret_cast<void *>(&CYHandleServer), &addr) != 0);
-    const char *library(addr.dli_fname);
+
+    size_t flength(strlen(addr.dli_fname));
+    char library[flength + 4 + 1];
+    memcpy(library, addr.dli_fname, flength);
+    library[flength] = '\0';
+    _assert(strcmp(library + flength - 6, ".dylib") == 0);
+    strcpy(library + flength - 6, "-any.dylib");
 
     mach_port_t self(mach_task_self()), task;
     _krncall(task_for_pid(self, pid, &task));

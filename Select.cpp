@@ -37,10 +37,7 @@ extern "C" void CYHandleServer(pid_t pid) {
     const char *fname(addr.dli_fname);
     size_t length(strlen(fname));
 
-    const char *ext(strrchr(fname, '.'));
-    size_t prefix(ext - fname);
-
-    const char *addition;
+    const char *target;
 #ifdef __APPLE__
     // XXX: THIS IS HORRIBLE OMG I NEED TO FIX THIS ASAP
     bool simulator(false);
@@ -49,18 +46,17 @@ extern "C" void CYHandleServer(pid_t pid) {
             simulator = true;
     }
     if (simulator)
-        addition = "-sim";
+        target = "sim";
     else
 #endif
     // someone threw a fit about dangling #endif + else
     // the idea that this bothers someone gives me glee
-    addition = "-sys";
+    target = "sys";
 
-    char library[length + 5];
-    memcpy(library, fname, prefix);
-    memcpy(library + prefix, addition, 4);
-    memcpy(library + prefix + 4, fname + prefix, length - prefix);
-    library[length + 4] = '\0';
+    char library[length + 1];
+    memcpy(library, fname, length);
+    memcpy(library + length - 6 - 3, target, 3);
+    library[length] = '\0';
 
     void *handle(dlopen(library, RTLD_LOCAL | RTLD_LAZY));
     if (handle == NULL) {

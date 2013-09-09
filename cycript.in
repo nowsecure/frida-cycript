@@ -1,0 +1,2 @@
+#!/bin/bash
+DYLD_LIBRARY_PATH=.libs exec .libs/cycript "$@"

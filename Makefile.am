@@ -32,10 +32,12 @@ CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
 
 lib_LTLIBRARIES = 
 
+if CY_MACH
 lib_LTLIBRARIES += libcycript-any.la
 libcycript_any_la_SOURCES = Select.cpp
 libcycript_any_la_LDFLAGS = $(CY_LDFLAGS)
 libcycript_any_la_LIBADD = -ldl
+endif
 
 lib_LTLIBRARIES += libcycript.la
 libcycript_la_LDFLAGS = $(CY_LDFLAGS)
@@ -117,7 +119,7 @@ CLEANFILES += lex.cy.cpp
 lex.cy.cpp: Cycript.l
 	$(FLEX) -t $< | $(SED) -e 's/int yyl;/yy_size_t yyl;/;s/int yyleng_r;/yy_size_t yyleng_r;/' >$@
 
-Console.$(OBJEXT) Execute.lo Handler.lo Highlight.lo Library.lo Parser.lo lex.cy.lo: Cycript.tab.hh
+Console.$(OBJEXT) Execute.lo Handler.lo Highlight.lo Library.lo Output.lo Parser.lo lex.cy.lo: Cycript.tab.hh
 
 CLEANFILES += Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh Cycript.output
 Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh Cycript.output: Cycript.yy
