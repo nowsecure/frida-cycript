@@ -163,7 +163,7 @@ am__uninstall_files_from_dir = { \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)"
-LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
+LTLIBRARIES = $(lib_LTLIBRARIES)
 libcycript_any_la_DEPENDENCIES =
 am_libcycript_any_la_OBJECTS = Select.lo
 libcycript_any_la_OBJECTS = $(am_libcycript_any_la_OBJECTS)
@@ -178,33 +178,29 @@ libcycript_any_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 am__DEPENDENCIES_1 =
 @CY_EXECUTE_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
 @CY_OBJECTIVEC_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
-libcycript_sys_la_DEPENDENCIES = libcycript.la $(am__DEPENDENCIES_1) \
+libcycript_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
-am__libcycript_sys_la_SOURCES_DIST = sig/ffi_type.cpp sig/parse.cpp \
-	sig/copy.cpp Bridge.cpp Execute.cpp JavaScriptCore.cpp \
-	Library.cpp Handler.mm
+am__libcycript_la_SOURCES_DIST = ConvertUTF.c Highlight.cpp \
+	Network.cpp Output.cpp Parser.cpp Replace.cpp Cycript.tab.cc \
+	lex.cy.cpp sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp \
+	Bridge.cpp Execute.cpp JavaScriptCore.cpp Library.cpp \
+	ObjectiveC/Output.cpp ObjectiveC/Replace.cpp \
+	ObjectiveC/Library.mm Handler.mm
 am__dirstamp = $(am__leading_dot)dirstamp
 @CY_EXECUTE_TRUE@am__objects_1 = sig/ffi_type.lo sig/parse.lo \
 @CY_EXECUTE_TRUE@	sig/copy.lo Bridge.lo Execute.lo \
 @CY_EXECUTE_TRUE@	JavaScriptCore.lo Library.lo
-@CY_MACH_TRUE@am__objects_2 = Handler.lo
-am_libcycript_sys_la_OBJECTS = $(am__objects_1) $(am__objects_2)
-libcycript_sys_la_OBJECTS = $(am_libcycript_sys_la_OBJECTS)
-libcycript_sys_la_LINK = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(OBJCXXLD) $(AM_OBJCXXFLAGS) \
-	$(OBJCXXFLAGS) $(libcycript_sys_la_LDFLAGS) $(LDFLAGS) -o $@
-libcycript_la_LIBADD =
-am__libcycript_la_SOURCES_DIST = ConvertUTF.c Highlight.cpp \
-	Network.cpp Output.cpp Parser.cpp Replace.cpp Cycript.tab.cc \
-	lex.cy.cpp ObjectiveC/Output.cpp ObjectiveC/Replace.cpp \
-	ObjectiveC/Library.mm
-@CY_OBJECTIVEC_TRUE@am__objects_3 = ObjectiveC/Output.lo \
+@CY_OBJECTIVEC_TRUE@am__objects_2 = ObjectiveC/Output.lo \
 @CY_OBJECTIVEC_TRUE@	ObjectiveC/Replace.lo \
 @CY_OBJECTIVEC_TRUE@	ObjectiveC/Library.lo
+@CY_MACH_TRUE@am__objects_3 = Handler.lo
 am_libcycript_la_OBJECTS = ConvertUTF.lo Highlight.lo Network.lo \
 	Output.lo Parser.lo Replace.lo Cycript.tab.lo lex.cy.lo \
-	$(am__objects_3)
+	$(am__objects_1) $(am__objects_2) $(am__objects_3)
 libcycript_la_OBJECTS = $(am_libcycript_la_OBJECTS)
+libcycript_la_LINK = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(OBJCXXLD) $(AM_OBJCXXFLAGS) \
+	$(OBJCXXFLAGS) $(libcycript_la_LDFLAGS) $(LDFLAGS) -o $@
 PROGRAMS = $(bin_PROGRAMS)
 am__cycript_SOURCES_DIST = Console.cpp Display.cpp Mach/Inject.cpp
 @CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__objects_4 = Mach/Inject.$(OBJEXT)
@@ -212,8 +208,8 @@ am__cycript_SOURCES_DIST = Console.cpp Display.cpp Mach/Inject.cpp
 @CY_CONSOLE_TRUE@	Display.$(OBJEXT) $(am__objects_4)
 cycript_OBJECTS = $(am_cycript_OBJECTS)
 @CY_CONSOLE_TRUE@cycript_DEPENDENCIES = libcycript.la \
-@CY_CONSOLE_TRUE@	libcycript-sys.la $(am__DEPENDENCIES_1) \
-@CY_CONSOLE_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+@CY_CONSOLE_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+@CY_CONSOLE_TRUE@	$(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -284,10 +280,9 @@ AM_V_OBJCXXLD = $(am__v_OBJCXXLD_@AM_V@)
 am__v_OBJCXXLD_ = $(am__v_OBJCXXLD_@AM_DEFAULT_V@)
 am__v_OBJCXXLD_0 = @echo "  OBJCXXLD" $@;
 am__v_OBJCXXLD_1 = 
-SOURCES = $(libcycript_any_la_SOURCES) $(libcycript_sys_la_SOURCES) \
-	$(libcycript_la_SOURCES) $(cycript_SOURCES)
+SOURCES = $(libcycript_any_la_SOURCES) $(libcycript_la_SOURCES) \
+	$(cycript_SOURCES)
 DIST_SOURCES = $(libcycript_any_la_SOURCES) \
-	$(am__libcycript_sys_la_SOURCES_DIST) \
 	$(am__libcycript_la_SOURCES_DIST) $(am__cycript_SOURCES_DIST)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
@@ -537,28 +532,23 @@ CLEANFILES = $(am__append_5) $(am__append_12) Cycript.yy Cycript.l \
 	position.hh stack.hh Cycript.output
 SUBDIRS = 
 ACLOCAL_AMFLAGS = -I m4
-
-# XXX: do I really need -fno-common?
-AM_CPPFLAGS = -fno-common -I$(srcdir)/include -DYYDEBUG=1 -include \
-	config.h -include $(srcdir)/unconfig.h $(am__append_3) \
-	$(am__append_11)
+AM_CPPFLAGS = -I$(srcdir)/include -DYYDEBUG=1 -include config.h \
+	-include $(srcdir)/unconfig.h $(am__append_3) $(am__append_11)
 CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
-noinst_LTLIBRARIES = libcycript.la
-lib_LTLIBRARIES = libcycript-any.la libcycript-sys.la
+lib_LTLIBRARIES = libcycript-any.la libcycript.la
 libcycript_any_la_SOURCES = Select.cpp
 libcycript_any_la_LDFLAGS = $(CY_LDFLAGS)
 libcycript_any_la_LIBADD = -ldl
+libcycript_la_LDFLAGS = $(CY_LDFLAGS)
+libcycript_la_LIBADD = $(LTLIBFFI) -ldl $(am__append_2) \
+	$(am__append_8)
 libcycript_la_SOURCES = ConvertUTF.c Highlight.cpp Network.cpp \
 	Output.cpp Parser.cpp Replace.cpp Cycript.tab.cc lex.cy.cpp \
-	$(am__append_7)
-libcycript_sys_la_SOURCES = $(am__append_1) $(am__append_9)
-libcycript_sys_la_LDFLAGS = $(CY_LDFLAGS)
-libcycript_sys_la_LIBADD = libcycript.la $(LTLIBFFI) -ldl \
-	$(am__append_2) $(am__append_8)
+	$(am__append_1) $(am__append_7) $(am__append_9)
 filters = $(CY_FILTERS) $(am__append_4) $(am__append_6)
 @CY_CONSOLE_TRUE@cycript_SOURCES = Console.cpp Display.cpp \
 @CY_CONSOLE_TRUE@	$(am__append_10)
-@CY_CONSOLE_TRUE@cycript_LDADD = libcycript.la libcycript-sys.la $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) -ldl
+@CY_CONSOLE_TRUE@cycript_LDADD = libcycript.la $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) -ldl
 @CY_CONSOLE_TRUE@ldid = true
 @CY_CONSOLE_TRUE@entitle = $(ldid) -S$(srcdir)/cycript.xml
 all: config.h
@@ -651,17 +641,6 @@ clean-libLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
-clean-noinstLTLIBRARIES:
-	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
-	@list='$(noinst_LTLIBRARIES)'; \
-	locs=`for p in $$list; do echo $$p; done | \
-	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
-	      sort -u`; \
-	test -z "$$locs" || { \
-	  echo rm -f $${locs}; \
-	  rm -f $${locs}; \
-	}
-
 libcycript-any.la: $(libcycript_any_la_OBJECTS) $(libcycript_any_la_DEPENDENCIES) $(EXTRA_libcycript_any_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libcycript_any_la_LINK) -rpath $(libdir) $(libcycript_any_la_OBJECTS) $(libcycript_any_la_LIBADD) $(LIBS)
 sig/$(am__dirstamp):
@@ -673,9 +652,6 @@ sig/$(DEPDIR)/$(am__dirstamp):
 sig/ffi_type.lo: sig/$(am__dirstamp) sig/$(DEPDIR)/$(am__dirstamp)
 sig/parse.lo: sig/$(am__dirstamp) sig/$(DEPDIR)/$(am__dirstamp)
 sig/copy.lo: sig/$(am__dirstamp) sig/$(DEPDIR)/$(am__dirstamp)
-
-libcycript-sys.la: $(libcycript_sys_la_OBJECTS) $(libcycript_sys_la_DEPENDENCIES) $(EXTRA_libcycript_sys_la_DEPENDENCIES) 
-	$(AM_V_OBJCXXLD)$(libcycript_sys_la_LINK) -rpath $(libdir) $(libcycript_sys_la_OBJECTS) $(libcycript_sys_la_LIBADD) $(LIBS)
 ObjectiveC/$(am__dirstamp):
 	@$(MKDIR_P) ObjectiveC
 	@: > ObjectiveC/$(am__dirstamp)
@@ -690,7 +666,7 @@ ObjectiveC/Library.lo: ObjectiveC/$(am__dirstamp) \
 	ObjectiveC/$(DEPDIR)/$(am__dirstamp)
 
 libcycript.la: $(libcycript_la_OBJECTS) $(libcycript_la_DEPENDENCIES) $(EXTRA_libcycript_la_DEPENDENCIES) 
-	$(AM_V_OBJCXXLD)$(OBJCXXLINK)  $(libcycript_la_OBJECTS) $(libcycript_la_LIBADD) $(LIBS)
+	$(AM_V_OBJCXXLD)$(libcycript_la_LINK) -rpath $(libdir) $(libcycript_la_OBJECTS) $(libcycript_la_LIBADD) $(LIBS)
 install-binPROGRAMS: $(bin_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
@@ -1238,7 +1214,7 @@ maintainer-clean-generic:
 clean: clean-recursive
 
 clean-am: clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
-	clean-libtool clean-noinstLTLIBRARIES mostlyclean-am
+	clean-libtool mostlyclean-am
 
 distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
@@ -1314,13 +1290,12 @@ uninstall-am: uninstall-binPROGRAMS uninstall-libLTLIBRARIES
 .PHONY: $(am__recursive_targets) CTAGS GTAGS TAGS all all-am \
 	am--refresh check check-am clean clean-binPROGRAMS \
 	clean-cscope clean-generic clean-libLTLIBRARIES clean-libtool \
-	clean-noinstLTLIBRARIES cscope cscopelist-am ctags ctags-am \
-	dist dist-all dist-bzip2 dist-gzip dist-lzip dist-shar \
-	dist-tarZ dist-xz dist-zip distcheck distclean \
-	distclean-compile distclean-generic distclean-hdr \
-	distclean-libtool distclean-tags distcleancheck distdir \
-	distuninstallcheck dvi dvi-am html html-am info info-am \
-	install install-am install-binPROGRAMS install-data \
+	cscope cscopelist-am ctags ctags-am dist dist-all dist-bzip2 \
+	dist-gzip dist-lzip dist-shar dist-tarZ dist-xz dist-zip \
+	distcheck distclean distclean-compile distclean-generic \
+	distclean-hdr distclean-libtool distclean-tags distcleancheck \
+	distdir distuninstallcheck dvi dvi-am html html-am info \
+	info-am install install-am install-binPROGRAMS install-data \
 	install-data-am install-dvi install-dvi-am install-exec \
 	install-exec-am install-html install-html-am install-info \
 	install-info-am install-libLTLIBRARIES install-man install-pdf \
@@ -1355,7 +1330,7 @@ Cycript.l: Cycript.l.in
 lex.cy.cpp: Cycript.l
 	$(FLEX) -t $< | $(SED) -e 's/int yyl;/yy_size_t yyl;/;s/int yyleng_r;/yy_size_t yyleng_r;/' >$@
 
-Console.lo Execute.lo Highlight.lo Library.lo Parser.lo lex.cy.lo: Cycript.tab.hh
+Console.o Execute.lo Handler.lo Highlight.lo Library.lo Parser.lo lex.cy.lo: Cycript.tab.hh
 Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh Cycript.output: Cycript.yy
 	$(BISON) -v --report=state $<
 	! grep -n '^ *$$default  reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Cycript.output -B 2 | grep 'shift, and go to state [0-9]*$$'

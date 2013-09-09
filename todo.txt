@@ -116,3 +116,6 @@ using .withName from the grammar is a horrible hack that makes other uses imposs
 
 blocks should be allowed to return blocks/functions: ModifiedType needs to go
   instead, TypedParameterList should be folded into a TypeModifier with the other types
+
+LT_INIT([pic-only]) doesn't work, because the default is only used if unset, and it has a default setting...
+even when using --pic-only, libtool insists on building every file twice... with the same fucking arguments

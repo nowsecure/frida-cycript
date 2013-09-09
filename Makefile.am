@@ -25,46 +25,40 @@ SUBDIRS =
 
 ACLOCAL_AMFLAGS = -I m4
 
-# XXX: do I really need -fno-common?
-AM_CPPFLAGS = -fno-common -I$(srcdir)/include -DYYDEBUG=1
+AM_CPPFLAGS = -I$(srcdir)/include -DYYDEBUG=1
 AM_CPPFLAGS += -include config.h -include $(srcdir)/unconfig.h
 
 CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
 
-noinst_LTLIBRARIES = 
 lib_LTLIBRARIES = 
-
-noinst_LTLIBRARIES += libcycript.la
 
 lib_LTLIBRARIES += libcycript-any.la
 libcycript_any_la_SOURCES = Select.cpp
 libcycript_any_la_LDFLAGS = $(CY_LDFLAGS)
 libcycript_any_la_LIBADD = -ldl
 
-libcycript_la_SOURCES = ConvertUTF.c Highlight.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp
-libcycript_la_SOURCES += Cycript.tab.cc
-libcycript_la_SOURCES += lex.cy.cpp
+lib_LTLIBRARIES += libcycript.la
+libcycript_la_LDFLAGS = $(CY_LDFLAGS)
+libcycript_la_LIBADD = $(LTLIBFFI) -ldl
 
-lib_LTLIBRARIES += libcycript-sys.la
-libcycript_sys_la_SOURCES = 
-libcycript_sys_la_LDFLAGS = $(CY_LDFLAGS)
-libcycript_sys_la_LIBADD = libcycript.la $(LTLIBFFI) -ldl
+libcycript_la_SOURCES = ConvertUTF.c Highlight.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp
+libcycript_la_SOURCES += Cycript.tab.cc lex.cy.cpp
 
 filters = $(CY_FILTERS)
 
 if CY_CONSOLE
 bin_PROGRAMS = cycript
 cycript_SOURCES = Console.cpp Display.cpp
-cycript_LDADD = libcycript.la libcycript-sys.la $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) -ldl
+cycript_LDADD = libcycript.la $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) -ldl
 
 ldid = true
 entitle = $(ldid) -S$(srcdir)/cycript.xml
 endif
 
 if CY_EXECUTE
-libcycript_sys_la_SOURCES += sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp
-libcycript_sys_la_SOURCES += Bridge.cpp Execute.cpp JavaScriptCore.cpp Library.cpp
-libcycript_sys_la_LIBADD += $(LTJAVASCRIPTCORE)
+libcycript_la_SOURCES += sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp
+libcycript_la_SOURCES += Bridge.cpp Execute.cpp JavaScriptCore.cpp Library.cpp
+libcycript_la_LIBADD += $(LTJAVASCRIPTCORE)
 
 AM_CPPFLAGS += -DCY_EXECUTE
 filters += C
@@ -83,11 +77,11 @@ endif
 if CY_OBJECTIVEC
 filters += ObjectiveC
 libcycript_la_SOURCES += ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm
-libcycript_sys_la_LIBADD += $(LTOBJECTIVEC)
+libcycript_la_LIBADD += $(LTOBJECTIVEC)
 endif
 
 if CY_MACH
-libcycript_sys_la_SOURCES += Handler.mm
+libcycript_la_SOURCES += Handler.mm
 
 if CY_CONSOLE
 cycript_SOURCES += Mach/Inject.cpp
@@ -123,7 +117,7 @@ CLEANFILES += lex.cy.cpp
 lex.cy.cpp: Cycript.l
 	$(FLEX) -t $< | $(SED) -e 's/int yyl;/yy_size_t yyl;/;s/int yyleng_r;/yy_size_t yyleng_r;/' >$@
 
-Console.lo Execute.lo Highlight.lo Library.lo Parser.lo lex.cy.lo: Cycript.tab.hh
+Console.$(OBJEXT) Execute.lo Handler.lo Highlight.lo Library.lo Parser.lo lex.cy.lo: Cycript.tab.hh
 
 CLEANFILES += Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh Cycript.output
 Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh Cycript.output: Cycript.yy

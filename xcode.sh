@@ -63,7 +63,7 @@ function configure() {
     cd ..
 }
 
-#configure mac "${mac}" "-arch i386 -arch x86_64 -mmacosx-version-min=10.6" CPPFLAGS="-I../readline" LDFLAGS="-L../readline"
+configure mac "${mac}" "-arch i386 -arch x86_64 -mmacosx-version-min=10.6" CPPFLAGS="-I../readline" LDFLAGS="-L../readline"
 
 function build() {
     local dir=$1
@@ -71,11 +71,11 @@ function build() {
     local flg=$3
     shift 3
 
-    configure "${dir}" "${sdk}" "${flg}" "$@" #--with-libffi=libffi.a #CPPFLAGS="-idirafter ${mac}/usr/include"
+    configure "${dir}" "${sdk}" "${flg}" "$@" --enable-static --with-pic #CPPFLAGS="-idirafter ${mac}/usr/include"
 }
 
 sim="-mios-simulator-version-min=2.0"
 sim="" # gcc does not support this
 
-#build sim iphonesimulator "-arch i386 ${sim}" OBJCXXFLAGS="-fobjc-abi-version=2 -fobjc-legacy-dispatch" CPPFLAGS="-I../libffi.i386/include" LDFLAGS="-L.." --disable-console
+build sim iphonesimulator "-arch i386 ${sim}" OBJCXXFLAGS="-fobjc-abi-version=2 -fobjc-legacy-dispatch" CPPFLAGS="-I../libffi.i386/include" LDFLAGS="-L.." --disable-console
 build ios iphoneos5.1 "-arch armv6 -miphoneos-version-min=2.0" --host=arm-apple-darwin10 CPPFLAGS="-I../libffi.armv6/include -I../sysroot.ios/usr/include -I../sysroot.ios/usr/include/apr-1" LTLIBAPR="../sysroot.ios/usr/lib/libapr-1.dylib" LDFLAGS="-L.. -L../sysroot.ios/usr/lib"
