@@ -47,9 +47,11 @@
 #include <errno.h>
 #include <unistd.h>
 
+#include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <netdb.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -616,6 +618,9 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
     pid_t pid(_not(pid_t));
 #endif
 
+    const char *host(NULL);
+    const char *port(NULL);
+
     apr_getopt_t *state;
     _aprcall(apr_getopt_init(&state, pool, argc, argv));
 
@@ -628,6 +633,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
 #ifdef CY_ATTACH
             "p:"
 #endif
+            "r:"
             "s"
         , &opt, &arg));
 
@@ -641,6 +647,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
 #ifdef CY_ATTACH
                     " [-p <pid|name>]"
 #endif
+                    " [-r <host:port>]"
                     " [<script> [<arg>...]]\n"
                 );
                 return 1;
@@ -728,6 +735,27 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
             } break;
 #endif
 
+            case 'r': {
+                //size_t size(strlen(arg));
+
+                char *colon(strrchr(arg, ':'));
+                if (colon == NULL) {
+                    fprintf(stderr, "missing colon in hostspec\n");
+                    return 1;
+                }
+
+                /*char *end;
+                port = strtoul(colon + 1, &end, 10);
+                if (end != arg + size) {
+                    fprintf(stderr, "invalid port in hostspec\n");
+                    return 1;
+                }*/
+
+                host = arg;
+                *colon = '\0';
+                port = colon + 1;
+            } break;
+
             case 's':
                 strict_ = true;
             break;
@@ -799,6 +827,34 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
 #else
     client_ = -1;
 #endif
+
+    if (client_ == -1 && host != NULL && port != NULL) {
+        struct addrinfo hints;
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_protocol = 0;
+        hints.ai_flags = 0;
+
+        struct addrinfo *infos;
+        _syscall(getaddrinfo(host, port, &hints, &infos));
+
+        _assert(infos != NULL); try {
+            for (struct addrinfo *info(infos); info != NULL; info = info->ai_next) {
+                int client(_syscall(socket(info->ai_family, info->ai_socktype, info->ai_protocol))); try {
+                    _syscall(connect(client, info->ai_addr, info->ai_addrlen));
+                    client_ = client;
+                    break;
+                } catch (...) {
+                    _syscall(close(client));
+                    throw;
+                }
+            }
+        } catch (...) {
+            freeaddrinfo(infos);
+            throw;
+        }
+    }
 
     if (script == NULL && tty)
         Console(options);

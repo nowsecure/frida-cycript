@@ -172,3 +172,55 @@ extern "C" void CYHandleServer(pid_t pid) {
         fprintf(stderr, "%s\n", error.PoolCString(pool));
     }
 }
+
+struct CYServer {
+    pthread_t thread_;
+    uint16_t port_;
+    int socket_;
+
+    CYServer(uint16_t port) :
+        port_(port),
+        socket_(-1)
+    {
+    }
+
+    ~CYServer() {
+        if (socket_ != -1)
+            _syscall(close(socket_));
+    }
+
+    void Listen() {
+        socket_ = _syscall(::socket(PF_INET, SOCK_STREAM, 0)); try {
+            sockaddr_in address;
+            address.sin_family = AF_INET;
+            address.sin_addr.s_addr = INADDR_ANY;
+            address.sin_port = htons(port_);
+            _syscall(::bind(socket_, reinterpret_cast<sockaddr *>(&address), sizeof(address)));
+
+            _syscall(::listen(socket_, -1));
+
+            for (;;) {
+                socklen_t length(sizeof(address));
+                int socket(_syscall(::accept(socket_, reinterpret_cast<sockaddr *>(&address), &length)));
+                CYHandleClient(socket);
+            }
+        } catch (const CYException &error) {
+            CYPool pool;
+            fprintf(stderr, "%s\n", error.PoolCString(pool));
+        }
+    }
+};
+
+static void *OnServer(void *data) {
+    CYServer *server(reinterpret_cast<CYServer *>(data));
+    server->Listen();
+    delete server;
+    return NULL;
+}
+
+extern "C" void CYListenServer(short port) {
+    CYInitializeDynamic();
+
+    CYServer *server(new CYServer(port));
+    _assert(pthread_create(&server->thread_, NULL, &OnServer, server) == 0);
+}
