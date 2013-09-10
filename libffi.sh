@@ -45,6 +45,7 @@ function arch() {
 
 arch armv6 arm-apple-darwin10 iphoneos5.1 iphoneos
 arch armv7 arm-apple-darwin10 iphoneos iphoneos
+arch armv7s arm-apple-darwin10 iphoneos iphoneos
 arch i386 i386-apple-darwin10 iphonesimulator ios-simulator
 
 libffi=()

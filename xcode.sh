@@ -73,13 +73,21 @@ function build() {
     local flg=$3
     shift 3
 
-    configure "${dir}" "${sdk}" "${flg}" "$@" --enable-static --with-pic #CPPFLAGS="-idirafter ${mac}/usr/include"
+    configure "${dir}" "${sdk}" "${flg}" "$@" --enable-static --with-pic
 }
 
 for arch in i386; do
     build "sim-${arch}" iphonesimulator "-arch ${arch} -mios-simulator-version-min=2.0" OBJCXXFLAGS="-fobjc-abi-version=2 -fobjc-legacy-dispatch" CPPFLAGS="-I../libffi.${arch}/include" LDFLAGS="-L.." --disable-console
 done
 
-for arch in armv6 armv7; do
-    build "ios-${arch}" iphoneos5.1 "-arch ${arch} -miphoneos-version-min=2.0" --host=arm-apple-darwin10 CPPFLAGS="-I../libffi.${arch}/include -I../sysroot.ios/usr/include -I../sysroot.ios/usr/include/apr-1" LTLIBAPR="../sysroot.ios/usr/lib/libapr-1.dylib" LDFLAGS="-L.. -L../sysroot.ios/usr/lib"
+for arch in armv6 armv7 armv7s; do
+    if [[ ${arch} == armv6 ]]; then
+        sdk=iphoneos5.1
+        flg=()
+    else
+        sdk=iphoneos
+        flg=(--disable-console)
+    fi
+
+    build "ios-${arch}" "${sdk}" "-arch ${arch} -miphoneos-version-min=2.0" --host=arm-apple-darwin10 CPPFLAGS="-I../libffi.${arch}/include -I../sysroot.ios/usr/include -I../sysroot.ios/usr/include/apr-1" LTLIBAPR="../sysroot.ios/usr/lib/libapr-1.dylib" LDFLAGS="-L.. -L../sysroot.ios/usr/lib" "${flg[@]}"
 done

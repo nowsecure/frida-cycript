@@ -20,6 +20,8 @@
 .DELETE_ON_ERROR:
 SHELL := /bin/bash
 
+lipo := $(shell xcrun --sdk iphoneos -f lipo)
+
 libs := 
 libs += .libs/cycript
 libs += .libs/libcycript.dylib
@@ -64,7 +66,7 @@ build.ios-$(1)/.libs/libcycript.a: build-ios-$(1)
 	@
 endef
 
-$(foreach arch,armv6 armv7,$(eval $(call build_ios,$(arch))))
+$(foreach arch,armv6 armv7 armv7s,$(eval $(call build_ios,$(arch))))
 
 define build_sim
 .PHONY: build-sim-$(1)
@@ -80,11 +82,7 @@ $(foreach arch,i386,$(eval $(call build_sim,$(arch))))
 
 .libs/%: build.mac-i386/.libs/% build.mac-x86_64/.libs/% build.ios-armv6/.libs/%
 	@mkdir -p .libs
-	lipo -create -output $@ $^
-
-.libs/%-ios.a: build.ios-armv6/.libs/%.a build.ios-armv7/.libs/%.a build.sim/.libs/%.a
-	@mkdir -p .libs
-	lipo -create -output $@ $^
+	$(lipo) -create -output $@ $^
 
 .libs/libcycript-sys.dylib:
 	@mkdir -p .libs
@@ -96,10 +94,10 @@ $(foreach arch,i386,$(eval $(call build_sim,$(arch))))
 
 .libs/libcycript-%.o: build.%/.libs/libcycript.a
 	@mkdir -p .libs
-	ld -r -arch $$(lipo -detailed_info $< | sed -e '/^Non-fat file: / ! d; s/.*: //') -o $@ -all_load $< libffi.a
+	ld -r -arch $$($(lipo) -detailed_info $< | sed -e '/^Non-fat file: / ! d; s/.*: //') -o $@ -all_load $< libffi.a
 
-.libs/libcycript.o: .libs/libcycript-ios-armv6.o .libs/libcycript-ios-armv7.o .libs/libcycript-sim-i386.o
-	lipo -create -output $@ $^
+.libs/libcycript.o: .libs/libcycript-ios-armv6.o .libs/libcycript-ios-armv7.o .libs/libcycript-ios-armv7s.o .libs/libcycript-sim-i386.o
+	$(lipo) -create -output $@ $^
 
 cycript: cycript.in
 	cp -af $< $@
