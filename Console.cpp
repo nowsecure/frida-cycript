@@ -51,8 +51,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "Cycript.tab.hh"
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -65,8 +63,11 @@
 
 #include <dlfcn.h>
 
-#include "Replace.hpp"
 #include "Display.hpp"
+#include "Replace.hpp"
+
+#include "Cycript.tab.hh"
+#include "Driver.hpp"
 
 static volatile enum {
     Working,

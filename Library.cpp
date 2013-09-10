@@ -34,13 +34,14 @@
 #include <sstream>
 #include <cmath>
 
-#include "Parser.hpp"
-#include "Cycript.tab.hh"
-
 #include "Error.hpp"
-#include "String.hpp"
 #include "Execute.hpp"
 #include "JavaScript.hpp"
+#include "Parser.hpp"
+#include "String.hpp"
+
+#include "Cycript.tab.hh"
+#include "Driver.hpp"
 
 #include "ConvertUTF.h"
 

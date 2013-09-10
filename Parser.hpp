@@ -24,7 +24,6 @@
 
 #include <iostream>
 
-#include <stack>
 #include <string>
 #include <vector>
 #include <map>
@@ -32,8 +31,6 @@
 
 #include <cstdio>
 #include <cstdlib>
-
-#include "location.hh"
 
 #include "List.hpp"
 #include "Pooling.hpp"
@@ -463,12 +460,6 @@ struct CYBlock :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-enum CYState {
-    CYClear,
-    CYRestricted,
-    CYNewLine
-};
-
 class CYStream :
     public std::istream
 {
@@ -488,87 +479,6 @@ class CYStream :
         buffer_(start, end)
     {
     }
-};
-
-class CYDriver {
-  public:
-    void *scanner_;
-
-    CYState state_;
-    std::stack<bool> in_;
-
-    struct {
-        bool AtImplementation;
-        bool Function;
-        bool OpenBrace;
-    } no_;
-
-    std::istream &data_;
-
-    bool strict_;
-    bool commented_;
-
-    enum Condition {
-        RegExpCondition,
-        XMLContentCondition,
-        XMLTagCondition,
-    };
-
-    std::string filename_;
-
-    struct Error {
-        bool warning_;
-        cy::location location_;
-        std::string message_;
-    };
-
-    typedef std::vector<Error> Errors;
-
-    CYProgram *program_;
-    Errors errors_;
-
-    bool auto_;
-
-    struct Context {
-        CYExpression *context_;
-
-        Context(CYExpression *context) :
-            context_(context)
-        {
-        }
-
-        typedef std::vector<CYWord *> Words;
-        Words words_;
-    };
-
-    typedef std::vector<Context> Contexts;
-    Contexts contexts_;
-
-    CYExpression *context_;
-
-    enum Mode {
-        AutoNone,
-        AutoPrimary,
-        AutoDirect,
-        AutoIndirect,
-        AutoMessage
-    } mode_;
-
-  private:
-    void ScannerInit();
-    void ScannerDestroy();
-
-  public:
-    CYDriver(std::istream &data, const std::string &filename = "");
-    ~CYDriver();
-
-    Condition GetCondition();
-    void SetCondition(Condition condition);
-
-    void PushCondition(Condition condition);
-    void PopCondition();
-
-    void Warning(const cy::location &location, const char *message);
 };
 
 struct CYForInitialiser {

@@ -19,14 +19,6 @@
 **/
 /* }}} */
 
-#include "cycript.hpp"
-#include "JavaScript.hpp"
-
-#include "Pooling.hpp"
-#include "Parser.hpp"
-
-#include "Cycript.tab.hh"
-
 #include <Foundation/Foundation.h>
 #include <pthread.h>
 #include <unistd.h>
@@ -36,6 +28,15 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/un.h>
+
+#include "cycript.hpp"
+
+#include "JavaScript.hpp"
+#include "Parser.hpp"
+#include "Pooling.hpp"
+
+#include "Cycript.tab.hh"
+#include "Driver.hpp"
 
 struct CYExecute_ {
     CYPool &pool_;

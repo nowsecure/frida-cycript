@@ -43,7 +43,7 @@ lib_LTLIBRARIES += libcycript.la
 libcycript_la_LDFLAGS = $(CY_LDFLAGS)
 libcycript_la_LIBADD = $(LTLIBFFI) -ldl
 
-libcycript_la_SOURCES = ConvertUTF.c Highlight.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp
+libcycript_la_SOURCES = ConvertUTF.c Driver.cpp Highlight.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp
 libcycript_la_SOURCES += Cycript.tab.cc lex.cy.cpp
 
 filters = $(CY_FILTERS)
@@ -119,7 +119,7 @@ CLEANFILES += lex.cy.cpp
 lex.cy.cpp: Cycript.l
 	$(FLEX) -t $< | $(SED) -e 's/int yyl;/yy_size_t yyl;/;s/int yyleng_r;/yy_size_t yyleng_r;/' >$@
 
-Console.$(OBJEXT) Execute.lo Handler.lo Highlight.lo Library.lo Output.lo Parser.lo lex.cy.lo: Cycript.tab.hh
+Console.$(OBJEXT) Cycript.tab.lo Driver.lo Handler.lo Highlight.lo Library.lo lex.cy.lo: Cycript.tab.hh
 
 CLEANFILES += Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh Cycript.output
 Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh Cycript.output: Cycript.yy

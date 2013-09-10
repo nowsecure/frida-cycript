@@ -20,9 +20,10 @@
 /* }}} */
 
 #include "Highlight.hpp"
+#include "Parser.hpp"
 
 #include "Cycript.tab.hh"
-#include "Parser.hpp"
+#include "Driver.hpp"
 
 static void Skip(const char *data, size_t size, std::ostream &output, size_t &offset, cy::position &current, cy::position target) {
     while (current.line != target.line || current.column != target.column) {

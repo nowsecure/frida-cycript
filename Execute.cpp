@@ -41,7 +41,6 @@
 #include <cmath>
 
 #include "Parser.hpp"
-#include "Cycript.tab.hh"
 
 #include "Error.hpp"
 #include "JavaScript.hpp"

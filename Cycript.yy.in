@@ -28,6 +28,7 @@
 @if Bison24 }
 
 @if Bison24 %code requires {
+#include "Driver.hpp"
 #include "Parser.hpp"
 #define CYNew new($pool)
 
