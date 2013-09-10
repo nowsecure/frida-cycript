@@ -149,8 +149,10 @@ static void *OnClient(void *data) {
     return NULL;
 }
 
-extern "C" void CYHandleClient(CYPool &pool, int socket) {
-    CYClient *client(new(pool) CYClient(socket));
+extern "C" void CYHandleClient(int socket) {
+    // XXX: this leaks memory... really?
+    CYPool *pool(new CYPool());
+    CYClient *client(new(*pool) CYClient(socket));
     _assert(pthread_create(&client->thread_, NULL, &OnClient, client) == 0);
 }
 
@@ -164,9 +166,7 @@ extern "C" void CYHandleServer(pid_t pid) {
         sprintf(address.sun_path, "/tmp/.s.cy.%u", pid);
 
         _syscall(connect(socket, reinterpret_cast<sockaddr *>(&address), SUN_LEN(&address)));
-
-        // XXX: this leaks memory... really?
-        CYHandleClient(*new CYPool(), socket);
+        CYHandleClient(socket);
     } catch (const CYException &error) {
         CYPool pool;
         fprintf(stderr, "%s\n", error.PoolCString(pool));

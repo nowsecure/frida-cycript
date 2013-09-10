@@ -37,7 +37,7 @@ void CYStringify(std::ostringstream &str, const char *data, size_t size);
 double CYCastDouble(const char *value, size_t size);
 double CYCastDouble(const char *value);
 
-extern "C" void CYHandleClient(CYPool &pool, int socket);
+extern "C" void CYHandleClient(int socket);
 
 template <typename Type_>
 bool CYRecvAll(int socket, Type_ *data, size_t size) {
