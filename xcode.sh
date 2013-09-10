@@ -59,12 +59,16 @@ function configure() {
     rm -rf build."${dir}"
     mkdir build."${dir}"
     cd build."${dir}"
-    CPP="${cc} -E" CC="${cc} ${flg}" CXXCPP="${cxx} -E" CXX="${cxx} ${flg}" OBJCXX="${cxx} ${flg}" ../configure "${flags[@]}" --prefix="/usr" "$@"
+
+    CC="${cc} ${flg}" CXX="${cxx} ${flg}" OBJCXX="${cxx} ${flg}" \
+        ../configure "${flags[@]}" --prefix="/usr" "$@"
+
     cd ..
 }
 
 for arch in i386 x86_64; do
-    configure "mac-${arch}" "${mac}" "-arch ${arch} -mmacosx-version-min=10.6" CPPFLAGS="-I../readline" LDFLAGS="-L../readline"
+    configure "mac-${arch}" "${mac}" "-arch ${arch} -mmacosx-version-min=10.6" \
+        CPPFLAGS="-I../readline" LDFLAGS="-L../readline"
 done
 
 function build() {
@@ -77,7 +81,11 @@ function build() {
 }
 
 for arch in i386; do
-    build "sim-${arch}" iphonesimulator "-arch ${arch} -mios-simulator-version-min=2.0" OBJCXXFLAGS="-fobjc-abi-version=2 -fobjc-legacy-dispatch" CPPFLAGS="-I../libffi.${arch}/include" LDFLAGS="-L.." --disable-console
+    build "sim-${arch}" iphonesimulator "-arch ${arch} -mios-simulator-version-min=2.0" \
+        OBJCXXFLAGS="-fobjc-abi-version=2 -fobjc-legacy-dispatch" \
+        CPPFLAGS="-I../libffi.${arch}/include" \
+        LDFLAGS="-L.." \
+    --disable-console
 done
 
 for arch in armv6 armv7 armv7s; do
@@ -89,5 +97,9 @@ for arch in armv6 armv7 armv7s; do
         flg=(--disable-console)
     fi
 
-    build "ios-${arch}" "${sdk}" "-arch ${arch} -miphoneos-version-min=2.0" --host=arm-apple-darwin10 CPPFLAGS="-I../libffi.${arch}/include -I../sysroot.ios/usr/include -I../sysroot.ios/usr/include/apr-1" LTLIBAPR="../sysroot.ios/usr/lib/libapr-1.dylib" LDFLAGS="-L.. -L../sysroot.ios/usr/lib" "${flg[@]}"
+    build "ios-${arch}" "${sdk}" "-arch ${arch} -miphoneos-version-min=2.0" --host=arm-apple-darwin10 \
+        CPPFLAGS="-I../libffi.${arch}/include -I../sysroot.ios/usr/include -I../sysroot.ios/usr/include/apr-1" \
+        LDFLAGS="-L.. -L../sysroot.ios/usr/lib" \
+        LTLIBAPR="../sysroot.ios/usr/lib/libapr-1.dylib" \
+    "${flg[@]}"
 done
