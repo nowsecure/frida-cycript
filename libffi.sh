@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Cycript - Optimizing JavaScript Compiler/Runtime
 # Copyright (C) 2009-2013  Jay Freeman (saurik)
