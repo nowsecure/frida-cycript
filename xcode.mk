@@ -56,12 +56,6 @@ define build_ios
 .PHONY: build-ios-$(1)
 build-ios-$(1):
 	$(MAKE) -C build.ios-$(1)
-build.ios-$(1)/.libs/cycript: build-ios-$(1)
-	@
-build.ios-$(1)/.libs/libcycript.dylib: build-ios-$(1)
-	@
-build.ios-$(1)/.libs/libcycript-any.dylib: build-ios-$(1)
-	@
 build.ios-$(1)/.libs/libcycript.a: build-ios-$(1)
 	@
 endef
@@ -79,6 +73,17 @@ build.sim-$(1)/.libs/libcycript.a: build-sim-$(1)
 endef
 
 $(foreach arch,i386,$(eval $(call build_sim,$(arch))))
+
+define build_arm
+build.ios-$(1)/.libs/cycript: build-ios-$(1)
+	@
+build.ios-$(1)/.libs/libcycript.dylib: build-ios-$(1)
+	@
+build.ios-$(1)/.libs/libcycript-any.dylib: build-ios-$(1)
+	@
+endef
+
+$(foreach arch,armv6,$(eval $(call build_arm,$(arch))))
 
 .libs/%: build.mac-i386/.libs/% build.mac-x86_64/.libs/% build.ios-armv6/.libs/%
 	@mkdir -p .libs
