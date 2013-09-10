@@ -29,11 +29,6 @@ AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_MAINTAINER_MODE([disable])
 
-dnl XXX: do this only on Mac OS X
-am_cv_CC_dependencies_compiler_type=none
-am_cv_CXX_dependencies_compiler_type=none
-am_cv_OBJCXX_dependencies_compiler_type=none
-
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_OBJCXX
@@ -149,6 +144,19 @@ AC_DEFUN([CY_LT_LIB], [
     LIBS=$cy_save
     AC_SUBST(]$1[)
 ])
+
+dnl -arch * {{{
+for cy_arch in ppc ppc64 i386 x86_64 armv6; do
+    AC_MSG_CHECKING([for -arch $cy_arch])
+    CY_TRY([CXXFLAGS], ["-arch $cy_arch"], [
+        AC_TRY_LINK([], [], [CY_SUCCESS], [CY_FAILURE])
+    ], [
+        AC_MSG_RESULT([yes])
+        AC_LIB_APPENDTOVAR([CY_ARCH], ["-arch $cy_arch"])
+    ], [AC_MSG_RESULT([no])])
+done
+AC_SUBST([CY_ARCH])
+dnl }}}
 
 dnl --enable-javascript {{{
 AC_DEFUN([CY_CHECK_JAVASCRIPTCORE], [

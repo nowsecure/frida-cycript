@@ -669,6 +669,7 @@ LTJAVASCRIPTCORE
 WEBKIT_LIBS
 WEBKIT_CFLAGS
 CY_EXECUTE
+CY_ARCH
 CY_FILTERS
 GNUTAR
 GPERF
@@ -3157,10 +3158,6 @@ fi
   MAINT=$MAINTAINER_MODE_TRUE
 
 
-
-am_cv_CC_dependencies_compiler_type=none
-am_cv_CXX_dependencies_compiler_type=none
-am_cv_OBJCXX_dependencies_compiler_type=none
 
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -18332,6 +18329,90 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
 
+
+
+for cy_arch in ppc ppc64 i386 x86_64 armv6; do
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for -arch $cy_arch" >&5
+$as_echo_n "checking for -arch $cy_arch... " >&6; }
+
+    cy_save=$CXXFLAGS
+
+  for element in "-arch $cy_arch"; do
+    haveit=
+    for x in $CXXFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }$element"
+    fi
+  done
+
+
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  cy_good=1
+else
+  cy_good=0
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+    CXXFLAGS=$cy_save
+    if test "x$cy_good" = x1; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+  for element in "-arch $cy_arch"; do
+    haveit=
+    for x in $CY_ARCH; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CY_ARCH="${CY_ARCH}${CY_ARCH:+ }$element"
+    fi
+  done
+
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+done
 
 
 

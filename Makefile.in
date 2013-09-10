@@ -391,6 +391,7 @@ CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
+CY_ARCH = @CY_ARCH@
 CY_ATTACH_GROUP = @CY_ATTACH_GROUP@
 CY_EXECUTE = @CY_EXECUTE@
 CY_FILTERS = @CY_FILTERS@
@@ -1320,9 +1321,9 @@ uninstall-am: uninstall-binPROGRAMS uninstall-libLTLIBRARIES
 
 @CY_CONSOLE_TRUE@@CY_MACH_TRUE@Mach/Inject.$(OBJEXT): Trampoline.t.hpp
 @CY_CONSOLE_TRUE@@CY_MACH_TRUE@Trampoline.t.lo: Trampoline.t.cpp Trampoline.hpp Baton.hpp Standard.hpp
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@	$(LTCXXCOMPILE) -c -o $@ $< -fno-stack-protector -fno-exceptions -O0
+@CY_CONSOLE_TRUE@@CY_MACH_TRUE@	$(LTCXXCOMPILE) $(CY_ARCH) -c -o $@ $< -fno-stack-protector -O0
 @CY_CONSOLE_TRUE@@CY_MACH_TRUE@libTrampoline.t.la: Trampoline.t.lo
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@	$(CXXLINK) -rpath $(libdir) $^
+@CY_CONSOLE_TRUE@@CY_MACH_TRUE@	$(CXXLINK) $(CY_ARCH) -rpath $(libdir) $^
 @CY_CONSOLE_TRUE@@CY_MACH_TRUE@Trampoline.t.hpp: libTrampoline.t.la trampoline.sh
 @CY_CONSOLE_TRUE@@CY_MACH_TRUE@	$(srcdir)/trampoline.sh $@ .libs/libTrampoline.t.dylib Trampoline $(SED) $(LIPO) $(NM) $(OTOOL)
 @CY_CONSOLE_TRUE@@CY_MACH_TRUE@	! grep '## symbol stub for:' $@

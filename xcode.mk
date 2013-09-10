@@ -33,44 +33,56 @@ all: cycript $(libs)
 clean:
 	rm -rf cycript .libs
 
-build-mac:
-	$(MAKE) -C build.mac
-
-build-ios:
-	$(MAKE) -C build.ios
-
-build-sim:
-	$(MAKE) -C build.sim
-
 # make stubbornly refuses to believe that these @'s are bugs
 # http://osdir.com/ml/help-make-gnu/2012-04/msg00008.html
 
-build.mac/.libs/cycript: build-mac
+define build_mac
+.PHONY: build-mac-$(1)
+build-mac-$(1):
+	$(MAKE) -C build.mac-$(1)
+build.mac-$(1)/.libs/cycript: build-mac-$(1)
 	@
-build.mac/.libs/libcycript.dylib: build-mac
+build.mac-$(1)/.libs/libcycript.dylib: build-mac-$(1)
 	@
-build.mac/.libs/libcycript-any.dylib: build-mac
+build.mac-$(1)/.libs/libcycript-any.dylib: build-mac-$(1)
 	@
+endef
 
-build.ios/.libs/cycript: build-ios
-	@
-build.ios/.libs/libcycript.dylib: build-ios
-	@
-build.ios/.libs/libcycript-any.dylib: build-ios
-	@
-build.ios/.libs/libcycript.a: build-ios
-	@
+$(foreach arch,i386 x86_64,$(eval $(call build_mac,$(arch))))
 
-build.sim/.libs/libcycript.dylib: build-sim
+define build_ios
+.PHONY: build-ios-$(1)
+build-ios-$(1):
+	$(MAKE) -C build.ios-$(1)
+build.ios-$(1)/.libs/cycript: build-ios-$(1)
 	@
-build.sim/.libs/libcycript.a: build-sim
+build.ios-$(1)/.libs/libcycript.dylib: build-ios-$(1)
 	@
+build.ios-$(1)/.libs/libcycript-any.dylib: build-ios-$(1)
+	@
+build.ios-$(1)/.libs/libcycript.a: build-ios-$(1)
+	@
+endef
 
-.libs/%: build.mac/.libs/% build.ios/.libs/%
+$(foreach arch,armv6 armv7,$(eval $(call build_ios,$(arch))))
+
+define build_sim
+.PHONY: build-sim-$(1)
+build-sim-$(1):
+	$(MAKE) -C build.sim-$(1)
+build.sim-$(1)/.libs/libcycript.dylib: build-sim-$(1)
+	@
+build.sim-$(1)/.libs/libcycript.a: build-sim-$(1)
+	@
+endef
+
+$(foreach arch,i386,$(eval $(call build_sim,$(arch))))
+
+.libs/%: build.mac-i386/.libs/% build.mac-x86_64/.libs/% build.ios-armv6/.libs/%
 	@mkdir -p .libs
 	lipo -create -output $@ $^
 
-.libs/%-ios.a: build.ios/.libs/%.a build.sim/.libs/%.a
+.libs/%-ios.a: build.ios-armv6/.libs/%.a build.ios-armv7/.libs/%.a build.sim/.libs/%.a
 	@mkdir -p .libs
 	lipo -create -output $@ $^
 
@@ -78,7 +90,7 @@ build.sim/.libs/libcycript.a: build-sim
 	@mkdir -p .libs
 	ln -sf libcycript.dylib $@
 
-.libs/libcycript-sim.dylib: build.sim/.libs/libcycript.dylib
+.libs/libcycript-sim.dylib: build.sim-i386/.libs/libcycript.dylib
 	@mkdir -p .libs
 	cp -af $< $@
 
@@ -86,11 +98,11 @@ build.sim/.libs/libcycript.a: build-sim
 	@mkdir -p .libs
 	ld -r -arch $$(lipo -detailed_info $< | sed -e '/^Non-fat file: / ! d; s/.*: //') -o $@ -all_load $< libffi.a
 
-.libs/libcycript.o: .libs/libcycript-ios.o .libs/libcycript-sim.o
+.libs/libcycript.o: .libs/libcycript-ios-armv6.o .libs/libcycript-ios-armv7.o .libs/libcycript-sim-i386.o
 	lipo -create -output $@ $^
 
 cycript: cycript.in
 	cp -af $< $@
 	chmod 755 $@
 
-.PHONY: all clean build-mac build-ios build-sim
+.PHONY: all clean

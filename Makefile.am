@@ -94,11 +94,11 @@ Mach/Inject.$(OBJEXT): Trampoline.t.hpp
 
 CLEANFILES += Trampoline.t.lo
 Trampoline.t.lo: Trampoline.t.cpp Trampoline.hpp Baton.hpp Standard.hpp
-	$(LTCXXCOMPILE) -c -o $@ $< -fno-stack-protector -fno-exceptions -O0
+	$(LTCXXCOMPILE) $(CY_ARCH) -c -o $@ $< -fno-stack-protector -O0
 
 CLEANFILES += libTrampoline.t.la
 libTrampoline.t.la: Trampoline.t.lo
-	$(CXXLINK) -rpath $(libdir) $^
+	$(CXXLINK) $(CY_ARCH) -rpath $(libdir) $^
 
 CLEANFILES += Trampoline.t.hpp
 Trampoline.t.hpp: libTrampoline.t.la trampoline.sh

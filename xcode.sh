@@ -63,7 +63,9 @@ function configure() {
     cd ..
 }
 
-configure mac "${mac}" "-arch i386 -arch x86_64 -mmacosx-version-min=10.6" CPPFLAGS="-I../readline" LDFLAGS="-L../readline"
+for arch in i386 x86_64; do
+    configure "mac-${arch}" "${mac}" "-arch ${arch} -mmacosx-version-min=10.6" CPPFLAGS="-I../readline" LDFLAGS="-L../readline"
+done
 
 function build() {
     local dir=$1
@@ -74,5 +76,10 @@ function build() {
     configure "${dir}" "${sdk}" "${flg}" "$@" --enable-static --with-pic #CPPFLAGS="-idirafter ${mac}/usr/include"
 }
 
-build sim iphonesimulator "-arch i386 -mios-simulator-version-min=2.0" OBJCXXFLAGS="-fobjc-abi-version=2 -fobjc-legacy-dispatch" CPPFLAGS="-I../libffi.i386/include" LDFLAGS="-L.." --disable-console
-build ios iphoneos5.1 "-arch armv6 -miphoneos-version-min=2.0" --host=arm-apple-darwin10 CPPFLAGS="-I../libffi.armv6/include -I../sysroot.ios/usr/include -I../sysroot.ios/usr/include/apr-1" LTLIBAPR="../sysroot.ios/usr/lib/libapr-1.dylib" LDFLAGS="-L.. -L../sysroot.ios/usr/lib"
+for arch in i386; do
+    build "sim-${arch}" iphonesimulator "-arch ${arch} -mios-simulator-version-min=2.0" OBJCXXFLAGS="-fobjc-abi-version=2 -fobjc-legacy-dispatch" CPPFLAGS="-I../libffi.${arch}/include" LDFLAGS="-L.." --disable-console
+done
+
+for arch in armv6 armv7; do
+    build "ios-${arch}" iphoneos5.1 "-arch ${arch} -miphoneos-version-min=2.0" --host=arm-apple-darwin10 CPPFLAGS="-I../libffi.${arch}/include -I../sysroot.ios/usr/include -I../sysroot.ios/usr/include/apr-1" LTLIBAPR="../sysroot.ios/usr/lib/libapr-1.dylib" LDFLAGS="-L.. -L../sysroot.ios/usr/lib"
+done
