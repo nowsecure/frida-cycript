@@ -22,28 +22,27 @@ SHELL := /bin/bash
 
 lipo := $(shell xcrun --sdk iphoneos -f lipo)
 
-libs := 
-libs += .libs/cycript
-libs += .libs/libcycript.dylib
-libs += .libs/libcycript-any.dylib
-libs += .libs/libcycript-sys.dylib
-libs += .libs/libcycript-sim.dylib
-libs += .libs/libcycript.o
+cycript := 
+cycript += cycript_/cycript
+cycript += cycript_/libcycript.dylib
+cycript += cycript_/libcycript-any.dylib
+cycript += cycript_/libcycript-sys.dylib
+cycript += cycript_/libcycript-sim.dylib
 
 framework := 
 framework += Cycript.framework/Cycript
 framework += Cycript.framework/Headers/Cycript.h
 
-all: cycript $(libs) $(framework)
+all: cycript $(cycript) $(framework)
 
 cycript.zip: all
 	rm -f $@
-	zip -r9y $@ .libs/cycript .libs/*.dylib Cycript.framework
+	zip -r9y $@ cycript cycript_ Cycript.framework
 
 package: cycript.zip
 
 clean:
-	rm -rf cycript .libs
+	rm -rf cycript cycript_ libcycript*.o
 
 # make stubbornly refuses to believe that these @'s are bugs
 # http://osdir.com/ml/help-make-gnu/2012-04/msg00008.html
@@ -95,26 +94,26 @@ endef
 
 $(foreach arch,armv6,$(eval $(call build_arm,$(arch))))
 
-.libs/%: build.mac-i386/.libs/% build.mac-x86_64/.libs/% build.ios-armv6/.libs/%
-	@mkdir -p .libs
+cycript_/%: build.mac-i386/.libs/% build.mac-x86_64/.libs/% build.ios-armv6/.libs/%
+	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
 
-.libs/libcycript-sys.dylib:
-	@mkdir -p .libs
+cycript_/libcycript-sys.dylib:
+	@mkdir -p $(dir $@)
 	ln -sf libcycript.dylib $@
 
-.libs/libcycript-sim.dylib: build.sim-i386/.libs/libcycript.dylib
-	@mkdir -p .libs
+cycript_/libcycript-sim.dylib: build.sim-i386/.libs/libcycript.dylib
+	@mkdir -p $(dir $@)
 	cp -af $< $@
 
-.libs/libcycript-%.o: build.%/.libs/libcycript.a
-	@mkdir -p .libs
+libcycript-%.o: build.%/.libs/libcycript.a
+	@mkdir -p $(dir $@)
 	ld -r -arch $$($(lipo) -detailed_info $< | sed -e '/^Non-fat file: / ! d; s/.*: //') -o $@ -all_load $< libffi.a
 
-.libs/libcycript.o: .libs/libcycript-ios-armv6.o .libs/libcycript-ios-armv7.o .libs/libcycript-ios-armv7s.o .libs/libcycript-sim-i386.o
+libcycript.o: libcycript-ios-armv6.o libcycript-ios-armv7.o libcycript-ios-armv7s.o libcycript-sim-i386.o
 	$(lipo) -create -output $@ $^
 
-Cycript.framework/Cycript: .libs/libcycript.o
+Cycript.framework/Cycript: libcycript.o
 	@mkdir -p $(dir $@)
 	cp -a $< $@
 
