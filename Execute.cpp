@@ -1188,6 +1188,12 @@ static JSValueRef Pointer_callAsFunction_toCYON(JSContextRef context, JSObjectRe
     }
 } CYCatch(NULL) }
 
+static JSValueRef Functor_getProperty_type(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
+    cy::Functor *internal(reinterpret_cast<cy::Functor *>(JSObjectGetPrivate(object)));
+    CYPool pool;
+    return CYCastJSValue(context, Unparse(pool, &internal->signature_));
+}
+
 static JSValueRef Type_getProperty_alignment(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
     return CYCastJSValue(context, internal->GetFFI()->alignment);
@@ -1246,6 +1252,11 @@ static JSStaticFunction Functor_staticFunctions[4] = {
 namespace cy {
     JSStaticFunction const * const Functor::StaticFunctions = Functor_staticFunctions;
 }
+
+static JSStaticValue Functor_staticValues[2] = {
+    {"type", &Functor_getProperty_type, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {NULL, NULL, NULL, 0}
+};
 
 static JSStaticValue Type_staticValues[4] = {
     {"alignment", &Type_getProperty_alignment, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
@@ -1361,6 +1372,7 @@ void CYInitializeDynamic() {
     definition = kJSClassDefinitionEmpty;
     definition.className = "Functor";
     definition.staticFunctions = cy::Functor::StaticFunctions;
+    definition.staticValues = Functor_staticValues;
     definition.callAsFunction = &Functor_callAsFunction;
     definition.finalize = &CYFinalize;
     Functor_ = JSClassCreate(&definition);

@@ -34,3 +34,4 @@ readline-6.2
 readline-6.2.tar.gz
 libffi.*
 build.*
+Cycript.framework

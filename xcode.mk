@@ -30,7 +30,17 @@ libs += .libs/libcycript-sys.dylib
 libs += .libs/libcycript-sim.dylib
 libs += .libs/libcycript.o
 
-all: cycript $(libs)
+framework := 
+framework += Cycript.framework/Cycript
+framework += Cycript.framework/Headers/Cycript.h
+
+all: cycript $(libs) $(framework)
+
+cycript.zip: all
+	rm -f $@
+	zip -r9y $@ .libs/cycript .libs/*.dylib Cycript.framework
+
+package: cycript.zip
 
 clean:
 	rm -rf cycript .libs
@@ -104,8 +114,16 @@ $(foreach arch,armv6,$(eval $(call build_arm,$(arch))))
 .libs/libcycript.o: .libs/libcycript-ios-armv6.o .libs/libcycript-ios-armv7.o .libs/libcycript-ios-armv7s.o .libs/libcycript-sim-i386.o
 	$(lipo) -create -output $@ $^
 
+Cycript.framework/Cycript: .libs/libcycript.o
+	@mkdir -p $(dir $@)
+	cp -a $< $@
+
+Cycript.framework/Headers/Cycript.h: Cycript.h
+	@mkdir -p $(dir $@)
+	cp -a $< $@
+
 cycript: cycript.in
 	cp -af $< $@
 	chmod 755 $@
 
-.PHONY: all clean
+.PHONY: all clean package
