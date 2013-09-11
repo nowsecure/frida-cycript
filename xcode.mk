@@ -23,11 +23,11 @@ SHELL := /bin/bash
 lipo := $(shell xcrun --sdk iphoneos -f lipo)
 
 cycript := 
-cycript += cycript_/cycript
-cycript += cycript_/libcycript.dylib
-cycript += cycript_/libcycript-any.dylib
-cycript += cycript_/libcycript-sys.dylib
-cycript += cycript_/libcycript-sim.dylib
+cycript += Cycript_/cycript
+cycript += Cycript_/libcycript.dylib
+cycript += Cycript_/libcycript-any.dylib
+cycript += Cycript_/libcycript-sys.dylib
+cycript += Cycript_/libcycript-sim.dylib
 
 framework := 
 framework += Cycript.framework/Cycript
@@ -37,12 +37,12 @@ all: cycript $(cycript) $(framework)
 
 cycript.zip: all
 	rm -f $@
-	zip -r9y $@ cycript cycript_ Cycript.framework
+	zip -r9y $@ cycript Cycript_ Cycript.framework
 
 package: cycript.zip
 
 clean:
-	rm -rf cycript cycript_ libcycript*.o
+	rm -rf cycript Cycript_ libcycript*.o
 
 # make stubbornly refuses to believe that these @'s are bugs
 # http://osdir.com/ml/help-make-gnu/2012-04/msg00008.html
@@ -94,15 +94,15 @@ endef
 
 $(foreach arch,armv6,$(eval $(call build_arm,$(arch))))
 
-cycript_/%: build.mac-i386/.libs/% build.mac-x86_64/.libs/% build.ios-armv6/.libs/%
+Cycript_/%: build.mac-i386/.libs/% build.mac-x86_64/.libs/% build.ios-armv6/.libs/%
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
 
-cycript_/libcycript-sys.dylib:
+Cycript_/libcycript-sys.dylib:
 	@mkdir -p $(dir $@)
 	ln -sf libcycript.dylib $@
 
-cycript_/libcycript-sim.dylib: build.sim-i386/.libs/libcycript.dylib
+Cycript_/libcycript-sim.dylib: build.sim-i386/.libs/libcycript.dylib
 	@mkdir -p $(dir $@)
 	cp -af $< $@
 
