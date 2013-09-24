@@ -36,3 +36,5 @@ done
 mkdir -p sysroot.ios/usr/include/ffi
 mv -v sysroot.ios/usr/include/{,ffi/}ffi.h
 ln -s /usr/include/apr-1 sysroot.ios/usr/include
+mv sysroot.ios/usr/lib/_ncurses/* sysroot.ios/usr/lib
+rmdir sysroot.ios/usr/lib/_ncurses
