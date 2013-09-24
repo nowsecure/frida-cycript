@@ -7,6 +7,7 @@ libtool
 .dirstamp
 .libs
 autom4te.cache
+codesign.mk
 config.h
 control
 control.tmp

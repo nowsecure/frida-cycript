@@ -20,6 +20,8 @@
 .DELETE_ON_ERROR:
 SHELL := /bin/bash
 
+include codesign.mk
+
 lipo := $(shell xcrun --sdk iphoneos -f lipo)
 
 cycript := 
@@ -97,6 +99,8 @@ $(foreach arch,armv6,$(eval $(call build_arm,$(arch))))
 Cycript_/%: build.mac-i386/.libs/% build.mac-x86_64/.libs/% build.ios-armv6/.libs/%
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
+	# XXX: this should probably not entitle the dylibs
+	codesign -s $(codesign) --entitlement cycript.xml $@
 
 Cycript_/libcycript-sys.dylib:
 	@mkdir -p $(dir $@)
@@ -105,6 +109,7 @@ Cycript_/libcycript-sys.dylib:
 Cycript_/libcycript-sim.dylib: build.sim-i386/.libs/libcycript.dylib
 	@mkdir -p $(dir $@)
 	cp -af $< $@
+	codesign -s $(codesign) $@
 
 libcycript-%.o: build.%/.libs/libcycript.a
 	@mkdir -p $(dir $@)
