@@ -2,48 +2,11 @@ PACKAGE_TARNAME := @PACKAGE_TARNAME@
 
 CY_ATTACH_GROUP := @CY_ATTACH_GROUP@
 
-ifneq ($(git),)
-version := $(shell $(git) describe --always --tags --dirty="+" --match="v*" | $(sed) -e 's@-\([^-]*\)-\([^-]*\)$$@+\1.\2@;s@^v@@')
-else
-version := @PACKAGE_VERSION@
-endif
-
 lib := lib
 dll := @SO@
 depends ?=
 
-ifdef arch
 deb := $(shell grep ^Package: $(srcdir)/control.in | cut -d ' ' -f 2-)_$(shell grep ^Version: $(srcdir)/control.in | cut -d ' ' -f 2 | $(sed) -e 's/\#/$(version)/')_$(arch).deb
-
-ifeq ($(depends)$(dll),dylib)
-control.tmp: control.in .libs/cycript .libs/$(lib)cycript.dylib
-	$(sed) -e 's/&/'"$$(dpkg-query -S $$(otool -lah .libs/cycript .libs/*.dylib | grep dylib | grep -v ':$$' | $(sed) -e 's/^ *name //;s/ (offset [0-9]*)$$//' | sort -u) 2>/dev/null | $(sed) -e 's/:.*//; /^cycript$$/ d; s/$$/,/' | sort -u | tr '\n' ' ')"'/;s/, $$//;s/#/$(version)/;s/%/$(arch)/' $< >$@
-else
-ifeq ($(depends)$(dll),so)
-control.tmp: control.in .libs/cycript .libs/$(lib)cycript.so
-	$(sed) -e 's/&/'"$$(dpkg-query -S $$(ldd cycript $(lib)cycript.so | $(sed) -e '/:$$/ d; s/^[ \t]*\([^ ]* => \)\?\([^ ]*\) .*/\2/' | sort -u) 2>/dev/null | $(sed) -e 's/:.*//; /^cycript$$/ d; s/$$/,/' | sort -u | tr '\n' ' ')"'/;s/, $$//;s/#/$(version)/;s/%/$(arch)/' $< >$@
-else
-control.tmp: control.in
-	$(sed) -e 's/&/$(depends)/;s/,$$//;s/#/$(version)/;s/%/$(arch)/' $< >$@
-endif
-endif
-
-control: control.tmp
-	[[ -e control ]] && diff control control.tmp &>/dev/null || cp -pRf control.tmp control
-
-$(deb): $(all) control
-	rm -rf package
-	mkdir -p package/DEBIAN
-	cp -pR control package/DEBIAN
-	mkdir -p package/usr/{bin,lib,sbin}
-	cp -pR .libs/$(lib)cycript.0.$(dll) package/usr/lib
-	cp -pR .libs/$(lib)cycript.$(dll) package/usr/lib
-	cp -pR .libs/cycript package/usr/bin
-	dpkg-deb -b package $(deb)
-endif
-
-clean::
-	rm -rf control
 
 libcycript.la: $(code)
 	$(ldid) .libs/$(lib)cycript.$(dll)
