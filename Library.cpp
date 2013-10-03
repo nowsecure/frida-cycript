@@ -36,7 +36,6 @@
 
 #include "Error.hpp"
 #include "Execute.hpp"
-#include "JavaScript.hpp"
 #include "Parser.hpp"
 #include "String.hpp"
 
@@ -190,26 +189,6 @@ double CYCastDouble(const char *value, size_t size) {
 
 double CYCastDouble(const char *value) {
     return CYCastDouble(value, strlen(value));
-}
-
-size_t CYArrayLength(JSContextRef context, JSObjectRef array) {
-    return CYCastDouble(context, CYGetProperty(context, array, length_s));
-}
-
-JSValueRef CYArrayGet(JSContextRef context, JSObjectRef array, size_t index) {
-    JSValueRef exception(NULL);
-    JSValueRef value(JSObjectGetPropertyAtIndex(context, array, index, &exception));
-    CYThrow(context, exception);
-    return value;
-}
-
-void CYArrayPush(JSContextRef context, JSObjectRef array, JSValueRef value) {
-    JSValueRef exception(NULL);
-    JSValueRef arguments[1];
-    arguments[0] = value;
-    JSObjectRef Array(CYGetCachedObject(context, CYJSString("Array_prototype")));
-    JSObjectCallAsFunction(context, CYCastJSObject(context, CYGetProperty(context, Array, push_s)), array, 1, arguments, &exception);
-    CYThrow(context, exception);
 }
 
 extern "C" void CydgetMemoryParse(const uint16_t **data, size_t *size) {

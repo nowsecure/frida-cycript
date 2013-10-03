@@ -324,6 +324,26 @@ bool CYIsCallable(JSContextRef context, JSValueRef value) {
     return value != NULL && JSValueIsObject(context, value) && JSObjectIsFunction(context, (JSObjectRef) value);
 }
 
+size_t CYArrayLength(JSContextRef context, JSObjectRef array) {
+    return CYCastDouble(context, CYGetProperty(context, array, length_s));
+}
+
+JSValueRef CYArrayGet(JSContextRef context, JSObjectRef array, size_t index) {
+    JSValueRef exception(NULL);
+    JSValueRef value(JSObjectGetPropertyAtIndex(context, array, index, &exception));
+    CYThrow(context, exception);
+    return value;
+}
+
+void CYArrayPush(JSContextRef context, JSObjectRef array, JSValueRef value) {
+    JSValueRef exception(NULL);
+    JSValueRef arguments[1];
+    arguments[0] = value;
+    JSObjectRef Array(CYGetCachedObject(context, CYJSString("Array_prototype")));
+    JSObjectCallAsFunction(context, CYCastJSObject(context, CYGetProperty(context, Array, push_s)), array, 1, arguments, &exception);
+    CYThrow(context, exception);
+}
+
 static JSValueRef System_print(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count == 0)
         printf("\n");
