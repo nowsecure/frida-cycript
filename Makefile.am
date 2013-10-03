@@ -43,7 +43,7 @@ lib_LTLIBRARIES += libcycript.la
 libcycript_la_LDFLAGS = $(CY_LDFLAGS)
 libcycript_la_LIBADD = $(LTLIBFFI) -ldl
 
-libcycript_la_SOURCES = ConvertUTF.c Driver.cpp Highlight.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp
+libcycript_la_SOURCES = ConvertUTF.c Driver.cpp Highlight.cpp Library.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp
 libcycript_la_SOURCES += Cycript.tab.cc lex.cy.cpp
 
 filters = $(CY_FILTERS)
@@ -59,7 +59,7 @@ endif
 
 if CY_EXECUTE
 libcycript_la_SOURCES += sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp
-libcycript_la_SOURCES += Bridge.cpp Execute.cpp JavaScriptCore.cpp Library.cpp
+libcycript_la_SOURCES += Bridge.cpp Execute.cpp JavaScriptCore.cpp
 libcycript_la_LIBADD += $(LTJAVASCRIPTCORE)
 
 AM_CPPFLAGS += -DCY_EXECUTE

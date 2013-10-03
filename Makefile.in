@@ -102,7 +102,7 @@ host_triplet = @host@
 @CY_CONSOLE_TRUE@bin_PROGRAMS = cycript$(EXEEXT)
 @CY_EXECUTE_TRUE@am__append_2 = sig/ffi_type.cpp sig/parse.cpp \
 @CY_EXECUTE_TRUE@	sig/copy.cpp Bridge.cpp Execute.cpp \
-@CY_EXECUTE_TRUE@	JavaScriptCore.cpp Library.cpp
+@CY_EXECUTE_TRUE@	JavaScriptCore.cpp
 @CY_EXECUTE_TRUE@am__append_3 = $(LTJAVASCRIPTCORE)
 @CY_EXECUTE_TRUE@am__append_4 = -DCY_EXECUTE
 @CY_EXECUTE_TRUE@am__append_5 = C
@@ -184,22 +184,23 @@ am__DEPENDENCIES_1 =
 libcycript_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
 am__libcycript_la_SOURCES_DIST = ConvertUTF.c Driver.cpp Highlight.cpp \
-	Network.cpp Output.cpp Parser.cpp Replace.cpp Cycript.tab.cc \
-	lex.cy.cpp sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp \
-	Bridge.cpp Execute.cpp JavaScriptCore.cpp Library.cpp \
+	Library.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp \
+	Cycript.tab.cc lex.cy.cpp sig/ffi_type.cpp sig/parse.cpp \
+	sig/copy.cpp Bridge.cpp Execute.cpp JavaScriptCore.cpp \
 	ObjectiveC/Output.cpp ObjectiveC/Replace.cpp \
 	ObjectiveC/Library.mm Handler.mm
 am__dirstamp = $(am__leading_dot)dirstamp
 @CY_EXECUTE_TRUE@am__objects_1 = sig/ffi_type.lo sig/parse.lo \
 @CY_EXECUTE_TRUE@	sig/copy.lo Bridge.lo Execute.lo \
-@CY_EXECUTE_TRUE@	JavaScriptCore.lo Library.lo
+@CY_EXECUTE_TRUE@	JavaScriptCore.lo
 @CY_OBJECTIVEC_TRUE@am__objects_2 = ObjectiveC/Output.lo \
 @CY_OBJECTIVEC_TRUE@	ObjectiveC/Replace.lo \
 @CY_OBJECTIVEC_TRUE@	ObjectiveC/Library.lo
 @CY_MACH_TRUE@am__objects_3 = Handler.lo
 am_libcycript_la_OBJECTS = ConvertUTF.lo Driver.lo Highlight.lo \
-	Network.lo Output.lo Parser.lo Replace.lo Cycript.tab.lo \
-	lex.cy.lo $(am__objects_1) $(am__objects_2) $(am__objects_3)
+	Library.lo Network.lo Output.lo Parser.lo Replace.lo \
+	Cycript.tab.lo lex.cy.lo $(am__objects_1) $(am__objects_2) \
+	$(am__objects_3)
 libcycript_la_OBJECTS = $(am_libcycript_la_OBJECTS)
 libcycript_la_LINK = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(OBJCXXLD) $(AM_OBJCXXFLAGS) \
@@ -547,8 +548,9 @@ libcycript_la_LDFLAGS = $(CY_LDFLAGS)
 libcycript_la_LIBADD = $(LTLIBFFI) -ldl $(am__append_3) \
 	$(am__append_9)
 libcycript_la_SOURCES = ConvertUTF.c Driver.cpp Highlight.cpp \
-	Network.cpp Output.cpp Parser.cpp Replace.cpp Cycript.tab.cc \
-	lex.cy.cpp $(am__append_2) $(am__append_8) $(am__append_10)
+	Library.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp \
+	Cycript.tab.cc lex.cy.cpp $(am__append_2) $(am__append_8) \
+	$(am__append_10)
 filters = $(CY_FILTERS) $(am__append_5) $(am__append_7)
 @CY_CONSOLE_TRUE@cycript_SOURCES = Console.cpp Display.cpp \
 @CY_CONSOLE_TRUE@	$(am__append_11)
