@@ -2165,16 +2165,20 @@ static int struct_forward_array[] = {
 #define OBJC_MAX_STRUCT_BY_VALUE 1
 static int struct_forward_array[] = {
     0, 0 };
+#elif defined(__arm64__)
+#define CY_NO_STRET
 #else
 #error missing objc-runtime-info
 #endif
 
+#ifndef CY_NO_STRET
 static bool stret(ffi_type *ffi_type) {
     return ffi_type->type == FFI_TYPE_STRUCT && (
         ffi_type->size > OBJC_MAX_STRUCT_BY_VALUE ||
         struct_forward_array[ffi_type->size] != 0
     );
 }
+#endif
 #endif
 
 JSValueRef CYSendMessage(CYPool &pool, JSContextRef context, id self, Class _class, SEL _cmd, size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception) { CYTry {
@@ -2231,9 +2235,11 @@ JSValueRef CYSendMessage(CYPool &pool, JSContextRef context, id self, Class _cla
 
     if (imp == NULL) {
 #ifdef __APPLE__
+#ifndef CY_NO_STRET
         if (stret(cif.rtype))
             imp = class_getMethodImplementation_stret(_class, _cmd);
         else
+#endif
             imp = class_getMethodImplementation(_class, _cmd);
 #else
         objc_super super = {self, _class};
