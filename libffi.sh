@@ -27,7 +27,8 @@ function arch() {
     local host=$2
     local sdk=$3
     local os=$4
-    shift 4
+    local min=$5
+    shift 5
 
     rm -rf "libffi.${arch}"
     if ! isysroot=$(xcodebuild -sdk "${sdk}" -version Path); then
@@ -37,16 +38,19 @@ function arch() {
     archs+=("${arch}")
     mkdir "libffi.${arch}"
 
+    flags="-isysroot ${isysroot} -m${os}-version-min=${min}"
+
     cd "libffi.${arch}"
-    CC="clang -arch ${arch}" CFLAGS="-no-integrated-as -isysroot ${isysroot} -m${os}-version-min=2.0" ../libffi/configure --host="${host}"
+    CC="clang -arch ${arch}" CFLAGS="-no-integrated-as ${flags}" CPPFLAGS="${flags}" ../libffi/configure --host="${host}"
     make
     cd ..
 }
 
-arch armv6 arm-apple-darwin10 iphoneos5.1 iphoneos
-arch armv7 arm-apple-darwin10 iphoneos iphoneos
-arch armv7s arm-apple-darwin10 iphoneos iphoneos
-arch i386 i386-apple-darwin10 iphonesimulator ios-simulator
+arch armv6 arm-apple-darwin10 iphoneos iphoneos 2.0
+arch armv7 arm-apple-darwin10 iphoneos iphoneos 2.0
+arch armv7s arm-apple-darwin10 iphoneos iphoneos 2.0
+arch arm64 aarch64-apple-darwin10 iphoneos iphoneos 2.0
+arch i386 i386-apple-darwin10 iphonesimulator ios-simulator 4.0
 
 libffi=()
 for arch in "${archs[@]}"; do
