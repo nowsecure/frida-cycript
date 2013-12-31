@@ -71,7 +71,7 @@ build.ios-$(1)/.libs/libcycript.a: build-ios-$(1)
 	@
 endef
 
-$(foreach arch,armv6 armv7 armv7s,$(eval $(call build_ios,$(arch))))
+$(foreach arch,armv6 armv7 armv7s arm64,$(eval $(call build_ios,$(arch))))
 
 define build_sim
 .PHONY: build-sim-$(1)
@@ -96,10 +96,13 @@ endef
 
 $(foreach arch,armv6,$(eval $(call build_arm,$(arch))))
 
+Cycript_/%.dylib: build.mac-i386/.libs/%.dylib build.mac-x86_64/.libs/%.dylib build.ios-armv6/.libs/%.dylib build.ios-arm64/.libs/%.dylib
+	@mkdir -p $(dir $@)
+	$(lipo) -create -output $@ $^
+
 Cycript_/%: build.mac-i386/.libs/% build.mac-x86_64/.libs/% build.ios-armv6/.libs/%
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
-	# XXX: this should probably not entitle the dylibs
 	codesign -s $(codesign) --entitlement cycript.xml $@
 
 Cycript_/libcycript-sys.dylib:
@@ -115,7 +118,7 @@ libcycript-%.o: build.%/.libs/libcycript.a
 	@mkdir -p $(dir $@)
 	ld -r -arch $$($(lipo) -detailed_info $< | sed -e '/^Non-fat file: / ! d; s/.*: //') -o $@ -all_load $< libffi.a
 
-libcycript.o: libcycript-ios-armv6.o libcycript-ios-armv7.o libcycript-ios-armv7s.o libcycript-sim-i386.o
+libcycript.o: libcycript-ios-armv6.o libcycript-ios-armv7.o libcycript-ios-armv7s.o libcycript-ios-arm64.o libcycript-sim-i386.o
 	$(lipo) -create -output $@ $^
 
 Cycript.framework/Cycript: libcycript.o

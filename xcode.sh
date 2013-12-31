@@ -81,25 +81,25 @@ function build() {
 }
 
 for arch in i386; do
-    build "sim-${arch}" iphonesimulator "-arch ${arch} -mios-simulator-version-min=2.0" \
+    build "sim-${arch}" iphonesimulator "-arch ${arch} -mios-simulator-version-min=4.0" \
         OBJCXXFLAGS="-fobjc-abi-version=2 -fobjc-legacy-dispatch" \
         CPPFLAGS="-I../libffi.${arch}/include" \
         LDFLAGS="-L.." \
     --disable-console
 done
 
-for arch in armv6 armv7 armv7s; do
-    if [[ ${arch} == armv6 ]]; then
-        sdk=iphoneos5.1
-        flg=()
-    else
-        sdk=iphoneos
+for arch in armv6 armv7 armv7s arm64; do
+    cpf="-I../libffi.${arch}/include"
+    ldf="-L.."
+
+    if [[ ${arch} != armv6 ]]; then
         flg=(--disable-console)
+    else
+        flg=(LTLIBAPR="../sysroot.ios/usr/lib/libapr-1.dylib")
+        cpf+=" -I../sysroot.ios/usr/include -I../sysroot.ios/usr/include/apr-1"
+        ldf+=" -L../sysroot.ios/usr/lib"
     fi
 
-    build "ios-${arch}" "${sdk}" "-arch ${arch} -miphoneos-version-min=2.0" --host=arm-apple-darwin10 \
-        CPPFLAGS="-I../libffi.${arch}/include -I../sysroot.ios/usr/include -I../sysroot.ios/usr/include/apr-1" \
-        LDFLAGS="-L.. -L../sysroot.ios/usr/lib" \
-        LTLIBAPR="../sysroot.ios/usr/lib/libapr-1.dylib" \
-    "${flg[@]}"
+    build "ios-${arch}" iphoneos "-arch ${arch} -miphoneos-version-min=2.0" --host=arm-apple-darwin10 \
+        CPPFLAGS="${cpf}" LDFLAGS="${ldf}" "${flg[@]}" --host=arm-apple-darwin10
 done
