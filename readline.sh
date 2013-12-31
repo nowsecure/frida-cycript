@@ -26,4 +26,4 @@ arch="-arch i386 -arch x86_64"
 cd readline
 CFLAGS="-g -O2 ${arch}" ./configure --disable-shared --enable-static
 make
-ln -s . readline
+ln -sf . readline
