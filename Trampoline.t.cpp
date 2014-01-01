@@ -19,16 +19,18 @@
 **/
 /* }}} */
 
+#include <TargetConditionals.h>
+#undef TARGET_IPHONE_SIMULATOR
+#define TARGET_IPHONE_SIMULATOR 1
 #define _PTHREAD_ATTR_T
 #include <pthread_internals.h>
+#undef TARGET_IPHONE_SIMULATOR
+#define TARGET_IPHONE_SIMULATOR 0
 
 #include <mach-o/dyld.h>
 #include <mach-o/dyld_images.h>
 #include <mach-o/loader.h>
-
-extern "C" {
 #include <mach-o/nlist.h>
-}
 
 #include "Standard.hpp"
 #include "Baton.hpp"
@@ -133,23 +135,16 @@ static void *Symbol(const mach_header_xx *mach, const char *name) {
         if (value == 0)
             continue;
 
+#ifdef __arm__
+        if ((symbol->n_desc & N_ARM_THUMB_DEF) != 0)
+            value |= 0x00000001;
+#endif
+
         value += slide;
         return reinterpret_cast<void *>(value);
     }
 
     return NULL;
-}
-
-struct Dynamic {
-    char *(*dlerror)();
-    void *(*dlsym)(void *, const char *);
-};
-
-template <typename Type_>
-static _finline void dlset(Dynamic *dynamic, Type_ &function, const char *name, void *handle = RTLD_DEFAULT) {
-    function = reinterpret_cast<Type_>(dynamic->dlsym(handle, name));
-    if (function == NULL)
-        dynamic->dlerror();
 }
 
 template <typename Type_>
@@ -165,33 +160,31 @@ static _finline const mach_header_xx *Library(Baton *baton, const char *name) {
 void *Routine(void *arg) {
     Baton *baton(reinterpret_cast<Baton *>(arg));
 
-    const mach_header_xx *dyld(Library(baton, "/usr/lib/system/libdyld.dylib"));
+    const mach_header_xx *dyld(NULL);
+    if (dyld == NULL)
+        dyld = Library(baton, "/usr/lib/system/libdyld.dylib");
+    if (dyld == NULL)
+        dyld = Library(baton, "/usr/lib/libSystem.B.dylib");
 
-    Dynamic dynamic;
-    cyset(dynamic.dlerror, "_dlerror", dyld);
-    cyset(dynamic.dlsym, "_dlsym", dyld);
+    char *(*$dlerror)();
+    cyset($dlerror, "_dlerror", dyld);
 
-    int (*pthread_detach)(pthread_t);
-    dlset(&dynamic, pthread_detach, "pthread_detach");
+    void *(*$dlopen)(const char *, int);
+    cyset($dlopen, "_dlopen", dyld);
 
-    pthread_t (*pthread_self)();
-    dlset(&dynamic, pthread_self, "pthread_self");
-
-    pthread_detach(pthread_self());
-
-    void *(*dlopen)(const char *, int);
-    dlset(&dynamic, dlopen, "dlopen");
-
-    void *handle(dlopen(baton->library, RTLD_LAZY | RTLD_LOCAL));
+    void *handle($dlopen(baton->library, RTLD_LAZY | RTLD_LOCAL));
     if (handle == NULL) {
-        dynamic.dlerror();
+        $dlerror();
         return NULL;
     }
 
+    void *(*$dlsym)(void *, const char *);
+    cyset($dlsym, "_dlsym", dyld);
+
     void (*CYHandleServer)(pid_t);
-    dlset(&dynamic, CYHandleServer, "CYHandleServer", handle);
+    CYHandleServer = reinterpret_cast<void (*)(pid_t)>($dlsym(handle, "CYHandleServer"));
     if (CYHandleServer == NULL) {
-        dynamic.dlerror();
+        $dlerror();
         return NULL;
     }
 
@@ -203,9 +196,13 @@ extern "C" void Start(Baton *baton) {
     struct _pthread self;
     $bzero(&self, sizeof(self));
 
-    const mach_header_xx *pthread(Library(baton, "/usr/lib/system/libsystem_pthread.dylib"));
+    const mach_header_xx *pthread(NULL);
+    if (pthread == NULL)
+        pthread = Library(baton, "/usr/lib/system/libsystem_pthread.dylib");
     if (pthread == NULL)
         pthread = Library(baton, "/usr/lib/system/libsystem_c.dylib");
+    if (pthread == NULL)
+        pthread = Library(baton, "/usr/lib/libSystem.B.dylib");
 
     void (*$__pthread_set_self)(pthread_t);
     cyset($__pthread_set_self, "___pthread_set_self", pthread);
@@ -213,13 +210,59 @@ extern "C" void Start(Baton *baton) {
     self.tsd[0] = &self;
     $__pthread_set_self(&self);
 
+    int (*$pthread_attr_init)(pthread_attr_t *);
+    cyset($pthread_attr_init, "_pthread_attr_init", pthread);
+
+#if 0
+    pthread_attr_t attr;
+    $pthread_attr_init(&attr);
+
+    int (*$pthread_attr_setdetachstate)(pthread_attr_t *, int);
+    cyset($pthread_attr_setdetachstate, "_pthread_attr_setdetachstate", pthread);
+
+    $pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+#endif
+
     int (*$pthread_create)(pthread_t *, const pthread_attr_t *, void *(*)(void *), void *);
     cyset($pthread_create, "_pthread_create", pthread);
 
     pthread_t thread;
     $pthread_create(&thread, NULL, &Routine, baton);
 
-    const mach_header_xx *kernel(Library(baton, "/usr/lib/system/libsystem_kernel.dylib"));
+#if 0
+    int (*$pthread_attr_destroy)(pthread_attr_t *);
+    cyset($pthread_attr_destroy, "_pthread_attr_destroy", pthread);
+
+    $pthread_attr_destroy(&attr);
+#endif
+
+#if defined(__arm__) || defined(__arm64__)
+    uintptr_t tpid;
+#if defined(__arm__)
+    __asm__ ("mrc p15, 0, %0, c13, c0, 3\n" : "=r" (tpid));
+#elif defined(__arm64__)
+    __asm__ ("mrs %0, tpidrro_el0\n" : "=r" (tpid));
+#else
+#error XXX
+#endif
+
+    void **tsd;
+    tsd = reinterpret_cast<void **>(tpid & ~3);
+    if (tsd != NULL)
+        tsd[0] = &self;
+#endif
+
+    int (*$pthread_join)(pthread_t, void **);
+    cyset($pthread_join, "_pthread_join", pthread);
+
+    void *status;
+    $pthread_join(thread, &status);
+
+    const mach_header_xx *kernel(NULL);
+    if (kernel == NULL)
+        kernel = Library(baton, "/usr/lib/system/libsystem_kernel.dylib");
+    if (kernel == NULL)
+        kernel = Library(baton, "/usr/lib/libSystem.B.dylib");
 
     mach_port_t (*$mach_thread_self)();
     cyset($mach_thread_self, "_mach_thread_self", kernel);

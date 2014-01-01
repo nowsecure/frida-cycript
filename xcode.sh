@@ -61,7 +61,7 @@ function configure() {
     cd build."${dir}"
 
     CC="${cc} ${flg}" CXX="${cxx} ${flg}" OBJCXX="${cxx} ${flg}" \
-        ../configure "${flags[@]}" --prefix="/usr" "$@"
+        ../configure --enable-maintainer-mode "${flags[@]}" --prefix="/usr" "$@"
 
     cd ..
 }
@@ -80,7 +80,7 @@ function build() {
     configure "${dir}" "${sdk}" "${flg}" "$@" --enable-static --with-pic
 }
 
-for arch in i386; do
+for arch in i386 x86_64; do
     build "sim-${arch}" iphonesimulator "-arch ${arch} -mios-simulator-version-min=4.0" \
         OBJCXXFLAGS="-fobjc-abi-version=2 -fobjc-legacy-dispatch" \
         CPPFLAGS="-I../libffi.${arch}/include" \
@@ -92,10 +92,12 @@ for arch in armv6 armv7 armv7s arm64; do
     cpf="-I../libffi.${arch}/include"
     ldf="-L.."
 
+    flg=()
     if [[ ${arch} != armv6 ]]; then
-        flg=(--disable-console)
+        flg+=(--disable-console)
     else
-        flg=(LTLIBAPR="../sysroot.ios/usr/lib/libapr-1.dylib")
+        flg+=(LTLIBAPR="../sysroot.ios/usr/lib/libapr-1.dylib")
+        flg+=(LTLIBGCC="-lgcc_s.1") #-L${xcs}/Platforms/iPhoneOS.platform/Developer/usr/llvm-gcc-4.2/lib/gcc/arm-apple-darwin10/4.2.1/v6 -lgcc_eh")
         cpf+=" -I../sysroot.ios/usr/include -I../sysroot.ios/usr/include/apr-1"
         ldf+=" -L../sysroot.ios/usr/lib"
     fi

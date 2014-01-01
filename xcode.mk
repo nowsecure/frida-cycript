@@ -24,6 +24,9 @@ include codesign.mk
 
 lipo := $(shell xcrun --sdk iphoneos -f lipo)
 
+version := $(shell git describe --always --tags --dirty="+" --match="v*" | sed -e 's@-\([^-]*\)-\([^-]*\)$$@+\1.\2@;s@^v@@;s@%@~@g')
+deb := cycript_$(version)_iphoneos-arm.deb
+
 cycript := 
 cycript += Cycript_/cycript
 cycript += Cycript_/libcycript.dylib
@@ -42,6 +45,19 @@ cycript.zip: all
 	zip -r9y $@ cycript Cycript_ Cycript.framework
 
 package: cycript.zip
+
+$(deb): Cycript_/cycript Cycript_/libcycript.dylib
+	rm -rf package
+	mkdir -p package/DEBIAN
+	sed -e 's/#/$(version)/' control.in >package/DEBIAN/control
+	mkdir -p package/usr/{bin,lib}
+	$(lipo) -extract armv6 -output package/usr/bin/cycript Cycript_/cycript
+	$(lipo) -extract armv6 -extract arm64 -output package/usr/lib/libcycript.dylib Cycript_/libcycript.dylib
+	ln -s libcycript.dylib package/usr/lib/libcycript.0.dylib
+	dpkg-deb -b package $@
+
+deb: $(deb)
+	ln -sf $< cycript.deb
 
 clean:
 	rm -rf cycript Cycript_ libcycript*.o
@@ -83,25 +99,31 @@ build.sim-$(1)/.libs/libcycript.a: build-sim-$(1)
 	@
 endef
 
-$(foreach arch,i386,$(eval $(call build_sim,$(arch))))
+$(foreach arch,i386 x86_64,$(eval $(call build_sim,$(arch))))
 
 define build_arm
 build.ios-$(1)/.libs/cycript: build-ios-$(1)
-	@
-build.ios-$(1)/.libs/libcycript.dylib: build-ios-$(1)
-	@
-build.ios-$(1)/.libs/libcycript-any.dylib: build-ios-$(1)
 	@
 endef
 
 $(foreach arch,armv6,$(eval $(call build_arm,$(arch))))
 
+define build_arm
+build.ios-$(1)/.libs/libcycript.dylib: build-ios-$(1)
+	@
+endef
+
+$(foreach arch,armv6 arm64,$(eval $(call build_arm,$(arch))))
+
 Cycript_/%.dylib: build.mac-i386/.libs/%.dylib build.mac-x86_64/.libs/%.dylib build.ios-armv6/.libs/%.dylib build.ios-arm64/.libs/%.dylib
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
+	install_name_tool -change /System/Library/{,Private}Frameworks/JavaScriptCore.framework/JavaScriptCore $@
+	codesign -s $(codesign) $@
 
 %_: %
 	@cp -af $< $@
+	install_name_tool -change /System/Library/{,Private}Frameworks/JavaScriptCore.framework/JavaScriptCore $@
 	codesign -s $(codesign) --entitlement cycript-$(word 2,$(subst ., ,$(subst -, ,$*))).xml $@
 
 Cycript_/%: build.mac-i386/.libs/%_ build.mac-x86_64/.libs/%_ build.ios-armv6/.libs/%_
@@ -112,7 +134,7 @@ Cycript_/libcycript-sys.dylib:
 	@mkdir -p $(dir $@)
 	ln -sf libcycript.dylib $@
 
-Cycript_/libcycript-sim.dylib: build.sim-i386/.libs/libcycript.dylib
+Cycript_/libcycript-sim.dylib: build.sim-i386/.libs/libcycript.dylib build.sim-x86_64/.libs/libcycript.dylib
 	@mkdir -p $(dir $@)
 	cp -af $< $@
 	codesign -s $(codesign) $@
@@ -121,7 +143,7 @@ libcycript-%.o: build.%/.libs/libcycript.a
 	@mkdir -p $(dir $@)
 	ld -r -arch $$($(lipo) -detailed_info $< | sed -e '/^Non-fat file: / ! d; s/.*: //') -o $@ -all_load $< libffi.a
 
-libcycript.o: libcycript-ios-armv6.o libcycript-ios-armv7.o libcycript-ios-armv7s.o libcycript-ios-arm64.o libcycript-sim-i386.o
+libcycript.o: libcycript-ios-armv6.o libcycript-ios-armv7.o libcycript-ios-armv7s.o libcycript-ios-arm64.o libcycript-sim-i386.o libcycript-sim-x86_64.o
 	$(lipo) -create -output $@ $^
 
 Cycript.framework/Cycript: libcycript.o

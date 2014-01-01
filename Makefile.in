@@ -182,7 +182,8 @@ am__DEPENDENCIES_1 =
 @CY_EXECUTE_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
 @CY_OBJECTIVEC_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
 libcycript_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_3)
 am__libcycript_la_SOURCES_DIST = ConvertUTF.c Driver.cpp Highlight.cpp \
 	Library.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp \
 	Cycript.tab.cc lex.cy.cpp sig/ffi_type.cpp sig/parse.cpp \
@@ -213,7 +214,7 @@ am__cycript_SOURCES_DIST = Console.cpp Display.cpp Mach/Inject.cpp
 cycript_OBJECTS = $(am_cycript_OBJECTS)
 @CY_CONSOLE_TRUE@cycript_DEPENDENCIES = libcycript.la \
 @CY_CONSOLE_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-@CY_CONSOLE_TRUE@	$(am__DEPENDENCIES_1)
+@CY_CONSOLE_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -433,6 +434,7 @@ LTFLAGS = @LTFLAGS@
 LTJAVASCRIPTCORE = @LTJAVASCRIPTCORE@
 LTLIBAPR = @LTLIBAPR@
 LTLIBFFI = @LTLIBFFI@
+LTLIBGCC = @LTLIBGCC@
 LTLIBOBJS = @LTLIBOBJS@
 LTLIBREADLINE = @LTLIBREADLINE@
 LTLIBTERMCAP = @LTLIBTERMCAP@
@@ -545,7 +547,7 @@ lib_LTLIBRARIES = $(am__append_1) libcycript.la
 @CY_MACH_TRUE@libcycript_any_la_LDFLAGS = $(CY_LDFLAGS)
 @CY_MACH_TRUE@libcycript_any_la_LIBADD = -ldl
 libcycript_la_LDFLAGS = $(CY_LDFLAGS)
-libcycript_la_LIBADD = $(LTLIBFFI) -ldl $(am__append_3) \
+libcycript_la_LIBADD = $(LTLIBFFI) $(LTLIBGCC) -ldl $(am__append_3) \
 	$(am__append_9)
 libcycript_la_SOURCES = ConvertUTF.c Driver.cpp Highlight.cpp \
 	Library.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp \
@@ -554,7 +556,7 @@ libcycript_la_SOURCES = ConvertUTF.c Driver.cpp Highlight.cpp \
 filters = $(CY_FILTERS) $(am__append_5) $(am__append_7)
 @CY_CONSOLE_TRUE@cycript_SOURCES = Console.cpp Display.cpp \
 @CY_CONSOLE_TRUE@	$(am__append_11)
-@CY_CONSOLE_TRUE@cycript_LDADD = libcycript.la $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) -ldl
+@CY_CONSOLE_TRUE@cycript_LDADD = libcycript.la $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) -ldl
 @CY_CONSOLE_TRUE@ldid = true
 @CY_CONSOLE_TRUE@entitle = $(ldid) -S$(srcdir)/cycript.xml
 all: config.h

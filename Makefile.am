@@ -41,7 +41,7 @@ endif
 
 lib_LTLIBRARIES += libcycript.la
 libcycript_la_LDFLAGS = $(CY_LDFLAGS)
-libcycript_la_LIBADD = $(LTLIBFFI) -ldl
+libcycript_la_LIBADD = $(LTLIBFFI) $(LTLIBGCC) -ldl
 
 libcycript_la_SOURCES = ConvertUTF.c Driver.cpp Highlight.cpp Library.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp
 libcycript_la_SOURCES += Cycript.tab.cc lex.cy.cpp
@@ -51,7 +51,7 @@ filters = $(CY_FILTERS)
 if CY_CONSOLE
 bin_PROGRAMS = cycript
 cycript_SOURCES = Console.cpp Display.cpp
-cycript_LDADD = libcycript.la $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) -ldl
+cycript_LDADD = libcycript.la $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) -ldl
 
 ldid = true
 entitle = $(ldid) -S$(srcdir)/cycript.xml

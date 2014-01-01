@@ -19,29 +19,25 @@
 **/
 /* }}} */
 
+#include "TargetConditionals.h"
+#ifdef TARGET_OS_IPHONE
+#undef __ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__
+#define __ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__ __IPHONE_5_0
+#endif
+
 #include <dlfcn.h>
+#include <pthread.h>
+#include <unistd.h>
 
 #include <mach/mach.h>
-
-#ifdef __APPLE__
-#include "TargetConditionals.h"
-#endif
-
-#ifdef TARGET_OS_IPHONE
 #include <mach/vm_map.h>
-#define mach_vm_allocate vm_allocate
-#define mach_vm_protect vm_protect
-#define mach_vm_write vm_write
-#define mach_vm_address_t vm_address_t
-#else
 #include <mach/mach_vm.h>
-#endif
 
 #include <mach/machine/thread_status.h>
 
-#include <cstdio>
-#include <pthread.h>
-#include <unistd.h>
+#ifdef __arm__
+#include "Mach/Memory.hpp"
+#endif
 
 #include "Baton.hpp"
 #include "Exception.hpp"
@@ -49,6 +45,8 @@
 #include "Trampoline.t.hpp"
 
 extern "C" void CYHandleServer(pid_t);
+
+extern "C" void *_dyld_get_all_image_infos();
 
 void InjectLibrary(pid_t pid) {
     Dl_info addr;
@@ -59,34 +57,107 @@ void InjectLibrary(pid_t pid) {
     memcpy(library, addr.dli_fname, flength);
     library[flength] = '\0';
     _assert(strcmp(library + flength - 6, ".dylib") == 0);
+#ifndef TARGET_OS_IPHONE
     strcpy(library + flength - 6, "-any.dylib");
+#endif
 
     mach_port_t self(mach_task_self()), task;
     _krncall(task_for_pid(self, pid, &task));
 
-    mach_msg_type_number_t count;
-
     task_dyld_info info;
-    count = TASK_DYLD_INFO_COUNT;
+#ifdef __arm__
+    union {
+        struct {
+            uint32_t all_image_info_addr;
+        } info_1;
+
+        struct {
+            uint32_t all_image_info_addr;
+            uint32_t all_image_info_size;
+            int32_t all_image_info_format;
+        } info32;
+
+        struct {
+            uint64_t all_image_info_addr;
+            uint64_t all_image_info_size;
+            int32_t all_image_info_format;
+        } info64;
+    } infoXX;
+
+    mach_msg_type_number_t count(sizeof(infoXX) / sizeof(natural_t));
+    _krncall(task_info(task, TASK_DYLD_INFO, reinterpret_cast<task_info_t>(&infoXX), &count));
+
+    bool broken;
+
+    switch (count) {
+        case sizeof(infoXX.info_1) / sizeof(natural_t):
+            broken = true;
+            info.all_image_info_addr = infoXX.info_1.all_image_info_addr;
+            info.all_image_info_size = 0;
+            info.all_image_info_format = TASK_DYLD_ALL_IMAGE_INFO_32;
+            break;
+        case sizeof(infoXX.info32) / sizeof(natural_t):
+            broken = true;
+            info.all_image_info_addr = infoXX.info32.all_image_info_addr;
+            info.all_image_info_size = infoXX.info32.all_image_info_size;
+            info.all_image_info_format = infoXX.info32.all_image_info_format;
+            break;
+        case sizeof(infoXX.info64) / sizeof(natural_t):
+            broken = false;
+            info.all_image_info_addr = infoXX.info64.all_image_info_addr;
+            info.all_image_info_size = infoXX.info64.all_image_info_size;
+            info.all_image_info_format = infoXX.info64.all_image_info_format;
+            break;
+        default:
+            _assert(false);
+    }
+#else
+    mach_msg_type_number_t count(TASK_DYLD_INFO_COUNT);
     _krncall(task_info(task, TASK_DYLD_INFO, reinterpret_cast<task_info_t>(&info), &count));
     _assert(count == TASK_DYLD_INFO_COUNT);
+#endif
     _assert(info.all_image_info_addr != 0);
 
     thread_act_t thread;
     _krncall(thread_create(task, &thread));
 
+    thread_state_t bottom;
+    thread_state_flavor_t flavor;
+
 #if defined (__i386__) || defined(__x86_64__)
     x86_thread_state_t state;
-#elif defined(__arm__)
-    arm_thread_state_t state;
+    memset(&state, 0, sizeof(state));
+
+    bottom = reinterpret_cast<thread_state_t>(&state);
+    flavor = MACHINE_THREAD_STATE;
+    count = MACHINE_THREAD_STATE_COUNT;
+#elif defined(__arm__) || defined(__arm64__)
+    arm_unified_thread_state_t state;
+    memset(&state, 0, sizeof(state));
+
+    switch (info.all_image_info_format) {
+        case TASK_DYLD_ALL_IMAGE_INFO_32:
+            bottom = reinterpret_cast<thread_state_t>(&state.ts_32);
+            flavor = ARM_THREAD_STATE;
+            count = ARM_THREAD_STATE_COUNT;
+            state.ash.flavor = ARM_THREAD_STATE32;
+            break;
+        case TASK_DYLD_ALL_IMAGE_INFO_64:
+            bottom = reinterpret_cast<thread_state_t>(&state.ts_64);
+            flavor = ARM_THREAD_STATE64;
+            count = ARM_THREAD_STATE64_COUNT + 1;
+            state.ash.flavor = ARM_THREAD_STATE64;
+            break;
+        default:
+            _assert(false);
+    }
 #else
     #error XXX: implement
 #endif
 
-    memset(&state, 0, sizeof(state));
-    mach_msg_type_number_t read(MACHINE_THREAD_STATE_COUNT);
-    _krncall(thread_get_state(thread, MACHINE_THREAD_STATE, reinterpret_cast<thread_state_t>(&state), &read));
-    _assert(read == MACHINE_THREAD_STATE_COUNT);
+    mach_msg_type_number_t read(count);
+    _krncall(thread_get_state(thread, flavor, bottom, &read));
+    _assert(read == count);
 
     Trampoline *trampoline;
     size_t align;
@@ -107,10 +178,21 @@ void InjectLibrary(pid_t pid) {
         default:
             _assert(false);
     }
-#elif defined(__arm__)
-    trampoline = &Trampoline_armv6_;
-    align = 4;
-    push = 0;
+#elif defined(__arm__) || defined(__arm64__)
+    switch (state.ash.flavor) {
+        case ARM_THREAD_STATE32:
+            trampoline = &Trampoline_armv6_;
+            align = 4;
+            push = 0;
+            break;
+        case ARM_THREAD_STATE64:
+            trampoline = &Trampoline_arm64_;
+            align = 8;
+            push = 0;
+            break;
+        default:
+            _assert(false);
+    }
 #else
     #error XXX: implement
 #endif
@@ -136,7 +218,7 @@ void InjectLibrary(pid_t pid) {
 
     mach_vm_address_t code;
     _krncall(mach_vm_allocate(task, &code, trampoline->size_, true));
-    _krncall(mach_vm_write(task, code, reinterpret_cast<mach_vm_address_t>(trampoline->data_), trampoline->size_));
+    _krncall(mach_vm_write(task, code, reinterpret_cast<vm_offset_t>(trampoline->data_), trampoline->size_));
     _krncall(mach_vm_protect(task, code, trampoline->size_, false, VM_PROT_READ | VM_PROT_EXECUTE));
 
     uint32_t frame[push];
@@ -158,14 +240,28 @@ void InjectLibrary(pid_t pid) {
         default:
             _assert(false);
     }
-#elif defined(__arm__)
-    state.__r[0] = data;
-    state.__pc = code + trampoline->entry_;
-    state.__sp = stack + Stack_ - sizeof(frame);
+#elif defined(__arm__) || defined(__arm64__)
+    switch (state.ash.flavor) {
+        case ARM_THREAD_STATE32:
+            state.ts_32.__r[0] = data;
+            state.ts_32.__pc = code + trampoline->entry_;
+            state.ts_32.__sp = stack + Stack_ - sizeof(frame);
 
-    if ((state.__pc & 0x1) != 0) {
-        state.__pc &= ~0x1;
-        state.__cpsr |= 0x20;
+            if ((state.ts_32.__pc & 0x1) != 0) {
+                state.ts_32.__pc &= ~0x1;
+                state.ts_32.__cpsr |= 0x20;
+            }
+
+            break;
+
+        case ARM_THREAD_STATE64:
+            state.ts_64.__x[0] = data;
+            state.ts_64.__pc = code + trampoline->entry_;
+            state.ts_64.__sp = stack + Stack_ - sizeof(frame);
+            break;
+
+        default:
+            _assert(false);
     }
 #else
     #error XXX: implement
@@ -174,8 +270,26 @@ void InjectLibrary(pid_t pid) {
     if (sizeof(frame) != 0)
         _krncall(mach_vm_write(task, stack + Stack_ - sizeof(frame), reinterpret_cast<mach_vm_address_t>(frame), sizeof(frame)));
 
-    _krncall(thread_set_state(thread, MACHINE_THREAD_STATE, reinterpret_cast<thread_state_t>(&state), MACHINE_THREAD_STATE_COUNT));
+    _krncall(thread_set_state(thread, flavor, bottom, read));
     _krncall(thread_resume(thread));
+
+    loop: switch (kern_return_t status = thread_get_state(thread, flavor, bottom, &(read = count))) {
+        case KERN_SUCCESS:
+            usleep(10000);
+            goto loop;
+
+        case KERN_TERMINATED:
+        case MACH_SEND_INVALID_DEST:
+            break;
+
+        default:
+            _assert(false);
+    }
+
+    _krncall(mach_port_deallocate(self, thread));
+
+    _krncall(mach_vm_deallocate(task, code, trampoline->size_));
+    _krncall(mach_vm_deallocate(task, stack, size));
 
     _krncall(mach_port_deallocate(self, task));
 }

@@ -1,18 +1,3 @@
-srcdir := .
-
-sed := sed
-git := git
-
-arch := iphoneos-arm
-
-#ifneq ($(git),)
-version := $(shell $(git) describe --always --tags --dirty="+" --match="v*" | $(sed) -e 's@-\([^-]*\)-\([^-]*\)$$@+\1.\2@;s@^v@@;s@%@~@g')
-#else
-#version := @PACKAGE_VERSION@
-#endif
-
-deb := $(shell grep ^Package: $(srcdir)/control.in | cut -d ' ' -f 2-)_$(shell grep ^Version: $(srcdir)/control.in | cut -d ' ' -f 2 | $(sed) -e 's/\#/$(version)/')_$(arch).deb
-
 binary := Cycript_/cycript
 
 $(deb): $(binary) $(patsubst %,Cycript_/libcycript%dylib,. -any. -sim. -sys.) control
@@ -41,8 +26,3 @@ control.tmp: control.in
 	$(sed) -e 's/&/$(depends)/;s/,$$//;s/#/$(version)/;s/%/$(arch)/' $< >$@
 endif
 endif
-
-clean::
-	rm -rf control
-
-.PHONY: clean

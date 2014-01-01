@@ -50,7 +50,9 @@ arch armv6 arm-apple-darwin10 iphoneos iphoneos 2.0
 arch armv7 arm-apple-darwin10 iphoneos iphoneos 2.0
 arch armv7s arm-apple-darwin10 iphoneos iphoneos 2.0
 arch arm64 aarch64-apple-darwin10 iphoneos iphoneos 2.0
+
 arch i386 i386-apple-darwin10 iphonesimulator ios-simulator 4.0
+arch x86_64 x86_64-apple-darwin10 iphonesimulator ios-simulator 4.0
 
 libffi=()
 for arch in "${archs[@]}"; do

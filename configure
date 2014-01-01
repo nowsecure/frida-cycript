@@ -650,6 +650,7 @@ ac_ct__LIPO
 _LIPO
 SO
 LTFLAGS
+LTLIBGCC
 LTLIBTERMCAP
 LTLIBREADLINE
 CY_OBJECTIVEC_FALSE
@@ -18330,7 +18331,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
 
-for cy_arch in ppc ppc64 i386 x86_64 armv6; do
+for cy_arch in ppc ppc64 i386 x86_64 armv6 arm64; do
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for -arch $cy_arch" >&5
 $as_echo_n "checking for -arch $cy_arch... " >&6; }
 
@@ -20070,6 +20071,8 @@ fi
 
     LTLIBTERMCAP=$LIBS
     LIBS=$cy_save
+
+
 
 
 

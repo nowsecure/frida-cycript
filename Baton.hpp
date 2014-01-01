@@ -26,7 +26,7 @@
 #include <sys/types.h>
 
 struct Baton {
-    mach_vm_address_t dyld;
+    uint64_t dyld;
     pid_t pid;
     char library[];
 } _packed;

@@ -49,18 +49,13 @@
 #ifndef _POSIX_PTHREAD_MACHDEP_H
 #define _POSIX_PTHREAD_MACHDEP_H
 
-#ifdef __LP64__
-#define _PTHREAD_TSD_OFFSET 0x60
-#else
-#define _PTHREAD_TSD_OFFSET 0x48
-#endif  /* __LP64__ */
-
 #ifndef __ASSEMBLER__
 
 #include <System/machine/cpu_capabilities.h>
 #ifdef __arm__
 #include <arm/arch.h>
 #endif
+#include <TargetConditionals.h>
 
 /*
 ** Define macros for inline pthread_getspecific() usage.
@@ -76,6 +71,8 @@
 #define _PTHREAD_TSD_SLOT_DYLD_2		2
 #define _PTHREAD_TSD_SLOT_DYLD_3		3
 #define _PTHREAD_TSD_RESERVED_SLOT_COUNT	4
+/* To mirror the usage by dyld for Unwind_SjLj */
+#define _PTHREAD_TSD_SLOT_DYLD_8		8
 
 /* Keys 10 - 29 are for Libc/Libsystem internal ussage */
 /* used as __pthread_tsd_first + Num  */
@@ -85,6 +82,8 @@
 #define __PTK_LIBC_GMTIME_KEY		13
 #define __PTK_LIBC_GDTOA_BIGINT_KEY	14
 #define __PTK_LIBC_PARSEFLOAT_KEY	15
+/* for usage by dyld */
+#define __PTK_LIBC_DYLD_Unwind_SjLj_Key	18
 
 /* Keys 20-25 for libdispactch usage */
 #define __PTK_LIBDISPATCH_KEY0		20
@@ -159,17 +158,35 @@
 
 
 /* Keys 80-89 for Garbage Collection */
-#define __PTK_FRAMEWORK_GC_KEY0		80
-#define __PTK_FRAMEWORK_GC_KEY1		81
-#define __PTK_FRAMEWORK_GC_KEY2		82
-#define __PTK_FRAMEWORK_GC_KEY3		83
-#define __PTK_FRAMEWORK_GC_KEY4		84
-#define __PTK_FRAMEWORK_GC_KEY5		85
-#define __PTK_FRAMEWORK_GC_KEY6		86
-#define __PTK_FRAMEWORK_GC_KEY7		87
-#define __PTK_FRAMEWORK_GC_KEY8		88
-#define __PTK_FRAMEWORK_GC_KEY9		89
+#define __PTK_FRAMEWORK_OLDGC_KEY0		80
+#define __PTK_FRAMEWORK_OLDGC_KEY1		81
+#define __PTK_FRAMEWORK_OLDGC_KEY2		82
+#define __PTK_FRAMEWORK_OLDGC_KEY3		83
+#define __PTK_FRAMEWORK_OLDGC_KEY4		84
+#define __PTK_FRAMEWORK_OLDGC_KEY5		85
+#define __PTK_FRAMEWORK_OLDGC_KEY6		86
+#define __PTK_FRAMEWORK_OLDGC_KEY7		87
+#define __PTK_FRAMEWORK_OLDGC_KEY8		88
+#define __PTK_FRAMEWORK_OLDGC_KEY9		89
 
+/* Keys 90-94 for JavaScriptCore Collection */
+#define __PTK_FRAMEWORK_JAVASCRIPTCORE_KEY0		90
+#define __PTK_FRAMEWORK_JAVASCRIPTCORE_KEY1		91
+#define __PTK_FRAMEWORK_JAVASCRIPTCORE_KEY2		92
+#define __PTK_FRAMEWORK_JAVASCRIPTCORE_KEY3		93
+#define __PTK_FRAMEWORK_JAVASCRIPTCORE_KEY4		94
+
+/* Keys 110-119 for Garbage Collection */
+#define __PTK_FRAMEWORK_GC_KEY0		110
+#define __PTK_FRAMEWORK_GC_KEY1		111
+#define __PTK_FRAMEWORK_GC_KEY2		112
+#define __PTK_FRAMEWORK_GC_KEY3		113
+#define __PTK_FRAMEWORK_GC_KEY4		114
+#define __PTK_FRAMEWORK_GC_KEY5		115
+#define __PTK_FRAMEWORK_GC_KEY6		116
+#define __PTK_FRAMEWORK_GC_KEY7		117
+#define __PTK_FRAMEWORK_GC_KEY8		118
+#define __PTK_FRAMEWORK_GC_KEY9		119
 
 /*
 ** Define macros for inline pthread_getspecific() usage.
@@ -192,6 +209,21 @@ int       pthread_key_init_np(int, void (*)(void *));
 
 typedef int pthread_lock_t;
 
+#if TARGET_IPHONE_SIMULATOR
+
+/* Similator will use the host implementation, so bypass the macro that is in the target code */
+
+inline static int
+_pthread_has_direct_tsd(void)
+{
+	return 0;
+}
+	
+#define _pthread_getspecific_direct(key) pthread_getspecific(key)
+#define _pthread_setspecific_direct(key, val) pthread_setspecific(key, val)
+
+#else /* TARGET_IPHONE_SIMULATOR */
+
 inline static int
 _pthread_has_direct_tsd(void)
 {
@@ -202,8 +234,6 @@ _pthread_has_direct_tsd(void)
 	} else {
 		return 0;
 	}
-#elif defined(__arm__) && defined(__thumb__) && defined(_ARM_ARCH_6) && !defined(_ARM_ARCH_7)
-	return 0;
 #else
 	return 1;
 #endif
@@ -214,34 +244,65 @@ inline static void *
 _pthread_getspecific_direct(unsigned long slot) 
 {
         void *ret;
+
 #if defined(__i386__) || defined(__x86_64__)
-#if defined(__OPTIMIZE__)
-        asm volatile("mov %%gs:%P1, %0" : "=r" (ret) : "i" (slot * sizeof(void *) + _PTHREAD_TSD_OFFSET));
-#else
-        asm("mov %%gs:%P2(,%1,%P3), %0" : "=r" (ret) : "r" (slot), "i" (_PTHREAD_TSD_OFFSET), "i" (sizeof (void *)));
-#endif
-#elif defined(__ppc__) 
-        void **__pthread_tsd;
-        asm volatile("mfspr %0, 259" : "=r" (__pthread_tsd));
-        ret = __pthread_tsd[slot + (_PTHREAD_TSD_OFFSET / sizeof(void *))];
-#elif defined(__ppc64__)
-        register void **__pthread_tsd asm ("r13");
-        ret = __pthread_tsd[slot + (_PTHREAD_TSD_OFFSET / sizeof(void *))];
+	asm("mov %%gs:%1, %0" : "=r" (ret) : "m" (*(void **)(slot * sizeof(void *))));
+#elif defined(__ppc64__) || defined(__ppc__)
+	ret = pthread_getspecific(slot);
+#elif defined(__arm__) && defined(_ARM_ARCH_6) && !defined(_ARM_ARCH_7) && defined(__thumb__) && !defined(__OPTIMIZE__)
+        ret = pthread_getspecific(slot);
 #elif defined(__arm__) && defined(_ARM_ARCH_6)
-	void **__pthread_tsd;
-	__asm__ ("mrc p15, 0, %0, c13, c0, 3" : "=r"(__pthread_tsd));
-	ret = __pthread_tsd[slot + (_PTHREAD_TSD_OFFSET / sizeof(void *))];
+        void **__pthread_tsd;
+        __asm__ (
+		"mrc p15, 0, %0, c13, c0, 3\n"
+		"bic %0, %0, #3\n"
+		: "=r"(__pthread_tsd));
+        ret = __pthread_tsd[slot];
 #elif defined(__arm__) && !defined(_ARM_ARCH_6)
         register void **__pthread_tsd asm ("r9");
-        ret = __pthread_tsd[slot + (_PTHREAD_TSD_OFFSET / sizeof(void *))];
+        ret = __pthread_tsd[slot];
 #else     
 #error no pthread_getspecific_direct implementation for this arch
 #endif
         return ret;
 }
 
+#if  defined(__i386__) || defined(__x86_64__) || defined(__arm__)
+/* To be used with static constant keys only */
+inline static int
+_pthread_setspecific_direct(unsigned long slot, void * val) 
+{
+
+#if defined(__i386__)
+#if defined(__PIC__)
+	asm("movl %1,%%gs:%0" : "=m" (*(void **)(slot * sizeof(void *))) : "rn" (val));
+#else
+	asm("movl %1,%%gs:%0" : "=m" (*(void **)(slot * sizeof(void *))) : "ri" (val));
+#endif
+#elif defined(__x86_64__)
+	/* PIC is free and cannot be disabled, even with: gcc -mdynamic-no-pic ... */
+	asm("movq %1,%%gs:%0" : "=m" (*(void **)(slot * sizeof(void *))) : "rn" (val));
+#elif defined(__arm__) && defined(_ARM_ARCH_6)
+        void **__pthread_tsd;
+        __asm__ (
+		"mrc p15, 0, %0, c13, c0, 3\n"
+		"bic %0, %0, #3\n"
+		: "=r"(__pthread_tsd));
+        __pthread_tsd[slot] = val;
+#elif defined(__arm__) && !defined(_ARM_ARCH_6)
+	register void **__pthread_tsd asm ("r9");
+	__pthread_tsd[slot] = val;
+#endif
+	return(0);
+}
+#elif defined(__ppc__)  || defined(__ppc64__)
 /* To be used with static constant keys only */
 #define _pthread_setspecific_direct(key, val) pthread_setspecific(key, val)
+#else
+#error no pthread_setspecific_direct implementation for this arch
+#endif
+
+#endif /* TARGET_IPHONE_SIMULATOR */
 
 #define LOCK_INIT(l)	((l) = 0)
 #define LOCK_INITIALIZER 0

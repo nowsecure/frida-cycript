@@ -146,7 +146,7 @@ AC_DEFUN([CY_LT_LIB], [
 ])
 
 dnl -arch * {{{
-for cy_arch in ppc ppc64 i386 x86_64 armv6; do
+for cy_arch in ppc ppc64 i386 x86_64 armv6 arm64; do
     AC_MSG_CHECKING([for -arch $cy_arch])
     CY_TRY([CXXFLAGS], ["-arch $cy_arch"], [
         AC_TRY_LINK([], [], [CY_SUCCESS], [CY_FAILURE])
@@ -270,6 +270,8 @@ CY_LT_LIB([LTLIBREADLINE], [AX_LIB_READLINE])
 AS_CASE([$ax_cv_lib_readline], [no], [AC_MSG_ERROR([missing "libreadline"])])
 
 CY_LT_LIB([LTLIBTERMCAP], [AC_SEARCH_LIBS([cur_term], [termcap ncurses])])
+
+AC_SUBST([LTLIBGCC])
 
 AC_SUBST([LTFLAGS])
 AC_SUBST([SO], [$acl_shlibext])

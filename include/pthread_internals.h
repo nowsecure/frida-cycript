@@ -78,6 +78,10 @@ typedef struct _pthread_attr_t pthread_attr_t;
 #include "pthread_spinlock.h"		/* spinlock definitions. */
 
 TAILQ_HEAD(__pthread_list, _pthread);
+
+extern int __pthread_lock_debug;
+extern int __pthread_lock_old;
+
 extern struct __pthread_list __pthread_head;        /* head of list of open files */
 extern pthread_lock_t _pthread_list_lock;
 extern  size_t pthreadsize;
@@ -113,7 +117,10 @@ typedef struct _pthread
 	int	       pad0;		/* for backwards compatibility */
 #endif
 	struct sched_param param;
-	struct _pthread_mutex *mutexes;
+	uint32_t	cancel_error;
+#if defined(__LP64__)
+	uint32_t	cancel_pad;	/* pad value for alignment */
+#endif
 	struct _pthread *joiner;
 #if !defined(__LP64__)
 	int		pad1;		/* for backwards compatibility */
@@ -151,12 +158,6 @@ typedef struct _pthread
 	void * cur_workitem;
 	uint64_t thread_id;
 } *pthread_t;
-
-/*
- * This will cause a compile-time failure if someone moved the tsd field
- * and we need to change _PTHREAD_TSD_OFFSET in pthread_machdep.h
- */
-typedef char _need_to_change_PTHREAD_TSD_OFFSET[(_PTHREAD_TSD_OFFSET == offsetof(struct _pthread, tsd[0])) ? 0 : -1] ;
 
 /*
  * Thread attributes
@@ -213,15 +214,19 @@ struct _pthread_mutex_options {
 		policy:3,
 		hold:2,
 		misalign:1,		/* 8 byte aligned? */
-		rfu:4,
+		notify:1,		/* CV notify field for kernel */
+		mutex:1,		/* used in clrprepo that it is a mutex */
+		rfu:2,
 		lock_count:16;
 };
 
 
 #define _PTHREAD_MTX_OPT_PSHARED 0x010
-#define _PTHREAD_MTX_OPT_HOLD 0x200
-#define _PTHREAD_MTX_OPT_NOHOLD 0x400
-#define _PTHREAD_MTX_OPT_LASTDROP (_PTHREAD_MTX_OPT_NOHOLD | _PTHREAD_MTX_OPT_HOLD)
+#define _PTHREAD_MTX_OPT_HOLD 0x200	/* current owner of the mutex */
+#define _PTHREAD_MTX_OPT_NOMTX 0x400	/* no mutex refs held */
+
+#define _PTHREAD_MTX_OPT_NOTIFY 0x1000	/* notify to drop mutex handling in cvwait */
+#define _PTHREAD_MTX_OPT_MUTEX	0x2000 /* this is a mutex type  */
 
 
 #define _PTHREAD_MUTEX_T
@@ -344,6 +349,9 @@ typedef struct {
 	int 		pshared;
 } pthread_rwlock_t;
 
+#define PTHRW_RFU_64BIT 124 /* 31 * sizeof(uint32_t) */
+#define PTHRW_RFU_32BIT 72  /* 18 * sizeof(uint32_t) */
+
 #define _PTHREAD_RWLOCK_T
 typedef struct {
 	long 		sig;
@@ -357,15 +365,15 @@ typedef struct {
 	pthread_t	rw_owner;
 	int 		reserv;
 #endif /* __LP64__ */
-	volatile uint32_t *	rw_lseqaddr;
-	volatile uint32_t *	rw_wcaddr;
-	volatile uint32_t *	rw_useqaddr;
+	volatile uint32_t *	rw_lcntaddr;
+	volatile uint32_t *	rw_seqaddr;
+	volatile uint32_t *	rw_ucntaddr;
 	uint32_t        rw_flags;
 	int		misalign;
 #if defined(__LP64__)
-	uint32_t	rfu[31];
+	char	rfu[PTHRW_RFU_64BIT];
 #else /* __LP64__ */
-	uint32_t	rfu[18];
+	char	rfu[PTHRW_RFU_32BIT];
 #endif /* __LP64__ */
 	int 		pshared;
 } npthread_rwlock_t;
@@ -374,25 +382,54 @@ typedef struct {
 #define PTHRW_KERN_PROCESS_SHARED	0x10
 #define PTHRW_KERN_PROCESS_PRIVATE	0x20
 #define PTHRW_KERN_PROCESS_FLAGS_MASK	0x30
+#define _PTHREAD_RWLOCK_UPGRADE_TRY	0x10000
 
-#define PTHRW_EBIT      0x01
-#define PTHRW_LBIT      0x02
-#define PTHRW_YBIT      0x04
-#define PTHRW_WBIT      0x08
-#define PTHRW_UBIT      0x10
-#define PTHRW_RETRYBIT      0x20
-#define PTHRW_SHADOW_W      0x20	/* same as 0x20, shadow W bit for rwlock */
+/* New model bits on Lword */
+#define PTH_RWL_KBIT	0x01	/* users cannot acquire in user mode */
+#define PTH_RWL_EBIT	0x02	/* exclusive lock in progress */
+#define PTH_RWL_WBIT	0x04	/* write waiters pending in kernel */
+#define PTH_RWL_PBIT	0x04	/* prepost (cv) pending in kernel */
+#define PTH_RWL_YBIT	0x08	/* yielding write waiters pending in kernel */
+#define PTH_RWL_RETRYBIT 0x08 	/* mutex retry wait */
+#define PTH_RWL_LBIT	0x10	/* long read in progress */
+#define PTH_RWL_MTXNONE	0x10	/* indicates the cvwait does not have mutex held */
+#define PTH_RWL_UBIT	0x20	/* upgrade request pending */
+#define PTH_RWL_MTX_WAIT 0x20 	/* in cvar in mutex wait */
+#define PTH_RWL_RBIT	0x40	/* reader pending in kernel(not used) */
+#define PTH_RWL_MBIT	0x40	/* overlapping grants from kernel */
+#define PTH_RWL_TRYLKBIT 0x40	/* sets try lock attempt */
+#define PTH_RWL_IBIT	0x80	/* lock reset, held untill first succeesful unlock */
 
-#define PTHRW_TRYLKBIT      0x40
-#define PTHRW_RW_HUNLOCK      0x40	/* readers responsible for handling unlock */
+/* UBIT values for mutex, cvar */
+#define PTH_RWU_SBIT	0x01
+#define PTH_RWU_BBIT	0x02
 
-#define PTHRW_MTX_NONE      0x80
-#define PTHRW_RW_INIT       0x80    /* reset on the lock bits */
-#define PTHRW_RW_SPURIOUS     0x80	/* same as 0x80, spurious rwlock  unlock ret from kernel */
+#define PTHRW_RWL_INIT       PTH_RWL_IBIT    /* reset on the lock bits (U)*/
+#define PTHRW_RWLOCK_INIT    (PTH_RWL_IBIT | PTH_RWL_RBIT)   /* reset on the lock bits (U)*/
+#define PTH_RWLOCK_RESET_RBIT	0xffffffbf
 
 #define PTHRW_INC	0x100
 #define PTHRW_BIT_MASK	0x000000ff
-#define PTHRW_UN_BIT_MASK 0x000000df	/* remove shadow bit */
+
+#define PTHRW_UN_BIT_MASK 0x000000bf	/* remove overlap  bit */
+
+
+/* New model bits on Sword */
+#define PTH_RWS_SBIT	0x01	/* kernel transition seq not set yet*/
+#define PTH_RWS_IBIT	0x02	/* Sequence is not set on return from kernel */
+
+#define PTH_RWS_CV_CBIT	PTH_RWS_SBIT	/* kernel has cleared all info w.r.s.t CV */
+#define PTH_RWS_CV_PBIT	PTH_RWS_IBIT	/* kernel has prepost/fake structs only,no waiters */
+#define PTH_RWS_CV_BITSALL	(PTH_RWS_CV_CBIT | PTH_RWS_CV_PBIT)
+#define PTH_RWS_CV_MBIT PTH_RWL_MBIT    /* to indicate prepost return from kernel */
+#define PTH_RWS_CV_RESET_PBIT	0xfffffffd
+
+#define PTH_RWS_WSVBIT	0x04	/* save W bit */
+#define PTH_RWS_USVBIT	0x08	/* save U bit */
+#define PTH_RWS_YSVBIT	0x10	/* save Y bit */
+#define PTHRW_RWS_INIT       PTH_RWS_SBIT    /* reset on the lock bits (U)*/
+#define PTHRW_RWS_SAVEMASK (PTH_RWS_WSVBIT|PTH_RWS_USVBIT|PTH_RWS_YSVBIT)    /*save bits mask*/
+#define PTHRW_SW_Reset_BIT_MASK 0x000000fe	/* remove S bit and get rest of the bits */
 
 #define PTHRW_COUNT_SHIFT	8 
 #define PTHRW_COUNT_MASK 	0xffffff00
@@ -401,30 +438,60 @@ typedef struct {
 
 #define PTHREAD_MTX_TID_SWITCHING (uint64_t)-1
 
-#define is_rw_ewubit_set(x) (((x) & (PTHRW_EBIT | PTHRW_WBIT | PTHRW_UBIT)) != 0)
-#define is_rw_lbit_set(x) (((x) & PTHRW_LBIT) != 0)
-#define is_rw_lybit_set(x) (((x) & (PTHRW_LBIT | PTHRW_YBIT)) != 0)
-#define is_rw_ebit_set(x) (((x) & PTHRW_EBIT) != 0)
-#define is_rw_ebit_clear(x) (((x) & PTHRW_EBIT) == 0)
-#define is_rw_uebit_set(x) (((x) & (PTHRW_EBIT | PTHRW_UBIT)) != 0)
-#define is_rw_ewuybit_set(x) (((x) & (PTHRW_EBIT | PTHRW_WBIT | PTHRW_UBIT | PTHRW_YBIT)) != 0)
-#define is_rw_ewuybit_clear(x) (((x) & (PTHRW_EBIT | PTHRW_WBIT | PTHRW_UBIT | PTHRW_YBIT)) == 0)
-#define is_rw_ewubit_set(x) (((x) & (PTHRW_EBIT | PTHRW_WBIT | PTHRW_UBIT)) != 0)
-#define is_rw_ewubit_clear(x) (((x) & (PTHRW_EBIT | PTHRW_WBIT | PTHRW_UBIT)) == 0)
+/* new L word defns */
+#define can_rwl_readinuser(x) ((((x) & (PTH_RWL_UBIT | PTH_RWL_WBIT | PTH_RWL_KBIT)) == 0)||(((x) & PTH_RWL_LBIT) != 0))
+#define can_rwl_longreadinuser(x) (((x) & (PTH_RWL_UBIT | PTH_RWL_WBIT | PTH_RWL_KBIT | PTH_RWL_YBIT)) == 0)
+#define is_rwl_ebit_set(x) (((x) & PTH_RWL_EBIT) != 0)
+#define is_rwl_eubit_set(x) (((x) & (PTH_RWL_EBIT | PTH_RWL_UBIT)) != 0)
+#define is_rwl_wbit_set(x) (((x) & PTH_RWL_WBIT) != 0)
+#define is_rwl_lbit_set(x) (((x) & PTH_RWL_LBIT) != 0)
+#define is_rwl_ebit_clear(x) (((x) & PTH_RWL_EBIT) == 0)
+#define is_rwl_lbit_clear(x) (((x) & PTH_RWL_LBIT) == 0)
+#define is_rwl_readoverlap(x) (((x) & PTH_RWL_MBIT) != 0)
+
+/* S word checks */
+#define is_rws_setseq(x) (((x) & PTH_RWS_SBIT))
+#define is_rws_setunlockinit(x) (((x) & PTH_RWS_IBIT))
 
 /* is x lower than Y */
-#define is_seqlower(x, y) ((x  < y) || ((x - y) > (PTHRW_MAX_READERS/2)))
+static inline int is_seqlower(uint32_t x, uint32_t y) {
+        if (x < y) {
+                if ((y-x) < (PTHRW_MAX_READERS/2))
+                        return(1);
+        } else {
+                if ((x-y) > (PTHRW_MAX_READERS/2))
+                        return(1);
+        }
+        return(0);
+}
+
 /* is x lower than or eq Y */
-#define is_seqlower_eq(x, y) ((x  <= y) || ((x - y) > (PTHRW_MAX_READERS/2)))
+static inline int is_seqlower_eq(uint32_t x, uint32_t y) {
+        if (x==y)
+                return(1);
+        else
+                return(is_seqlower(x,y));
+}
 
 /* is x greater than Y */
-#define is_seqhigher(x, y) ((x  > y) || ((y - x) > (PTHRW_MAX_READERS/2)))
+static inline int is_seqhigher(uint32_t x, uint32_t y) {
+        if (x > y) {
+                if ((x-y) < (PTHRW_MAX_READERS/2))
+                        return(1);
+        } else {
+                if ((y-x) > (PTHRW_MAX_READERS/2))
+                        return(1);
+        }
+        return(0);
+}
 
 static inline  int diff_genseq(uint32_t x, uint32_t y) {
-        if (x > y)  {
+	if (x == y) {
+		return(0);
+        } else if (x > y)  {
                 return(x-y);
         } else {
-                return((PTHRW_MAX_READERS - y) + x +1);
+                return((PTHRW_MAX_READERS - y) + x + PTHRW_INC);
         }
 }
 
@@ -444,7 +511,7 @@ typedef struct _pthread_workitem {
 	void	* func_arg;
 	struct _pthread_workqueue *  workq;	
 	unsigned int	flags;
-	unsigned int	gencount;
+	unsigned int	fromcache;		/* padding for 64bit */
 }  * pthread_workitem_t;
 
 #define PTH_WQITEM_INKERNEL_QUEUE 	1
@@ -457,11 +524,15 @@ typedef struct _pthread_workitem {
 #define PTH_WQITEM_APPLIED 		0x80
 #define PTH_WQITEM_KERN_COUNT 		0x100
 
-#define WORKITEM_POOL_SIZE 1000
+/* try to fit these within multiple of pages (8 pages for now) */
+#define WORKITEM_POOL_SIZE 680
+/* ensure some multiple of the chunk is the pool size */
+#define WORKITEM_CHUNK_SIZE 40
+
+#define WORKITEM_STARTPOOL_SIZE WORKITEM_CHUNK_SIZE
+
 TAILQ_HEAD(__pthread_workitem_pool, _pthread_workitem);
 extern struct __pthread_workitem_pool __pthread_workitem_pool_head;        /* head list of workitem pool  */
-
-#define WQ_NUM_PRIO_QS	3	/* WORKQ_HIGH/DEFAULT/LOW_PRIOQUEUE */
 
 #define _PTHREAD_WORKQUEUE_HEAD_T
 typedef struct  _pthread_workqueue_head {
@@ -470,6 +541,7 @@ typedef struct  _pthread_workqueue_head {
 } * pthread_workqueue_head_t;
 
 
+/* sized to be 128 bytes both in 32 and 64bit archs */
 #define _PTHREAD_WORKQUEUE_T
 typedef struct  _pthread_workqueue {
 	unsigned int       sig;	      /* Unique signature for this structure */
@@ -489,9 +561,7 @@ typedef struct  _pthread_workqueue {
 	void  * term_callarg;
 	pthread_workqueue_head_t headp;
 	int		overcommit;
-#if defined(__ppc64__) || defined(__x86_64__)
-	unsigned int	rev2[2];
-#else
+#if  !defined(__LP64__)
 	unsigned int	rev2[12];
 #endif
 }  * pthread_workqueue_t;
@@ -504,11 +574,11 @@ typedef struct  _pthread_workqueue {
 #define	 PTHREAD_WORKQ_REQUEUED		0x20
 #define	 PTHREAD_WORKQ_SUSPEND		0x40
 
-#define WORKQUEUE_POOL_SIZE 100
+#define WORKQUEUE_POOL_SIZE 16
 TAILQ_HEAD(__pthread_workqueue_pool, _pthread_workqueue);
 extern struct __pthread_workqueue_pool __pthread_workqueue_pool_head;        /* head list of workqueue pool  */
 
-#include "pthread.h"
+#include "pthread_spis.h"
 
 #if defined(__i386__) || defined(__ppc64__) || defined(__x86_64__) || (defined(__arm__) && (defined(_ARM_ARCH_7) || !defined(_ARM_ARCH_6) || !defined(__thumb__)))
 /*
@@ -518,17 +588,17 @@ extern struct __pthread_workqueue_pool __pthread_workqueue_pool_head;        /* 
 inline static pthread_t __attribute__((__pure__))
 _pthread_self_direct(void)
 {
-       pthread_t ret;
+	pthread_t ret;
+
 #if defined(__i386__) || defined(__x86_64__)
-       asm("mov %%gs:%P1, %0" : "=r" (ret) : "i" (offsetof(struct _pthread, tsd[0])));
+	ret = (pthread_t) _pthread_getspecific_direct(0);
 #elif defined(__ppc64__)
 	register const pthread_t __pthread_self asm ("r13");
 	ret = __pthread_self;
 #elif defined(__arm__) && defined(_ARM_ARCH_6)
-	__asm__ ("mrc p15, 0, %0, c13, c0, 3" : "=r"(ret));
+	ret = (pthread_t) _pthread_getspecific_direct(0);
 #elif defined(__arm__) && !defined(_ARM_ARCH_6)
-	register const pthread_t __pthread_self asm ("r9");
-	ret = __pthread_self;
+	ret = (pthread_t) _pthread_getspecific_direct(0);
 #endif
        return ret;
 }
@@ -546,6 +616,11 @@ _pthread_self_direct(void)
 #define _PTHREAD_MUTEX_ATTR_SIG		0x4D545841  /* 'MTXA' */
 #define _PTHREAD_MUTEX_SIG		0x4D555458  /* 'MUTX' */
 #define _PTHREAD_MUTEX_SIG_init		0x32AAABA7  /* [almost] ~'MUTX' */
+#define _PTHREAD_ERRORCHECK_MUTEX_SIG_init      0x32AAABA1
+#define _PTHREAD_RECURSIVE_MUTEX_SIG_init       0x32AAABA2
+#define _PTHREAD_FIRSTFIT_MUTEX_SIG_init       0x32AAABA3
+#define _PTHREAD_MUTEX_SIG_init_MASK            0xfffffff0
+#define _PTHREAD_MUTEX_SIG_CMP                  0x32AAABA0
 #define _PTHREAD_COND_ATTR_SIG		0x434E4441  /* 'CNDA' */
 #define _PTHREAD_COND_SIG		0x434F4E44  /* 'COND' */
 #define _PTHREAD_COND_SIG_init		0x3CB0B1BB  /* [almost] ~'COND' */
@@ -594,17 +669,18 @@ extern void _pthread_setup(pthread_t th, void (*f)(pthread_t), void *sp, int sus
 
 extern void _pthread_tsd_cleanup(pthread_t self);
 
-#if  defined(__i386__) || defined(__x86_64__)
-__private_extern__ void __mtx_holdlock(npthread_mutex_t *mutex, uint32_t diff, uint32_t * flagp, uint32_t ** pmtxp, uint32_t * mgenp, uint32_t * ugenp);
-__private_extern__ int __mtx_droplock(npthread_mutex_t *mutex, int count, uint32_t * flagp, uint32_t ** pmtxp, uint32_t * mgenp, uint32_t * ugenp, uint32_t * notifyp);
-__private_extern__ int __mtx_updatebits(npthread_mutex_t *mutex, uint32_t updateval, int firstfiti, int fromcond);
+__private_extern__ void __mtx_holdlock(npthread_mutex_t *mutex, uint32_t diff, uint32_t * flagp, uint32_t ** pmtxp, uint32_t * mgenp, uint32_t * ugenp, uint64_t *tidp);
+__private_extern__ int __mtx_droplock(npthread_mutex_t *mutex, uint32_t diff, uint32_t * flagp, uint32_t ** pmtxp, uint32_t * mgenp, uint32_t * ugenp);
+__private_extern__ int __mtx_updatebits(npthread_mutex_t *mutex, uint32_t updateval, int firstfiti, int fromcond, uint64_t selfid);
 
 /* syscall interfaces */
 extern uint32_t __psynch_mutexwait(pthread_mutex_t * mutex,  uint32_t mgen, uint32_t  ugen, uint64_t tid, uint32_t flags);
 extern uint32_t __psynch_mutexdrop(pthread_mutex_t * mutex,  uint32_t mgen, uint32_t  ugen, uint64_t tid, uint32_t flags);
-extern int __psynch_cvbroad(pthread_cond_t * cv, uint32_t cvgen, uint32_t diffgen, pthread_mutex_t * mutex,  uint32_t mgen, uint32_t ugen, uint64_t tid, uint32_t flags);
-extern int __psynch_cvsignal(pthread_cond_t * cv, uint32_t cvgen, uint32_t cvugen, pthread_mutex_t * mutex,  uint32_t mgen, uint32_t ugen, int thread_port, uint32_t flags);
-extern uint32_t __psynch_cvwait(pthread_cond_t * cv, uint32_t cvgen, uint32_t cvugen, pthread_mutex_t * mutex,  uint32_t mgen, uint32_t ugen, uint64_t sec, uint64_t usec);
+
+extern uint32_t __psynch_cvbroad(pthread_cond_t * cv, uint64_t cvlsgen, uint64_t cvudgen, uint32_t flags, pthread_mutex_t * mutex,  uint64_t mugen, uint64_t tid);
+extern uint32_t __psynch_cvsignal(pthread_cond_t * cv, uint64_t cvlsgen, uint32_t cvugen, int thread_port, pthread_mutex_t * mutex,  uint64_t mugen, uint64_t tid, uint32_t flags);
+extern uint32_t __psynch_cvwait(pthread_cond_t * cv, uint64_t cvlsgen, uint32_t cvugen, pthread_mutex_t * mutex,  uint64_t mugen, uint32_t flags, int64_t sec, uint32_t nsec);
+extern uint32_t __psynch_cvclrprepost(void * cv, uint32_t cvgen, uint32_t cvugen, uint32_t cvsgen, uint32_t prepocnt, uint32_t preposeq, uint32_t flags);
 extern uint32_t __psynch_rw_longrdlock(pthread_rwlock_t * rwlock, uint32_t lgenval, uint32_t ugenval, uint32_t rw_wc, int flags);
 extern uint32_t __psynch_rw_yieldwrlock(pthread_rwlock_t * rwlock, uint32_t lgenval, uint32_t ugenval, uint32_t rw_wc, int flags);
 extern int __psynch_rw_downgrade(pthread_rwlock_t * rwlock, uint32_t lgenval, uint32_t ugenval, uint32_t rw_wc, int flags);
@@ -613,12 +689,12 @@ extern uint32_t __psynch_rw_rdlock(pthread_rwlock_t * rwlock, uint32_t lgenval, 
 extern uint32_t __psynch_rw_wrlock(pthread_rwlock_t * rwlock, uint32_t lgenval, uint32_t ugenval, uint32_t rw_wc, int flags);
 extern uint32_t __psynch_rw_unlock(pthread_rwlock_t * rwlock, uint32_t lgenval, uint32_t ugenval, uint32_t rw_wc, int flags);
 extern uint32_t __psynch_rw_unlock2(pthread_rwlock_t * rwlock, uint32_t lgenval, uint32_t ugenval, uint32_t rw_wc, int flags);
-#endif /* __i386__ || __x86_64__ */
 
 __private_extern__ semaphore_t new_sem_from_pool(void);
 __private_extern__ void restore_sem_to_pool(semaphore_t);
 __private_extern__ void _pthread_atfork_queue_init(void);
 int _pthread_lookup_thread(pthread_t thread, mach_port_t * port, int only_joinable);
 int _pthread_join_cleanup(pthread_t thread, void ** value_ptr, int conforming);
+__private_extern__ int proc_setthreadname(void * buffer, int buffersize);
 
 #endif /* _POSIX_PTHREAD_INTERNALS_H */

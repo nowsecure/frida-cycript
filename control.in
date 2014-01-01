@@ -2,11 +2,11 @@ Package: cycript
 Priority: optional
 Section: Development
 Maintainer: Jay Freeman (saurik) <saurik@saurik.com>
-Architecture: %
+Architecture: iphoneos-arm
 Version: #
 Description: runtime execution server and disassembler
 Name: Cycript
-Depends: &
+Depends: apr-lib, readline, libffi (>= 1:3.0.10-5), adv-cmds
 Author: Jay Freeman (saurik) <saurik@saurik.com>
 Depiction: http://cydia.saurik.com/info/cycript/
 Tag: purpose::daemon, role::developer
