@@ -97,7 +97,7 @@ for arch in armv6 armv7 armv7s arm64; do
         flg+=(--disable-console)
     else
         flg+=(LTLIBAPR="../sysroot.ios/usr/lib/libapr-1.dylib")
-        flg+=(LTLIBGCC="-lgcc_s.1") #-L${xcs}/Platforms/iPhoneOS.platform/Developer/usr/llvm-gcc-4.2/lib/gcc/arm-apple-darwin10/4.2.1/v6 -lgcc_eh")
+        flg+=(LTLIBGCC="-lgcc_s.1")
         cpf+=" -I../sysroot.ios/usr/include -I../sysroot.ios/usr/include/apr-1"
         ldf+=" -L../sysroot.ios/usr/lib"
     fi
