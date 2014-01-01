@@ -54,7 +54,7 @@ $(deb): Cycript_/cycript Cycript_/libcycript.dylib
 	$(lipo) -extract armv6 -output package/usr/bin/cycript Cycript_/cycript
 	$(lipo) -extract armv6 -extract arm64 -output package/usr/lib/libcycript.dylib Cycript_/libcycript.dylib
 	ln -s libcycript.dylib package/usr/lib/libcycript.0.dylib
-	dpkg-deb -b package $@
+	dpkg-deb -zlzma -b package $@
 
 deb: $(deb)
 	ln -sf $< cycript.deb
