@@ -100,10 +100,13 @@ Cycript_/%.dylib: build.mac-i386/.libs/%.dylib build.mac-x86_64/.libs/%.dylib bu
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
 
-Cycript_/%: build.mac-i386/.libs/% build.mac-x86_64/.libs/% build.ios-armv6/.libs/%
+%_: %
+	@cp -af $< $@
+	codesign -s $(codesign) --entitlement cycript-$(word 2,$(subst ., ,$(subst -, ,$*))).xml $@
+
+Cycript_/%: build.mac-i386/.libs/%_ build.mac-x86_64/.libs/%_ build.ios-armv6/.libs/%_
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
-	codesign -s $(codesign) --entitlement cycript.xml $@
 
 Cycript_/libcycript-sys.dylib:
 	@mkdir -p $(dir $@)
