@@ -24,7 +24,7 @@ set -e
 rm -rf sysroot.ios
 mkdir -p sysroot.ios
 
-for deb in apr-lib_1.3.3-2 libffi_1:3.0.10-5 ncurses_5.7-12 readline_6.0-7; do
+for deb in apr-lib_1.3.3-2 ncurses_5.7-12 readline_6.0-7; do
     deb=${deb}_iphoneos-arm.deb
     [[ -f "${deb}" ]] || wget http://apt.saurik.com/debs/"${deb}"
     tar=data.tar.lzma
@@ -33,8 +33,6 @@ for deb in apr-lib_1.3.3-2 libffi_1:3.0.10-5 ncurses_5.7-12 readline_6.0-7; do
     rm -f "${tar}"
 done
 
-mkdir -p sysroot.ios/usr/include/ffi
-mv sysroot.ios/usr/include/{,ffi/}ffi.h
 ln -s /usr/include/apr-1 sysroot.ios/usr/include
 mv sysroot.ios/usr/lib/_ncurses/* sysroot.ios/usr/lib
 rmdir sysroot.ios/usr/lib/_ncurses
