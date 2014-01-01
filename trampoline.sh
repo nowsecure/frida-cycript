@@ -72,7 +72,7 @@ for arch in "${archs[@]}"; do
     echo
     echo "static const char ${name}_${arch}_data_[] = {"
 
-    od -v -t x1 -t c -j "$((offset + fileoff))" -N "${filesize}" "${object}" | "${sed}" -e '
+    LANG=C od -v -t x1 -t c -j "$((offset + fileoff))" -N "${filesize}" "${object}" | "${sed}" -e '
         /^[0-7]/ ! {
             s@^        @//  @;
             s/\(....\)/ \1/g;
