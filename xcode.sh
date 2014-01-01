@@ -102,6 +102,12 @@ for arch in armv6 armv7 armv7s arm64; do
         ldf+=" -L../sysroot.ios/usr/lib"
     fi
 
-    build "ios-${arch}" iphoneos "-arch ${arch} -miphoneos-version-min=2.0" --host=arm-apple-darwin10 \
+    if [[ ${arch} == arm64 ]]; then
+        min=7.0
+    else
+        min=2.0
+    fi
+
+    build "ios-${arch}" iphoneos "-arch ${arch} -miphoneos-version-min=${min}" --host=arm-apple-darwin10 \
         CPPFLAGS="${cpf}" LDFLAGS="${ldf}" "${flg[@]}" --host=arm-apple-darwin10
 done
