@@ -172,6 +172,12 @@ Type *Parse_(CYPool &pool, const char **name, char eos, bool named, Callback cal
         case 's': type->primitive = short_P; break;
         case 'v': type->primitive = void_P; break;
 
+#ifdef __LP64__
+        case 'F': type->primitive = double_P; break;
+#else
+        case 'F': type->primitive = float_P; break;
+#endif
+
         case '{':
             type->primitive = struct_P;
             next = '}';

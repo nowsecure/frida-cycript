@@ -44,9 +44,9 @@ T UInt32 {uint32_t}
 T SInt64 {int64_t}
 T UInt64 {uint64_t}
 
-S CGPoint "x"f"y"f
+S CGPoint "x"{CGFloat}"y"{CGFloat}
 S CGRect "origin"{CGPoint}"size"{CGSize}
-S CGSize "width"f"height"f
+S CGSize "width"{CGFloat}"height"{CGFloat}
 
 l c
 
@@ -1241,7 +1241,7 @@ F CFShowStr v@
 
 f CoreGraphics
 
-T CGFloat f
+T CGFloat F
 
 # CGAffineTransform
 
