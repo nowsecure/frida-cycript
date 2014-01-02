@@ -357,16 +357,16 @@ static JSValueRef System_print(JSContextRef context, JSObjectRef object, JSObjec
 
 static size_t Nonce_(0);
 
-static JSValueRef $cyq(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+static JSValueRef $cyq(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CYPool pool;
     const char *name(pool.strcat(CYPoolCString(pool, context, arguments[0]), pool.itoa(Nonce_++), NULL));
     return CYCastJSValue(context, name);
-}
+} CYCatch(NULL) }
 
-static JSValueRef Cycript_gc_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+static JSValueRef Cycript_gc_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     JSGarbageCollect(context);
     return CYJSUndefined(context);
-}
+} CYCatch(NULL) }
 
 const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSValueRef value, JSValueRef *exception) { CYTry {
     switch (JSType type = JSValueGetType(context, value)) {
@@ -886,11 +886,11 @@ static bool Pointer_setProperty(JSContextRef context, JSObjectRef object, JSStri
     return true;
 } CYCatch(false) }
 
-static JSValueRef Struct_callAsFunction_$cya(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+static JSValueRef Struct_callAsFunction_$cya(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     Struct_privateData *internal(reinterpret_cast<Struct_privateData *>(JSObjectGetPrivate(_this)));
     Type_privateData *typical(internal->type_);
     return CYMakePointer(context, internal->value_, _not(size_t), typical->type_, typical->ffi_, _this);
-}
+} CYCatch(NULL) }
 
 static JSValueRef Struct_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     CYPool pool;
@@ -975,11 +975,11 @@ JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, voi
     return CYFromFFI(context, signature->elements[0].type, cif->rtype, value, initialize);
 } CYCatch(NULL) }
 
-static JSValueRef Functor_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+static JSValueRef Functor_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CYPool pool;
     cy::Functor *internal(reinterpret_cast<cy::Functor *>(JSObjectGetPrivate(object)));
     return CYCallFunction(pool, context, 0, NULL, count, arguments, false, exception, &internal->signature_, &internal->cif_, internal->GetValue());
-}
+} CYCatch(NULL) }
 
 JSObjectRef CYMakeType(JSContextRef context, const char *type) {
     Type_privateData *internal(new Type_privateData(type));
@@ -1208,26 +1208,26 @@ static JSValueRef Pointer_callAsFunction_toCYON(JSContextRef context, JSObjectRe
     }
 } CYCatch(NULL) }
 
-static JSValueRef Functor_getProperty_type(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
+static JSValueRef Functor_getProperty_type(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     cy::Functor *internal(reinterpret_cast<cy::Functor *>(JSObjectGetPrivate(object)));
     CYPool pool;
     return CYCastJSValue(context, Unparse(pool, &internal->signature_));
-}
+} CYCatch(NULL) }
 
-static JSValueRef Type_getProperty_alignment(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
+static JSValueRef Type_getProperty_alignment(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
     return CYCastJSValue(context, internal->GetFFI()->alignment);
-}
+} CYCatch(NULL) }
 
-static JSValueRef Type_getProperty_name(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
+static JSValueRef Type_getProperty_name(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
     return CYCastJSValue(context, internal->type_->name);
-}
+} CYCatch(NULL) }
 
-static JSValueRef Type_getProperty_size(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) {
+static JSValueRef Type_getProperty_size(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
     return CYCastJSValue(context, internal->GetFFI()->size);
-}
+} CYCatch(NULL) }
 
 static JSValueRef Type_callAsFunction_toString(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
