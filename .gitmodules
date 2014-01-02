@@ -1,6 +1,6 @@
 [submodule "libffi"]
 	path = libffi
-	url = git://github.com/atgreen/libffi.git
+	url = git://github.com/SaurikIT/libffi.git
 	ignore = dirty
 [submodule "readline"]
 	path = readline
