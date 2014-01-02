@@ -38,10 +38,15 @@ function arch() {
     archs+=("${arch}")
     mkdir "libffi.${arch}"
 
-    flags="-isysroot ${isysroot} -m${os}-version-min=${min}"
+    flags=()
+    flags+=(-isysroot "${isysroot}")
+    flags+=(-m${os}-version-min="${min}")
+    flags+=(-no-integrated-as)
+    flags+=(-fno-stack-protector)
+    flags+=(-O3 -g3)
 
     cd "libffi.${arch}"
-    CC="clang -arch ${arch}" CFLAGS="-no-integrated-as ${flags}" CPPFLAGS="${flags}" ../libffi/configure --host="${host}"
+    CC="clang -arch ${arch}" CFLAGS="${flags[*]}" CPPFLAGS="${flags[*]}" ../libffi/configure --host="${host}"
     make
     cd ..
 }
