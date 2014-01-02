@@ -20,12 +20,15 @@
 /* }}} */
 
 #include <TargetConditionals.h>
+#if defined(__arm__) || defined(__arm64__)
 #undef TARGET_IPHONE_SIMULATOR
 #define TARGET_IPHONE_SIMULATOR 1
+#endif
 #define _PTHREAD_ATTR_T
 #include <pthread_internals.h>
+#if defined(__arm__) || defined(__arm64__)
 #undef TARGET_IPHONE_SIMULATOR
-#define TARGET_IPHONE_SIMULATOR 0
+#endif
 
 #include <mach-o/dyld.h>
 #include <mach-o/dyld_images.h>
@@ -250,6 +253,8 @@ extern "C" void Start(Baton *baton) {
     tsd = reinterpret_cast<void **>(tpid & ~3);
     if (tsd != NULL)
         tsd[0] = &self;
+#else
+    _pthread_setspecific_direct(0, &self);
 #endif
 
     int (*$pthread_join)(pthread_t, void **);
