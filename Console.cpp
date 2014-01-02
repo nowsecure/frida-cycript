@@ -388,6 +388,34 @@ static char **Complete(const char *word, int start, int end) {
 static char name_[] = "cycript";
 static char break_[] = " \t\n\"\\'`@$><=;|&{(" ")}" ".:[]";
 
+class History {
+  private:
+    std::string histfile_;
+    size_t histlines_;
+
+  public:
+    History(std::string histfile) :
+        histfile_(histfile),
+        histlines_(0)
+    {
+        read_history(histfile_.c_str());
+    }
+
+    ~History() {
+        if (append_history$ != NULL) {
+            _syscall(close(_syscall(open(histfile_.c_str(), O_CREAT | O_WRONLY, 0600))));
+            _assert((*append_history$)(histlines_, histfile_.c_str()) == 0);
+        } else {
+            _assert(write_history(histfile_.c_str()) == 0);
+        }
+    }
+
+    void operator +=(const std::string &command) {
+        add_history(command_.c_str());
+        ++histlines_;
+    }
+};
+
 static void Console(CYOptions &options) {
     CYPool pool;
 
@@ -397,15 +425,14 @@ static void Console(CYOptions &options) {
     else
         passwd = getpwuid(getuid());
 
-    const char *basedir(pool.strcat(passwd->pw_dir, "/.cycript", NULL));
-    const char *histfile(pool.strcat(basedir, "/history", NULL));
-    size_t histlines(0);
+    std::string basedir(passwd->pw_dir);
+    basedir += "/.cycript";
+    mkdir(basedir.c_str(), 0700);
 
     rl_initialize();
     rl_readline_name = name_;
 
-    mkdir(basedir, 0700);
-    read_history(histfile);
+    History history(basedir + "/history");
 
     bool bypass(false);
     bool debug(false);
@@ -480,8 +507,7 @@ static void Console(CYOptions &options) {
                     syntax = !syntax;
                     *out_ << "syntax == " << (syntax ? "true" : "false") << std::endl;
                 }
-                add_history(line);
-                ++histlines;
+                history += line;
                 goto restart;
             }
         }
@@ -535,8 +561,7 @@ static void Console(CYOptions &options) {
                         std::cerr << "  | ";
                         std::cerr << error->message_ << std::endl;
 
-                        add_history(command_.c_str());
-                        ++histlines;
+                        history += command_;
                         goto restart;
                     }
                 }
@@ -562,8 +587,7 @@ static void Console(CYOptions &options) {
             }
         }
 
-        add_history(command_.c_str());
-        ++histlines;
+        history += command_;
 
         if (debug) {
             Write(syntax, code.c_str(), code.size(), std::cout);
@@ -571,13 +595,6 @@ static void Console(CYOptions &options) {
         }
 
         Run(client_, syntax, code, out_, expand);
-    }
-
-    if (append_history$ != NULL) {
-        _syscall(close(_syscall(open(histfile, O_CREAT | O_WRONLY, 0600))));
-        (*append_history$)(histlines, histfile);
-    } else {
-        write_history(histfile);
     }
 
     *out_ << std::endl;
