@@ -1219,9 +1219,7 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
 
 - (NSString *) cy$toCYON:(bool)objective { CYObjectiveTry {
     CYPool pool;
-    JSValueRef exception(NULL);
     const char *cyon(CYPoolCCYON(pool, context_, object_));
-    CYThrow(context_, exception);
     if (cyon == NULL)
         return [super cy$toCYON:objective];
     else
