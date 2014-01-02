@@ -485,9 +485,10 @@ static void Console(CYOptions &options) {
         char *line(readline(prompt));
         mode_ = Working;
 
-        if (line == NULL)
+        if (line == NULL) {
+            *out_ << std::endl;
             break;
-        if (line[0] == '\0')
+        } else if (line[0] == '\0')
             goto read;
 
         if (!extra) {
@@ -596,8 +597,6 @@ static void Console(CYOptions &options) {
 
         Run(client_, syntax, code, out_, expand);
     }
-
-    *out_ << std::endl;
 }
 
 static void *Map(const char *path, size_t *psize) {
