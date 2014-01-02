@@ -251,6 +251,8 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "["    L C F(tk::OpenBracket, hi::Structure);
 "]"    L C F(tk::CloseBracket, hi::Structure);
 
+"@error"          L C F(tk::AtError, hi::Error);
+
 @begin Java
 "@class"          L C F(tk::AtClass, hi::Meta);
 @end

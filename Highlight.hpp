@@ -28,7 +28,7 @@ namespace hi { enum Value {
     Comment,
     Constant,
     Control,
-    Escape,
+    Error,
     Identifier,
     Meta,
     Nothing,

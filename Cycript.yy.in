@@ -224,6 +224,8 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %token OpenBracket "["
 %token CloseBracket "]"
 
+%token AtError "@error"
+
 @begin Java
 %token AtClass "@class"
 @end

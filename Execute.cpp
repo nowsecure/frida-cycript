@@ -443,26 +443,32 @@ const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSObjectRef object) 
     bool comma(false);
 
     for (size_t index(0), count(JSPropertyNameArrayGetCount(names)); index != count; ++index) {
-        JSStringRef name(JSPropertyNameArrayGetNameAtIndex(names, index));
-        JSValueRef value(CYGetProperty(context, object, name));
-
         if (comma)
             str << ',';
         else
             comma = true;
 
+        JSStringRef name(JSPropertyNameArrayGetNameAtIndex(names, index));
         CYUTF8String string(CYPoolUTF8String(pool, context, name));
+
         if (CYIsKey(string))
             str << string.data;
         else
             CYStringify(str, string.data, string.size);
 
-        str << ':' << CYPoolCCYON(pool, context, value);
+        str << ':';
+
+        try {
+            JSValueRef value(CYGetProperty(context, object, name));
+            str << CYPoolCCYON(pool, context, value);
+        } catch (const CYException &error) {
+            str << "@error";
+        }
     }
 
-    str << '}';
-
     JSPropertyNameArrayRelease(names);
+
+    str << '}';
 
     std::string string(str.str());
     return pool.strmemdup(string.c_str(), string.size());
