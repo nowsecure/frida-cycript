@@ -136,15 +136,15 @@ static CYUTF8String Run(CYPool &pool, int client, CYUTF8String code) {
     } else {
         mode_ = Sending;
         size = code.size;
-        CYSendAll(client, &size, sizeof(size));
-        CYSendAll(client, code.data, code.size);
+        _assert(CYSendAll(client, &size, sizeof(size)));
+        _assert(CYSendAll(client, code.data, code.size));
         mode_ = Waiting;
-        CYRecvAll(client, &size, sizeof(size));
+        _assert(CYRecvAll(client, &size, sizeof(size)));
         if (size == _not(uint32_t))
             json = NULL;
         else {
             char *temp(new(pool) char[size + 1]);
-            CYRecvAll(client, temp, size);
+            _assert(CYRecvAll(client, temp, size));
             temp[size] = '\0';
             json = temp;
         }
