@@ -42,6 +42,7 @@
 
 #include <cmath>
 #include <map>
+#include <set>
 
 #include <dlfcn.h>
 
@@ -291,8 +292,9 @@ static JSClassRef ObjectiveC_Images_;
 static Class NSCFBoolean_;
 static Class NSCFType_;
 static Class NSGenericDeallocHandler_;
-static Class NSMessageBuilder_;
 static Class NSZombie_;
+
+static std::set<Class> banned_;
 #else
 static Class NSBoolNumber_;
 #endif
@@ -464,7 +466,7 @@ NSString *CYCastNSCYON(id value, bool objective) {
             else if (_class == NSZombie_)
                 string = [NSString stringWithFormat:@"<_NSZombie_: %p>", value];
             // XXX: frowny /in/ the pants
-            else if (value == NSGenericDeallocHandler_ || value == NSMessageBuilder_ || value == Object_)
+            else if (banned_.find(value) != banned_.end())
                 string = nil;
 #endif
             else
@@ -2569,6 +2571,12 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     Object_type = new(pool) Type_privateData("@");
     Selector_type = new(pool) Type_privateData(":");
 
+    NSArray_ = objc_getClass("NSArray");
+    NSBlock_ = objc_getClass("NSBlock");
+    NSDictionary_ = objc_getClass("NSDictionary");
+    NSString_ = objc_getClass("NSString");
+    Object_ = objc_getClass("Object");
+
 #ifdef __APPLE__
     // XXX: apparently, iOS now has both of these
     NSCFBoolean_ = objc_getClass("__NSCFBoolean");
@@ -2576,18 +2584,17 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
         NSCFBoolean_ = objc_getClass("NSCFBoolean");
 
     NSCFType_ = objc_getClass("NSCFType");
-    NSGenericDeallocHandler_ = objc_getClass("__NSGenericDeallocHandler");
-    NSMessageBuilder_ = objc_getClass("NSMessageBuilder");
+
     NSZombie_ = objc_getClass("_NSZombie_");
+
+    banned_.insert(Object_);
+    banned_.insert(objc_getClass("__NSAtom"));
+    banned_.insert(objc_getClass("__NSGenericDeallocHandler"));
+    banned_.insert(objc_getClass("NSMessageBuilder"));
+    banned_.insert(objc_getClass("__NSMessageBuilder"));
 #else
     NSBoolNumber_ = objc_getClass("NSBoolNumber");
 #endif
-
-    NSArray_ = objc_getClass("NSArray");
-    NSBlock_ = objc_getClass("NSBlock");
-    NSDictionary_ = objc_getClass("NSDictionary");
-    NSString_ = objc_getClass("NSString");
-    Object_ = objc_getClass("Object");
 
     JSClassDefinition definition;
 
