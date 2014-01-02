@@ -1969,6 +1969,11 @@ static JSValueRef Internal_getProperty(JSContextRef context, JSObjectRef object,
     id self(internal->GetValue());
     const char *name(CYPoolCString(pool, context, property));
 
+#ifdef __arm64__
+    if (strcmp(name, "isa") == 0)
+        return CYCastJSValue(context, object_getClass(self));
+#endif
+
     if (objc_ivar *ivar = object_getInstanceVariable(self, name, NULL)) {
         Type_privateData type(pool, ivar_getTypeEncoding(ivar));
         // XXX: if this fails and throws an exception the person we are throwing it to gets the wrong exception
