@@ -52,6 +52,18 @@ static int $strcmp(const char *lhs, const char *rhs) {
     } return *lhs < *rhs ? -1 : 1;
 }
 
+static void $strlcpy(char *dst, const char *src, size_t size) {
+    if (size == 0)
+        return;
+    size_t i(0);
+    while (i != size - 1) {
+        char value(src[i]);
+        if (value == '\0')
+            break;
+        dst[i++] = value;
+    } dst[i] = '\0';
+}
+
 #ifdef __LP64__
 typedef struct mach_header_64 mach_header_xx;
 typedef struct nlist_64 nlist_xx;
@@ -177,7 +189,7 @@ void *Routine(void *arg) {
 
     void *handle($dlopen(baton->library, RTLD_LAZY | RTLD_LOCAL));
     if (handle == NULL) {
-        $dlerror();
+        $strlcpy(baton->error, $dlerror(), sizeof(baton->error));
         return NULL;
     }
 
@@ -187,7 +199,7 @@ void *Routine(void *arg) {
     void (*CYHandleServer)(pid_t);
     CYHandleServer = reinterpret_cast<void (*)(pid_t)>($dlsym(handle, "CYHandleServer"));
     if (CYHandleServer == NULL) {
-        $dlerror();
+        $strlcpy(baton->error, $dlerror(), sizeof(baton->error));
         return NULL;
     }
 

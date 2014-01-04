@@ -31,6 +31,18 @@ static kern_return_t cy_vm_protect(bool broken, vm_map_t target_task, mach_vm_ad
 #define mach_vm_protect(a, b, c, d, e) \
     cy_vm_protect(broken, a, b, c, d, e)
 
+static kern_return_t cy_vm_read_overwrite(bool broken, vm_map_t target_task, mach_vm_address_t address, mach_vm_size_t size, mach_vm_address_t data, mach_vm_size_t *outsize) {
+    if (!broken)
+        return mach_vm_read_overwrite(target_task, address, size, data, outsize);
+    vm_size_t outsize32(*outsize);
+    kern_return_t value(vm_read_overwrite(target_task, address, data, size, &outsize32));
+    *outsize = outsize32;
+    return value;
+}
+
+#define mach_vm_read_overwrite(a, b, c, d, e) \
+    cy_vm_read_overwrite(broken, a, b, c, d, e)
+
 static kern_return_t cy_vm_write(bool broken, vm_map_t target_task, mach_vm_address_t address, vm_offset_t data, mach_msg_type_number_t dataCnt) {
     if (!broken)
         return mach_vm_write(target_task, address, data, dataCnt);

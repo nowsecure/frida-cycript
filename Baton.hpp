@@ -28,5 +28,6 @@
 struct Baton {
     uint64_t dyld;
     pid_t pid;
+    char error[1024];
     char library[];
 } _packed;

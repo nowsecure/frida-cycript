@@ -288,6 +288,12 @@ void InjectLibrary(pid_t pid) {
 
     _krncall(mach_port_deallocate(self, thread));
 
+    mach_vm_size_t error(sizeof(baton->error));
+    _krncall(mach_vm_read_overwrite(task, data + offsetof(Baton, error), sizeof(baton->error), reinterpret_cast<mach_vm_address_t>(&baton->error), &error));
+    _assert(error == sizeof(baton->error));
+    if (baton->error[0] != '\0')
+        CYThrow("%s", baton->error);
+
     _krncall(mach_vm_deallocate(task, code, trampoline->size_));
     _krncall(mach_vm_deallocate(task, stack, size));
 
