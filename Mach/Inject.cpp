@@ -20,7 +20,7 @@
 /* }}} */
 
 #include "TargetConditionals.h"
-#ifdef TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE
 #undef __ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__
 #define __ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__ __IPHONE_5_0
 #endif
@@ -57,7 +57,7 @@ void InjectLibrary(pid_t pid) {
     memcpy(library, addr.dli_fname, flength);
     library[flength] = '\0';
     _assert(strcmp(library + flength - 6, ".dylib") == 0);
-#ifndef TARGET_OS_IPHONE
+#if !TARGET_OS_IPHONE
     strcpy(library + flength - 6, "-any.dylib");
 #endif
 
