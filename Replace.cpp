@@ -521,6 +521,10 @@ CYStatement *CYLabel::Replace(CYContext &context) {
     return this;
 }
 
+CYExpression *CYLambda::Replace(CYContext &context) {
+    return $N2($V("Functor"), $ CYFunctionExpression(NULL, parameters_->Parameters(context), statements_), parameters_->TypeSignature(context, type_->Replace(context)));
+}
+
 CYStatement *CYLetStatement::Replace(CYContext &context) {
     return $E($ CYCall(CYNonLocalize(context, $ CYFunctionExpression(NULL, declarations_->Parameter(context), code_)), declarations_->Argument(context)));
 }
@@ -860,6 +864,30 @@ CYStatement *Try::Replace(CYContext &context) {
 }
 
 } }
+
+CYExpression *CYTypeArrayOf::Replace(CYContext &context) {
+    return $ CYCall($ CYDirectMember(next_->Replace(context), $ CYString("arrayOf")), $ CYArgument(size_));
+}
+
+CYExpression *CYTypeConstant::Replace(CYContext &context) {
+    return $ CYCall($ CYDirectMember(next_->Replace(context), $ CYString("constant")));
+}
+
+CYExpression *CYTypePointerTo::Replace(CYContext &context) {
+    return $ CYCall($ CYDirectMember(next_->Replace(context), $ CYString("pointerTo")));
+}
+
+CYExpression *CYTypeVariable::Replace(CYContext &context) {
+    return expression_;
+}
+
+CYFunctionParameter *CYTypedParameter::Parameters(CYContext &context) { $T(NULL)
+    return $ CYFunctionParameter($ CYDeclaration(typed_->identifier_ ?: context.Unique()), next_->Parameters(context));
+}
+
+CYExpression *CYTypedParameter::TypeSignature(CYContext &context, CYExpression *prefix) { $T(prefix)
+    return next_->TypeSignature(context, $ CYAdd(prefix, typed_->type_->Replace(context)));
+}
 
 CYStatement *CYVar::Replace(CYContext &context) {
     declarations_->Replace(context);

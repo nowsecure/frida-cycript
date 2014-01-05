@@ -1577,20 +1577,6 @@ PrimaryExpression
     ;
 /* }}} */
 /* Cycript (Objective-C): Block Expressions {{{ */
-TypedParameterList_
-    : "," TypedParameterList { $$ = $2; }
-    | { $$ = NULL; }
-    ;
-
-TypedParameterList
-    : TypedIdentifier TypedParameterList_ { $$ = CYNew CYTypedParameter($1, $2); }
-    ;
-
-TypedParameterListOpt
-    : TypedParameterList { $$ = $1; }
-    | { $$ = NULL; }
-    ;
-
 PrimaryExpression
     : "^" ModifiedType "(" LexPushInOff TypedParameterListOpt ")" LexPopIn BRACE LexPushInOff FunctionBody "}" LexPopIn { $$ = CYNew CYObjCBlock($2, $5, $10); }
     ;
@@ -1616,6 +1602,25 @@ MemberAccess
 /* Cycript (C): auto Compatibility {{{ */
 Var_
     : "auto"
+    ;
+/* }}} */
+/* Cycript (C): Lambda Expressions {{{ */
+TypedParameterList_
+    : "," TypedParameterList { $$ = $2; }
+    | { $$ = NULL; }
+    ;
+
+TypedParameterList
+    : TypedIdentifier TypedParameterList_ { $$ = CYNew CYTypedParameter($1, $2); }
+    ;
+
+TypedParameterListOpt
+    : TypedParameterList { $$ = $1; }
+    | { $$ = NULL; }
+    ;
+
+PrimaryExpression
+    : "[" LexPushInOff LexSetRegExp "=" "]" LexPopIn "(" LexPushInOff TypedParameterListOpt ")" LexPopIn "->" ModifiedType BRACE LexPushInOff FunctionBody "}" LexPopIn { $$ = CYNew CYLambda($13, $9, $16); }
     ;
 /* }}} */
 @end

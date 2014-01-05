@@ -474,6 +474,14 @@ void CYLabel::Output(CYOutput &out, CYFlags flags) const {
     statement_->Single(out, CYRight(flags));
 }
 
+void CYLambda::Output(CYOutput &out, CYFlags flags) const {
+    // XXX: this is seriously wrong
+    out << "[](";
+    out << ")->";
+    out << "{";
+    out << "}";
+}
+
 void CYLetStatement::Output(CYOutput &out, CYFlags flags) const {
     out << "let" << ' ' << '(' << *declarations_ << ')';
     code_->Single(out, CYRight(flags));

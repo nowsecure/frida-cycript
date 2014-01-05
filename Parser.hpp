@@ -1600,6 +1600,123 @@ struct CYFinally :
     virtual void Output(CYOutput &out) const;
 };
 
+struct CYTypeModifier :
+    CYNext<CYTypeModifier>
+{
+    CYTypeModifier(CYTypeModifier *next) :
+        CYNext<CYTypeModifier>(next)
+    {
+    }
+
+    virtual CYExpression *Replace(CYContext &context) = 0;
+};
+
+struct CYTypeArrayOf :
+    CYTypeModifier
+{
+    CYExpression *size_;
+
+    CYTypeArrayOf(CYExpression *size, CYTypeModifier *next = NULL) :
+        CYTypeModifier(next),
+        size_(size)
+    {
+    }
+
+    CYPrecedence(2)
+
+    virtual CYExpression *Replace(CYContext &context);
+};
+
+struct CYTypeConstant :
+    CYTypeModifier
+{
+    CYTypeConstant(CYTypeModifier *next = NULL) :
+        CYTypeModifier(next)
+    {
+    }
+
+    CYPrecedence(3)
+
+    virtual CYExpression *Replace(CYContext &context);
+};
+
+struct CYTypePointerTo :
+    CYTypeModifier
+{
+    CYTypePointerTo(CYTypeModifier *next = NULL) :
+        CYTypeModifier(next)
+    {
+    }
+
+    CYPrecedence(3)
+
+    virtual CYExpression *Replace(CYContext &context);
+};
+
+struct CYTypeVariable :
+    CYTypeModifier
+{
+    CYExpression *expression_;
+
+    CYTypeVariable(CYExpression *expression) :
+        CYTypeModifier(NULL),
+        expression_(expression)
+    {
+    }
+
+    CYPrecedence(1)
+
+    virtual CYExpression *Replace(CYContext &context);
+};
+
+struct CYTypedIdentifier :
+    CYNext<CYTypedIdentifier>
+{
+    CYIdentifier *identifier_;
+    CYTypeModifier *type_;
+
+    CYTypedIdentifier(CYIdentifier *identifier) :
+        identifier_(identifier),
+        type_(NULL)
+    {
+    }
+};
+
+struct CYTypedParameter :
+    CYNext<CYTypedParameter>
+{
+    CYTypedIdentifier *typed_;
+
+    CYTypedParameter(CYTypedIdentifier *typed, CYTypedParameter *next) :
+        CYNext<CYTypedParameter>(next),
+        typed_(typed)
+    {
+    }
+
+    CYFunctionParameter *Parameters(CYContext &context);
+    CYExpression *TypeSignature(CYContext &context, CYExpression *prefix);
+};
+
+struct CYLambda :
+    CYExpression
+{
+    CYTypeModifier *type_;
+    CYTypedParameter *parameters_;
+    CYStatement *statements_;
+
+    CYLambda(CYTypeModifier *type, CYTypedParameter *parameters, CYStatement *statements) :
+        type_(type),
+        parameters_(parameters),
+        statements_(statements)
+    {
+    }
+
+    CYPrecedence(1)
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
 namespace cy {
 namespace Syntax {
 
