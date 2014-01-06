@@ -230,6 +230,10 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %token AtClass "@class"
 @end
 
+@begin C
+%token <identifier_> Typedef "typedef"
+@end
+
 @begin ObjectiveC
 %token AtImplementation "@implementation"
 %token AtImplementation_ ";@implementation"
@@ -644,6 +648,10 @@ WordOpt
 
 Identifier
     : Identifier_ { $$ = $1; }
+
+@begin C
+    | "typedef" { $$ = $1; }
+@end
 
     | "implements" { $$ = $1; }
     | "interface" { $$ = $1; }
@@ -1621,6 +1629,11 @@ TypedParameterListOpt
 
 PrimaryExpression
     : "[" LexPushInOff LexSetRegExp "=" "]" LexPopIn "(" LexPushInOff TypedParameterListOpt ")" LexPopIn "->" ModifiedType BRACE LexPushInOff FunctionBody "}" LexPopIn { $$ = CYNew CYLambda($13, $9, $16); }
+    ;
+/* }}} */
+/* Cycript (C): Type Definitions {{{ */
+Statement__
+    : "typedef" TypedIdentifier Terminator { $$ = CYNew CYTypeDefinition($2); }
     ;
 /* }}} */
 @end

@@ -1670,7 +1670,8 @@ struct CYTypeVariable :
 };
 
 struct CYTypedIdentifier :
-    CYNext<CYTypedIdentifier>
+    CYNext<CYTypedIdentifier>,
+    CYThing
 {
     CYIdentifier *identifier_;
     CYTypeModifier *type_;
@@ -1680,6 +1681,8 @@ struct CYTypedIdentifier :
         type_(NULL)
     {
     }
+
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYTypedParameter :
@@ -1714,6 +1717,20 @@ struct CYLambda :
     CYPrecedence(1)
 
     virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYTypeDefinition :
+    CYStatement
+{
+    CYTypedIdentifier *typed_;
+
+    CYTypeDefinition(CYTypedIdentifier *typed) :
+        typed_(typed)
+    {
+    }
+
+    virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 

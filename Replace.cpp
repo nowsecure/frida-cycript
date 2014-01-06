@@ -873,6 +873,10 @@ CYExpression *CYTypeConstant::Replace(CYContext &context) {
     return $ CYCall($ CYDirectMember(next_->Replace(context), $ CYString("constant")));
 }
 
+CYStatement *CYTypeDefinition::Replace(CYContext &context) {
+    return $E($ CYAssign($V(typed_->identifier_), typed_->type_->Replace(context)));
+}
+
 CYExpression *CYTypePointerTo::Replace(CYContext &context) {
     return $ CYCall($ CYDirectMember(next_->Replace(context), $ CYString("pointerTo")));
 }

@@ -474,12 +474,21 @@ void CYLabel::Output(CYOutput &out, CYFlags flags) const {
     statement_->Single(out, CYRight(flags));
 }
 
+void CYTypedIdentifier::Output(CYOutput &out) const {
+    // XXX: this is clearly wrong
+    out << "XXX";
+}
+
 void CYLambda::Output(CYOutput &out, CYFlags flags) const {
     // XXX: this is seriously wrong
     out << "[](";
     out << ")->";
     out << "{";
     out << "}";
+}
+
+void CYTypeDefinition::Output(CYOutput &out, CYFlags flags) const {
+    out << "typedef" << *typed_;
 }
 
 void CYLetStatement::Output(CYOutput &out, CYFlags flags) const {

@@ -257,6 +257,10 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "@class"          L C F(tk::AtClass, hi::Meta);
 @end
 
+@begin C
+"typedef"         L C I(identifier, Identifier("typedef"), tk::Typedef, hi::Meta);
+@end
+
 @begin ObjectiveC
 "@encode"         L C F(tk::AtEncode, hi::Meta);
 "@end"            L C F(tk::AtEnd, hi::Meta);
