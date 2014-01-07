@@ -1977,9 +1977,32 @@ static JSValueRef Internal_getProperty(JSContextRef context, JSObjectRef object,
 #endif
 
     if (objc_ivar *ivar = object_getInstanceVariable(self, name, NULL)) {
-        Type_privateData type(pool, ivar_getTypeEncoding(ivar));
-        // XXX: if this fails and throws an exception the person we are throwing it to gets the wrong exception
-        return CYFromFFI(context, type.type_, type.GetFFI(), reinterpret_cast<uint8_t *>(self) + ivar_getOffset(ivar));
+        ptrdiff_t offset(ivar_getOffset(ivar));
+        void *data(reinterpret_cast<uint8_t *>(self) + offset);
+
+        const char *encoding(ivar_getTypeEncoding(ivar));
+        if (encoding[0] == 'b') {
+            unsigned length(CYCastDouble(encoding + 1));
+            unsigned shift(0);
+
+            unsigned int size;
+            objc_ivar **ivars(class_copyIvarList(object_getClass(self), &size));
+            for (size_t i(0); i != size; ++i)
+                if (ivars[i] == ivar)
+                    break;
+                else if (ivar_getOffset(ivars[i]) == offset) {
+                    const char *encoding(ivar_getTypeEncoding(ivars[i]));
+                    _assert(encoding[0] == 'b');
+                    shift += CYCastDouble(encoding + 1);
+                }
+            free(ivars);
+
+            _assert(shift + length <= sizeof(uintptr_t) * 8);
+            return CYCastJSValue(context, (*reinterpret_cast<uintptr_t *>(data) >> shift) & (1 << length) - 1);
+        } else {
+            Type_privateData type(pool, ivar_getTypeEncoding(ivar));
+            return CYFromFFI(context, type.type_, type.GetFFI(), data);
+        }
     }
 
     return NULL;
