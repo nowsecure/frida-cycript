@@ -1628,7 +1628,7 @@ TypedParameterListOpt
     ;
 
 PrimaryExpression
-    : "[" LexPushInOff LexSetRegExp "=" "]" LexPopIn "(" LexPushInOff TypedParameterListOpt ")" LexPopIn "->" ModifiedType BRACE LexPushInOff FunctionBody "}" LexPopIn { $$ = CYNew CYLambda($13, $9, $16); }
+    : "[" LexPushInOff LexSetRegExp "&" LexSetRegExp "]" LexPopIn "(" LexPushInOff TypedParameterListOpt ")" LexPopIn "->" ModifiedType BRACE LexPushInOff FunctionBody "}" LexPopIn { $$ = CYNew CYLambda($14, $10, $17); }
     ;
 /* }}} */
 /* Cycript (C): Type Definitions {{{ */
