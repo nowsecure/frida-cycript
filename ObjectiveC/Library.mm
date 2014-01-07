@@ -1964,6 +1964,23 @@ static bool Internal_hasProperty(JSContextRef context, JSObjectRef object, JSStr
     return false;
 }
 
+static void CYBitField(unsigned &length, unsigned &shift, id self, Ivar ivar, const char *encoding, unsigned offset) {
+    length = CYCastDouble(encoding + 1);
+    shift = 0;
+
+    unsigned int size;
+    objc_ivar **ivars(class_copyIvarList(object_getClass(self), &size));
+    for (size_t i(0); i != size; ++i)
+        if (ivars[i] == ivar)
+            break;
+        else if (ivar_getOffset(ivars[i]) == offset) {
+            const char *encoding(ivar_getTypeEncoding(ivars[i]));
+            _assert(encoding[0] == 'b');
+            shift += CYCastDouble(encoding + 1);
+        }
+    free(ivars);
+}
+
 static JSValueRef Internal_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     Internal *internal(reinterpret_cast<Internal *>(JSObjectGetPrivate(object)));
     CYPool pool;
@@ -1982,23 +1999,12 @@ static JSValueRef Internal_getProperty(JSContextRef context, JSObjectRef object,
 
         const char *encoding(ivar_getTypeEncoding(ivar));
         if (encoding[0] == 'b') {
-            unsigned length(CYCastDouble(encoding + 1));
-            unsigned shift(0);
-
-            unsigned int size;
-            objc_ivar **ivars(class_copyIvarList(object_getClass(self), &size));
-            for (size_t i(0); i != size; ++i)
-                if (ivars[i] == ivar)
-                    break;
-                else if (ivar_getOffset(ivars[i]) == offset) {
-                    const char *encoding(ivar_getTypeEncoding(ivars[i]));
-                    _assert(encoding[0] == 'b');
-                    shift += CYCastDouble(encoding + 1);
-                }
-            free(ivars);
-
+            unsigned length, shift;
+            CYBitField(length, shift, self, ivar, encoding, offset);
             _assert(shift + length <= sizeof(uintptr_t) * 8);
-            return CYCastJSValue(context, (*reinterpret_cast<uintptr_t *>(data) >> shift) & (1 << length) - 1);
+            uintptr_t &field(*reinterpret_cast<uintptr_t *>(data));
+            uintptr_t mask((1 << length) - 1);
+            return CYCastJSValue(context, (field >> shift) & mask);
         } else {
             Type_privateData type(pool, ivar_getTypeEncoding(ivar));
             return CYFromFFI(context, type.type_, type.GetFFI(), data);
@@ -2016,9 +2022,22 @@ static bool Internal_setProperty(JSContextRef context, JSObjectRef object, JSStr
     const char *name(CYPoolCString(pool, context, property));
 
     if (objc_ivar *ivar = object_getInstanceVariable(self, name, NULL)) {
-        Type_privateData type(pool, ivar_getTypeEncoding(ivar));
-        CYPoolFFI(&pool, context, type.type_, type.GetFFI(), reinterpret_cast<uint8_t *>(self) + ivar_getOffset(ivar), value);
-        return true;
+        ptrdiff_t offset(ivar_getOffset(ivar));
+        void *data(reinterpret_cast<uint8_t *>(self) + offset);
+
+        const char *encoding(ivar_getTypeEncoding(ivar));
+        if (encoding[0] == 'b') {
+            unsigned length, shift;
+            CYBitField(length, shift, self, ivar, encoding, offset);
+            _assert(shift + length <= sizeof(uintptr_t) * 8);
+            uintptr_t &field(*reinterpret_cast<uintptr_t *>(data));
+            uintptr_t mask((1 << length) - 1);
+            field = field & ~(mask << shift) | (uintptr_t(CYCastDouble(context, value)) & mask) << shift;
+        } else {
+            Type_privateData type(pool, ivar_getTypeEncoding(ivar));
+            CYPoolFFI(&pool, context, type.type_, type.GetFFI(), reinterpret_cast<uint8_t *>(self) + ivar_getOffset(ivar), value);
+            return true;
+        }
     }
 
     return false;
