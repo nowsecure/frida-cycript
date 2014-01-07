@@ -754,7 +754,6 @@ PrimaryExpression
     | Literal { $$ = $1; }
     | ArrayLiteral { $$ = $1; }
     | ObjectLiteral { $$ = $1; }
-    | FunctionExpression { $$ = $1; }
     | Parenthetical { $$ = $1; }
     | AutoComplete { driver.mode_ = CYDriver::AutoPrimary; YYACCEPT; }
     ;
@@ -851,6 +850,7 @@ MemberExpression_
 
 MemberExpression
     : LexSetRegExp PrimaryExpression { $$ = $2; }
+    | LexSetRegExp FunctionExpression { $$ = $2; }
     | MemberExpression_ { driver.context_ = $1; } MemberAccess { $3->SetLeft($1); $$ = $3; }
     | LexSetRegExp "new" MemberExpression Arguments { $$ = CYNew cy::Syntax::New($3, $4); }
     ;
