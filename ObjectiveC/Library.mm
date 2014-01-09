@@ -2284,7 +2284,7 @@ JSValueRef CYSendMessage(CYPool &pool, JSContextRef context, id self, Class _cla
     return CYCallFunction(pool, context, 2, setup, count, arguments, initialize, &signature, &cif, function);
 }
 
-static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[]) {
     if (count < 2)
         throw CYJSError(context, "too few arguments to objc_msgSend");
 
@@ -2320,6 +2320,10 @@ static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObje
     _cmd = CYCastSEL(context, arguments[1]);
 
     return CYSendMessage(pool, context, self, _class, _cmd, count - 2, arguments + 2, uninitialized);
+}
+
+static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    return $objc_msgSend(context, object, _this, count, arguments);
 } CYCatch(NULL) }
 
 static JSValueRef Selector_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -2327,7 +2331,7 @@ static JSValueRef Selector_callAsFunction(JSContextRef context, JSObjectRef obje
     setup[0] = _this;
     setup[1] = object;
     memcpy(setup + 2, arguments, sizeof(JSValueRef) * count);
-    return $objc_msgSend(context, NULL, NULL, count + 2, setup, exception);
+    return $objc_msgSend(context, NULL, NULL, count + 2, setup);
 } CYCatch(NULL) }
 
 static JSValueRef Message_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
