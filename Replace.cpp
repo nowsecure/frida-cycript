@@ -877,12 +877,20 @@ CYStatement *CYTypeDefinition::Replace(CYContext &context) {
     return $E($ CYAssign($V(typed_->identifier_), typed_->type_->Replace(context)));
 }
 
+CYExpression *CYTypeFunctionWith::Replace(CYContext &context) {
+    return $ CYCall($ CYDirectMember(next_->Replace(context), $ CYString("functionWith")), parameters_->Argument(context));
+}
+
 CYExpression *CYTypePointerTo::Replace(CYContext &context) {
     return $ CYCall($ CYDirectMember(next_->Replace(context), $ CYString("pointerTo")));
 }
 
 CYExpression *CYTypeVariable::Replace(CYContext &context) {
     return expression_;
+}
+
+CYArgument *CYTypedParameter::Argument(CYContext &context) { $T(NULL)
+    return $ CYArgument(typed_->type_->Replace(context), next_->Argument(context));
 }
 
 CYFunctionParameter *CYTypedParameter::Parameters(CYContext &context) { $T(NULL)

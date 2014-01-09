@@ -1696,6 +1696,7 @@ struct CYTypedParameter :
     {
     }
 
+    CYArgument *Argument(CYContext &context);
     CYFunctionParameter *Parameters(CYContext &context);
     CYExpression *TypeSignature(CYContext &context, CYExpression *prefix);
 };
@@ -1732,6 +1733,22 @@ struct CYTypeDefinition :
 
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYTypeFunctionWith :
+    CYTypeModifier
+{
+    CYTypedParameter *parameters_;
+
+    CYTypeFunctionWith(CYTypedParameter *parameters, CYTypeModifier *next = NULL) :
+        CYTypeModifier(next),
+        parameters_(parameters)
+    {
+    }
+
+    CYPrecedence(2)
+
+    virtual CYExpression *Replace(CYContext &context);
 };
 
 namespace cy {
