@@ -50,29 +50,19 @@ struct CYHooks *hooks_;
 
 /* JavaScript Properties {{{ */
 JSValueRef CYGetProperty(JSContextRef context, JSObjectRef object, size_t index) {
-    JSValueRef exception(NULL);
-    JSValueRef value(JSObjectGetPropertyAtIndex(context, object, index, &exception));
-    CYThrow(context, exception);
-    return value;
+    return _jsccall(JSObjectGetPropertyAtIndex, context, object, index);
 }
 
 JSValueRef CYGetProperty(JSContextRef context, JSObjectRef object, JSStringRef name) {
-    JSValueRef exception(NULL);
-    JSValueRef value(JSObjectGetProperty(context, object, name, &exception));
-    CYThrow(context, exception);
-    return value;
+    return _jsccall(JSObjectGetProperty, context, object, name);
 }
 
 void CYSetProperty(JSContextRef context, JSObjectRef object, size_t index, JSValueRef value) {
-    JSValueRef exception(NULL);
-    JSObjectSetPropertyAtIndex(context, object, index, value, &exception);
-    CYThrow(context, exception);
+    _jsccall(JSObjectSetPropertyAtIndex, context, object, index, value);
 }
 
 void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef value, JSPropertyAttributes attributes) {
-    JSValueRef exception(NULL);
-    JSObjectSetProperty(context, object, name, value, attributes, &exception);
-    CYThrow(context, exception);
+    _jsccall(JSObjectSetProperty, context, object, name, value, attributes);
 }
 
 void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef (*callback)(JSContextRef, JSObjectRef, JSObjectRef, size_t, const JSValueRef[], JSValueRef *), JSPropertyAttributes attributes) {
@@ -96,10 +86,7 @@ JSStringRef CYCopyJSString(CYUTF8String value) {
 JSStringRef CYCopyJSString(JSContextRef context, JSValueRef value) {
     if (JSValueIsNull(context, value))
         return NULL;
-    JSValueRef exception(NULL);
-    JSStringRef string(JSValueToStringCopy(context, value, &exception));
-    CYThrow(context, exception);
-    return string;
+    return _jsccall(JSValueToStringCopy, context, value);
 }
 
 static CYUTF16String CYCastUTF16String(JSStringRef value) {
@@ -284,10 +271,7 @@ JSValueRef CYJSUndefined(JSContextRef context) {
 }
 
 double CYCastDouble(JSContextRef context, JSValueRef value) {
-    JSValueRef exception(NULL);
-    double number(JSValueToNumber(context, value, &exception));
-    CYThrow(context, exception);
-    return number;
+    return _jsccall(JSValueToNumber, context, value);
 }
 
 bool CYCastBool(JSContextRef context, JSValueRef value) {
@@ -307,17 +291,11 @@ JSValueRef CYCastJSValue(JSContextRef context, const char *value) {
 }
 
 JSObjectRef CYCastJSObject(JSContextRef context, JSValueRef value) {
-    JSValueRef exception(NULL);
-    JSObjectRef object(JSValueToObject(context, value, &exception));
-    CYThrow(context, exception);
-    return object;
+    return _jsccall(JSValueToObject, context, value);
 }
 
 JSValueRef CYCallAsFunction(JSContextRef context, JSObjectRef function, JSObjectRef _this, size_t count, const JSValueRef arguments[]) {
-    JSValueRef exception(NULL);
-    JSValueRef value(JSObjectCallAsFunction(context, function, _this, count, arguments, &exception));
-    CYThrow(context, exception);
-    return value;
+    return _jsccall(JSObjectCallAsFunction, context, function, _this, count, arguments);
 }
 
 bool CYIsCallable(JSContextRef context, JSValueRef value) {
@@ -329,19 +307,14 @@ size_t CYArrayLength(JSContextRef context, JSObjectRef array) {
 }
 
 JSValueRef CYArrayGet(JSContextRef context, JSObjectRef array, size_t index) {
-    JSValueRef exception(NULL);
-    JSValueRef value(JSObjectGetPropertyAtIndex(context, array, index, &exception));
-    CYThrow(context, exception);
-    return value;
+    return _jsccall(JSObjectGetPropertyAtIndex, context, array, index);
 }
 
 void CYArrayPush(JSContextRef context, JSObjectRef array, JSValueRef value) {
-    JSValueRef exception(NULL);
     JSValueRef arguments[1];
     arguments[0] = value;
     JSObjectRef Array(CYGetCachedObject(context, CYJSString("Array_prototype")));
-    JSObjectCallAsFunction(context, CYCastJSObject(context, CYGetProperty(context, Array, push_s)), array, 1, arguments, &exception);
-    CYThrow(context, exception);
+    _jsccall(JSObjectCallAsFunction, context, CYCastJSObject(context, CYGetProperty(context, Array, push_s)), array, 1, arguments);
 }
 
 static JSValueRef System_print(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -400,10 +373,7 @@ const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSValueRef value, JS
 } CYCatch(NULL) }
 
 const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSValueRef value) {
-    JSValueRef exception(NULL);
-    const char *cyon(CYPoolCCYON(pool, context, value, &exception));
-    CYThrow(context, exception);
-    return cyon;
+    return _jsccall(CYPoolCCYON, pool, context, value);
 }
 
 const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSObjectRef object) {
@@ -417,10 +387,7 @@ const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSObjectRef object) 
     JSValueRef toJSON(CYGetProperty(context, object, toJSON_s));
     if (CYIsCallable(context, toJSON)) {
         JSValueRef arguments[1] = {CYCastJSValue(context, CYJSString(""))};
-        JSValueRef exception(NULL);
-        const char *cyon(CYPoolCCYON(pool, context, CYCallAsFunction(context, (JSObjectRef) toJSON, object, 1, arguments), &exception));
-        CYThrow(context, exception);
-        return cyon;
+        return _jsccall(CYPoolCCYON, pool, context, CYCallAsFunction(context, (JSObjectRef) toJSON, object, 1, arguments));
     }
 
     if (JSObjectIsFunction(context, object)) {
@@ -786,10 +753,7 @@ JSObjectRef CYGetCachedObject(JSContextRef context, JSStringRef name) {
 static JSObjectRef CYMakeFunctor(JSContextRef context, JSValueRef value, const char *type) {
     JSObjectRef Function(CYGetCachedObject(context, CYJSString("Function")));
 
-    JSValueRef exception(NULL);
-    bool function(JSValueIsInstanceOfConstructor(context, value, Function, &exception));
-    CYThrow(context, exception);
-
+    bool function(_jsccall(JSValueIsInstanceOfConstructor, context, value, Function));
     if (function) {
         JSObjectRef function(CYCastJSObject(context, value));
         return CYMakeFunctor(context, function, type);
@@ -1311,11 +1275,9 @@ void CYSetArgs(int argc, const char *argv[]) {
         args[i] = CYCastJSValue(context, argv[i]);
 
     JSObjectRef array;
-    if (JSObjectMakeArray$ != NULL) {
-        JSValueRef exception(NULL);
-        array = (*JSObjectMakeArray$)(context, argc, args, &exception);
-        CYThrow(context, exception);
-    } else {
+    if (JSObjectMakeArray$ != NULL)
+        array = _jsccall(*JSObjectMakeArray$, context, argc, args);
+    else {
         JSObjectRef Array(CYGetCachedObject(context, CYJSString("Array")));
         JSValueRef value(CYCallAsFunction(context, Array, NULL, argc, args));
         array = CYCastJSObject(context, value);
@@ -1471,14 +1433,8 @@ JSValueRef CYJSError::CastJSValue(JSContextRef context) const {
 
 JSValueRef CYCastJSError(JSContextRef context, const char *message) {
     JSObjectRef Error(CYGetCachedObject(context, CYJSString("Error")));
-
     JSValueRef arguments[1] = {CYCastJSValue(context, message)};
-
-    JSValueRef exception(NULL);
-    JSValueRef value(JSObjectCallAsConstructor(context, Error, 1, arguments, &exception));
-    CYThrow(context, exception);
-
-    return value;
+    return _jsccall(JSObjectCallAsConstructor, context, Error, 1, arguments);
 }
 
 JSValueRef CYPoolError::CastJSValue(JSContextRef context) const {
@@ -1504,8 +1460,6 @@ JSGlobalContextRef CYGetJSContext(JSContextRef context) {
 }
 
 extern "C" void CYSetupContext(JSGlobalContextRef context) {
-    JSValueRef exception(NULL);
-
     CYInitializeDynamic();
 
     JSObjectRef global(CYGetGlobalObject(context));
@@ -1559,8 +1513,7 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     JSObjectRef all(JSObjectMake(context, All_, NULL));
     CYSetProperty(context, cycript, CYJSString("all"), all);
 
-    JSObjectRef alls(JSObjectCallAsConstructor(context, Array, 0, NULL, &exception));
-    CYThrow(context, exception);
+    JSObjectRef alls(_jsccall(JSObjectCallAsConstructor, context, Array, 0, NULL));
     CYSetProperty(context, cycript, CYJSString("alls"), alls);
 
     if (true) {

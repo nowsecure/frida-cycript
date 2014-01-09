@@ -103,4 +103,28 @@ void CYThrow(JSContextRef context, JSValueRef value);
     _value; \
 })
 
+struct CYJSException {
+    JSContextRef context_;
+    JSValueRef value_;
+
+    CYJSException(JSContextRef context) :
+        context_(context),
+        value_(NULL)
+    {
+    }
+
+    ~CYJSException() {
+        CYThrow(context_, value_);
+    }
+
+    operator JSValueRef *() {
+        return &value_;
+    }
+};
+
+#define _jsccall(code, args...) ({ \
+    CYJSException _error(context); \
+    (code)(args, _error); \
+})
+
 #endif/*CYCRIPT_ERROR_HPP*/
