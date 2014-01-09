@@ -955,7 +955,7 @@ static void Struct_getPropertyNames(JSContextRef context, JSObjectRef object, JS
     }
 }
 
-JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, void *setup[], size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception, sig::Signature *signature, ffi_cif *cif, void (*function)()) { CYTry {
+JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, void *setup[], size_t count, const JSValueRef arguments[], bool initialize, sig::Signature *signature, ffi_cif *cif, void (*function)()) {
     if (setups + count != signature->count - 1)
         throw CYJSError(context, "incorrect number of arguments to ffi function");
 
@@ -979,12 +979,12 @@ JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, voi
         ffi_call(cif, function, value, values);
 
     return CYFromFFI(context, signature->elements[0].type, cif->rtype, value, initialize);
-} CYCatch(NULL) }
+}
 
 static JSValueRef Functor_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CYPool pool;
     cy::Functor *internal(reinterpret_cast<cy::Functor *>(JSObjectGetPrivate(object)));
-    return CYCallFunction(pool, context, 0, NULL, count, arguments, false, exception, &internal->signature_, &internal->cif_, internal->GetValue());
+    return CYCallFunction(pool, context, 0, NULL, count, arguments, false, &internal->signature_, &internal->cif_, internal->GetValue());
 } CYCatch(NULL) }
 
 JSObjectRef CYMakeType(JSContextRef context, const char *type) {

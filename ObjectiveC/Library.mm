@@ -159,7 +159,7 @@ enum {
     BLOCK_HAS_SIGNATURE = 1 << 30,
 };
 
-JSValueRef CYSendMessage(CYPool &pool, JSContextRef context, id self, Class super, SEL _cmd, size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception);
+JSValueRef CYSendMessage(CYPool &pool, JSContextRef context, id self, Class super, SEL _cmd, size_t count, const JSValueRef arguments[], bool initialize);
 
 /* Objective-C Pool Release {{{ */
 void CYPoolRelease_(void *data) {
@@ -1739,14 +1739,14 @@ static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object,
     if (objc_property_t property = class_getProperty(_class, string)) {
         PropertyAttributes attributes(property);
         SEL sel(sel_registerName(attributes.Getter()));
-        return CYSendMessage(pool, context, self, NULL, sel, 0, NULL, false, exception);
+        return CYSendMessage(pool, context, self, NULL, sel, 0, NULL, false);
     }
 #endif
 
     if (CYHasImplicitProperties(_class))
         if (SEL sel = sel_getUid(string))
             if (CYImplements(self, _class, sel, true))
-                return CYSendMessage(pool, context, self, NULL, sel, 0, NULL, false, exception);
+                return CYSendMessage(pool, context, self, NULL, sel, 0, NULL, false);
 
     return NULL;
 } CYCatch(NULL) }
@@ -1774,7 +1774,7 @@ static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStr
         if (const char *setter = attributes.Setter()) {
             SEL sel(sel_registerName(setter));
             JSValueRef arguments[1] = {value};
-            CYSendMessage(pool, context, self, NULL, sel, 1, arguments, false, exception);
+            CYSendMessage(pool, context, self, NULL, sel, 1, arguments, false);
             return true;
         }
     }
@@ -1799,7 +1799,7 @@ static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStr
     if (SEL sel = sel_getUid(set))
         if (CYImplements(self, _class, sel)) {
             JSValueRef arguments[1] = {value};
-            CYSendMessage(pool, context, self, NULL, sel, 1, arguments, false, exception);
+            CYSendMessage(pool, context, self, NULL, sel, 1, arguments, false);
             return true;
         }
 
@@ -1912,7 +1912,7 @@ static JSValueRef Instance_callAsFunction(JSContextRef context, JSObjectRef obje
             sig::sig_ffi_cif(pool, &sig::ObjectiveC, &signature, &cif);
 
             void (*function)() = reinterpret_cast<void (*)()>(literal->invoke);
-            return CYCallFunction(pool, context, 1, setup, count, arguments, false, exception, &signature, &cif, function);
+            return CYCallFunction(pool, context, 1, setup, count, arguments, false, &signature, &cif, function);
         }
     }
 
@@ -2228,7 +2228,7 @@ static bool stret(ffi_type *ffi_type) {
 #endif
 #endif
 
-JSValueRef CYSendMessage(CYPool &pool, JSContextRef context, id self, Class _class, SEL _cmd, size_t count, const JSValueRef arguments[], bool initialize, JSValueRef *exception) { CYTry {
+JSValueRef CYSendMessage(CYPool &pool, JSContextRef context, id self, Class _class, SEL _cmd, size_t count, const JSValueRef arguments[], bool initialize) {
     const char *type;
 
     if (_class == NULL)
@@ -2295,8 +2295,8 @@ JSValueRef CYSendMessage(CYPool &pool, JSContextRef context, id self, Class _cla
     }
 
     void (*function)() = reinterpret_cast<void (*)()>(imp);
-    return CYCallFunction(pool, context, 2, setup, count, arguments, initialize, exception, &signature, &cif, function);
-} CYCatch(NULL) }
+    return CYCallFunction(pool, context, 2, setup, count, arguments, initialize, &signature, &cif, function);
+}
 
 static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count < 2)
@@ -2333,7 +2333,7 @@ static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObje
 
     _cmd = CYCastSEL(context, arguments[1]);
 
-    return CYSendMessage(pool, context, self, _class, _cmd, count - 2, arguments + 2, uninitialized, exception);
+    return CYSendMessage(pool, context, self, _class, _cmd, count - 2, arguments + 2, uninitialized);
 } CYCatch(NULL) }
 
 static JSValueRef Selector_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -2355,7 +2355,7 @@ static JSValueRef Message_callAsFunction(JSContextRef context, JSObjectRef objec
     setup[0] = &self;
     setup[1] = &internal->sel_;
 
-    return CYCallFunction(pool, context, 2, setup, count, arguments, false, exception, &internal->signature_, &internal->cif_, internal->GetValue());
+    return CYCallFunction(pool, context, 2, setup, count, arguments, false, &internal->signature_, &internal->cif_, internal->GetValue());
 } CYCatch(NULL) }
 
 static JSObjectRef Super_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
