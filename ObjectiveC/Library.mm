@@ -2512,9 +2512,9 @@ static JSValueRef Selector_callAsFunction_toString(JSContextRef context, JSObjec
     return CYCastJSValue(context, sel_getName(internal->GetValue()));
 } CYCatch(NULL) }
 
-static JSValueRef Selector_callAsFunction_toJSON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+static JSValueRef Selector_callAsFunction_toJSON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     return Selector_callAsFunction_toString(context, object, _this, count, arguments, exception);
-} CYCatch(NULL) }
+}
 
 static JSValueRef Selector_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     Selector_privateData *internal(reinterpret_cast<Selector_privateData *>(JSObjectGetPrivate(_this)));
