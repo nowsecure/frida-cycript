@@ -508,7 +508,8 @@ static void Console(CYOptions &options) {
                     syntax = !syntax;
                     *out_ << "syntax == " << (syntax ? "true" : "false") << std::endl;
                 }
-                history += line;
+                command_ = line;
+                history += command_;
                 goto restart;
             }
         }
