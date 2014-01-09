@@ -1293,7 +1293,7 @@ JSObjectRef CYGetGlobalObject(JSContextRef context) {
 
 const char *CYExecute(CYPool &pool, CYUTF8String code) {
     JSContextRef context(CYGetJSContext());
-    JSValueRef exception(NULL), result;
+    JSValueRef exception(NULL);
 
     void *handle;
     if (hooks_ != NULL && hooks_->ExecuteStart != NULL)
@@ -1301,8 +1301,9 @@ const char *CYExecute(CYPool &pool, CYUTF8String code) {
     else
         handle = NULL;
 
-    const char *json;
+    try {
 
+    JSValueRef result;
     try {
         result = JSEvaluateScript(context, CYJSString(code), NULL, NULL, 0, &exception);
     } catch (const char *error) {
@@ -1315,6 +1316,7 @@ const char *CYExecute(CYPool &pool, CYUTF8String code) {
     if (JSValueIsUndefined(context, result))
         return NULL;
 
+    const char *json;
     try {
         json = CYPoolCCYON(pool, context, result, &exception);
     } catch (const char *error) {
@@ -1326,9 +1328,13 @@ const char *CYExecute(CYPool &pool, CYUTF8String code) {
 
     CYSetProperty(context, CYGetGlobalObject(context), Result_, result);
 
-    if (hooks_ != NULL && hooks_->ExecuteEnd != NULL)
-        (*hooks_->ExecuteEnd)(context, handle);
     return json;
+
+    } catch (...) {
+        if (hooks_ != NULL && hooks_->ExecuteEnd != NULL)
+            (*hooks_->ExecuteEnd)(context, handle);
+        throw;
+    }
 }
 
 extern "C" void CydgetSetupContext(JSGlobalContextRef context) {
