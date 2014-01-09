@@ -2734,7 +2734,12 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     ObjectiveC_Protocols_ = JSClassCreate(&definition);
 
 #ifdef __APPLE__
+// XXX: this is horrible; there has to be a better way to do this
+#ifdef __LP64__
+    class_addMethod(NSCFType_, @selector(cy$toJSON:inContext:), reinterpret_cast<IMP>(&NSCFType$cy$toJSON$inContext$), "^{OpaqueJSValue=}32@0:8@16^{OpaqueJSContext=}24");
+#else
     class_addMethod(NSCFType_, @selector(cy$toJSON:inContext:), reinterpret_cast<IMP>(&NSCFType$cy$toJSON$inContext$), "^{OpaqueJSValue=}16@0:4@8^{OpaqueJSContext=}12");
+#endif
 #endif
 } CYPoolCatch() }
 
