@@ -22,6 +22,9 @@
 #include "Internal.hpp"
 
 #include <dlfcn.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "cycript.hpp"
 
@@ -32,6 +35,7 @@
 #include "Execute.hpp"
 
 #include <sys/mman.h>
+#include <sys/stat.h>
 
 #include <iostream>
 #include <set>
@@ -1467,6 +1471,66 @@ JSGlobalContextRef CYGetJSContext(JSContextRef context) {
     return reinterpret_cast<Context *>(JSObjectGetPrivate(CYCastJSObject(context, CYGetProperty(context, CYGetGlobalObject(context), cy_s))))->context_;
 }
 
+extern "C" bool CydgetMemoryParse(const uint16_t **data, size_t *size);
+
+void *CYMapFile(const char *path, size_t *psize) {
+    int fd;
+    _syscall(fd = open(path, O_RDONLY));
+
+    struct stat stat;
+    _syscall(fstat(fd, &stat));
+    size_t size(stat.st_size);
+
+    *psize = size;
+
+    void *base;
+    _syscall(base = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0));
+
+    _syscall(close(fd));
+    return base;
+}
+
+static void CYRunSetups(JSContextRef context) {
+    std::string folder("/etc/cycript/setup.d");
+    DIR *setups(opendir(folder.c_str()));
+    if (setups == NULL)
+        return;
+
+    for (;;) {
+        dirent setup;
+        dirent *result;
+        _syscall(readdir_r(setups, &setup, &result));
+
+        if (result == NULL)
+            break;
+        _assert(result == &setup);
+
+        const char *name(setup.d_name);
+        size_t length(strlen(name));
+        if (length < 4)
+            continue;
+
+        if (name[0] == '.')
+            continue;
+        if (memcmp(name + length - 3, ".cy", 3) != 0)
+            continue;
+
+        std::string script(folder + "/" + name);
+        CYUTF8String utf8;
+        utf8.data = reinterpret_cast<char *>(CYMapFile(script.c_str(), &utf8.size));
+
+        CYPool pool;
+        CYUTF16String utf16(CYPoolUTF16String(pool, utf8));
+        munmap(const_cast<char *>(utf8.data), utf8.size);
+
+        if (CydgetMemoryParse(&utf16.data, &utf16.size))
+            CYExecute(context, pool, CYPoolUTF8String(pool, utf16));
+        free(const_cast<uint16_t *>(utf16.data));
+    }
+
+    _syscall(closedir(setups));
+}
+
 extern "C" void CYSetupContext(JSGlobalContextRef context) {
     CYInitializeDynamic();
 
@@ -1556,6 +1620,8 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
         (*hooks_->SetupContext)(context);
 
     CYArrayPush(context, alls, cycript);
+
+    CYRunSetups(context);
 }
 
 JSGlobalContextRef CYGetJSContext() {

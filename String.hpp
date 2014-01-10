@@ -31,6 +31,12 @@ struct CYUTF8String {
     const char *data;
     size_t size;
 
+    CYUTF8String() :
+        data(NULL),
+        size(0)
+    {
+    }
+
     CYUTF8String(const char *data) :
         data(data),
         size(strlen(data))
