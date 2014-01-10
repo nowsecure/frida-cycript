@@ -45,6 +45,10 @@ function arch() {
     flags+=(-fno-stack-protector)
     flags+=(-O3 -g3)
 
+    if [[ ${arch} == arm* && ${arch} != arm64 ]]; then
+        flags+=(-mthumb)
+    fi
+
     cd "libffi.${arch}"
     CC="clang -arch ${arch}" CFLAGS="${flags[*]}" CPPFLAGS="${flags[*]} $*" ../libffi/configure --host="${host}"
     make

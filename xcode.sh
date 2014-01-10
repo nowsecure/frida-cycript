@@ -107,6 +107,7 @@ for arch in armv6 armv7 armv7s arm64; do
         min=7.0
     else
         min=2.0
+        #cpf+=" -mthumb"
     fi
 
     build "ios-${arch}" iphoneos "-arch ${arch} -miphoneos-version-min=${min}" --host=arm-apple-darwin10 \
