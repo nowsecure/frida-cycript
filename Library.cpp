@@ -191,7 +191,7 @@ double CYCastDouble(const char *value) {
     return CYCastDouble(value, strlen(value));
 }
 
-extern "C" void CydgetMemoryParse(const uint16_t **data, size_t *size) {
+extern "C" bool CydgetMemoryParse(const uint16_t **data, size_t *size) {
     CYLocalPool local;
 
     CYUTF8String utf8(CYPoolUTF8String(local, CYUTF16String(*data, *size)));
@@ -199,8 +199,11 @@ extern "C" void CydgetMemoryParse(const uint16_t **data, size_t *size) {
     CYDriver driver(stream);
 
     cy::parser parser(driver);
-    if (parser.parse() != 0 || !driver.errors_.empty())
-        return;
+    if (parser.parse() != 0 || !driver.errors_.empty()) {
+        *data = NULL;
+        *size = 0;
+        return false;
+    }
 
     CYOptions options;
     CYContext context(options);
@@ -219,6 +222,7 @@ extern "C" void CydgetMemoryParse(const uint16_t **data, size_t *size) {
 
     *data = copy;
     *size = utf16.size;
+    return true;
 }
 
 CYPool &CYGetGlobalPool() {
