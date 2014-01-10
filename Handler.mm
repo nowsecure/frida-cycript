@@ -100,36 +100,20 @@ struct CYClient :
                 return;
             data[size] = '\0';
 
-            CYStream stream(data, data + size);
-            CYDriver driver(stream);
+            NSAutoreleasePool *ar = [[NSAutoreleasePool alloc] init];
 
-            cy::parser parser(driver);
+            std::string code(data, size);
+            CYExecute_ execute = {pool, code.c_str()};
+            NSValue *value([NSValue valueWithPointer:&execute]);
+            if (dispatch)
+                [client performSelectorOnMainThread:@selector(execute:) withObject:value waitUntilDone:YES];
+            else
+                [client execute:value];
 
-            const char *json;
-            if (parser.parse() != 0 || !driver.errors_.empty()) {
-                json = NULL;
-                size = _not(uint32_t);
-            } else {
-                NSAutoreleasePool *ar = [[NSAutoreleasePool alloc] init];
+            const char *json(execute.data_);
+            size = json == NULL ? _not(uint32_t) : strlen(json);
 
-                CYOptions options;
-                CYContext context(options);
-                driver.program_->Replace(context);
-                std::ostringstream str;
-                CYOutput out(str, options);
-                out << *driver.program_;
-                std::string code(str.str());
-                CYExecute_ execute = {pool, code.c_str()};
-                NSValue *value([NSValue valueWithPointer:&execute]);
-                if (dispatch)
-                    [client performSelectorOnMainThread:@selector(execute:) withObject:value waitUntilDone:YES];
-                else
-                    [client execute:value];
-                json = execute.data_;
-                size = json == NULL ? _not(uint32_t) : strlen(json);
-
-                [ar release];
-            }
+            [ar release];
 
             if (!CYSendAll(socket_, &size, sizeof(size)))
                 return;

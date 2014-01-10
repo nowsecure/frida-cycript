@@ -26,6 +26,7 @@
 #endif
 
 #include <cstdio>
+#include <fstream>
 #include <sstream>
 
 #include <setjmp.h>
@@ -41,8 +42,6 @@
 #else
 #include <readline/history.h>
 #endif
-
-#include <sys/mman.h>
 
 #include <errno.h>
 #include <unistd.h>
@@ -578,15 +577,11 @@ static void Console(CYOptions &options) {
             if (driver.program_ == NULL)
                 goto restart;
 
-            if (client_ != -1)
-                code = command_;
-            else {
-                std::ostringstream str;
-                CYOutput out(str, options);
-                Setup(out, driver, options);
-                out << *driver.program_;
-                code = str.str();
-            }
+            std::ostringstream str;
+            CYOutput out(str, options);
+            Setup(out, driver, options);
+            out << *driver.program_;
+            code = str.str();
         }
 
         history += command_;
@@ -598,23 +593,6 @@ static void Console(CYOptions &options) {
 
         Run(client_, syntax, code, out_, expand);
     }
-}
-
-static void *Map(const char *path, size_t *psize) {
-    int fd;
-    _syscall(fd = open(path, O_RDONLY));
-
-    struct stat stat;
-    _syscall(fstat(fd, &stat));
-    size_t size(stat.st_size);
-
-    *psize = size;
-
-    void *base;
-    _syscall(base = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0));
-
-    _syscall(close(fd));
-    return base;
 }
 
 void InjectLibrary(pid_t pid);
@@ -878,56 +856,33 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
     else {
         CYLocalPool pool;
 
-        char *start, *end;
-        std::istream *indirect;
-
+        std::istream *stream;
         if (script == NULL) {
-            start = NULL;
-            end = NULL;
-            indirect = &std::cin;
+            stream = &std::cin;
+            script = "<stdin>";
         } else {
-            size_t size;
-            start = reinterpret_cast<char *>(Map(script, &size));
-            end = start + size;
-
-            if (size >= 2 && start[0] == '#' && start[1] == '!') {
-                start += 2;
-
-                if (void *line = memchr(start, '\n', end - start))
-                    start = reinterpret_cast<char *>(line);
-                else
-                    start = end;
-            }
-
-            indirect = NULL;
+            stream = new std::fstream(script, std::ios::in | std::ios::binary);
+            _assert(!stream->fail());
         }
 
-        CYStream direct(start, end);
-        std::istream &stream(indirect == NULL ? direct : *indirect);
-        CYDriver driver(stream, script ?: "<stdin>");
-
+        CYDriver driver(*stream, script);
         cy::parser parser(driver);
         Setup(driver, parser);
 
         if (parser.parse() != 0 || !driver.errors_.empty()) {
             for (CYDriver::Errors::const_iterator i(driver.errors_.begin()); i != driver.errors_.end(); ++i)
                 std::cerr << i->location_.begin << ": " << i->message_ << std::endl;
-        } else if (driver.program_ != NULL)
-            if (client_ != -1) {
-                // XXX: this code means that you can't pipe to another process
-                std::string code(start, end-start);
+        } else if (driver.program_ != NULL) {
+            std::ostringstream str;
+            CYOutput out(str, options);
+            Setup(out, driver, options);
+            out << *driver.program_;
+            std::string code(str.str());
+            if (compile)
+                std::cout << code;
+            else
                 Run(client_, false, code, &std::cout);
-            } else {
-                std::ostringstream str;
-                CYOutput out(str, options);
-                Setup(out, driver, options);
-                out << *driver.program_;
-                std::string code(str.str());
-                if (compile)
-                    std::cout << code;
-                else
-                    Run(client_, false, code, &std::cout);
-            }
+        }
     }
 
     apr_pool_destroy(pool);
