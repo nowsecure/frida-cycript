@@ -2241,9 +2241,13 @@ static void choose_(task_t task, void *baton, unsigned type, vm_range_t *ranges,
         Class isa(reinterpret_cast<Class>(pointers[0]));
 #endif
 
-        if (choice->query_.find(isa) == choice->query_.end())
+        std::set<Class>::const_iterator result(choice->query_.find(isa));
+        if (result == choice->query_.end())
             continue;
 
+        // XXX: if (size < class_getInstanceSize(*result))
+        if ((class_getInstanceSize(*result) + 15) / 16 * 16 != size)
+            continue;
         CYArrayPush(context, choice->results_, CYCastJSValue(context, reinterpret_cast<id>(data)));
     }
 }
