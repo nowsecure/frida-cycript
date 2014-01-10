@@ -2074,26 +2074,38 @@ static JSValueRef ObjectiveC_Classes_getProperty(JSContextRef context, JSObjectR
     return NULL;
 } CYCatch(NULL) }
 
-static void ObjectiveC_Classes_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
 #ifdef __APPLE__
-    size_t size(objc_getClassList(NULL, 0));
+static Class *CYCopyClassList(size_t &size) {
+    size = objc_getClassList(NULL, 0);
     Class *data(reinterpret_cast<Class *>(malloc(sizeof(Class) * size)));
 
-  get:
-    size_t writ(objc_getClassList(data, size));
-    if (size < writ) {
+    for (;;) {
+        size_t writ(objc_getClassList(data, size));
+        if (writ <= size) {
+            size = writ;
+            return data;
+        }
+
+        Class *copy(reinterpret_cast<Class *>(realloc(data, sizeof(Class) * writ)));
+        if (copy == NULL) {
+            free(data);
+            return NULL;
+        }
+
+        data = copy;
         size = writ;
-        if (Class *copy = reinterpret_cast<Class *>(realloc(data, sizeof(Class) * writ))) {
-            data = copy;
-            goto get;
-        } else goto done;
     }
+}
+#endif
 
-    for (size_t i(0); i != writ; ++i)
-        JSPropertyNameAccumulatorAddName(names, CYJSString(class_getName(data[i])));
-
-  done:
-    free(data);
+static void ObjectiveC_Classes_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
+#ifdef __APPLE__
+    size_t size;
+    if (Class *data = CYCopyClassList(size)) {
+        for (size_t i(0); i != size; ++i)
+            JSPropertyNameAccumulatorAddName(names, CYJSString(class_getName(data[i])));
+        free(data);
+    }
 #else
     void *state(NULL);
     while (Class _class = objc_next_class(&state))
@@ -2194,13 +2206,14 @@ static void ObjectiveC_Constants_getPropertyNames(JSContextRef context, JSObject
     JSPropertyNameAccumulatorAddName(names, CYJSString("nil"));
 }
 
+#ifdef __APPLE__
 static kern_return_t CYReadMemory(task_t task, vm_address_t address, vm_size_t size, void **data) {
     *data = reinterpret_cast<void *>(address);
     return KERN_SUCCESS;
 }
 
 struct CYChoice {
-    Class query_;
+    std::set<Class> query_;
     JSContextRef context_;
     JSObjectRef results_;
 };
@@ -2228,8 +2241,9 @@ static void choose_(task_t task, void *baton, unsigned type, vm_range_t *ranges,
         Class isa(reinterpret_cast<Class>(pointers[0]));
 #endif
 
-        if (isa != choice->query_)
+        if (choice->query_.find(isa) == choice->query_.end())
             continue;
+
         CYArrayPush(context, choice->results_, CYCastJSValue(context, reinterpret_cast<id>(data)));
     }
 }
@@ -2250,19 +2264,33 @@ static JSValueRef choose(JSContextRef context, JSObjectRef object, JSObjectRef _
     JSObjectRef results(_jsccall(JSObjectCallAsConstructor, context, Array, 0, NULL));
 
     CYChoice choice;
-    choice.query_ = _class;
     choice.context_ = context;
     choice.results_ = results;
+
+    size_t number;
+    Class *classes(CYCopyClassList(number));
+    _assert(classes != NULL);
+
+    for (size_t i(0); i != number; ++i)
+        for (Class current(classes[i]); current != Nil; current = class_getSuperclass(current))
+            if (current == _class) {
+                choice.query_.insert(classes[i]);
+                break;
+            }
+
+    free(classes);
 
     for (unsigned i(0); i != size; ++i) {
         const malloc_zone_t *zone(reinterpret_cast<const malloc_zone_t *>(zones[i]));
         if (zone == NULL || zone->introspect == NULL)
             continue;
+
         zone->introspect->enumerator(mach_task_self(), &choice, MALLOC_PTR_IN_USE_RANGE_TYPE, zones[i], &CYReadMemory, &choose_);
     }
 
     return results;
 } CYCatch(NULL) }
+#endif
 
 #ifdef __APPLE__
 #if defined(__i386__) || defined(__x86_64__)
