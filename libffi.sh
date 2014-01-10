@@ -46,12 +46,12 @@ function arch() {
     flags+=(-O3 -g3)
 
     cd "libffi.${arch}"
-    CC="clang -arch ${arch}" CFLAGS="${flags[*]}" CPPFLAGS="${flags[*]}" ../libffi/configure --host="${host}"
+    CC="clang -arch ${arch}" CFLAGS="${flags[*]}" CPPFLAGS="${flags[*]} $*" ../libffi/configure --host="${host}"
     make
     cd ..
 }
 
-arch armv6 arm-apple-darwin10 iphoneos iphoneos 2.0
+arch armv6 arm-apple-darwin10 iphoneos iphoneos 2.0 -mllvm -arm-reserve-r9
 arch armv7 arm-apple-darwin10 iphoneos iphoneos 2.0
 arch armv7s arm-apple-darwin10 iphoneos iphoneos 2.0
 arch arm64 aarch64-apple-darwin11 iphoneos iphoneos 2.0
