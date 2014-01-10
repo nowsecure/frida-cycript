@@ -451,18 +451,21 @@ static JSValueRef Array_callAsFunction_toCYON(JSContextRef context, JSObjectRef 
     bool comma(false);
 
     for (size_t index(0), count(CYCastDouble(context, length)); index != count; ++index) {
-        JSValueRef value(CYGetProperty(context, _this, index));
-
         if (comma)
             str << ',';
         else
             comma = true;
 
-        if (!JSValueIsUndefined(context, value))
-            str << CYPoolCCYON(pool, context, value);
-        else {
-            str << ',';
-            comma = false;
+        try {
+            JSValueRef value(CYGetProperty(context, _this, index));
+            if (!JSValueIsUndefined(context, value))
+                str << CYPoolCCYON(pool, context, value);
+            else {
+                str << ',';
+                comma = false;
+            }
+        } catch (const CYException &error) {
+            str << "@error";
         }
     }
 
