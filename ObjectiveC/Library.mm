@@ -35,6 +35,11 @@
 #include <objc/runtime.h>
 #endif
 
+#ifdef __APPLE__
+#include <malloc/malloc.h>
+#include <mach/mach.h>
+#endif
+
 #include "Error.hpp"
 #include "JavaScript.hpp"
 #include "String.hpp"
@@ -2189,6 +2194,76 @@ static void ObjectiveC_Constants_getPropertyNames(JSContextRef context, JSObject
     JSPropertyNameAccumulatorAddName(names, CYJSString("nil"));
 }
 
+static kern_return_t CYReadMemory(task_t task, vm_address_t address, vm_size_t size, void **data) {
+    *data = reinterpret_cast<void *>(address);
+    return KERN_SUCCESS;
+}
+
+struct CYChoice {
+    Class query_;
+    JSContextRef context_;
+    JSObjectRef results_;
+};
+
+struct CYObjectStruct {
+    Class isa_;
+};
+
+static void choose_(task_t task, void *baton, unsigned type, vm_range_t *ranges, unsigned count) {
+    CYChoice *choice(reinterpret_cast<CYChoice *>(baton));
+    JSContextRef context(choice->context_);
+
+    for (unsigned i(0); i != count; ++i) {
+        vm_range_t &range(ranges[i]);
+        void *data(reinterpret_cast<void *>(range.address));
+        size_t size(range.size);
+
+        if (size < sizeof(CYObjectStruct))
+            continue;
+
+        uintptr_t *pointers(reinterpret_cast<uintptr_t *>(data));
+#ifdef __arm64__
+        Class isa(reinterpret_cast<Class>(pointers[0] & 0x1fffffff8));
+#else
+        Class isa(reinterpret_cast<Class>(pointers[0]));
+#endif
+
+        if (isa != choice->query_)
+            continue;
+        CYArrayPush(context, choice->results_, CYCastJSValue(context, reinterpret_cast<id>(data)));
+    }
+}
+
+static JSValueRef choose(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    if (count != 1)
+        throw CYJSError(context, "choose() takes a class argument");
+
+    CYPool pool;
+    Class _class(CYCastNSObject(&pool, context, arguments[0]));
+
+    vm_address_t *zones(NULL);
+    unsigned size(0);
+    kern_return_t error(malloc_get_all_zones(0, &CYReadMemory, &zones, &size));
+    _assert(error == KERN_SUCCESS);
+
+    JSObjectRef Array(CYGetCachedObject(context, CYJSString("Array")));
+    JSObjectRef results(_jsccall(JSObjectCallAsConstructor, context, Array, 0, NULL));
+
+    CYChoice choice;
+    choice.query_ = _class;
+    choice.context_ = context;
+    choice.results_ = results;
+
+    for (unsigned i(0); i != size; ++i) {
+        const malloc_zone_t *zone(reinterpret_cast<const malloc_zone_t *>(zones[i]));
+        if (zone == NULL || zone->introspect == NULL)
+            continue;
+        zone->introspect->enumerator(mach_task_self(), &choice, MALLOC_PTR_IN_USE_RANGE_TYPE, zones[i], &CYReadMemory, &choose_);
+    }
+
+    return results;
+} CYCatch(NULL) }
+
 #ifdef __APPLE__
 #if defined(__i386__) || defined(__x86_64__)
 #define OBJC_MAX_STRUCT_BY_VALUE 8
@@ -2819,6 +2894,10 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
 
 #if defined(__APPLE__) && defined(__arm__) && 0
     CYSetProperty(context, all, CYJSString("objc_registerClassPair"), &objc_registerClassPair_, kJSPropertyAttributeDontEnum);
+#endif
+
+#ifdef __APPLE__
+    CYSetProperty(context, all, CYJSString("choose"), &choose, kJSPropertyAttributeDontEnum);
 #endif
 
     CYSetProperty(context, all, CYJSString("objc_msgSend"), &$objc_msgSend, kJSPropertyAttributeDontEnum);
