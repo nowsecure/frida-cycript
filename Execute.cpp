@@ -1294,8 +1294,7 @@ JSObjectRef CYGetGlobalObject(JSContextRef context) {
     return JSContextGetGlobalObject(context);
 }
 
-const char *CYExecute(CYPool &pool, CYUTF8String code) {
-    JSContextRef context(CYGetJSContext());
+const char *CYExecute(JSContextRef context, CYPool &pool, CYUTF8String code) {
     JSValueRef exception(NULL);
 
     void *handle;

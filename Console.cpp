@@ -123,7 +123,7 @@ static CYUTF8String Run(CYPool &pool, int client, CYUTF8String code) {
     if (client == -1) {
         mode_ = Running;
 #ifdef CY_EXECUTE
-        json = CYExecute(pool, code);
+        json = CYExecute(CYGetJSContext(), pool, code);
 #else
         json = NULL;
 #endif

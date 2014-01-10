@@ -57,7 +57,7 @@ struct CYExecute_ {
     CYExecute_ *execute(reinterpret_cast<CYExecute_ *>([value pointerValue]));
     const char *data(execute->data_);
     execute->data_ = NULL;
-    execute->data_ = CYExecute(execute->pool_, CYUTF8String(data));
+    execute->data_ = CYExecute(CYGetJSContext(), execute->pool_, CYUTF8String(data));
 }
 
 @end
