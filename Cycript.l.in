@@ -270,8 +270,8 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
 "NULL"         L C I(identifier, Identifier("NULL"), tk::Identifier_, hi::Constant);
 "nil"          L C I(identifier, Identifier("nil"), tk::Identifier_, hi::Constant);
-"YES"          L C I(identifier, Identifier("YES"), tk::Identifier_, hi::Constant);
-"NO"           L C I(identifier, Identifier("NO"), tk::Identifier_, hi::Constant);
+"YES"          L C I(identifier, Identifier("YES"), tk::Yes, hi::Constant);
+"NO"           L C I(identifier, Identifier("NO"), tk::No, hi::Constant);
 
 "bool"         L C I(identifier, Identifier("bool"), tk::Identifier_, hi::Type);
 "BOOL"         L C I(identifier, Identifier("BOOL"), tk::Identifier_, hi::Type);

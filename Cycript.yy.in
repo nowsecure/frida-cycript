@@ -241,6 +241,8 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %token AtEncode "@encode"
 %token AtEnd "@end"
 %token AtSelector "@selector"
+%token <identifier_> Yes "YES"
+%token <identifier_> No "NO"
 @end
 
 %token <false_> False "false"
@@ -657,6 +659,8 @@ Identifier
 
 @begin C
     | "typedef" { $$ = $1; }
+    | "YES" { $$ = $1; }
+    | "NO" { $$ = $1; }
 @end
 
     | "implements" { $$ = $1; }
@@ -1609,6 +1613,8 @@ BoxableExpression
     | ArrayLiteral { $$ = $1; }
     | ObjectLiteral { $$ = $1; }
     | Parenthetical { $$ = $1; }
+    | "YES" { $$ = CYNew CYTrue(); }
+    | "NO" { $$ = CYNew CYFalse(); }
     ;
 
 PrimaryExpression
