@@ -124,6 +124,7 @@ void CYDisplayStart(int meta) {
 void CYDisplayUpdate() {
     rl_display_fixed = 1;
     rl_redisplay();
+    current_ = CYCursor(_rl_last_v_pos, _rl_last_c_pos);
 
 #if RL_READLINE_VERSION >= 0x0600
     const char *prompt(rl_display_prompt);
@@ -148,8 +149,6 @@ void CYDisplayUpdate() {
     CYCursor target(CYDisplayOutput(putchar, width, stream.str().c_str(), rl_point));
 
     _rl_vis_botlin = current_.real();
-    _rl_last_c_pos = current_.imag();
-    _rl_last_v_pos = target.real();
 
     if (current_.imag() == 0)
         CYDisplayOutput(putchar, width, " ");
@@ -157,6 +156,9 @@ void CYDisplayUpdate() {
 
     CYDisplayMove(target);
     fflush(stdout);
+
+    _rl_last_v_pos = current_.real();
+    _rl_last_c_pos = current_.imag();
 
     width_ = width;
     point_ = rl_point;
