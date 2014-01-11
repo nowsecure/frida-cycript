@@ -38,6 +38,7 @@
 
 typedef std::complex<int> CYCursor;
 
+extern "C" int rl_display_fixed;
 extern "C" int _rl_vis_botlin;
 extern "C" int _rl_last_c_pos;
 extern "C" int _rl_last_v_pos;
@@ -121,6 +122,9 @@ void CYDisplayStart(int meta) {
 }
 
 void CYDisplayUpdate() {
+    rl_display_fixed = 1;
+    rl_redisplay();
+
 #if RL_READLINE_VERSION >= 0x0600
     const char *prompt(rl_display_prompt);
 #else
@@ -146,10 +150,6 @@ void CYDisplayUpdate() {
     _rl_vis_botlin = current_.real();
     _rl_last_c_pos = current_.imag();
     _rl_last_v_pos = target.real();
-
-    // XXX: readline crashes trying to avoid an empty line if this is left at 0 :(
-    if (_rl_last_c_pos == 0)
-        _rl_last_c_pos = 1;
 
     if (current_.imag() == 0)
         CYDisplayOutput(putchar, width, " ");
