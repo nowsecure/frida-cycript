@@ -28,6 +28,8 @@
 #include <readline/readline.h>
 #endif
 
+#if RL_READLINE_VERSION >= 0x0600
+
 #include <sys/ioctl.h>
 
 #include "Highlight.hpp"
@@ -35,6 +37,10 @@
 #include <term.h>
 
 typedef std::complex<int> CYCursor;
+
+extern "C" int _rl_vis_botlin;
+extern "C" int _rl_last_c_pos;
+extern "C" int _rl_last_v_pos;
 
 CYCursor current_;
 int width_;
@@ -137,6 +143,14 @@ void CYDisplayUpdate() {
     CYDisplayOutput(putchar, width, prompt);
     CYCursor target(CYDisplayOutput(putchar, width, stream.str().c_str(), rl_point));
 
+    _rl_vis_botlin = current_.real();
+    _rl_last_c_pos = current_.imag();
+    _rl_last_v_pos = target.real();
+
+    // XXX: readline crashes trying to avoid an empty line if this is left at 0 :(
+    if (_rl_last_c_pos == 0)
+        _rl_last_c_pos = 1;
+
     if (current_.imag() == 0)
         CYDisplayOutput(putchar, width, " ");
     putp(clr_eos);
@@ -151,3 +165,5 @@ void CYDisplayUpdate() {
 void CYDisplayFinish() {
     rl_deprep_terminal();
 }
+
+#endif
