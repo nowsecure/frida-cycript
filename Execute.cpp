@@ -496,8 +496,12 @@ JSObjectRef CYMakePointer(JSContextRef context, void *pointer, size_t length, si
     return JSObjectMake(context, Pointer_, internal);
 }
 
-static JSObjectRef CYMakeFunctor(JSContextRef context, void (*function)(), const char *type) {
-    return JSObjectMake(context, Functor_, new cy::Functor(type, function));
+static JSObjectRef CYMakeFunctor(JSContextRef context, void (*function)(), const char *encoding) {
+    return JSObjectMake(context, Functor_, new cy::Functor(encoding, function));
+}
+
+static JSObjectRef CYMakeFunctor(JSContextRef context, void (*function)(), sig::Signature &signature) {
+    return JSObjectMake(context, Functor_, new cy::Functor(signature, function));
 }
 
 static JSObjectRef CYMakeFunctor(JSContextRef context, const char *symbol, const char *type, void **cache) {
@@ -1172,6 +1176,9 @@ static JSValueRef Type_callAsFunction(JSContextRef context, JSObjectRef object, 
     if (count != 1)
         throw CYJSError(context, "incorrect number of arguments to type cast function");
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
+
+    if (internal->type_->primitive == sig::function_P)
+        return CYMakeFunctor(context, reinterpret_cast<void (*)()>(static_cast<uintptr_t>(CYCastDouble(context, arguments[0]))), internal->type_->data.signature);
 
     sig::Type *type(internal->type_);
     ffi_type *ffi(internal->GetFFI());

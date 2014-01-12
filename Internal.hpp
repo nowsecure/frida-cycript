@@ -161,14 +161,27 @@ namespace cy {
 struct Functor :
     CYValue
 {
+  private:
+    void set() {
+        sig::sig_ffi_cif(*pool_, &sig::ObjectiveC, &signature_, &cif_);
+    }
+
+  public:
     sig::Signature signature_;
     ffi_cif cif_;
 
-    Functor(const char *type, void (*value)()) :
+    Functor(sig::Signature &signature, void (*value)()) :
         CYValue(reinterpret_cast<void *>(value))
     {
-        sig::Parse(*pool_, &signature_, type, &Structor_);
-        sig::sig_ffi_cif(*pool_, &sig::ObjectiveC, &signature_, &cif_);
+        sig::Copy(*pool_, signature_, signature);
+        set();
+    }
+
+    Functor(const char *encoding, void (*value)()) :
+        CYValue(reinterpret_cast<void *>(value))
+    {
+        sig::Parse(*pool_, &signature_, encoding, &Structor_);
+        set();
     }
 
     void (*GetValue() const)() {
