@@ -36,7 +36,7 @@ CYTypedIdentifier *Decode_(CYPool &pool, struct sig::Type *type) {
 
         case sig::typename_P: return $ CYTypedIdentifier($V("Class"));
         case sig::union_P: _assert(false); break;
-        case sig::string_P: return $ CYTypedIdentifier($V("char"), $ CYTypeConstant($ CYTypePointerTo()));
+        case sig::string_P: return $ CYTypedIdentifier($V("char"), $ CYTypePointerTo());
         case sig::selector_P: return $ CYTypedIdentifier($V("SEL"));
         case sig::block_P: _assert(false); break;
 
@@ -89,7 +89,11 @@ CYTypedIdentifier *Decode_(CYPool &pool, struct sig::Type *type) {
 
 CYTypedIdentifier *Decode(CYPool &pool, struct sig::Type *type) {
     CYTypedIdentifier *typed(Decode_(pool, type));
-    if ((type->flags & JOC_TYPE_CONST) != 0)
-        typed = typed->Modify($ CYTypeConstant());
+    if ((type->flags & JOC_TYPE_CONST) != 0) {
+        if (type->primitive == sig::string_P)
+            typed->modifier_ = $ CYTypeConstant(typed->modifier_);
+        else
+            typed = typed->Modify($ CYTypeConstant());
+    }
     return typed;
 }

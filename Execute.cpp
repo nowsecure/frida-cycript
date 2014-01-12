@@ -1139,11 +1139,18 @@ static JSValueRef Type_callAsFunction_pointerTo(JSContextRef context, JSObjectRe
 
     sig::Type type;
     type.name = NULL;
-    type.flags = 0;
 
-    type.primitive = sig::pointer_P;
-    type.data.data.type = internal->type_;
-    type.data.data.size = 0;
+    if (internal->type_->primitive == sig::char_P) {
+        type.flags = internal->type_->flags;
+        type.primitive = sig::string_P;
+        type.data.data.type = NULL;
+        type.data.data.size = 0;
+    } else {
+        type.flags = 0;
+        type.primitive = sig::pointer_P;
+        type.data.data.type = internal->type_;
+        type.data.data.size = 0;
+    }
 
     return CYMakeType(context, &type);
 } CYCatch(NULL) }
