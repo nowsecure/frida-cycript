@@ -2930,10 +2930,6 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     JSObjectRef box(JSObjectMakeFunctionWithCallback(context, CYJSString("box"), &Instance_box_callAsFunction));
     CYSetProperty(context, Instance, CYJSString("box"), box);
 
-#if defined(__APPLE__) && defined(__arm__) && 0
-    CYSetProperty(context, all, CYJSString("objc_registerClassPair"), &objc_registerClassPair_, kJSPropertyAttributeDontEnum);
-#endif
-
 #ifdef __APPLE__
     CYSetProperty(context, all, CYJSString("choose"), &choose, kJSPropertyAttributeDontEnum);
 #endif
