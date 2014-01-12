@@ -110,10 +110,11 @@ void Setup(CYDriver &driver, cy::parser &parser) {
         driver.strict_ = true;
 }
 
-void Setup(CYOutput &out, CYDriver &driver, CYOptions &options) {
+void Setup(CYOutput &out, CYDriver &driver, CYOptions &options, bool lower) {
     out.pretty_ = pretty_;
     CYContext context(options);
-    driver.program_->Replace(context);
+    if (lower)
+        driver.program_->Replace(context);
 }
 
 static CYUTF8String Run(CYPool &pool, int client, CYUTF8String code) {
@@ -436,6 +437,7 @@ static void Console(CYOptions &options) {
     bool bypass(false);
     bool debug(false);
     bool expand(false);
+    bool lower(true);
     bool syntax(true);
 
     out_ = &std::cout;
@@ -498,6 +500,9 @@ static void Console(CYOptions &options) {
                 } else if (data == "expand") {
                     expand = !expand;
                     *out_ << "expand == " << (expand ? "true" : "false") << std::endl;
+                } else if (data == "lower") {
+                    lower = !lower;
+                    *out_ << "lower == " << (lower ? "true" : "false") << std::endl;
                 } else if (data == "syntax") {
                     syntax = !syntax;
                     *out_ << "syntax == " << (syntax ? "true" : "false") << std::endl;
@@ -574,7 +579,7 @@ static void Console(CYOptions &options) {
 
             std::ostringstream str;
             CYOutput out(str, options);
-            Setup(out, driver, options);
+            Setup(out, driver, options, lower);
             out << *driver.program_;
             code = str.str();
         }
@@ -870,7 +875,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
         } else if (driver.program_ != NULL) {
             std::ostringstream str;
             CYOutput out(str, options);
-            Setup(out, driver, options);
+            Setup(out, driver, options, true);
             out << *driver.program_;
             std::string code(str.str());
             if (compile)
