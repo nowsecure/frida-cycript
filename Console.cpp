@@ -469,15 +469,10 @@ static void Console(CYOptions &options) {
       read:
 
 #if RL_READLINE_VERSION >= 0x0600
-        if (syntax) {
-            rl_prep_term_function = CYDisplayStart;
+        if (syntax)
             rl_redisplay_function = CYDisplayUpdate;
-            rl_deprep_term_function = CYDisplayFinish;
-        } else {
-            rl_prep_term_function = rl_prep_terminal;
+        else
             rl_redisplay_function = rl_redisplay;
-            rl_deprep_term_function = rl_deprep_terminal;
-        }
 #endif
 
         mode_ = Parsing;

@@ -116,11 +116,6 @@ void CYDisplayMove(CYCursor target) {
     current_ = target;
 }
 
-void CYDisplayStart(int meta) {
-    rl_prep_terminal(meta);
-    current_ = CYCursor();
-}
-
 void CYDisplayUpdate() {
     rl_display_fixed = 1;
     rl_redisplay();
@@ -162,10 +157,6 @@ void CYDisplayUpdate() {
 
     width_ = width;
     point_ = rl_point;
-}
-
-void CYDisplayFinish() {
-    rl_deprep_terminal();
 }
 
 #endif

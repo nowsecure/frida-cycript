@@ -22,8 +22,6 @@
 #ifndef CYCRIPT_DISPLAY_HPP
 #define CYCRIPT_DISPLAY_HPP
 
-void CYDisplayStart(int meta);
 void CYDisplayUpdate();
-void CYDisplayFinish();
 
 #endif/*CYCRIPT_DISPLAY_HPP*/
