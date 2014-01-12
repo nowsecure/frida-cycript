@@ -29,7 +29,7 @@
 
 #include <mach-o/dyld.h>
 
-extern "C" void CYHandleServer(pid_t pid) {
+extern "C" void CYHandleServer(pid_t pid, char *data, size_t size) {
     Dl_info addr;
     if (dladdr(reinterpret_cast<void *>(&CYHandleServer), &addr) == 0)
         return;
@@ -60,13 +60,15 @@ extern "C" void CYHandleServer(pid_t pid) {
 
     void *handle(dlopen(library, RTLD_LOCAL | RTLD_LAZY));
     if (handle == NULL) {
-        syslog(LOG_ERR, "dlopen() -> %s", dlerror());
+        strlcpy(data, dlerror(), size);
         return;
     }
 
     void *symbol(dlsym(handle, "CYHandleServer"));
-    if (symbol == NULL)
+    if (symbol == NULL) {
+        strlcpy(data, dlerror(), size);
         return;
+    }
 
     reinterpret_cast<void (*)(pid_t)>(symbol)(pid);
 }

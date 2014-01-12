@@ -196,14 +196,14 @@ void *Routine(void *arg) {
     void *(*$dlsym)(void *, const char *);
     cyset($dlsym, "_dlsym", dyld);
 
-    void (*CYHandleServer)(pid_t);
-    CYHandleServer = reinterpret_cast<void (*)(pid_t)>($dlsym(handle, "CYHandleServer"));
+    void (*CYHandleServer)(pid_t, char *, size_t);
+    CYHandleServer = reinterpret_cast<void (*)(pid_t, char *, size_t)>($dlsym(handle, "CYHandleServer"));
     if (CYHandleServer == NULL) {
         $strlcpy(baton->error, $dlerror(), sizeof(baton->error));
         return NULL;
     }
 
-    CYHandleServer(baton->pid);
+    CYHandleServer(baton->pid, baton->error, sizeof(baton->error));
     return NULL;
 }
 
