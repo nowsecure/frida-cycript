@@ -136,7 +136,7 @@ Cycript_/libcycript-sys.dylib:
 
 Cycript_/libcycript-sim.dylib: build.sim-i386/.libs/libcycript.dylib build.sim-x86_64/.libs/libcycript.dylib
 	@mkdir -p $(dir $@)
-	cp -af $< $@
+	$(lipo) -create -output $@ $^
 	codesign -s $(codesign) $@
 
 libcycript-%.o: build.%/.libs/libcycript.a
