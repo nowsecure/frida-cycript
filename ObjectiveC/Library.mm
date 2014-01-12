@@ -1549,9 +1549,12 @@ static JSObjectRef CYMakeMessage(JSContextRef context, SEL sel, IMP imp, const c
     return JSObjectMake(context, Message_, internal);
 }
 
-static IMP CYMakeMessage(JSContextRef context, JSValueRef value, const char *type) {
+static IMP CYMakeMessage(JSContextRef context, JSValueRef value, const char *encoding) {
     JSObjectRef function(CYCastJSObject(context, value));
-    Closure_privateData *internal(CYMakeFunctor_(context, function, type, &MessageClosure_));
+    CYPool pool;
+    sig::Signature signature;
+    sig::Parse(pool, &signature, encoding, &Structor_);
+    Closure_privateData *internal(CYMakeFunctor_(context, function, signature, &MessageClosure_));
     // XXX: see notes in Library.cpp about needing to leak
     return reinterpret_cast<IMP>(internal->GetValue());
 }

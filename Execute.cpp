@@ -496,15 +496,11 @@ JSObjectRef CYMakePointer(JSContextRef context, void *pointer, size_t length, si
     return JSObjectMake(context, Pointer_, internal);
 }
 
-static JSObjectRef CYMakeFunctor(JSContextRef context, void (*function)(), const char *encoding) {
-    return JSObjectMake(context, Functor_, new cy::Functor(encoding, function));
-}
-
-static JSObjectRef CYMakeFunctor(JSContextRef context, void (*function)(), sig::Signature &signature) {
+static JSObjectRef CYMakeFunctor(JSContextRef context, void (*function)(), const sig::Signature &signature) {
     return JSObjectMake(context, Functor_, new cy::Functor(signature, function));
 }
 
-static JSObjectRef CYMakeFunctor(JSContextRef context, const char *symbol, const char *type, void **cache) {
+static JSObjectRef CYMakeFunctor(JSContextRef context, const char *symbol, const char *encoding, void **cache) {
     cy::Functor *internal;
     if (*cache != NULL)
         internal = reinterpret_cast<cy::Functor *>(*cache);
@@ -513,7 +509,7 @@ static JSObjectRef CYMakeFunctor(JSContextRef context, const char *symbol, const
         if (function == NULL)
             return NULL;
 
-        internal = new cy::Functor(type, function);
+        internal = new cy::Functor(encoding, function);
         *cache = internal;
     }
 
@@ -719,10 +715,10 @@ static void FunctionClosure_(ffi_cif *cif, void *result, void **arguments, void 
     CYExecuteClosure(cif, result, arguments, arg, &FunctionAdapter_);
 }
 
-Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, const char *type, void (*callback)(ffi_cif *, void *, void **, void *)) {
+Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, const sig::Signature &signature, void (*callback)(ffi_cif *, void *, void **, void *)) {
     // XXX: in case of exceptions this will leak
     // XXX: in point of fact, this may /need/ to leak :(
-    Closure_privateData *internal(new Closure_privateData(context, function, type));
+    Closure_privateData *internal(new Closure_privateData(context, function, signature));
 
 #if defined(__APPLE__) && defined(__arm__)
     void *executable;
@@ -750,8 +746,8 @@ Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, 
     return internal;
 }
 
-static JSObjectRef CYMakeFunctor(JSContextRef context, JSObjectRef function, const char *type) {
-    Closure_privateData *internal(CYMakeFunctor_(context, function, type, &FunctionClosure_));
+static JSObjectRef CYMakeFunctor(JSContextRef context, JSObjectRef function, const sig::Signature &signature) {
+    Closure_privateData *internal(CYMakeFunctor_(context, function, signature, &FunctionClosure_));
     JSObjectRef object(JSObjectMake(context, Functor_, internal));
     // XXX: see above notes about needing to leak
     JSValueProtect(CYGetJSContext(context), object);
@@ -762,16 +758,16 @@ JSObjectRef CYGetCachedObject(JSContextRef context, JSStringRef name) {
     return CYCastJSObject(context, CYGetProperty(context, CYCastJSObject(context, CYGetProperty(context, CYGetGlobalObject(context), cy_s)), name));
 }
 
-static JSObjectRef CYMakeFunctor(JSContextRef context, JSValueRef value, const char *type) {
+static JSObjectRef CYMakeFunctor(JSContextRef context, JSValueRef value, const sig::Signature &signature) {
     JSObjectRef Function(CYGetCachedObject(context, CYJSString("Function")));
 
     bool function(_jsccall(JSValueIsInstanceOfConstructor, context, value, Function));
     if (function) {
         JSObjectRef function(CYCastJSObject(context, value));
-        return CYMakeFunctor(context, function, type);
+        return CYMakeFunctor(context, function, signature);
     } else {
         void (*function)()(CYCastPointer<void (*)()>(context, value));
-        return CYMakeFunctor(context, function, type);
+        return CYMakeFunctor(context, function, signature);
     }
 }
 
@@ -1212,8 +1208,10 @@ static JSObjectRef Functor_new(JSContextRef context, JSObjectRef object, size_t 
     if (count != 2)
         throw CYJSError(context, "incorrect number of arguments to Functor constructor");
     CYPool pool;
-    const char *type(CYPoolCString(pool, context, arguments[1]));
-    return CYMakeFunctor(context, arguments[0], type);
+    const char *encoding(CYPoolCString(pool, context, arguments[1]));
+    sig::Signature signature;
+    sig::Parse(pool, &signature, encoding, &Structor_);
+    return CYMakeFunctor(context, arguments[0], signature);
 } CYCatch(NULL) }
 
 static JSValueRef CYValue_callAsFunction_valueOf(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {

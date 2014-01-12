@@ -170,7 +170,7 @@ struct Functor :
     sig::Signature signature_;
     ffi_cif cif_;
 
-    Functor(sig::Signature &signature, void (*value)()) :
+    Functor(const sig::Signature &signature, void (*value)()) :
         CYValue(reinterpret_cast<void *>(value))
     {
         sig::Copy(*pool_, signature_, signature);
@@ -197,8 +197,8 @@ struct Closure_privateData :
     JSGlobalContextRef context_;
     JSObjectRef function_;
 
-    Closure_privateData(JSContextRef context, JSObjectRef function, const char *type) :
-        cy::Functor(type, NULL),
+    Closure_privateData(JSContextRef context, JSObjectRef function, const sig::Signature &signature) :
+        cy::Functor(signature, NULL),
         context_(CYGetJSContext(context)),
         function_(function)
     {
@@ -212,7 +212,7 @@ struct Closure_privateData :
     }
 };
 
-Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, const char *type, void (*callback)(ffi_cif *, void *, void **, void *));
+Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, const sig::Signature &signature, void (*callback)(ffi_cif *, void *, void **, void *));
 void CYExecuteClosure(ffi_cif *cif, void *result, void **arguments, void *arg, JSValueRef (*adapter)(JSContextRef, size_t, JSValueRef[], JSObjectRef));
 
 #endif/*CYCRIPT_INTERNAL_HPP*/
