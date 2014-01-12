@@ -5,6 +5,8 @@ C NULL null
 : applicationDidFinishLaunching: v12@0:4@8
 
 T id @
+T Class #
+T SEL :
 
 T short s
 T int i
