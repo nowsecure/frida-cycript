@@ -1204,7 +1204,7 @@ static JSObjectRef Type_callAsConstructor(JSContextRef context, JSObjectRef obje
         type = type->data.data.type;
     }
 
-    void *value(malloc(internal->GetFFI()->size));
+    void *value(calloc(1, internal->GetFFI()->size));
     return CYMakePointer(context, value, length, type, NULL, NULL);
 } CYCatch(NULL) }
 
