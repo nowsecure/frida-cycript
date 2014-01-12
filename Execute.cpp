@@ -1174,7 +1174,7 @@ static JSValueRef Type_callAsFunction(JSContextRef context, JSObjectRef object, 
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
 
     if (internal->type_->primitive == sig::function_P)
-        return CYMakeFunctor(context, reinterpret_cast<void (*)()>(static_cast<uintptr_t>(CYCastDouble(context, arguments[0]))), internal->type_->data.signature);
+        return CYMakeFunctor(context, arguments[0], internal->type_->data.signature);
 
     sig::Type *type(internal->type_);
     ffi_type *ffi(internal->GetFFI());
