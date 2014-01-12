@@ -512,7 +512,7 @@ struct CYExpression :
     CYClassName,
     CYThing
 {
-    virtual unsigned Precedence() const = 0;
+    virtual int Precedence() const = 0;
 
     virtual bool RightHand() const {
         return true;
@@ -525,7 +525,7 @@ struct CYExpression :
 
     virtual void Output(CYOutput &out) const;
     virtual void Output(CYOutput &out, CYFlags flags) const = 0;
-    void Output(CYOutput &out, unsigned precedence, CYFlags flags) const;
+    void Output(CYOutput &out, int precedence, CYFlags flags) const;
 
     virtual CYExpression *ClassName(CYContext &context, bool object);
     virtual void ClassName(CYOutput &out, bool object) const;
@@ -556,8 +556,8 @@ struct CYExpression :
     }
 
 #define CYPrecedence(value) \
-    static const unsigned Precedence_ = value; \
-    virtual unsigned Precedence() const { \
+    static const int Precedence_ = value; \
+    virtual int Precedence() const { \
         return Precedence_; \
     }
 
@@ -1329,7 +1329,7 @@ struct New :
     {
     }
 
-    virtual unsigned Precedence() const {
+    virtual int Precedence() const {
         return arguments_ == NULL ? 2 : 1;
     }
 
@@ -1608,7 +1608,13 @@ struct CYTypeModifier :
     {
     }
 
-    virtual CYExpression *Replace(CYContext &context) = 0;
+    virtual int Precedence() const = 0;
+
+    virtual CYExpression *Replace_(CYContext &context, CYExpression *type) = 0;
+    CYExpression *Replace(CYContext &context, CYExpression *type);
+
+    virtual void Output(CYOutput &out, CYIdentifier *identifier) const = 0;
+    void Output(CYOutput &out, int precedence, CYIdentifier *identifier) const;
 };
 
 struct CYTypeArrayOf :
@@ -1622,9 +1628,10 @@ struct CYTypeArrayOf :
     {
     }
 
-    CYPrecedence(2)
+    CYPrecedence(1)
 
-    virtual CYExpression *Replace(CYContext &context);
+    virtual CYExpression *Replace_(CYContext &context, CYExpression *type);
+    virtual void Output(CYOutput &out, CYIdentifier *identifier) const;
 };
 
 struct CYTypeConstant :
@@ -1635,9 +1642,10 @@ struct CYTypeConstant :
     {
     }
 
-    CYPrecedence(3)
+    CYPrecedence(0)
 
-    virtual CYExpression *Replace(CYContext &context);
+    virtual CYExpression *Replace_(CYContext &context, CYExpression *type);
+    virtual void Output(CYOutput &out, CYIdentifier *identifier) const;
 };
 
 struct CYTypePointerTo :
@@ -1648,25 +1656,24 @@ struct CYTypePointerTo :
     {
     }
 
-    CYPrecedence(3)
+    CYPrecedence(0)
 
-    virtual CYExpression *Replace(CYContext &context);
+    virtual CYExpression *Replace_(CYContext &context, CYExpression *type);
+    virtual void Output(CYOutput &out, CYIdentifier *identifier) const;
 };
 
-struct CYTypeVariable :
+struct CYTypeVolatile :
     CYTypeModifier
 {
-    CYExpression *expression_;
-
-    CYTypeVariable(CYExpression *expression) :
-        CYTypeModifier(NULL),
-        expression_(expression)
+    CYTypeVolatile(CYTypeModifier *next = NULL) :
+        CYTypeModifier(next)
     {
     }
 
-    CYPrecedence(1)
+    CYPrecedence(0)
 
-    virtual CYExpression *Replace(CYContext &context);
+    virtual CYExpression *Replace_(CYContext &context, CYExpression *type);
+    virtual void Output(CYOutput &out, CYIdentifier *identifier) const;
 };
 
 struct CYTypedIdentifier :
@@ -1674,19 +1681,51 @@ struct CYTypedIdentifier :
     CYThing
 {
     CYIdentifier *identifier_;
-    CYTypeModifier *type_;
+    CYExpression *type_;
+    CYTypeModifier *modifier_;
 
-    CYTypedIdentifier(CYIdentifier *identifier) :
+    CYTypedIdentifier(CYIdentifier *identifier = NULL) :
         identifier_(identifier),
-        type_(NULL)
+        type_(NULL),
+        modifier_(NULL)
     {
     }
 
+    CYTypedIdentifier(CYExpression *type, CYTypeModifier *modifier = NULL) :
+        identifier_(NULL),
+        type_(type),
+        modifier_(modifier)
+    {
+    }
+
+    inline CYTypedIdentifier *Modify(CYTypeModifier *modifier) {
+        CYSetLast(modifier_) = modifier;
+        return this;
+    }
+
+    virtual CYExpression *Replace(CYContext &context);
     virtual void Output(CYOutput &out) const;
 };
 
+struct CYEncodedType :
+    CYExpression
+{
+    CYTypedIdentifier *typed_;
+
+    CYEncodedType(CYTypedIdentifier *typed) :
+        typed_(typed)
+    {
+    }
+
+    CYPrecedence(1)
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
 struct CYTypedParameter :
-    CYNext<CYTypedParameter>
+    CYNext<CYTypedParameter>,
+    CYThing
 {
     CYTypedIdentifier *typed_;
 
@@ -1699,17 +1738,19 @@ struct CYTypedParameter :
     CYArgument *Argument(CYContext &context);
     CYFunctionParameter *Parameters(CYContext &context);
     CYExpression *TypeSignature(CYContext &context, CYExpression *prefix);
+
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYLambda :
     CYExpression
 {
-    CYTypeModifier *type_;
+    CYTypedIdentifier *typed_;
     CYTypedParameter *parameters_;
     CYStatement *statements_;
 
-    CYLambda(CYTypeModifier *type, CYTypedParameter *parameters, CYStatement *statements) :
-        type_(type),
+    CYLambda(CYTypedIdentifier *typed, CYTypedParameter *parameters, CYStatement *statements) :
+        typed_(typed),
         parameters_(parameters),
         statements_(statements)
     {
@@ -1746,9 +1787,10 @@ struct CYTypeFunctionWith :
     {
     }
 
-    CYPrecedence(2)
+    CYPrecedence(1)
 
-    virtual CYExpression *Replace(CYContext &context);
+    virtual CYExpression *Replace_(CYContext &context, CYExpression *type);
+    virtual void Output(CYOutput &out, CYIdentifier *identifier) const;
 };
 
 namespace cy {

@@ -58,7 +58,7 @@ void Copy(CYPool &pool, Type &lhs, Type &rhs) {
     lhs.name = pool.strdup(rhs.name);
     lhs.flags = rhs.flags;
 
-    if (sig::IsAggregate(rhs.primitive))
+    if (rhs.primitive == '\0' || sig::IsAggregate(rhs.primitive))
         Copy(pool, lhs.data.signature, rhs.data.signature);
     else {
         sig::Type *&lht(lhs.data.data.type);

@@ -27,30 +27,14 @@
 struct CYObjCBlock :
     CYExpression
 {
-    CYTypeModifier *type_;
+    CYTypedIdentifier *typed_;
     CYTypedParameter *parameters_;
     CYStatement *statements_;
 
-    CYObjCBlock(CYTypeModifier *type, CYTypedParameter *parameters, CYStatement *statements) :
-        type_(type),
+    CYObjCBlock(CYTypedIdentifier *typed, CYTypedParameter *parameters, CYStatement *statements) :
+        typed_(typed),
         parameters_(parameters),
         statements_(statements)
-    {
-    }
-
-    CYPrecedence(1)
-
-    virtual CYExpression *Replace(CYContext &context);
-    virtual void Output(CYOutput &out, CYFlags flags) const;
-};
-
-struct CYEncodedType :
-    CYExpression
-{
-    CYTypeModifier *type_;
-
-    CYEncodedType(CYTypeModifier *type) :
-        type_(type)
     {
     }
 

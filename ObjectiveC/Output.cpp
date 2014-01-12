@@ -74,12 +74,6 @@ void CYClassStatement::Output(CYOutput &out, CYFlags flags) const {
     CYClass::Output(out, flags);
 }
 
-void CYEncodedType::Output(CYOutput &out, CYFlags flags) const {
-    out << "@encode(";
-    // XXX: this is seriously wrong
-    out << ")";
-}
-
 void CYField::Output(CYOutput &out) const {
 }
 

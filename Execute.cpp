@@ -46,6 +46,7 @@
 
 #include "Parser.hpp"
 
+#include "Decode.hpp"
 #include "Error.hpp"
 #include "JavaScript.hpp"
 #include "String.hpp"
@@ -958,14 +959,27 @@ static JSValueRef Functor_callAsFunction(JSContextRef context, JSObjectRef objec
     return CYCallFunction(pool, context, 0, NULL, count, arguments, false, &internal->signature_, &internal->cif_, internal->GetValue());
 } CYCatch(NULL) }
 
-JSObjectRef CYMakeType(JSContextRef context, const char *type) {
-    Type_privateData *internal(new Type_privateData(type));
+JSObjectRef CYMakeType(JSContextRef context, const char *encoding) {
+    Type_privateData *internal(new Type_privateData(encoding));
     return JSObjectMake(context, Type_privateData::Class_, internal);
 }
 
 JSObjectRef CYMakeType(JSContextRef context, sig::Type *type) {
     Type_privateData *internal(new Type_privateData(type));
     return JSObjectMake(context, Type_privateData::Class_, internal);
+}
+
+JSObjectRef CYMakeType(JSContextRef context, sig::Signature *signature) {
+    CYPool pool;
+
+    sig::Type type;
+    type.name = NULL;
+    type.flags = 0;
+
+    type.primitive = sig::function_P;
+    sig::Copy(pool, type.data.signature, *signature);
+
+    return CYMakeType(context, &type);
 }
 
 static JSValueRef All_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
@@ -1086,6 +1100,38 @@ static JSValueRef Type_callAsFunction_constant(JSContextRef context, JSObjectRef
     return CYMakeType(context, &type);
 } CYCatch(NULL) }
 
+static JSValueRef Type_callAsFunction_functionWith(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
+
+    CYPool pool;
+
+    sig::Type type;
+    type.name = NULL;
+    type.flags = 0;
+
+    type.primitive = sig::function_P;
+    type.data.signature.elements = new(pool) sig::Element[1 + count];
+    type.data.signature.count = 1 + count;
+
+    type.data.signature.elements[0].name = NULL;
+    type.data.signature.elements[0].type = internal->type_;
+    type.data.signature.elements[0].offset = _not(size_t);
+
+    for (size_t i(0); i != count; ++i) {
+        sig::Element &element(type.data.signature.elements[i + 1]);
+        element.name = NULL;
+        element.offset = _not(size_t);
+
+        JSObjectRef object(CYCastJSObject(context, arguments[i]));
+        _assert(JSValueIsObjectOfClass(context, object, Type_privateData::Class_));
+        Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
+
+        element.type = internal->type_;
+    }
+
+    return CYMakeType(context, &type);
+} CYCatch(NULL) }
+
 static JSValueRef Type_callAsFunction_pointerTo(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 0)
         throw CYJSError(context, "incorrect number of arguments to Type.pointerTo");
@@ -1187,8 +1233,7 @@ static JSValueRef Pointer_callAsFunction_toCYON(JSContextRef context, JSObjectRe
 
 static JSValueRef Functor_getProperty_type(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     cy::Functor *internal(reinterpret_cast<cy::Functor *>(JSObjectGetPrivate(object)));
-    CYPool pool;
-    return CYCastJSValue(context, Unparse(pool, &internal->signature_));
+    return CYMakeType(context, &internal->signature_);
 } CYCatch(NULL) }
 
 static JSValueRef Type_getProperty_alignment(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
@@ -1215,12 +1260,12 @@ static JSValueRef Type_callAsFunction_toString(JSContextRef context, JSObjectRef
 
 static JSValueRef Type_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
-    CYPool pool;
-    const char *type(sig::Unparse(pool, internal->type_));
-    std::ostringstream str;
-    CYStringify(str, type, strlen(type));
-    char *cyon(pool.strcat("new Type(", str.str().c_str(), ")", NULL));
-    return CYCastJSValue(context, CYJSString(cyon));
+    CYLocalPool pool;
+    std::ostringstream out;
+    CYOptions options;
+    CYOutput output(out, options);
+    (new(pool) CYEncodedType(Decode(pool, internal->type_)))->Output(output, CYNoFlags);
+    return CYCastJSValue(context, CYJSString(out.str().c_str()));
 } CYCatch(NULL) }
 
 static JSValueRef Type_callAsFunction_toJSON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
@@ -1262,9 +1307,10 @@ static JSStaticValue Type_staticValues[4] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction Type_staticFunctions[8] = {
+static JSStaticFunction Type_staticFunctions[9] = {
     {"arrayOf", &Type_callAsFunction_arrayOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"constant", &Type_callAsFunction_constant, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"functionWith", &Type_callAsFunction_functionWith, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"pointerTo", &Type_callAsFunction_pointerTo, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"withName", &Type_callAsFunction_withName, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toCYON", &Type_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},

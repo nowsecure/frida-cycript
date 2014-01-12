@@ -78,10 +78,6 @@ CYStatement *CYClassStatement::Replace(CYContext &context) {
     return $E(Replace_(context));
 }
 
-CYExpression *CYEncodedType::Replace(CYContext &context) {
-    return type_->Replace(context);
-}
-
 CYStatement *CYField::Replace(CYContext &context) const { $T(NULL)
     CYVariable *cyn($V("$cyn"));
     CYVariable *cyt($V("$cyt"));
@@ -151,7 +147,7 @@ CYExpression *CYBox::Replace(CYContext &context) {
 }
 
 CYExpression *CYObjCBlock::Replace(CYContext &context) {
-    return $N2($V("Functor"), $ CYFunctionExpression(NULL, $ CYFunctionParameter($ CYDeclaration($ CYIdentifier("$cyt")), parameters_->Parameters(context)), statements_), parameters_->TypeSignature(context, $ CYAdd(type_->Replace(context), $ CYString("@"))));
+    return $N2($V("Functor"), $ CYFunctionExpression(NULL, $ CYFunctionParameter($ CYDeclaration($ CYIdentifier("$cyt")), parameters_->Parameters(context)), statements_), parameters_->TypeSignature(context, $ CYAdd(typed_->Replace(context), $ CYString("@"))));
 }
 
 CYStatement *CYProtocol::Replace(CYContext &context) const { $T(NULL)

@@ -329,7 +329,7 @@ void CYExpression::Output(CYOutput &out) const {
     Output(out, CYNoFlags);
 }
 
-void CYExpression::Output(CYOutput &out, unsigned precedence, CYFlags flags) const {
+void CYExpression::Output(CYOutput &out, int precedence, CYFlags flags) const {
     if (precedence < Precedence() || (flags & CYNoRightHand) != 0 && RightHand())
         out << '(' << *this << ')';
     else
@@ -474,9 +474,61 @@ void CYLabel::Output(CYOutput &out, CYFlags flags) const {
     statement_->Single(out, CYRight(flags));
 }
 
+void CYTypeArrayOf::Output(CYOutput &out, CYIdentifier *identifier) const {
+    next_->Output(out, Precedence(), identifier);
+    out << '[';
+    out << size_;
+    out << ']';
+}
+
+void CYTypeConstant::Output(CYOutput &out, CYIdentifier *identifier) const {
+    out << "const";
+    next_->Output(out, Precedence(), identifier);
+}
+
+void CYTypeFunctionWith::Output(CYOutput &out, CYIdentifier *identifier) const {
+    next_->Output(out, Precedence(), identifier);
+    out << '(' << parameters_ << ')';
+}
+
+void CYTypePointerTo::Output(CYOutput &out, CYIdentifier *identifier) const {
+    out << '*';
+    next_->Output(out, Precedence(), identifier);
+}
+
+void CYTypeVolatile::Output(CYOutput &out, CYIdentifier *identifier) const {
+    out << "volatile";
+    next_->Output(out, Precedence(), identifier);
+}
+
+void CYTypeModifier::Output(CYOutput &out, int precedence, CYIdentifier *identifier) const {
+    if (this == NULL) {
+        out << identifier;
+        return;
+    }
+
+    bool protect(precedence > Precedence());
+
+    if (protect)
+        out << '(';
+    Output(out, identifier);
+    if (protect)
+        out << ')';
+}
+
 void CYTypedIdentifier::Output(CYOutput &out) const {
-    // XXX: this is clearly wrong
-    out << "XXX";
+    type_->Output(out, 0, CYNoFlags);
+    modifier_->Output(out, 0, identifier_);
+}
+
+void CYEncodedType::Output(CYOutput &out, CYFlags flags) const {
+    out << "@encode(" << typed_ << ")";
+}
+
+void CYTypedParameter::Output(CYOutput &out) const {
+    out << typed_;
+    if (next_ != NULL)
+        out << ',' << ' ' << next_;
 }
 
 void CYLambda::Output(CYOutput &out, CYFlags flags) const {

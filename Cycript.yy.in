@@ -91,7 +91,7 @@ typedef struct {
         CYMessageParameter *messageParameter_;
         CYProtocol *protocol_;
         CYSelectorPart *selector_;
-        CYTypeModifier *type_;
+        CYTypeModifier *modifier_;
         CYTypedIdentifier *typedIdentifier_;
         CYTypedParameter *typedParameter_;
 @end
@@ -482,16 +482,15 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <protocol_> ClassProtocolListOpt
 %type <protocol_> ClassProtocols
 %type <protocol_> ClassProtocolsOpt
-%type <type_> ConcreteType
 %type <expression_> EncodedType
+%type <modifier_> FunctionedType
 %type <expression_> MessageExpression
 %type <messageParameter_> MessageParameter
 %type <messageParameter_> MessageParameters
 %type <messageParameter_> MessageParameterList
 %type <messageParameter_> MessageParameterListOpt
 %type <bool_> MessageScope
-%type <type_> ModifiedType_
-%type <type_> ModifiedType
+%type <typedIdentifier_> ModifiedType
 %type <typedIdentifier_> PrefixedType
 %type <expression_> PrimitiveType
 %type <argument_> SelectorCall_
@@ -504,8 +503,8 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <typedIdentifier_> SuffixedType
 %type <expression_> TypeOpt
 %type <typedIdentifier_> TypeParenthetical
-%type <type_> TypeQualifierLeft
-%type <type_> TypeQualifierRight
+%type <modifier_> TypeQualifierLeft
+%type <typedIdentifier_> TypeQualifierRight
 %type <typedIdentifier_> TypeSignifier
 %type <typedIdentifier_> TypedIdentifier
 %type <typedParameter_> TypedParameterList_
@@ -1370,42 +1369,44 @@ ProgramBodyOpt
 @begin ObjectiveC
 /* Cycript (Objective-C): Type Encoding {{{ */
 TypeParenthetical
-    : "(" PrefixedType ")" { $$ = $2; }
+    : "(" LexPushInOff PrefixedType ")" LexPopIn { $$ = $3; }
     ;
 
 TypeSignifier
     : Identifier { $$ = CYNew CYTypedIdentifier($1); }
-    | TypeParenthetical
+    | TypeParenthetical { $$ = $1; }
     ;
 
 ArrayedType
-    : ArrayedType "[" NumericLiteral "]" { $$ = $1; CYSetLast($$->type_) = CYNew CYTypeArrayOf($3); }
+    : ArrayedType "[" NumericLiteral "]" { $$ = $1; $$->modifier_ = CYNew CYTypeArrayOf($3, $$->modifier_); }
     | TypeSignifier { $$ = $1; }
-    | { $$ = CYNew CYTypedIdentifier(NULL); }
+    | { $$ = CYNew CYTypedIdentifier(); }
+    ;
+
+FunctionedType
+    : "(" LexPushInOff TypedParameterListOpt ")" LexPopIn { $$ = CYNew CYTypeFunctionWith($3); }
     ;
 
 SuffixedType
     : ArrayedType { $$ = $1; }
-    | TypeParenthetical "(" LexPushInOff TypedParameterListOpt ")" LexPopIn { $$ = $1; CYSetLast($$->type_) = CYNew CYTypeFunctionWith($4); }
+    | TypeParenthetical FunctionedType { $$ = $1; CYSetLast($2) = $$->modifier_; $$->modifier_ = $2; }
+    | FunctionedType { $$ = CYNew CYTypedIdentifier(); CYSetLast($1) = $$->modifier_; $$->modifier_ = $1; }
     ;
 
 PrefixedType
-    : "*" TypeQualifierRight PrefixedType { $$ = $3; CYSetLast($$->type_) = $2; CYSetLast($$->type_) = CYNew CYTypePointerTo(); }
-    | SuffixedType { $$ = $1; }
+    : "*" TypeQualifierRight { $$ = $2; $$->modifier_ = CYNew CYTypePointerTo($$->modifier_); }
     ;
 
 TypeQualifierLeft
-    : "const" TypeQualifierLeft { $$ = CYNew CYTypeConstant(); CYSetLast($$) = $2; }
+    : "const" TypeQualifierLeft { $$ = $2; CYSetLast($$) = CYNew CYTypeConstant(); }
+    /* XXX: | "volatile" TypeQualifierLeft { $$ = $2; CYSetLast($$) = CYNew CYTypeVolatile(); } */
     | { $$ = NULL; }
     ;
 
 TypeQualifierRight
-    : TypeQualifierRight "const" { $$ = CYNew CYTypeConstant($1); }
-    | { $$ = NULL; }
-    ;
-
-ConcreteType
-    : TypeQualifierLeft PrimitiveType TypeQualifierRight { $$ = $3; CYSetLast($$) = $1; CYSetLast($$) = CYNew CYTypeVariable($2); }
+    : "const" TypeQualifierRight { $$ = $2; $$->modifier_ = CYNew CYTypeConstant($$->modifier_); }
+    | PrefixedType { $$ = $1; }
+    | SuffixedType { $$ = $1; }
     ;
 
 PrimitiveType
@@ -1414,20 +1415,11 @@ PrimitiveType
     ;
 
 TypedIdentifier
-    : ConcreteType PrefixedType { $$ = $2; CYSetLast($$->type_) = $1; }
+    : TypeQualifierLeft PrimitiveType TypeQualifierRight { $$ = $3; $$->type_ = $2; CYSetLast($1) = $$->modifier_; $$->modifier_ = $1; }
     ;
 
 EncodedType
-    : TypedIdentifier { $$ = CYNew CYEncodedType($1->type_); }
-    ;
-
-ModifiedType_
-    : TypeQualifierLeft PrimitiveType { $$ = $1; CYSetLast($$) = CYNew CYTypeVariable($2); }
-    | ModifiedType "*" { $$ = CYNew CYTypePointerTo($1); }
-    ;
-
-ModifiedType
-    : ModifiedType_ TypeQualifierRight { $$ = $2; CYSetLast($$) = $1; }
+    : TypedIdentifier { $$ = CYNew CYEncodedType($1); }
     ;
 
 PrimaryExpression
@@ -1622,6 +1614,11 @@ PrimaryExpression
     ;
 /* }}} */
 /* Cycript (Objective-C): Block Expressions {{{ */
+ModifiedType
+    : TypeQualifierLeft PrimitiveType { $$ = CYNew CYTypedIdentifier(); $$->type_ = $2; $$->modifier_ = $1; }
+    | ModifiedType "*" { $$ = $1; $$->modifier_ = CYNew CYTypePointerTo($$->modifier_); }
+    ;
+
 PrimaryExpression
     : "^" ModifiedType "(" LexPushInOff TypedParameterListOpt ")" LexPopIn BRACE LexPushInOff FunctionBody "}" LexPopIn { $$ = CYNew CYObjCBlock($2, $5, $10); }
     ;
@@ -1665,7 +1662,7 @@ TypedParameterListOpt
     ;
 
 PrimaryExpression
-    : "[" LexPushInOff LexSetRegExp "&" LexSetRegExp "]" LexPopIn "(" LexPushInOff TypedParameterListOpt ")" LexPopIn "->" TypedIdentifier BRACE LexPushInOff FunctionBody "}" LexPopIn { $$ = CYNew CYLambda($14->type_, $10, $17); }
+    : "[" LexPushInOff LexSetRegExp "&" LexSetRegExp "]" LexPopIn "(" LexPushInOff TypedParameterListOpt ")" LexPopIn "->" TypedIdentifier BRACE LexPushInOff FunctionBody "}" LexPopIn { $$ = CYNew CYLambda($14, $10, $17); }
     ;
 /* }}} */
 /* Cycript (C): Type Definitions {{{ */

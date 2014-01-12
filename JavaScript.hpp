@@ -125,6 +125,10 @@ extern struct CYHooks *hooks_;
 
 JSObjectRef CYMakePointer(JSContextRef context, void *pointer, size_t length, sig::Type *type, ffi_type *ffi, JSObjectRef owner);
 
+JSObjectRef CYMakeType(JSContextRef context, const char *encoding);
+JSObjectRef CYMakeType(JSContextRef context, sig::Type *type);
+JSObjectRef CYMakeType(JSContextRef context, sig::Signature *signature);
+
 void CYFinalize(JSObjectRef object);
 
 size_t CYArrayLength(JSContextRef context, JSObjectRef array);

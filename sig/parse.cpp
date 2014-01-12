@@ -25,6 +25,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <sstream>
 
 namespace sig {
 
@@ -247,6 +248,19 @@ const char *Unparse(CYPool &pool, struct Signature *signature) {
 
 const char *Unparse_(CYPool &pool, struct Type *type) {
     switch (type->primitive) {
+        case function_P: {
+            if (type->data.signature.count == 0)
+                return "?";
+            std::ostringstream out;
+            for (size_t i(0); i != type->data.signature.count; ++i) {
+                Element &element(type->data.signature.elements[i]);
+                out << Unparse(pool, element.type);
+                if (element.offset != _not(size_t))
+                    out << pool.itoa(element.offset);
+            }
+            return pool.strdup(out.str().c_str());
+        } break;
+
         case typename_P: return "#";
         case union_P: return pool.strcat("(", Unparse(pool, &type->data.signature), ")", NULL);
         case string_P: return "*";
@@ -265,7 +279,15 @@ const char *Unparse_(CYPool &pool, struct Type *type) {
             return pool.strcat("[", pool.itoa(type->data.data.size), value, "]", NULL);
         } break;
 
-        case pointer_P: return pool.strcat("^", type->data.data.type == NULL ? "v" : Unparse(pool, type->data.data.type), NULL);
+        case pointer_P: {
+            if (type->data.data.type == NULL)
+                return "^v";
+            else if (type->data.data.type->primitive == function_P)
+                return "^?";
+            else
+                return pool.strcat("^", Unparse(pool, type->data.data.type), NULL);
+        } break;
+
         case bit_P: return pool.strcat("b", pool.itoa(type->data.data.size), NULL);
         case char_P: return "c";
         case double_P: return "d";

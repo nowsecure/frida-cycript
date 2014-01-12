@@ -30,6 +30,7 @@
 namespace sig {
 
 enum Primitive {
+    function_P = '\0',
     typename_P = '#',
     union_P = '(',
     string_P = '*',

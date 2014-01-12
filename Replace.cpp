@@ -289,6 +289,10 @@ CYStatement *CYEmpty::Replace(CYContext &context) {
     return NULL;
 }
 
+CYExpression *CYEncodedType::Replace(CYContext &context) {
+    return typed_->Replace(context);
+}
+
 CYStatement *CYExpress::Replace(CYContext &context) {
     while (CYExpress *express = dynamic_cast<CYExpress *>(next_)) {
         CYCompound *compound(dynamic_cast<CYCompound *>(express->expression_));
@@ -522,7 +526,7 @@ CYStatement *CYLabel::Replace(CYContext &context) {
 }
 
 CYExpression *CYLambda::Replace(CYContext &context) {
-    return $N2($V("Functor"), $ CYFunctionExpression(NULL, parameters_->Parameters(context), statements_), parameters_->TypeSignature(context, type_->Replace(context)));
+    return $N2($V("Functor"), $ CYFunctionExpression(NULL, parameters_->Parameters(context), statements_), parameters_->TypeSignature(context, typed_->Replace(context)));
 }
 
 CYStatement *CYLetStatement::Replace(CYContext &context) {
@@ -865,32 +869,40 @@ CYStatement *Try::Replace(CYContext &context) {
 
 } }
 
-CYExpression *CYTypeArrayOf::Replace(CYContext &context) {
-    return $ CYCall($ CYDirectMember(next_->Replace(context), $ CYString("arrayOf")), $ CYArgument(size_));
+CYExpression *CYTypeArrayOf::Replace_(CYContext &context, CYExpression *type) {
+    return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("arrayOf")), $ CYArgument(size_)));
 }
 
-CYExpression *CYTypeConstant::Replace(CYContext &context) {
-    return $ CYCall($ CYDirectMember(next_->Replace(context), $ CYString("constant")));
+CYExpression *CYTypeConstant::Replace_(CYContext &context, CYExpression *type) {
+    return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("constant"))));
 }
 
 CYStatement *CYTypeDefinition::Replace(CYContext &context) {
     return $E($ CYAssign($V(typed_->identifier_), typed_->type_->Replace(context)));
 }
 
-CYExpression *CYTypeFunctionWith::Replace(CYContext &context) {
-    return $ CYCall($ CYDirectMember(next_->Replace(context), $ CYString("functionWith")), parameters_->Argument(context));
+CYExpression *CYTypeModifier::Replace(CYContext &context, CYExpression *type) { $T(type)
+    return Replace_(context, type);
 }
 
-CYExpression *CYTypePointerTo::Replace(CYContext &context) {
-    return $ CYCall($ CYDirectMember(next_->Replace(context), $ CYString("pointerTo")));
+CYExpression *CYTypeFunctionWith::Replace_(CYContext &context, CYExpression *type) {
+    return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("functionWith")), parameters_->Argument(context)));
 }
 
-CYExpression *CYTypeVariable::Replace(CYContext &context) {
-    return expression_;
+CYExpression *CYTypePointerTo::Replace_(CYContext &context, CYExpression *type) {
+    return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("pointerTo"))));
+}
+
+CYExpression *CYTypeVolatile::Replace_(CYContext &context, CYExpression *type) {
+    return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("volatile"))));
+}
+
+CYExpression *CYTypedIdentifier::Replace(CYContext &context) {
+    return modifier_->Replace(context, type_);
 }
 
 CYArgument *CYTypedParameter::Argument(CYContext &context) { $T(NULL)
-    return $ CYArgument(typed_->type_->Replace(context), next_->Argument(context));
+    return $ CYArgument(typed_->Replace(context), next_->Argument(context));
 }
 
 CYFunctionParameter *CYTypedParameter::Parameters(CYContext &context) { $T(NULL)

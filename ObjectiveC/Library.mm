@@ -2647,10 +2647,13 @@ static JSValueRef Selector_callAsFunction_type(JSContextRef context, JSObjectRef
     else
         method = NULL;
 
-    if (const char *type = CYPoolTypeEncoding(pool, context, sel, method))
-        return CYCastJSValue(context, CYJSString(type));
+    const char *encoding(CYPoolTypeEncoding(pool, context, sel, method));
+    if (encoding == NULL)
+        return CYJSNull(context);
 
-    return CYJSNull(context);
+    sig::Signature signature;
+    sig::Parse(pool, &signature, encoding, &Structor_);
+    return CYMakeType(context, &signature);
 } CYCatch(NULL) }
 
 static JSStaticValue Selector_staticValues[2] = {
