@@ -720,7 +720,7 @@ Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, 
     // XXX: in point of fact, this may /need/ to leak :(
     Closure_privateData *internal(new Closure_privateData(context, function, signature));
 
-#if defined(__APPLE__) && defined(__arm__)
+#if defined(__APPLE__) && (defined(__arm__) || defined(__arm64__))
     void *executable;
     ffi_closure *writable(reinterpret_cast<ffi_closure *>(ffi_closure_alloc(sizeof(ffi_closure), &executable)));
 
