@@ -34,7 +34,7 @@
 
 namespace sig {
 
-void Copy(CYPool &pool, Element &lhs, Element &rhs) {
+void Copy(CYPool &pool, Element &lhs, const Element &rhs) {
     lhs.name = pool.strdup(rhs.name);
     if (rhs.type == NULL)
         lhs.type = NULL;
@@ -45,7 +45,7 @@ void Copy(CYPool &pool, Element &lhs, Element &rhs) {
     lhs.offset = rhs.offset;
 }
 
-void Copy(CYPool &pool, Signature &lhs, Signature &rhs) {
+void Copy(CYPool &pool, Signature &lhs, const Signature &rhs) {
     size_t count(rhs.count);
     lhs.count = count;
     lhs.elements = new(pool) Element[count];
@@ -53,7 +53,7 @@ void Copy(CYPool &pool, Signature &lhs, Signature &rhs) {
         Copy(pool, lhs.elements[index], rhs.elements[index]);
 }
 
-void Copy(CYPool &pool, Type &lhs, Type &rhs) {
+void Copy(CYPool &pool, Type &lhs, const Type &rhs) {
     lhs.primitive = rhs.primitive;
     lhs.name = pool.strdup(rhs.name);
     lhs.flags = rhs.flags;
@@ -62,7 +62,7 @@ void Copy(CYPool &pool, Type &lhs, Type &rhs) {
         Copy(pool, lhs.data.signature, rhs.data.signature);
     else {
         sig::Type *&lht(lhs.data.data.type);
-        sig::Type *&rht(rhs.data.data.type);
+        sig::Type *const &rht(rhs.data.data.type);
 
         if (rht == NULL)
             lht = NULL;
