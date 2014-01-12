@@ -219,11 +219,11 @@ extern "C" void Start(Baton *baton) {
     if (pthread == NULL)
         pthread = Library(baton, "/usr/lib/libSystem.B.dylib");
 
-    void (*$__pthread_set_self)(pthread_t);
+    void (*$__pthread_set_self)(void **);
     cyset($__pthread_set_self, "___pthread_set_self", pthread);
 
     self.tsd[0] = &self;
-    $__pthread_set_self(&self);
+    $__pthread_set_self(&self.tsd[0]);
 
     int (*$pthread_attr_init)(pthread_attr_t *);
     cyset($pthread_attr_init, "_pthread_attr_init", pthread);
@@ -249,24 +249,6 @@ extern "C" void Start(Baton *baton) {
     cyset($pthread_attr_destroy, "_pthread_attr_destroy", pthread);
 
     $pthread_attr_destroy(&attr);
-#endif
-
-#if defined(__arm__) || defined(__arm64__)
-    uintptr_t tpid;
-#if defined(__arm__)
-    __asm__ ("mrc p15, 0, %0, c13, c0, 3\n" : "=r" (tpid));
-#elif defined(__arm64__)
-    __asm__ ("mrs %0, tpidrro_el0\n" : "=r" (tpid));
-#else
-#error XXX
-#endif
-
-    void **tsd;
-    tsd = reinterpret_cast<void **>(tpid & ~3);
-    if (tsd != NULL)
-        tsd[0] = &self;
-#else
-    _pthread_setspecific_direct(0, &self);
 #endif
 
     int (*$pthread_join)(pthread_t, void **);
