@@ -139,9 +139,9 @@ Cycript_/libcycript-sim.dylib: build.sim-i386/.libs/libcycript.dylib build.sim-x
 	$(lipo) -create -output $@ $^
 	codesign -s $(codesign) $@
 
-libcycript-%.o: build.%/.libs/libcycript.a
+libcycript-%.o: build.%/.libs/libcycript.a xcode.map
 	@mkdir -p $(dir $@)
-	ld -r -arch $$($(lipo) -detailed_info $< | sed -e '/^Non-fat file: / ! d; s/.*: //') -o $@ -all_load $< libffi.a
+	ld -r -arch $$($(lipo) -detailed_info $< | sed -e '/^Non-fat file: / ! d; s/.*: //') -o $@ -all_load -exported_symbols_list xcode.map $< libffi.a
 
 libcycript.o: libcycript-ios-armv6.o libcycript-ios-armv7.o libcycript-ios-armv7s.o libcycript-ios-arm64.o libcycript-sim-i386.o libcycript-sim-x86_64.o
 	$(lipo) -create -output $@ $^
