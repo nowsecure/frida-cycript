@@ -60,12 +60,15 @@ void CYThrow(JSContextRef context, JSValueRef value);
         return value; \
     }
 
+#define _assert_(mode, test, code, format, ...) do \
+    if (!(test)) \
+        CYThrow("*** _%s(%s):%s(%u):%s" format, mode, code, __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__); \
+while (false)
+
 // XXX: fix this: _ is not safe; this is /not/ Menes ;P
 #undef _assert
-#define _assert(test, args...) do { \
-    if (!(test)) \
-        CYThrow("*** _assert(%s):%s(%u):%s [errno=%d]", #test, __FILE__, __LINE__, __FUNCTION__, errno); \
-} while (false)
+#define _assert(test) \
+    _assert_("assert", (test), #test, "")
 
 #define _trace() do { \
     fprintf(stderr, "_trace():%u\n", __LINE__); \
@@ -75,32 +78,27 @@ void CYThrow(JSContextRef context, JSValueRef value);
     __typeof__(expr) _value; \
     do if ((long) (_value = (expr)) != -1) \
         break; \
-    else switch (errno) { \
-        case EINTR: \
-            continue; \
-        default: \
-            _assert(false); \
-    } while (true); \
+    else \
+        _assert_("syscall", errno == EINTR, #expr, " [errno=%d]", errno); \
+    while (true); \
     _value; \
 })
 
 #define _aprcall(expr) \
     do { \
         apr_status_t _aprstatus((expr)); \
-        _assert(_aprstatus == APR_SUCCESS); \
+        _assert_("aprcall", _aprstatus == APR_SUCCESS, #expr, ""); \
     } while (false)
 
 #define _krncall(expr) \
     do { \
         kern_return_t _krnstatus((expr)); \
-        _assert(_krnstatus == KERN_SUCCESS); \
+        _assert_("krncall", _krnstatus == KERN_SUCCESS, #expr, " [return=0x%x]", _krnstatus); \
     } while (false)
 
 #define _sqlcall(expr) ({ \
     __typeof__(expr) _value = (expr); \
-    if (_value != 0 && (_value < 100 || _value >= 200)) \
-        _assert(false, "_sqlcall(%u:%s): %s\n", _value, #expr, sqlite3_errmsg(database_)); \
-    _value; \
+    _assert_("sqlcall", _value == 0 || _value >= 100 && _value < 200, #expr, " %u:%s", _value sqlite3_errmsg(database_)); \
 })
 
 struct CYJSException {
