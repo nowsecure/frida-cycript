@@ -699,10 +699,8 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
                                 break;
                             else {
                                 size += read;
-                                if (size == sizeof(value)) {
-                                    pid = _not(pid_t);
+                                if (size == sizeof(value))
                                     goto fail;
-                                }
                             }
                         }
 
@@ -723,7 +721,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
                     }
 
                     if (pid == _not(pid_t)) {
-                        fprintf(stderr, "invalid pid for -p\n");
+                        fprintf(stderr, "unable to find process `%s' using ps\n", arg);
                         return 1;
                     }
                 }
