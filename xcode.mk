@@ -28,7 +28,7 @@ version := $(shell git describe --always --tags --dirty="+" --match="v*" | sed -
 deb := cycript_$(version)_iphoneos-arm.deb
 
 cycript := 
-cycript += Cycript_/cycript
+cycript += Cycript_/cycript_
 cycript += Cycript_/libcycript.dylib
 cycript += Cycript_/libcycript-any.dylib
 cycript += Cycript_/libcycript-sys.dylib
@@ -46,12 +46,12 @@ cycript.zip: all
 
 package: cycript.zip
 
-$(deb): Cycript_/cycript Cycript_/libcycript.dylib
+$(deb): Cycript_/cycript_ Cycript_/libcycript.dylib
 	rm -rf package
 	mkdir -p package/DEBIAN
 	sed -e 's/#/$(version)/' control.in >package/DEBIAN/control
 	mkdir -p package/usr/{bin,lib}
-	$(lipo) -extract armv6 -output package/usr/bin/cycript Cycript_/cycript
+	$(lipo) -extract armv6 -output package/usr/bin/cycript Cycript_/cycript_
 	$(lipo) -extract armv6 -extract arm64 -output package/usr/lib/libcycript.dylib Cycript_/libcycript.dylib
 	ln -s libcycript.dylib package/usr/lib/libcycript.0.dylib
 	dpkg-deb -Zlzma -b package $@
@@ -126,7 +126,7 @@ Cycript_/%.dylib: build.mac-i386/.libs/%.dylib build.mac-x86_64/.libs/%.dylib bu
 	install_name_tool -change /System/Library/{,Private}Frameworks/JavaScriptCore.framework/JavaScriptCore $@
 	codesign -s $(codesign) --entitlement cycript-$(word 2,$(subst ., ,$(subst -, ,$*))).xml $@
 
-Cycript_/%: build.mac-i386/.libs/%_ build.mac-x86_64/.libs/%_ build.ios-armv6/.libs/%_
+Cycript_/%_: build.mac-i386/.libs/%_ build.mac-x86_64/.libs/%_ build.ios-armv6/.libs/%_
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
 

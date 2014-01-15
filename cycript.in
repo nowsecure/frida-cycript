@@ -19,4 +19,4 @@
 # along with Cycript.  If not, see <http://www.gnu.org/licenses/>.
 # }}}
 
-DYLD_LIBRARY_PATH=.libs exec .libs/cycript "$@"
+DYLD_LIBRARY_PATH=.libs exec .libs/cycript_ "$@"
