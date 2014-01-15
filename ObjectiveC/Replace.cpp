@@ -93,7 +93,7 @@ CYStatement *CYField::Replace(CYContext &context) const { $T(NULL)
 }
 
 CYStatement *CYImport::Replace(CYContext &context) {
-    return this;
+    return $ CYVar($L1($L(module_->part_->Word(), $C1($V("require"), module_->Replace(context, "/")))));
 }
 
 CYStatement *CYMessage::Replace(CYContext &context, bool replace) const { $T(NULL)
@@ -140,6 +140,12 @@ CYSelectorPart *CYMessageParameter::SelectorPart(CYContext &context) const { $T(
 
 CYExpression *CYMessageParameter::TypeSignature(CYContext &context) const {
     return MessageType(context, type_, next_);
+}
+
+CYString *CYModule::Replace(CYContext &context, const char *separator) const {
+    if (next_ == NULL)
+        return $ CYString(part_);
+    return $ CYString($pool.strcat(next_->Replace(context, separator)->Value(), separator, part_->Word(), NULL));
 }
 
 CYExpression *CYBox::Replace(CYContext &context) {

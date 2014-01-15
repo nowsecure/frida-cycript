@@ -72,6 +72,7 @@ typedef struct {
         CYInfix *infix_;
         CYLiteral *literal_;
         CYMember *member_;
+        CYModule *module_;
         CYNull *null_;
         CYNumber *number_;
         CYProgram *program_;
@@ -491,6 +492,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <messageParameter_> MessageParameterListOpt
 %type <bool_> MessageScope
 %type <typedIdentifier_> ModifiedType
+%type <module_> Module
 %type <typedIdentifier_> PrefixedType
 %type <expression_> PrimitiveType
 %type <argument_> SelectorCall_
@@ -1580,20 +1582,13 @@ PrimaryExpression
     ;
 /* }}} */
 /* Cycript (Objective-C): @import Directive {{{ */
-PathName
-    : "/" PathName
-    | "." PathName
-    | Word PathName
-    |
+Module
+    : Module "." Word { $$ = CYNew CYModule($3, $1); }
+    | Word { $$ = CYNew CYModule($1); }
     ;
 
-ImportPath
-    : "<" PathName ">"
-    | StringLiteral
-    ;
-
-StatementListItem
-    : LexSetStatement LexSetRegExp "@import" ImportPath { $$ = CYNew CYImport(); }
+Declaration__
+    : "@import" Module { $$ = CYNew CYImport($2); }
     ;
 /* }}} */
 /* Cycript (Objective-C): Boxed Expressions {{{ */

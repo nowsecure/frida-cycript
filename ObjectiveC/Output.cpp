@@ -94,6 +94,12 @@ void CYMessage::Output(CYOutput &out, bool replace) const {
     out << code_;
 }
 
+void CYModule::Output(CYOutput &out) const {
+    out << part_;
+    if (next_ != NULL)
+        out << '.' << next_;
+}
+
 void CYBox::Output(CYOutput &out, CYFlags flags) const {
     out << '@';
     value_->Output(out, Precedence(), CYRight(flags));
