@@ -1589,6 +1589,51 @@ static void CYRunSetups(JSContextRef context) {
     _syscall(closedir(setups));
 }
 
+static JSValueRef require(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    _assert(count == 1);
+    CYPool pool;
+
+    Dl_info addr;
+    _assert(dladdr(reinterpret_cast<void *>(&require), &addr) != 0);
+    char *lib(pool.strdup(addr.dli_fname));
+
+    char *slash(strrchr(lib, '/'));
+    _assert(slash != NULL);
+    *slash = '\0';
+
+    CYJSString property("exports");
+    JSObjectRef module;
+
+    const char *path(pool.strcat(lib, "/cycript/", CYPoolCString(pool, context, arguments[0]), ".cy", NULL));
+    CYJSString key(path);
+    JSObjectRef modules(CYGetCachedObject(context, CYJSString("modules")));
+    JSValueRef cache(CYGetProperty(context, modules, key));
+
+    if (!JSValueIsUndefined(context, cache))
+        module = CYCastJSObject(context, cache);
+    else {
+        CYUTF8String code;
+        code.data = reinterpret_cast<char *>(CYMapFile(path, &code.size));
+
+        std::stringstream wrap;
+        wrap << "(function (exports, require, module) { " << code << "\n});";
+        code = CYPoolCode(pool, wrap.str().c_str());
+
+        JSValueRef value(_jsccall(JSEvaluateScript, context, CYJSString(code), NULL, NULL, 0));
+        JSObjectRef function(CYCastJSObject(context, value));
+
+        module = JSObjectMake(context, NULL, NULL);
+        JSObjectRef exports(JSObjectMake(context, NULL, NULL));
+        CYSetProperty(context, module, property, exports);
+
+        JSValueRef arguments[3] = { exports, JSObjectMakeFunctionWithCallback(context, CYJSString("require"), &require), module };
+        CYCallAsFunction(context, function, NULL, 3, arguments);
+        CYSetProperty(context, modules, key, module);
+    }
+
+    return CYGetProperty(context, module, property);
+} CYCatch(NULL) }
+
 extern "C" void CYSetupContext(JSGlobalContextRef context) {
     CYInitializeDynamic();
 
@@ -1640,6 +1685,9 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     CYSetProperty(context, cycript, CYJSString("Pointer"), JSObjectMakeConstructor(context, Pointer_, &Pointer_new));
     CYSetProperty(context, cycript, CYJSString("Type"), JSObjectMakeConstructor(context, Type_privateData::Class_, &Type_new));
 
+    JSObjectRef modules(JSObjectMake(context, NULL, NULL));
+    CYSetProperty(context, cy, CYJSString("modules"), modules);
+
     JSObjectRef all(JSObjectMake(context, All_, NULL));
     CYSetProperty(context, cycript, CYJSString("all"), all);
 
@@ -1665,6 +1713,8 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
 
     JSObjectRef System(JSObjectMake(context, NULL, NULL));
     CYSetProperty(context, cy, CYJSString("System"), System);
+
+    CYSetProperty(context, all, CYJSString("require"), &require, kJSPropertyAttributeDontEnum);
 
     CYSetProperty(context, global, CYJSString("system"), System);
     CYSetProperty(context, System, CYJSString("args"), CYJSNull(context));
