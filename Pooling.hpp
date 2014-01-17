@@ -62,6 +62,11 @@ class CYPool {
         return (size + 7) & ~0x3;
     }
 
+    template <typename Type_>
+    static void delete_(void *data) {
+        reinterpret_cast<Type_ *>(data)->~Type_();
+    }
+
     CYPool(const CYPool &);
 
   public:
@@ -182,6 +187,13 @@ class CYPool {
     }
 
     void atexit(void (*code)(void *), void *data = NULL);
+
+    template <typename Type_>
+    Type_ &object() {
+        Type_ *value(new(*this) Type_());
+        atexit(&delete_<Type_>, value);
+        return *value;
+    }
 };
 
 _finline void *operator new(size_t size, CYPool &pool) {

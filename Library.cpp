@@ -191,31 +191,38 @@ double CYCastDouble(const char *value) {
     return CYCastDouble(value, strlen(value));
 }
 
-extern "C" bool CydgetMemoryParse(const uint16_t **data, size_t *size) {
+CYUTF8String CYPoolCode(CYPool &pool, CYUTF8String code) {
     CYLocalPool local;
-
-    CYUTF8String utf8(CYPoolUTF8String(local, CYUTF16String(*data, *size)));
-    CYStream stream(utf8.data, utf8.data + utf8.size);
+    CYStream stream(code.data, code.data + code.size);
     CYDriver driver(stream);
 
     cy::parser parser(driver);
-    if (parser.parse() != 0 || !driver.errors_.empty()) {
+    _assert(parser.parse() == 0);
+    _assert(driver.errors_.empty());
+
+    CYOptions options;
+    CYContext context(options);
+    driver.program_->Replace(context);
+
+    std::ostringstream &str(pool.object<std::ostringstream>());
+    CYOutput out(str, options);
+    out << *driver.program_;
+    return str.str().c_str();
+}
+
+extern "C" bool CydgetMemoryParse(const uint16_t **data, size_t *size) {
+    CYPool pool;
+
+    CYUTF8String utf8(CYPoolUTF8String(pool, CYUTF16String(*data, *size)));
+    try {
+        utf8 = CYPoolCode(pool, utf8);
+    } catch (const CYException &) {
         *data = NULL;
         *size = 0;
         return false;
     }
 
-    CYOptions options;
-    CYContext context(options);
-    driver.program_->Replace(context);
-    std::ostringstream str;
-    CYOutput out(str, options);
-    out << *driver.program_;
-    std::string code(str.str());
-
-    CYPool pool;
-    CYUTF16String utf16(CYPoolUTF16String(pool, CYUTF8String(code.c_str(), code.size())));
-
+    CYUTF16String utf16(CYPoolUTF16String(pool, CYUTF8String(utf8.data, utf8.size)));
     size_t bytes(utf16.size * sizeof(uint16_t));
     uint16_t *copy(reinterpret_cast<uint16_t *>(malloc(bytes)));
     memcpy(copy, utf16.data, bytes);
