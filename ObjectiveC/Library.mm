@@ -2988,3 +2988,25 @@ struct CYObjectiveC {
         _assert(hooks_ != NULL);
     }
 } CYObjectiveC;
+
+extern "C" void CydgetSetupContext(JSGlobalContextRef context) { CYObjectiveTry_ {
+    CYSetupContext(context);
+} CYObjectiveCatch }
+
+extern "C" void CydgetMemoryParse(const uint16_t **data, size_t *size) { try {
+    CYPool pool;
+
+    CYUTF8String utf8(CYPoolUTF8String(pool, CYUTF16String(*data, *size)));
+    utf8 = CYPoolCode(pool, utf8);
+
+    CYUTF16String utf16(CYPoolUTF16String(pool, CYUTF8String(utf8.data, utf8.size)));
+    size_t bytes(utf16.size * sizeof(uint16_t));
+    uint16_t *copy(reinterpret_cast<uint16_t *>(malloc(bytes)));
+    memcpy(copy, utf16.data, bytes);
+
+    *data = copy;
+    *size = utf16.size;
+} catch (const CYException &exception) {
+    CYPool pool;
+    @throw [NSException exceptionWithName:NSRangeException reason:[NSString stringWithFormat:@"%s", exception.PoolCString(pool)] userInfo:nil];
+} }

@@ -210,28 +210,6 @@ CYUTF8String CYPoolCode(CYPool &pool, CYUTF8String code) {
     return $pool.strdup(str.str().c_str());
 }
 
-extern "C" bool CydgetMemoryParse(const uint16_t **data, size_t *size) {
-    CYPool pool;
-
-    CYUTF8String utf8(CYPoolUTF8String(pool, CYUTF16String(*data, *size)));
-    try {
-        utf8 = CYPoolCode(pool, utf8);
-    } catch (const CYException &) {
-        *data = NULL;
-        *size = 0;
-        return false;
-    }
-
-    CYUTF16String utf16(CYPoolUTF16String(pool, CYUTF8String(utf8.data, utf8.size)));
-    size_t bytes(utf16.size * sizeof(uint16_t));
-    uint16_t *copy(reinterpret_cast<uint16_t *>(malloc(bytes)));
-    memcpy(copy, utf16.data, bytes);
-
-    *data = copy;
-    *size = utf16.size;
-    return true;
-}
-
 CYPool &CYGetGlobalPool() {
     static CYPool pool;
     return pool;

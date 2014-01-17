@@ -1410,10 +1410,6 @@ const char *CYExecute(JSContextRef context, CYPool &pool, CYUTF8String code) {
     }
 }
 
-extern "C" void CydgetSetupContext(JSGlobalContextRef context) {
-    CYSetupContext(context);
-}
-
 static bool initialized_ = false;
 
 void CYInitializeDynamic() {
@@ -1590,8 +1586,10 @@ static void CYRunSetups(JSContextRef context) {
         CYUTF16String utf16(CYPoolUTF16String(pool, utf8));
         munmap(const_cast<char *>(utf8.data), utf8.size);
 
-        if (CydgetMemoryParse(&utf16.data, &utf16.size))
-            CYExecute(context, pool, CYPoolUTF8String(pool, utf16));
+        // XXX: this should not be used
+        CydgetMemoryParse(&utf16.data, &utf16.size);
+
+        CYExecute(context, pool, CYPoolUTF8String(pool, utf16));
         free(const_cast<uint16_t *>(utf16.data));
     }
 
