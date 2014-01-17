@@ -3,6 +3,8 @@
 <dict>
 	<key>com.apple.springboard.debugapplications</key>
 	<true/>
+	<key>dynamic-codesigning</key>
+	<true/>
 	<key>get-task-allow</key>
 	<true/>
 	<key>task_for_pid-allow</key>
