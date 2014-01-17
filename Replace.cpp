@@ -873,6 +873,10 @@ CYExpression *CYTypeArrayOf::Replace_(CYContext &context, CYExpression *type) {
     return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("arrayOf")), $ CYArgument(size_)));
 }
 
+CYExpression *CYTypeBlockWith::Replace_(CYContext &context, CYExpression *type) {
+    return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("blockWith")), parameters_->Argument(context)));
+}
+
 CYExpression *CYTypeConstant::Replace_(CYContext &context, CYExpression *type) {
     return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("constant"))));
 }

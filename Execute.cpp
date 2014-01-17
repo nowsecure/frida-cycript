@@ -1069,38 +1069,7 @@ static JSObjectRef Type_new(JSContextRef context, JSObjectRef object, size_t cou
     return CYMakeType(context, type);
 } CYCatch(NULL) }
 
-static JSValueRef Type_callAsFunction_arrayOf(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    if (count != 1)
-        throw CYJSError(context, "incorrect number of arguments to Type.arrayOf");
-    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
-
-    CYPool pool;
-    size_t index(CYGetIndex(pool, context, CYJSString(context, arguments[0])));
-    if (index == _not(size_t))
-        throw CYJSError(context, "invalid array size used with Type.arrayOf");
-
-    sig::Type type;
-    type.name = NULL;
-    type.flags = 0;
-
-    type.primitive = sig::array_P;
-    type.data.data.type = internal->type_;
-    type.data.data.size = index;
-
-    return CYMakeType(context, &type);
-} CYCatch(NULL) }
-
-static JSValueRef Type_callAsFunction_constant(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    if (count != 0)
-        throw CYJSError(context, "incorrect number of arguments to Type.constant");
-    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
-
-    sig::Type type(*internal->type_);
-    type.flags |= JOC_TYPE_CONST;
-    return CYMakeType(context, &type);
-} CYCatch(NULL) }
-
-static JSValueRef Type_callAsFunction_functionWith(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+static JSValueRef Type_callAsFunction_$With(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], sig::Primitive primitive, JSValueRef *exception) { CYTry {
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
 
     CYPool pool;
@@ -1109,7 +1078,7 @@ static JSValueRef Type_callAsFunction_functionWith(JSContextRef context, JSObjec
     type.name = NULL;
     type.flags = 0;
 
-    type.primitive = sig::function_P;
+    type.primitive = primitive;
     type.data.signature.elements = new(pool) sig::Element[1 + count];
     type.data.signature.count = 1 + count;
 
@@ -1131,6 +1100,45 @@ static JSValueRef Type_callAsFunction_functionWith(JSContextRef context, JSObjec
 
     return CYMakeType(context, &type);
 } CYCatch(NULL) }
+
+static JSValueRef Type_callAsFunction_arrayOf(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    if (count != 1)
+        throw CYJSError(context, "incorrect number of arguments to Type.arrayOf");
+    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
+
+    CYPool pool;
+    size_t index(CYGetIndex(pool, context, CYJSString(context, arguments[0])));
+    if (index == _not(size_t))
+        throw CYJSError(context, "invalid array size used with Type.arrayOf");
+
+    sig::Type type;
+    type.name = NULL;
+    type.flags = 0;
+
+    type.primitive = sig::array_P;
+    type.data.data.type = internal->type_;
+    type.data.data.size = index;
+
+    return CYMakeType(context, &type);
+} CYCatch(NULL) }
+
+static JSValueRef Type_callAsFunction_blockWith(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    return Type_callAsFunction_$With(context, object, _this, count, arguments, sig::block_P, exception);
+}
+
+static JSValueRef Type_callAsFunction_constant(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    if (count != 0)
+        throw CYJSError(context, "incorrect number of arguments to Type.constant");
+    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
+
+    sig::Type type(*internal->type_);
+    type.flags |= JOC_TYPE_CONST;
+    return CYMakeType(context, &type);
+} CYCatch(NULL) }
+
+static JSValueRef Type_callAsFunction_functionWith(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    return Type_callAsFunction_$With(context, object, _this, count, arguments, sig::function_P, exception);
+}
 
 static JSValueRef Type_callAsFunction_pointerTo(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 0)
@@ -1319,8 +1327,9 @@ static JSStaticValue Type_staticValues[4] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction Type_staticFunctions[9] = {
+static JSStaticFunction Type_staticFunctions[10] = {
     {"arrayOf", &Type_callAsFunction_arrayOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"blockWith", &Type_callAsFunction_blockWith, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"constant", &Type_callAsFunction_constant, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"functionWith", &Type_callAsFunction_functionWith, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"pointerTo", &Type_callAsFunction_pointerTo, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},

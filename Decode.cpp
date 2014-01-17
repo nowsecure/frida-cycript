@@ -38,7 +38,14 @@ CYTypedIdentifier *Decode_(CYPool &pool, struct sig::Type *type) {
         case sig::union_P: _assert(false); break;
         case sig::string_P: return $ CYTypedIdentifier($V("char"), $ CYTypePointerTo());
         case sig::selector_P: return $ CYTypedIdentifier($V("SEL"));
-        case sig::block_P: _assert(false); break;
+
+        case sig::block_P: {
+            _assert(type->data.signature.count != 0);
+            CYTypedParameter *parameter(NULL);
+            for (size_t i(type->data.signature.count - 1); i != 0; --i)
+                parameter = $ CYTypedParameter(Decode(pool, type->data.signature.elements[i].type), parameter);
+            return Decode(pool, type->data.signature.elements[0].type)->Modify($ CYTypeBlockWith(parameter));
+        } break;
 
         case sig::object_P: {
             if (type->name == NULL)

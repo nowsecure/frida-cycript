@@ -1391,6 +1391,7 @@ FunctionedType
 
 SuffixedType
     : ArrayedType { $$ = $1; }
+    | "(" LexPushInOff "^" TypeQualifierRight ")" LexPopIn "(" LexPushInOff TypedParameterListOpt ")" LexPopIn { $$ = $4; $$->modifier_ = CYNew CYTypeBlockWith($9, $$->modifier_); }
     | TypeParenthetical FunctionedType { $$ = $1; CYSetLast($2) = $$->modifier_; $$->modifier_ = $2; }
     | FunctionedType { $$ = CYNew CYTypedIdentifier(); CYSetLast($1) = $$->modifier_; $$->modifier_ = $1; }
     ;

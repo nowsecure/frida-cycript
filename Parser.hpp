@@ -1776,6 +1776,23 @@ struct CYTypeDefinition :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
+struct CYTypeBlockWith :
+    CYTypeModifier
+{
+    CYTypedParameter *parameters_;
+
+    CYTypeBlockWith(CYTypedParameter *parameters, CYTypeModifier *next = NULL) :
+        CYTypeModifier(next),
+        parameters_(parameters)
+    {
+    }
+
+    CYPrecedence(0)
+
+    virtual CYExpression *Replace_(CYContext &context, CYExpression *type);
+    virtual void Output(CYOutput &out, CYIdentifier *identifier) const;
+};
+
 struct CYTypeFunctionWith :
     CYTypeModifier
 {

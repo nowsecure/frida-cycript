@@ -481,6 +481,12 @@ void CYTypeArrayOf::Output(CYOutput &out, CYIdentifier *identifier) const {
     out << ']';
 }
 
+void CYTypeBlockWith::Output(CYOutput &out, CYIdentifier *identifier) const {
+    out << '(' << '^';
+    next_->Output(out, Precedence(), identifier);
+    out << ')' << '(' << parameters_ << ')';
+}
+
 void CYTypeConstant::Output(CYOutput &out, CYIdentifier *identifier) const {
     out << "const";
     next_->Output(out, Precedence(), identifier);
