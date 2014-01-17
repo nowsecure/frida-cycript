@@ -153,7 +153,7 @@ CYExpression *CYBox::Replace(CYContext &context) {
 }
 
 CYExpression *CYObjCBlock::Replace(CYContext &context) {
-    return $N2($V("Functor"), $ CYFunctionExpression(NULL, $ CYFunctionParameter($ CYDeclaration($ CYIdentifier("$cyt")), parameters_->Parameters(context)), statements_), parameters_->TypeSignature(context, $ CYAdd(typed_->Replace(context), $ CYString("@"))));
+    return $C1($ CYEncodedType(($ CYTypedIdentifier(*typed_))->Modify($ CYTypeBlockWith(parameters_))), $ CYFunctionExpression(NULL, parameters_->Parameters(context), statements_));
 }
 
 CYStatement *CYProtocol::Replace(CYContext &context) const { $T(NULL)

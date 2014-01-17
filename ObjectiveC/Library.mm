@@ -638,30 +638,46 @@ _finline bool CYJSValueIsInstanceOfCachedConstructor(JSContextRef context, JSVal
     return _jsccall(JSValueIsInstanceOfConstructor, context, value, CYGetCachedObject(context, cache));
 }
 
-NSObject *CYMakeBlock(void (*invoke)(), sig::Signature &signature) {
+struct CYBlockDescriptor {
+    struct {
+        BlockDescriptor1 one_;
+        BlockDescriptor2 two_;
+        BlockDescriptor3 three_;
+    } d_;
+
+    Closure_privateData *internal_;
+};
+
+void CYDisposeBlock(BlockLiteral *literal) {
+    delete reinterpret_cast<CYBlockDescriptor *>(literal->descriptor)->internal_;
+}
+
+static JSValueRef BlockAdapter_(JSContextRef context, size_t count, JSValueRef values[], JSObjectRef function) {
+    JSObjectRef _this(CYCastJSObject(context, values[0]));
+    return CYCallAsFunction(context, function, _this, count - 1, values + 1);
+}
+
+static void BlockClosure_(ffi_cif *cif, void *result, void **arguments, void *arg) {
+    CYExecuteClosure(cif, result, arguments, arg, &BlockAdapter_);
+}
+
+NSObject *CYMakeBlock(JSContextRef context, JSObjectRef function, sig::Signature &signature) {
     BlockLiteral *literal(reinterpret_cast<BlockLiteral *>(malloc(sizeof(BlockLiteral))));
 
-    struct Descriptor {
-        struct {
-            BlockDescriptor1 one_;
-            BlockDescriptor2 two_;
-            BlockDescriptor3 three_;
-        } d_;
-
-        CYPool pool_;
-    };
-
-    Descriptor *descriptor(new Descriptor);
+    CYBlockDescriptor *descriptor(new CYBlockDescriptor);
     memset(&descriptor->d_, 0, sizeof(descriptor->d_));
 
-    literal->isa = objc_getClass("__NSGlobalBlock__");
+    descriptor->internal_ = CYMakeFunctor_(context, function, signature, &BlockClosure_);
+    literal->invoke = reinterpret_cast<void (*)(void *, ...)>(descriptor->internal_->GetValue());
+
+    literal->isa = objc_getClass("__NSMallocBlock__");
     literal->flags = BLOCK_HAS_SIGNATURE | BLOCK_HAS_COPY_DISPOSE | BLOCK_IS_GLOBAL;
     literal->reserved = 0;
-    literal->invoke = reinterpret_cast<void (*)(void *, ...)>(invoke);
     literal->descriptor = descriptor;
 
     descriptor->d_.one_.size = sizeof(descriptor->d_);
-    descriptor->d_.three_.signature = sig::Unparse(descriptor->pool_, &signature);
+    descriptor->d_.two_.dispose_helper = &CYDisposeBlock;
+    descriptor->d_.three_.signature = sig::Unparse(*descriptor->internal_->pool_, &signature);
 
     return reinterpret_cast<NSObject *>(literal);
 }
@@ -670,11 +686,6 @@ NSObject *CYCastNSObject(CYPool *pool, JSContextRef context, JSObjectRef object)
     if (CYJSValueIsNSObject(context, object)) {
         Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
         return internal->GetValue();
-    }
-
-    if (JSValueIsObjectOfClass(context, object, Functor_)) {
-        cy::Functor *internal(reinterpret_cast<cy::Functor *>(JSObjectGetPrivate(object)));
-        return CYMakeBlock(internal->GetValue(), internal->signature_);
     }
 
     bool array(CYJSValueIsInstanceOfCachedConstructor(context, object, Array_s));
@@ -1452,12 +1463,32 @@ static void CYObjectiveC_CallFunction(JSContextRef context, ffi_cif *cif, void (
 } CYSadCatch() }
 
 static bool CYObjectiveC_PoolFFI(CYPool *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value) { CYSadTry {
+    // XXX: assigning to an indirect id * works for return values, but not for properties and fields
+
     switch (type->primitive) {
-        // XXX: do something epic about blocks
-        case sig::block_P:
+        case sig::block_P: {
+            _assert(type->data.signature.count != 0);
+            sig::Signature signature;
+            sig::Copy(*pool, signature, type->data.signature);
+
+            sig::Element *elements(new(*pool) sig::Element[++signature.count]);
+            elements[0] = signature.elements[0];
+            memcpy(elements + 2, signature.elements + 1, sizeof(sig::Element) * (signature.count - 2));
+            signature.elements = elements;
+
+            elements[1].name = NULL;
+            elements[1].type = new(*pool) sig::Type();
+            elements[1].offset = _not(size_t);
+
+            memset(elements[1].type, 0, sizeof(sig::Type));
+            elements[1].type->primitive = sig::object_P;
+
+            JSObjectRef function(CYCastJSObject(context, value));
+            *reinterpret_cast<id *>(data) = CYMakeBlock(context, function, signature);
+        } break;
+
         case sig::object_P:
         case sig::typename_P:
-            // XXX: this works for return values, but not for properties and fields
             *reinterpret_cast<id *>(data) = CYCastNSObject(pool, context, value);
         break;
 
