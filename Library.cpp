@@ -204,10 +204,10 @@ CYUTF8String CYPoolCode(CYPool &pool, CYUTF8String code) {
     CYContext context(options);
     driver.program_->Replace(context);
 
-    std::ostringstream &str(pool.object<std::ostringstream>());
+    std::ostringstream str;
     CYOutput out(str, options);
     out << *driver.program_;
-    return str.str().c_str();
+    return $pool.strdup(str.str().c_str());
 }
 
 extern "C" bool CydgetMemoryParse(const uint16_t **data, size_t *size) {
