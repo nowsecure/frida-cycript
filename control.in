@@ -8,6 +8,7 @@ Description: runtime execution server and disassembler
 Name: Cycript
 Depends: apr-lib, readline, adv-cmds
 Pre-Depends: dpkg (>= 1.14.25-8)
+Breaks: cydget (<< 0.9.4008)
 Author: Jay Freeman (saurik) <saurik@saurik.com>
 Depiction: http://cydia.saurik.com/info/cycript/
 Tag: purpose::daemon, role::developer
