@@ -294,6 +294,7 @@ static JSClassRef ObjectiveC_Images_;
 #endif
 
 #ifdef __APPLE__
+static Class __NSMallocBlock__;
 static Class NSCFBoolean_;
 static Class NSCFType_;
 static Class NSGenericDeallocHandler_;
@@ -662,6 +663,7 @@ static void BlockClosure_(ffi_cif *cif, void *result, void **arguments, void *ar
 }
 
 NSObject *CYMakeBlock(JSContextRef context, JSObjectRef function, sig::Signature &signature) {
+    _assert(__NSMallocBlock__ != Nil);
     BlockLiteral *literal(reinterpret_cast<BlockLiteral *>(malloc(sizeof(BlockLiteral))));
 
     CYBlockDescriptor *descriptor(new CYBlockDescriptor);
@@ -670,7 +672,7 @@ NSObject *CYMakeBlock(JSContextRef context, JSObjectRef function, sig::Signature
     descriptor->internal_ = CYMakeFunctor_(context, function, signature, &BlockClosure_);
     literal->invoke = reinterpret_cast<void (*)(void *, ...)>(descriptor->internal_->GetValue());
 
-    literal->isa = objc_getClass("__NSMallocBlock__");
+    literal->isa = __NSMallocBlock__;
     literal->flags = BLOCK_HAS_SIGNATURE | BLOCK_HAS_COPY_DISPOSE | BLOCK_IS_GLOBAL;
     literal->reserved = 0;
     literal->descriptor = descriptor;
@@ -2754,6 +2756,8 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     Object_ = objc_getClass("Object");
 
 #ifdef __APPLE__
+    __NSMallocBlock__ = objc_getClass("__NSMallocBlock__");
+
     // XXX: apparently, iOS now has both of these
     NSCFBoolean_ = objc_getClass("__NSCFBoolean");
     if (NSCFBoolean_ == nil)
