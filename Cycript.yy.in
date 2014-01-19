@@ -347,6 +347,8 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <argument_> ArgumentList
 %type <argument_> ArgumentListOpt
 %type <argument_> Arguments
+%type <expression_> ArrayComprehension
+%type <expression_> ArrayInitialiser
 %type <literal_> ArrayLiteral
 %type <expression_> ArrowFunction
 %type <functionParameter_> ArrowParameters
@@ -368,10 +370,10 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <clause_> CaseClause
 %type <clause_> CaseClausesOpt
 %type <catch_> CatchOpt
-%type <comprehension_> ComprehensionForList
-%type <comprehension_> ComprehensionForListOpt
-%type <comprehension_> ComprehensionList
-%type <comprehension_> ComprehensionListOpt
+%type <expression_> Comprehension
+%type <comprehension_> ComprehensionFor
+%type <comprehension_> ComprehensionIf
+%type <comprehension_> ComprehensionTail
 %type <expression_> ConditionalExpression
 %type <statement_> ContinueStatement
 %type <statement_> ConciseBody
@@ -392,7 +394,6 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <expression_> ExpressionOpt
 %type <statement_> ExpressionStatement
 %type <finally_> FinallyOpt
-%type <comprehension_> ForComprehension
 %type <for_> ForStatementInitialiser
 %type <forin_> ForInStatementInitialiser
 %type <declaration_> FormalParameter
@@ -405,7 +406,6 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <identifier_> Identifier
 %type <identifier_> IdentifierOpt
 %type <word_> IdentifierName
-%type <comprehension_> IfComprehension
 %type <statement_> IfStatement
 %type <expression_> Initialiser
 %type <expression_> InitialiserOpt
@@ -763,13 +763,19 @@ PrimaryExpression
     : "this" { $$ = $1; }
     | Variable { $$ = $1; }
     | Literal { $$ = $1; }
-    | ArrayLiteral { $$ = $1; }
+    | ArrayInitialiser { $$ = $1; }
     | ObjectLiteral { $$ = $1; }
     | Parenthetical { $$ = $1; }
     | AutoComplete { driver.mode_ = CYDriver::AutoPrimary; YYACCEPT; }
     ;
 /* }}} */
-/* 11.1.4.1 Array Initialiser {{{ */
+/* 11.1.4 Array Initializer {{{ */
+ArrayInitialiser
+    : ArrayLiteral { $$ = $1; }
+    | ArrayComprehension { $$ = $1; }
+    ;
+/* }}} */
+/* 11.1.4.1 Array Literal {{{ */
 ArrayLiteral
     : "[" LexPushInOff ElementListOpt "]" LexPopIn { $$ = CYNew CYArray($3); }
     ;
@@ -794,19 +800,26 @@ ElementListOpt
     ;
 /* }}} */
 /* 11.1.4.2 Array Comprehension {{{ */
-PrimaryExpression
-    : "[" LexPushInOff AssignmentExpression ComprehensionForList "]" LexPopIn { $$ = CYNew CYArrayComprehension($3, $4); }
+ArrayComprehension
+    : "[" LexPushInOff Comprehension "]" LexPopIn { $$ = $3; }
     ;
 
-ComprehensionForList
-    : "for" Binding "in" Expression ComprehensionForListOpt { $$ = CYNew CYForInComprehension($2, $4, $5); }
-    | "for" Binding "of" Expression ComprehensionForListOpt { $$ = CYNew CYForOfComprehension($2, $4, $5); }
+Comprehension
+    : LexSetRegExp ComprehensionFor ComprehensionTail AssignmentExpression { $$ = CYNew CYArrayComprehension($4, $2->Modify($3)); }
     ;
 
-ComprehensionForListOpt
-    : ComprehensionForList { $$ = $1; }
-    | "if" Expression { $$ = CYNew CYIfComprehension($2); }
-    | { $$ = NULL; }
+ComprehensionTail
+    : { $$ = NULL; }
+    | ComprehensionFor ComprehensionTail { $$ = $1->Modify($2); }
+    | ComprehensionIf ComprehensionTail { $$ = $1->Modify($2); }
+    ;
+
+ComprehensionFor
+    : "for" "(" Binding "of" Expression ")" { $$ = CYNew CYForOfComprehension($3, $5); }
+    ;
+
+ComprehensionIf
+    : "if" "(" AssignmentExpression ")" { $$ = CYNew CYIfComprehension($3); }
     ;
 /* }}} */
 /* 11.1.5 Object Initialiser {{{ */
@@ -1849,27 +1862,13 @@ Statement__
 @end
 
 /* JavaScript 1.7: Array Comprehensions {{{ */
-IfComprehension
-    : "if" "(" Expression ")" { $$ = CYNew CYIfComprehension($3); }
+Comprehension
+    : AssignmentExpression ComprehensionFor ComprehensionTail { $$ = CYNew CYArrayComprehension($1, $2->Modify($3)); }
     ;
 
-ForComprehension
-    : "for" "(" Identifier "in" Expression ")" { $$ = CYNew CYForInComprehension($3, $5); }
-    | "for" "each" "(" Identifier "in" Expression ")" { $$ = CYNew CYForOfComprehension($4, $6); }
-    ;
-
-ComprehensionList
-    : ForComprehension ComprehensionListOpt { $1->SetNext($2); $$ = $1; }
-    ;
-
-ComprehensionListOpt
-    : ComprehensionList { $$ = $1; }
-    | IfComprehension { $$ = $1; }
-    | { $$ = NULL; }
-    ;
-
-PrimaryExpression
-    : "[" LexPushInOff AssignmentExpression ComprehensionList "]" LexPopIn { $$ = CYNew CYArrayComprehension($3, $4); }
+ComprehensionFor
+    : "for" "(" Binding "in" Expression ")" { $$ = CYNew CYForInComprehension($3, $5); }
+    | "for" "each" "(" Binding "in" Expression ")" { $$ = CYNew CYForOfComprehension($4, $6); }
     ;
 /* }}} */
 /* JavaScript 1.7: for each {{{ */

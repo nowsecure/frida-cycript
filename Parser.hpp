@@ -616,6 +616,11 @@ struct CYComprehension :
     {
     }
 
+    CYComprehension *Modify(CYComprehension *next) {
+        next_ = next;
+        return this;
+    }
+
     virtual const char *Name() const = 0;
 
     virtual CYFunctionParameter *Parameter(CYContext &context) const = 0;
@@ -673,7 +678,8 @@ struct CYIfComprehension :
 {
     CYExpression *test_;
 
-    CYIfComprehension(CYExpression *test) :
+    CYIfComprehension(CYExpression *test, CYComprehension *next = NULL) :
+        CYComprehension(next),
         test_(test)
     {
     }
