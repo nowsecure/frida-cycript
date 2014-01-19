@@ -33,6 +33,7 @@ namespace hi { enum Value {
     Meta,
     Nothing,
     Operator,
+    Special,
     Structure,
     Type,
 }; }

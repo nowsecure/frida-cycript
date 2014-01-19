@@ -79,6 +79,7 @@ void CYLexerHighlight(const char *data, size_t size, std::ostream &output, bool 
             case hi::Meta: color = CYColor(false, 32); break;
             case hi::Nothing: color = CYColor(false, 0); break;
             case hi::Operator: color = CYColor(false, 36); break;
+            case hi::Special: color = CYColor(false, 35); break;
             case hi::Structure: color = CYColor(true, 34); break;
             case hi::Type: color = CYColor(true, 34); break;
 

@@ -266,7 +266,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "@encode"         L C F(tk::AtEncode, hi::Meta);
 "@end"            L C F(tk::AtEnd, hi::Meta);
 "@implementation" L C F(yyextra->no_.AtImplementation ? tk::AtImplementation_ : tk::AtImplementation, hi::Meta);
-"@import"         L C F(tk::AtImport, hi::Meta);
+"@import"         L C F(tk::AtImport, hi::Special);
 "@selector"       L C F(tk::AtSelector, hi::Meta);
 
 "NULL"         L C I(identifier, Identifier("NULL"), tk::Identifier_, hi::Constant);
