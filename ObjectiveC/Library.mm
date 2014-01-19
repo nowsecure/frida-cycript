@@ -2493,7 +2493,7 @@ static JSValueRef Message_callAsFunction(JSContextRef context, JSObjectRef objec
 
 static JSObjectRef Super_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 2)
-        throw CYJSError(context, "incorrect number of arguments to Super constructor");
+        throw CYJSError(context, "incorrect number of arguments to objc_super constructor");
     CYPool pool;
     id self(CYCastNSObject(&pool, context, arguments[0]));
     Class _class(CYCastClass(pool, context, arguments[1]));
@@ -2960,7 +2960,7 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
 
     CYSetProperty(context, cycript, CYJSString("Instance"), Instance);
     CYSetProperty(context, cycript, CYJSString("Selector"), Selector);
-    CYSetProperty(context, cycript, CYJSString("Super"), Super);
+    CYSetProperty(context, cycript, CYJSString("objc_super"), Super);
 
     JSObjectRef box(JSObjectMakeFunctionWithCallback(context, CYJSString("box"), &Instance_box_callAsFunction));
     CYSetProperty(context, Instance, CYJSString("box"), box);
