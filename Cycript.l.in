@@ -276,6 +276,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "bool"         L C I(identifier, Identifier("bool"), tk::Identifier_, hi::Type);
 "BOOL"         L C I(identifier, Identifier("BOOL"), tk::Identifier_, hi::Type);
 "id"           L C I(identifier, Identifier("id"), tk::Identifier_, hi::Type);
+"SEL"          L C I(identifier, Identifier("SEL"), tk::Identifier_, hi::Type);
 @end
 
 "undefined"    L C I(identifier, Identifier("undefined"), tk::Identifier_, hi::Operator);
