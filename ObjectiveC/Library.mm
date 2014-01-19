@@ -1111,6 +1111,19 @@ NSObject *CYCopyNSObject(CYPool &pool, JSContextRef context, JSValueRef value) {
 
 @end
 /* }}} */
+/* Bridge: NSSet {{{ */
+@implementation NSSet (Cycript)
+
+- (NSString *) cy$toCYON:(bool)objective {
+    NSMutableString *json([[[NSMutableString alloc] init] autorelease]);
+    [json appendString:@"[NSSet setWithArray:"];
+    [json appendString:CYCastNSCYON([self allObjects], true)];
+    [json appendString:@"]]"];
+    return json;
+}
+
+@end
+/* }}} */
 /* Bridge: NSString {{{ */
 @implementation NSString (Cycript)
 
