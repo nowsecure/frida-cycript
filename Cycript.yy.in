@@ -160,6 +160,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 
 @begin E4X ObjectiveC
 %token At "@"
+%token Pound "#"
 @end
 
 %token Ampersand "&"

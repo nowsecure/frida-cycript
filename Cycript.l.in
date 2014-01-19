@@ -193,6 +193,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
 @begin E4X ObjectiveC
 "@"    L C F(tk::At, hi::Operator);
+"#"    L C F(tk::Pound, hi::Operator);
 @end
 
 "&"    L C F(tk::Ampersand, hi::Operator);
