@@ -39,6 +39,7 @@
 
 extern JSStringRef Array_s;
 extern JSStringRef cy_s;
+extern JSStringRef cyi_s;
 extern JSStringRef length_s;
 extern JSStringRef message_s;
 extern JSStringRef name_s;

@@ -127,6 +127,7 @@ static JSClassRef Struct_;
 
 JSStringRef Array_s;
 JSStringRef cy_s;
+JSStringRef cyi_s;
 JSStringRef length_s;
 JSStringRef message_s;
 JSStringRef name_s;
@@ -1244,7 +1245,10 @@ static JSValueRef Pointer_callAsFunction_toCYON(JSContextRef context, JSObjectRe
         JSObjectRef Array(CYGetCachedObject(context, CYJSString("Array_prototype")));
         JSObjectRef toCYON(CYCastJSObject(context, CYGetProperty(context, Array, toCYON_s)));
         return CYCallAsFunction(context, toCYON, _this, count, arguments);
-    } else {
+    } else try {
+        CYPool pool;
+        return CYCastJSValue(context, pool.strcat("&", CYPoolCCYON(pool, context, CYGetProperty(context, _this, cyi_s)), NULL));
+    } catch (const CYException &e) {
         char string[32];
         sprintf(string, "%p", internal->value_);
         return CYCastJSValue(context, string);
@@ -1473,6 +1477,7 @@ void CYInitializeDynamic() {
 
     Array_s = JSStringCreateWithUTF8CString("Array");
     cy_s = JSStringCreateWithUTF8CString("$cy");
+    cyi_s = JSStringCreateWithUTF8CString("$cyi");
     length_s = JSStringCreateWithUTF8CString("length");
     message_s = JSStringCreateWithUTF8CString("message");
     name_s = JSStringCreateWithUTF8CString("name");
