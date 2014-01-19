@@ -587,6 +587,7 @@ static void Console(CYOptions &options) {
         history += command_;
 
         if (debug) {
+            std::cout << "cy= ";
             Write(syntax, code.c_str(), code.size(), std::cout);
             std::cout << std::endl;
         }
