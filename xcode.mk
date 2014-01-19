@@ -126,7 +126,7 @@ Cycript_/%.dylib: build.mac-i386/.libs/%.dylib build.mac-x86_64/.libs/%.dylib bu
 	install_name_tool -change /System/Library/{,Private}Frameworks/JavaScriptCore.framework/JavaScriptCore $@
 	codesign -s $(codesign) --entitlement cycript-$(word 2,$(subst ., ,$(subst -, ,$*))).xml $@
 
-Cycript_/%_: build.mac-i386/.libs/%_ build.mac-x86_64/.libs/%_ build.ios-armv6/.libs/%_
+Cycript_/cycript_: build.mac-i386/.libs/cycript_ build.mac-x86_64/.libs/cycript_ build.ios-armv6/.libs/cycript_
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
 
