@@ -342,8 +342,13 @@ static JSValueRef $cyq(JSContextRef context, JSObjectRef object, JSObjectRef _th
     return CYCastJSValue(context, name);
 } CYCatch(NULL) }
 
-static JSValueRef Cycript_gc_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+
+void CYGarbageCollect(JSContextRef context) {
     JSGarbageCollect(context);
+}
+
+static JSValueRef Cycript_gc_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    CYGarbageCollect(context);
     return CYJSUndefined(context);
 } CYCatch(NULL) }
 

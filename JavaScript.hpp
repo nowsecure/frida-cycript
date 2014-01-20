@@ -143,6 +143,7 @@ JSStringRef CYCopyJSString(JSStringRef value);
 JSStringRef CYCopyJSString(CYUTF8String value);
 JSStringRef CYCopyJSString(JSContextRef context, JSValueRef value);
 
+void CYGarbageCollect(JSContextRef context);
 void CYDestroyContext();
 
 class CYJSString {
