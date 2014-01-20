@@ -823,9 +823,9 @@ static JSValueRef Pointer_getProperty(JSContextRef context, JSObjectRef object, 
         return internal->length_ == _not(size_t) ? CYJSUndefined(context) : CYCastJSValue(context, internal->length_);
 
     Type_privateData *typical(internal->type_);
-
     if (typical->type_ == NULL)
         return NULL;
+    sig::Type &type(*typical->type_);
 
     ssize_t offset;
     if (JSStringIsEqualToUTF8CString(property, "$cyi"))
@@ -833,13 +833,16 @@ static JSValueRef Pointer_getProperty(JSContextRef context, JSObjectRef object, 
     else if (!CYGetOffset(pool, context, property, offset))
         return NULL;
 
+    if (type.primitive == sig::function_P)
+        return CYMakeFunctor(context, reinterpret_cast<void (*)()>(internal->value_), type.data.signature);
+
     ffi_type *ffi(typical->GetFFI());
 
     uint8_t *base(reinterpret_cast<uint8_t *>(internal->value_));
     base += ffi->size * offset;
 
     JSObjectRef owner(internal->GetOwner() ?: object);
-    return CYFromFFI(context, typical->type_, ffi, base, false, owner);
+    return CYFromFFI(context, &type, ffi, base, false, owner);
 } CYCatch(NULL) }
 
 static bool Pointer_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) { CYTry {
