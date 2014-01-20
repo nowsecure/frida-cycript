@@ -2305,6 +2305,8 @@ static JSValueRef choose(JSContextRef context, JSObjectRef object, JSObjectRef _
     if (count != 1)
         throw CYJSError(context, "choose() takes a class argument");
 
+    CYGarbageCollect(context);
+
     CYPool pool;
     Class _class(CYCastNSObject(&pool, context, arguments[0]));
 
