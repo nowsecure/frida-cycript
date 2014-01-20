@@ -1248,13 +1248,18 @@ static JSValueRef Pointer_callAsFunction_toCYON(JSContextRef context, JSObjectRe
         JSObjectRef Array(CYGetCachedObject(context, CYJSString("Array_prototype")));
         JSObjectRef toCYON(CYCastJSObject(context, CYGetProperty(context, Array, toCYON_s)));
         return CYCallAsFunction(context, toCYON, _this, count, arguments);
-    } else try {
-        CYPool pool;
-        return CYCastJSValue(context, pool.strcat("&", CYPoolCCYON(pool, context, CYGetProperty(context, _this, cyi_s)), NULL));
-    } catch (const CYException &e) {
+    } else if (internal->type_->type_ == NULL) pointer: {
         char string[32];
         sprintf(string, "%p", internal->value_);
         return CYCastJSValue(context, string);
+    } try {
+        JSValueRef value(CYGetProperty(context, _this, cyi_s));
+        if (JSValueIsUndefined(context, value))
+            goto pointer;
+        CYPool pool;
+        return CYCastJSValue(context, pool.strcat("&", CYPoolCCYON(pool, context, value), NULL));
+    } catch (const CYException &e) {
+        goto pointer;
     }
 } CYCatch(NULL) }
 
