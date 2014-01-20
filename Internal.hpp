@@ -85,8 +85,6 @@ struct Type_privateData :
 
     ffi_type *GetFFI() {
         if (ffi_ == NULL) {
-            ffi_ = new(*pool_) ffi_type;
-
             sig::Element element;
             element.name = NULL;
             element.type = type_;
@@ -98,6 +96,8 @@ struct Type_privateData :
 
             ffi_cif cif;
             sig::sig_ffi_cif(*pool_, &sig::ObjectiveC, &signature, &cif);
+
+            ffi_ = new(*pool_) ffi_type;
             *ffi_ = *cif.rtype;
         }
 
