@@ -1019,6 +1019,7 @@ LogicalORExpression
 ConditionalExpression
     : LogicalORExpression { $$ = $1; }
     | LogicalORExpression "?" LexPushInOff AssignmentExpression ":" LexPopIn AssignmentExpression { $$ = CYNew CYCondition($1, $4, $7); }
+    | LogicalORExpression "?" LexPushInOff LexSetRegExp ":" LexPopIn AssignmentExpression { $$ = CYNew CYCondition($1, $1, $7); }
     ;
 /* }}} */
 /* 11.13 Assignment Operators {{{ */
