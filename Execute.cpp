@@ -1393,19 +1393,33 @@ JSObjectRef CYGetGlobalObject(JSContextRef context) {
     return JSContextGetGlobalObject(context);
 }
 
+class ExecutionHandle {
+  private:
+    JSContextRef context_;
+    void *handle_;
+
+  public:
+    ExecutionHandle(JSContextRef context) :
+        context_(context)
+    {
+        if (hooks_ != NULL && hooks_->ExecuteStart != NULL)
+            handle_ = (*hooks_->ExecuteStart)(context_);
+        else
+            handle_ = NULL;
+    }
+
+    ~ExecutionHandle() {
+        if (hooks_ != NULL && hooks_->ExecuteEnd != NULL)
+            (*hooks_->ExecuteEnd)(context_, handle_);
+    }
+};
+
 const char *CYExecute(JSContextRef context, CYPool &pool, CYUTF8String code) {
     JSValueRef exception(NULL);
 
-    void *handle;
-    if (hooks_ != NULL && hooks_->ExecuteStart != NULL)
-        handle = (*hooks_->ExecuteStart)(context);
-    else
-        handle = NULL;
+    ExecutionHandle handle(context);
 
-    try {
-
-    JSValueRef result;
-    try {
+    JSValueRef result; try {
         result = JSEvaluateScript(context, CYJSString(code), NULL, NULL, 0, &exception);
     } catch (const char *error) {
         return error;
@@ -1417,8 +1431,7 @@ const char *CYExecute(JSContextRef context, CYPool &pool, CYUTF8String code) {
     if (JSValueIsUndefined(context, result))
         return NULL;
 
-    const char *json;
-    try {
+    const char *json; try {
         json = CYPoolCCYON(pool, context, result, &exception);
     } catch (const char *error) {
         return error;
@@ -1430,12 +1443,6 @@ const char *CYExecute(JSContextRef context, CYPool &pool, CYUTF8String code) {
     CYSetProperty(context, CYGetGlobalObject(context), Result_, result);
 
     return json;
-
-    } catch (...) {
-        if (hooks_ != NULL && hooks_->ExecuteEnd != NULL)
-            (*hooks_->ExecuteEnd)(context, handle);
-        throw;
-    }
 }
 
 static bool initialized_ = false;
