@@ -81,6 +81,11 @@ void CYImport::Output(CYOutput &out, CYFlags flags) const {
     out << "@import";
 }
 
+void CYInstanceLiteral::Output(CYOutput &out, CYFlags flags) const {
+    out << '#';
+    number_->Output(out, CYRight(flags));
+}
+
 void CYMessage::Output(CYOutput &out, bool replace) const {
     out << (instance_ ? '-' : '+');
 

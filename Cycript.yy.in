@@ -1634,6 +1634,11 @@ PrimaryExpression
     : "^" ModifiedType "(" LexPushInOff TypedParameterListOpt ")" LexPopIn BRACE LexPushInOff FunctionBody "}" LexPopIn { $$ = CYNew CYObjCBlock($2, $5, $10); }
     ;
 /* }}} */
+/* Cycript (Objective-C): Instance Literals {{{ */
+PrimaryExpression
+    : "#" NumericLiteral { $$ = CYNew CYInstanceLiteral($2); }
+    ;
+/* }}} */
 @end
 
 @begin C

@@ -24,6 +24,22 @@
 
 #include "Parser.hpp"
 
+struct CYInstanceLiteral :
+    CYExpression
+{
+    CYNumber *number_;
+
+    CYInstanceLiteral(CYNumber *number) :
+        number_(number)
+    {
+    }
+
+    CYPrecedence(1)
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
 struct CYObjCBlock :
     CYExpression
 {

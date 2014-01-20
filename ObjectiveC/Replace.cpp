@@ -96,6 +96,10 @@ CYStatement *CYImport::Replace(CYContext &context) {
     return $ CYVar($L1($L(module_->part_->Word(), $C1($V("require"), module_->Replace(context, "/")))));
 }
 
+CYExpression *CYInstanceLiteral::Replace(CYContext &context) {
+    return $N1($V("Instance"), number_);
+}
+
 CYStatement *CYMessage::Replace(CYContext &context, bool replace) const { $T(NULL)
     CYVariable *cyn($V("$cyn"));
     CYVariable *cyt($V("$cyt"));
