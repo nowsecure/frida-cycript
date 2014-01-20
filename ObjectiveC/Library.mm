@@ -391,9 +391,7 @@ JSObjectRef Instance::Make(JSContextRef context, id object, Flags flags) {
 
 Instance::~Instance() {
     if ((flags_ & Transient) == 0)
-        // XXX: does this handle background threads correctly?
-        // XXX: this simply does not work on the console because I'm stupid
-        [GetValue() performSelector:@selector(release) withObject:nil afterDelay:0];
+        [GetValue() release];
 }
 
 struct Message_privateData :
