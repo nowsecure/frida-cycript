@@ -1763,10 +1763,10 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     CYRunSetups(context);
 }
 
+static JSGlobalContextRef context_;
+
 JSGlobalContextRef CYGetJSContext() {
     CYInitializeDynamic();
-
-    static JSGlobalContextRef context_;
 
     if (context_ == NULL) {
         context_ = JSGlobalContextCreate(Global_);
@@ -1774,4 +1774,11 @@ JSGlobalContextRef CYGetJSContext() {
     }
 
     return context_;
+}
+
+void CYDestroyContext() {
+    if (context_ == NULL)
+        return;
+    JSGlobalContextRelease(context_);
+    context_ = NULL;
 }
