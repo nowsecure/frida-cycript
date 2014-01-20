@@ -1255,6 +1255,11 @@ static JSValueRef Pointer_callAsFunction_toCYON(JSContextRef context, JSObjectRe
     }
 } CYCatch(NULL) }
 
+static JSValueRef Pointer_getProperty_type(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
+    Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(object)));
+    return CYMakeType(context, internal->type_->type_);
+} CYCatch(NULL) }
+
 static JSValueRef Functor_getProperty_type(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     cy::Functor *internal(reinterpret_cast<cy::Functor *>(JSObjectGetPrivate(object)));
     return CYMakeType(context, &internal->signature_);
@@ -1301,6 +1306,11 @@ static JSStaticFunction Pointer_staticFunctions[4] = {
     {"toJSON", &CYValue_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"valueOf", &CYValue_callAsFunction_valueOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
+};
+
+static JSStaticValue Pointer_staticValues[2] = {
+    {"type", &Pointer_getProperty_type, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {NULL, NULL, NULL, 0}
 };
 
 static JSStaticFunction Struct_staticFunctions[2] = {
@@ -1447,6 +1457,7 @@ void CYInitializeDynamic() {
     definition = kJSClassDefinitionEmpty;
     definition.className = "Pointer";
     definition.staticFunctions = Pointer_staticFunctions;
+    definition.staticValues = Pointer_staticValues;
     definition.getProperty = &Pointer_getProperty;
     definition.setProperty = &Pointer_setProperty;
     definition.finalize = &CYFinalize;
