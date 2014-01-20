@@ -342,9 +342,10 @@ static JSValueRef $cyq(JSContextRef context, JSObjectRef object, JSObjectRef _th
     return CYCastJSValue(context, name);
 } CYCatch(NULL) }
 
+static void (*JSSynchronousGarbageCollectForDebugging$)(JSContextRef);
 
 void CYGarbageCollect(JSContextRef context) {
-    JSGarbageCollect(context);
+    (JSSynchronousGarbageCollectForDebugging$ ?: &JSGarbageCollect)(context);
 }
 
 static JSValueRef Cycript_gc_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -1445,6 +1446,7 @@ void CYInitializeDynamic() {
     else return;
 
     JSObjectMakeArray$ = reinterpret_cast<JSObjectRef (*)(JSContextRef, size_t, const JSValueRef[], JSValueRef *)>(dlsym(RTLD_DEFAULT, "JSObjectMakeArray"));
+    JSSynchronousGarbageCollectForDebugging$ = reinterpret_cast<void (*)(JSContextRef)>(dlsym(RTLD_DEFAULT, "JSSynchronousGarbageCollectForDebugging"));
 
     JSClassDefinition definition;
 
