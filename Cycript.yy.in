@@ -1449,7 +1449,7 @@ IntegerType
 
 IntegerTypeOpt
     : IntegerType { $$ = $1; }
-    |
+    | { $$ = CYNew CYTypeVariable("int"); }
     ;
 
 PrimitiveType
