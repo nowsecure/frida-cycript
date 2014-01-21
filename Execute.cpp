@@ -152,7 +152,6 @@ void CYFinalize(JSObjectRef object) {
 void Structor_(CYPool &pool, sig::Type *&type) {
     if (
         type->primitive == sig::pointer_P &&
-        type->data.data.type != NULL &&
         type->data.data.type->primitive == sig::struct_P &&
         type->data.data.type->name != NULL &&
         strcmp(type->data.data.type->name, "_objc_class") == 0

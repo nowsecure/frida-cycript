@@ -73,8 +73,9 @@ struct Type_privateData :
     Type_privateData(sig::Type *type) :
         ffi_(NULL)
     {
-        if (type != NULL)
-            Set(type);
+        // XXX: just in case I messed up migrating
+        _assert(type != NULL);
+        Set(type);
     }
 
     Type_privateData(sig::Type *type, ffi_type *ffi) {

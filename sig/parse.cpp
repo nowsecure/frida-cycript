@@ -149,14 +149,11 @@ Type *Parse_(CYPool &pool, const char **name, char eos, bool named, Callback cal
 
         case '^':
             type->primitive = pointer_P;
-            if (**name == '"') {
+            if (**name == '"')
+                // XXX: why is this here?
                 type->data.data.type = NULL;
-            } else {
+            else
                 type->data.data.type = Parse_(pool, name, eos, named, callback);
-                sig::Type *&target(type->data.data.type);
-                if (target != NULL && target->primitive == void_P)
-                    target = NULL;
-            }
         break;
 
         case 'b':
@@ -280,9 +277,9 @@ const char *Unparse_(CYPool &pool, struct Type *type) {
         } break;
 
         case pointer_P: {
-            if (type->data.data.type == NULL)
-                return "^v";
-            else if (type->data.data.type->primitive == function_P)
+            // XXX: protect against the weird '"' check in Parse_
+            _assert(type->data.data.type != NULL);
+            if (type->data.data.type->primitive == function_P)
                 return "^?";
             else
                 return pool.strcat("^", Unparse(pool, type->data.data.type), NULL);

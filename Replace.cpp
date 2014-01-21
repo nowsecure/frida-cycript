@@ -951,7 +951,7 @@ CYFunctionParameter *CYTypedParameter::Parameters(CYContext &context) { $T(NULL)
 }
 
 CYExpression *CYTypedParameter::TypeSignature(CYContext &context, CYExpression *prefix) { $T(prefix)
-    return next_->TypeSignature(context, $ CYAdd(prefix, typed_->specifier_->Replace(context)));
+    return next_->TypeSignature(context, $ CYAdd(prefix, typed_->Replace(context)));
 }
 
 CYStatement *CYVar::Replace(CYContext &context) {
