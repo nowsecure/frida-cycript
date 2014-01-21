@@ -1685,7 +1685,7 @@ static JSValueRef require(JSContextRef context, JSObjectRef object, JSObjectRef 
     CYJSString property("exports");
     JSObjectRef module;
 
-    const char *path(pool.strcat(lib, "/cycript/", CYPoolCString(pool, context, arguments[0]), ".cy", NULL));
+    const char *path(pool.strcat(lib, "/cycript0.9/", CYPoolCString(pool, context, arguments[0]), ".cy", NULL));
     CYJSString key(path);
     JSObjectRef modules(CYGetCachedObject(context, CYJSString("modules")));
     JSValueRef cache(CYGetProperty(context, modules, key));

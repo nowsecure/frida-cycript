@@ -28,7 +28,8 @@ version := $(shell git describe --always --tags --dirty="+" --match="v*" | sed -
 deb := cycript_$(version)_iphoneos-arm.deb
 
 cycript := 
-cycript += Cycript.lib/cycript_
+cycript += Cycript.lib/cycript
+cycript += Cycript.lib/cycript0.9
 cycript += Cycript.lib/libcycript.dylib
 cycript += Cycript.lib/libcycript-any.dylib
 cycript += Cycript.lib/libcycript-sys.dylib
@@ -38,20 +39,26 @@ framework :=
 framework += Cycript.framework/Cycript
 framework += Cycript.framework/Headers/Cycript.h
 
+links := 
+links += Cycript.lib/libsubstrate.dylib
+links += Cycript.lib/cycript0.9
+
 all: cycript $(cycript) $(framework)
 
 cycript.zip: all
 	rm -f $@
-	zip -r9y $@ cycript Cycript.lib Cycript.framework
+	zip -r9y $@ cycript Cycript.lib Cycript.framework $(patsubst %,--exclude %,$(links))
+	zip -r9 $@ $(links)
 
 package: cycript.zip
 
-$(deb): Cycript.lib/cycript_ Cycript.lib/libcycript.dylib
+$(deb): Cycript.lib/cycript Cycript.lib/libcycript.dylib
 	rm -rf package
 	mkdir -p package/DEBIAN
 	sed -e 's/#/$(version)/' control.in >package/DEBIAN/control
 	mkdir -p package/usr/{bin,lib}
-	$(lipo) -extract armv6 -output package/usr/bin/cycript Cycript.lib/cycript_
+	cp -a modules package/usr/lib/cycript0.9
+	$(lipo) -extract armv6 -output package/usr/bin/cycript Cycript.lib/cycript
 	$(lipo) -extract armv6 -extract arm64 -output package/usr/lib/libcycript.dylib Cycript.lib/libcycript.dylib
 	ln -s libcycript.dylib package/usr/lib/libcycript.0.dylib
 	dpkg-deb -Zlzma -b package $@
@@ -126,7 +133,7 @@ Cycript.lib/%.dylib: build.mac-i386/.libs/%.dylib build.mac-x86_64/.libs/%.dylib
 	install_name_tool -change /System/Library/{,Private}Frameworks/JavaScriptCore.framework/JavaScriptCore $@
 	codesign -s $(codesign) --entitlement cycript-$(word 2,$(subst ., ,$(subst -, ,$*))).xml $@
 
-Cycript.lib/cycript_: build.mac-i386/.libs/cycript_ build.mac-x86_64/.libs/cycript_ build.ios-armv6/.libs/cycript_
+Cycript.lib/%: build.mac-i386/.libs/%_ build.mac-x86_64/.libs/%_ build.ios-armv6/.libs/%_
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
 
@@ -153,6 +160,10 @@ Cycript.framework/Cycript: libcycript.o
 Cycript.framework/Headers/Cycript.h: Cycript.h
 	@mkdir -p $(dir $@)
 	cp -a $< $@
+
+Cycript.lib/cycript0.9:
+	@mkdir -p $(dir $@)
+	ln -s ../modules $@
 
 cycript: cycript.in
 	cp -af $< $@
