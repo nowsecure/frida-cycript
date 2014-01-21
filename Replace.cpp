@@ -533,6 +533,19 @@ CYStatement *CYLetStatement::Replace(CYContext &context) {
     return $E($ CYCall(CYNonLocalize(context, $ CYFunctionExpression(NULL, declarations_->Parameter(context), code_)), declarations_->Argument(context)));
 }
 
+CYExpression *CYMultiply::Replace(CYContext &context) {
+    CYInfix::Replace(context);
+
+    CYExpression *lhp(lhs_->Primitive(context));
+    CYExpression *rhp(rhs_->Primitive(context));
+
+    if (CYNumber *lhn = lhp->Number(context))
+        if (CYNumber *rhn = rhp->Number(context))
+            return $D(lhn->Value() * rhn->Value());
+
+    return this;
+}
+
 namespace cy {
 namespace Syntax {
 

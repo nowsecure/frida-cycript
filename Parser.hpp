@@ -2043,7 +2043,7 @@ CYPrefix_(false, "-", Negate)
 CYPrefix_(false, "~", BitwiseNot)
 CYPrefix_(false, "!", LogicalNot)
 
-CYInfix_(false, 5, "*", Multiply)
+CYInfix_(false, 5, "*", Multiply, CYReplace)
 CYInfix_(false, 5, "/", Divide)
 CYInfix_(false, 5, "%", Modulus)
 CYInfix_(false, 6, "+", Add, CYReplace)
