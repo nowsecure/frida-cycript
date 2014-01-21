@@ -906,8 +906,32 @@ CYExpression *CYTypeFunctionWith::Replace_(CYContext &context, CYExpression *typ
     return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("functionWith")), parameters_->Argument(context)));
 }
 
+CYExpression *CYTypeLong::Replace(CYContext &context) {
+    return $ CYCall($ CYDirectMember(specifier_->Replace(context), $ CYString("long")));
+}
+
 CYExpression *CYTypePointerTo::Replace_(CYContext &context, CYExpression *type) {
     return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("pointerTo"))));
+}
+
+CYExpression *CYTypeShort::Replace(CYContext &context) {
+    return $ CYCall($ CYDirectMember(specifier_->Replace(context), $ CYString("short")));
+}
+
+CYExpression *CYTypeSigned::Replace(CYContext &context) {
+    return $ CYCall($ CYDirectMember(specifier_->Replace(context), $ CYString("signed")));
+}
+
+CYExpression *CYTypeUnsigned::Replace(CYContext &context) {
+    return $ CYCall($ CYDirectMember(specifier_->Replace(context), $ CYString("unsigned")));
+}
+
+CYExpression *CYTypeVariable::Replace(CYContext &context) {
+    return $V(name_);
+}
+
+CYExpression *CYTypeVoid::Replace(CYContext &context) {
+    return $N1($V("Type"), $ CYString("v"));
 }
 
 CYExpression *CYTypeVolatile::Replace_(CYContext &context, CYExpression *type) {
@@ -915,7 +939,7 @@ CYExpression *CYTypeVolatile::Replace_(CYContext &context, CYExpression *type) {
 }
 
 CYExpression *CYTypedIdentifier::Replace(CYContext &context) {
-    return modifier_->Replace(context, type_);
+    return modifier_->Replace(context, specifier_->Replace(context));
 }
 
 CYArgument *CYTypedParameter::Argument(CYContext &context) { $T(NULL)
@@ -927,7 +951,7 @@ CYFunctionParameter *CYTypedParameter::Parameters(CYContext &context) { $T(NULL)
 }
 
 CYExpression *CYTypedParameter::TypeSignature(CYContext &context, CYExpression *prefix) { $T(prefix)
-    return next_->TypeSignature(context, $ CYAdd(prefix, typed_->type_->Replace(context)));
+    return next_->TypeSignature(context, $ CYAdd(prefix, typed_->specifier_->Replace(context)));
 }
 
 CYStatement *CYVar::Replace(CYContext &context) {

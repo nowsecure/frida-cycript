@@ -1606,6 +1606,97 @@ struct CYFinally :
     virtual void Output(CYOutput &out) const;
 };
 
+struct CYTypeSpecifier :
+    CYThing
+{
+    virtual CYExpression *Replace(CYContext &context) = 0;
+};
+
+struct CYTypeVoid :
+    CYTypeSpecifier
+{
+    CYTypeVoid() {
+    }
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out) const;
+};
+
+struct CYTypeVariable :
+    CYTypeSpecifier
+{
+    CYIdentifier *name_;
+
+    CYTypeVariable(CYIdentifier *name) :
+        name_(name)
+    {
+    }
+
+    CYTypeVariable(const char *name) :
+        name_(new($pool) CYIdentifier(name))
+    {
+    }
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out) const;
+};
+
+struct CYTypeUnsigned :
+    CYTypeSpecifier
+{
+    CYTypeSpecifier *specifier_;
+
+    CYTypeUnsigned(CYTypeSpecifier *specifier) :
+        specifier_(specifier)
+    {
+    }
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out) const;
+};
+
+struct CYTypeSigned :
+    CYTypeSpecifier
+{
+    CYTypeSpecifier *specifier_;
+
+    CYTypeSigned(CYTypeSpecifier *specifier) :
+        specifier_(specifier)
+    {
+    }
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out) const;
+};
+
+struct CYTypeLong :
+    CYTypeSpecifier
+{
+    CYTypeSpecifier *specifier_;
+
+    CYTypeLong(CYTypeSpecifier *specifier) :
+        specifier_(specifier)
+    {
+    }
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out) const;
+};
+
+struct CYTypeShort :
+    CYTypeSpecifier
+{
+    CYTypeSpecifier *specifier_;
+
+    CYTypeShort(CYTypeSpecifier *specifier) :
+        specifier_(specifier)
+    {
+    }
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out) const;
+};
+
 struct CYTypeModifier :
     CYNext<CYTypeModifier>
 {
@@ -1687,19 +1778,19 @@ struct CYTypedIdentifier :
     CYThing
 {
     CYIdentifier *identifier_;
-    CYExpression *type_;
+    CYTypeSpecifier *specifier_;
     CYTypeModifier *modifier_;
 
     CYTypedIdentifier(CYIdentifier *identifier = NULL) :
         identifier_(identifier),
-        type_(NULL),
+        specifier_(NULL),
         modifier_(NULL)
     {
     }
 
-    CYTypedIdentifier(CYExpression *type, CYTypeModifier *modifier = NULL) :
+    CYTypedIdentifier(CYTypeSpecifier *specifier, CYTypeModifier *modifier = NULL) :
         identifier_(NULL),
-        type_(type),
+        specifier_(specifier),
         modifier_(modifier)
     {
     }

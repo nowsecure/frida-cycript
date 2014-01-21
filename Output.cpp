@@ -523,7 +523,7 @@ void CYTypeModifier::Output(CYOutput &out, int precedence, CYIdentifier *identif
 }
 
 void CYTypedIdentifier::Output(CYOutput &out) const {
-    type_->Output(out, 0, CYNoFlags);
+    specifier_->Output(out);
     modifier_->Output(out, 0, identifier_);
 }
 
@@ -747,6 +747,30 @@ void Try::Output(CYOutput &out, CYFlags flags) const {
 }
 
 } }
+
+void CYTypeLong::Output(CYOutput &out) const {
+    out << "long" << specifier_;
+}
+
+void CYTypeShort::Output(CYOutput &out) const {
+    out << "short" << specifier_;
+}
+
+void CYTypeSigned::Output(CYOutput &out) const {
+    out << "signed" << specifier_;
+}
+
+void CYTypeUnsigned::Output(CYOutput &out) const {
+    out << "unsigned" << specifier_;
+}
+
+void CYTypeVariable::Output(CYOutput &out) const {
+    out << *name_;
+}
+
+void CYTypeVoid::Output(CYOutput &out) const {
+    out << "void";
+}
 
 void CYVar::Output(CYOutput &out, CYFlags flags) const {
     out << "var";

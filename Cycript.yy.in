@@ -79,6 +79,7 @@ typedef struct {
         CYProperty *property_;
         CYPropertyName *propertyName_;
         CYRubyProc *rubyProc_;
+        CYTypeSpecifier *specifier_;
         CYStatement *statement_;
         CYString *string_;
         CYThis *this_;
@@ -234,6 +235,8 @@ int cylex(YYSTYPE *, cy::location *, void *);
 
 @begin C
 %token <identifier_> Typedef "typedef"
+%token <identifier_> Unsigned "unsigned"
+%token <identifier_> Signed "signed"
 @end
 
 @begin ObjectiveC
@@ -406,6 +409,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <expression_> FunctionExpression
 %type <identifier_> Identifier
 %type <identifier_> IdentifierOpt
+%type <identifier_> IdentifierType
 %type <word_> IdentifierName
 %type <statement_> IfStatement
 %type <expression_> Initialiser
@@ -486,6 +490,8 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <protocol_> ClassProtocolsOpt
 %type <expression_> EncodedType
 %type <modifier_> FunctionedType
+%type <specifier_> IntegerType
+%type <specifier_> IntegerTypeOpt
 %type <expression_> MessageExpression
 %type <messageParameter_> MessageParameter
 %type <messageParameter_> MessageParameters
@@ -495,7 +501,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <typedIdentifier_> ModifiedType
 %type <module_> Module
 %type <typedIdentifier_> PrefixedType
-%type <expression_> PrimitiveType
+%type <specifier_> PrimitiveType
 %type <argument_> SelectorCall_
 %type <argument_> SelectorCall
 %type <selector_> SelectorExpression_
@@ -656,14 +662,8 @@ WordOpt
     | { $$ = NULL; }
     ;
 
-Identifier
+IdentifierType
     : Identifier_ { $$ = $1; }
-
-@begin C
-    | "typedef" { $$ = $1; }
-    | "YES" { $$ = $1; }
-    | "NO" { $$ = $1; }
-@end
 
     | "implements" { $$ = $1; }
     | "interface" { $$ = $1; }
@@ -676,19 +676,14 @@ Identifier
     | "abstract" { $$ = $1; }
     | "boolean" { $$ = $1; }
     | "byte" { $$ = $1; }
-    | "char" { $$ = $1; }
     | "double" { $$ = $1; }
     | "final" { $$ = $1; }
     | "float" { $$ = $1; }
     | "goto" { $$ = $1; }
-    | "int" { $$ = $1; }
-    | "long" { $$ = $1; }
     | "native" { $$ = $1; }
-    | "short" { $$ = $1; }
     | "synchronized" { $$ = $1; }
     | "throws" { $$ = $1; }
     | "transient" { $$ = $1; }
-    | "volatile" { $$ = $1; }
 
     // XXX: currently I only have this as Word
     // | "let" { $$ = $1; }
@@ -697,6 +692,22 @@ Identifier
 
     | "each" { $$ = $1; }
     | "of" { $$ = $1; }
+    ;
+
+Identifier
+    : IdentifierType
+    | "char" { $$ = $1; }
+    | "int" { $$ = $1; }
+    | "long" { $$ = $1; }
+    | "short" { $$ = $1; }
+    | "volatile" { $$ = $1; }
+@begin C
+    | "typedef" { $$ = $1; }
+    | "unsigned" { $$ = $1; }
+    | "signed" { $$ = $1; }
+    | "YES" { $$ = $1; }
+    | "NO" { $$ = $1; }
+@end
     ;
 
 IdentifierOpt
@@ -1390,7 +1401,7 @@ TypeParenthetical
     ;
 
 TypeSignifier
-    : Identifier { $$ = CYNew CYTypedIdentifier($1); }
+    : IdentifierType { $$ = CYNew CYTypedIdentifier($1); }
     | TypeParenthetical { $$ = $1; }
     ;
 
@@ -1416,24 +1427,42 @@ PrefixedType
     ;
 
 TypeQualifierLeft
-    : "const" TypeQualifierLeft { $$ = $2; CYSetLast($$) = CYNew CYTypeConstant(); }
-    /* XXX: | "volatile" TypeQualifierLeft { $$ = $2; CYSetLast($$) = CYNew CYTypeVolatile(); } */
-    | { $$ = NULL; }
+    : { $$ = NULL; }
+    | "const" TypeQualifierLeft { $$ = $2; CYSetLast($$) = CYNew CYTypeConstant(); }
+    | "volatile" TypeQualifierLeft { $$ = $2; CYSetLast($$) = CYNew CYTypeVolatile(); }
     ;
 
 TypeQualifierRight
-    : "const" TypeQualifierRight { $$ = $2; $$->modifier_ = CYNew CYTypeConstant($$->modifier_); }
-    | PrefixedType { $$ = $1; }
+    : PrefixedType { $$ = $1; }
     | SuffixedType { $$ = $1; }
+    | "const" TypeQualifierRight { $$ = $2; $$->modifier_ = CYNew CYTypeConstant($$->modifier_); }
+    | "volatile" TypeQualifierRight { $$ = $2; $$->modifier_ = CYNew CYTypeVolatile($$->modifier_); }
+    ;
+
+IntegerType
+    : "int" { $$ = CYNew CYTypeVariable("int"); }
+    | "unsigned" IntegerTypeOpt { $$ = CYNew CYTypeUnsigned($2); }
+    | "signed" IntegerTypeOpt { $$ = CYNew CYTypeSigned($2); }
+    | "long" IntegerTypeOpt { $$ = CYNew CYTypeLong($2); }
+    | "short" IntegerTypeOpt { $$ = CYNew CYTypeShort($2); }
+    ;
+
+IntegerTypeOpt
+    : IntegerType { $$ = $1; }
+    |
     ;
 
 PrimitiveType
-    : Variable { $$ = $1; }
-    | "void" { $$  = CYNew cy::Syntax::New(CYNew CYVariable(CYNew CYIdentifier("Type")), CYNew CYArgument(CYNew CYString("v"))); }
+    : IdentifierType { $$ = CYNew CYTypeVariable($1); }
+    | IntegerType { $$ = $1; }
+    | "void" { $$ = CYNew CYTypeVoid(); }
+    | "char" { $$ = CYNew CYTypeVariable("char"); }
+    | "signed" "char" { $$ = CYNew CYTypeSigned(CYNew CYTypeVariable("char")); }
+    | "unsigned" "char" { $$ = CYNew CYTypeUnsigned(CYNew CYTypeVariable("char")); }
     ;
 
 TypedIdentifier
-    : TypeQualifierLeft PrimitiveType TypeQualifierRight { $$ = $3; $$->type_ = $2; CYSetLast($1) = $$->modifier_; $$->modifier_ = $1; }
+    : TypeQualifierLeft PrimitiveType TypeQualifierRight { $$ = $3; $$->specifier_ = $2; CYSetLast($1) = $$->modifier_; $$->modifier_ = $1; }
     ;
 
 EncodedType
@@ -1626,7 +1655,7 @@ PrimaryExpression
 /* }}} */
 /* Cycript (Objective-C): Block Expressions {{{ */
 ModifiedType
-    : TypeQualifierLeft PrimitiveType { $$ = CYNew CYTypedIdentifier(); $$->type_ = $2; $$->modifier_ = $1; }
+    : TypeQualifierLeft PrimitiveType { $$ = CYNew CYTypedIdentifier(); $$->specifier_ = $2; $$->modifier_ = $1; }
     | ModifiedType "*" { $$ = $1; $$->modifier_ = CYNew CYTypePointerTo($$->modifier_); }
     ;
 

@@ -1146,6 +1146,78 @@ static JSValueRef Type_callAsFunction_constant(JSContextRef context, JSObjectRef
     return CYMakeType(context, &type);
 } CYCatch(NULL) }
 
+static JSValueRef Type_callAsFunction_long(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    if (count != 0)
+        throw CYJSError(context, "incorrect number of arguments to Type.long");
+    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
+
+    sig::Type type(*internal->type_);
+
+    switch (type.primitive) {
+        case sig::short_P: type.primitive = sig::int_P; break;
+        case sig::int_P: type.primitive = sig::long_P; break;
+        case sig::long_P: type.primitive = sig::longlong_P; break;
+        default: throw CYJSError(context, "invalid type argument to Type.long");
+    }
+
+    return CYMakeType(context, &type);
+} CYCatch(NULL) }
+
+static JSValueRef Type_callAsFunction_short(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    if (count != 0)
+        throw CYJSError(context, "incorrect number of arguments to Type.short");
+    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
+
+    sig::Type type(*internal->type_);
+
+    switch (type.primitive) {
+        case sig::int_P: type.primitive = sig::short_P; break;
+        case sig::long_P: type.primitive = sig::int_P; break;
+        case sig::longlong_P: type.primitive = sig::long_P; break;
+        default: throw CYJSError(context, "invalid type argument to Type.short");
+    }
+
+    return CYMakeType(context, &type);
+} CYCatch(NULL) }
+
+static JSValueRef Type_callAsFunction_signed(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    if (count != 0)
+        throw CYJSError(context, "incorrect number of arguments to Type.signed");
+    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
+
+    sig::Type type(*internal->type_);
+
+    switch (type.primitive) {
+        case sig::char_P: case sig::uchar_P: type.primitive = sig::char_P; break;
+        case sig::short_P: case sig::ushort_P: type.primitive = sig::short_P; break;
+        case sig::int_P: case sig::uint_P: type.primitive = sig::int_P; break;
+        case sig::long_P: case sig::ulong_P: type.primitive = sig::long_P; break;
+        case sig::longlong_P: case sig::ulonglong_P: type.primitive = sig::longlong_P; break;
+        default: throw CYJSError(context, "invalid type argument to Type.signed");
+    }
+
+    return CYMakeType(context, &type);
+} CYCatch(NULL) }
+
+static JSValueRef Type_callAsFunction_unsigned(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    if (count != 0)
+        throw CYJSError(context, "incorrect number of arguments to Type.unsigned");
+    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
+
+    sig::Type type(*internal->type_);
+
+    switch (type.primitive) {
+        case sig::char_P: case sig::uchar_P: type.primitive = sig::uchar_P; break;
+        case sig::short_P: case sig::ushort_P: type.primitive = sig::ushort_P; break;
+        case sig::int_P: case sig::uint_P: type.primitive = sig::uint_P; break;
+        case sig::long_P: case sig::ulong_P: type.primitive = sig::ulong_P; break;
+        case sig::longlong_P: case sig::ulonglong_P: type.primitive = sig::ulonglong_P; break;
+        default: throw CYJSError(context, "invalid type argument to Type.unsigned");
+    }
+
+    return CYMakeType(context, &type);
+} CYCatch(NULL) }
+
 static JSValueRef Type_callAsFunction_functionWith(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     return Type_callAsFunction_$With(context, object, _this, count, arguments, sig::function_P, exception);
 }
@@ -1355,16 +1427,20 @@ static JSStaticValue Type_staticValues[4] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction Type_staticFunctions[10] = {
+static JSStaticFunction Type_staticFunctions[14] = {
     {"arrayOf", &Type_callAsFunction_arrayOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"blockWith", &Type_callAsFunction_blockWith, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"constant", &Type_callAsFunction_constant, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"functionWith", &Type_callAsFunction_functionWith, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"long", &Type_callAsFunction_long, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"pointerTo", &Type_callAsFunction_pointerTo, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"short", &Type_callAsFunction_short, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"signed", &Type_callAsFunction_signed, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"withName", &Type_callAsFunction_withName, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toCYON", &Type_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toJSON", &Type_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toString", &Type_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"unsigned", &Type_callAsFunction_unsigned, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
 
