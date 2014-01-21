@@ -26,7 +26,7 @@ stack.hh
 sysroot.ios
 sysroot.sim
 lex.cy.cpp
-cycript
+/cycript
 Trampoline.t.hpp
 Bridge.hpp
 package
