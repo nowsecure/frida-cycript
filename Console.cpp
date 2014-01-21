@@ -500,7 +500,9 @@ static void Console(CYOptions &options) {
                 } else if (data == "destroy") {
                     CYDestroyContext();
                 } else if (data == "gc") {
+                    *out_ << "collecting... " << std::flush;
                     CYGarbageCollect(CYGetJSContext());
+                    *out_ << "done." << std::endl;
                 } else if (data == "exit") {
                     return;
                 } else if (data == "expand") {
