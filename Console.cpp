@@ -501,6 +501,8 @@ static void Console(CYOptions &options) {
                     CYDestroyContext();
                 } else if (data == "gc") {
                     CYGarbageCollect(CYGetJSContext());
+                } else if (data == "exit") {
+                    return;
                 } else if (data == "expand") {
                     expand = !expand;
                     *out_ << "expand == " << (expand ? "true" : "false") << std::endl;
