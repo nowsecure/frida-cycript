@@ -1470,7 +1470,7 @@ EncodedType
     ;
 
 PrimaryExpression
-    : AtEncode "(" EncodedType ")" { $$ = $3; }
+    : "@encode" "(" EncodedType ")" { $$ = $3; }
     ;
 /* }}} */
 /* Cycript (Objective-C): @class Declaration {{{ */
