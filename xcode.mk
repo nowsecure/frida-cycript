@@ -28,11 +28,11 @@ version := $(shell git describe --always --tags --dirty="+" --match="v*" | sed -
 deb := cycript_$(version)_iphoneos-arm.deb
 
 cycript := 
-cycript += Cycript_/cycript_
-cycript += Cycript_/libcycript.dylib
-cycript += Cycript_/libcycript-any.dylib
-cycript += Cycript_/libcycript-sys.dylib
-cycript += Cycript_/libcycript-sim.dylib
+cycript += Cycript.lib/cycript_
+cycript += Cycript.lib/libcycript.dylib
+cycript += Cycript.lib/libcycript-any.dylib
+cycript += Cycript.lib/libcycript-sys.dylib
+cycript += Cycript.lib/libcycript-sim.dylib
 
 framework := 
 framework += Cycript.framework/Cycript
@@ -42,17 +42,17 @@ all: cycript $(cycript) $(framework)
 
 cycript.zip: all
 	rm -f $@
-	zip -r9y $@ cycript Cycript_ Cycript.framework
+	zip -r9y $@ cycript Cycript.lib Cycript.framework
 
 package: cycript.zip
 
-$(deb): Cycript_/cycript_ Cycript_/libcycript.dylib
+$(deb): Cycript.lib/cycript_ Cycript.lib/libcycript.dylib
 	rm -rf package
 	mkdir -p package/DEBIAN
 	sed -e 's/#/$(version)/' control.in >package/DEBIAN/control
 	mkdir -p package/usr/{bin,lib}
-	$(lipo) -extract armv6 -output package/usr/bin/cycript Cycript_/cycript_
-	$(lipo) -extract armv6 -extract arm64 -output package/usr/lib/libcycript.dylib Cycript_/libcycript.dylib
+	$(lipo) -extract armv6 -output package/usr/bin/cycript Cycript.lib/cycript_
+	$(lipo) -extract armv6 -extract arm64 -output package/usr/lib/libcycript.dylib Cycript.lib/libcycript.dylib
 	ln -s libcycript.dylib package/usr/lib/libcycript.0.dylib
 	dpkg-deb -Zlzma -b package $@
 
@@ -60,7 +60,7 @@ deb: $(deb)
 	ln -sf $< cycript.deb
 
 clean:
-	rm -rf cycript Cycript_ libcycript*.o
+	rm -rf cycript Cycript.lib libcycript*.o
 
 # make stubbornly refuses to believe that these @'s are bugs
 # http://osdir.com/ml/help-make-gnu/2012-04/msg00008.html
@@ -115,7 +115,7 @@ endef
 
 $(foreach arch,armv6 arm64,$(eval $(call build_arm,$(arch))))
 
-Cycript_/%.dylib: build.mac-i386/.libs/%.dylib build.mac-x86_64/.libs/%.dylib build.ios-armv6/.libs/%.dylib build.ios-arm64/.libs/%.dylib
+Cycript.lib/%.dylib: build.mac-i386/.libs/%.dylib build.mac-x86_64/.libs/%.dylib build.ios-armv6/.libs/%.dylib build.ios-arm64/.libs/%.dylib
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
 	install_name_tool -change /System/Library/{,Private}Frameworks/JavaScriptCore.framework/JavaScriptCore $@
@@ -126,15 +126,15 @@ Cycript_/%.dylib: build.mac-i386/.libs/%.dylib build.mac-x86_64/.libs/%.dylib bu
 	install_name_tool -change /System/Library/{,Private}Frameworks/JavaScriptCore.framework/JavaScriptCore $@
 	codesign -s $(codesign) --entitlement cycript-$(word 2,$(subst ., ,$(subst -, ,$*))).xml $@
 
-Cycript_/cycript_: build.mac-i386/.libs/cycript_ build.mac-x86_64/.libs/cycript_ build.ios-armv6/.libs/cycript_
+Cycript.lib/cycript_: build.mac-i386/.libs/cycript_ build.mac-x86_64/.libs/cycript_ build.ios-armv6/.libs/cycript_
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
 
-Cycript_/libcycript-sys.dylib:
+Cycript.lib/libcycript-sys.dylib:
 	@mkdir -p $(dir $@)
 	ln -sf libcycript.dylib $@
 
-Cycript_/libcycript-sim.dylib: build.sim-i386/.libs/libcycript.dylib build.sim-x86_64/.libs/libcycript.dylib
+Cycript.lib/libcycript-sim.dylib: build.sim-i386/.libs/libcycript.dylib build.sim-x86_64/.libs/libcycript.dylib
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
 	codesign -s $(codesign) $@
