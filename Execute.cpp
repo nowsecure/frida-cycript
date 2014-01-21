@@ -1666,49 +1666,6 @@ void *CYMapFile(const char *path, size_t *psize) {
     return base;
 }
 
-static void CYRunSetups(JSContextRef context) {
-    std::string folder("/etc/cycript/setup.d");
-    DIR *setups(opendir(folder.c_str()));
-    if (setups == NULL)
-        return;
-
-    for (;;) {
-        dirent setup;
-        dirent *result;
-        _syscall(readdir_r(setups, &setup, &result));
-
-        if (result == NULL)
-            break;
-        _assert(result == &setup);
-
-        const char *name(setup.d_name);
-        size_t length(strlen(name));
-        if (length < 4)
-            continue;
-
-        if (name[0] == '.')
-            continue;
-        if (memcmp(name + length - 3, ".cy", 3) != 0)
-            continue;
-
-        std::string script(folder + "/" + name);
-        CYUTF8String utf8;
-        utf8.data = reinterpret_cast<char *>(CYMapFile(script.c_str(), &utf8.size));
-
-        CYPool pool;
-        CYUTF16String utf16(CYPoolUTF16String(pool, utf8));
-        munmap(const_cast<char *>(utf8.data), utf8.size);
-
-        // XXX: this should not be used
-        CydgetMemoryParse(&utf16.data, &utf16.size);
-
-        CYExecute(context, pool, CYPoolUTF8String(pool, utf16));
-        free(const_cast<uint16_t *>(utf16.data));
-    }
-
-    _syscall(closedir(setups));
-}
-
 static JSValueRef require(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     _assert(count == 1);
     CYPool pool;
@@ -1860,8 +1817,6 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
         (*hooks_->SetupContext)(context);
 
     CYArrayPush(context, alls, cycript);
-
-    CYRunSetups(context);
 }
 
 static JSGlobalContextRef context_;
