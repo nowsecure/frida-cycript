@@ -260,8 +260,8 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
 @begin C
 "typedef"         L C I(identifier, Identifier("typedef"), tk::Typedef, hi::Meta);
-"unsigned"        L C I(identifier, Identifier("unsigned"), tk::Unsigned, hi::Meta);
-"signed"          L C I(identifier, Identifier("signed"), tk::Signed, hi::Meta);
+"unsigned"        L C I(identifier, Identifier("unsigned"), tk::Unsigned, hi::Type);
+"signed"          L C I(identifier, Identifier("signed"), tk::Signed, hi::Type);
 @end
 
 @begin ObjectiveC
