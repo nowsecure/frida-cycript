@@ -26,6 +26,8 @@
 
 CYTypedIdentifier *Decode_(CYPool &pool, struct sig::Type *type) {
     switch (type->primitive) {
+        case sig::unknown_P: return $ CYTypedIdentifier($ CYTypeError());
+
         case sig::function_P: {
             _assert(type->data.signature.count != 0);
             CYTypedParameter *parameter(NULL);

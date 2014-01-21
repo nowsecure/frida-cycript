@@ -31,11 +31,13 @@ namespace sig {
 
 enum Primitive {
     function_P = '\0',
+    block_P = '\a',
+
+    unknown_P = '?',
     typename_P = '#',
     union_P = '(',
     string_P = '*',
     selector_P = ':',
-    block_P = '?',
     object_P = 'W',
     boolean_P = 'B',
     uchar_P = 'C',

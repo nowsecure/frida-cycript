@@ -84,8 +84,6 @@ void Parse_(CYPool &pool, struct Signature *signature, const char **name, char e
 
 Type *Parse_(CYPool &pool, const char **name, char eos, bool named, Callback callback) {
     char next = *(*name)++;
-    if (next == '?')
-        return NULL;
 
     Type *type(new(pool) Type());
     _assert(type != NULL);
@@ -93,6 +91,7 @@ Type *Parse_(CYPool &pool, const char **name, char eos, bool named, Callback cal
 
   parse:
     switch (next) {
+        case '?': type->primitive = unknown_P; break;
         case '#': type->primitive = typename_P; break;
 
         case '(':
@@ -258,6 +257,7 @@ const char *Unparse_(CYPool &pool, struct Type *type) {
             return pool.strdup(out.str().c_str());
         } break;
 
+        case unknown_P: return "?";
         case typename_P: return "#";
         case union_P: return pool.strcat("(", Unparse(pool, &type->data.signature), ")", NULL);
         case string_P: return "*";

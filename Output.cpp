@@ -748,6 +748,10 @@ void Try::Output(CYOutput &out, CYFlags flags) const {
 
 } }
 
+void CYTypeError::Output(CYOutput &out) const {
+    out << "@error";
+}
+
 void CYTypeLong::Output(CYOutput &out) const {
     out << "long" << specifier_;
 }

@@ -1612,6 +1612,16 @@ struct CYTypeSpecifier :
     virtual CYExpression *Replace(CYContext &context) = 0;
 };
 
+struct CYTypeError :
+    CYTypeSpecifier
+{
+    CYTypeError() {
+    }
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out) const;
+};
+
 struct CYTypeVoid :
     CYTypeSpecifier
 {

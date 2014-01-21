@@ -898,6 +898,11 @@ CYStatement *CYTypeDefinition::Replace(CYContext &context) {
     return $E($ CYAssign($V(typed_->identifier_), typed_->Replace(context)));
 }
 
+CYExpression *CYTypeError::Replace(CYContext &context) {
+    _assert(false);
+    return NULL;
+}
+
 CYExpression *CYTypeModifier::Replace(CYContext &context, CYExpression *type) { $T(type)
     return Replace_(context, type);
 }
