@@ -273,7 +273,9 @@ bool CYGetOffset(CYPool &pool, JSContextRef context, NSString *value, ssize_t &i
 static JSClassRef Instance_;
 
 static JSClassRef ArrayInstance_;
+static JSClassRef BooleanInstance_;
 static JSClassRef FunctionInstance_;
+static JSClassRef NumberInstance_;
 static JSClassRef ObjectInstance_;
 static JSClassRef StringInstance_;
 
@@ -308,6 +310,7 @@ static Class NSBoolNumber_;
 static Class NSArray_;
 static Class NSBlock_;
 static Class NSDictionary_;
+static Class NSNumber_;
 static Class NSString_;
 static Class Object_;
 
@@ -344,10 +347,18 @@ JSValueRef CYGetClassPrototype(JSContextRef context, Class self, bool meta) {
     JSClassRef _class(NULL);
     JSValueRef prototype;
 
-    if (self == NSArray_)
+#ifdef __APPLE__
+    if (self == NSCFBoolean_)
+#else
+    if (self == NSBoolNumber_)
+#endif
+        prototype = CYGetCachedObject(context, CYJSString("BooleanInstance_prototype"));
+    else if (self == NSArray_)
         prototype = CYGetCachedObject(context, CYJSString("ArrayInstance_prototype"));
     else if (self == NSBlock_)
         prototype = CYGetCachedObject(context, CYJSString("FunctionInstance_prototype"));
+    else if (self == NSNumber_)
+        prototype = CYGetCachedObject(context, CYJSString("NumberInstance_prototype"));
     else if (self == NSDictionary_)
         prototype = CYGetCachedObject(context, CYJSString("ObjectInstance_prototype"));
     else if (self == NSString_)
@@ -2765,6 +2776,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     NSArray_ = objc_getClass("NSArray");
     NSBlock_ = objc_getClass("NSBlock");
     NSDictionary_ = objc_getClass("NSDictionary");
+    NSNumber_ = objc_getClass("NSNumber");
     NSString_ = objc_getClass("NSString");
     Object_ = objc_getClass("Object");
 
@@ -2809,8 +2821,14 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     definition.className = "ArrayInstance";
     ArrayInstance_ = JSClassCreate(&definition);
 
+    definition.className = "BooleanInstance";
+    BooleanInstance_ = JSClassCreate(&definition);
+
     definition.className = "FunctionInstance";
     FunctionInstance_ = JSClassCreate(&definition);
+
+    definition.className = "NumberInstance";
+    NumberInstance_ = JSClassCreate(&definition);
 
     definition.className = "ObjectInstance";
     ObjectInstance_ = JSClassCreate(&definition);
@@ -2949,11 +2967,23 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     JSObjectRef Array_prototype(CYGetCachedObject(context, CYJSString("Array_prototype")));
     JSObjectSetPrototype(context, ArrayInstance_prototype, Array_prototype);
 
+    JSObjectRef BooleanInstance(JSObjectMakeConstructor(context, BooleanInstance_, NULL));
+    JSObjectRef BooleanInstance_prototype(CYCastJSObject(context, CYGetProperty(context, BooleanInstance, prototype_s)));
+    CYSetProperty(context, cy, CYJSString("BooleanInstance_prototype"), BooleanInstance_prototype);
+    JSObjectRef Boolean_prototype(CYGetCachedObject(context, CYJSString("Boolean_prototype")));
+    JSObjectSetPrototype(context, BooleanInstance_prototype, Boolean_prototype);
+
     JSObjectRef FunctionInstance(JSObjectMakeConstructor(context, FunctionInstance_, NULL));
     JSObjectRef FunctionInstance_prototype(CYCastJSObject(context, CYGetProperty(context, FunctionInstance, prototype_s)));
     CYSetProperty(context, cy, CYJSString("FunctionInstance_prototype"), FunctionInstance_prototype);
     JSObjectRef Function_prototype(CYGetCachedObject(context, CYJSString("Function_prototype")));
     JSObjectSetPrototype(context, FunctionInstance_prototype, Function_prototype);
+
+    JSObjectRef NumberInstance(JSObjectMakeConstructor(context, NumberInstance_, NULL));
+    JSObjectRef NumberInstance_prototype(CYCastJSObject(context, CYGetProperty(context, NumberInstance, prototype_s)));
+    CYSetProperty(context, cy, CYJSString("NumberInstance_prototype"), NumberInstance_prototype);
+    JSObjectRef Number_prototype(CYGetCachedObject(context, CYJSString("Number_prototype")));
+    JSObjectSetPrototype(context, NumberInstance_prototype, Number_prototype);
 
     JSObjectRef ObjectInstance(JSObjectMakeConstructor(context, ObjectInstance_, NULL));
     JSObjectRef ObjectInstance_prototype(CYCastJSObject(context, CYGetProperty(context, ObjectInstance, prototype_s)));

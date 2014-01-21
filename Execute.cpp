@@ -1769,6 +1769,12 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     JSObjectRef Array_prototype(CYCastJSObject(context, CYGetProperty(context, Array, prototype_s)));
     CYSetProperty(context, cy, CYJSString("Array_prototype"), Array_prototype);
 
+    JSObjectRef Boolean(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Boolean"))));
+    CYSetProperty(context, cy, CYJSString("Boolean"), Boolean);
+
+    JSObjectRef Boolean_prototype(CYCastJSObject(context, CYGetProperty(context, Boolean, prototype_s)));
+    CYSetProperty(context, cy, CYJSString("Boolean_prototype"), Boolean_prototype);
+
     JSObjectRef Error(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Error"))));
     CYSetProperty(context, cy, CYJSString("Error"), Error);
 
@@ -1777,6 +1783,12 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
 
     JSObjectRef Function_prototype(CYCastJSObject(context, CYGetProperty(context, Function, prototype_s)));
     CYSetProperty(context, cy, CYJSString("Function_prototype"), Function_prototype);
+
+    JSObjectRef Number(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Number"))));
+    CYSetProperty(context, cy, CYJSString("Number"), Number);
+
+    JSObjectRef Number_prototype(CYCastJSObject(context, CYGetProperty(context, Number, prototype_s)));
+    CYSetProperty(context, cy, CYJSString("Number_prototype"), Number_prototype);
 
     JSObjectRef Object(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Object"))));
     CYSetProperty(context, cy, CYJSString("Object"), Object);
