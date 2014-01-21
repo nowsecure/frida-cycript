@@ -1419,6 +1419,10 @@ static JSStaticValue Functor_staticValues[2] = {
     {NULL, NULL, NULL, 0}
 };
 
+namespace cy {
+    JSStaticValue const * const Functor::StaticValues = Functor_staticValues;
+}
+
 static JSStaticValue Type_staticValues[4] = {
     {"alignment", &Type_getProperty_alignment, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"name", &Type_getProperty_name, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},

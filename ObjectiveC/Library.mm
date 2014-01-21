@@ -2854,6 +2854,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     definition = kJSClassDefinitionEmpty;
     definition.className = "Message";
     definition.staticFunctions = cy::Functor::StaticFunctions;
+    definition.staticValues = cy::Functor::StaticValues;
     definition.callAsFunction = &Message_callAsFunction;
     definition.finalize = &CYFinalize;
     Message_ = JSClassCreate(&definition);

@@ -190,6 +190,7 @@ struct Functor :
     }
 
     static JSStaticFunction const * const StaticFunctions;
+    static JSStaticValue const * const StaticValues;
 }; }
 
 struct Closure_privateData :
