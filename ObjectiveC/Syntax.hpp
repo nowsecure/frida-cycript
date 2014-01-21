@@ -113,13 +113,11 @@ struct CYSelector :
 struct CYField :
     CYNext<CYField>
 {
-    CYExpression *type_;
-    CYIdentifier *name_;
+    CYTypedIdentifier *typed_;
 
-    CYField(CYExpression *type, CYIdentifier *name, CYField *next = NULL) :
+    CYField(CYTypedIdentifier *typed, CYField *next = NULL) :
         CYNext<CYField>(next),
-        type_(type),
-        name_(name)
+        typed_(typed)
     {
     }
 

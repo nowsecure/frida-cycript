@@ -1481,7 +1481,7 @@ ClassSuperOpt
     ;
 
 ClassFieldListOpt
-    : Expression Identifier ";" ClassFieldListOpt { $$ = CYNew CYField($1, $2, $4); }
+    : TypedIdentifier ";" ClassFieldListOpt { $$ = CYNew CYField($1, $3); }
     | LexSetRegExp { $$ = NULL; }
     ;
 

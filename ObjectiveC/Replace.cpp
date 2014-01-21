@@ -82,13 +82,13 @@ CYStatement *CYField::Replace(CYContext &context) const { $T(NULL)
     CYVariable *cyn($V("$cyn"));
     CYVariable *cyt($V("$cyt"));
 
-    CYExpression *type($C0($M(type_, $S("toString"))));
+    CYExpression *type($C0($M(typed_->Replace(context), $S("toString"))));
 
     return $ CYBlock($$->*
         next_->Replace(context)->*
         $E($ CYAssign(cyt, type))->*
         $E($ CYAssign(cyn, $N1($V("Type"), cyt)))->*
-        $E($C5($V("class_addIvar"), $V("$cyc"), $S(name_->Word()), $M(cyn, $S("size")), $M(cyn, $S("alignment")), cyt))
+        $E($C5($V("class_addIvar"), $V("$cyc"), $S(typed_->identifier_->Word()), $M(cyn, $S("size")), $M(cyn, $S("alignment")), cyt))
     );
 }
 
