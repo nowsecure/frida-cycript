@@ -1648,10 +1648,7 @@ static bool Messages_setProperty(JSContextRef context, JSObjectRef object, JSStr
 
     CYPool pool;
     const char *name(CYPoolCString(pool, context, property));
-
     SEL sel(sel_registerName(name));
-
-    objc_method *method(class_getInstanceMethod(_class, sel));
 
     const char *type;
     IMP imp;
@@ -1661,9 +1658,29 @@ static bool Messages_setProperty(JSContextRef context, JSObjectRef object, JSStr
         type = sig::Unparse(pool, &message->signature_);
         imp = reinterpret_cast<IMP>(message->GetValue());
     } else {
+        objc_method *method(class_getInstanceMethod(_class, sel));
         type = CYPoolTypeEncoding(pool, context, sel, method);
         imp = CYMakeMessage(context, value, type);
     }
+
+    objc_method *method(NULL);
+#if OBJC_API_VERSION >= 2
+    unsigned int size;
+    objc_method **methods(class_copyMethodList(_class, &size));
+    for (size_t i(0); i != size; ++i)
+        if (sel_isEqual(method_getName(methods[i]), sel)) {
+            method = methods[i];
+            break;
+        }
+    free(methods);
+#else
+    for (objc_method_list *methods(_class->methods); methods != NULL; methods = methods->method_next)
+        for (int i(0); i != methods->method_count; ++i)
+            if (sel_isEqual(method_getName(&methods->method_list[i]), sel)) {
+                method = &methods->method_list[i];
+                break;
+            }
+#endif
 
     if (method != NULL)
         method_setImplementation(method, imp);
