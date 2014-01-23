@@ -1054,11 +1054,11 @@ AssignmentExpression
 /* 11.14 Comma Operator {{{ */
 Expression_
     : "," Expression { $$ = $2; }
-    | { $$ = CYNew CYCompound(); }
+    | { $$ = NULL; }
     ;
 
 Expression
-    : AssignmentExpression Expression_ { $2->AddPrev($1); $$ = $2; }
+    : AssignmentExpression Expression_ { $$ = CYNew CYCompound($1, $2); }
     ;
 
 ExpressionOpt

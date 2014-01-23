@@ -506,7 +506,6 @@ struct CYNumber;
 struct CYString;
 
 struct CYExpression :
-    CYNext<CYExpression>,
     CYForInitialiser,
     CYForInInitialiser,
     CYClassName,
@@ -534,7 +533,7 @@ struct CYExpression :
     virtual CYAssignment *Assignment(CYContext &context);
 
     virtual CYExpression *Primitive(CYContext &context) {
-        return this;
+        return NULL;
     }
 
     virtual CYNumber *Number(CYContext &context) {
@@ -569,16 +568,16 @@ struct CYExpression :
 struct CYCompound :
     CYExpression
 {
-    CYExpression *expressions_;
+    CYExpression *expression_;
+    CYExpression *next_;
 
-    CYCompound(CYExpression *expressions = NULL) :
-        expressions_(expressions)
+    CYCompound(CYExpression *expression, CYExpression *next = NULL) :
+        expression_(expression),
+        next_(next)
     {
-    }
-
-    void AddPrev(CYExpression *expression) {
-        CYSetLast(expression) = expressions_;
-        expressions_ = expression;
+        if (expression_ == NULL)
+            throw;
+        _assert(expression_ != NULL);
     }
 
     CYPrecedence(17)
@@ -716,6 +715,10 @@ struct CYLiteral :
 {
     CYPrecedence(0)
     CYRightHand(false)
+
+    virtual CYExpression *Primitive(CYContext &context) {
+        return this;
+    }
 };
 
 struct CYTrivial :
@@ -1535,7 +1538,7 @@ struct CYExpress :
     CYExpress(CYExpression *expression) :
         expression_(expression)
     {
-        if (expression == NULL)
+        if (expression_ == NULL)
             throw;
     }
 

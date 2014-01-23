@@ -227,11 +227,14 @@ static CYExpression *ParseExpression(CYUTF8String code) {
     CYOptions options;
     CYContext context(options);
 
-    // XXX: this could be replaced with a CYStatement::Primitive()
-    if (CYExpress *express = dynamic_cast<CYExpress *>(driver.program_->statements_))
-        return express->expression_->Primitive(context);
+    CYStatement *statement(driver.program_->statements_);
+    _assert(statement != NULL);
+    _assert(statement->next_ == NULL);
 
-    return NULL;
+    CYExpress *express(dynamic_cast<CYExpress *>(driver.program_->statements_));
+    _assert(express != NULL);
+
+    return express->expression_;
 }
 
 static int client_;
@@ -316,8 +319,7 @@ static char **Complete(const char *word, int start, int end) {
     if (result == NULL)
         return NULL;
 
-    CYArray *array(dynamic_cast<CYArray *>(result));
-
+    CYArray *array(dynamic_cast<CYArray *>(result->Primitive(context)));
     if (array == NULL) {
         *out_ << '\n';
         Output(false, json, out_);

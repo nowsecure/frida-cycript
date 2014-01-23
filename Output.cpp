@@ -194,19 +194,13 @@ void CYComment::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYCompound::Output(CYOutput &out, CYFlags flags) const {
-    if (CYExpression *expression = expressions_)
-        if (CYExpression *next = expression->next_) {
-            expression->Output(out, CYLeft(flags));
-            CYFlags center(CYCenter(flags));
-            while (next != NULL) {
-                expression = next;
-                out << ',' << ' ';
-                next = expression->next_;
-                CYFlags right(next != NULL ? center : CYRight(flags));
-                expression->Output(out, right);
-            }
-        } else
-            expression->Output(out, flags);
+    if (next_ == NULL)
+        expression_->Output(out, flags);
+    else {
+        expression_->Output(out, CYLeft(flags));
+        out << ',' << ' ';
+        next_->Output(out, CYRight(flags));
+    }
 }
 
 void CYCondition::Output(CYOutput &out, CYFlags flags) const {

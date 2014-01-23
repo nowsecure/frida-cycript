@@ -32,19 +32,16 @@ CYFunctionExpression *CYNonLocalize(CYContext &context, CYFunctionExpression *fu
 CYExpression *CYAdd::Replace(CYContext &context) {
     CYInfix::Replace(context);
 
-    CYExpression *lhp(lhs_->Primitive(context));
-    CYExpression *rhp(rhs_->Primitive(context));
-
-    CYString *lhs(dynamic_cast<CYString *>(lhp));
-    CYString *rhs(dynamic_cast<CYString *>(rhp));
+    CYString *lhs(dynamic_cast<CYString *>(lhs_));
+    CYString *rhs(dynamic_cast<CYString *>(rhs_));
 
     if (lhs != NULL || rhs != NULL) {
         if (lhs == NULL) {
-            lhs = lhp->String(context);
+            lhs = lhs_->String(context);
             if (lhs == NULL)
                 return this;
         } else if (rhs == NULL) {
-            rhs = rhp->String(context);
+            rhs = rhs_->String(context);
             if (rhs == NULL)
                 return this;
         }
@@ -52,8 +49,8 @@ CYExpression *CYAdd::Replace(CYContext &context) {
         return lhs->Concat(context, rhs);
     }
 
-    if (CYNumber *lhn = lhp->Number(context))
-        if (CYNumber *rhn = rhp->Number(context))
+    if (CYNumber *lhn = lhs_->Number(context))
+        if (CYNumber *rhn = rhs_->Number(context))
             return $D(lhn->Value() + rhn->Value());
 
     return this;
@@ -149,18 +146,26 @@ CYStatement *CYComment::Replace(CYContext &context) {
 }
 
 CYExpression *CYCompound::Replace(CYContext &context) {
-    context.ReplaceAll(expressions_);
-    if (expressions_ == NULL)
-        return NULL;
+    if (next_ == NULL)
+        return expression_;
+
+    context.Replace(expression_);
+    context.Replace(next_);
+
+    if (CYCompound *compound = dynamic_cast<CYCompound *>(expression_)) {
+        expression_ = compound->expression_;
+        compound->expression_ = compound->next_;
+        compound->next_ = next_;
+        next_ = compound;
+    }
+
     return this;
 }
 
 CYExpression *CYCompound::Primitive(CYContext &context) {
-    CYExpression *expression(expressions_);
-    if (expression == NULL)
+    CYExpression *expression(expression_);
+    if (expression == NULL || next_ != NULL)
         return NULL;
-    while (expression->next_ != NULL)
-        expression = expression->next_;
     return expression->Primitive(context);
 }
 
@@ -262,9 +267,9 @@ CYArgument *CYDeclarations::Argument(CYContext &context) { $T(NULL)
 }
 
 CYCompound *CYDeclarations::Compound(CYContext &context) { $T(NULL)
-    CYCompound *compound(next_->Compound(context) ?: $ CYCompound());
+    CYCompound *compound(next_->Compound(context));
     if (CYAssignment *assignment = declaration_->Assignment(context))
-        compound->AddPrev(assignment);
+        compound = $ CYCompound(assignment, compound);
     return compound;
 }
 
@@ -295,11 +300,7 @@ CYExpression *CYEncodedType::Replace(CYContext &context) {
 
 CYStatement *CYExpress::Replace(CYContext &context) {
     while (CYExpress *express = dynamic_cast<CYExpress *>(next_)) {
-        CYCompound *compound(dynamic_cast<CYCompound *>(express->expression_));
-        if (compound == NULL)
-            compound = $ CYCompound(express->expression_);
-        compound->AddPrev(expression_);
-        expression_ = compound;
+        expression_ = $ CYCompound(expression_, express->expression_);
         SetNext(express->next_);
     }
 
@@ -536,11 +537,8 @@ CYStatement *CYLetStatement::Replace(CYContext &context) {
 CYExpression *CYMultiply::Replace(CYContext &context) {
     CYInfix::Replace(context);
 
-    CYExpression *lhp(lhs_->Primitive(context));
-    CYExpression *rhp(rhs_->Primitive(context));
-
-    if (CYNumber *lhn = lhp->Number(context))
-        if (CYNumber *rhn = rhp->Number(context))
+    if (CYNumber *lhn = lhs_->Number(context))
+        if (CYNumber *rhn = rhs_->Number(context))
             return $D(lhn->Value() * rhn->Value());
 
     return this;
@@ -961,7 +959,9 @@ CYExpression *CYTypedParameter::TypeSignature(CYContext &context, CYExpression *
 
 CYStatement *CYVar::Replace(CYContext &context) {
     declarations_->Replace(context);
-    return $E(declarations_->Compound(context));
+    if (CYCompound *compound = declarations_->Compound(context))
+        return $E(compound);
+    return $ CYEmpty();
 }
 
 CYExpression *CYVariable::Replace(CYContext &context) {
