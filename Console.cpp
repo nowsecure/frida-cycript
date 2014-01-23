@@ -295,7 +295,7 @@ static char **Complete(const char *word, int start, int end) {
     "       var before = prefix.length;\n"
     "       prefix += word;\n"
     "       var entire = prefix.length;\n"
-    "       for (name in object)\n"
+    "       for (var name in object)\n"
     "           if (name.substring(0, entire) == prefix)\n"
     "               names.push(name.substr(before));\n"
     "       return names;\n"
