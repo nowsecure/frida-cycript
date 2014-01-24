@@ -395,7 +395,7 @@ JSObjectRef Super::Make(JSContextRef context, id object, Class _class) {
 } }
 
 JSObjectRef Instance::Make(JSContextRef context, id object, Flags flags) {
-    JSObjectRef value(JSObjectMake(context, Instance_, new Instance(object, flags)));
+    JSObjectRef value(JSObjectMake(context, [object isKindOfClass:NSBlock_] ? FunctionInstance_ : Instance_, new Instance(object, flags)));
     JSObjectSetPrototype(context, value, CYGetClassPrototype(context, object_getClass(object)));
     return value;
 }
@@ -641,7 +641,7 @@ struct PropertyAttributes {
 /* }}} */
 
 _finline bool CYJSValueIsNSObject(JSContextRef context, JSValueRef value) {
-    return JSValueIsObjectOfClass(context, value, Instance_);
+    return JSValueIsObjectOfClass(context, value, Instance_) || JSValueIsObjectOfClass(context, value, FunctionInstance_);
 }
 
 _finline bool CYJSValueIsInstanceOfCachedConstructor(JSContextRef context, JSValueRef value, JSStringRef cache) {
@@ -1956,17 +1956,9 @@ static const char *CYBlockEncoding(NSBlock *self) {
     return descriptor3->signature;
 }
 
-static JSValueRef Instance_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+static JSValueRef FunctionInstance_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
     id self(internal->GetValue());
-
-    if (![self isKindOfClass:NSBlock_])
-        CYThrow("non-NSBlock object is not a function");
-    // XXX: replace above logic with the following assertion
-    //_assert([self isKindOfClass:NSBlock_]);
-    // to do this, make it so FunctionInstance_ is the class of blocks
-    // to do /that/, generalize the various "is exactly Instance_" checks
-    // then, move Instance_callAsFunction to only be on FunctionInstance
 
     if (const char *encoding = CYBlockEncoding(self)) {
         CYPool pool;
@@ -2833,7 +2825,6 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     definition.deleteProperty = &Instance_deleteProperty;
     definition.getPropertyNames = &Instance_getPropertyNames;
     definition.callAsConstructor = &Instance_callAsConstructor;
-    definition.callAsFunction = &Instance_callAsFunction;
     definition.hasInstance = &Instance_hasInstance;
     definition.finalize = &CYFinalize;
     Instance_ = JSClassCreate(&definition);
@@ -2845,6 +2836,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     BooleanInstance_ = JSClassCreate(&definition);
 
     definition.className = "FunctionInstance";
+    definition.callAsFunction = &FunctionInstance_callAsFunction;
     FunctionInstance_ = JSClassCreate(&definition);
 
     definition.className = "NumberInstance";
