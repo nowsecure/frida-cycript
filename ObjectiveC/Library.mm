@@ -1944,6 +1944,18 @@ static JSObjectRef Instance_callAsConstructor(JSContextRef context, JSObjectRef 
     return value;
 } CYCatch(NULL) }
 
+static const char *CYBlockEncoding(NSBlock *self) {
+    BlockLiteral *literal(reinterpret_cast<BlockLiteral *>(self));
+    if ((literal->flags & BLOCK_HAS_SIGNATURE) == 0)
+        return NULL;
+    uint8_t *descriptor(reinterpret_cast<uint8_t *>(literal->descriptor));
+    descriptor += sizeof(BlockDescriptor1);
+    if ((literal->flags & BLOCK_HAS_COPY_DISPOSE) != 0)
+        descriptor += sizeof(BlockDescriptor2);
+    BlockDescriptor3 *descriptor3(reinterpret_cast<BlockDescriptor3 *>(descriptor));
+    return descriptor3->signature;
+}
+
 static JSValueRef Instance_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
     id self(internal->GetValue());
@@ -1956,30 +1968,21 @@ static JSValueRef Instance_callAsFunction(JSContextRef context, JSObjectRef obje
     // to do /that/, generalize the various "is exactly Instance_" checks
     // then, move Instance_callAsFunction to only be on FunctionInstance
 
-    BlockLiteral *literal(reinterpret_cast<BlockLiteral *>(self));
+    if (const char *encoding = CYBlockEncoding(self)) {
+        CYPool pool;
 
-    if ((literal->flags & BLOCK_HAS_SIGNATURE) != 0) {
-        uint8_t *descriptor(reinterpret_cast<uint8_t *>(literal->descriptor));
-        descriptor += sizeof(BlockDescriptor1);
-        if ((literal->flags & BLOCK_HAS_COPY_DISPOSE) != 0)
-            descriptor += sizeof(BlockDescriptor2);
-        BlockDescriptor3 *descriptor3(reinterpret_cast<BlockDescriptor3 *>(descriptor));
+        void *setup[1];
+        setup[0] = &self;
 
-        if (const char *type = descriptor3->signature) {
-            CYPool pool;
+        sig::Signature signature;
+        sig::Parse(pool, &signature, encoding, &Structor_);
 
-            void *setup[1];
-            setup[0] = &self;
+        ffi_cif cif;
+        sig::sig_ffi_cif(pool, &sig::ObjectiveC, &signature, &cif);
 
-            sig::Signature signature;
-            sig::Parse(pool, &signature, type, &Structor_);
-
-            ffi_cif cif;
-            sig::sig_ffi_cif(pool, &sig::ObjectiveC, &signature, &cif);
-
-            void (*function)() = reinterpret_cast<void (*)()>(literal->invoke);
-            return CYCallFunction(pool, context, 1, setup, count, arguments, false, &signature, &cif, function);
-        }
+        BlockLiteral *literal(reinterpret_cast<BlockLiteral *>(self));
+        void (*function)() = reinterpret_cast<void (*)()>(literal->invoke);
+        return CYCallFunction(pool, context, 1, setup, count, arguments, false, &signature, &cif, function);
     }
 
     if (count != 0)
