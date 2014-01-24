@@ -2574,6 +2574,18 @@ static JSValueRef CYValue_callAsFunction_$cya(JSContextRef context, JSObjectRef 
     return CYMakePointer(context, &internal->value_, _not(size_t), type, ffi, object);
 } CYCatch(NULL) }
 
+static JSValueRef FunctionInstance_getProperty_type(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
+    Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
+    const char *encoding(CYBlockEncoding(internal->GetValue()));
+    if (encoding == NULL)
+        return CYJSNull(context);
+    // XXX: this should be stored on a FunctionInstance private value subclass
+    CYPool pool;
+    sig::Signature signature;
+    sig::Parse(pool, &signature, encoding, &Structor_);
+    return CYMakeType(context, &signature);
+} CYCatch(NULL) }
+
 static JSValueRef Instance_getProperty_constructor(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
     return Instance::Make(context, (id) object_getClass(internal->GetValue()));
@@ -2733,7 +2745,18 @@ static JSStaticValue Selector_staticValues[2] = {
     {NULL, NULL, NULL, 0}
 };
 
+// XXX: this is sadly duplicated in FunctionInstance_staticValues
 static JSStaticValue Instance_staticValues[5] = {
+    {"constructor", &Instance_getProperty_constructor, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"messages", &Instance_getProperty_messages, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"prototype", &Instance_getProperty_prototype, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"value", &CYValue_getProperty_value, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {NULL, NULL, NULL, 0}
+};
+
+static JSStaticValue FunctionInstance_staticValues[6] = {
+    {"type", &FunctionInstance_getProperty_type, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    // XXX: this is sadly a duplicate of Instance_staticValues
     {"constructor", &Instance_getProperty_constructor, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"messages", &Instance_getProperty_messages, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"prototype", &Instance_getProperty_prototype, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
@@ -2836,6 +2859,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     BooleanInstance_ = JSClassCreate(&definition);
 
     definition.className = "FunctionInstance";
+    definition.staticValues = FunctionInstance_staticValues;
     definition.callAsFunction = &FunctionInstance_callAsFunction;
     FunctionInstance_ = JSClassCreate(&definition);
 
