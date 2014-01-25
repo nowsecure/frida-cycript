@@ -2315,8 +2315,9 @@ static void choose_(task_t task, void *baton, unsigned type, vm_range_t *ranges,
         if (result == choice->query_.end())
             continue;
 
-        // XXX: if (size < class_getInstanceSize(*result))
-        if ((class_getInstanceSize(*result) + 15) / 16 * 16 != size)
+        size_t needed(class_getInstanceSize(*result));
+        // XXX: if (size < needed)
+        if (needed <= 496 && (needed + 15) / 16 * 16 != size || needed > 496 && (needed + 511) / 512 * 512 != size)
             continue;
         CYArrayPush(context, choice->results_, CYCastJSValue(context, reinterpret_cast<id>(data)));
     }
