@@ -74,15 +74,27 @@ while (false)
     fprintf(stderr, "_trace():%u\n", __LINE__); \
 } while (false)
 
-#define _syscall(expr) ({ \
+static _finline bool CYContains(int value, size_t many, int *okay) {
+    for (size_t i(0); i != many; ++i)
+        if (value == okay[i])
+            return true;
+    return false;
+}
+
+#define _syscall_(expr, many, okay) ({ \
     __typeof__(expr) _value; \
     do if ((long) (_value = (expr)) != -1) \
+        break; \
+    else if (CYContains(errno, many, ((int [many]) okay))) \
         break; \
     else \
         _assert_("syscall", errno == EINTR, #expr, " [errno=%d]", errno); \
     while (true); \
     _value; \
 })
+
+#define _syscall(expr) \
+    _syscall_(expr, 0, {})
 
 #define _aprcall(expr) \
     do { \
