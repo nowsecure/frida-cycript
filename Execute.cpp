@@ -1685,8 +1685,9 @@ JSGlobalContextRef CYGetJSContext(JSContextRef context) {
 extern "C" bool CydgetMemoryParse(const uint16_t **data, size_t *size);
 
 void *CYMapFile(const char *path, size_t *psize) {
-    int fd;
-    _syscall(fd = open(path, O_RDONLY));
+    int fd(_syscall_(open(path, O_RDONLY), 1, {ENOENT}));
+    if (fd == -1)
+        return NULL;
 
     struct stat stat;
     _syscall(fstat(fd, &stat));
@@ -1716,7 +1717,9 @@ static JSValueRef require(JSContextRef context, JSObjectRef object, JSObjectRef 
     CYJSString property("exports");
     JSObjectRef module;
 
-    const char *path(pool.strcat(lib, "/cycript0.9/", CYPoolCString(pool, context, arguments[0]), ".cy", NULL));
+    const char *name(CYPoolCString(pool, context, arguments[0]));
+    const char *path(pool.strcat(lib, "/cycript0.9/", name, ".cy", NULL));
+
     CYJSString key(path);
     JSObjectRef modules(CYGetCachedObject(context, CYJSString("modules")));
     JSValueRef cache(CYGetProperty(context, modules, key));
@@ -1726,6 +1729,16 @@ static JSValueRef require(JSContextRef context, JSObjectRef object, JSObjectRef 
     else {
         CYUTF8String code;
         code.data = reinterpret_cast<char *>(CYMapFile(path, &code.size));
+
+        if (code.data == NULL) {
+            if (strchr(name, '/') == NULL && (
+                dlopen(pool.strcat("/System/Library/Frameworks/", name, ".framework/", name, NULL), RTLD_LAZY | RTLD_GLOBAL) != NULL ||
+                dlopen(pool.strcat("/System/Library/PrivateFrameworks/", name, ".framework/", name, NULL), RTLD_LAZY | RTLD_GLOBAL) != NULL ||
+            false))
+                return CYJSUndefined(NULL);
+
+            CYThrow("Can't find module: %s", name);
+        }
 
         module = JSObjectMake(context, NULL, NULL);
         CYSetProperty(context, modules, key, module);
