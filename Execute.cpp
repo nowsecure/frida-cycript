@@ -1724,14 +1724,14 @@ static JSValueRef require(JSContextRef context, JSObjectRef object, JSObjectRef 
     if (!JSValueIsUndefined(context, cache))
         module = CYCastJSObject(context, cache);
     else {
+        CYUTF8String code;
+        code.data = reinterpret_cast<char *>(CYMapFile(path, &code.size));
+
         module = JSObjectMake(context, NULL, NULL);
         CYSetProperty(context, modules, key, module);
 
         JSObjectRef exports(JSObjectMake(context, NULL, NULL));
         CYSetProperty(context, module, property, exports);
-
-        CYUTF8String code;
-        code.data = reinterpret_cast<char *>(CYMapFile(path, &code.size));
 
         std::stringstream wrap;
         wrap << "(function (exports, require, module) { " << code << "\n});";
