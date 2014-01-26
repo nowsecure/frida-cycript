@@ -67,6 +67,7 @@ double CYCastDouble(JSContextRef context, JSValueRef value);
 CYUTF8String CYPoolUTF8String(CYPool &pool, JSContextRef context, JSStringRef value);
 const char *CYPoolCString(CYPool &pool, JSContextRef context, JSStringRef value);
 
+bool CYHasProperty(JSContextRef context, JSObjectRef object, JSStringRef name);
 JSValueRef CYGetProperty(JSContextRef context, JSObjectRef object, size_t index);
 JSValueRef CYGetProperty(JSContextRef context, JSObjectRef object, JSStringRef name);
 

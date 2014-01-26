@@ -2143,6 +2143,11 @@ static JSValueRef Internal_callAsFunction_$cya(JSContextRef context, JSObjectRef
     return internal->GetOwner();
 } CYCatch(NULL) }
 
+static bool ObjectiveC_Classes_hasProperty(JSContextRef context, JSObjectRef object, JSStringRef property) {
+    CYPool pool;
+    return objc_getClass(CYPoolCString(pool, context, property)) != Nil;
+}
+
 static JSValueRef ObjectiveC_Classes_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     CYPool pool;
     NSString *name(CYCastNSString(&pool, context, property));
@@ -2931,6 +2936,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "ObjectiveC::Classes";
+    definition.hasProperty = &ObjectiveC_Classes_hasProperty;
     definition.getProperty = &ObjectiveC_Classes_getProperty;
     definition.getPropertyNames = &ObjectiveC_Classes_getPropertyNames;
     ObjectiveC_Classes_ = JSClassCreate(&definition);

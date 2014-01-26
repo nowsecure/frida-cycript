@@ -54,6 +54,10 @@
 struct CYHooks *hooks_;
 
 /* JavaScript Properties {{{ */
+bool CYHasProperty(JSContextRef context, JSObjectRef object, JSStringRef name) {
+    return JSObjectHasProperty(context, object, name);
+}
+
 JSValueRef CYGetProperty(JSContextRef context, JSObjectRef object, size_t index) {
     return _jsccall(JSObjectGetPropertyAtIndex, context, object, index);
 }
@@ -991,6 +995,33 @@ JSObjectRef CYMakeType(JSContextRef context, sig::Signature *signature) {
     return CYMakeType(context, &type);
 }
 
+static bool All_hasProperty(JSContextRef context, JSObjectRef object, JSStringRef property) {
+    JSObjectRef global(CYGetGlobalObject(context));
+    JSObjectRef cycript(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Cycript"))));
+    JSObjectRef alls(CYCastJSObject(context, CYGetProperty(context, cycript, CYJSString("alls"))));
+
+    for (size_t i(0), count(CYArrayLength(context, alls)); i != count; ++i)
+        if (JSObjectRef space = CYCastJSObject(context, CYArrayGet(context, alls, count - i - 1)))
+            if (CYHasProperty(context, space, property))
+                return true;
+
+    CYPool pool;
+    CYUTF8String name(CYPoolUTF8String(pool, context, property));
+
+    size_t length(name.size);
+    char keyed[length + 2];
+    memcpy(keyed + 1, name.data, length + 1);
+
+    static const char *modes = "0124";
+    for (size_t i(0); i != 4; ++i) {
+        keyed[0] = modes[i];
+        if (CYBridgeHash(keyed, length + 1) != NULL)
+            return true;
+    }
+
+    return false;
+}
+
 static JSValueRef All_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     JSObjectRef global(CYGetGlobalObject(context));
     JSObjectRef cycript(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Cycript"))));
@@ -1538,6 +1569,7 @@ void CYInitializeDynamic() {
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "All";
+    definition.hasProperty = &All_hasProperty;
     definition.getProperty = &All_getProperty;
     definition.getPropertyNames = &All_getPropertyNames;
     All_ = JSClassCreate(&definition);
