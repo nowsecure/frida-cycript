@@ -460,27 +460,6 @@ struct CYBlock :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-class CYStream :
-    public std::istream
-{
-  private:
-    class CYBuffer :
-        public std::streambuf
-    {
-      public:
-        CYBuffer(const char *start, const char *end) {
-            setg(const_cast<char *>(start), const_cast<char *>(start), const_cast<char *>(end));
-        }
-    } buffer_;
-
-  public:
-    CYStream(const char *start, const char *end) :
-        std::istream(&buffer_),
-        buffer_(start, end)
-    {
-    }
-};
-
 struct CYForInitialiser {
     virtual ~CYForInitialiser() {
     }

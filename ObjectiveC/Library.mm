@@ -40,6 +40,7 @@
 #include <mach/mach.h>
 #endif
 
+#include "Code.hpp"
 #include "Error.hpp"
 #include "JavaScript.hpp"
 #include "String.hpp"
@@ -3116,7 +3117,8 @@ extern "C" void CydgetMemoryParse(const uint16_t **data, size_t *size) { try {
     CYPool pool;
 
     CYUTF8String utf8(CYPoolUTF8String(pool, CYUTF16String(*data, *size)));
-    utf8 = CYPoolCode(pool, utf8);
+    CYStream stream(utf8.data, utf8.data + utf8.size);
+    utf8 = CYPoolCode(pool, stream);
 
     CYUTF16String utf16(CYPoolUTF16String(pool, CYUTF8String(utf8.data, utf8.size)));
     size_t bytes(utf16.size * sizeof(uint16_t));

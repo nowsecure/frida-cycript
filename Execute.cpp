@@ -44,8 +44,7 @@
 #include <sstream>
 #include <cmath>
 
-#include "Parser.hpp"
-
+#include "Code.hpp"
 #include "Decode.hpp"
 #include "Error.hpp"
 #include "JavaScript.hpp"
@@ -1736,7 +1735,7 @@ static JSValueRef require(JSContextRef context, JSObjectRef object, JSObjectRef 
 
         std::stringstream wrap;
         wrap << "(function (exports, require, module) { " << code << "\n});";
-        code = CYPoolCode(pool, wrap.str().c_str());
+        code = CYPoolCode(pool, wrap);
 
         JSValueRef value(_jsccall(JSEvaluateScript, context, CYJSString(code), NULL, NULL, 0));
         JSObjectRef function(CYCastJSObject(context, value));

@@ -26,7 +26,6 @@
 #include <sstream>
 
 #include "Pooling.hpp"
-#include "String.hpp"
 
 bool CYRecvAll_(int socket, uint8_t *data, size_t size);
 bool CYSendAll_(int socket, const uint8_t *data, size_t size);
@@ -50,7 +49,5 @@ bool CYSendAll(int socket, const Type_ *data, size_t size) {
 }
 
 CYPool &CYGetGlobalPool();
-
-CYUTF8String CYPoolCode(CYPool &pool, CYUTF8String code);
 
 #endif/*CYCRIPT_HPP*/
