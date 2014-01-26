@@ -394,8 +394,15 @@ JSObjectRef Super::Make(JSContextRef context, id object, Class _class) {
     return value;
 } }
 
+bool CYIsKindOfClass(id object, Class _class) {
+    for (Class isa(object_getClass(object)); isa != NULL; isa = class_getSuperclass(isa))
+        if (isa == _class)
+            return true;
+    return false;
+}
+
 JSObjectRef Instance::Make(JSContextRef context, id object, Flags flags) {
-    JSObjectRef value(JSObjectMake(context, [object isKindOfClass:NSBlock_] ? FunctionInstance_ : Instance_, new Instance(object, flags)));
+    JSObjectRef value(JSObjectMake(context, CYIsKindOfClass(object, NSBlock_) ? FunctionInstance_ : Instance_, new Instance(object, flags)));
     JSObjectSetPrototype(context, value, CYGetClassPrototype(context, object_getClass(object)));
     return value;
 }
