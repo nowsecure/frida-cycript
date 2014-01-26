@@ -129,6 +129,8 @@ static void (*$objc_setAssociatedObject)(id object, void *key, id value, objc_As
 static id (*$objc_getAssociatedObject)(id object, void *key);
 static void (*$objc_removeAssociatedObjects)(id object);
 
+@class NSBlock;
+
 struct BlockLiteral {
     Class isa;
     int flags;
@@ -678,7 +680,7 @@ static void BlockClosure_(ffi_cif *cif, void *result, void **arguments, void *ar
     CYExecuteClosure(cif, result, arguments, arg, &BlockAdapter_);
 }
 
-NSObject *CYMakeBlock(JSContextRef context, JSObjectRef function, sig::Signature &signature) {
+NSBlock *CYMakeBlock(JSContextRef context, JSObjectRef function, sig::Signature &signature) {
     _assert(__NSMallocBlock__ != Nil);
     BlockLiteral *literal(reinterpret_cast<BlockLiteral *>(malloc(sizeof(BlockLiteral))));
 
@@ -697,7 +699,7 @@ NSObject *CYMakeBlock(JSContextRef context, JSObjectRef function, sig::Signature
     descriptor->d_.two_.dispose_helper = &CYDisposeBlock;
     descriptor->d_.three_.signature = sig::Unparse(*descriptor->internal_->pool_, &signature);
 
-    return reinterpret_cast<NSObject *>(literal);
+    return reinterpret_cast<NSBlock *>(literal);
 }
 
 NSObject *CYCastNSObject(CYPool *pool, JSContextRef context, JSObjectRef object) {
@@ -1493,30 +1495,49 @@ static void CYObjectiveC_CallFunction(JSContextRef context, ffi_cif *cif, void (
     ffi_call(cif, function, value, values);
 } CYSadCatch() }
 
+static NSBlock *CYCastNSBlock(CYPool &pool, JSContextRef context, JSValueRef value, sig::Signature *signature) {
+    if (JSValueIsNull(context, value))
+        return nil;
+    JSObjectRef object(CYCastJSObject(context, value));
+
+    if (JSValueIsObjectOfClass(context, object, FunctionInstance_))
+        return reinterpret_cast<Instance *>(JSObjectGetPrivate(object))->GetValue();
+
+    if (JSValueIsObjectOfClass(context, object, Instance_)) {
+        _assert(reinterpret_cast<Instance *>(JSObjectGetPrivate(object))->GetValue() == nil);
+        return nil;
+    }
+
+    _assert(JSObjectIsFunction(context, object));
+
+    _assert(signature != NULL);
+    _assert(signature->count != 0);
+
+    sig::Signature modified;
+    modified.count = signature->count + 1;
+    modified.elements = new(pool) sig::Element[modified.count];
+
+    modified.elements[0] = signature->elements[0];
+    memcpy(modified.elements + 2, signature->elements + 1, sizeof(sig::Element) * (signature->count - 1));
+
+    modified.elements[1].name = NULL;
+    modified.elements[1].type = new(pool) sig::Type();
+    modified.elements[1].offset = _not(size_t);
+
+    memset(modified.elements[1].type, 0, sizeof(sig::Type));
+    modified.elements[1].type->primitive = sig::object_P;
+
+    return CYMakeBlock(context, object, modified);
+}
+
 static bool CYObjectiveC_PoolFFI(CYPool *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value) { CYSadTry {
     // XXX: assigning to an indirect id * works for return values, but not for properties and fields
 
     switch (type->primitive) {
-        case sig::block_P: {
-            _assert(type->data.signature.count != 0);
-            sig::Signature signature;
-            sig::Copy(*pool, signature, type->data.signature);
-
-            sig::Element *elements(new(*pool) sig::Element[++signature.count]);
-            elements[0] = signature.elements[0];
-            memcpy(elements + 2, signature.elements + 1, sizeof(sig::Element) * (signature.count - 2));
-            signature.elements = elements;
-
-            elements[1].name = NULL;
-            elements[1].type = new(*pool) sig::Type();
-            elements[1].offset = _not(size_t);
-
-            memset(elements[1].type, 0, sizeof(sig::Type));
-            elements[1].type->primitive = sig::object_P;
-
-            JSObjectRef function(CYCastJSObject(context, value));
-            *reinterpret_cast<id *>(data) = CYMakeBlock(context, function, signature);
-        } break;
+        case sig::block_P:
+            // XXX: this function might not handle the idea of a null pool
+            *reinterpret_cast<id *>(data) = CYCastNSBlock(*pool, context, value, &type->data.signature);
+        break;
 
         case sig::object_P:
         case sig::typename_P:
