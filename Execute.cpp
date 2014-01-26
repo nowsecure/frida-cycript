@@ -1725,6 +1725,12 @@ static JSValueRef require(JSContextRef context, JSObjectRef object, JSObjectRef 
     if (!JSValueIsUndefined(context, cache))
         module = CYCastJSObject(context, cache);
     else {
+        module = JSObjectMake(context, NULL, NULL);
+        CYSetProperty(context, modules, key, module);
+
+        JSObjectRef exports(JSObjectMake(context, NULL, NULL));
+        CYSetProperty(context, module, property, exports);
+
         CYUTF8String code;
         code.data = reinterpret_cast<char *>(CYMapFile(path, &code.size));
 
@@ -1735,13 +1741,8 @@ static JSValueRef require(JSContextRef context, JSObjectRef object, JSObjectRef 
         JSValueRef value(_jsccall(JSEvaluateScript, context, CYJSString(code), NULL, NULL, 0));
         JSObjectRef function(CYCastJSObject(context, value));
 
-        module = JSObjectMake(context, NULL, NULL);
-        JSObjectRef exports(JSObjectMake(context, NULL, NULL));
-        CYSetProperty(context, module, property, exports);
-
         JSValueRef arguments[3] = { exports, JSObjectMakeFunctionWithCallback(context, CYJSString("require"), &require), module };
         CYCallAsFunction(context, function, NULL, 3, arguments);
-        CYSetProperty(context, modules, key, module);
     }
 
     return CYGetProperty(context, module, property);
