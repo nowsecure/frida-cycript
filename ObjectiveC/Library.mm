@@ -2859,11 +2859,6 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     definition.className = "BooleanInstance";
     BooleanInstance_ = JSClassCreate(&definition);
 
-    definition.className = "FunctionInstance";
-    definition.staticValues = FunctionInstance_staticValues;
-    definition.callAsFunction = &FunctionInstance_callAsFunction;
-    FunctionInstance_ = JSClassCreate(&definition);
-
     definition.className = "NumberInstance";
     NumberInstance_ = JSClassCreate(&definition);
 
@@ -2872,6 +2867,11 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
 
     definition.className = "StringInstance";
     StringInstance_ = JSClassCreate(&definition);
+
+    definition.className = "FunctionInstance";
+    definition.staticValues = FunctionInstance_staticValues;
+    definition.callAsFunction = &FunctionInstance_callAsFunction;
+    FunctionInstance_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "Class";
