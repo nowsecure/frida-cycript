@@ -19,4 +19,5 @@
 # along with Cycript.  If not, see <http://www.gnu.org/licenses/>.
 # }}}
 
+dir=${0%/*}
 DYLD_LIBRARY_PATH=Cycript.lib exec Cycript.lib/cycript "$@"
