@@ -1271,7 +1271,7 @@ V kCFDateFormatterIsLenient @
 V kCFDateFormatterTimeZone @
 V kCFDateFormatterCalendarName @
 V kCFDateFormatterDefaultFormat @
-   
+
 V kCFDateFormatterTwoDigitStartDate @
 V kCFDateFormatterDefaultDate @
 V kCFDateFormatterCalendar @
@@ -1282,7 +1282,7 @@ V kCFDateFormatterWeekdaySymbols @
 V kCFDateFormatterShortWeekdaySymbols @
 V kCFDateFormatterAMSymbol @
 V kCFDateFormatterPMSymbol @
-   
+
 V kCFDateFormatterLongEraSymbols @
 V kCFDateFormatterVeryShortMonthSymbols @
 V kCFDateFormatterStandaloneMonthSymbols @
@@ -1470,7 +1470,7 @@ F CFMakeCollectable {CFTypeRef}{CFTypeRef}
 F CFRelease v{CFTypeRef}
 F CFRetain {CFTypeRef}{CFTypeRef}
 
-F CFEqual 
+F CFEqual
 
 F CFHash {CFHashCode}{CFTypeRef}
 
