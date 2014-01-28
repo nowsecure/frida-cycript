@@ -457,6 +457,252 @@ V UIWebViewGrowsAndShrinksToFitHeight f
 V UIWebViewGrowsAndShrinksToFitWidth f
 V UIWebViewScalesToFitScale f
 
+f Security
+
+T OSStatus {ulong}
+
+F SecCertificateAddToKeychain {OSStatus}@@
+F SecCertificateCopyCommonName {OSStatus}@^@
+F SecCertificateCopyData @@
+F SecCertificateCopyEmailAddresses {OSStatus}@^@
+F SecCertificateCopyLongDescription @@@^@
+F SecCertificateCopyNormalizedIssuerContent @@^@
+F SecCertificateCopyNormalizedSubjectContent @@^@
+F SecCertificateCopyPreferred @@@
+F SecCertificateCopyPublicKey {OSStatus}@^@
+F SecCertificateCopySerialNumber @@^@
+F SecCertificateCopyShortDescription @@@^@
+F SecCertificateCopySubjectSummary @@
+F SecCertificateCopyValues @@@^@
+F SecCertificateCreateWithData @@@
+F SecCertificateGetItem @@^@
+F SecCertificateGetTypeID {CFTypeID}
+F SecCertificateSetPreference {OSStatus}@@{uint32_t}@
+F SecCertificateSetPreferred {OSStatus}@@@
+F SecCopyErrorMessageString @{OSStatus}^v
+F SecIdentityCopyCertificate {OSStatus}@^@
+F SecIdentityCopyPreferred @@@@
+F SecIdentityCopyPrivateKey {OSStatus}@^@
+F SecIdentityCopySystemIdentity {OSStatus}@^@^@
+F SecIdentityCreateWithCertificate {OSStatus}@@^@
+F SecIdentityGetTypeID {CFTypeID}
+F SecIdentitySetPreferred {OSStatus}@@@
+F SecIdentitySetSystemIdentity {OSStatus}@@
+F SecKeyCreateFromData @@@^@
+F SecKeyDeriveFromPassword @@@^@
+F SecKeyGeneratePair {OSStatus}@^@^@
+F SecKeyGeneratePairAsync v@{dispatch_queue_t}@?
+F SecKeyGenerateSymmetric @@^@
+F SecKeyGetBlockSize {size_t}@
+F SecKeyGetTypeID {CFTypeID}
+F SecKeyUnwrapSymmetric @^@@@^@
+F SecKeyWrapSymmetric @@@@^@
+F SecPKCS12Import {OSStatus}@@^@
+F SecPolicyCopyProperties @@
+F SecPolicyCreateBasicX509 @
+F SecPolicyCreateSSL @B@
+F SecPolicyGetTypeID {CFTypeID}
+F SecTrustCopyAnchorCertificates {OSStatus}^@
+F SecTrustCopyCustomAnchorCertificates {OSStatus}@^@
+F SecTrustCopyExceptions @@
+F SecTrustCopyPolicies {OSStatus}@^@
+F SecTrustCopyProperties @@
+F SecTrustCopyPublicKey @@
+F SecTrustCreateWithCertificates {OSStatus}@@^@
+F SecTrustEvaluate {OSStatus}@^@
+F SecTrustEvaluateAsync @{dispatch_queue_t}@?
+F SecTrustGetCertificateAtIndex @@{CFIndex}
+F SecTrustGetCertificateCount {CFIndex}@
+F SecTrustGetTrustResult {OSStatus}@^@
+F SecTrustGetTypeID {CFTypeID}
+F SecTrustGetVerifyTime {CFAbsoluteTime}@
+F SecTrustSetAnchorCertificates {OSStatus}@@
+F SecTrustSetAnchorCertificatesOnly {OSStatus}@B
+F SecTrustSetExceptions B@@
+F SecTrustSetKeychains {OSStatus}@@
+F SecTrustSetOptions {OSStatus}@{SecTrustOptionFlags}
+F SecTrustSetPolicies {OSStatus}@@
+F SecTrustSettingsCopyCertificates {OSStatus}{SecTrustSettingsDomain}^@
+F SecTrustSettingsCopyModificationDate {OSStatus}@{SecTrustSettingsDomain}^@
+F SecTrustSettingsCopyTrustSettings {OSStatus}@{SecTrustSettingsDomain}^@
+F SecTrustSettingsCreateExternalRepresentation {OSStatus}{SecTrustSettingsDomain}^@
+F SecTrustSettingsImportExternalRepresentation {OSStatus}{SecTrustSettingsDomain}@
+F SecTrustSettingsRemoveTrustSettings {OSStatus}@{SecTrustSettingsDomain}
+F SecTrustSettingsSetTrustSettings {OSStatus}@{SecTrustSettingsDomain}@
+F SecTrustSetVerifyDate {OSStatus}@@
+
+C CSSM_CERT_STATUS_EXPIRED 0x00000001
+C CSSM_CERT_STATUS_NOT_VALID_YET 0x00000002
+C CSSM_CERT_STATUS_IS_IN_INPUT_CERTS 0x00000004
+C CSSM_CERT_STATUS_IS_IN_ANCHORS 0x00000008
+C CSSM_CERT_STATUS_IS_ROOT 0x00000010
+C CSSM_CERT_STATUS_IS_FROM_NET 0x00000020
+
+C kSecPaddingNone 0
+C kSecPaddingPKCS1 1
+C kSecPaddingPKCS1MD2 0x8000
+C kSecPaddingPKCS1MD5 0x8001
+C kSecPaddingPKCS1SHA1 0x8002
+
+C kSecTrustResultInvalid 0
+C kSecTrustResultProceed 1
+C kSecTrustResultConfirm 2
+C kSecTrustResultDeny 3
+C kSecTrustResultUnspecified 4
+C kSecTrustResultRecoverableTrustFailure 5
+C kSecTrustResultFatalTrustFailure 6
+C kSecTrustResultOtherError 7
+
+C CSSM_TP_ACTION_ALLOW_EXPIRED 0x00000001
+C CSSM_TP_ACTION_LEAF_IS_CA 0x00000002
+C CSSM_TP_ACTION_FETCH_CERT_FROM_NET 0x00000004
+C CSSM_TP_ACTION_ALLOW_EXPIRED_ROOT 0x00000008
+
+V kSecImportItemLabel @
+V kSecImportItemKeyID @
+V kSecImportItemTrust @
+V kSecImportItemCertChain @
+V kSecImportItemIdentity @
+
+V kSecIdentityDomainDefault @
+V kSecIdentityDomainKerberosKDC @
+
+C kSecCredentialTypeDefault 0
+C kSecCredentialTypeWithUI 1
+C kSecCredentialTypeNoUI 2
+
+T SecTrustSettingsDomain {uint32_t}
+C kSecTrustSettingsDomainUser 0
+C kSecTrustSettingsDomainAdmin 1
+C kSecTrustSettingsDomainSystem 2
+
+C kSecTrustSettingsKeyUseSignature 0x00000001
+C kSecTrustSettingsKeyUseEnDecryptData 0x00000002
+C kSecTrustSettingsKeyUseEnDecryptKey 0x00000004
+C kSecTrustSettingsKeyUseSignCert 0x00000008
+C kSecTrustSettingsKeyUseSignRevocation 0x00000010
+C kSecTrustSettingsKeyUseKeyExchange 0x00000020
+C kSecTrustSettingsKeyUseAny 0xffffffff
+
+C kSecTrustSettingsPolicy @"kSecTrustSettingsPolicy"
+C kSecTrustSettingsApplication @"kSecTrustSettingsApplication"
+C kSecTrustSettingsPolicyString @"kSecTrustSettingsPolicyString"
+C kSecTrustSettingsKeyUsage @"kSecTrustSettingsKeyUsage"
+C kSecTrustSettingsAllowedError @"kSecTrustSettingsAllowedError"
+C kSecTrustSettingsResult @"kSecTrustSettingsResult"
+
+C kSecTrustSettingsResultInvalid 0
+C kSecTrustSettingsResultTrustRoot 1
+C kSecTrustSettingsResultTrustAsRoot 2
+C kSecTrustSettingsResultDeny 3
+C kSecTrustSettingsResultUnspecified 4
+
+# XXX: this is a pointer...
+C kSecTrustSettingsDefaultRootCertSetting -1
+
+V kSecPropertyKeyType @
+V kSecPropertyKeyLabel @
+V kSecPropertyKeyLocalizedLabel @
+V kSecPropertyKeyValue @
+
+V kSecPropertyTypeWarning @
+V kSecPropertyTypeSuccess @
+V kSecPropertyTypeSection @
+V kSecPropertyTypeData @
+V kSecPropertyTypeString @
+V kSecPropertyTypeURL @
+V kSecPropertyTypeDate @
+V kSecPropertyTypeTitle @
+V kSecPropertyTypeError @
+
+V kSecCertificateUsageSigning @
+V kSecCertificateUsageSigningAndEncrypting @
+V kSecCertificateUsageDeriveAndSign @
+
+V kSecPolicyOid @
+V kSecPolicyName @
+V kSecPolicyClient @
+V kSecPolicyKU_DigitalSignature @
+V kSecPolicyKU_NonRepudiation @
+V kSecPolicyKU_KeyEncipherment @
+V kSecPolicyKU_DataEncipherment @
+V kSecPolicyKU_KeyAgreement @
+V kSecPolicyKU_KeyCertSign @
+V kSecPolicyKU_CRLSign @
+V kSecPolicyKU_EncipherOnly @
+V kSecPolicyKU_DecipherOnly @
+
+C kSecTrustOptionAllowExpired 0x00000001
+C kSecTrustOptionLeafIsCA 0x00000002
+C kSecTrustOptionFetchIssuerFromNet 0x00000004
+C kSecTrustOptionAllowExpiredRoot 0x00000008
+C kSecTrustOptionRequireRevPerCert 0x00000010
+C kSecTrustOptionImplicitAnchors 0x00000040
+
+C kSecDefaultKeySize 0
+C kSec3DES192 192
+C kSecAES128 128
+C kSecAES192 192
+C kSecAES256 256
+C kSecp192r1 192
+C kSecp256r1 256
+C kSecp384r1 384
+C kSecp521r1 521
+C kSecRSAMin 1024
+C kSecRSAMax 4096
+
+V kSecPolicyAppleX509Basic @
+V kSecPolicyAppleSSL @
+V kSecPolicyAppleSMIME @
+V kSecPolicyAppleEAP @
+V kSecPolicyAppleIPsec @
+V kSecPolicyAppleiCha @
+V kSecPolicyApplePKINITClient @
+V kSecPolicyApplePKINITServer @
+V kSecPolicyAppleCodeSigning @
+V kSecPolicyMacAppStoreReceipt @
+V kSecPolicyAppleIDValidation @
+V kSecPolicyAppleTimeStamping @
+
+C errSecSuccess 0
+C errSecUnimplemented -4
+C errSecParam -50
+C errSecAllocate  -108
+C errSecNotAvailable  –25291
+C errSecReadOnly  –25292
+C errSecAuthFailed  –25293
+C errSecNoSuchKeychain  –25294
+C errSecInvalidKeychain –25295
+C errSecDuplicateKeychain –25296
+C errSecDuplicateItem –25299
+C errSecItemNotFound  –25300
+C errSecBufferTooSmall  –25301
+C errSecDataTooLarge  –25302
+C errSecNoSuchAttr  –25303
+C errSecInvalidItemRef  –25304
+C errSecInvalidSearchRef  –25305
+C errSecNoSuchClass –25306
+C errSecNoDefaultKeychain –25307
+C errSecInteractionNotAllowed –25308
+C errSecReadOnlyAttr  –25309
+C errSecWrongSecVersion –25310
+C errSecKeySizeNotAllowed –25311
+C errSecNoStorageModule –25312
+C errSecNoCertificateModule –25313
+C errSecNoPolicyModule  –25314
+C errSecInteractionRequired –25315
+C errSecDataNotAvailable  –25316
+C errSecDataNotModifiable –25317
+C errSecCreateChainFailed –25318
+C errSecInvalidPrefsDomain  –25319
+C errSecACLNotSimple  –25240
+C errSecPolicyNotFound  –25241
+C errSecInvalidTrustSetting –25242
+C errSecNoAccessForItem –25243
+C errSecInvalidOwnerEdit  –25244
+C errSecTrustNotAvailable –25245
+C errSecDecode  -26275
+
 f AddressBook
 
 # Private
