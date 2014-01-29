@@ -794,13 +794,6 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
     }
 
 #ifdef CY_ATTACH
-    if (pid != _not(pid_t) && script == NULL && !tty) {
-        fprintf(stderr, "non-terminal attaching to remote console\n");
-        return 1;
-    }
-#endif
-
-#ifdef CY_ATTACH
     if (pid == _not(pid_t))
         client_ = -1;
     else {
