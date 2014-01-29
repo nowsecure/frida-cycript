@@ -2,8 +2,6 @@ C YES true
 C NO false
 C NULL null
 
-: applicationDidFinishLaunching: v12@0:4@8
-
 T id @
 T Class #
 T SEL :
@@ -170,9 +168,6 @@ V UINavigationControllerHideShowBarDuration f
 
 # UINavigationControllerDelegate
 
-: navigationController:willShowViewController:animated: v20@0:4@8@12B16
-: navigationController:didShowViewController:animated: v20@0:4@8@12B16
-
 # UIScrollView
 
 C UIScrollViewIndicatorStyleDefault 0
@@ -184,28 +179,9 @@ V UIScrollViewDecelerationRateFast f
 
 # UIScrollViewDelegate
 
-: scrollViewDidScroll: v12@0:4@8
-: scrollViewWillBeginDragging: v12@0:4@8
-: scrollViewDidEndDragging:willDecelerate: v16@0:4@8B12
-: scrollViewShouldScrollToTop: B12@0:4@8
-: scrollViewDidScrollToTop: v12@0:4@8
-: scrollViewWillBeginDecelerating: v12@0:4@8
-: scrollViewDidEndDecelerating: v12@0:4@8
-
-: viewForZoomingInScrollView: @12@0:4@8
-: scrollViewDidEndZooming:withView:atScale: v20@0:4@8@12f16
-
-: scrollViewDidEndScrollingAnimation: v12@0:4@8
-
 # UITabBar
 
 # UITabBarDelegate
-
-: tabBar:willBeginCustomizingItems: v16@0:4@8@12
-: tabBar:didBeginCustomizingItems: v16@0:4@8@12
-: tabBar:willBeginCustomizingItems:changed: v20@0:4@8@12B16
-: tabBar:didBeginCustomizingItems:changed: v20@0:4@8@12B16
-: tabBar:didSelectItem: v16@0:4@8@12
 
 # UITableView
 
@@ -256,20 +232,6 @@ C UITableViewCellSeparatorStyleSingleLine 1
 # UITableViewController
 
 # UITableViewDataSource
-
-: tableView:numberOfRowsInSection: i16@0:4@8i12
-: numberOfSectionsInTableView: i12@0:4@8
-: tableView:cellForRowAtIndexPath: @16@0:4@8@12
-: sectionIndexTitlesForTableView: @12@0:4@8
-: tableView:sectionForSectionIndexTitle:atIndex: i20@0:4@8@12i16
-: tableView:titleForHeaderInSection: @16@0:4@8i12
-: tableView:titleForFooterInSection: @16@0:4@8i12
-
-: tableView:commitEditingStyle:forRowAtIndexPath: v20@0:4@8i12@16
-: tableView:canEditRowAtIndexPath: B16@0:4@8@12
-
-: tableView:canMoveRowAtIndexPath: B16@0:4@8@12
-: tableView:moveRowAtIndexPath:toIndexPath: v20@0:4@8@12@16
 
 # UIToolbar
 
@@ -324,11 +286,6 @@ C UIWebViewNavigationTypeFormResubmitted 4
 C UIWebViewNavigationTypeOther 5
 
 # UIWebViewDelegate
-
-: webView:shouldStartLoadWithRequest:navigationType: B20@0:4@8@12I16
-: webViewDidStartLoad: v12@0:4@8
-: webViewDidFinishLoad: v12@0:4@8
-: webView:didFailLoadWithError: v16@0:4@8@12
 
 # UIWindow
 

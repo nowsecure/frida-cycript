@@ -1601,24 +1601,6 @@ static bool CYImplements(id object, Class _class, SEL selector, bool devoid = fa
     return false;
 }
 
-static const char *CYPoolTypeEncoding(CYPool &pool, JSContextRef context, SEL sel, objc_method *method) {
-    if (method != NULL)
-        return method_getTypeEncoding(method);
-
-    const char *name(sel_getName(sel));
-    size_t length(strlen(name));
-
-    char keyed[length + 2];
-    keyed[0] = '6';
-    keyed[length + 1] = '\0';
-    memcpy(keyed + 1, name, length);
-
-    if (CYBridgeEntry *entry = CYBridgeHash(keyed, length + 1))
-        return entry->value_;
-
-    return NULL;
-}
-
 static JSValueRef MessageAdapter_(JSContextRef context, size_t count, JSValueRef values[], JSObjectRef function) {
     JSObjectRef _this(CYCastJSObject(context, values[0]));
     return CYCallAsFunction(context, function, _this, count - 2, values + 2);
@@ -1686,11 +1668,10 @@ static bool Messages_setProperty(JSContextRef context, JSObjectRef object, JSStr
         Message_privateData *message(reinterpret_cast<Message_privateData *>(JSObjectGetPrivate((JSObjectRef) value)));
         type = sig::Unparse(pool, &message->signature_);
         imp = reinterpret_cast<IMP>(message->GetValue());
-    } else {
-        objc_method *method(class_getInstanceMethod(_class, sel));
-        type = CYPoolTypeEncoding(pool, context, sel, method);
+    } else if (objc_method *method = class_getInstanceMethod(_class, sel)) {
+        type = method_getTypeEncoding(method);
         imp = CYMakeMessage(context, value, type);
-    }
+    } else _assert(false);
 
     objc_method *method(NULL);
 #if OBJC_API_VERSION >= 2
@@ -2760,15 +2741,9 @@ static JSValueRef Selector_callAsFunction_type(JSContextRef context, JSObjectRef
     Selector_privateData *internal(reinterpret_cast<Selector_privateData *>(JSObjectGetPrivate(_this)));
     SEL sel(internal->GetValue());
 
-    objc_method *method;
-    if (Class _class = CYCastClass(pool, context, arguments[0]))
-        method = class_getInstanceMethod(_class, sel);
-    else
-        method = NULL;
-
-    const char *encoding(CYPoolTypeEncoding(pool, context, sel, method));
-    if (encoding == NULL)
-        return CYJSNull(context);
+    Class _class(_require(CYCastClass(pool, context, arguments[0])));
+    objc_method *method(_require(class_getInstanceMethod(_class, sel)));
+    const char *encoding(method_getTypeEncoding(method));
 
     sig::Signature signature;
     sig::Parse(pool, &signature, encoding, &Structor_);

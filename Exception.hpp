@@ -70,6 +70,11 @@ while (false)
 #define _assert(test) \
     _assert_("assert", (test), #test, "")
 
+#define _require(expr) ({ \
+    __typeof__(expr) _value = (expr); \
+    _assert_("require", _value != NULL, #expr, ""); \
+_value; })
+
 #define _trace() do { \
     fprintf(stderr, "_trace():%u\n", __LINE__); \
 } while (false)
