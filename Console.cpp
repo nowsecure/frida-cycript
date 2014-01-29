@@ -616,6 +616,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
 
     bool tty(isatty(STDIN_FILENO));
     bool compile(false);
+    bool target(false);
     CYOptions options;
 
     append_history$ = (int (*)(int, const char *)) (dlsym(RTLD_DEFAULT, "append_history"));
@@ -664,9 +665,22 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
         }
 
         switch (opt) {
+            target:
+                if (!target)
+                    target = true;
+                else {
+                    fprintf(stderr, "only one of -[c"
+#ifdef CY_ATTACH
+                    "p"
+#endif
+                    "r] may be used at a time\n");
+                    return 1;
+                }
+            break;
+
             case 'c':
                 compile = true;
-            break;
+            goto target;
 
             case 'g':
                 if (false);
@@ -738,7 +752,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
                         return 1;
                     }
                 }
-            } break;
+            } goto target;
 #endif
 
             case 'r': {
@@ -760,7 +774,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
                 host = arg;
                 *colon = '\0';
                 port = colon + 1;
-            } break;
+            } goto target;
 
             case 's':
                 strict_ = true;
@@ -774,11 +788,6 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
 #ifdef CY_ATTACH
     if (pid != _not(pid_t) && ind < argc - 1) {
         fprintf(stderr, "-p cannot set argv\n");
-        return 1;
-    }
-
-    if (pid != _not(pid_t) && compile) {
-        fprintf(stderr, "-p conflicts with -c\n");
         return 1;
     }
 #endif
