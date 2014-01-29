@@ -631,17 +631,19 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
     _aprcall(apr_getopt_init(&state, pool, argc, argv));
 
     for (;;) {
-        char opt;
+        int opt;
         const char *arg;
 
-        apr_status_t status(apr_getopt(state,
-            "cg:n:"
+        apr_status_t status(apr_getopt_long(state, (apr_getopt_option_t[]) {
+            {NULL, 'c', false, NULL},
+            {NULL, 'g', true, NULL},
+            {NULL, 'n', true, NULL},
 #ifdef CY_ATTACH
-            "p:"
+            {NULL, 'p', true, NULL},
 #endif
-            "r:"
-            "s"
-        , &opt, &arg));
+            {NULL, 'r', true, NULL},
+            {NULL, 's', false, NULL},
+        {0, 0, 0, 0}}, &opt, &arg));
 
         switch (status) {
             case APR_EOF:
