@@ -155,6 +155,8 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
 <RegExp>\/{RegularExpressionBody}\/{RegularExpressionFlags} L C I(literal, RegEx(Y), tk::RegularExpressionLiteral, hi::Constant);
 
+#![^\n]* L M
+
 \/\/[^\n]* L M
 
 	/* http://ostermiller.org/findcomment.html */
