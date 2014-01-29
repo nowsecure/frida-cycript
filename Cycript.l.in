@@ -119,7 +119,8 @@ int H(char c) {
 %option noyywrap
 %option yylineno
 %option nounput
-%option interactive
+%option batch
+%option never-interactive
 %option reentrant
 %option stack
 
