@@ -1470,8 +1470,10 @@ static SEL CYCastSEL(JSContextRef context, JSValueRef value) {
     if (JSValueIsObjectOfClass(context, value, Selector_)) {
         Selector_privateData *internal(reinterpret_cast<Selector_privateData *>(JSObjectGetPrivate((JSObjectRef) value)));
         return reinterpret_cast<SEL>(internal->value_);
-    } else
-        return CYCastPointer<SEL>(context, value);
+    } else {
+        CYPool pool;
+        return sel_registerName(CYPoolCString(pool, context, value));
+    }
 }
 
 void *CYObjectiveC_ExecuteStart(JSContextRef context) { CYSadTry {

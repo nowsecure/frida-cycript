@@ -206,7 +206,7 @@ CYExpression *CYSendDirect::Replace(CYContext &context) {
             argument = &(*argument)->next_;
     }
 
-    return $C2($V("objc_msgSend"), self_, ($ CYSelector(selector))->Replace(context), arguments_);
+    return $C2($V("objc_msgSend"), self_, selector->Replace(context), arguments_);
 }
 
 CYExpression *CYSendSuper::Replace(CYContext &context) {
