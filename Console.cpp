@@ -814,19 +814,27 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
             address.sun_family = AF_UNIX;
 
             sprintf(address.sun_path, "/tmp/.s.cy.%u", getpid());
+            unlink(address.sun_path);
+
+            struct File {
+                const char *path_;
+
+                File(const char *path) :
+                    path_(path)
+                {
+                }
+
+                ~File() {
+                    unlink(path_);
+                }
+            } file(address.sun_path);
 
             _syscall(bind(server, reinterpret_cast<sockaddr *>(&address), SUN_LEN(&address)));
             _syscall(chmod(address.sun_path, 0777));
 
-            try {
-                _syscall(listen(server, 1));
-                InjectLibrary(pid);
-                client_ = _syscall(accept(server, NULL, NULL));
-            } catch (...) {
-                // XXX: exception?
-                unlink(address.sun_path);
-                throw;
-            }
+            _syscall(listen(server, 1));
+            InjectLibrary(pid);
+            client_ = _syscall(accept(server, NULL, NULL));
         } catch (...) {
             _syscall(close(server));
             throw;
