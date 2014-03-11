@@ -1087,7 +1087,7 @@ NSObject *CYCopyNSObject(CYPool &pool, JSContextRef context, JSValueRef value) {
 }
 
 - (NSString *) cy$toCYON:(bool)objective {
-    return [@"^" stringByAppendingString:[[self description] cy$toCYON:true]];
+    return [@"#" stringByAppendingString:[[self description] cy$toCYON:true]];
 }
 
 - (bool) cy$hasProperty:(NSString *)name {

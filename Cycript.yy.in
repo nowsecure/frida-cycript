@@ -161,6 +161,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 
 @begin E4X ObjectiveC
 %token At "@"
+%token Pound "#"
 @end
 
 %token Ampersand "&"
@@ -1664,7 +1665,7 @@ PrimaryExpression
 /* }}} */
 /* Cycript (Objective-C): Instance Literals {{{ */
 PrimaryExpression
-    : "^" NumericLiteral { $$ = CYNew CYInstanceLiteral($2); }
+    : "#" NumericLiteral { $$ = CYNew CYInstanceLiteral($2); }
     ;
 /* }}} */
 @end
