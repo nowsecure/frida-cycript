@@ -207,6 +207,7 @@ void InjectLibrary(pid_t pid) {
 
     baton->dyld = info.all_image_info_addr;
     baton->pid = getpid();
+    memset(baton->error, 0, sizeof(baton->error));
     memcpy(baton->library, library, length);
 
     mach_vm_size_t size(depth + Stack_);
