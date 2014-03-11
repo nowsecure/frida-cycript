@@ -808,37 +808,49 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
     if (pid == _not(pid_t))
         client_ = -1;
     else {
-        int server(_syscall(socket(PF_UNIX, SOCK_STREAM, 0))); try {
-            struct sockaddr_un address;
-            memset(&address, 0, sizeof(address));
-            address.sun_family = AF_UNIX;
+        struct Socket {
+            int fd_;
 
-            sprintf(address.sun_path, "/tmp/.s.cy.%u", getpid());
-            unlink(address.sun_path);
+            Socket(int fd) :
+                fd_(fd)
+            {
+            }
 
-            struct File {
-                const char *path_;
+            ~Socket() {
+                close(fd_);
+            }
 
-                File(const char *path) :
-                    path_(path)
-                {
-                }
+            operator int() {
+                return fd_;
+            }
+        } server(_syscall(socket(PF_UNIX, SOCK_STREAM, 0)));
 
-                ~File() {
-                    unlink(path_);
-                }
-            } file(address.sun_path);
+        struct sockaddr_un address;
+        memset(&address, 0, sizeof(address));
+        address.sun_family = AF_UNIX;
 
-            _syscall(bind(server, reinterpret_cast<sockaddr *>(&address), SUN_LEN(&address)));
-            _syscall(chmod(address.sun_path, 0777));
+        sprintf(address.sun_path, "/tmp/.s.cy.%u", getpid());
+        unlink(address.sun_path);
 
-            _syscall(listen(server, 1));
-            InjectLibrary(pid);
-            client_ = _syscall(accept(server, NULL, NULL));
-        } catch (...) {
-            _syscall(close(server));
-            throw;
-        }
+        struct File {
+            const char *path_;
+
+            File(const char *path) :
+                path_(path)
+            {
+            }
+
+            ~File() {
+                unlink(path_);
+            }
+        } file(address.sun_path);
+
+        _syscall(bind(server, reinterpret_cast<sockaddr *>(&address), SUN_LEN(&address)));
+        _syscall(chmod(address.sun_path, 0777));
+
+        _syscall(listen(server, 1));
+        InjectLibrary(pid);
+        client_ = _syscall(accept(server, NULL, NULL));
     }
 #else
     client_ = -1;
