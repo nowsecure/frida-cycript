@@ -2048,6 +2048,7 @@ static void CYBitField(unsigned &length, unsigned &shift, id self, Ivar ivar, co
             break;
         else if (ivar_getOffset(ivars[i]) == offset) {
             const char *encoding(ivar_getTypeEncoding(ivars[i]));
+            _assert(encoding != NULL);
             _assert(encoding[0] == 'b');
             shift += CYCastDouble(encoding + 1);
         }
@@ -2071,6 +2072,7 @@ static JSValueRef Internal_getProperty(JSContextRef context, JSObjectRef object,
         void *data(reinterpret_cast<uint8_t *>(self) + offset);
 
         const char *encoding(ivar_getTypeEncoding(ivar));
+        _assert(encoding != NULL);
         if (encoding[0] == 'b') {
             unsigned length, shift;
             CYBitField(length, shift, self, ivar, encoding, offset);
@@ -2099,6 +2101,7 @@ static bool Internal_setProperty(JSContextRef context, JSObjectRef object, JSStr
         void *data(reinterpret_cast<uint8_t *>(self) + offset);
 
         const char *encoding(ivar_getTypeEncoding(ivar));
+        _assert(encoding != NULL);
         if (encoding[0] == 'b') {
             unsigned length, shift;
             CYBitField(length, shift, self, ivar, encoding, offset);
