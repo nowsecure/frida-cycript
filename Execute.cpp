@@ -360,7 +360,7 @@ static JSValueRef Cycript_gc_callAsFunction(JSContextRef context, JSObjectRef ob
     return CYJSUndefined(context);
 } CYCatch(NULL) }
 
-const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSValueRef value, JSValueRef *exception) { CYTry {
+const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSValueRef value, std::set<void *> &objects, JSValueRef *exception) { CYTry {
     switch (JSType type = JSValueGetType(context, value)) {
         case kJSTypeUndefined:
             return "undefined";
@@ -385,20 +385,31 @@ const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSValueRef value, JS
         } break;
 
         case kJSTypeObject:
-            return CYPoolCCYON(pool, context, (JSObjectRef) value);
+            return CYPoolCCYON(pool, context, (JSObjectRef) value, objects);
         default:
             throw CYJSError(context, "JSValueGetType() == 0x%x", type);
     }
 } CYCatch(NULL) }
 
-const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSValueRef value) {
-    return _jsccall(CYPoolCCYON, pool, context, value);
+const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSValueRef value, std::set<void *> &objects) {
+    return _jsccall(CYPoolCCYON, pool, context, value, objects);
 }
 
-const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSObjectRef object) {
+const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSValueRef value, std::set<void *> *objects) {
+    if (objects != NULL)
+        return CYPoolCCYON(pool, context, value, *objects);
+    else {
+        std::set<void *> objects;
+        return CYPoolCCYON(pool, context, value, objects);
+    }
+}
+
+const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSObjectRef object, std::set<void *> &objects) {
     JSValueRef toCYON(CYGetProperty(context, object, toCYON_s));
     if (CYIsCallable(context, toCYON)) {
-        JSValueRef value(CYCallAsFunction(context, (JSObjectRef) toCYON, object, 0, NULL));
+        // XXX: this needs to be abstracted behind some kind of function
+        JSValueRef arguments[1] = {CYCastJSValue(context, static_cast<double>(reinterpret_cast<uintptr_t>(&objects)))};
+        JSValueRef value(CYCallAsFunction(context, (JSObjectRef) toCYON, object, 1, arguments));
         _assert(value != NULL);
         return CYPoolCString(pool, context, value);
     }
@@ -406,7 +417,7 @@ const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSObjectRef object) 
     JSValueRef toJSON(CYGetProperty(context, object, toJSON_s));
     if (CYIsCallable(context, toJSON)) {
         JSValueRef arguments[1] = {CYCastJSValue(context, CYJSString(""))};
-        return _jsccall(CYPoolCCYON, pool, context, CYCallAsFunction(context, (JSObjectRef) toJSON, object, 1, arguments));
+        return _jsccall(CYPoolCCYON, pool, context, CYCallAsFunction(context, (JSObjectRef) toJSON, object, 1, arguments), objects);
     }
 
     if (JSObjectIsFunction(context, object)) {
@@ -418,6 +429,8 @@ const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSObjectRef object) 
             return CYPoolCString(pool, context, value);
         }
     }
+
+    _assert(objects.insert(object).second);
 
     std::ostringstream str;
 
@@ -446,7 +459,7 @@ const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSObjectRef object) 
 
         try {
             JSValueRef value(CYGetProperty(context, object, name));
-            str << CYPoolCCYON(pool, context, value);
+            str << CYPoolCCYON(pool, context, value, objects);
         } catch (const CYException &error) {
             str << "@error";
         }
@@ -460,7 +473,19 @@ const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSObjectRef object) 
     return pool.strmemdup(string.c_str(), string.size());
 }
 
+std::set<void *> *CYCastObjects(JSContextRef context, JSObjectRef _this, size_t count, const JSValueRef arguments[]) {
+    if (count == 0)
+        return NULL;
+    return CYCastPointer<std::set<void *> *>(context, arguments[0]);
+}
+
 static JSValueRef Array_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    std::set<void *> *objects(CYCastObjects(context, _this, count, arguments));
+    // XXX: this is horribly inefficient
+    std::set<void *> backup;
+    if (objects == NULL)
+        objects = &backup;
+
     CYPool pool;
     std::ostringstream str;
 
@@ -478,7 +503,7 @@ static JSValueRef Array_callAsFunction_toCYON(JSContextRef context, JSObjectRef 
         try {
             JSValueRef value(CYGetProperty(context, _this, index));
             if (!JSValueIsUndefined(context, value))
-                str << CYPoolCCYON(pool, context, value);
+                str << CYPoolCCYON(pool, context, value, *objects);
             else {
                 str << ',';
                 comma = false;
@@ -1355,6 +1380,8 @@ static JSValueRef CYValue_callAsFunction_toCYON(JSContextRef context, JSObjectRe
 } CYCatch(NULL) }
 
 static JSValueRef Pointer_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    std::set<void *> *objects(CYCastObjects(context, _this, count, arguments));
+
     Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(_this)));
     if (internal->length_ != _not(size_t)) {
         JSObjectRef Array(CYGetCachedObject(context, CYJSString("Array_prototype")));
@@ -1369,7 +1396,7 @@ static JSValueRef Pointer_callAsFunction_toCYON(JSContextRef context, JSObjectRe
         if (JSValueIsUndefined(context, value))
             goto pointer;
         CYPool pool;
-        return CYCastJSValue(context, pool.strcat("&", CYPoolCCYON(pool, context, value), NULL));
+        return CYCastJSValue(context, pool.strcat("&", CYPoolCCYON(pool, context, value, objects), NULL));
     } catch (const CYException &e) {
         goto pointer;
     }
@@ -1546,7 +1573,8 @@ const char *CYExecute(JSContextRef context, CYPool &pool, CYUTF8String code) {
         return NULL;
 
     const char *json; try {
-        json = CYPoolCCYON(pool, context, result, &exception);
+        std::set<void *> objects;
+        json = CYPoolCCYON(pool, context, result, objects, &exception);
     } catch (const char *error) {
         return error;
     }
@@ -1650,8 +1678,9 @@ void CYThrow(JSContextRef context, JSValueRef value) {
 }
 
 const char *CYJSError::PoolCString(CYPool &pool) const {
+    std::set<void *> objects;
     // XXX: this used to be CYPoolCString
-    return CYPoolCCYON(pool, context_, value_);
+    return CYPoolCCYON(pool, context_, value_, objects);
 }
 
 JSValueRef CYJSError::CastJSValue(JSContextRef context) const {

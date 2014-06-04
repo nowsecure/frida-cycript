@@ -22,6 +22,8 @@
 #ifndef CYCRIPT_JAVASCRIPT_HPP
 #define CYCRIPT_JAVASCRIPT_HPP
 
+#include <set>
+
 #include <JavaScriptCore/JSBase.h>
 #include <JavaScriptCore/JSContextRef.h>
 #include <JavaScriptCore/JSStringRef.h>
@@ -110,7 +112,8 @@ JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, voi
 bool CYIsCallable(JSContextRef context, JSValueRef value);
 JSValueRef CYCallAsFunction(JSContextRef context, JSObjectRef function, JSObjectRef _this, size_t count, const JSValueRef arguments[]);
 
-const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSObjectRef object);
+const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSObjectRef object, std::set<void *> &objects);
+std::set<void *> *CYCastObjects(JSContextRef context, JSObjectRef _this, size_t count, const JSValueRef arguments[]);
 
 struct CYHooks {
     void *(*ExecuteStart)(JSContextRef);
