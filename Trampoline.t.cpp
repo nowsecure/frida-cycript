@@ -66,6 +66,24 @@ static void $strlcpy(char *dst, const char *src, size_t size) {
     } dst[i] = '\0';
 }
 
+__attribute__((__unused__))
+static void $snprintfp(char *dst, size_t size, const void *pointer) {
+    uintptr_t value(reinterpret_cast<uintptr_t>(pointer));
+    char buffer[32];
+    char *end(buffer + sizeof(buffer));
+    *--end = '\0';
+    if (value == 0)
+        *--end = '0';
+    else do {
+        unsigned digit(value & 0xf);
+        value >>= 4;
+        *--end = (digit < 10 ? '0' : 'a' - 10) + digit;
+    } while (value != 0);
+    *--end = 'x';
+    *--end = '0';
+    $strlcpy(dst, end, size);
+}
+
 #ifdef __LP64__
 typedef struct mach_header_64 mach_header_xx;
 typedef struct nlist_64 nlist_xx;
