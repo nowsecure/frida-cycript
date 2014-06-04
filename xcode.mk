@@ -179,4 +179,8 @@ cycript: cycript.in
 	cp -af $< $@
 	chmod 755 $@
 
-.PHONY: all clean package
+install: Cycript.lib/cycript Cycript.lib/libcycript.dylib Cycript.lib/libcycript-sys.dylib Cycript.lib/libcycript-any.dylib Cycript.lib/libcycript-sim.dylib
+	sudo cp -af $(filter-out %.dylib,$^) /usr/bin
+	sudo cp -af $(filter %.dylib,$^) /usr/lib
+
+.PHONY: all clean install package
