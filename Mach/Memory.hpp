@@ -4,7 +4,7 @@
 static kern_return_t cy_vm_allocate(bool broken, vm_map_t target, mach_vm_address_t *address, mach_vm_size_t size, int flags) {
     if (!broken)
         return mach_vm_allocate(target, address, size, flags);
-    vm_address_t address32;
+    vm_address_t address32(0);
     kern_return_t value(vm_allocate(target, &address32, size, flags));
     *address = address32;
     return value;
