@@ -53,6 +53,8 @@ static int $strcmp(const char *lhs, const char *rhs) {
 }
 
 static void $strlcpy(char *dst, const char *src, size_t size) {
+    if (src == NULL)
+        src = "(null)";
     if (size == 0)
         return;
     size_t i(0);
