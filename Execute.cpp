@@ -76,6 +76,11 @@ void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, J
 void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef (*callback)(JSContextRef, JSObjectRef, JSObjectRef, size_t, const JSValueRef[], JSValueRef *), JSPropertyAttributes attributes) {
     CYSetProperty(context, object, name, JSObjectMakeFunctionWithCallback(context, name, callback), attributes);
 }
+
+void CYSetPrototype(JSContextRef context, JSObjectRef object, JSValueRef value) {
+    JSObjectSetPrototype(context, object, value);
+    _assert(JSObjectGetPrototype(context, object) == value);
+}
 /* }}} */
 /* JavaScript Strings {{{ */
 JSStringRef CYCopyJSString(const char *value) {
@@ -1817,7 +1822,7 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     CYSetProperty(context, cycript, CYJSString("gc"), &Cycript_gc_callAsFunction);
 
     JSObjectRef Functor(JSObjectMakeConstructor(context, Functor_, &Functor_new));
-    JSObjectSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Functor, prototype_s)), Function_prototype);
+    CYSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Functor, prototype_s)), Function_prototype);
     CYSetProperty(context, cycript, CYJSString("Functor"), Functor);
 
     CYSetProperty(context, cycript, CYJSString("Pointer"), JSObjectMakeConstructor(context, Pointer_, &Pointer_new));
@@ -1844,7 +1849,7 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
             next = JSObjectGetPrototype(context, curr);
         }
 
-        JSObjectSetPrototype(context, last, all);
+        CYSetPrototype(context, last, all);
     }
 
     CYSetProperty(context, global, CYJSString("$cyq"), &$cyq, kJSPropertyAttributeDontEnum);

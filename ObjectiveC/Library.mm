@@ -370,7 +370,7 @@ JSValueRef CYGetClassPrototype(JSContextRef context, Class self, bool meta) {
         prototype = CYGetClassPrototype(context, class_getSuperclass(self), meta);
 
     JSObjectRef object(JSObjectMake(context, _class, NULL));
-    JSObjectSetPrototype(context, object, prototype);
+    CYSetPrototype(context, object, prototype);
     CYSetProperty(context, cy, name, object);
 
     return object;
@@ -383,7 +383,7 @@ _finline JSValueRef CYGetClassPrototype(JSContextRef context, Class self) {
 JSObjectRef Messages::Make(JSContextRef context, Class _class) {
     JSObjectRef value(JSObjectMake(context, Messages_, new Messages(_class)));
     if (Class super = class_getSuperclass(_class))
-        JSObjectSetPrototype(context, value, Messages::Make(context, super));
+        CYSetPrototype(context, value, Messages::Make(context, super));
     return value;
 }
 
@@ -406,7 +406,7 @@ bool CYIsKindOfClass(id object, Class _class) {
 
 JSObjectRef Instance::Make(JSContextRef context, id object, Flags flags) {
     JSObjectRef value(JSObjectMake(context, CYIsKindOfClass(object, NSBlock_) ? FunctionInstance_ : Instance_, new Instance(object, flags)));
-    JSObjectSetPrototype(context, value, CYGetClassPrototype(context, object_getClass(object)));
+    CYSetPrototype(context, value, CYGetClassPrototype(context, object_getClass(object)));
     return value;
 }
 
@@ -2975,12 +2975,14 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     ObjectiveC_Protocols_ = JSClassCreate(&definition);
 
 #ifdef __APPLE__
-// XXX: this is horrible; there has to be a better way to do this
-#ifdef __LP64__
-    class_addMethod(NSCFType_, @selector(cy$toJSON:inContext:), reinterpret_cast<IMP>(&NSCFType$cy$toJSON$inContext$), "^{OpaqueJSValue=}32@0:8@16^{OpaqueJSContext=}24");
-#else
-    class_addMethod(NSCFType_, @selector(cy$toJSON:inContext:), reinterpret_cast<IMP>(&NSCFType$cy$toJSON$inContext$), "^{OpaqueJSValue=}16@0:4@8^{OpaqueJSContext=}12");
-#endif
+    class_addMethod(NSCFType_, @selector(cy$toJSON:inContext:), reinterpret_cast<IMP>(&NSCFType$cy$toJSON$inContext$),
+        // XXX: this is horrible; there has to be a better way to do this
+    #ifdef __LP64__
+        "^{OpaqueJSValue=}32@0:8@16^{OpaqueJSContext=}24"
+    #else
+        "^{OpaqueJSValue=}16@0:4@8^{OpaqueJSContext=}12"
+    #endif
+    );
 #endif
 } CYPoolCatch() }
 
@@ -3023,41 +3025,41 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     JSObjectRef ArrayInstance_prototype(CYCastJSObject(context, CYGetProperty(context, ArrayInstance, prototype_s)));
     CYSetProperty(context, cy, CYJSString("ArrayInstance_prototype"), ArrayInstance_prototype);
     JSObjectRef Array_prototype(CYGetCachedObject(context, CYJSString("Array_prototype")));
-    JSObjectSetPrototype(context, ArrayInstance_prototype, Array_prototype);
+    CYSetPrototype(context, ArrayInstance_prototype, Array_prototype);
 
     JSObjectRef BooleanInstance(JSObjectMakeConstructor(context, BooleanInstance_, NULL));
     JSObjectRef BooleanInstance_prototype(CYCastJSObject(context, CYGetProperty(context, BooleanInstance, prototype_s)));
     CYSetProperty(context, cy, CYJSString("BooleanInstance_prototype"), BooleanInstance_prototype);
     JSObjectRef Boolean_prototype(CYGetCachedObject(context, CYJSString("Boolean_prototype")));
-    JSObjectSetPrototype(context, BooleanInstance_prototype, Boolean_prototype);
+    CYSetPrototype(context, BooleanInstance_prototype, Boolean_prototype);
 
     JSObjectRef FunctionInstance(JSObjectMakeConstructor(context, FunctionInstance_, NULL));
     JSObjectRef FunctionInstance_prototype(CYCastJSObject(context, CYGetProperty(context, FunctionInstance, prototype_s)));
     CYSetProperty(context, cy, CYJSString("FunctionInstance_prototype"), FunctionInstance_prototype);
     JSObjectRef Function_prototype(CYGetCachedObject(context, CYJSString("Function_prototype")));
-    JSObjectSetPrototype(context, FunctionInstance_prototype, Function_prototype);
+    CYSetPrototype(context, FunctionInstance_prototype, Function_prototype);
 
     JSObjectRef NumberInstance(JSObjectMakeConstructor(context, NumberInstance_, NULL));
     JSObjectRef NumberInstance_prototype(CYCastJSObject(context, CYGetProperty(context, NumberInstance, prototype_s)));
     CYSetProperty(context, cy, CYJSString("NumberInstance_prototype"), NumberInstance_prototype);
     JSObjectRef Number_prototype(CYGetCachedObject(context, CYJSString("Number_prototype")));
-    JSObjectSetPrototype(context, NumberInstance_prototype, Number_prototype);
+    CYSetPrototype(context, NumberInstance_prototype, Number_prototype);
 
     JSObjectRef ObjectInstance(JSObjectMakeConstructor(context, ObjectInstance_, NULL));
     JSObjectRef ObjectInstance_prototype(CYCastJSObject(context, CYGetProperty(context, ObjectInstance, prototype_s)));
     CYSetProperty(context, cy, CYJSString("ObjectInstance_prototype"), ObjectInstance_prototype);
     JSObjectRef Object_prototype(CYGetCachedObject(context, CYJSString("Object_prototype")));
-    JSObjectSetPrototype(context, ObjectInstance_prototype, Object_prototype);
+    CYSetPrototype(context, ObjectInstance_prototype, Object_prototype);
 
     JSObjectRef StringInstance(JSObjectMakeConstructor(context, StringInstance_, NULL));
     JSObjectRef StringInstance_prototype(CYCastJSObject(context, CYGetProperty(context, StringInstance, prototype_s)));
     CYSetProperty(context, cy, CYJSString("StringInstance_prototype"), StringInstance_prototype);
     JSObjectRef String_prototype(CYGetCachedObject(context, CYJSString("String_prototype")));
-    JSObjectSetPrototype(context, StringInstance_prototype, String_prototype);
+    CYSetPrototype(context, StringInstance_prototype, String_prototype);
 
     JSObjectRef Class_prototype(CYCastJSObject(context, CYGetProperty(context, Class, prototype_s)));
     CYSetProperty(context, cy, CYJSString("Class_prototype"), Class_prototype);
-    JSObjectSetPrototype(context, Class_prototype, Instance_prototype);
+    CYSetPrototype(context, Class_prototype, Instance_prototype);
 
     CYSetProperty(context, cycript, CYJSString("Instance"), Instance);
     CYSetProperty(context, cycript, CYJSString("Selector"), Selector);
@@ -3072,8 +3074,8 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
 
     CYSetProperty(context, all, CYJSString("objc_msgSend"), &$objc_msgSend, kJSPropertyAttributeDontEnum);
 
-    JSObjectSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Message, prototype_s)), Function_prototype);
-    JSObjectSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Selector, prototype_s)), Function_prototype);
+    CYSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Message, prototype_s)), Function_prototype);
+    CYSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Selector, prototype_s)), Function_prototype);
 } CYPoolCatch() }
 
 static CYHooks CYObjectiveCHooks = {

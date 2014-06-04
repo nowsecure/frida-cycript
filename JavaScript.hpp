@@ -75,6 +75,8 @@ void CYSetProperty(JSContextRef context, JSObjectRef object, size_t index, JSVal
 void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef value, JSPropertyAttributes attributes = kJSPropertyAttributeNone);
 void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef (*callback)(JSContextRef, JSObjectRef, JSObjectRef, size_t, const JSValueRef[], JSValueRef *), JSPropertyAttributes attributes = kJSPropertyAttributeNone);
 
+void CYSetPrototype(JSContextRef context, JSObjectRef object, JSValueRef prototype);
+
 JSObjectRef CYGetCachedObject(JSContextRef context, JSStringRef name);
 
 JSValueRef CYCastJSValue(JSContextRef context, bool value);
