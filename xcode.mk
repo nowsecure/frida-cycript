@@ -36,8 +36,10 @@ cycript += Cycript.lib/libcycript-sys.dylib
 cycript += Cycript.lib/libcycript-sim.dylib
 
 framework := 
-framework += Cycript.framework/Cycript
-framework += Cycript.framework/Headers/Cycript.h
+framework += Cycript
+framework += Headers/Cycript.h
+
+framework := $(foreach os,ios mac,$(foreach file,$(framework),Cycript-$(os).framework/$(file)))
 
 links := 
 links += Cycript.lib/libsubstrate.dylib
@@ -47,7 +49,7 @@ all: cycript $(cycript) $(framework)
 
 cycript.zip: all
 	rm -f $@
-	zip -r9y $@ cycript Cycript.lib Cycript.framework $(patsubst %,--exclude %,$(links))
+	zip -r9y $@ cycript Cycript.lib Cycript-{ios,mac}.framework $(patsubst %,--exclude %,$(links))
 	zip -r9 $@ $(links)
 
 package: cycript.zip
@@ -155,14 +157,17 @@ libcycript-%.o: build.%/.libs/libcycript.a xcode.map
 	@mkdir -p $(dir $@)
 	ld -r -arch $$($(lipo) -detailed_info $< | sed -e '/^Non-fat file: / ! d; s/.*: //') -o $@ -all_load -exported_symbols_list xcode.map $< libffi.a
 
-libcycript.o: libcycript-ios-armv6.o libcycript-ios-armv7.o libcycript-ios-armv7s.o libcycript-ios-arm64.o libcycript-sim-i386.o libcycript-sim-x86_64.o
+libcycript-ios.o: libcycript-ios-armv6.o libcycript-ios-armv7.o libcycript-ios-armv7s.o libcycript-ios-arm64.o libcycript-sim-i386.o libcycript-sim-x86_64.o
 	$(lipo) -create -output $@ $^
 
-Cycript.framework/Cycript: libcycript.o
+libcycript-mac.o: libcycript-mac-i386.o libcycript-mac-x86_64.o
+	$(lipo) -create -output $@ $^
+
+Cycript-%.framework/Cycript: libcycript-%.o
 	@mkdir -p $(dir $@)
 	cp -a $< $@
 
-Cycript.framework/Headers/Cycript.h: Cycript.h
+Cycript-%.framework/Headers/Cycript.h: Cycript.h
 	@mkdir -p $(dir $@)
 	cp -a $< $@
 
