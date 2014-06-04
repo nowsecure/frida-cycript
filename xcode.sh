@@ -66,11 +66,6 @@ function configure() {
     cd ..
 }
 
-for arch in i386 x86_64; do
-    configure "mac-${arch}" "${mac}" "-arch ${arch} -mmacosx-version-min=10.6" \
-        CPPFLAGS="-I../readline" LDFLAGS="-L../readline"
-done
-
 function build() {
     local dir=$1
     local sdk=$2
@@ -79,6 +74,11 @@ function build() {
 
     configure "${dir}" "${sdk}" "${flg}" "$@" --enable-static --with-pic
 }
+
+for arch in i386 x86_64; do
+    build "mac-${arch}" "${mac}" "-arch ${arch} -mmacosx-version-min=10.6" \
+        CPPFLAGS="-I../readline" LDFLAGS="-L../readline"
+done
 
 for arch in i386 x86_64; do
     build "sim-${arch}" iphonesimulator "-arch ${arch} -mios-simulator-version-min=4.0" \

@@ -72,37 +72,38 @@ clean:
 # make stubbornly refuses to believe that these @'s are bugs
 # http://osdir.com/ml/help-make-gnu/2012-04/msg00008.html
 
+define build_any
+.PHONY: build-$(1)-$(2)
+build-$(1)-$(2):
+	$(MAKE) -C build.$(1)-$(2)
+build.$(1)-$(2)/.libs/libcycript.a: build-$(1)-$(2)
+	@
+endef
+
+define build_lib
+build.$(1)-$(2)/.libs/libcycript.dylib: build-$(1)-$(2)
+	@
+endef
+
 define build_mac
-.PHONY: build-mac-$(1)
-build-mac-$(1):
-	$(MAKE) -C build.mac-$(1)
+$(call build_any,mac,$(1))
+$(call build_lib,mac,$(1))
 build.mac-$(1)/.libs/cycript: build-mac-$(1)
-	@
-build.mac-$(1)/.libs/libcycript.dylib: build-mac-$(1)
-	@
-build.mac-$(1)/.libs/libcycript-any.dylib: build-mac-$(1)
 	@
 endef
 
 $(foreach arch,i386 x86_64,$(eval $(call build_mac,$(arch))))
 
 define build_ios
-.PHONY: build-ios-$(1)
-build-ios-$(1):
-	$(MAKE) -C build.ios-$(1)
-build.ios-$(1)/.libs/libcycript.a: build-ios-$(1)
-	@
+$(call build_any,ios,$(1))
 endef
 
 $(foreach arch,armv6 armv7 armv7s arm64,$(eval $(call build_ios,$(arch))))
 
 define build_sim
-.PHONY: build-sim-$(1)
-build-sim-$(1):
-	$(MAKE) -C build.sim-$(1)
-build.sim-$(1)/.libs/libcycript.dylib: build-sim-$(1)
-	@
-build.sim-$(1)/.libs/libcycript.a: build-sim-$(1)
+$(call build_any,sim,$(1))
+$(call build_lib,sim,$(1))
+build.sim-$(1)/.libs/libcycript-any.dylib: build-sim-$(1)
 	@
 endef
 
@@ -116,13 +117,17 @@ endef
 $(foreach arch,armv6,$(eval $(call build_arm,$(arch))))
 
 define build_arm
-build.ios-$(1)/.libs/libcycript.dylib: build-ios-$(1)
-	@
+$(call build_lib,ios,$(1))
 endef
 
 $(foreach arch,armv6 arm64,$(eval $(call build_arm,$(arch))))
 
-Cycript.lib/%.dylib: build.mac-i386/.libs/%.dylib build.mac-x86_64/.libs/%.dylib build.ios-armv6/.libs/%.dylib build.ios-arm64/.libs/%.dylib
+Cycript.lib/libcycript-any.dylib: build.sim-i386/.libs/libcycript-any.dylib build.sim-x86_64/.libs/libcycript-any.dylib
+	@mkdir -p $(dir $@)
+	$(lipo) -create -output $@ $^
+	codesign -s $(codesign) $@
+
+Cycript.lib/libcycript.dylib: build.mac-i386/.libs/libcycript.dylib build.sim-x86_64/.libs/libcycript.dylib build.ios-armv6/.libs/libcycript.dylib build.ios-arm64/.libs/libcycript.dylib
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
 	install_name_tool -change /System/Library/{,Private}Frameworks/JavaScriptCore.framework/JavaScriptCore $@
