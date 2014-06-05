@@ -308,8 +308,6 @@ static Class NSCFBoolean_;
 static Class NSCFType_;
 static Class NSGenericDeallocHandler_;
 static Class NSZombie_;
-
-static std::set<Class> banned_;
 #else
 static Class NSBoolNumber_;
 #endif
@@ -481,7 +479,13 @@ NSString *CYCastNSCYON(id value, bool objective, std::set<void *> &objects) {
         Class _class(object_getClass(value));
         SEL sel(@selector(cy$toCYON:inSet:));
 
-        if (objc_method *toCYON = class_getInstanceMethod(_class, sel))
+        if (class_isMetaClass(_class)) {
+            const char *name(class_getName(value));
+            if (class_isMetaClass(value))
+                string = [NSString stringWithFormat:@"object_getClass(%s)", name];
+            else
+                string = [NSString stringWithUTF8String:name];
+        } else if (objc_method *toCYON = class_getInstanceMethod(_class, sel))
             string = reinterpret_cast<NSString *(*)(id, SEL, bool, std::set<void *> &)>(method_getImplementation(toCYON))(value, sel, objective, objects);
         else if (objc_method *methodSignatureForSelector = class_getInstanceMethod(_class, @selector(methodSignatureForSelector:))) {
             if (reinterpret_cast<NSMethodSignature *(*)(id, SEL, SEL)>(method_getImplementation(methodSignatureForSelector))(value, @selector(methodSignatureForSelector:), sel) != nil)
@@ -490,13 +494,8 @@ NSString *CYCastNSCYON(id value, bool objective, std::set<void *> &objects) {
         } else fail: {
             if (false);
 #ifdef __APPLE__
-            else if (value == NSZombie_)
-                string = @"_NSZombie_";
             else if (_class == NSZombie_)
                 string = [NSString stringWithFormat:@"<_NSZombie_: %p>", value];
-            // XXX: frowny /in/ the pants
-            else if (banned_.find(value) != banned_.end())
-                string = nil;
 #endif
             else
                 string = [NSString stringWithFormat:@"%@", value];
@@ -2867,12 +2866,6 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     NSCFType_ = objc_getClass("NSCFType");
 
     NSZombie_ = objc_getClass("_NSZombie_");
-
-    banned_.insert(Object_);
-    banned_.insert(objc_getClass("__NSAtom"));
-    banned_.insert(objc_getClass("__NSGenericDeallocHandler"));
-    banned_.insert(objc_getClass("NSMessageBuilder"));
-    banned_.insert(objc_getClass("__NSMessageBuilder"));
 #else
     NSBoolNumber_ = objc_getClass("NSBoolNumber");
 #endif
