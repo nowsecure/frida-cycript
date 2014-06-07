@@ -118,8 +118,7 @@ void CYArgument::Output(CYOutput &out) const {
     if (value_ != NULL)
         value_->Output(out, CYAssign::Precedence_, CYNoFlags);
     if (next_ != NULL) {
-        if (next_->name_ == NULL)
-            out << ',';
+        out << ',';
         out << ' ' << *next_;
     }
 }
