@@ -26,6 +26,7 @@ lipo := $(shell xcrun --sdk iphoneos -f lipo)
 
 version := $(shell git describe --always --tags --dirty="+" --match="v*" | sed -e 's@-\([^-]*\)-\([^-]*\)$$@+\1.\2@;s@^v@@;s@%@~@g')
 deb := cycript_$(version)_iphoneos-arm.deb
+zip := cycript_$(version).zip
 
 cycript := 
 cycript += Cycript.lib/cycript
@@ -47,12 +48,13 @@ links += Cycript.lib/cycript0.9
 
 all: cycript $(cycript) $(framework)
 
-cycript.zip: all
+$(zip): all
 	rm -f $@
 	zip -r9y $@ cycript Cycript.lib Cycript-{ios,mac}.framework $(patsubst %,--exclude %,$(links))
 	zip -r9 $@ $(links)
 
-package: cycript.zip
+zip: $(zip)
+	ln -sf $< cycript.zip
 
 $(deb): Cycript.lib/cycript Cycript.lib/libcycript.dylib
 	rm -rf package
