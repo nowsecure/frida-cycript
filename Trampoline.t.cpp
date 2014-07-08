@@ -108,11 +108,11 @@ static const uint32_t MH_MAGIC_XX = MH_MAGIC;
                     lcp->cmdsize % sizeof(long) != 0 || lcp->cmdsize <= 0 || \
                     reinterpret_cast<const uint8_t *>(lcp) + lcp->cmdsize > reinterpret_cast<const uint8_t *>(load_commands) + mach->sizeofcmds \
                 ) \
-                    return NULL; \
+                    break; \
                 else if (lcp->cmd != lc) \
                     continue; \
                 else if (lcp->cmdsize < sizeof(type)) \
-                    return NULL; \
+                    break; \
                 else if (const type *command = reinterpret_cast<const type *>(lcp))
 
 static const mach_header_xx *Library(struct dyld_all_image_infos *infos, const char *name) {
