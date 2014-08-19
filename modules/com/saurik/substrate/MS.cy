@@ -22,15 +22,20 @@
 (function(exports) {
 
 var libcycript = dlopen("/usr/lib/libcycript.dylib", RTLD_NOLOAD);
-if (libcycript == null)
+if (libcycript == null) {
+    exports.error = dlerror();
     return;
+}
 
 var CYHandleServer = dlsym(libcycript, "CYHandleServer");
-if (CYHandleServer == null)
+if (CYHandleServer == null) {
+    exports.error = dlerror();
     return;
+}
 
 var info = new Dl_info;
 if (dladdr(CYHandleServer, info) == 0) {
+    exports.error = dlerror();
     free(info);
     return;
 }
@@ -41,9 +46,12 @@ free(info);
 var slash = path.lastIndexOf('/');
 if (slash == -1)
     return;
+
 var libsubstrate = dlopen(path.substr(0, slash) + "/libsubstrate.dylib", RTLD_GLOBAL | RTLD_LAZY);
-if (libsubstrate == null)
+if (libsubstrate == null) {
+    exports.error = dlerror();
     return;
+}
 
 MSGetImageByName = @encode(void *(const char *))(dlsym(libsubstrate, "MSGetImageByName"));
 MSFindSymbol = @encode(void *(void *, const char *))(dlsym(libsubstrate, "MSFindSymbol"));
