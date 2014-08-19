@@ -65,7 +65,10 @@ arch x86_64 x86_64-apple-darwin11 iphonesimulator ios-simulator 4.0
 
 libffi=()
 for arch in "${archs[@]}"; do
-    libffi+=(libffi."${arch}"/.libs/libffi.a)
+    a=libffi."${arch}"/.libs/libffi.a
+    # sectionForAddress(...) address not in any section file '...' for architecture i386
+    ar m "${a}" src/prep_cif.o
+    libffi+=("${a}")
 done
 
 lipo -create -output libffi.a "${libffi[@]}"
