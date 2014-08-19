@@ -131,7 +131,7 @@ Cycript.lib/libcycript-any.dylib: build.sim-i386/.libs/libcycript-any.dylib buil
 	$(lipo) -create -output $@ $^
 	codesign -s $(codesign) $@
 
-Cycript.lib/libcycript.dylib: build.mac-i386/.libs/libcycript.dylib build.sim-x86_64/.libs/libcycript.dylib build.ios-armv6/.libs/libcycript.dylib build.ios-arm64/.libs/libcycript.dylib
+Cycript.lib/libcycript.dylib: build.mac-i386/.libs/libcycript.dylib build.mac-x86_64/.libs/libcycript.dylib build.ios-armv6/.libs/libcycript.dylib build.ios-arm64/.libs/libcycript.dylib
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
 	install_name_tool -change /System/Library/{,Private}Frameworks/JavaScriptCore.framework/JavaScriptCore $@
