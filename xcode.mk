@@ -177,4 +177,4 @@ install: Cycript.lib/cycript Cycript.lib/libcycript.dylib Cycript.lib/libcycript
 	sudo cp -af $(filter-out %.dylib,$^) /usr/bin
 	sudo cp -af $(filter %.dylib,$^) /usr/lib
 
-.PHONY: all clean install package
+.PHONY: all clean install zip
