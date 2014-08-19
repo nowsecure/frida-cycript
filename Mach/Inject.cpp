@@ -58,7 +58,7 @@ void InjectLibrary(pid_t pid) {
     library[flength] = '\0';
     _assert(strcmp(library + flength - 6, ".dylib") == 0);
 #if !TARGET_OS_IPHONE
-    strcpy(library + flength - 6, "-any.dylib");
+    strcpy(library + flength - 6, "-###.dylib");
 #endif
 
     mach_port_t self(mach_task_self()), task;

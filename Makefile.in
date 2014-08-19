@@ -98,22 +98,21 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@CY_MACH_TRUE@am__append_1 = libcycript-any.la
 @CY_CONSOLE_TRUE@bin_PROGRAMS = cycript$(EXEEXT)
-@CY_EXECUTE_TRUE@am__append_2 = sig/ffi_type.cpp sig/parse.cpp \
+@CY_EXECUTE_TRUE@am__append_1 = sig/ffi_type.cpp sig/parse.cpp \
 @CY_EXECUTE_TRUE@	sig/copy.cpp Bridge.cpp Execute.cpp \
 @CY_EXECUTE_TRUE@	JavaScriptCore.cpp
-@CY_EXECUTE_TRUE@am__append_3 = $(LTJAVASCRIPTCORE)
-@CY_EXECUTE_TRUE@am__append_4 = -DCY_EXECUTE
-@CY_EXECUTE_TRUE@am__append_5 = C
-@CY_EXECUTE_TRUE@am__append_6 = Bridge.gperf Bridge.hpp
-@CY_OBJECTIVEC_TRUE@am__append_7 = ObjectiveC
-@CY_OBJECTIVEC_TRUE@am__append_8 = ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm
-@CY_OBJECTIVEC_TRUE@am__append_9 = $(LTOBJECTIVEC)
-@CY_MACH_TRUE@am__append_10 = Handler.mm
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__append_11 = Mach/Inject.cpp
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__append_12 = -DCY_ATTACH
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__append_13 = Trampoline.t.lo \
+@CY_EXECUTE_TRUE@am__append_2 = $(LTJAVASCRIPTCORE)
+@CY_EXECUTE_TRUE@am__append_3 = -DCY_EXECUTE
+@CY_EXECUTE_TRUE@am__append_4 = C
+@CY_EXECUTE_TRUE@am__append_5 = Bridge.gperf Bridge.hpp
+@CY_OBJECTIVEC_TRUE@am__append_6 = ObjectiveC
+@CY_OBJECTIVEC_TRUE@am__append_7 = ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm
+@CY_OBJECTIVEC_TRUE@am__append_8 = $(LTOBJECTIVEC)
+@CY_MACH_TRUE@am__append_9 = Handler.mm
+@CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__append_10 = Mach/Inject.cpp
+@CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__append_11 = -DCY_ATTACH
+@CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__append_12 = Trampoline.t.lo \
 @CY_CONSOLE_TRUE@@CY_MACH_TRUE@	libTrampoline.t.la \
 @CY_CONSOLE_TRUE@@CY_MACH_TRUE@	Trampoline.t.hpp
 subdir = .
@@ -165,19 +164,6 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-libcycript_any_la_DEPENDENCIES =
-am__libcycript_any_la_SOURCES_DIST = Select.cpp
-@CY_MACH_TRUE@am_libcycript_any_la_OBJECTS = Select.lo
-libcycript_any_la_OBJECTS = $(am_libcycript_any_la_OBJECTS)
-AM_V_lt = $(am__v_lt_@AM_V@)
-am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
-am__v_lt_0 = --silent
-am__v_lt_1 = 
-libcycript_any_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
-	$(AM_CXXFLAGS) $(CXXFLAGS) $(libcycript_any_la_LDFLAGS) \
-	$(LDFLAGS) -o $@
-@CY_MACH_TRUE@am_libcycript_any_la_rpath = -rpath $(libdir)
 am__DEPENDENCIES_1 =
 @CY_EXECUTE_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
 @CY_OBJECTIVEC_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
@@ -203,6 +189,10 @@ am_libcycript_la_OBJECTS = ConvertUTF.lo Decode.lo Driver.lo \
 	Replace.lo Cycript.tab.lo lex.cy.lo $(am__objects_1) \
 	$(am__objects_2) $(am__objects_3)
 libcycript_la_OBJECTS = $(am_libcycript_la_OBJECTS)
+AM_V_lt = $(am__v_lt_@AM_V@)
+am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
+am__v_lt_0 = --silent
+am__v_lt_1 = 
 libcycript_la_LINK = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(OBJCXXLD) $(AM_OBJCXXFLAGS) \
 	$(OBJCXXFLAGS) $(libcycript_la_LDFLAGS) $(LDFLAGS) -o $@
@@ -285,10 +275,9 @@ AM_V_OBJCXXLD = $(am__v_OBJCXXLD_@AM_V@)
 am__v_OBJCXXLD_ = $(am__v_OBJCXXLD_@AM_DEFAULT_V@)
 am__v_OBJCXXLD_0 = @echo "  OBJCXXLD" $@;
 am__v_OBJCXXLD_1 = 
-SOURCES = $(libcycript_any_la_SOURCES) $(libcycript_la_SOURCES) \
-	$(cycript_SOURCES)
-DIST_SOURCES = $(am__libcycript_any_la_SOURCES_DIST) \
-	$(am__libcycript_la_SOURCES_DIST) $(am__cycript_SOURCES_DIST)
+SOURCES = $(libcycript_la_SOURCES) $(cycript_SOURCES)
+DIST_SOURCES = $(am__libcycript_la_SOURCES_DIST) \
+	$(am__cycript_SOURCES_DIST)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -534,28 +523,25 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = subdir-objects
-CLEANFILES = $(am__append_6) $(am__append_13) Cycript.yy Cycript.l \
+CLEANFILES = $(am__append_5) $(am__append_12) Cycript.yy Cycript.l \
 	lex.cy.cpp Cycript.tab.cc Cycript.tab.hh location.hh \
 	position.hh stack.hh Cycript.output
 SUBDIRS = 
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -I$(srcdir)/include -DYYDEBUG=1 -include config.h \
-	-include $(srcdir)/unconfig.h $(am__append_4) $(am__append_12)
+	-include $(srcdir)/unconfig.h $(am__append_3) $(am__append_11)
 CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
-lib_LTLIBRARIES = $(am__append_1) libcycript.la
-@CY_MACH_TRUE@libcycript_any_la_SOURCES = Select.cpp
-@CY_MACH_TRUE@libcycript_any_la_LDFLAGS = $(CY_LDFLAGS)
-@CY_MACH_TRUE@libcycript_any_la_LIBADD = -ldl
+lib_LTLIBRARIES = libcycript.la
 libcycript_la_LDFLAGS = $(CY_LDFLAGS)
-libcycript_la_LIBADD = $(LTLIBFFI) $(LTLIBGCC) -ldl $(am__append_3) \
-	$(am__append_9)
+libcycript_la_LIBADD = $(LTLIBFFI) $(LTLIBGCC) -ldl $(am__append_2) \
+	$(am__append_8)
 libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp \
 	Highlight.cpp Library.cpp Network.cpp Output.cpp Parser.cpp \
-	Replace.cpp Cycript.tab.cc lex.cy.cpp $(am__append_2) \
-	$(am__append_8) $(am__append_10)
-filters = $(CY_FILTERS) $(am__append_5) $(am__append_7)
+	Replace.cpp Cycript.tab.cc lex.cy.cpp $(am__append_1) \
+	$(am__append_7) $(am__append_9)
+filters = $(CY_FILTERS) $(am__append_4) $(am__append_6)
 @CY_CONSOLE_TRUE@cycript_SOURCES = Console.cpp Display.cpp \
-@CY_CONSOLE_TRUE@	$(am__append_11)
+@CY_CONSOLE_TRUE@	$(am__append_10)
 @CY_CONSOLE_TRUE@cycript_LDADD = libcycript.la $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) -ldl
 @CY_CONSOLE_TRUE@ldid = true
 @CY_CONSOLE_TRUE@entitle = $(ldid) -S$(srcdir)/cycript.xml
@@ -648,9 +634,6 @@ clean-libLTLIBRARIES:
 	  echo rm -f $${locs}; \
 	  rm -f $${locs}; \
 	}
-
-libcycript-any.la: $(libcycript_any_la_OBJECTS) $(libcycript_any_la_DEPENDENCIES) $(EXTRA_libcycript_any_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(libcycript_any_la_LINK) $(am_libcycript_any_la_rpath) $(libcycript_any_la_OBJECTS) $(libcycript_any_la_LIBADD) $(LIBS)
 sig/$(am__dirstamp):
 	@$(MKDIR_P) sig
 	@: > sig/$(am__dirstamp)
@@ -764,7 +747,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Output.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Parser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Replace.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Select.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lex.cy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@Mach/$(DEPDIR)/Inject.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/Library.Plo@am__quote@

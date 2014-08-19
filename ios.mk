@@ -1,6 +1,6 @@
 binary := Cycript_/cycript
 
-$(deb): $(binary) $(patsubst %,Cycript_/libcycript%dylib,. -any. -sim. -sys.) control
+$(deb): $(binary) $(patsubst %,Cycript_/libcycript%dylib,. -sim. -sys.) control
 	rm -rf package
 	mkdir -p package/DEBIAN
 	cp -pR control package/DEBIAN

@@ -44,6 +44,12 @@ static void $bzero(void *data, size_t size) {
         bytes[i] = 0;
 }
 
+__attribute__((__unused__))
+static void $memcpy(char *dst, const char *src, size_t size) {
+    for (size_t i(0); i != size; ++i)
+        dst[i] = src[i];
+}
+
 static int $strcmp(const char *lhs, const char *rhs) {
     while (*lhs == *rhs) {
         if (*lhs == '\0')
@@ -64,6 +70,26 @@ static void $strlcpy(char *dst, const char *src, size_t size) {
             break;
         dst[i++] = value;
     } dst[i] = '\0';
+}
+
+__attribute__((__unused__))
+static char *$strstr(const char *haystack, const char *needle) {
+    if (*needle == '\0')
+        return NULL;
+    for (; *haystack != '\0'; ++haystack)
+        for (size_t i(0); ; ++i)
+            if (needle[i] == '\0')
+                return const_cast<char *>(haystack);
+            else if (needle[i] != haystack[i])
+                break;
+    return NULL;
+}
+
+__attribute__((__unused__))
+static size_t $strlen(const char *data) {
+    for (size_t i(0); ; ++i)
+        if (data[i] == '\0')
+            return i;
 }
 
 __attribute__((__unused__))
@@ -192,6 +218,22 @@ static _finline const mach_header_xx *Library(Baton *baton, const char *name) {
     return Library(infos, name);
 }
 
+#if defined(__i386__) || defined(__x86_64__)
+static bool Simulator(struct dyld_all_image_infos *infos) {
+    for (uint32_t i(0); i != infos->infoArrayCount; ++i) {
+        const dyld_image_info &info(infos->infoArray[i]);
+        const char *path(info.imageFilePath);
+        if ($strstr(path, "/SDKs/iPhoneSimulator") != NULL)
+            return true;
+    } return false;
+}
+
+static bool Simulator(Baton *baton) {
+    struct dyld_all_image_infos *infos(reinterpret_cast<struct dyld_all_image_infos *>(baton->dyld));
+    return Simulator(infos);
+}
+#endif
+
 void *Routine(void *arg) {
     Baton *baton(reinterpret_cast<Baton *>(arg));
 
@@ -207,6 +249,12 @@ void *Routine(void *arg) {
     void *(*$dlopen)(const char *, int);
     cyset($dlopen, "_dlopen", dyld);
 
+#if defined(__i386__) || defined(__x86_64__)
+    size_t length($strlen(baton->library));
+    if (length >= 10 && $strcmp(baton->library + length - 10, "-###.dylib") == 0)
+        $memcpy(baton->library + length - 10, Simulator(baton) ? "-sim" : "-sys", 4);
+#endif
+
     void *handle($dlopen(baton->library, RTLD_LAZY | RTLD_LOCAL));
     if (handle == NULL) {
         $strlcpy(baton->error, $dlerror(), sizeof(baton->error));
@@ -216,14 +264,14 @@ void *Routine(void *arg) {
     void *(*$dlsym)(void *, const char *);
     cyset($dlsym, "_dlsym", dyld);
 
-    void (*CYHandleServer)(pid_t, char *, size_t);
-    CYHandleServer = reinterpret_cast<void (*)(pid_t, char *, size_t)>($dlsym(handle, "CYHandleServer"));
+    void (*CYHandleServer)(pid_t);
+    CYHandleServer = reinterpret_cast<void (*)(pid_t)>($dlsym(handle, "CYHandleServer"));
     if (CYHandleServer == NULL) {
         $strlcpy(baton->error, $dlerror(), sizeof(baton->error));
         return NULL;
     }
 
-    CYHandleServer(baton->pid, baton->error, sizeof(baton->error));
+    CYHandleServer(baton->pid);
     return NULL;
 }
 

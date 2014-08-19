@@ -140,7 +140,7 @@ extern "C" void CYHandleClient(int socket) {
     _assert(pthread_create(&client->thread_, NULL, &OnClient, client) == 0);
 }
 
-extern "C" void CYHandleServer(pid_t pid, char *data, size_t size) {
+extern "C" void CYHandleServer(pid_t pid) {
     CYInitializeDynamic();
 
     int socket(_syscall(::socket(PF_UNIX, SOCK_STREAM, 0))); try {

@@ -32,7 +32,6 @@ cycript :=
 cycript += Cycript.lib/cycript
 cycript += Cycript.lib/cycript0.9
 cycript += Cycript.lib/libcycript.dylib
-cycript += Cycript.lib/libcycript-any.dylib
 cycript += Cycript.lib/libcycript-sys.dylib
 cycript += Cycript.lib/libcycript-sim.dylib
 
@@ -107,8 +106,6 @@ $(foreach arch,armv6 armv7 armv7s arm64,$(eval $(call build_ios,$(arch))))
 define build_sim
 $(call build_any,sim,$(1))
 $(call build_lib,sim,$(1))
-build.sim-$(1)/.libs/libcycript-any.dylib: build-sim-$(1)
-	@
 endef
 
 $(foreach arch,i386 x86_64,$(eval $(call build_sim,$(arch))))
@@ -125,11 +122,6 @@ $(call build_lib,ios,$(1))
 endef
 
 $(foreach arch,armv6 arm64,$(eval $(call build_arm,$(arch))))
-
-Cycript.lib/libcycript-any.dylib: build.sim-i386/.libs/libcycript-any.dylib build.sim-x86_64/.libs/libcycript-any.dylib
-	@mkdir -p $(dir $@)
-	$(lipo) -create -output $@ $^
-	codesign -s $(codesign) $@
 
 Cycript.lib/libcycript.dylib: build.mac-i386/.libs/libcycript.dylib build.mac-x86_64/.libs/libcycript.dylib build.ios-armv6/.libs/libcycript.dylib build.ios-arm64/.libs/libcycript.dylib
 	@mkdir -p $(dir $@)
@@ -181,7 +173,7 @@ cycript: cycript.in
 	cp -af $< $@
 	chmod 755 $@
 
-install: Cycript.lib/cycript Cycript.lib/libcycript.dylib Cycript.lib/libcycript-sys.dylib Cycript.lib/libcycript-any.dylib Cycript.lib/libcycript-sim.dylib
+install: Cycript.lib/cycript Cycript.lib/libcycript.dylib Cycript.lib/libcycript-sys.dylib Cycript.lib/libcycript-sim.dylib
 	sudo cp -af $(filter-out %.dylib,$^) /usr/bin
 	sudo cp -af $(filter %.dylib,$^) /usr/lib
 
