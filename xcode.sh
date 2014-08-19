@@ -76,7 +76,7 @@ function build() {
 }
 
 for arch in i386 x86_64; do
-    build "mac-${arch}" "${mac}" "-arch ${arch} -mmacosx-version-min=10.6" \
+    build "osx-${arch}" "${mac}" "-arch ${arch} -mmacosx-version-min=10.6" \
         CPPFLAGS="-I../readline" LDFLAGS="-L../readline"
 done
 

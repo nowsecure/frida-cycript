@@ -39,7 +39,7 @@ framework :=
 framework += Cycript
 framework += Headers/Cycript.h
 
-framework := $(foreach os,ios mac,$(foreach file,$(framework),Cycript-$(os).framework/$(file)))
+framework := $(foreach os,ios osx,$(foreach file,$(framework),Cycript.$(os)/Cycript.framework/$(file)))
 
 links := 
 links += Cycript.lib/libsubstrate.dylib
@@ -49,7 +49,7 @@ all: cycript $(cycript) $(framework)
 
 $(zip): all
 	rm -f $@
-	zip -r9y $@ cycript Cycript.lib Cycript-{ios,mac}.framework $(patsubst %,--exclude %,$(links))
+	zip -r9y $@ cycript Cycript.lib Cycript.{ios,osx} $(patsubst %,--exclude %,$(links))
 	zip -r9 $@ $(links)
 
 zip: $(zip)
@@ -88,14 +88,14 @@ build.$(1)-$(2)/.libs/libcycript.dylib: build-$(1)-$(2)
 	@
 endef
 
-define build_mac
-$(call build_any,mac,$(1))
-$(call build_lib,mac,$(1))
-build.mac-$(1)/.libs/cycript: build-mac-$(1)
+define build_osx
+$(call build_any,osx,$(1))
+$(call build_lib,osx,$(1))
+build.osx-$(1)/.libs/cycript: build-osx-$(1)
 	@
 endef
 
-$(foreach arch,i386 x86_64,$(eval $(call build_mac,$(arch))))
+$(foreach arch,i386 x86_64,$(eval $(call build_osx,$(arch))))
 
 define build_ios
 $(call build_any,ios,$(1))
@@ -123,7 +123,7 @@ endef
 
 $(foreach arch,armv6 arm64,$(eval $(call build_arm,$(arch))))
 
-Cycript.lib/libcycript.dylib: build.mac-i386/.libs/libcycript.dylib build.mac-x86_64/.libs/libcycript.dylib build.ios-armv6/.libs/libcycript.dylib build.ios-arm64/.libs/libcycript.dylib
+Cycript.lib/libcycript.dylib: build.osx-i386/.libs/libcycript.dylib build.osx-x86_64/.libs/libcycript.dylib build.ios-armv6/.libs/libcycript.dylib build.ios-arm64/.libs/libcycript.dylib
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
 	install_name_tool -change /System/Library/{,Private}Frameworks/JavaScriptCore.framework/JavaScriptCore $@
@@ -134,7 +134,7 @@ Cycript.lib/libcycript.dylib: build.mac-i386/.libs/libcycript.dylib build.mac-x8
 	install_name_tool -change /System/Library/{,Private}Frameworks/JavaScriptCore.framework/JavaScriptCore $@
 	codesign -s $(codesign) --entitlement cycript-$(word 2,$(subst ., ,$(subst -, ,$*))).xml $@
 
-Cycript.lib/%: build.mac-i386/.libs/%_ build.mac-x86_64/.libs/%_ build.ios-armv6/.libs/%_
+Cycript.lib/%: build.osx-i386/.libs/%_ build.osx-x86_64/.libs/%_ build.ios-armv6/.libs/%_
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
 
@@ -154,14 +154,14 @@ libcycript-%.o: build.%/.libs/libcycript.a xcode.map
 libcycript-ios.o: libcycript-ios-armv6.o libcycript-ios-armv7.o libcycript-ios-armv7s.o libcycript-ios-arm64.o libcycript-sim-i386.o libcycript-sim-x86_64.o
 	$(lipo) -create -output $@ $^
 
-libcycript-mac.o: libcycript-mac-i386.o libcycript-mac-x86_64.o
+libcycript-osx.o: libcycript-osx-i386.o libcycript-osx-x86_64.o
 	$(lipo) -create -output $@ $^
 
-Cycript-%.framework/Cycript: libcycript-%.o
+Cycript.%/Cycript.framework/Cycript: libcycript-%.o
 	@mkdir -p $(dir $@)
 	cp -a $< $@
 
-Cycript-%.framework/Headers/Cycript.h: Cycript.h
+Cycript.%/Cycript.framework/Headers/Cycript.h: Cycript.h
 	@mkdir -p $(dir $@)
 	cp -a $< $@
 
