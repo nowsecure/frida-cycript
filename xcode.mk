@@ -24,7 +24,9 @@ include codesign.mk
 
 lipo := $(shell xcrun --sdk iphoneos -f lipo)
 
+monotonic := $(shell git log -1 --pretty=format:%ct)
 version := $(shell git describe --always --tags --dirty="+" --match="v*" | sed -e 's@-\([^-]*\)-\([^-]*\)$$@+\1.\2@;s@^v@@;s@%@~@g')
+
 deb := cycript_$(version)_iphoneos-arm.deb
 zip := cycript_$(version).zip
 
@@ -45,9 +47,10 @@ links :=
 links += Cycript.lib/libsubstrate.dylib
 links += Cycript.lib/cycript0.9
 
-all: cycript $(cycript) $(framework)
+all := cycript $(cycript) $(framework)
+all: $(all)
 
-$(zip): all
+$(zip): $(all)
 	rm -f $@
 	zip -r9y $@ cycript Cycript.lib Cycript.{ios,osx} $(patsubst %,--exclude %,$(links))
 	zip -r9 $@ $(links)
@@ -177,4 +180,8 @@ install: Cycript.lib/cycript Cycript.lib/libcycript.dylib Cycript.lib/libcycript
 	sudo cp -af $(filter-out %.dylib,$^) /usr/bin
 	sudo cp -af $(filter %.dylib,$^) /usr/lib
 
-.PHONY: all clean install zip
+
+cast: $(zip)
+	appcast.sh cycript/mac $(monotonic) $(version) $< "$(CYCRIPT_CHANGES)"
+
+.PHONY: all cast clean install zip
