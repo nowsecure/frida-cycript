@@ -160,7 +160,9 @@ dnl }}}
 
 dnl --enable-javascript {{{
 AC_DEFUN([CY_CHECK_JAVASCRIPTCORE], [
-    CY_LT_LIB([LTJAVASCRIPTCORE], [AC_CHECK_FRAMEWORK([JavaScriptCore], [
+    CY_LT_LIB([LTJAVASCRIPTCORE], [AC_SEARCH_LIBS([JSEvaluateScript], [JavaScriptCore], [
+        AC_SUBST([CY_EXECUTE], [1])
+    ], [AC_CHECK_FRAMEWORK([JavaScriptCore], [
         #include <JavaScriptCore/JSBase.h>
     ], [
         JSEvaluateScript(0, 0, 0, 0, 0, 0);
@@ -174,7 +176,7 @@ AC_DEFUN([CY_CHECK_JAVASCRIPTCORE], [
                 AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs $cy_webkit_pkg`])
             ], [:]); if test "x$CY_EXECUTE" = x1; then break; fi
         done
-    ])])
+    ])])])
 ])
 
 AC_DEFUN([CY_CHECK_JAVASCRIPT], [

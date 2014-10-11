@@ -32,6 +32,9 @@ Bridge.hpp
 package
 aclocal.m4
 stamp-h1
+ncurses-5.9
+ncurses-5.9.tar.gz
+ncurses.*
 readline-6.2
 readline-6.2.tar.gz
 readline.*
