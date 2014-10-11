@@ -122,11 +122,10 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	config.guess config.rpath config.sub install-sh missing \
 	ltmain.sh
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/find_apr.m4 \
-	$(top_srcdir)/m4/framework.m4 $(top_srcdir)/m4/libtool.m4 \
-	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
-	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
-	$(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/m4/framework.m4 \
+	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
+	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
+	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
@@ -204,7 +203,7 @@ am__cycript_SOURCES_DIST = Console.cpp Display.cpp Mach/Inject.cpp
 cycript_OBJECTS = $(am_cycript_OBJECTS)
 @CY_CONSOLE_TRUE@cycript_DEPENDENCIES = libcycript.la \
 @CY_CONSOLE_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-@CY_CONSOLE_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+@CY_CONSOLE_TRUE@	$(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -421,7 +420,6 @@ LIPO = @LIPO@
 LN_S = @LN_S@
 LTFLAGS = @LTFLAGS@
 LTJAVASCRIPTCORE = @LTJAVASCRIPTCORE@
-LTLIBAPR = @LTLIBAPR@
 LTLIBFFI = @LTLIBFFI@
 LTLIBGCC = @LTLIBGCC@
 LTLIBOBJS = @LTLIBOBJS@
@@ -542,7 +540,7 @@ libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp \
 filters = $(CY_FILTERS) $(am__append_4) $(am__append_6)
 @CY_CONSOLE_TRUE@cycript_SOURCES = Console.cpp Display.cpp \
 @CY_CONSOLE_TRUE@	$(am__append_10)
-@CY_CONSOLE_TRUE@cycript_LDADD = libcycript.la $(LTLIBAPR) $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) -ldl
+@CY_CONSOLE_TRUE@cycript_LDADD = libcycript.la $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) -ldl
 @CY_CONSOLE_TRUE@ldid = true
 @CY_CONSOLE_TRUE@entitle = $(ldid) -S$(srcdir)/cycript.xml
 all: config.h

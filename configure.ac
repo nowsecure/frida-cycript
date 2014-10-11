@@ -198,22 +198,6 @@ dnl }}}
 AC_ARG_ENABLE([console], AS_HELP_STRING([--disable-console], [disable console]))
 AM_CONDITIONAL([CY_CONSOLE], [test "x$enable_console" != "xno"])
 
-AM_COND_IF([CY_CONSOLE], [
-dnl APR_FIND_APR {{{
-AS_IF([test "x$LTLIBAPR" != x], [
-    AC_SUBST([LTLIBAPR])
-], [
-    APR_FIND_APR([], [], [1], [1])
-AS_CASE([$apr_found], [yes], [
-    AC_LIB_APPENDTOVAR([CPPFLAGS], [`$apr_config --includes`])
-    AC_LIB_APPENDTOVAR([LTLIBAPR], [`$apr_config --link-libtool`])
-    AC_SUBST([LTLIBAPR])
-], [
-    AC_MSG_ERROR([missing "libapr"])
-])])
-dnl }}}
-])
-
 AC_DEFUN([CY_CHECK_PKG_CONFIG_LIBFFI], [
     PKG_CHECK_MODULES([LIBFFI], [libffi], [
         AC_LIB_APPENDTOVAR([CPPFLAGS], [`$PKG_CONFIG --cflags libffi`])

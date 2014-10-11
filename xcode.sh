@@ -96,11 +96,10 @@ for arch in armv6 armv7 armv7s arm64; do
     if [[ ${arch} != armv6 ]]; then
         flg+=(--disable-console)
     else
-        flg+=(LTLIBAPR="../sysroot.ios/usr/lib/libapr-1.dylib")
         flg+=(LTLIBGCC="-lgcc_s.1")
         cpf+=" -include ${PWD}/xcode.h"
         cpf+=" -mllvm -arm-reserve-r9"
-        cpf+=" -I../sysroot.ios/usr/include -I../sysroot.ios/usr/include/apr-1"
+        cpf+=" -I../sysroot.ios/usr/include"
         ldf+=" -L../sysroot.ios/usr/lib"
     fi
 

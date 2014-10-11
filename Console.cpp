@@ -44,6 +44,8 @@
 #endif
 
 #include <errno.h>
+#include <getopt.h>
+#include <signal.h>
 #include <unistd.h>
 
 #include <sys/socket.h>
@@ -57,10 +59,6 @@
 #include <netinet/in.h>
 #include <sys/un.h>
 #include <pwd.h>
-
-#include <apr_getopt.h>
-#include <apr_pools.h>
-#include <apr_strings.h>
 
 #include <dlfcn.h>
 
@@ -240,7 +238,7 @@ static CYExpression *ParseExpression(CYUTF8String code) {
 static int client_;
 
 static char **Complete(const char *word, int start, int end) {
-    rl_attempted_completion_over = TRUE;
+    rl_attempted_completion_over = ~0;
 
     CYLocalPool pool;
 
@@ -608,12 +606,7 @@ static void Console(CYOptions &options) {
 
 void InjectLibrary(pid_t pid);
 
-int Main(int argc, char const * const argv[], char const * const envp[]) {
-    _aprcall(apr_initialize());
-
-    apr_pool_t *pool;
-    apr_pool_create(&pool, NULL);
-
+int Main(int argc, char * const argv[], char const * const envp[]) {
     bool tty(isatty(STDIN_FILENO));
     bool compile(false);
     bool target(false);
@@ -628,29 +621,35 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
     const char *host(NULL);
     const char *port(NULL);
 
-    apr_getopt_t *state;
-    _aprcall(apr_getopt_init(&state, pool, argc, argv));
+    optind = 1;
 
     for (;;) {
-        int opt;
-        const char *arg;
-
-        apr_status_t status(apr_getopt_long(state, (apr_getopt_option_t[]) {
-            {NULL, 'c', false, NULL},
-            {NULL, 'g', true, NULL},
-            {NULL, 'n', true, NULL},
+        int option(getopt_long(argc, argv,
+            "c"
+            "g:"
+            "n:"
 #ifdef CY_ATTACH
-            {NULL, 'p', true, NULL},
+            "p:"
 #endif
-            {NULL, 'r', true, NULL},
-            {NULL, 's', false, NULL},
-        {0, 0, 0, 0}}, &opt, &arg));
+            "r:"
+            "s"
+        , (struct option[]) {
+            {NULL, no_argument, NULL, 'c'},
+            {NULL, required_argument, NULL, 'g'},
+            {NULL, required_argument, NULL, 'n'},
+#ifdef CY_ATTACH
+            {NULL, required_argument, NULL, 'p'},
+#endif
+            {NULL, required_argument, NULL, 'r'},
+            {NULL, no_argument, NULL, 's'},
+        {0, 0, 0, 0}}, NULL));
 
-        switch (status) {
-            case APR_EOF:
+        switch (option) {
+            case -1:
                 goto getopt;
-            case APR_BADCH:
-            case APR_BADARG:
+
+            case ':':
+            case '?':
                 fprintf(stderr,
                     "usage: cycript [-c]"
 #ifdef CY_ATTACH
@@ -660,11 +659,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
                     " [<script> [<arg>...]]\n"
                 );
                 return 1;
-            default:
-                _aprcall(status);
-        }
 
-        switch (opt) {
             target:
                 if (!target)
                     target = true;
@@ -684,10 +679,10 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
 
             case 'g':
                 if (false);
-                else if (strcmp(arg, "rename") == 0)
+                else if (strcmp(optarg, "rename") == 0)
                     options.verbose_ = true;
 #if YYDEBUG
-                else if (strcmp(arg, "bison") == 0)
+                else if (strcmp(optarg, "bison") == 0)
                     bison_ = true;
 #endif
                 else {
@@ -698,7 +693,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
 
             case 'n':
                 if (false);
-                else if (strcmp(arg, "minify") == 0)
+                else if (strcmp(optarg, "minify") == 0)
                     pretty_ = true;
                 else {
                     fprintf(stderr, "invalid name for -n\n");
@@ -708,13 +703,15 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
 
 #ifdef CY_ATTACH
             case 'p': {
-                size_t size(strlen(arg));
+                size_t size(strlen(optarg));
                 char *end;
 
-                pid = strtoul(arg, &end, 0);
-                if (arg + size != end) {
+                pid = strtoul(optarg, &end, 0);
+                if (optarg + size != end) {
                     // XXX: arg needs to be escaped in some horrendous way of doom
-                    const char *command(apr_pstrcat(pool, "ps axc|sed -e '/^ *[0-9]/{s/^ *\\([0-9]*\\)\\( *[^ ]*\\)\\{3\\} *-*\\([^ ]*\\)/\\3 \\1/;/^", arg, " /{s/^[^ ]* //;q;};};d'", NULL));
+                    // XXX: this is a memory leak now because I just don't care enough
+                    char *command;
+                    asprintf(&command, "ps axc|sed -e '/^ *[0-9]/{s/^ *\\([0-9]*\\)\\( *[^ ]*\\)\\{3\\} *-*\\([^ ]*\\)/\\3 \\1/;/^%s /{s/^[^ ]* //;q;};};d'", optarg);
 
                     if (FILE *pids = popen(command, "r")) {
                         char value[32];
@@ -748,7 +745,7 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
                     }
 
                     if (pid == _not(pid_t)) {
-                        fprintf(stderr, "unable to find process `%s' using ps\n", arg);
+                        fprintf(stderr, "unable to find process `%s' using ps\n", optarg);
                         return 1;
                     }
                 }
@@ -756,9 +753,9 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
 #endif
 
             case 'r': {
-                //size_t size(strlen(arg));
+                //size_t size(strlen(optarg));
 
-                char *colon(strrchr(arg, ':'));
+                char *colon(strrchr(optarg, ':'));
                 if (colon == NULL) {
                     fprintf(stderr, "missing colon in hostspec\n");
                     return 1;
@@ -766,12 +763,12 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
 
                 /*char *end;
                 port = strtoul(colon + 1, &end, 10);
-                if (end != arg + size) {
+                if (end != optarg + size) {
                     fprintf(stderr, "invalid port in hostspec\n");
                     return 1;
                 }*/
 
-                host = arg;
+                host = optarg;
                 *colon = '\0';
                 port = colon + 1;
             } goto target;
@@ -779,27 +776,33 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
             case 's':
                 strict_ = true;
             break;
+
+            default:
+                _assert(false);
         }
-    } getopt:;
+    }
+
+  getopt:
+    argc -= optind;
+    argv += optind;
 
     const char *script;
-    int ind(state->ind);
 
 #ifdef CY_ATTACH
-    if (pid != _not(pid_t) && ind < argc - 1) {
+    if (pid != _not(pid_t) && argc > 1) {
         fprintf(stderr, "-p cannot set argv\n");
         return 1;
     }
 #endif
 
-    if (ind == argc)
+    if (argc == 0)
         script = NULL;
     else {
 #ifdef CY_EXECUTE
         // XXX: const_cast?! wtf gcc :(
-        CYSetArgs(argc - ind - 1, const_cast<const char **>(argv + ind + 1));
+        CYSetArgs(argc - 1, const_cast<const char **>(argv + 1));
 #endif
-        script = argv[ind];
+        script = argv[0];
         if (strcmp(script, "-") == 0)
             script = NULL;
     }
@@ -918,18 +921,11 @@ int Main(int argc, char const * const argv[], char const * const envp[]) {
         }
     }
 
-    apr_pool_destroy(pool);
-
     return 0;
 }
 
-int main(int argc, char const * const argv[], char const * const envp[]) {
-    apr_status_t status(apr_app_initialize(&argc, &argv, &envp));
-
-    if (status != APR_SUCCESS) {
-        fprintf(stderr, "apr_app_initialize() != APR_SUCCESS\n");
-        return 1;
-    } else try {
+int main(int argc, char * const argv[], char const * const envp[]) {
+    try {
         return Main(argc, argv, envp);
     } catch (const CYException &error) {
         CYPool pool;

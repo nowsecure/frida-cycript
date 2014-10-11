@@ -101,12 +101,6 @@ static _finline bool CYContains(int value, size_t many, const int *okay) {
 #define _syscall(expr) \
     _syscall_(expr, 0, {})
 
-#define _aprcall(expr) \
-    do { \
-        apr_status_t _aprstatus((expr)); \
-        _assert_("aprcall", _aprstatus == APR_SUCCESS, #expr, ""); \
-    } while (false)
-
 #define _krncall(expr) \
     do { \
         kern_return_t _krnstatus((expr)); \
