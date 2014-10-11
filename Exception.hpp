@@ -79,7 +79,7 @@ _value; })
     fprintf(stderr, "_trace():%u\n", __LINE__); \
 } while (false)
 
-static _finline bool CYContains(int value, size_t many, int *okay) {
+static _finline bool CYContains(int value, size_t many, const int *okay) {
     for (size_t i(0); i != many; ++i)
         if (value == okay[i])
             return true;
@@ -90,7 +90,7 @@ static _finline bool CYContains(int value, size_t many, int *okay) {
     __typeof__(expr) _value; \
     do if ((long) (_value = (expr)) != -1) \
         break; \
-    else if (CYContains(errno, many, ((int [many]) okay))) \
+    else if (CYContains(errno, many, ((const int [many]) okay))) \
         break; \
     else \
         _assert_("syscall", errno == EINTR, #expr, " [errno=%d]", errno); \
