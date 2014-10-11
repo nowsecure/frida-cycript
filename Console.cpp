@@ -418,15 +418,18 @@ class History {
 };
 
 static void Console(CYOptions &options) {
-    CYPool pool;
+    std::string basedir;
+    if (const char *home = getenv("HOME"))
+        basedir = home;
+    else {
+        passwd *passwd;
+        if (const char *username = getenv("LOGNAME"))
+            passwd = getpwnam(username);
+        else
+            passwd = getpwuid(getuid());
+        basedir = passwd->pw_dir;
+    }
 
-    passwd *passwd;
-    if (const char *username = getenv("LOGNAME"))
-        passwd = getpwnam(username);
-    else
-        passwd = getpwuid(getuid());
-
-    std::string basedir(passwd->pw_dir);
     basedir += "/.cycript";
     mkdir(basedir.c_str(), 0700);
 
