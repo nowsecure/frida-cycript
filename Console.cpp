@@ -403,7 +403,8 @@ class History {
 
     ~History() {
         if (append_history$ != NULL) {
-            _syscall(close(_syscall(open(histfile_.c_str(), O_CREAT | O_WRONLY, 0600))));
+            int fd(_syscall(open(histfile_.c_str(), O_CREAT | O_WRONLY, 0600)));
+            _syscall(close(fd));
             _assert((*append_history$)(histlines_, histfile_.c_str()) == 0);
         } else {
             _assert(write_history(histfile_.c_str()) == 0);
@@ -633,7 +634,7 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
 #endif
             "r:"
             "s"
-        , (struct option[]) {
+        , (const struct option[]) {
             {NULL, no_argument, NULL, 'c'},
             {NULL, required_argument, NULL, 'g'},
             {NULL, required_argument, NULL, 'n'},
