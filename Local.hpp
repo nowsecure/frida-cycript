@@ -57,7 +57,4 @@ class CYLocal {
     }
 };
 
-template <typename Type_>
-::pthread_key_t CYLocal<Type_>::key_ = Key_();
-
 #endif/*CYCRIPT_LOCAL_HPP*/

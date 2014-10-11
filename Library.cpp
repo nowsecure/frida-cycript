@@ -44,6 +44,9 @@
 
 #include "ConvertUTF.h"
 
+template <>
+::pthread_key_t CYLocal<CYPool>::key_ = Key_();
+
 /* C Strings {{{ */
 CYUTF8String CYPoolUTF8String(CYPool &pool, CYUTF16String utf16) {
     // XXX: this is wrong
