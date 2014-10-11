@@ -1766,8 +1766,10 @@ static JSValueRef require(JSContextRef context, JSObjectRef object, JSObjectRef 
 
         if (code.data == NULL) {
             if (strchr(name, '/') == NULL && (
+#ifdef __APPLE__
                 dlopen(pool.strcat("/System/Library/Frameworks/", name, ".framework/", name, NULL), RTLD_LAZY | RTLD_GLOBAL) != NULL ||
                 dlopen(pool.strcat("/System/Library/PrivateFrameworks/", name, ".framework/", name, NULL), RTLD_LAZY | RTLD_GLOBAL) != NULL ||
+#endif
             false))
                 return CYJSUndefined(NULL);
 
