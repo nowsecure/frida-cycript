@@ -24,6 +24,12 @@ cat << EOF
 #include <cstddef>
 #include <cstring>
 #include "Execute.hpp"
+
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
+#pragma clang diagnostic ignored "-Wdeprecated-register"
+#endif
 %}
 
 %language=ANSI-C
@@ -47,3 +53,10 @@ EOF
 
 grep '^[CFV]' "$1" | sed -e 's/^C/0/;s/^F/1/;s/^V/2/' | sed -e 's/"/\\"/g;s/^\([^ ]*\) \([^ ]*\) \(.*\)$/\1\2, "\3", NULL/';
 grep '^[EST]' "$1" | sed -e 's/^S/3/;s/^T/4/;s/^E/5/' | sed -e 's/^5\(.*\)$/4\1 i/;s/"/\\"/g' | sed -e 's/^\([^ ]*\) \([^ ]*\) \(.*\)$/\1\2, "\3", NULL/';
+
+cat <<EOF
+%%
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+EOF

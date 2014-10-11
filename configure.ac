@@ -40,6 +40,9 @@ LT_INIT([disable-static])
 
 AC_LANG([C++])
 
+AX_CXX_COMPILE_STDCXX_11([ext], [mandatory])
+OBJCXXFLAGS="${OBJCXXFLAGS} ${CXXFLAGS##*' '}"
+
 PKG_PROG_PKG_CONFIG([0.22])
 
 AC_PATH_PROG([GIT], [git])

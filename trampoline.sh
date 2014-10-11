@@ -70,7 +70,7 @@ for arch in "${archs[@]}"; do
     filesize=${file[1]}
 
     echo
-    echo "static const char ${name}_${arch}_data_[] = {"
+    echo "static const unsigned char ${name}_${arch}_data_[] = {"
 
     LANG=C od -v -t x1 -t c -j "$((offset + fileoff))" -N "${filesize}" "${object}" | "${sed}" -e '
         /^[0-7]/ ! {

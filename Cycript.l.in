@@ -22,6 +22,13 @@
 /* XXX: supposedly I will be screwed on very very long multi-line comments and need to replace these with a manual lexer. http://websrv.cs.fsu.edu/~engelen/courses/COP5621/Pr2.pdf */
 
 %{
+
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
+#pragma clang diagnostic ignored "-Wdeprecated-register"
+#endif
+
 #define YYLTYPE cy::location
 #include "Cycript.tab.hh"
 typedef cy::parser::token tk;
@@ -491,3 +498,7 @@ void CYDriver::PushCondition(Condition condition) {
 void CYDriver::PopCondition() {
     yy_pop_state(scanner_);
 }
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif

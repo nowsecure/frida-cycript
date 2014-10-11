@@ -20,7 +20,7 @@
 /* }}} */
 
 struct Trampoline {
-    const char *data_;
+    const unsigned char *data_;
     size_t size_;
     size_t entry_;
 };
