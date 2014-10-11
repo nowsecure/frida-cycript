@@ -1,25 +1,25 @@
 dnl Cycript - Optimizing JavaScript Compiler/Runtime
-dnl Copyright (C) 2009-2013  Jay Freeman (saurik)
+dnl Copyright (C) 2009-2014  Jay Freeman (saurik)
 
-dnl GNU General Public License, Version 3 {{{
+dnl GNU Affero General Public License, Version 3 {{{
 dnl
-dnl Cycript is free software: you can redistribute it and/or modify
-dnl it under the terms of the GNU General Public License as published
-dnl by the Free Software Foundation, either version 3 of the License,
-dnl or (at your option) any later version.
+dnl This program is free software: you can redistribute it and/or modify
+dnl it under the terms of the GNU Affero General Public License as published by
+dnl the Free Software Foundation, either version 3 of the License, or
+dnl (at your option) any later version.
 dnl
-dnl Cycript is distributed in the hope that it will be useful, but
-dnl WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
 dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-dnl GNU General Public License for more details.
+dnl GNU Affero General Public License for more details.
 dnl
-dnl You should have received a copy of the GNU General Public License
-dnl along with Cycript.  If not, see <http://www.gnu.org/licenses/>.
+dnl You should have received a copy of the GNU Affero General Public License
+dnl along with this program.  If not, see <http://www.gnu.org/licenses/>.
 dnl }}}
 
 AC_PREREQ([2.65])
 AC_INIT([Cycript], [0.9], [saurik@saurik.com], [cycript], [http://www.cycript.org/])
-AC_COPYRIGHT([Copyright (C) 2009-2012  Jay Freeman (saurik)])
+AC_COPYRIGHT([Copyright (C) 2009-2014  Jay Freeman (saurik)])
 
 AC_CONFIG_SRCDIR([Console.cpp])
 AC_CONFIG_AUX_DIR([.])
