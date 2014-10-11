@@ -107,7 +107,7 @@ host_triplet = @host@
 @CY_EXECUTE_TRUE@am__append_4 = C
 @CY_EXECUTE_TRUE@am__append_5 = Bridge.gperf Bridge.hpp
 @CY_JAVA_TRUE@am__append_6 = Java
-@CY_JAVA_TRUE@am__append_7 = 
+@CY_JAVA_TRUE@am__append_7 = Java/Execute.cpp
 @CY_JAVA_TRUE@am__append_8 = $(LTJAVA)
 @CY_OBJECTIVEC_TRUE@am__append_9 = ObjectiveC
 @CY_OBJECTIVEC_TRUE@am__append_10 = ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm
@@ -177,13 +177,13 @@ am__libcycript_la_SOURCES_DIST = ConvertUTF.c Decode.cpp Driver.cpp \
 	Highlight.cpp Library.cpp Network.cpp Output.cpp Parser.cpp \
 	Replace.cpp Cycript.tab.cc lex.cy.cpp sig/ffi_type.cpp \
 	sig/parse.cpp sig/copy.cpp Bridge.cpp Execute.cpp \
-	JavaScriptCore.cpp ObjectiveC/Output.cpp \
+	JavaScriptCore.cpp Java/Execute.cpp ObjectiveC/Output.cpp \
 	ObjectiveC/Replace.cpp ObjectiveC/Library.mm Handler.mm
 am__dirstamp = $(am__leading_dot)dirstamp
 @CY_EXECUTE_TRUE@am__objects_1 = sig/ffi_type.lo sig/parse.lo \
 @CY_EXECUTE_TRUE@	sig/copy.lo Bridge.lo Execute.lo \
 @CY_EXECUTE_TRUE@	JavaScriptCore.lo
-am__objects_2 =
+@CY_JAVA_TRUE@am__objects_2 = Java/Execute.lo
 @CY_OBJECTIVEC_TRUE@am__objects_3 = ObjectiveC/Output.lo \
 @CY_OBJECTIVEC_TRUE@	ObjectiveC/Replace.lo \
 @CY_OBJECTIVEC_TRUE@	ObjectiveC/Library.lo
@@ -649,6 +649,13 @@ sig/$(DEPDIR)/$(am__dirstamp):
 sig/ffi_type.lo: sig/$(am__dirstamp) sig/$(DEPDIR)/$(am__dirstamp)
 sig/parse.lo: sig/$(am__dirstamp) sig/$(DEPDIR)/$(am__dirstamp)
 sig/copy.lo: sig/$(am__dirstamp) sig/$(DEPDIR)/$(am__dirstamp)
+Java/$(am__dirstamp):
+	@$(MKDIR_P) Java
+	@: > Java/$(am__dirstamp)
+Java/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) Java/$(DEPDIR)
+	@: > Java/$(DEPDIR)/$(am__dirstamp)
+Java/Execute.lo: Java/$(am__dirstamp) Java/$(DEPDIR)/$(am__dirstamp)
 ObjectiveC/$(am__dirstamp):
 	@$(MKDIR_P) ObjectiveC
 	@: > ObjectiveC/$(am__dirstamp)
@@ -728,6 +735,8 @@ cycript$(EXEEXT): $(cycript_OBJECTS) $(cycript_DEPENDENCIES) $(EXTRA_cycript_DEP
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f Java/*.$(OBJEXT)
+	-rm -f Java/*.lo
 	-rm -f Mach/*.$(OBJEXT)
 	-rm -f ObjectiveC/*.$(OBJEXT)
 	-rm -f ObjectiveC/*.lo
@@ -754,6 +763,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Parser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Replace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lex.cy.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@Java/$(DEPDIR)/Execute.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@Mach/$(DEPDIR)/Inject.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/Library.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/Output.Plo@am__quote@
@@ -863,6 +873,7 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
+	-rm -rf Java/.libs Java/_libs
 	-rm -rf ObjectiveC/.libs ObjectiveC/_libs
 	-rm -rf sig/.libs sig/_libs
 
@@ -1200,6 +1211,8 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f Java/$(DEPDIR)/$(am__dirstamp)
+	-rm -f Java/$(am__dirstamp)
 	-rm -f Mach/$(DEPDIR)/$(am__dirstamp)
 	-rm -f Mach/$(am__dirstamp)
 	-rm -f ObjectiveC/$(DEPDIR)/$(am__dirstamp)
@@ -1217,7 +1230,7 @@ clean-am: clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
 
 distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
-	-rm -rf ./$(DEPDIR) Mach/$(DEPDIR) ObjectiveC/$(DEPDIR) sig/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) Java/$(DEPDIR) Mach/$(DEPDIR) ObjectiveC/$(DEPDIR) sig/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-libtool distclean-tags
@@ -1265,7 +1278,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
-	-rm -rf ./$(DEPDIR) Mach/$(DEPDIR) ObjectiveC/$(DEPDIR) sig/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) Java/$(DEPDIR) Mach/$(DEPDIR) ObjectiveC/$(DEPDIR) sig/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

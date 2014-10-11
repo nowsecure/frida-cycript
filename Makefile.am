@@ -71,7 +71,7 @@ endif
 
 if CY_JAVA
 filters += Java
-libcycript_la_SOURCES += 
+libcycript_la_SOURCES += Java/Execute.cpp
 libcycript_la_LIBADD += $(LTJAVA)
 endif
 
