@@ -110,12 +110,17 @@ typedef struct {
 } YYSTYPE;
 
 #define YYSTYPE YYSTYPE
-@if Bison24 }
 
 @if Bison24 %code provides {
 int cylex(YYSTYPE *, cy::location *, void *);
 @if Bison24 }
 
+@if Bison23 %}
+@if Bison23 %union {
+@if Bison23 }
+@if Bison23 %{
+
+@if Bison24 }
 @if Bison23 %}
 
 %name-prefix="cy"
