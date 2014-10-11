@@ -242,11 +242,14 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %token <identifier_> Signed "signed"
 @end
 
+@begin C
+%token AtEncode "@encode"
+@end
+
 @begin ObjectiveC
 %token AtImplementation "@implementation"
 %token AtImplementation_ ";@implementation"
 %token AtImport "@import"
-%token AtEncode "@encode"
 %token AtEnd "@end"
 %token AtSelector "@selector"
 %token <identifier_> Yes "YES"

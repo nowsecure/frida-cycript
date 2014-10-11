@@ -267,8 +267,11 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "signed"          L C I(identifier, Identifier("signed"), tk::Signed, hi::Type);
 @end
 
-@begin ObjectiveC
+@begin C
 "@encode"         L C F(tk::AtEncode, hi::Meta);
+@end
+
+@begin ObjectiveC
 "@end"            L C F(tk::AtEnd, hi::Meta);
 "@implementation" L C F(yyextra->no_.AtImplementation ? tk::AtImplementation_ : tk::AtImplementation, hi::Meta);
 "@import"         L C F(tk::AtImport, hi::Special);
