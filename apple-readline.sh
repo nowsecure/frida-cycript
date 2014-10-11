@@ -23,7 +23,9 @@ set -e
 
 arch="-arch i386 -arch x86_64"
 
-cd readline
-CFLAGS="-g -O2 ${arch}" ./configure --disable-shared --enable-static
+rm -rf readline.osx
+mkdir readline.osx
+cd readline.osx
+CFLAGS="-g -O2 ${arch}" ../readline/configure --disable-shared --enable-static
 make
 ln -sf . readline

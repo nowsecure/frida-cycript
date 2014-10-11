@@ -23,8 +23,8 @@ set -e
 
 cd "${0%%/*}"
 
-if [[ ! -e readline/libreadline.a ]]; then
-    ./readline.sh; fi
+if [[ ! -e readline.osx/libreadline.a ]]; then
+    ./apple-readline.sh; fi
 if [[ ! -e libffi.a ]]; then
     ./libffi.sh; fi
 
@@ -77,7 +77,7 @@ function build() {
 
 for arch in i386 x86_64; do
     build "osx-${arch}" "${mac}" "-arch ${arch} -mmacosx-version-min=10.6" \
-        CPPFLAGS="-I../readline" LDFLAGS="-L../readline"
+        CPPFLAGS="-I../readline.osx" LDFLAGS="-L../readline.osx"
 done
 
 for arch in i386 x86_64; do

@@ -19,4 +19,4 @@
 # along with Cycript.  If not, see <http://www.gnu.org/licenses/>.
 # }}}
 
-exec make -f xcode.mk "$@"
+exec make -f apple.mk "$@"

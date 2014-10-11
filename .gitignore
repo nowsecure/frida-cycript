@@ -34,6 +34,7 @@ aclocal.m4
 stamp-h1
 readline-6.2
 readline-6.2.tar.gz
+readline.*
 libffi.*
 build.*
 Cycript.ios
