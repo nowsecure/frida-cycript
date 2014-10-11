@@ -218,6 +218,14 @@ AS_CASE([$CY_EXECUTE], [1], [
         AS_CASE([$ac_cv_search_ffi_call], [no], [CY_CHECK_PKG_CONFIG_LIBFFI])
     ]))
 
+    AC_CHECK_HEADER([jni.h], [
+        AC_SUBST([CY_JAVA], [1])
+        CY_LT_LIB([LTJAVA], [AC_SEARCH_LIBS([JNI_GetCreatedJavaVMs], [dvm], [
+        ])])
+    ], [
+        AC_SUBST([CY_JAVA], [0])
+    ])
+
     AC_LANG_PUSH([Objective C++])
 
     AC_MSG_CHECKING([if we really have Objective C++])
@@ -250,6 +258,7 @@ AS_CASE([$CY_EXECUTE], [1], [
     AC_LANG_POP([Objective C++])
 ])
 
+AM_CONDITIONAL([CY_JAVA], [test "x$CY_JAVA" = x1])
 AM_CONDITIONAL([CY_OBJECTIVEC], [test "x$CY_OBJECTIVEC" = x1])
 
 CY_LT_LIB([LTLIBREADLINE], [AX_LIB_READLINE])

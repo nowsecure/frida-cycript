@@ -655,9 +655,13 @@ LTLIBTERMCAP
 LTLIBREADLINE
 CY_OBJECTIVEC_FALSE
 CY_OBJECTIVEC_TRUE
+CY_JAVA_FALSE
+CY_JAVA_TRUE
 LTOBJECTIVEC
 GNUSTEP_CONFIG
 CY_OBJECTIVEC
+LTJAVA
+CY_JAVA
 LTLIBFFI
 LIBFFI_LIBS
 LIBFFI_CFLAGS
@@ -19576,6 +19580,85 @@ fi
 
 
 
+    ac_fn_cxx_check_header_mongrel "$LINENO" "jni.h" "ac_cv_header_jni_h" "$ac_includes_default"
+if test "x$ac_cv_header_jni_h" = xyes; then :
+
+        CY_JAVA=1
+
+
+    cy_save=$LIBS
+    LIBS=
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing JNI_GetCreatedJavaVMs" >&5
+$as_echo_n "checking for library containing JNI_GetCreatedJavaVMs... " >&6; }
+if ${ac_cv_search_JNI_GetCreatedJavaVMs+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char JNI_GetCreatedJavaVMs ();
+int
+main ()
+{
+return JNI_GetCreatedJavaVMs ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' dvm; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_JNI_GetCreatedJavaVMs=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_JNI_GetCreatedJavaVMs+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_JNI_GetCreatedJavaVMs+:} false; then :
+
+else
+  ac_cv_search_JNI_GetCreatedJavaVMs=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_JNI_GetCreatedJavaVMs" >&5
+$as_echo "$ac_cv_search_JNI_GetCreatedJavaVMs" >&6; }
+ac_res=$ac_cv_search_JNI_GetCreatedJavaVMs
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+
+fi
+
+    LTJAVA=$LIBS
+    LIBS=$cy_save
+
+
+
+else
+
+        CY_JAVA=0
+
+
+fi
+
+
+
     ac_ext=mm
 ac_cpp='$OBJCXXCPP $CPPFLAGS'
 ac_compile='$OBJCXX -c $OBJCXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -19859,6 +19942,14 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
   *) :
      ;;
 esac
+
+ if test "x$CY_JAVA" = x1; then
+  CY_JAVA_TRUE=
+  CY_JAVA_FALSE='#'
+else
+  CY_JAVA_TRUE='#'
+  CY_JAVA_FALSE=
+fi
 
  if test "x$CY_OBJECTIVEC" = x1; then
   CY_OBJECTIVEC_TRUE=
@@ -20556,6 +20647,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${CY_EXECUTE_TRUE}" && test -z "${CY_EXECUTE_FALSE}"; then
   as_fn_error $? "conditional \"CY_EXECUTE\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${CY_JAVA_TRUE}" && test -z "${CY_JAVA_FALSE}"; then
+  as_fn_error $? "conditional \"CY_JAVA\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${CY_OBJECTIVEC_TRUE}" && test -z "${CY_OBJECTIVEC_FALSE}"; then

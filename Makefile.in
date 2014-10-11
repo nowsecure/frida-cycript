@@ -106,13 +106,16 @@ host_triplet = @host@
 @CY_EXECUTE_TRUE@am__append_3 = -DCY_EXECUTE
 @CY_EXECUTE_TRUE@am__append_4 = C
 @CY_EXECUTE_TRUE@am__append_5 = Bridge.gperf Bridge.hpp
-@CY_OBJECTIVEC_TRUE@am__append_6 = ObjectiveC
-@CY_OBJECTIVEC_TRUE@am__append_7 = ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm
-@CY_OBJECTIVEC_TRUE@am__append_8 = $(LTOBJECTIVEC)
-@CY_MACH_TRUE@am__append_9 = Handler.mm
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__append_10 = Mach/Inject.cpp
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__append_11 = -DCY_ATTACH
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__append_12 = Trampoline.t.lo \
+@CY_JAVA_TRUE@am__append_6 = Java
+@CY_JAVA_TRUE@am__append_7 = 
+@CY_JAVA_TRUE@am__append_8 = $(LTJAVA)
+@CY_OBJECTIVEC_TRUE@am__append_9 = ObjectiveC
+@CY_OBJECTIVEC_TRUE@am__append_10 = ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm
+@CY_OBJECTIVEC_TRUE@am__append_11 = $(LTOBJECTIVEC)
+@CY_MACH_TRUE@am__append_12 = Handler.mm
+@CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__append_13 = Mach/Inject.cpp
+@CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__append_14 = -DCY_ATTACH
+@CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__append_15 = Trampoline.t.lo \
 @CY_CONSOLE_TRUE@@CY_MACH_TRUE@	libTrampoline.t.la \
 @CY_CONSOLE_TRUE@@CY_MACH_TRUE@	Trampoline.t.hpp
 subdir = .
@@ -165,10 +168,11 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 @CY_EXECUTE_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-@CY_OBJECTIVEC_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
+@CY_JAVA_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
+@CY_OBJECTIVEC_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
 libcycript_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_3)
+	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4)
 am__libcycript_la_SOURCES_DIST = ConvertUTF.c Decode.cpp Driver.cpp \
 	Highlight.cpp Library.cpp Network.cpp Output.cpp Parser.cpp \
 	Replace.cpp Cycript.tab.cc lex.cy.cpp sig/ffi_type.cpp \
@@ -179,14 +183,15 @@ am__dirstamp = $(am__leading_dot)dirstamp
 @CY_EXECUTE_TRUE@am__objects_1 = sig/ffi_type.lo sig/parse.lo \
 @CY_EXECUTE_TRUE@	sig/copy.lo Bridge.lo Execute.lo \
 @CY_EXECUTE_TRUE@	JavaScriptCore.lo
-@CY_OBJECTIVEC_TRUE@am__objects_2 = ObjectiveC/Output.lo \
+am__objects_2 =
+@CY_OBJECTIVEC_TRUE@am__objects_3 = ObjectiveC/Output.lo \
 @CY_OBJECTIVEC_TRUE@	ObjectiveC/Replace.lo \
 @CY_OBJECTIVEC_TRUE@	ObjectiveC/Library.lo
-@CY_MACH_TRUE@am__objects_3 = Handler.lo
+@CY_MACH_TRUE@am__objects_4 = Handler.lo
 am_libcycript_la_OBJECTS = ConvertUTF.lo Decode.lo Driver.lo \
 	Highlight.lo Library.lo Network.lo Output.lo Parser.lo \
 	Replace.lo Cycript.tab.lo lex.cy.lo $(am__objects_1) \
-	$(am__objects_2) $(am__objects_3)
+	$(am__objects_2) $(am__objects_3) $(am__objects_4)
 libcycript_la_OBJECTS = $(am_libcycript_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -197,9 +202,9 @@ libcycript_la_LINK = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
 	$(OBJCXXFLAGS) $(libcycript_la_LDFLAGS) $(LDFLAGS) -o $@
 PROGRAMS = $(bin_PROGRAMS)
 am__cycript_SOURCES_DIST = Console.cpp Display.cpp Mach/Inject.cpp
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__objects_4 = Mach/Inject.$(OBJEXT)
+@CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__objects_5 = Mach/Inject.$(OBJEXT)
 @CY_CONSOLE_TRUE@am_cycript_OBJECTS = Console.$(OBJEXT) \
-@CY_CONSOLE_TRUE@	Display.$(OBJEXT) $(am__objects_4)
+@CY_CONSOLE_TRUE@	Display.$(OBJEXT) $(am__objects_5)
 cycript_OBJECTS = $(am_cycript_OBJECTS)
 @CY_CONSOLE_TRUE@cycript_DEPENDENCIES = libcycript.la \
 @CY_CONSOLE_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
@@ -385,6 +390,7 @@ CY_ARCH = @CY_ARCH@
 CY_ATTACH_GROUP = @CY_ATTACH_GROUP@
 CY_EXECUTE = @CY_EXECUTE@
 CY_FILTERS = @CY_FILTERS@
+CY_JAVA = @CY_JAVA@
 CY_MACH = @CY_MACH@
 CY_OBJECTIVEC = @CY_OBJECTIVEC@
 DEFS = @DEFS@
@@ -419,6 +425,7 @@ LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTFLAGS = @LTFLAGS@
+LTJAVA = @LTJAVA@
 LTJAVASCRIPTCORE = @LTJAVASCRIPTCORE@
 LTLIBFFI = @LTLIBFFI@
 LTLIBGCC = @LTLIBGCC@
@@ -521,25 +528,26 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = subdir-objects
-CLEANFILES = $(am__append_5) $(am__append_12) Cycript.yy Cycript.l \
+CLEANFILES = $(am__append_5) $(am__append_15) Cycript.yy Cycript.l \
 	lex.cy.cpp Cycript.tab.cc Cycript.tab.hh location.hh \
 	position.hh stack.hh Cycript.output
 SUBDIRS = 
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -I$(srcdir)/include -DYYDEBUG=1 -include config.h \
-	-include $(srcdir)/unconfig.h $(am__append_3) $(am__append_11)
+	-include $(srcdir)/unconfig.h $(am__append_3) $(am__append_14)
 CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
 lib_LTLIBRARIES = libcycript.la
 libcycript_la_LDFLAGS = $(CY_LDFLAGS)
 libcycript_la_LIBADD = $(LTLIBFFI) $(LTLIBGCC) -ldl $(am__append_2) \
-	$(am__append_8)
+	$(am__append_8) $(am__append_11)
 libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp \
 	Highlight.cpp Library.cpp Network.cpp Output.cpp Parser.cpp \
 	Replace.cpp Cycript.tab.cc lex.cy.cpp $(am__append_1) \
-	$(am__append_7) $(am__append_9)
-filters = $(CY_FILTERS) $(am__append_4) $(am__append_6)
+	$(am__append_7) $(am__append_10) $(am__append_12)
+filters = $(CY_FILTERS) $(am__append_4) $(am__append_6) \
+	$(am__append_9)
 @CY_CONSOLE_TRUE@cycript_SOURCES = Console.cpp Display.cpp \
-@CY_CONSOLE_TRUE@	$(am__append_10)
+@CY_CONSOLE_TRUE@	$(am__append_13)
 @CY_CONSOLE_TRUE@cycript_LDADD = libcycript.la $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) -ldl
 @CY_CONSOLE_TRUE@ldid = true
 @CY_CONSOLE_TRUE@entitle = $(ldid) -S$(srcdir)/cycript.xml

@@ -69,6 +69,12 @@ Bridge.hpp: Bridge.gperf
 	$(GPERF) $< | $(SED) -e 's/defined __GNUC_STDC_INLINE__ || defined __GNUC_GNU_INLINE__/0/' >$@
 endif
 
+if CY_JAVA
+filters += Java
+libcycript_la_SOURCES += 
+libcycript_la_LIBADD += $(LTJAVA)
+endif
+
 if CY_OBJECTIVEC
 filters += ObjectiveC
 libcycript_la_SOURCES += ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm
