@@ -440,6 +440,10 @@ void CYIfComprehension::Output(CYOutput &out) const {
     out << "if" << ' ' << '(' << *test_ << ')' << next_;
 }
 
+void CYImport::Output(CYOutput &out, CYFlags flags) const {
+    out << "@import";
+}
+
 void CYIndirectMember::Output(CYOutput &out, CYFlags flags) const {
     object_->Output(out, Precedence(), CYLeft(flags));
     if (const char *word = property_->Word())
@@ -545,6 +549,12 @@ void CYTypeDefinition::Output(CYOutput &out, CYFlags flags) const {
 void CYLetStatement::Output(CYOutput &out, CYFlags flags) const {
     out << "let" << ' ' << '(' << *declarations_ << ')';
     code_->Single(out, CYRight(flags));
+}
+
+void CYModule::Output(CYOutput &out) const {
+    out << part_;
+    if (next_ != NULL)
+        out << '.' << next_;
 }
 
 namespace cy {

@@ -1851,6 +1851,36 @@ struct CYLambda :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
+struct CYModule :
+    CYNext<CYModule>,
+    CYThing
+{
+    CYWord *part_;
+
+    CYModule(CYWord *part, CYModule *next = NULL) :
+        CYNext<CYModule>(next),
+        part_(part)
+    {
+    }
+
+    CYString *Replace(CYContext &context, const char *separator) const;
+    void Output(CYOutput &out) const;
+};
+
+struct CYImport :
+    CYStatement
+{
+    CYModule *module_;
+
+    CYImport(CYModule *module) :
+        module_(module)
+    {
+    }
+
+    virtual CYStatement *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
 struct CYTypeDefinition :
     CYStatement
 {

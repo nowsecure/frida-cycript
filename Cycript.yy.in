@@ -79,12 +79,18 @@ typedef struct {
         CYProperty *property_;
         CYPropertyName *propertyName_;
         CYRubyProc *rubyProc_;
-        CYTypeSpecifier *specifier_;
         CYStatement *statement_;
         CYString *string_;
         CYThis *this_;
         CYTrue *true_;
         CYWord *word_;
+
+@begin C
+        CYTypeModifier *modifier_;
+        CYTypeSpecifier *specifier_;
+        CYTypedIdentifier *typedIdentifier_;
+        CYTypedParameter *typedParameter_;
+@end
 
 @begin ObjectiveC
         CYClassName *className_;
@@ -93,9 +99,6 @@ typedef struct {
         CYMessageParameter *messageParameter_;
         CYProtocol *protocol_;
         CYSelectorPart *selector_;
-        CYTypeModifier *modifier_;
-        CYTypedIdentifier *typedIdentifier_;
-        CYTypedParameter *typedParameter_;
 @end
 
 @begin E4X
@@ -426,6 +429,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <member_> MemberAccess
 %type <expression_> MemberExpression_
 %type <expression_> MemberExpression
+%type <module_> Module
 %type <expression_> MultiplicativeExpression
 %type <expression_> NewExpression
 %type <null_> NullLiteral
@@ -472,8 +476,26 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <word_> WordOpt
 %type <expression_> Variable
 
-@begin ObjectiveC
+@begin C
 %type <typedIdentifier_> ArrayedType
+%type <expression_> EncodedType
+%type <modifier_> FunctionedType
+%type <specifier_> IntegerType
+%type <specifier_> IntegerTypeOpt
+%type <typedIdentifier_> PrefixedType
+%type <specifier_> PrimitiveType
+%type <typedIdentifier_> TypeParenthetical
+%type <typedIdentifier_> TypeSignifier
+%type <typedIdentifier_> SuffixedType
+%type <modifier_> TypeQualifierLeft
+%type <typedIdentifier_> TypeQualifierRight
+%type <typedIdentifier_> TypedIdentifier
+%type <typedParameter_> TypedParameterList_
+%type <typedParameter_> TypedParameterList
+%type <typedParameter_> TypedParameterListOpt
+@end
+
+@begin ObjectiveC
 %type <expression_> BoxableExpression
 %type <statement_> CategoryStatement
 %type <expression_> ClassExpression
@@ -488,10 +510,6 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <protocol_> ClassProtocolListOpt
 %type <protocol_> ClassProtocols
 %type <protocol_> ClassProtocolsOpt
-%type <expression_> EncodedType
-%type <modifier_> FunctionedType
-%type <specifier_> IntegerType
-%type <specifier_> IntegerTypeOpt
 %type <expression_> MessageExpression
 %type <messageParameter_> MessageParameter
 %type <messageParameter_> MessageParameters
@@ -499,9 +517,6 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <messageParameter_> MessageParameterListOpt
 %type <bool_> MessageScope
 %type <typedIdentifier_> ModifiedType
-%type <module_> Module
-%type <typedIdentifier_> PrefixedType
-%type <specifier_> PrimitiveType
 %type <argument_> SelectorCall_
 %type <argument_> SelectorCall
 %type <selector_> SelectorExpression_
@@ -509,16 +524,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <selector_> SelectorExpressionOpt
 %type <argument_> SelectorList
 %type <word_> SelectorWordOpt
-%type <typedIdentifier_> SuffixedType
 %type <expression_> TypeOpt
-%type <typedIdentifier_> TypeParenthetical
-%type <modifier_> TypeQualifierLeft
-%type <typedIdentifier_> TypeQualifierRight
-%type <typedIdentifier_> TypeSignifier
-%type <typedIdentifier_> TypedIdentifier
-%type <typedParameter_> TypedParameterList_
-%type <typedParameter_> TypedParameterList
-%type <typedParameter_> TypedParameterListOpt
 %type <argument_> VariadicCall
 @end
 
@@ -705,6 +711,8 @@ Identifier
     | "typedef" { $$ = $1; }
     | "unsigned" { $$ = $1; }
     | "signed" { $$ = $1; }
+@end
+@begin ObjectiveC
     | "YES" { $$ = $1; }
     | "NO" { $$ = $1; }
 @end
@@ -1394,8 +1402,8 @@ ProgramBodyOpt
     ;
 /* }}} */
 
-@begin ObjectiveC
-/* Cycript (Objective-C): Type Encoding {{{ */
+@begin C
+/* Cycript (C): Type Encoding {{{ */
 TypeParenthetical
     : "(" LexPushInOff PrefixedType ")" LexPopIn { $$ = $3; }
     ;
@@ -1473,6 +1481,9 @@ PrimaryExpression
     : "@encode" "(" EncodedType ")" { $$ = $3; }
     ;
 /* }}} */
+@end
+
+@begin ObjectiveC
 /* Cycript (Objective-C): @class Declaration {{{ */
 ClassSuperOpt
     /* XXX: why the hell did I choose MemberExpression? */
@@ -1626,7 +1637,9 @@ PrimaryExpression
     | "@selector" "(" LexPushInOff SelectorExpression ")" LexPopIn { $$ = CYNew CYSelector($4); }
     ;
 /* }}} */
-/* Cycript (Objective-C): @import Directive {{{ */
+@end
+
+/* Cycript: @import Directive {{{ */
 Module
     : Module "." Word { $$ = CYNew CYModule($3, $1); }
     | Word { $$ = CYNew CYModule($1); }
@@ -1636,6 +1649,8 @@ Declaration__
     : "@import" Module { $$ = CYNew CYImport($2); }
     ;
 /* }}} */
+
+@begin ObjectiveC
 /* Cycript (Objective-C): Boxed Expressions {{{ */
 BoxableExpression
     : NullLiteral { $$ = $1; }

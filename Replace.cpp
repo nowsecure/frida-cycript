@@ -507,6 +507,10 @@ CYStatement *CYIfComprehension::Replace(CYContext &context, CYStatement *stateme
     return $ CYIf(test_, CYComprehension::Replace(context, statement));
 }
 
+CYStatement *CYImport::Replace(CYContext &context) {
+    return $ CYVar($L1($L(module_->part_->Word(), $C1($V("require"), module_->Replace(context, "/")))));
+}
+
 CYExpression *CYIndirect::Replace(CYContext &context) {
     return $M(rhs_, $S("$cyi"));
 }
@@ -532,6 +536,12 @@ CYExpression *CYLambda::Replace(CYContext &context) {
 
 CYStatement *CYLetStatement::Replace(CYContext &context) {
     return $E($ CYCall(CYNonLocalize(context, $ CYFunctionExpression(NULL, declarations_->Parameter(context), code_)), declarations_->Argument(context)));
+}
+
+CYString *CYModule::Replace(CYContext &context, const char *separator) const {
+    if (next_ == NULL)
+        return $ CYString(part_);
+    return $ CYString($pool.strcat(next_->Replace(context, separator)->Value(), separator, part_->Word(), NULL));
 }
 
 CYExpression *CYMultiply::Replace(CYContext &context) {

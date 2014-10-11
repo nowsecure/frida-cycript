@@ -77,10 +77,6 @@ void CYClassStatement::Output(CYOutput &out, CYFlags flags) const {
 void CYField::Output(CYOutput &out) const {
 }
 
-void CYImport::Output(CYOutput &out, CYFlags flags) const {
-    out << "@import";
-}
-
 void CYInstanceLiteral::Output(CYOutput &out, CYFlags flags) const {
     out << '#';
     number_->Output(out, CYRight(flags));
@@ -97,12 +93,6 @@ void CYMessage::Output(CYOutput &out, bool replace) const {
         }
 
     out << code_;
-}
-
-void CYModule::Output(CYOutput &out) const {
-    out << part_;
-    if (next_ != NULL)
-        out << '.' << next_;
 }
 
 void CYBox::Output(CYOutput &out, CYFlags flags) const {
