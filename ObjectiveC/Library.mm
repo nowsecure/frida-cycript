@@ -3092,7 +3092,7 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     CYSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Selector, prototype_s)), Function_prototype);
 } CYPoolCatch() }
 
-static CYHooks CYObjectiveCHooks = {
+static CYHook CYObjectiveCHook = {
     &CYObjectiveC_ExecuteStart,
     &CYObjectiveC_ExecuteEnd,
     &CYObjectiveC_CallFunction,
@@ -3102,13 +3102,7 @@ static CYHooks CYObjectiveCHooks = {
     &CYObjectiveC_FromFFI,
 };
 
-struct CYObjectiveC {
-    CYObjectiveC() {
-        hooks_ = &CYObjectiveCHooks;
-        // XXX: evil magic juju to make this actually take effect on a Mac when compiled with autoconf/libtool doom!
-        _assert(hooks_ != NULL);
-    }
-} CYObjectiveC;
+CYRegisterHook CYObjectiveC(&CYObjectiveCHook);
 
 extern "C" void CydgetSetupContext(JSGlobalContextRef context) { CYObjectiveTry_ {
     CYSetupContext(context);

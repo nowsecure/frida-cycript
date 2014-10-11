@@ -50,7 +50,11 @@
 #include "JavaScript.hpp"
 #include "String.hpp"
 
-struct CYHooks *hooks_;
+std::vector<CYHook *> hooks_;
+
+CYRegisterHook::CYRegisterHook(CYHook *hook) {
+    hooks_.push_back(hook);
+}
 
 /* JavaScript Properties {{{ */
 bool CYHasProperty(JSContextRef context, JSObjectRef object, JSStringRef name) {
@@ -670,9 +674,10 @@ void CYPoolFFI(CYPool *pool, JSContextRef context, sig::Type *type, ffi_type *ff
         break;
 
         default:
-            if (hooks_ != NULL && hooks_->PoolFFI != NULL)
-                if ((*hooks_->PoolFFI)(pool, context, type, ffi, data, value))
-                    return;
+            for (CYHook *hook : hooks_)
+                if (hook->PoolFFI != NULL)
+                    if ((*hook->PoolFFI)(pool, context, type, ffi, data, value))
+                        return;
 
             CYThrow("unimplemented signature code: '%c''\n", type->primitive);
     }
@@ -723,9 +728,10 @@ JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void 
         null:
             return CYJSNull(context);
         default:
-            if (hooks_ != NULL && hooks_->FromFFI != NULL)
-                if (JSValueRef value = (*hooks_->FromFFI)(context, type, ffi, data, initialize, owner))
-                    return value;
+            for (CYHook *hook : hooks_)
+                if (hook->FromFFI != NULL)
+                    if (JSValueRef value = (*hook->FromFFI)(context, type, ffi, data, initialize, owner))
+                        return value;
 
             CYThrow("unimplemented signature code: '%c''\n", type->primitive);
     }
@@ -987,11 +993,15 @@ JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, voi
 
     uint8_t value[cif->rtype->size];
 
-    if (hooks_ != NULL && hooks_->CallFunction != NULL)
-        (*hooks_->CallFunction)(context, cif, function, value, values);
-    else
-        ffi_call(cif, function, value, values);
+    for (CYHook *hook : hooks_)
+        if (hook->CallFunction != NULL) {
+            // XXX: this only supports one hook, but it is a bad idea anyway
+            (*hook->CallFunction)(context, cif, function, value, values);
+            goto from;
+        }
+    ffi_call(cif, function, value, values);
 
+  from:
     return CYFromFFI(context, signature->elements[0].type, cif->rtype, value, initialize);
 }
 
@@ -1534,24 +1544,32 @@ JSObjectRef CYGetGlobalObject(JSContextRef context) {
     return JSContextGetGlobalObject(context);
 }
 
+// XXX: this is neither exceptin safe nor even terribly sane
 class ExecutionHandle {
   private:
     JSContextRef context_;
-    void *handle_;
+    std::vector<void *> handles_;
 
   public:
     ExecutionHandle(JSContextRef context) :
         context_(context)
     {
-        if (hooks_ != NULL && hooks_->ExecuteStart != NULL)
-            handle_ = (*hooks_->ExecuteStart)(context_);
-        else
-            handle_ = NULL;
+        handles_.resize(hooks_.size());
+        for (size_t i(0); i != hooks_.size(); ++i) {
+            CYHook *hook(hooks_[i]);
+            if (hook->ExecuteStart != NULL)
+                handles_[i] = (*hook->ExecuteStart)(context_);
+            else
+                handles_[i] = NULL;
+        }
     }
 
     ~ExecutionHandle() {
-        if (hooks_ != NULL && hooks_->ExecuteEnd != NULL)
-            (*hooks_->ExecuteEnd)(context_, handle_);
+        for (size_t i(hooks_.size()); i != 0; --i) {
+            CYHook *hook(hooks_[i-1]);
+            if (hook->ExecuteEnd != NULL)
+                (*hook->ExecuteEnd)(context_, handles_[i-1]);
+        }
     }
 };
 
@@ -1668,8 +1686,9 @@ void CYInitializeDynamic() {
 
     Result_ = JSStringCreateWithUTF8CString("_");
 
-    if (hooks_ != NULL && hooks_->Initialize != NULL)
-        (*hooks_->Initialize)();
+    for (CYHook *hook : hooks_)
+        if (hook->Initialize != NULL)
+            (*hook->Initialize)();
 }
 
 void CYThrow(JSContextRef context, JSValueRef value) {
@@ -1898,8 +1917,9 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     if (CYBridgeEntry *entry = CYBridgeHash("1dlerror", 8))
         entry->cache_ = new cy::Functor(entry->value_, reinterpret_cast<void (*)()>(&dlerror));
 
-    if (hooks_ != NULL && hooks_->SetupContext != NULL)
-        (*hooks_->SetupContext)(context);
+    for (CYHook *hook : hooks_)
+        if (hook->SetupContext != NULL)
+            (*hook->SetupContext)(context);
 
     CYArrayPush(context, alls, cycript);
 }

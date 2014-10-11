@@ -115,7 +115,7 @@ JSValueRef CYCallAsFunction(JSContextRef context, JSObjectRef function, JSObject
 const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSObjectRef object, std::set<void *> &objects);
 std::set<void *> *CYCastObjects(JSContextRef context, JSObjectRef _this, size_t count, const JSValueRef arguments[]);
 
-struct CYHooks {
+struct CYHook {
     void *(*ExecuteStart)(JSContextRef);
     void (*ExecuteEnd)(JSContextRef, void *);
 
@@ -128,7 +128,9 @@ struct CYHooks {
     JSValueRef (*FromFFI)(JSContextRef, sig::Type *, ffi_type *, void *, bool, JSObjectRef);
 };
 
-extern struct CYHooks *hooks_;
+struct CYRegisterHook {
+    CYRegisterHook(CYHook *hook);
+};
 
 JSObjectRef CYMakePointer(JSContextRef context, void *pointer, size_t length, sig::Type *type, ffi_type *ffi, JSObjectRef owner);
 
