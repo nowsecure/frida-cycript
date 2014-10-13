@@ -122,7 +122,7 @@ struct CYJSException {
     {
     }
 
-    ~CYJSException() {
+    ~CYJSException() noexcept(false) {
         CYThrow(context_, value_);
     }
 
