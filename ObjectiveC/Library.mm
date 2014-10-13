@@ -2099,8 +2099,8 @@ static JSValueRef Internal_getProperty(JSContextRef context, JSObjectRef object,
             uintptr_t mask((1 << length) - 1);
             return CYCastJSValue(context, (field >> shift) & mask);
         } else {
-            Type_privateData type(pool, ivar_getTypeEncoding(ivar));
-            return CYFromFFI(context, type.type_, type.GetFFI(), data);
+            auto type(new(pool) Type_privateData(ivar_getTypeEncoding(ivar)));
+            return CYFromFFI(context, type->type_, type->GetFFI(), data);
         }
     }
 
@@ -2128,8 +2128,8 @@ static bool Internal_setProperty(JSContextRef context, JSObjectRef object, JSStr
             uintptr_t mask((1 << length) - 1);
             field = field & ~(mask << shift) | (uintptr_t(CYCastDouble(context, value)) & mask) << shift;
         } else {
-            Type_privateData type(pool, ivar_getTypeEncoding(ivar));
-            CYPoolFFI(&pool, context, type.type_, type.GetFFI(), reinterpret_cast<uint8_t *>(self) + ivar_getOffset(ivar), value);
+            auto type(new(pool) Type_privateData(ivar_getTypeEncoding(ivar)));
+            CYPoolFFI(&pool, context, type->type_, type->GetFFI(), reinterpret_cast<uint8_t *>(self) + ivar_getOffset(ivar), value);
             return true;
         }
     }

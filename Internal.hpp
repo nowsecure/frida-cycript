@@ -53,15 +53,6 @@ struct Type_privateData :
         sig::Copy(*pool_, *type_, *type);
     }
 
-    Type_privateData(CYPool &pool, const char *type) :
-        CYData(pool),
-        ffi_(NULL)
-    {
-        sig::Signature signature;
-        sig::Parse(*pool_, &signature, type, &Structor_);
-        type_ = signature.elements[0].type;
-    }
-
     Type_privateData(const char *type) :
         ffi_(NULL)
     {
