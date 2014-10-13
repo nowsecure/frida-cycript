@@ -2732,16 +2732,11 @@ static JSValueRef Class_callAsFunction_pointerTo(JSContextRef context, JSObjectR
     if (!CYIsClass(value))
         CYThrow("non-Class object cannot be used as Type");
 
-    // XXX: this is a very silly implementation
-
-    std::ostringstream type;
-    type << "@\"";
-    type << class_getName(value);
-    type << "\"";
-
-    CYPoolTry {
-        return CYMakeType(context, type.str().c_str());
-    } CYPoolCatch(NULL)
+    sig::Type type;
+    memset(&type, 0, sizeof(type));
+    type.primitive = sig::object_P;
+    type.name = class_getName(value);
+    return CYMakeType(context, &type);
 } CYCatch(NULL) return /*XXX*/ NULL; }
 
 static JSValueRef Selector_callAsFunction_toString(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {

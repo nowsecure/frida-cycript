@@ -35,7 +35,6 @@
 JSGlobalContextRef CYGetJSContext(JSContextRef context);
 void Structor_(CYPool &pool, sig::Type *&type);
 
-JSObjectRef CYMakeType(JSContextRef context, const char *type);
 JSObjectRef CYMakeType(JSContextRef context, sig::Type *type);
 
 extern JSClassRef Functor_;
