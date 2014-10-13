@@ -60,6 +60,15 @@ struct Type_privateData :
         type_ = signature.elements[0].type;
     }
 
+    Type_privateData(sig::Primitive primitive) :
+        ffi_(NULL)
+    {
+        sig::Type type;
+        memset(&type, 0, sizeof(type));
+        type.primitive = primitive;
+        Set(&type);
+    }
+
     Type_privateData(sig::Type *type) :
         ffi_(NULL)
     {

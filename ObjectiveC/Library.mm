@@ -2840,8 +2840,8 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
 
     CYPool &pool(CYGetGlobalPool());
 
-    Object_type = new(pool) Type_privateData("@");
-    Selector_type = new(pool) Type_privateData(":");
+    Object_type = new(pool) Type_privateData(sig::object_P);
+    Selector_type = new(pool) Type_privateData(sig::selector_P);
 
     NSArray_ = objc_getClass("NSArray");
     NSBlock_ = objc_getClass("NSBlock");
