@@ -1881,6 +1881,22 @@ struct CYImport :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
+struct CYExternal :
+    CYStatement
+{
+    CYString *abi_;
+    CYTypedIdentifier *typed_;
+
+    CYExternal(CYString *abi, CYTypedIdentifier *typed) :
+        abi_(abi),
+        typed_(typed)
+    {
+    }
+
+    virtual CYStatement *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
 struct CYTypeDefinition :
     CYStatement
 {

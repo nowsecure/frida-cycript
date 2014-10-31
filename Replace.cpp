@@ -327,6 +327,10 @@ CYAssignment *CYExpression::Assignment(CYContext &context) {
     return NULL;
 }
 
+CYStatement *CYExternal::Replace(CYContext &context) {
+    return $E($ CYAssign($V(typed_->identifier_), $C1(typed_->Replace(context), $C2($V("dlsym"), $V("RTLD_DEFAULT"), $S(typed_->identifier_->Word())))));
+}
+
 CYNumber *CYFalse::Number(CYContext &context) {
     return $D(0);
 }

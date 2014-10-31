@@ -329,6 +329,10 @@ void CYExpression::Output(CYOutput &out, int precedence, CYFlags flags) const {
         Output(out, flags);
 }
 
+void CYExternal::Output(CYOutput &out, CYFlags flags) const {
+    out << "extern" << abi_ << typed_ << ';';
+}
+
 void CYFatArrow::Output(CYOutput &out, CYFlags flags) const {
     out << '(' << parameters_ << ')' << ' ' << "=>" << ' ' << code_;
 }

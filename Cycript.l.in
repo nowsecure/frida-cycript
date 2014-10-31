@@ -272,6 +272,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "typedef"         L C I(identifier, Identifier("typedef"), tk::Typedef, hi::Meta);
 "unsigned"        L C I(identifier, Identifier("unsigned"), tk::Unsigned, hi::Type);
 "signed"          L C I(identifier, Identifier("signed"), tk::Signed, hi::Type);
+"extern"          L C I(identifier, Identifier("extern"), tk::Extern, hi::Type);
 @end
 
 @begin C

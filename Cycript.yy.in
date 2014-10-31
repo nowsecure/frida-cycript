@@ -245,6 +245,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %token <identifier_> Typedef "typedef"
 %token <identifier_> Unsigned "unsigned"
 %token <identifier_> Signed "signed"
+%token <identifier_> Extern "extern"
 @end
 
 @begin C
@@ -718,6 +719,7 @@ Identifier
     | "typedef" { $$ = $1; }
     | "unsigned" { $$ = $1; }
     | "signed" { $$ = $1; }
+    | "extern" { $$ = $1; }
 @end
 @begin ObjectiveC
     | "YES" { $$ = $1; }
@@ -1434,6 +1436,7 @@ SuffixedType
     : ArrayedType { $$ = $1; }
     | "(" LexPushInOff "^" TypeQualifierRight ")" LexPopIn "(" LexPushInOff TypedParameterListOpt ")" LexPopIn { $$ = $4; $$->modifier_ = CYNew CYTypeBlockWith($9, $$->modifier_); }
     | TypeParenthetical FunctionedType { $$ = $1; CYSetLast($2) = $$->modifier_; $$->modifier_ = $2; }
+    | IdentifierType FunctionedType { $$ = CYNew CYTypedIdentifier($1); CYSetLast($2) = $$->modifier_; $$->modifier_ = $2; }
     | FunctionedType { $$ = CYNew CYTypedIdentifier(); CYSetLast($1) = $$->modifier_; $$->modifier_ = $1; }
     ;
 
@@ -1730,9 +1733,15 @@ PrimaryExpression
 /* }}} */
 /* Cycript (C): Type Definitions {{{ */
 Statement__
-    : "typedef" TypedIdentifier Terminator { $$ = CYNew CYTypeDefinition($2); }
+    : "typedef" TypedIdentifier { if ($2->identifier_ == NULL) YYABORT; } Terminator { $$ = CYNew CYTypeDefinition($2); }
     ;
 /* }}} */
+/* Cycript (C): extern "C" {{{ */
+Statement__
+    : "extern" StringLiteral { if (strcmp($2->Value(), "C") != 0) YYABORT; } TypedIdentifier Terminator { $$ = CYNew CYExternal($2, $4); }
+    ;
+/* }}} */
+
 @end
 
 /* YUI: Documentation Comments {{{ */
