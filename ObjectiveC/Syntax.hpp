@@ -129,10 +129,10 @@ struct CYMessageParameter :
     CYNext<CYMessageParameter>
 {
     CYWord *tag_;
-    CYExpression *type_;
+    CYTypedIdentifier *type_;
     CYIdentifier *name_;
 
-    CYMessageParameter(CYWord *tag, CYExpression *type, CYIdentifier *name) :
+    CYMessageParameter(CYWord *tag, CYTypedIdentifier *type, CYIdentifier *name) :
         tag_(tag),
         type_(type),
         name_(name)
@@ -149,11 +149,11 @@ struct CYMessage :
     CYNext<CYMessage>
 {
     bool instance_;
-    CYExpression *type_;
+    CYTypedIdentifier *type_;
     CYMessageParameter *parameters_;
     CYBlock code_;
 
-    CYMessage(bool instance, CYExpression *type, CYMessageParameter *parameter, CYStatement *statements) :
+    CYMessage(bool instance, CYTypedIdentifier *type, CYMessageParameter *parameter, CYStatement *statements) :
         instance_(instance),
         type_(type),
         parameters_(parameter),

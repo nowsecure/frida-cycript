@@ -24,11 +24,11 @@
 
 #include <sstream>
 
-static CYExpression *MessageType(CYContext &context, CYExpression *type, CYMessageParameter *next, CYExpression *extra = NULL) {
+static CYExpression *MessageType(CYContext &context, CYTypedIdentifier *type, CYMessageParameter *next, CYExpression *extra = NULL) {
     if (type == NULL)
         return NULL;
 
-    CYExpression *left($C0($M(type, $S("toString"))));
+    CYExpression *left($C0($M(type->Replace(context), $S("toString"))));
     if (extra != NULL)
         left = $ CYAdd(left, extra);
 

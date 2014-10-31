@@ -486,7 +486,6 @@ int cylex(YYSTYPE *, cy::location *, void *);
 
 @begin C
 %type <typedIdentifier_> ArrayedType
-%type <expression_> EncodedType
 %type <modifier_> FunctionedType
 %type <specifier_> IntegerType
 %type <specifier_> IntegerTypeOpt
@@ -532,7 +531,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <selector_> SelectorExpressionOpt
 %type <argument_> SelectorList
 %type <word_> SelectorWordOpt
-%type <expression_> TypeOpt
+%type <typedIdentifier_> TypeOpt
 %type <argument_> VariadicCall
 @end
 
@@ -1481,12 +1480,8 @@ TypedIdentifier
     : TypeQualifierLeft PrimitiveType TypeQualifierRight { $$ = $3; $$->specifier_ = $2; CYSetLast($1) = $$->modifier_; $$->modifier_ = $1; }
     ;
 
-EncodedType
-    : TypedIdentifier { $$ = CYNew CYEncodedType($1); }
-    ;
-
 PrimaryExpression
-    : "@encode" "(" EncodedType ")" { $$ = $3; }
+    : "@encode" "(" TypedIdentifier ")" { $$ = CYNew CYEncodedType($3); }
     ;
 /* }}} */
 @end
@@ -1514,7 +1509,7 @@ MessageScope
     ;
 
 TypeOpt
-    : "(" LexSetRegExp EncodedType ")" { $$ = $3; }
+    : "(" LexSetRegExp TypedIdentifier ")" { $$ = $3; }
     | { $$ = NULL; }
     ;
 
