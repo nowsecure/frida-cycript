@@ -50,10 +50,13 @@
 #include "JavaScript.hpp"
 #include "String.hpp"
 
-std::vector<CYHook *> hooks_;
+static std::vector<CYHook *> &GetHooks() {
+    static std::vector<CYHook *> hooks;
+    return hooks;
+}
 
 CYRegisterHook::CYRegisterHook(CYHook *hook) {
-    hooks_.push_back(hook);
+    GetHooks().push_back(hook);
 }
 
 /* JavaScript Properties {{{ */
@@ -674,7 +677,7 @@ void CYPoolFFI(CYPool *pool, JSContextRef context, sig::Type *type, ffi_type *ff
         break;
 
         default:
-            for (CYHook *hook : hooks_)
+            for (CYHook *hook : GetHooks())
                 if (hook->PoolFFI != NULL)
                     if ((*hook->PoolFFI)(pool, context, type, ffi, data, value))
                         return;
@@ -728,7 +731,7 @@ JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void 
         null:
             return CYJSNull(context);
         default:
-            for (CYHook *hook : hooks_)
+            for (CYHook *hook : GetHooks())
                 if (hook->FromFFI != NULL)
                     if (JSValueRef value = (*hook->FromFFI)(context, type, ffi, data, initialize, owner))
                         return value;
@@ -993,7 +996,7 @@ JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, voi
 
     uint8_t value[cif->rtype->size];
 
-    for (CYHook *hook : hooks_)
+    for (CYHook *hook : GetHooks())
         if (hook->CallFunction != NULL) {
             // XXX: this only supports one hook, but it is a bad idea anyway
             (*hook->CallFunction)(context, cif, function, value, values);
@@ -1554,9 +1557,9 @@ class ExecutionHandle {
     ExecutionHandle(JSContextRef context) :
         context_(context)
     {
-        handles_.resize(hooks_.size());
-        for (size_t i(0); i != hooks_.size(); ++i) {
-            CYHook *hook(hooks_[i]);
+        handles_.resize(GetHooks().size());
+        for (size_t i(0); i != GetHooks().size(); ++i) {
+            CYHook *hook(GetHooks()[i]);
             if (hook->ExecuteStart != NULL)
                 handles_[i] = (*hook->ExecuteStart)(context_);
             else
@@ -1565,8 +1568,8 @@ class ExecutionHandle {
     }
 
     ~ExecutionHandle() {
-        for (size_t i(hooks_.size()); i != 0; --i) {
-            CYHook *hook(hooks_[i-1]);
+        for (size_t i(GetHooks().size()); i != 0; --i) {
+            CYHook *hook(GetHooks()[i-1]);
             if (hook->ExecuteEnd != NULL)
                 (*hook->ExecuteEnd)(context_, handles_[i-1]);
         }
@@ -1686,7 +1689,7 @@ void CYInitializeDynamic() {
 
     Result_ = JSStringCreateWithUTF8CString("_");
 
-    for (CYHook *hook : hooks_)
+    for (CYHook *hook : GetHooks())
         if (hook->Initialize != NULL)
             (*hook->Initialize)();
 }
@@ -1917,7 +1920,7 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     if (CYBridgeEntry *entry = CYBridgeHash("1dlerror", 8))
         entry->cache_ = new cy::Functor(entry->value_, reinterpret_cast<void (*)()>(&dlerror));
 
-    for (CYHook *hook : hooks_)
+    for (CYHook *hook : GetHooks())
         if (hook->SetupContext != NULL)
             (*hook->SetupContext)(context);
 
