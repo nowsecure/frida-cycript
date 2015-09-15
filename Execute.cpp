@@ -86,7 +86,7 @@ void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, J
 
 void CYSetPrototype(JSContextRef context, JSObjectRef object, JSValueRef value) {
     JSObjectSetPrototype(context, object, value);
-    _assert(JSObjectGetPrototype(context, object) == value);
+    _assert(CYIsEqual(context, JSObjectGetPrototype(context, object), value));
 }
 /* }}} */
 /* JavaScript Strings {{{ */
@@ -320,6 +320,10 @@ JSValueRef CYCallAsFunction(JSContextRef context, JSObjectRef function, JSObject
 
 bool CYIsCallable(JSContextRef context, JSValueRef value) {
     return value != NULL && JSValueIsObject(context, value) && JSObjectIsFunction(context, (JSObjectRef) value);
+}
+
+bool CYIsEqual(JSContextRef context, JSValueRef lhs, JSValueRef rhs) {
+    return _jsccall(JSValueIsEqual, context, lhs, rhs);
 }
 
 size_t CYArrayLength(JSContextRef context, JSObjectRef array) {

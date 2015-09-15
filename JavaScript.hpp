@@ -66,6 +66,8 @@ void CYSetArgs(int argc, const char *argv[]);
 bool CYCastBool(JSContextRef context, JSValueRef value);
 double CYCastDouble(JSContextRef context, JSValueRef value);
 
+bool CYIsEqual(JSContextRef context, JSValueRef lhs, JSValueRef rhs);
+
 CYUTF8String CYPoolUTF8String(CYPool &pool, JSContextRef context, JSStringRef value);
 const char *CYPoolCString(CYPool &pool, JSContextRef context, JSStringRef value);
 
