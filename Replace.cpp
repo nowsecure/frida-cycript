@@ -406,7 +406,7 @@ CYFunctionParameter *CYForOfComprehension::Parameter(CYContext &context) const {
 }
 
 CYStatement *CYForOfComprehension::Replace(CYContext &context, CYStatement *statement) const {
-    CYIdentifier *cys($I("cys"));
+    CYIdentifier *cys($I("$cys"));
 
     return $E($C0($F(NULL, $P1($L("$cys")), $$->*
         $E($ CYAssign($V(cys), set_))->*
