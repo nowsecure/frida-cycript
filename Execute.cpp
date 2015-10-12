@@ -241,9 +241,6 @@ struct Struct_privateData :
     }
 };
 
-typedef std::map<const char *, Type_privateData *, CYCStringLess> TypeMap;
-static TypeMap Types_;
-
 JSObjectRef CYMakeStruct(JSContextRef context, void *data, sig::Type *type, ffi_type *ffi, JSObjectRef owner) {
     Struct_privateData *internal(new Struct_privateData(context, owner));
     CYPool &pool(*internal->pool_);
