@@ -16070,6 +16070,7 @@ OBJCXXFLAGS="${OBJCXXFLAGS} ${CXXFLAGS##*' '}"
 
 
 
+
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
 	if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}pkg-config", so it can be a program name with args.
@@ -16683,28 +16684,6 @@ rm -f conftest.y
 
 
 
-if ${CFLAGS+:} false; then :
-  case " $CFLAGS " in
-    *"  "*)
-      { { $as_echo "$as_me:${as_lineno-$LINENO}: : CFLAGS already contains "; } >&5
-  (: CFLAGS already contains ) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-      ;;
-    *)
-      { { $as_echo "$as_me:${as_lineno-$LINENO}: : CFLAGS=\"\$CFLAGS \""; } >&5
-  (: CFLAGS="$CFLAGS ") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-      CFLAGS="$CFLAGS "
-      ;;
-   esac
-else
-  CFLAGS=""
-fi
-
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -16741,6 +16720,7 @@ CFLAGS="$ac_save_CFLAGS"
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_cflags_warn_all" >&5
 $as_echo "$ac_cv_cflags_warn_all" >&6; }
+
 
 case ".$ac_cv_cflags_warn_all" in
      .ok|.ok,*)  ;;
@@ -16813,6 +16793,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_cxxflags_warn_all" >&5
 $as_echo "$ac_cv_cxxflags_warn_all" >&6; }
 
+
 case ".$ac_cv_cxxflags_warn_all" in
      .ok|.ok,*)  ;;
    .|.no|.no,*)  ;;
@@ -16877,6 +16858,7 @@ CXXFLAGS="$ac_save_CXXFLAGS"
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_cxxflags_warn_all" >&5
 $as_echo "$ac_cv_cxxflags_warn_all" >&6; }
+
 
 case ".$ac_cv_cxxflags_warn_all" in
      .ok|.ok,*)  ;;
@@ -18715,6 +18697,7 @@ if test -n "$WEBKIT_CFLAGS"; then
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
   pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "$cy_webkit_pkg" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
 fi
@@ -18731,6 +18714,7 @@ if test -n "$WEBKIT_LIBS"; then
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
   pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "$cy_webkit_pkg" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
 fi
@@ -18750,9 +18734,9 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "$cy_webkit_pkg" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "$cy_webkit_pkg" 2>&1`
         else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "$cy_webkit_pkg" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "$cy_webkit_pkg" 2>&1`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$WEBKIT_PKG_ERRORS" >&5
@@ -18982,6 +18966,7 @@ if test -n "$WEBKIT_CFLAGS"; then
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
   pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "$cy_webkit_pkg" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
 fi
@@ -18998,6 +18983,7 @@ if test -n "$WEBKIT_LIBS"; then
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
   pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "$cy_webkit_pkg" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
 fi
@@ -19017,9 +19003,9 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "$cy_webkit_pkg" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "$cy_webkit_pkg" 2>&1`
         else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "$cy_webkit_pkg" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "$cy_webkit_pkg" 2>&1`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$WEBKIT_PKG_ERRORS" >&5
@@ -19249,6 +19235,7 @@ if test -n "$WEBKIT_CFLAGS"; then
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
   pkg_cv_WEBKIT_CFLAGS=`$PKG_CONFIG --cflags "$cy_webkit_pkg" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
 fi
@@ -19265,6 +19252,7 @@ if test -n "$WEBKIT_LIBS"; then
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
   pkg_cv_WEBKIT_LIBS=`$PKG_CONFIG --libs "$cy_webkit_pkg" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
 fi
@@ -19284,9 +19272,9 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "$cy_webkit_pkg" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "$cy_webkit_pkg" 2>&1`
         else
-	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors "$cy_webkit_pkg" 2>&1`
+	        WEBKIT_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "$cy_webkit_pkg" 2>&1`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$WEBKIT_PKG_ERRORS" >&5
@@ -19432,6 +19420,7 @@ if test -n "$LIBFFI_CFLAGS"; then
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
   pkg_cv_LIBFFI_CFLAGS=`$PKG_CONFIG --cflags "libffi" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
 fi
@@ -19448,6 +19437,7 @@ if test -n "$LIBFFI_LIBS"; then
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
   pkg_cv_LIBFFI_LIBS=`$PKG_CONFIG --libs "libffi" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
 fi
@@ -19467,9 +19457,9 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        LIBFFI_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "libffi" 2>&1`
+	        LIBFFI_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libffi" 2>&1`
         else
-	        LIBFFI_PKG_ERRORS=`$PKG_CONFIG --print-errors "libffi" 2>&1`
+	        LIBFFI_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libffi" 2>&1`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$LIBFFI_PKG_ERRORS" >&5
@@ -19610,6 +19600,7 @@ if test -n "$LIBFFI_CFLAGS"; then
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
   pkg_cv_LIBFFI_CFLAGS=`$PKG_CONFIG --cflags "libffi" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
 fi
@@ -19626,6 +19617,7 @@ if test -n "$LIBFFI_LIBS"; then
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
   pkg_cv_LIBFFI_LIBS=`$PKG_CONFIG --libs "libffi" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
 fi
@@ -19645,9 +19637,9 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        LIBFFI_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "libffi" 2>&1`
+	        LIBFFI_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libffi" 2>&1`
         else
-	        LIBFFI_PKG_ERRORS=`$PKG_CONFIG --print-errors "libffi" 2>&1`
+	        LIBFFI_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libffi" 2>&1`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$LIBFFI_PKG_ERRORS" >&5
