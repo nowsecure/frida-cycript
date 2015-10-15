@@ -107,6 +107,7 @@ for arch in armv6 armv7 armv7s arm64; do
         min=7.0
     else
         min=2.0
+        ldf+=" -Wl,-segalign,4000"
         #cpf+=" -mthumb"
     fi
 
