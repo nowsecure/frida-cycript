@@ -608,7 +608,7 @@ static void Console(CYOptions &options) {
     }
 }
 
-void InjectLibrary(pid_t pid);
+void InjectLibrary(pid_t, int, const char *[]);
 
 int Main(int argc, char * const argv[], char const * const envp[]) {
     bool tty(isatty(STDIN_FILENO));
@@ -836,7 +836,14 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
         memset(&address, 0, sizeof(address));
         address.sun_family = AF_UNIX;
 
-        sprintf(address.sun_path, "/tmp/.s.cy.%u", getpid());
+        const char *tmp;
+#if defined(__APPLE__) && (defined(__arm__) || defined(__arm64__))
+        tmp = "/Library/Caches";
+#else
+        tmp = "/tmp";
+#endif
+
+        sprintf(address.sun_path, "%s/.s.cy.%u", tmp, getpid());
         unlink(address.sun_path);
 
         struct File {
@@ -856,7 +863,7 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
         _syscall(chmod(address.sun_path, 0777));
 
         _syscall(listen(server, 1));
-        InjectLibrary(pid);
+        InjectLibrary(pid, 1, (const char *[]) {address.sun_path, NULL});
         client_ = _syscall(accept(server, NULL, NULL));
     }
 #else

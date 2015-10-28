@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <sstream>
 
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -141,22 +142,24 @@ extern "C" void CYHandleClient(int socket) {
     _assert(pthread_create(&client->thread_, NULL, &OnClient, client) == 0);
 }
 
-static void CYHandleProcess(pid_t pid) {
-    CYInitializeDynamic();
-
+static void CYHandleSocket(const char *path) {
     int socket(_syscall(::socket(PF_UNIX, SOCK_STREAM, 0)));
 
     struct sockaddr_un address;
     memset(&address, 0, sizeof(address));
     address.sun_family = AF_UNIX;
-    sprintf(address.sun_path, "/tmp/.s.cy.%u", pid);
+    strcpy(address.sun_path, path);
 
     _syscall(connect(socket, reinterpret_cast<sockaddr *>(&address), SUN_LEN(&address)));
+
+    CYInitializeDynamic();
     CYHandleClient(socket);
 }
 
 extern "C" void CYHandleServer(pid_t pid) { try {
-    CYHandleProcess(pid);
+    char path[1024];
+    sprintf(path, "/tmp/.s.cy.%u", pid);
+    CYHandleSocket(path);
 } catch (const CYException &error) {
     CYPool pool;
     fprintf(stderr, "%s\n", error.PoolCString(pool));
@@ -164,11 +167,7 @@ extern "C" void CYHandleServer(pid_t pid) { try {
 
 extern "C" char *MSmain0(int argc, char *argv[]) { try {
     _assert(argc == 2);
-    auto arg(argv[1]);
-
-    char *end;
-    pid_t pid(strtoul(arg, &end, 10));
-    _assert(end == arg + strlen(arg));
+    CYHandleSocket(argv[1]);
 
     static void *handle(NULL);
     if (handle == NULL) {
@@ -176,8 +175,6 @@ extern "C" char *MSmain0(int argc, char *argv[]) { try {
         _assert(dladdr(reinterpret_cast<void *>(&MSmain0), &info) != 0);
         handle = dlopen(info.dli_fname, RTLD_NOLOAD);
     }
-
-    CYHandleProcess(pid);
 
     return NULL;
 } catch (const CYException &error) {

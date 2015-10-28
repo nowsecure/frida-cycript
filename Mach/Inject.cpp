@@ -19,6 +19,7 @@
 **/
 /* }}} */
 
+#include <sstream>
 #include <string>
 
 #include <dlfcn.h>
@@ -52,7 +53,7 @@ Type_ *shift(Type_ *data, size_t size) {
     return reinterpret_cast<Type_ *>(reinterpret_cast<uint8_t *>(data) + size);
 }
 
-void InjectLibrary(pid_t pid) {
+void InjectLibrary(int pid, int argc, const char *argv[]) {
     auto cynject(LibraryFor(reinterpret_cast<void *>(&main)));
     auto slash(cynject.rfind('/'));
     _assert(slash != std::string::npos);
@@ -107,7 +108,10 @@ void InjectLibrary(pid_t pid) {
     library += ".dylib";
 #endif
 
-    CYPool pool;
-    int status(system(pool.sprintf(1024, "%s %u %s %u", cynject.c_str(), pid, library.c_str(), getpid())));
-    _assert(status == 0);
+    std::ostringstream inject;
+    inject << cynject << " " << std::dec << pid << " " << library;
+    for (decltype(argc) i(0); i != argc; ++i)
+        inject << " " << argv[i];
+
+    _assert(system(inject.str().c_str()) == 0);
 }
