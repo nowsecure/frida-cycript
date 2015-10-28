@@ -66,7 +66,7 @@ void InjectLibrary(int pid, int argc, const char *argv[]) {
     _assert(csops(pid, CS_OPS_PIDOFFSET, &offset, sizeof(offset)) != -1);
 
     char path[PATH_MAX];
-    int writ(proc_pidpath(pid, path, sizeof(path)) != 0);
+    int writ(proc_pidpath(pid, path, sizeof(path)));
     _assert(writ != 0);
 
     auto fd(_syscall(open(path, O_RDONLY)));
