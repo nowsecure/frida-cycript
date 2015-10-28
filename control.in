@@ -6,7 +6,7 @@ Architecture: iphoneos-arm
 Version: #
 Description: runtime execution server and disassembler
 Name: Cycript
-Depends: readline, adv-cmds
+Depends: readline, adv-cmds, mobilesubstrate (>= 0.9.6100)
 Pre-Depends: dpkg (>= 1.14.25-8)
 Breaks: cydget (<< 0.9.4008)
 Author: Jay Freeman (saurik) <saurik@saurik.com>

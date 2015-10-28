@@ -27,7 +27,6 @@ sysroot.ios
 sysroot.sim
 lex.cy.cpp
 /cycript
-Trampoline.t.hpp
 Bridge.hpp
 package
 aclocal.m4

@@ -44,6 +44,7 @@ framework += Headers/Cycript.h
 framework := $(foreach os,ios osx,$(foreach file,$(framework),Cycript.$(os)/Cycript.framework/$(file)))
 
 links := 
+links += Cycript.lib/cynject
 links += Cycript.lib/libsubstrate.dylib
 links += Cycript.lib/cycript0.9
 

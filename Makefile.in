@@ -115,9 +115,6 @@ host_triplet = @host@
 @CY_MACH_TRUE@am__append_12 = Handler.mm
 @CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__append_13 = Mach/Inject.cpp
 @CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__append_14 = -DCY_ATTACH
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__append_15 = Trampoline.t.lo \
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@	libTrampoline.t.la \
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@	Trampoline.t.hpp
 subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
@@ -530,9 +527,9 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = subdir-objects
-CLEANFILES = $(am__append_5) $(am__append_15) Cycript.yy Cycript.l \
-	lex.cy.cpp Cycript.tab.cc Cycript.tab.hh location.hh \
-	position.hh stack.hh Cycript.output
+CLEANFILES = $(am__append_5) Cycript.yy Cycript.l lex.cy.cpp \
+	Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh \
+	Cycript.output
 SUBDIRS = 
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -I$(srcdir)/include -DYYDEBUG=1 -include config.h \
@@ -1328,15 +1325,6 @@ uninstall-am: uninstall-binPROGRAMS uninstall-libLTLIBRARIES
 @CY_EXECUTE_TRUE@	$(srcdir)/Bridge.sh $< >$@
 @CY_EXECUTE_TRUE@Bridge.hpp: Bridge.gperf
 @CY_EXECUTE_TRUE@	$(GPERF) $< | $(SED) -e 's/defined __GNUC_STDC_INLINE__ || defined __GNUC_GNU_INLINE__/0/' >$@
-
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@Mach/Inject.$(OBJEXT): Trampoline.t.hpp
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@Trampoline.t.lo: Trampoline.t.cpp Trampoline.hpp Baton.hpp Standard.hpp
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@	$(LTCXXCOMPILE) $(CY_ARCH) -c -o $@ $< -fno-stack-protector -O0
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@libTrampoline.t.la: Trampoline.t.lo
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@	$(CXXLINK) $(CY_ARCH) -rpath $(libdir) $^
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@Trampoline.t.hpp: libTrampoline.t.la trampoline.sh
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@	$(srcdir)/trampoline.sh $@ .libs/libTrampoline.t.dylib Trampoline $(SED) $(LIPO) $(NM) $(OTOOL)
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@	! grep '## symbol stub for:' $@
 Cycript.yy: Cycript.yy.in
 	$(srcdir)/Filter.sh <$< >$@ $(filters)
 Cycript.l: Cycript.l.in

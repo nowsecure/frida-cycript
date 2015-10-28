@@ -86,23 +86,7 @@ libcycript_la_SOURCES += Handler.mm
 
 if CY_CONSOLE
 cycript_SOURCES += Mach/Inject.cpp
-
 AM_CPPFLAGS += -DCY_ATTACH
-
-Mach/Inject.$(OBJEXT): Trampoline.t.hpp
-
-CLEANFILES += Trampoline.t.lo
-Trampoline.t.lo: Trampoline.t.cpp Trampoline.hpp Baton.hpp Standard.hpp
-	$(LTCXXCOMPILE) $(CY_ARCH) -c -o $@ $< -fno-stack-protector -O0
-
-CLEANFILES += libTrampoline.t.la
-libTrampoline.t.la: Trampoline.t.lo
-	$(CXXLINK) $(CY_ARCH) -rpath $(libdir) $^
-
-CLEANFILES += Trampoline.t.hpp
-Trampoline.t.hpp: libTrampoline.t.la trampoline.sh
-	$(srcdir)/trampoline.sh $@ .libs/libTrampoline.t.dylib Trampoline $(SED) $(LIPO) $(NM) $(OTOOL)
-	! grep '## symbol stub for:' $@
 endif
 endif
 

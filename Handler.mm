@@ -20,6 +20,7 @@
 /* }}} */
 
 #include <Foundation/Foundation.h>
+#include <dlfcn.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <sstream>
@@ -140,22 +141,49 @@ extern "C" void CYHandleClient(int socket) {
     _assert(pthread_create(&client->thread_, NULL, &OnClient, client) == 0);
 }
 
-extern "C" void CYHandleServer(pid_t pid) {
+static void CYHandleProcess(pid_t pid) {
     CYInitializeDynamic();
 
-    int socket(_syscall(::socket(PF_UNIX, SOCK_STREAM, 0))); try {
-        struct sockaddr_un address;
-        memset(&address, 0, sizeof(address));
-        address.sun_family = AF_UNIX;
-        sprintf(address.sun_path, "/tmp/.s.cy.%u", pid);
+    int socket(_syscall(::socket(PF_UNIX, SOCK_STREAM, 0)));
 
-        _syscall(connect(socket, reinterpret_cast<sockaddr *>(&address), SUN_LEN(&address)));
-        CYHandleClient(socket);
-    } catch (const CYException &error) {
-        CYPool pool;
-        fprintf(stderr, "%s\n", error.PoolCString(pool));
-    }
+    struct sockaddr_un address;
+    memset(&address, 0, sizeof(address));
+    address.sun_family = AF_UNIX;
+    sprintf(address.sun_path, "/tmp/.s.cy.%u", pid);
+
+    _syscall(connect(socket, reinterpret_cast<sockaddr *>(&address), SUN_LEN(&address)));
+    CYHandleClient(socket);
 }
+
+extern "C" void CYHandleServer(pid_t pid) { try {
+    CYHandleProcess(pid);
+} catch (const CYException &error) {
+    CYPool pool;
+    fprintf(stderr, "%s\n", error.PoolCString(pool));
+} }
+
+extern "C" char *MSmain0(int argc, char *argv[]) { try {
+    _assert(argc == 2);
+    auto arg(argv[1]);
+
+    char *end;
+    pid_t pid(strtoul(arg, &end, 10));
+    _assert(end == arg + strlen(arg));
+
+    static void *handle(NULL);
+    if (handle == NULL) {
+        Dl_info info;
+        _assert(dladdr(reinterpret_cast<void *>(&MSmain0), &info) != 0);
+        handle = dlopen(info.dli_fname, RTLD_NOLOAD);
+    }
+
+    CYHandleProcess(pid);
+
+    return NULL;
+} catch (const CYException &error) {
+    CYPool pool;
+    return strdup(error.PoolCString(pool));
+} }
 
 struct CYServer {
     pthread_t thread_;

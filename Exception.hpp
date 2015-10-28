@@ -22,6 +22,8 @@
 #ifndef CYCRIPT_EXCEPTION_HPP
 #define CYCRIPT_EXCEPTION_HPP
 
+#include <cstdlib>
+
 #ifdef CY_EXECUTE
 #include <JavaScriptCore/JSBase.h>
 #endif
@@ -100,12 +102,6 @@ static _finline bool CYContains(int value, size_t many, const int *okay) {
 
 #define _syscall(expr) \
     _syscall_(expr, 0, {})
-
-#define _krncall(expr) \
-    do { \
-        kern_return_t _krnstatus((expr)); \
-        _assert_("krncall", _krnstatus == KERN_SUCCESS, #expr, " [return=0x%x]", _krnstatus); \
-    } while (false)
 
 #define _sqlcall(expr) ({ \
     __typeof__(expr) _value = (expr); \
