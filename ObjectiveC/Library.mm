@@ -130,10 +130,6 @@
 #define protocol_getName(protocol) [(protocol) name]
 #endif
 
-static void (*$objc_setAssociatedObject)(id object, void *key, id value, objc_AssociationPolicy policy);
-static id (*$objc_getAssociatedObject)(id object, void *key);
-static void (*$objc_removeAssociatedObjects)(id object);
-
 @class NSBlock;
 
 struct BlockLiteral {
@@ -1447,11 +1443,11 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
 }
 
 + (CYInternal *) get:(id)object {
-    if ($objc_getAssociatedObject == NULL)
+    if (&objc_getAssociatedObject == NULL)
         return nil;
 
     @synchronized (object) {
-        if (CYInternal *internal = $objc_getAssociatedObject(object, @selector(cy$internal)))
+        if (CYInternal *internal = objc_getAssociatedObject(object, @selector(cy$internal)))
             return internal;
     }
 
@@ -1459,14 +1455,14 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
 }
 
 + (CYInternal *) set:(id)object inContext:(JSContextRef)context {
-    if ($objc_getAssociatedObject == NULL)
+    if (&objc_getAssociatedObject == NULL)
         return nil;
 
     @synchronized (object) {
-        if (CYInternal *internal = $objc_getAssociatedObject(object, @selector(cy$internal)))
+        if (CYInternal *internal = objc_getAssociatedObject(object, @selector(cy$internal)))
             return internal;
 
-        if ($objc_setAssociatedObject == NULL)
+        if (&objc_setAssociatedObject == NULL)
             return nil;
 
         CYInternal *internal([[[CYInternal alloc] initInContext:context] autorelease]);
@@ -2834,10 +2830,6 @@ JSValueRef NSCFType$cy$toJSON$inContext$(id self, SEL sel, JSValueRef key, JSCon
 #endif
 
 void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
-    $objc_setAssociatedObject = reinterpret_cast<void (*)(id, void *, id value, objc_AssociationPolicy)>(dlsym(RTLD_DEFAULT, "objc_setAssociatedObject"));
-    $objc_getAssociatedObject = reinterpret_cast<id (*)(id, void *)>(dlsym(RTLD_DEFAULT, "objc_getAssociatedObject"));
-    $objc_removeAssociatedObjects = reinterpret_cast<void (*)(id)>(dlsym(RTLD_DEFAULT, "objc_removeAssociatedObjects"));
-
     CYPool &pool(CYGetGlobalPool());
 
     Object_type = new(pool) Type_privateData(sig::object_P);
