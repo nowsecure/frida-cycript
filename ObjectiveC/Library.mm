@@ -1498,16 +1498,6 @@ void CYObjectiveC_ExecuteEnd(JSContextRef context, void *handle) { CYSadTry {
     return [(NSAutoreleasePool *) handle release];
 } CYSadCatch() }
 
-JSValueRef CYObjectiveC_RuntimeProperty(JSContextRef context, CYUTF8String name) { CYPoolTry {
-    if (name == "nil")
-        return Instance::Make(context, nil);
-    if (Class _class = objc_getClass(name.data))
-        return CYMakeInstance(context, _class, true);
-    if (Protocol *protocol = objc_getProtocol(name.data))
-        return CYMakeInstance(context, protocol, true);
-    return NULL;
-} CYPoolCatch(NULL) return /*XXX*/ NULL; }
-
 static void CYObjectiveC_CallFunction(JSContextRef context, ffi_cif *cif, void (*function)(), uint8_t *value, void **values) { CYSadTry {
     ffi_call(cif, function, value, values);
 } CYSadCatch() }
