@@ -45,7 +45,7 @@ struct Instance :
 {
     enum Flags {
         None          = 0,
-        Transient     = (1 << 0),
+        Permanent     = (1 << 0),
         Uninitialized = (1 << 1),
     };
 
@@ -79,7 +79,7 @@ struct Super :
     Class class_;
 
     _finline Super(id value, Class _class) :
-        Instance(value, Instance::Transient),
+        Instance(value, Instance::Permanent),
         class_(_class)
     {
     }

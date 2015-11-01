@@ -413,7 +413,7 @@ JSObjectRef Instance::Make(JSContextRef context, id object, Flags flags) {
 }
 
 Instance::~Instance() {
-    if ((flags_ & Transient) == 0)
+    if ((flags_ & Permanent) == 0)
         [GetValue() release];
 }
 
@@ -429,11 +429,11 @@ struct Message_privateData :
     }
 };
 
-JSObjectRef CYMakeInstance(JSContextRef context, id object, bool transient) {
+JSObjectRef CYMakeInstance(JSContextRef context, id object, bool permanent) {
     Instance::Flags flags;
 
-    if (transient)
-        flags = Instance::Transient;
+    if (permanent)
+        flags = Instance::Permanent;
     else {
         flags = Instance::None;
         object = [object retain];
