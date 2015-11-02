@@ -80,9 +80,9 @@ typedef cy::parser::token tk;
             left = yyleng - (nl - yytext) - 1; \
             nl = reinterpret_cast<const char *>(memchr(nl + 1, '\n', left)); \
         } while (nl != NULL); \
+        yylloc->step(); \
         yylloc->end.lines(lines); \
         yylloc->end.columns(left); \
-        yylloc->step(); \
         more \
     } else L \
 }
@@ -418,7 +418,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
     I(string, String(value, local - value), tk::StringLiteral, hi::Constant);
 }
 
-\r?\n|\r|\xe2\x80[\xa8\xa9] yylloc->end.lines(); yylloc->step(); N
+\r?\n|\r|\xe2\x80[\xa8\xa9] yylloc->step(); yylloc->end.lines(); N
 
 [ \t] L
 
