@@ -26,7 +26,7 @@
 #include "Driver.hpp"
 #include "Code.hpp"
 
-static void Skip(const char *data, size_t size, std::ostream &output, size_t &offset, cy::position &current, cy::position target) {
+static void Skip(const char *data, size_t size, std::ostream &output, size_t &offset, CYPosition &current, CYPosition target) {
     while (current.line != target.line || current.column != target.column) {
         _assert(offset != size);
         char next(data[offset++]);
@@ -61,12 +61,12 @@ void CYLexerHighlight(const char *data, size_t size, std::ostream &output, bool 
     driver.commented_ = true;
 
     size_t offset(0);
-    cy::position current;
+    CYPosition current;
 
     CYLocalPool pool;
 
     YYSTYPE value;
-    cy::location location;
+    CYLocation location;
 
     while (cylex(&value, &location, driver.scanner_) != 0) {
         CYColor color;

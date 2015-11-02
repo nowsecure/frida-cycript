@@ -20,8 +20,6 @@ Cycript.l
 Cycript.tab.*
 Cycript.output
 Bridge.gperf
-location.hh
-position.hh
 stack.hh
 sysroot.ios
 sysroot.sim

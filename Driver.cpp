@@ -42,7 +42,7 @@ CYDriver::~CYDriver() {
     ScannerDestroy();
 }
 
-void CYDriver::Warning(const cy::location &location, const char *message) {
+void CYDriver::Warning(const cy::parser::location_type &location, const char *message) {
     if (!strict_)
         return;
 

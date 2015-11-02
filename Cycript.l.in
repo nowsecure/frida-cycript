@@ -29,7 +29,7 @@
 #pragma clang diagnostic ignored "-Wdeprecated-register"
 #endif
 
-#define YYLTYPE cy::location
+#define YYLTYPE CYLocation
 #include "Cycript.tab.hh"
 typedef cy::parser::token tk;
 
@@ -89,7 +89,7 @@ typedef cy::parser::token tk;
 
 #define L { \
     yylloc->step(); \
-    yylloc->columns(yyleng); \
+    yylloc->end.columns(yyleng); \
 }
 
 #define M { \

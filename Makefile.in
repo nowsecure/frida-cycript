@@ -528,8 +528,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = subdir-objects
 CLEANFILES = $(am__append_5) Cycript.yy Cycript.l lex.cy.cpp \
-	Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh \
-	Cycript.output
+	Cycript.tab.cc Cycript.tab.hh stack.hh Cycript.output
 SUBDIRS = 
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -I$(srcdir)/include -DYYDEBUG=1 -include config.h \
@@ -1332,7 +1331,7 @@ lex.cy.cpp: Cycript.l
 	$(FLEX) -t $< | $(SED) -e 's/int yyl;/yy_size_t yyl;/;s/int yyleng_r;/yy_size_t yyleng_r;/' >$@
 
 Console.$(OBJEXT) Cycript.tab.lo Driver.lo Handler.lo Highlight.lo Library.lo lex.cy.lo: Cycript.tab.hh
-Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh Cycript.output: Cycript.yy
+Cycript.tab.cc Cycript.tab.hh stack.hh Cycript.output: Cycript.yy
 	$(BISON) -v --report=state $<
 	! grep -n '^State [0-9]* conflicts:' Cycript.output
 	! grep -n '^ *$$default  reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Cycript.output -B 2 | grep 'shift, and go to state [0-9]*$$'

@@ -28,8 +28,7 @@
 #include <string>
 #include <vector>
 
-#include "location.hh"
-
+#include "Location.hpp"
 #include "Parser.hpp"
 
 enum CYState {
@@ -66,7 +65,7 @@ class CYDriver {
 
     struct Error {
         bool warning_;
-        cy::location location_;
+        CYLocation location_;
         std::string message_;
     };
 
@@ -116,7 +115,7 @@ class CYDriver {
     void PushCondition(Condition condition);
     void PopCondition();
 
-    void Warning(const cy::location &location, const char *message);
+    void Warning(const CYLocation &location, const char *message);
 };
 
 #endif/*CYCRIPT_DRIVER_HPP*/

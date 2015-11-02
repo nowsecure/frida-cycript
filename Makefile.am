@@ -104,8 +104,8 @@ lex.cy.cpp: Cycript.l
 
 Console.$(OBJEXT) Cycript.tab.lo Driver.lo Handler.lo Highlight.lo Library.lo lex.cy.lo: Cycript.tab.hh
 
-CLEANFILES += Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh Cycript.output
-Cycript.tab.cc Cycript.tab.hh location.hh position.hh stack.hh Cycript.output: Cycript.yy
+CLEANFILES += Cycript.tab.cc Cycript.tab.hh stack.hh Cycript.output
+Cycript.tab.cc Cycript.tab.hh stack.hh Cycript.output: Cycript.yy
 	$(BISON) -v --report=state $<
 	! grep -n '^State [0-9]* conflicts:' Cycript.output
 	! grep -n '^ *$$default  reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Cycript.output -B 2 | grep 'shift, and go to state [0-9]*$$'

@@ -110,7 +110,7 @@ typedef struct {
 }
 
 %code provides {
-int cylex(YYSTYPE *, cy::location *, void *);
+int cylex(YYSTYPE *, CYLocation *, void *);
 }
 
 %name-prefix "cy"
@@ -123,6 +123,8 @@ int cylex(YYSTYPE *, cy::location *, void *);
 
 %locations
 %defines
+
+%define api.location.type { CYLocation }
 
 //%glr-parser
 //%expect 1
