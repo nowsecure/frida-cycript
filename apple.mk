@@ -17,6 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # }}}
 
+.SECONDARY:
 .DELETE_ON_ERROR:
 SHELL := /bin/bash
 
