@@ -82,7 +82,7 @@ clean:
 define build_any
 .PHONY: build-$(1)-$(2)
 build-$(1)-$(2):
-	$(MAKE) -C build.$(1)-$(2)
+	$$(MAKE) -C build.$(1)-$(2)
 build.$(1)-$(2)/.libs/libcycript.a: build-$(1)-$(2)
 	@
 endef
