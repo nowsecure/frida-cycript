@@ -959,6 +959,19 @@ CYExpression *CYTypedIdentifier::Replace(CYContext &context) {
     return modifier_->Replace(context, specifier_->Replace(context));
 }
 
+CYTypeFunctionWith *CYTypedIdentifier::Function() {
+    CYTypeModifier **modifier(&modifier_);
+    if (*modifier == NULL)
+        return NULL;
+    while ((*modifier)->next_ != NULL)
+        modifier = &(*modifier)->next_;
+    CYTypeFunctionWith *function((*modifier)->Function());
+    if (function == NULL)
+        return NULL;
+    *modifier = NULL;
+    return function;
+}
+
 CYArgument *CYTypedParameter::Argument(CYContext &context) { $T(NULL)
     return $ CYArgument(typed_->Replace(context), next_->Argument(context));
 }

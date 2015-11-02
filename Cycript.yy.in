@@ -477,15 +477,12 @@ int cylex(YYSTYPE *, CYLocation *, void *);
 %type <expression_> Variable
 
 @begin C
-%type <typedIdentifier_> ArrayedType
-%type <modifier_> FunctionedType
 %type <specifier_> IntegerType
 %type <specifier_> IntegerTypeOpt
 %type <typedIdentifier_> PrefixedType
 %type <specifier_> PrimitiveType
-%type <typedIdentifier_> TypeParenthetical
-%type <typedIdentifier_> TypeSignifier
 %type <typedIdentifier_> SuffixedType
+%type <typedIdentifier_> TypeSignifier
 %type <modifier_> TypeQualifierLeft
 %type <typedIdentifier_> TypeQualifierRight
 %type <typedIdentifier_> TypedIdentifier
@@ -515,7 +512,6 @@ int cylex(YYSTYPE *, CYLocation *, void *);
 %type <messageParameter_> MessageParameterList
 %type <messageParameter_> MessageParameterListOpt
 %type <bool_> MessageScope
-%type <typedIdentifier_> ModifiedType
 %type <argument_> SelectorCall_
 %type <argument_> SelectorCall
 %type <selector_> SelectorExpression_
@@ -1404,31 +1400,18 @@ ProgramBodyOpt
 
 @begin C
 /* Cycript (C): Type Encoding {{{ */
-TypeParenthetical
-    : "(" LexPushInOff PrefixedType ")" LexPopIn { $$ = $3; }
-    ;
-
 TypeSignifier
-    : IdentifierType { $$ = CYNew CYTypedIdentifier($1); }
-    | TypeParenthetical { $$ = $1; }
-    ;
-
-ArrayedType
-    : ArrayedType "[" NumericLiteral "]" { $$ = $1; $$->modifier_ = CYNew CYTypeArrayOf($3, $$->modifier_); }
-    | TypeSignifier { $$ = $1; }
-    | { $$ = CYNew CYTypedIdentifier(); }
-    ;
-
-FunctionedType
-    : "(" LexPushInOff TypedParameterListOpt ")" LexPopIn { $$ = CYNew CYTypeFunctionWith($3); }
+    : IdentifierType { $$ = CYNew CYTypedIdentifier(@1, $1); }
+    | "(" LexPushInOff "*" TypeQualifierRight ")" LexPopIn { $$ = $4; }
     ;
 
 SuffixedType
-    : ArrayedType { $$ = $1; }
+    : SuffixedType "[" NumericLiteral "]" { $$ = $1; $$->modifier_ = CYNew CYTypeArrayOf($3, $$->modifier_); }
     | "(" LexPushInOff "^" TypeQualifierRight ")" LexPopIn "(" LexPushInOff TypedParameterListOpt ")" LexPopIn { $$ = $4; $$->modifier_ = CYNew CYTypeBlockWith($9, $$->modifier_); }
-    | TypeParenthetical FunctionedType { $$ = $1; CYSetLast($2) = $$->modifier_; $$->modifier_ = $2; }
-    | IdentifierType FunctionedType { $$ = CYNew CYTypedIdentifier($1); CYSetLast($2) = $$->modifier_; $$->modifier_ = $2; }
-    | FunctionedType { $$ = CYNew CYTypedIdentifier(); CYSetLast($1) = $$->modifier_; $$->modifier_ = $1; }
+    | TypeSignifier "(" LexPushInOff TypedParameterListOpt ")" LexPopIn { $$ = $1; $$->modifier_ = CYNew CYTypeFunctionWith($4, $$->modifier_); }
+    | "(" LexPushInOff TypedParameterListOpt ")" LexPopIn { $$ = CYNew CYTypedIdentifier(@1); $$->modifier_ = CYNew CYTypeFunctionWith($3, $$->modifier_); }
+    | TypeSignifier { $$ = $1; }
+    | { $$ = CYNew CYTypedIdentifier(@$); }
     ;
 
 PrefixedType
@@ -1666,13 +1649,8 @@ PrimaryExpression
     ;
 /* }}} */
 /* Cycript (Objective-C): Block Expressions {{{ */
-ModifiedType
-    : TypeQualifierLeft PrimitiveType { $$ = CYNew CYTypedIdentifier(); $$->specifier_ = $2; $$->modifier_ = $1; }
-    | ModifiedType "*" { $$ = $1; $$->modifier_ = CYNew CYTypePointerTo($$->modifier_); }
-    ;
-
 PrimaryExpression
-    : "^" ModifiedType "(" LexPushInOff TypedParameterListOpt ")" LexPopIn BRACE LexPushInOff FunctionBody "}" LexPopIn { $$ = CYNew CYObjCBlock($2, $5, $10); }
+    : "^" TypedIdentifier { if ($2->identifier_ != NULL) error($2->location_, "unexpected identifier"); } BRACE LexPushInOff FunctionBody "}" LexPopIn { if (CYTypeFunctionWith *function = $2->Function()) $$ = CYNew CYObjCBlock($2, function->parameters_, $6); else error($2->location_, "expected parameters"); }
     ;
 /* }}} */
 /* Cycript (Objective-C): Instance Literals {{{ */
@@ -1724,12 +1702,12 @@ PrimaryExpression
 /* }}} */
 /* Cycript (C): Type Definitions {{{ */
 Statement__
-    : "typedef" TypedIdentifier { if ($2->identifier_ == NULL) YYABORT; } Terminator { $$ = CYNew CYTypeDefinition($2); }
+    : "typedef" TypedIdentifier { if ($2->identifier_ == NULL) error($2->location_, "expected identifier"); } Terminator { $$ = CYNew CYTypeDefinition($2); }
     ;
 /* }}} */
 /* Cycript (C): extern "C" {{{ */
 Statement__
-    : "extern" StringLiteral { if (strcmp($2->Value(), "C") != 0) YYABORT; } TypedIdentifier Terminator { $$ = CYNew CYExternal($2, $4); }
+    : "extern" StringLiteral { if (strcmp($2->Value(), "C") != 0) YYABORT; } TypedIdentifier { if ($4->identifier_ == NULL) error($4->location_, "expected identifier"); } Terminator { $$ = CYNew CYExternal($2, $4); }
     ;
 /* }}} */
 

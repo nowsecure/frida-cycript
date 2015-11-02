@@ -33,6 +33,7 @@
 #include <cstdlib>
 
 #include "List.hpp"
+#include "Location.hpp"
 #include "Pooling.hpp"
 #include "Options.hpp"
 
@@ -1689,6 +1690,8 @@ struct CYTypeShort :
     virtual void Output(CYOutput &out) const;
 };
 
+struct CYTypeFunctionWith;
+
 struct CYTypeModifier :
     CYNext<CYTypeModifier>
 {
@@ -1704,6 +1707,8 @@ struct CYTypeModifier :
 
     virtual void Output(CYOutput &out, CYIdentifier *identifier) const = 0;
     void Output(CYOutput &out, int precedence, CYIdentifier *identifier) const;
+
+    virtual CYTypeFunctionWith *Function() { return NULL; }
 };
 
 struct CYTypeArrayOf :
@@ -1769,11 +1774,13 @@ struct CYTypedIdentifier :
     CYNext<CYTypedIdentifier>,
     CYThing
 {
+    CYLocation location_;
     CYIdentifier *identifier_;
     CYTypeSpecifier *specifier_;
     CYTypeModifier *modifier_;
 
-    CYTypedIdentifier(CYIdentifier *identifier = NULL) :
+    CYTypedIdentifier(const CYLocation &location, CYIdentifier *identifier = NULL) :
+        location_(location),
         identifier_(identifier),
         specifier_(NULL),
         modifier_(NULL)
@@ -1794,6 +1801,8 @@ struct CYTypedIdentifier :
 
     virtual CYExpression *Replace(CYContext &context);
     virtual void Output(CYOutput &out) const;
+
+    CYTypeFunctionWith *Function();
 };
 
 struct CYEncodedType :
@@ -1943,6 +1952,8 @@ struct CYTypeFunctionWith :
 
     virtual CYExpression *Replace_(CYContext &context, CYExpression *type);
     virtual void Output(CYOutput &out, CYIdentifier *identifier) const;
+
+    virtual CYTypeFunctionWith *Function() { return this; }
 };
 
 namespace cy {
