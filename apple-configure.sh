@@ -75,14 +75,17 @@ function build() {
     configure "${dir}" "${sdk}" "${flg}" "$@" --enable-static --with-pic
 }
 
+gof=(-g0 -O3)
+
 for arch in i386 x86_64; do
     build "osx-${arch}" "${mac}" "-arch ${arch} -mmacosx-version-min=10.6" \
+        CFLAGS="${gof}" CXXFLAGS="${gof}" OBJCXXFLAGS="${gof}" \
         CPPFLAGS="-I../readline.osx" LDFLAGS="-L../readline.osx"
 done
 
 for arch in i386 x86_64; do
     build "sim-${arch}" iphonesimulator "-arch ${arch} -mios-simulator-version-min=4.0" \
-        OBJCXXFLAGS="-fobjc-abi-version=2 -fobjc-legacy-dispatch" \
+        CFLAGS="${gof}" CXXFLAGS="${gof}" OBJCXXFLAGS="${gof} -fobjc-abi-version=2 -fobjc-legacy-dispatch" \
         CPPFLAGS="-I../libffi.${arch}/include" \
         LDFLAGS="-L.." \
     --disable-console
@@ -112,5 +115,6 @@ for arch in armv6 armv7 armv7s arm64; do
     fi
 
     build "ios-${arch}" iphoneos "-arch ${arch} -miphoneos-version-min=${min}" --host=arm-apple-darwin10 \
+        CFLAGS="${gof}" CXXFLAGS="${gof}" OBJCXXFLAGS="${gof}" \
         CPPFLAGS="${cpf}" LDFLAGS="${ldf}" "${flg[@]}" --host=arm-apple-darwin10
 done
