@@ -387,7 +387,6 @@ CYGPATH_W = @CYGPATH_W@
 CY_ARCH = @CY_ARCH@
 CY_ATTACH_GROUP = @CY_ATTACH_GROUP@
 CY_EXECUTE = @CY_EXECUTE@
-CY_FILTERS = @CY_FILTERS@
 CY_JAVA = @CY_JAVA@
 CY_MACH = @CY_MACH@
 CY_OBJECTIVEC = @CY_OBJECTIVEC@
@@ -544,8 +543,7 @@ libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp \
 	Highlight.cpp Library.cpp Network.cpp Output.cpp Parser.cpp \
 	Replace.cpp Cycript.tab.cc lex.cy.cpp $(am__append_1) \
 	$(am__append_7) $(am__append_10) $(am__append_12)
-filters = $(CY_FILTERS) $(am__append_4) $(am__append_6) \
-	$(am__append_9)
+filters = $(am__append_4) $(am__append_6) $(am__append_9)
 @CY_CONSOLE_TRUE@cycript_SOURCES = Console.cpp Display.cpp \
 @CY_CONSOLE_TRUE@	$(am__append_13)
 @CY_CONSOLE_TRUE@cycript_LDADD = libcycript.la $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) -ldl

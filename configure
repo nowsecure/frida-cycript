@@ -674,7 +674,6 @@ WEBKIT_LIBS
 WEBKIT_CFLAGS
 CY_EXECUTE
 CY_ARCH
-CY_FILTERS
 GNUTAR
 GPERF
 FLEX
@@ -16881,8 +16880,8 @@ fi
 
 
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bison >= 2.3" >&5
-$as_echo_n "checking for bison >= 2.3... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bison >= 3.0" >&5
+$as_echo_n "checking for bison >= 3.0... " >&6; }
     if test -z "$BISON"; then
   ac_path_BISON_found=false
   # Loop through the user's path and test for each of PROGNAME-LIST
@@ -16960,7 +16959,7 @@ else
   }
 '
 as_arg_v1=$version
-as_arg_v2=2.3
+as_arg_v2=3.0
 awk "$as_awk_strverscmp" v1="$as_arg_v1" v2="$as_arg_v2" /dev/null
 case $? in #(
   1) :
@@ -16998,7 +16997,7 @@ $as_echo "$BISON" >&6; }
 else
   if true; then :
 
-        as_fn_error $? "You need bison 2.3 or greater" "$LINENO" 5
+        as_fn_error $? "You need bison 3.0 or greater" "$LINENO" 5
 
 else
 
@@ -17225,66 +17224,6 @@ $as_echo "no" >&6; }
 
 fi
 fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking bison for %code{}" >&5
-$as_echo_n "checking bison for %code{}... " >&6; }
-echo '%code{}%%_:' >conftest.y
-if $BISON conftest.y -o/dev/null 2>/dev/null; then
-
-  for element in Bison24; do
-    haveit=
-    for x in $CY_FILTERS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      CY_FILTERS="${CY_FILTERS}${CY_FILTERS:+ }$element"
-    fi
-  done
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-else
-
-  for element in Bison23; do
-    haveit=
-    for x in $CY_FILTERS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      CY_FILTERS="${CY_FILTERS}${CY_FILTERS:+ }$element"
-    fi
-  done
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-rm -f conftest.y
 
 
 

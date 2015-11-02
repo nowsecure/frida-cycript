@@ -73,26 +73,13 @@ AC_DEFUN([CY_CHECK_PROGS_VERSION], [
 ]) dnl }}}
 
 CY_CHECK_PROGS_VERSION([BISON], [bison], [GNU Project parser generator (yacc replacement)],
-    [-V | $SED -e '1 s/^bison (GNU Bison) \(.*\)$/\1/p;d'], [2.3])
+    [-V | $SED -e '1 s/^bison (GNU Bison) \(.*\)$/\1/p;d'], [3.0])
 CY_CHECK_PROGS_VERSION([FLEX], [flex], [the fast lexical analyser generator],
     [--version | $SED -e '1 s/^@<:@^0-9.@:>@* \(@<:@0-9.@:>@*\).*$/\1/p;d'], [2.5.33])
 CY_CHECK_PROGS_VERSION([GPERF], [gperf], [perfect hash function generator],
     [--version | $SED -e '1 s/^.* \(@<:@0-9.@:>@*\)$/\1/p;d'], [3.0.3])
 CY_CHECK_PROGS_VERSION([GNUTAR], [tar gtar gnutar], [a very sticky lump of files],
     [--version | $SED -e '1 s/^tar (GNU tar) \(.*\)$/\1/p;d'], [1.19])
-
-AC_MSG_CHECKING([bison for %code{}])
-echo '%code{}%%_:' >conftest.y
-if $BISON conftest.y -o/dev/null 2>/dev/null; then
-    AC_LIB_APPENDTOVAR([CY_FILTERS], [Bison24])
-    AC_MSG_RESULT([yes])
-else
-    AC_LIB_APPENDTOVAR([CY_FILTERS], [Bison23])
-    AC_MSG_RESULT([no])
-fi
-
-rm -f conftest.y
-AC_SUBST([CY_FILTERS])
 
 dnl CY_TRY {{{
 AC_DEFUN([CY_SUCCESS], [cy_good=1])

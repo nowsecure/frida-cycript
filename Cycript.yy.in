@@ -19,15 +19,12 @@
 **/
 /* }}} */
 
-@if Bison23 %{
-
-@if Bison24 %code top {
+%code top {
 #define cyscanner driver.scanner_
 #define YYSTACKEXPANDABLE 1
-@if Bison23 #define yyerrok (yyerrstatus_ = 0)
-@if Bison24 }
+}
 
-@if Bison24 %code requires {
+%code requires {
 #include "Driver.hpp"
 #include "Parser.hpp"
 #define CYNew new($pool)
@@ -110,23 +107,15 @@ typedef struct {
 } YYSTYPE;
 
 #define YYSTYPE YYSTYPE
+}
 
-@if Bison24 %code provides {
+%code provides {
 int cylex(YYSTYPE *, cy::location *, void *);
-@if Bison24 }
+}
 
-@if Bison23 %}
-@if Bison23 %union {
-@if Bison23 }
-@if Bison23 %{
+%name-prefix "cy"
 
-@if Bison24 }
-@if Bison23 %}
-
-%name-prefix="cy"
-
-@if Bison23 %skeleton "lalr1.cc"
-@if Bison24 %language "C++"
+%language "C++"
 
 %initial-action {
     @$.begin.filename = @$.end.filename = &driver.filename_;
@@ -444,7 +433,7 @@ int cylex(YYSTYPE *, cy::location *, void *);
 %type <null_> NullLiteral
 %type <literal_> ObjectLiteral
 %type <compound_> Parenthetical
-%type <compound_> ParentheticalOpt
+//%type <compound_> ParentheticalOpt
 %type <expression_> PostfixExpression
 %type <expression_> PrimaryExpression
 %type <statement_> Program
@@ -587,16 +576,16 @@ LexSetRegExp
     ;
 
 LexNoBrace
-    : { if (yychar == yyempty_) driver.no_.OpenBrace = true; else if (yychar == token::OpenBrace || yychar == token::OpenBrace_) yychar = token::OpenBrace__; }
+    : { if (yyla.empty()) driver.no_.OpenBrace = true; else if (yyla.type == yytranslate_(token::OpenBrace) || yyla.type == yytranslate_(token::OpenBrace_)) yyla.type = yytranslate_(token::OpenBrace__); }
     ;
 
 LexNoFunction
-    : { if (yychar == yyempty_) driver.no_.Function = true; else if (yychar == token::Function) yychar = token::Function_; }
+    : { if (yyla.empty()) driver.no_.Function = true; else if (yyla.type == yytranslate_(token::Function)) yyla.type = yytranslate_(token::Function_); }
     ;
 
 LexNoAtImplementation :
 @begin ObjectiveC
-    { if (yychar == yyempty_) driver.no_.AtImplementation = true; else if (yychar == token::AtImplementation) yychar = token::AtImplementation_; }
+    { if (yyla.empty()) driver.no_.AtImplementation = true; else if (yyla.type == yytranslate_(token::AtImplementation)) yyla.type = yytranslate_(token::AtImplementation_); }
 @end
     ;
 
@@ -760,12 +749,12 @@ BooleanLiteral
 
 /* 7.9 Automatic Semicolon Insertion {{{ */
 StrictSemi
-    : { driver.Warning(yylloc, "warning, automatic semi-colon insertion required"); }
+    : { driver.Warning(@$, "warning, automatic semi-colon insertion required"); }
     ;
 
 Terminator
     : ";"
-    | error { if (yychar != yyeof_ && yychar != token::CloseBrace && !yylval.newline_) YYABORT; else { yyerrok; driver.errors_.pop_back(); } } StrictSemi
+    | error { if (yyla.type_get() != yyeof_ && yyla.type != token::CloseBrace && !yyla.value.newline_) YYABORT; else { yyerrok; driver.errors_.pop_back(); } } StrictSemi
     ;
 
 TerminatorOpt
@@ -779,10 +768,10 @@ Parenthetical
     : "(" LexPushInOff Expression ")" LexPopIn { $$ = $3; }
     ;
 
-ParentheticalOpt
+/*ParentheticalOpt
     : Parenthetical { $$ = $1; }
     | { $$ = NULL; }
-    ;
+    ;*/
 
 Variable
     : Identifier { $$ = CYNew CYVariable($1); }
