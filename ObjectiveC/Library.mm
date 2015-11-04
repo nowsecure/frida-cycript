@@ -2077,6 +2077,7 @@ static JSValueRef Internal_getProperty(JSContextRef context, JSObjectRef object,
 
         const char *encoding(ivar_getTypeEncoding(ivar));
         _assert(encoding != NULL);
+        _assert(encoding[0] != '\0');
         if (encoding[0] == 'b') {
             unsigned length, shift;
             CYBitField(length, shift, self, ivar, encoding, offset);
