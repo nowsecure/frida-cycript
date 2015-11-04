@@ -126,6 +126,8 @@ CY_TEST_FLAG([-Wno-overloaded-virtual])
 CY_TEST_FLAG([-Wno-parentheses])
 CY_TEST_FLAG([-Wno-unneeded-internal-declaration])
 
+AX_PTHREAD
+
 AC_DEFUN([CY_LT_LIB], [
     cy_save=$LIBS
     LIBS=

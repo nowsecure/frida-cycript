@@ -206,7 +206,7 @@ am__cycript_SOURCES_DIST = Console.cpp Display.cpp Mach/Inject.cpp
 cycript_OBJECTS = $(am_cycript_OBJECTS)
 @CY_CONSOLE_TRUE@cycript_DEPENDENCIES = libcycript.la \
 @CY_CONSOLE_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-@CY_CONSOLE_TRUE@	$(am__DEPENDENCIES_1)
+@CY_CONSOLE_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -456,6 +456,9 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PKG_CONFIG = @PKG_CONFIG@
 PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
 PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
+PTHREAD_CC = @PTHREAD_CC@
+PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
+PTHREAD_LIBS = @PTHREAD_LIBS@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -486,6 +489,7 @@ am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
 am__tar = @am__tar@
 am__untar = @am__untar@
+ax_pthread_config = @ax_pthread_config@
 bindir = @bindir@
 build = @build@
 build_alias = @build_alias@
@@ -545,7 +549,7 @@ libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp \
 filters = $(am__append_4) $(am__append_6) $(am__append_9)
 @CY_CONSOLE_TRUE@cycript_SOURCES = Console.cpp Display.cpp \
 @CY_CONSOLE_TRUE@	$(am__append_13)
-@CY_CONSOLE_TRUE@cycript_LDADD = libcycript.la $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) -ldl
+@CY_CONSOLE_TRUE@cycript_LDADD = libcycript.la $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) $(PTHREAD_CFLAGS) -ldl
 @CY_CONSOLE_TRUE@ldid = true
 @CY_CONSOLE_TRUE@entitle = $(ldid) -S$(srcdir)/cycript.xml
 all: config.h
