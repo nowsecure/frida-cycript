@@ -53,6 +53,7 @@ extern JSStringRef toCYON_s;
 extern JSStringRef toJSON_s;
 extern JSStringRef toPointer_s;
 extern JSStringRef toString_s;
+extern JSStringRef weak_s;
 
 void CYInitializeDynamic();
 JSGlobalContextRef CYGetJSContext();
@@ -82,6 +83,7 @@ void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, J
 
 void CYSetPrototype(JSContextRef context, JSObjectRef object, JSValueRef prototype);
 
+JSValueRef CYGetCachedValue(JSContextRef context, JSStringRef name);
 JSObjectRef CYGetCachedObject(JSContextRef context, JSStringRef name);
 
 JSValueRef CYCastJSValue(JSContextRef context, bool value);
@@ -202,5 +204,14 @@ class CYJSString {
         return string_;
     }
 };
+
+typedef struct OpaqueJSWeakObjectMap *JSWeakObjectMapRef;
+typedef void (*JSWeakMapDestroyedCallback)(JSWeakObjectMapRef map, void *data);
+
+extern "C" JSWeakObjectMapRef JSWeakObjectMapCreate(JSContextRef ctx, void *data, JSWeakMapDestroyedCallback destructor) __attribute__((__weak_import__));
+extern "C" void JSWeakObjectMapSet(JSContextRef ctx, JSWeakObjectMapRef map, void *key, JSObjectRef) __attribute__((__weak_import__));
+extern "C" JSObjectRef JSWeakObjectMapGet(JSContextRef ctx, JSWeakObjectMapRef map, void *key) __attribute__((__weak_import__));
+extern "C" bool JSWeakObjectMapClear(JSContextRef ctx, JSWeakObjectMapRef map, void *key, JSObjectRef object) __attribute__((__weak_import__));
+extern "C" void JSWeakObjectMapRemove(JSContextRef ctx, JSWeakObjectMapRef map, void* key) __attribute__((__weak_import__));
 
 #endif/*CYCRIPT_JAVASCRIPT_HPP*/

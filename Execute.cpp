@@ -154,6 +154,7 @@ JSStringRef toCYON_s;
 JSStringRef toJSON_s;
 JSStringRef toPointer_s;
 JSStringRef toString_s;
+JSStringRef weak_s;
 
 static JSStringRef Result_;
 
@@ -573,7 +574,9 @@ static bool CYGetOffset(CYPool &pool, JSContextRef context, JSStringRef value, s
 }
 
 void *CYCastPointer_(JSContextRef context, JSValueRef value) {
-    switch (JSValueGetType(context, value)) {
+    if (value == NULL)
+        return NULL;
+    else switch (JSValueGetType(context, value)) {
         case kJSTypeNull:
             return NULL;
         case kJSTypeObject: {
@@ -807,8 +810,12 @@ static JSObjectRef CYMakeFunctor(JSContextRef context, JSObjectRef function, con
     return object;
 }
 
+JSValueRef CYGetCachedValue(JSContextRef context, JSStringRef name) {
+    return CYGetProperty(context, CYCastJSObject(context, CYGetProperty(context, CYGetGlobalObject(context), cy_s)), name);
+}
+
 JSObjectRef CYGetCachedObject(JSContextRef context, JSStringRef name) {
-    return CYCastJSObject(context, CYGetProperty(context, CYCastJSObject(context, CYGetProperty(context, CYGetGlobalObject(context), cy_s)), name));
+    return CYCastJSObject(context, CYGetCachedValue(context, name));
 }
 
 static JSObjectRef CYMakeFunctor(JSContextRef context, JSValueRef value, const sig::Signature &signature) {
@@ -1691,6 +1698,7 @@ void CYInitializeDynamic() {
     toJSON_s = JSStringCreateWithUTF8CString("toJSON");
     toPointer_s = JSStringCreateWithUTF8CString("toPointer");
     toString_s = JSStringCreateWithUTF8CString("toString");
+    weak_s = JSStringCreateWithUTF8CString("weak");
 
     Result_ = JSStringCreateWithUTF8CString("_");
 
@@ -1921,6 +1929,11 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     CYSetProperty(context, System, CYJSString("args"), CYJSNull(context));
     //CYSetProperty(context, System, CYJSString("global"), global);
     CYSetProperty(context, System, CYJSString("print"), &System_print);
+
+    if (&JSWeakObjectMapCreate != NULL) {
+        JSWeakObjectMapRef weak(JSWeakObjectMapCreate(context, NULL, NULL));
+        CYSetProperty(context, cy, weak_s, CYCastJSValue(context, reinterpret_cast<uintptr_t>(weak)));
+    }
 
     if (CYBridgeEntry *entry = CYBridgeHash("1dlerror", 8))
         entry->cache_ = new cy::Functor(entry->value_, reinterpret_cast<void (*)()>(&dlerror));

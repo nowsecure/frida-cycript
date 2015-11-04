@@ -425,17 +425,24 @@ struct Message_privateData :
     }
 };
 
-JSObjectRef CYMakeInstance(JSContextRef context, id object, bool permanent) {
-    Instance::Flags flags;
+JSObjectRef CYMakeInstance(JSContextRef context, id object, Instance::Flags flags = Instance::None) {
+    _assert(object != nil);
 
-    if (permanent)
-        flags = Instance::Permanent;
-    else {
-        flags = Instance::None;
+    JSWeakObjectMapRef weak(CYCastPointer<JSWeakObjectMapRef>(context, CYGetCachedValue(context, weak_s)));
+
+    if (weak != NULL && &JSWeakObjectMapGet != NULL)
+        if (JSObjectRef instance = JSWeakObjectMapGet(context, weak, object))
+            return instance;
+
+    if ((flags & Instance::Permanent) == 0)
         object = [object retain];
-    }
 
-    return Instance::Make(context, object, flags);
+    JSObjectRef instance(Instance::Make(context, object, flags));
+
+    if (weak != NULL && &JSWeakObjectMapSet != NULL)
+        JSWeakObjectMapSet(context, weak, object, instance);
+
+    return instance;
 }
 
 @interface NSMethodSignature (Cycript)
@@ -467,42 +474,32 @@ JSObjectRef CYMakeInstance(JSContextRef context, id object, bool permanent) {
 @end
 
 NSString *CYCastNSCYON(id value, bool objective, std::set<void *> &objects) {
-    NSString *string;
+    _assert(value != nil);
 
-    if (value == nil)
-        string = @"nil";
-    else {
-        Class _class(object_getClass(value));
-        SEL sel(@selector(cy$toCYON:inSet:));
+    Class _class(object_getClass(value));
 
-        if (class_isMetaClass(_class)) {
-            const char *name(class_getName(value));
-            if (class_isMetaClass(value))
-                string = [NSString stringWithFormat:@"object_getClass(%s)", name];
-            else
-                string = [NSString stringWithUTF8String:name];
-        } else if (objc_method *toCYON = class_getInstanceMethod(_class, sel))
-            string = reinterpret_cast<NSString *(*)(id, SEL, bool, std::set<void *> &)>(method_getImplementation(toCYON))(value, sel, objective, objects);
-        else if (objc_method *methodSignatureForSelector = class_getInstanceMethod(_class, @selector(methodSignatureForSelector:))) {
-            if (reinterpret_cast<NSMethodSignature *(*)(id, SEL, SEL)>(method_getImplementation(methodSignatureForSelector))(value, @selector(methodSignatureForSelector:), sel) != nil)
-                string = [value cy$toCYON:objective inSet:objects];
-            else goto fail;
-        } else fail: {
-            if (false);
-#ifdef __APPLE__
-            else if (_class == NSZombie_)
-                string = [NSString stringWithFormat:@"<_NSZombie_: %p>", value];
-#endif
-            else
-                string = [NSString stringWithFormat:@"%@", value];
-        }
-
-        // XXX: frowny pants
-        if (string == nil)
-            string = @"undefined";
+    if (class_isMetaClass(_class)) {
+        const char *name(class_getName(value));
+        if (class_isMetaClass(value))
+            return [NSString stringWithFormat:@"object_getClass(%s)", name];
+        else
+            return [NSString stringWithUTF8String:name];
     }
 
-    return string;
+#ifdef __APPLE__
+    if (_class == NSZombie_)
+        return [NSString stringWithFormat:@"<_NSZombie_: %p>", value];
+#endif
+
+    SEL sel(@selector(cy$toCYON:inSet:));
+
+    if (objc_method *toCYON = class_getInstanceMethod(_class, sel))
+        return reinterpret_cast<NSString *(*)(id, SEL, bool, std::set<void *> &)>(method_getImplementation(toCYON))(value, sel, objective, objects);
+    else if (objc_method *methodSignatureForSelector = class_getInstanceMethod(_class, @selector(methodSignatureForSelector:)))
+        if (reinterpret_cast<NSMethodSignature *(*)(id, SEL, SEL)>(method_getImplementation(methodSignatureForSelector))(value, @selector(methodSignatureForSelector:), sel) != nil)
+            return [value cy$toCYON:objective inSet:objects];
+
+    return [NSString stringWithFormat:@"%@", value];
 }
 
 NSString *CYCastNSCYON(id value, bool objective, std::set<void *> *objects) {
@@ -817,7 +814,7 @@ NSObject *CYCopyNSObject(CYPool &pool, JSContextRef context, JSValueRef value) {
             [json appendString:@","];
         else
             comma = true;
-        if (object == nil || [object cy$JSType] != kJSTypeUndefined)
+        if (object != nil && [object cy$JSType] != kJSTypeUndefined)
             [json appendString:CYCastNSCYON(object, true, objects)];
         else {
             [json appendString:@","];
@@ -1259,7 +1256,7 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
     if (value == nil)
         return CYJSNull(context);
     else
-        return CYMakeInstance(context, value, false);
+        return CYMakeInstance(context, value);
 } CYPoolCatch(NULL) return /*XXX*/ NULL; }
 
 @implementation CYJSObject
@@ -1567,19 +1564,32 @@ static JSValueRef CYObjectiveC_FromFFI(JSContextRef context, sig::Type *type, ff
         // XXX: do something epic about blocks
         case sig::block_P:
         case sig::object_P:
-            if (NSObject *object = *reinterpret_cast<NSObject **>(data)) {
-                JSValueRef value(CYCastJSValue(context, object));
-                if (initialize)
-                    [object release];
-                return value;
+            if (NSObject *value = *reinterpret_cast<NSObject **>(data)) {
+                JSObjectRef object(CYMakeInstance(context, value));
+
+                if (initialize) {
+                    Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
+
+                    if ((internal->flags_ & Instance::Uninitialized) != 0) {
+                        internal->flags_ = static_cast<Instance::Flags>(internal->flags_ & ~Instance::Uninitialized);
+                        _assert(internal->value_ == nil);
+                        internal->value_ = value;
+                    }
+
+                    [value release];
+                }
+
+                return object;
             } else goto null;
 
         case sig::typename_P:
-            return CYMakeInstance(context, *reinterpret_cast<Class *>(data), true);
+            if (Class value = *reinterpret_cast<Class *>(data))
+                return CYMakeInstance(context, value, Instance::Permanent);
+            else goto null;
 
         case sig::selector_P:
-            if (SEL sel = *reinterpret_cast<SEL *>(data))
-                return CYMakeSelector(context, sel);
+            if (SEL value = *reinterpret_cast<SEL *>(data))
+                return CYMakeSelector(context, value);
             else goto null;
 
         null:
@@ -1956,7 +1966,7 @@ static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, 
 
 static JSObjectRef Instance_callAsConstructor(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
-    JSObjectRef value(Instance::Make(context, [internal->GetValue() alloc], Instance::Uninitialized));
+    JSObjectRef value(CYMakeInstance(context, [internal->GetValue() alloc], Instance::Uninitialized));
     return value;
 } CYCatch(NULL) }
 
@@ -2165,7 +2175,7 @@ static JSValueRef ObjectiveC_Classes_getProperty(JSContextRef context, JSObjectR
     CYPool pool;
     NSString *name(CYCastNSString(&pool, context, property));
     if (Class _class = NSClassFromString(name))
-        return CYMakeInstance(context, _class, true);
+        return CYMakeInstance(context, _class, Instance::Permanent);
     return NULL;
 } CYCatch(NULL) }
 
@@ -2220,7 +2230,7 @@ static JSValueRef ObjectiveC_Image_Classes_getProperty(JSContextRef context, JSO
     for (size_t i(0); i != size; ++i)
         if (strcmp(name, data[i]) == 0) {
             if (Class _class = objc_getClass(name)) {
-                value = CYMakeInstance(context, _class, true);
+                value = CYMakeInstance(context, _class, Instance::Permanent);
                 goto free;
             } else
                 break;
@@ -2273,7 +2283,7 @@ static JSValueRef ObjectiveC_Protocols_getProperty(JSContextRef context, JSObjec
     CYPool pool;
     const char *name(CYPoolCString(pool, context, property));
     if (Protocol *protocol = objc_getProtocol(name))
-        return CYMakeInstance(context, protocol, true);
+        return CYMakeInstance(context, protocol, Instance::Permanent);
     return NULL;
 } CYCatch(NULL) }
 
@@ -2293,7 +2303,7 @@ static JSValueRef ObjectiveC_Constants_getProperty(JSContextRef context, JSObjec
     CYPool pool;
     CYUTF8String name(CYPoolUTF8String(pool, context, property));
     if (name == "nil")
-        return Instance::Make(context, nil);
+        return CYJSNull(context);
     return NULL;
 } CYCatch(NULL) }
 
@@ -2579,7 +2589,7 @@ static JSObjectRef Instance_new(JSContextRef context, JSObjectRef object, size_t
     if (count > 1)
         throw CYJSError(context, "incorrect number of arguments to Instance constructor");
     id self(count == 0 ? nil : CYCastPointer<id>(context, arguments[0]));
-    return CYMakeInstance(context, self, false);
+    return CYMakeInstance(context, self);
 } CYCatch(NULL) }
 
 static JSValueRef CYValue_getProperty_value(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
@@ -2619,7 +2629,7 @@ static JSValueRef FunctionInstance_getProperty_type(JSContextRef context, JSObje
 
 static JSValueRef Instance_getProperty_constructor(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
-    return Instance::Make(context, (id) object_getClass(internal->GetValue()));
+    return CYMakeInstance(context, object_getClass(internal->GetValue()), Instance::Permanent);
 } CYCatch(NULL) }
 
 static JSValueRef Instance_getProperty_prototype(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
@@ -2677,6 +2687,7 @@ static JSValueRef Instance_callAsFunction_valueOf(JSContextRef context, JSObject
 
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
     id value(internal->GetValue());
+    _assert(value != nil);
 
     if (![value respondsToSelector:@selector(cy$valueOfInContext:)])
         return _this;
