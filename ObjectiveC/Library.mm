@@ -2086,7 +2086,7 @@ static JSValueRef Internal_getProperty(JSContextRef context, JSObjectRef object,
             uintptr_t mask((1 << length) - 1);
             return CYCastJSValue(context, (field >> shift) & mask);
         } else {
-            auto type(new(pool) Type_privateData(ivar_getTypeEncoding(ivar)));
+            auto type(new(pool) Type_privateData(encoding));
             return CYFromFFI(context, type->type_, type->GetFFI(), data);
         }
     }
