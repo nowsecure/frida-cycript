@@ -19,20 +19,18 @@
 **/
 /* }}} */
 
-#include <Foundation/Foundation.h>
-
-#include "ObjectiveC/Internal.hpp"
-
-#include <objc/objc-api.h>
-
 #include "cycript.hpp"
 
 #include "ObjectiveC/Internal.hpp"
 
+#include <objc/message.h>
+#include <objc/runtime.h>
+
+#include <Foundation/Foundation.h>
+
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
 #include <JavaScriptCore/JSStringRefCF.h>
-#include <objc/runtime.h>
 #endif
 
 #ifdef __APPLE__
@@ -90,45 +88,6 @@
 #define _oassert(test) \
     if (!(test)) \
         @throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"_assert(" #test ")" userInfo:nil];
-
-#ifndef __APPLE__
-#define class_getSuperclass GSObjCSuper
-#define class_getInstanceVariable GSCGetInstanceVariableDefinition
-#define class_getName GSNameFromClass
-
-#define class_removeMethods(cls, list) GSRemoveMethodList(cls, list, YES)
-
-#define ivar_getName(ivar) ((ivar)->ivar_name)
-#define ivar_getOffset(ivar) ((ivar)->ivar_offset)
-#define ivar_getTypeEncoding(ivar) ((ivar)->ivar_type)
-
-#define method_getName(method) ((method)->method_name)
-#define method_getImplementation(method) ((method)->method_imp)
-#define method_getTypeEncoding(method) ((method)->method_types)
-#define method_setImplementation(method, imp) ((void) ((method)->method_imp = (imp)))
-
-#undef objc_getClass
-#define objc_getClass GSClassFromName
-
-#define objc_getProtocol GSProtocolFromName
-
-#define object_getClass GSObjCClass
-
-#define object_getInstanceVariable(object, name, value) ({ \
-    objc_ivar *ivar(class_getInstanceVariable(object_getClass(object), name)); \
-    _assert(value != NULL); \
-    if (ivar != NULL) \
-        GSObjCGetVariable(object, ivar_getOffset(ivar), sizeof(void *), value); \
-    ivar; \
-})
-
-#define object_setIvar(object, ivar, value) ({ \
-    void *data = (value); \
-    GSObjCSetVariable(object, ivar_getOffset(ivar), sizeof(void *), &data); \
-})
-
-#define protocol_getName(protocol) [(protocol) name]
-#endif
 
 @class NSBlock;
 
@@ -200,21 +159,23 @@ const char *CYPoolCString(CYPool &pool, JSContextRef context, NSString *value) {
     return string;
 }
 
-JSStringRef CYCopyJSString(JSContextRef context, NSString *value) {
 #ifdef __APPLE__
+JSStringRef CYCopyJSString(JSContextRef context, NSString *value) {
     return JSStringCreateWithCFString(reinterpret_cast<CFStringRef>(value));
-#else
-    CYPool pool;
-    return CYCopyJSString(CYPoolCString(pool, context, value));
-#endif
 }
+#endif
 
 JSStringRef CYCopyJSString(JSContextRef context, NSObject *value) {
     if (value == nil)
         return NULL;
     // XXX: this definition scares me; is anyone using this?!
     NSString *string([value description]);
+#ifdef __APPLE__
     return CYCopyJSString(context, string);
+#else
+    CYPool pool;
+    return CYCopyJSString(CYPoolCString(pool, context, string));
+#endif
 }
 
 NSString *CYCopyNSString(const CYUTF8String &value) {
@@ -428,19 +389,23 @@ struct Message_privateData :
 JSObjectRef CYMakeInstance(JSContextRef context, id object, Instance::Flags flags = Instance::None) {
     _assert(object != nil);
 
+#ifdef __APPLE__
     JSWeakObjectMapRef weak(CYCastPointer<JSWeakObjectMapRef>(context, CYGetCachedValue(context, weak_s)));
 
     if (weak != NULL && &JSWeakObjectMapGet != NULL)
         if (JSObjectRef instance = JSWeakObjectMapGet(context, weak, object))
             return instance;
+#endif
 
     if ((flags & Instance::Permanent) == 0)
         object = [object retain];
 
     JSObjectRef instance(Instance::Make(context, object, flags));
 
+#ifdef __APPLE__
     if (weak != NULL && &JSWeakObjectMapSet != NULL)
         JSWeakObjectMapSet(context, weak, object, instance);
+#endif
 
     return instance;
 }
@@ -663,6 +628,7 @@ _finline bool CYJSValueIsInstanceOfCachedConstructor(JSContextRef context, JSVal
     return _jsccall(JSValueIsInstanceOfConstructor, context, value, CYGetCachedObject(context, cache));
 }
 
+#ifdef __APPLE__
 struct CYBlockDescriptor {
     struct {
         BlockDescriptor1 one_;
@@ -707,6 +673,7 @@ NSBlock *CYMakeBlock(JSContextRef context, JSObjectRef function, sig::Signature 
 
     return reinterpret_cast<NSBlock *>(literal);
 }
+#endif
 
 NSObject *CYCastNSObject(CYPool *pool, JSContextRef context, JSObjectRef object) {
     if (CYJSValueIsNSObject(context, object)) {
@@ -1440,6 +1407,7 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
 }
 
 + (CYInternal *) get:(id)object {
+#ifdef __APPLE__
     if (&objc_getAssociatedObject == NULL)
         return nil;
 
@@ -1447,11 +1415,13 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
         if (CYInternal *internal = objc_getAssociatedObject(object, @selector(cy$internal)))
             return internal;
     }
+#endif
 
     return nil;
 }
 
 + (CYInternal *) set:(id)object inContext:(JSContextRef)context {
+#ifdef __APPLE__
     if (&objc_getAssociatedObject == NULL)
         return nil;
 
@@ -1466,6 +1436,7 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
         objc_setAssociatedObject(object, @selector(cy$internal), internal, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         return internal;
     }
+#endif
 
     return nil;
 }
@@ -1499,6 +1470,7 @@ static void CYObjectiveC_CallFunction(JSContextRef context, ffi_cif *cif, void (
     ffi_call(cif, function, value, values);
 } CYSadCatch() }
 
+#ifdef __APPLE__
 static NSBlock *CYCastNSBlock(CYPool &pool, JSContextRef context, JSValueRef value, sig::Signature *signature) {
     if (JSValueIsNull(context, value))
         return nil;
@@ -1533,15 +1505,18 @@ static NSBlock *CYCastNSBlock(CYPool &pool, JSContextRef context, JSValueRef val
 
     return CYMakeBlock(context, object, modified);
 }
+#endif
 
 static bool CYObjectiveC_PoolFFI(CYPool *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value) { CYSadTry {
     // XXX: assigning to an indirect id * works for return values, but not for properties and fields
 
     switch (type->primitive) {
+#ifdef __APPLE__
         case sig::block_P:
             // XXX: this function might not handle the idea of a null pool
             *reinterpret_cast<id *>(data) = CYCastNSBlock(*pool, context, value, &type->data.signature);
         break;
+#endif
 
         case sig::object_P:
         case sig::typename_P:
@@ -1690,7 +1665,6 @@ static bool Messages_setProperty(JSContextRef context, JSObjectRef object, JSStr
     } else _assert(false);
 
     objc_method *method(NULL);
-#if OBJC_API_VERSION >= 2
     unsigned int size;
     objc_method **methods(class_copyMethodList(_class, &size));
     for (size_t i(0); i != size; ++i)
@@ -1699,65 +1673,24 @@ static bool Messages_setProperty(JSContextRef context, JSObjectRef object, JSStr
             break;
         }
     free(methods);
-#else
-    for (objc_method_list *methods(_class->methods); methods != NULL; methods = methods->method_next)
-        for (int i(0); i != methods->method_count; ++i)
-            if (sel_isEqual(method_getName(&methods->method_list[i]), sel)) {
-                method = &methods->method_list[i];
-                break;
-            }
-#endif
 
     if (method != NULL)
         method_setImplementation(method, imp);
-    else {
-#ifdef GNU_RUNTIME
-        GSMethodList list(GSAllocMethodList(1));
-        GSAppendMethodToList(list, sel, type, imp, YES);
-        GSAddMethodList(_class, list, YES);
-        GSFlushMethodCacheForClass(_class);
-#else
+    else
         class_addMethod(_class, sel, imp, type);
-#endif
-    }
 
     return true;
 } CYCatch(false) }
-
-#if 0 && OBJC_API_VERSION < 2
-static bool Messages_deleteProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
-    Messages *internal(reinterpret_cast<Messages *>(JSObjectGetPrivate(object)));
-    Class _class(internal->GetValue());
-
-    CYPool pool;
-    const char *name(CYPoolCString(pool, context, property));
-
-    if (SEL sel = sel_getUid(name))
-        if (objc_method *method = class_getInstanceMethod(_class, sel)) {
-            objc_method_list list = {NULL, 1, {method}};
-            class_removeMethods(_class, &list);
-            return true;
-        }
-
-    return false;
-} CYCatch(false) }
-#endif
 
 static void Messages_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
     Messages *internal(reinterpret_cast<Messages *>(JSObjectGetPrivate(object)));
     Class _class(internal->GetValue());
 
-#if OBJC_API_VERSION >= 2
     unsigned int size;
     objc_method **data(class_copyMethodList(_class, &size));
     for (size_t i(0); i != size; ++i)
         JSPropertyNameAccumulatorAddName(names, CYJSString(sel_getName(method_getName(data[i]))));
     free(data);
-#else
-    for (objc_method_list *methods(_class->methods); methods != NULL; methods = methods->method_next)
-        for (int i(0); i != methods->method_count; ++i)
-            JSPropertyNameAccumulatorAddName(names, CYJSString(sel_getName(method_getName(&methods->method_list[i]))));
-#endif
 }
 
 static bool CYHasImplicitProperties(Class _class) {
@@ -1944,17 +1877,11 @@ static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, 
 
     if (CYHasImplicitProperties(_class))
         for (Class current(_class); current != nil; current = class_getSuperclass(current)) {
-#if OBJC_API_VERSION >= 2
             unsigned int size;
             objc_method **data(class_copyMethodList(current, &size));
             for (size_t i(0); i != size; ++i)
                 Instance_getPropertyNames_message(names, data[i]);
             free(data);
-#else
-            for (objc_method_list *methods(current->methods); methods != NULL; methods = methods->method_next)
-                for (int i(0); i != methods->method_count; ++i)
-                    Instance_getPropertyNames_message(names, &methods->method_list[i]);
-#endif
         }
 
     CYPoolTry {
@@ -2138,17 +2065,11 @@ static void Internal_getPropertyNames_(Class _class, JSPropertyNameAccumulatorRe
     if (Class super = class_getSuperclass(_class))
         Internal_getPropertyNames_(super, names);
 
-#if OBJC_API_VERSION >= 2
     unsigned int size;
     objc_ivar **data(class_copyIvarList(_class, &size));
     for (size_t i(0); i != size; ++i)
         JSPropertyNameAccumulatorAddName(names, CYJSString(ivar_getName(data[i])));
     free(data);
-#else
-    if (objc_ivar_list *ivars = _class->ivars)
-        for (int i(0); i != ivars->ivar_count; ++i)
-            JSPropertyNameAccumulatorAddName(names, CYJSString(ivar_getName(&ivars->ivar_list[i])));
-#endif
 }
 
 static void Internal_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
@@ -2179,7 +2100,6 @@ static JSValueRef ObjectiveC_Classes_getProperty(JSContextRef context, JSObjectR
     return NULL;
 } CYCatch(NULL) }
 
-#ifdef __APPLE__
 static Class *CYCopyClassList(size_t &size) {
     size = objc_getClassList(NULL, 0);
     Class *data(reinterpret_cast<Class *>(malloc(sizeof(Class) * size)));
@@ -2201,21 +2121,14 @@ static Class *CYCopyClassList(size_t &size) {
         size = writ;
     }
 }
-#endif
 
 static void ObjectiveC_Classes_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
-#ifdef __APPLE__
     size_t size;
     if (Class *data = CYCopyClassList(size)) {
         for (size_t i(0); i != size; ++i)
             JSPropertyNameAccumulatorAddName(names, CYJSString(class_getName(data[i])));
         free(data);
     }
-#else
-    void *state(NULL);
-    while (Class _class = objc_next_class(&state))
-        JSPropertyNameAccumulatorAddName(names, CYJSString(class_getName(_class)));
-#endif
 }
 
 #if OBJC_API_VERSION >= 2
@@ -2923,9 +2836,6 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     definition.hasProperty = &Messages_hasProperty;
     definition.getProperty = &Messages_getProperty;
     definition.setProperty = &Messages_setProperty;
-#if 0 && OBJC_API_VERSION < 2
-    definition.deleteProperty = &Messages_deleteProperty;
-#endif
     definition.getPropertyNames = &Messages_getPropertyNames;
     definition.finalize = &CYFinalize;
     Messages_ = JSClassCreate(&definition);

@@ -473,7 +473,9 @@ int cylex(YYSTYPE *, CYLocation *, void *);
 %type <statement_> VariableStatement
 %type <statement_> WithStatement
 %type <word_> Word
+@begin ObjectiveC
 %type <word_> WordOpt
+@end
 %type <expression_> Variable
 
 @begin C
@@ -658,10 +660,12 @@ Word
     | "with" { $$ = $1; }
     ;
 
+@begin ObjectiveC
 WordOpt
     : Word { $$ = $1; }
     | { $$ = NULL; }
     ;
+@end
 
 IdentifierType
     : Identifier_ { $$ = $1; }

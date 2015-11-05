@@ -1754,7 +1754,7 @@ JSGlobalContextRef CYGetJSContext(JSContextRef context) {
 extern "C" bool CydgetMemoryParse(const uint16_t **data, size_t *size);
 
 void *CYMapFile(const char *path, size_t *psize) {
-    int fd(_syscall_(open(path, O_RDONLY), 1, {ENOENT}));
+    int fd(_syscall_(open(path, O_RDONLY), 1, ENOENT));
     if (fd == -1)
         return NULL;
 
@@ -1930,10 +1930,12 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     //CYSetProperty(context, System, CYJSString("global"), global);
     CYSetProperty(context, System, CYJSString("print"), &System_print);
 
+#ifdef __APPLE__
     if (&JSWeakObjectMapCreate != NULL) {
         JSWeakObjectMapRef weak(JSWeakObjectMapCreate(context, NULL, NULL));
         CYSetProperty(context, cy, weak_s, CYCastJSValue(context, reinterpret_cast<uintptr_t>(weak)));
     }
+#endif
 
     if (CYBridgeEntry *entry = CYBridgeHash("1dlerror", 8))
         entry->cache_ = new cy::Functor(entry->value_, reinterpret_cast<void (*)()>(&dlerror));

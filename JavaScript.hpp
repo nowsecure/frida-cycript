@@ -205,6 +205,7 @@ class CYJSString {
     }
 };
 
+#ifdef __APPLE__
 typedef struct OpaqueJSWeakObjectMap *JSWeakObjectMapRef;
 typedef void (*JSWeakMapDestroyedCallback)(JSWeakObjectMapRef map, void *data);
 
@@ -213,5 +214,6 @@ extern "C" void JSWeakObjectMapSet(JSContextRef ctx, JSWeakObjectMapRef map, voi
 extern "C" JSObjectRef JSWeakObjectMapGet(JSContextRef ctx, JSWeakObjectMapRef map, void *key) __attribute__((__weak_import__));
 extern "C" bool JSWeakObjectMapClear(JSContextRef ctx, JSWeakObjectMapRef map, void *key, JSObjectRef object) __attribute__((__weak_import__));
 extern "C" void JSWeakObjectMapRemove(JSContextRef ctx, JSWeakObjectMapRef map, void* key) __attribute__((__weak_import__));
+#endif
 
 #endif/*CYCRIPT_JAVASCRIPT_HPP*/

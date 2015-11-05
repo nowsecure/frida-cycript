@@ -88,11 +88,11 @@ static _finline bool CYContains(int value, size_t many, const int *okay) {
     return false;
 }
 
-#define _syscall_(expr, many, okay) ({ \
+#define _syscall_(expr, many, ...) ({ \
     __typeof__(expr) _value; \
     do if ((long) (_value = (expr)) != -1) \
         break; \
-    else if (CYContains(errno, many, ((const int [many]) okay))) \
+    else if (CYContains(errno, many, ((const int [many + 1]) {0, ##__VA_ARGS__} + 1))) \
         break; \
     else \
         _assert_("syscall", errno == EINTR, #expr, " [errno=%d]", errno); \
@@ -101,7 +101,7 @@ static _finline bool CYContains(int value, size_t many, const int *okay) {
 })
 
 #define _syscall(expr) \
-    _syscall_(expr, 0, {})
+    _syscall_(expr, 0)
 
 #define _sqlcall(expr) ({ \
     __typeof__(expr) _value = (expr); \
