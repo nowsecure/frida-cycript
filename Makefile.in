@@ -112,9 +112,9 @@ host_triplet = @host@
 @CY_OBJECTIVEC_TRUE@am__append_9 = ObjectiveC
 @CY_OBJECTIVEC_TRUE@am__append_10 = ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm
 @CY_OBJECTIVEC_TRUE@am__append_11 = $(LTOBJECTIVEC)
-@CY_MACH_TRUE@am__append_12 = Handler.cpp
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__append_13 = Mach/Inject.cpp
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__append_14 = -DCY_ATTACH
+@CY_ATTACH_TRUE@am__append_12 = Handler.cpp
+@CY_ATTACH_TRUE@@CY_CONSOLE_TRUE@am__append_13 = Inject.cpp
+@CY_ATTACH_TRUE@@CY_CONSOLE_TRUE@am__append_14 = -DCY_ATTACH
 subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
@@ -185,7 +185,7 @@ am__dirstamp = $(am__leading_dot)dirstamp
 @CY_OBJECTIVEC_TRUE@am__objects_3 = ObjectiveC/Output.lo \
 @CY_OBJECTIVEC_TRUE@	ObjectiveC/Replace.lo \
 @CY_OBJECTIVEC_TRUE@	ObjectiveC/Library.lo
-@CY_MACH_TRUE@am__objects_4 = Handler.lo
+@CY_ATTACH_TRUE@am__objects_4 = Handler.lo
 am_libcycript_la_OBJECTS = ConvertUTF.lo Decode.lo Driver.lo \
 	Highlight.lo Library.lo Network.lo Output.lo Parser.lo \
 	Replace.lo Cycript.tab.lo lex.cy.lo $(am__objects_1) \
@@ -199,8 +199,8 @@ libcycript_la_LINK = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(OBJCXXLD) $(AM_OBJCXXFLAGS) \
 	$(OBJCXXFLAGS) $(libcycript_la_LDFLAGS) $(LDFLAGS) -o $@
 PROGRAMS = $(bin_PROGRAMS)
-am__cycript_SOURCES_DIST = Console.cpp Display.cpp Mach/Inject.cpp
-@CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__objects_5 = Mach/Inject.$(OBJEXT)
+am__cycript_SOURCES_DIST = Console.cpp Display.cpp Inject.cpp
+@CY_ATTACH_TRUE@@CY_CONSOLE_TRUE@am__objects_5 = Inject.$(OBJEXT)
 @CY_CONSOLE_TRUE@am_cycript_OBJECTS = Console.$(OBJEXT) \
 @CY_CONSOLE_TRUE@	Display.$(OBJEXT) $(am__objects_5)
 cycript_OBJECTS = $(am_cycript_OBJECTS)
@@ -385,10 +385,8 @@ CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 CY_ARCH = @CY_ARCH@
-CY_ATTACH_GROUP = @CY_ATTACH_GROUP@
 CY_EXECUTE = @CY_EXECUTE@
 CY_JAVA = @CY_JAVA@
-CY_MACH = @CY_MACH@
 CY_OBJECTIVEC = @CY_OBJECTIVEC@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -469,9 +467,6 @@ TIME = @TIME@
 VERSION = @VERSION@
 WEBKIT_CFLAGS = @WEBKIT_CFLAGS@
 WEBKIT_LIBS = @WEBKIT_LIBS@
-_LIPO = @_LIPO@
-_NM = @_NM@
-_OTOOL = @_OTOOL@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -481,9 +476,6 @@ ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
 ac_ct_OBJCXX = @ac_ct_OBJCXX@
-ac_ct__LIPO = @ac_ct__LIPO@
-ac_ct__NM = @ac_ct__NM@
-ac_ct__OTOOL = @ac_ct__OTOOL@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
@@ -535,8 +527,8 @@ CLEANFILES = $(am__append_5) Cycript.yy Cycript.l lex.cy.cpp \
 	Cycript.tab.cc Cycript.tab.hh stack.hh Cycript.output
 SUBDIRS = 
 ACLOCAL_AMFLAGS = -I m4
-AM_CPPFLAGS = -I$(srcdir)/include -DYYDEBUG=1 -include config.h \
-	-include $(srcdir)/unconfig.h $(am__append_3) $(am__append_14)
+AM_CPPFLAGS = -DYYDEBUG=1 -include config.h -include \
+	$(srcdir)/unconfig.h $(am__append_3) $(am__append_14)
 CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
 lib_LTLIBRARIES = libcycript.la
 libcycript_la_LDFLAGS = $(CY_LDFLAGS)
@@ -550,8 +542,6 @@ filters = $(am__append_4) $(am__append_6) $(am__append_9)
 @CY_CONSOLE_TRUE@cycript_SOURCES = Console.cpp Display.cpp \
 @CY_CONSOLE_TRUE@	$(am__append_13)
 @CY_CONSOLE_TRUE@cycript_LDADD = libcycript.la $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) $(PTHREAD_CFLAGS) -ldl
-@CY_CONSOLE_TRUE@ldid = true
-@CY_CONSOLE_TRUE@entitle = $(ldid) -S$(srcdir)/cycript.xml
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
@@ -721,14 +711,6 @@ clean-binPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
-Mach/$(am__dirstamp):
-	@$(MKDIR_P) Mach
-	@: > Mach/$(am__dirstamp)
-Mach/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) Mach/$(DEPDIR)
-	@: > Mach/$(DEPDIR)/$(am__dirstamp)
-Mach/Inject.$(OBJEXT): Mach/$(am__dirstamp) \
-	Mach/$(DEPDIR)/$(am__dirstamp)
 
 cycript$(EXEEXT): $(cycript_OBJECTS) $(cycript_DEPENDENCIES) $(EXTRA_cycript_DEPENDENCIES) 
 	@rm -f cycript$(EXEEXT)
@@ -738,7 +720,6 @@ mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f Java/*.$(OBJEXT)
 	-rm -f Java/*.lo
-	-rm -f Mach/*.$(OBJEXT)
 	-rm -f ObjectiveC/*.$(OBJEXT)
 	-rm -f ObjectiveC/*.lo
 	-rm -f sig/*.$(OBJEXT)
@@ -757,6 +738,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Execute.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Handler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Highlight.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Inject.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/JavaScriptCore.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Library.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Network.Plo@am__quote@
@@ -765,7 +747,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Replace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lex.cy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@Java/$(DEPDIR)/Execute.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@Mach/$(DEPDIR)/Inject.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/Library.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/Output.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/Replace.Plo@am__quote@
@@ -1214,8 +1195,6 @@ distclean-generic:
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
 	-rm -f Java/$(DEPDIR)/$(am__dirstamp)
 	-rm -f Java/$(am__dirstamp)
-	-rm -f Mach/$(DEPDIR)/$(am__dirstamp)
-	-rm -f Mach/$(am__dirstamp)
 	-rm -f ObjectiveC/$(DEPDIR)/$(am__dirstamp)
 	-rm -f ObjectiveC/$(am__dirstamp)
 	-rm -f sig/$(DEPDIR)/$(am__dirstamp)
@@ -1231,7 +1210,7 @@ clean-am: clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
 
 distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
-	-rm -rf ./$(DEPDIR) Java/$(DEPDIR) Mach/$(DEPDIR) ObjectiveC/$(DEPDIR) sig/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) Java/$(DEPDIR) ObjectiveC/$(DEPDIR) sig/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-libtool distclean-tags
@@ -1279,7 +1258,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
-	-rm -rf ./$(DEPDIR) Java/$(DEPDIR) Mach/$(DEPDIR) ObjectiveC/$(DEPDIR) sig/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) Java/$(DEPDIR) ObjectiveC/$(DEPDIR) sig/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

@@ -25,7 +25,7 @@ SUBDIRS =
 
 ACLOCAL_AMFLAGS = -I m4
 
-AM_CPPFLAGS = -I$(srcdir)/include -DYYDEBUG=1
+AM_CPPFLAGS = -DYYDEBUG=1
 AM_CPPFLAGS += -include config.h -include $(srcdir)/unconfig.h
 
 CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
@@ -45,9 +45,6 @@ if CY_CONSOLE
 bin_PROGRAMS = cycript
 cycript_SOURCES = Console.cpp Display.cpp
 cycript_LDADD = libcycript.la $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) $(PTHREAD_CFLAGS) -ldl
-
-ldid = true
-entitle = $(ldid) -S$(srcdir)/cycript.xml
 endif
 
 if CY_EXECUTE
@@ -81,11 +78,11 @@ libcycript_la_SOURCES += ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC
 libcycript_la_LIBADD += $(LTOBJECTIVEC)
 endif
 
-if CY_MACH
+if CY_ATTACH
 libcycript_la_SOURCES += Handler.cpp
 
 if CY_CONSOLE
-cycript_SOURCES += Mach/Inject.cpp
+cycript_SOURCES += Inject.cpp
 AM_CPPFLAGS += -DCY_ATTACH
 endif
 endif

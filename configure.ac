@@ -192,6 +192,9 @@ dnl }}}
 AC_ARG_ENABLE([console], AS_HELP_STRING([--disable-console], [disable console]))
 AM_CONDITIONAL([CY_CONSOLE], [test "x$enable_console" != "xno"])
 
+AC_ARG_ENABLE([attach], AS_HELP_STRING([--disable-attach], [disable attach]))
+AM_CONDITIONAL([CY_ATTACH], [test "x$enable_attach" != "xno" -a "x$CY_EXECUTE" = x1])
+
 AC_DEFUN([CY_CHECK_PKG_CONFIG_LIBFFI], [
     PKG_CHECK_MODULES([LIBFFI], [libffi], [
         AC_LIB_APPENDTOVAR([CPPFLAGS], [`$PKG_CONFIG --cflags libffi`])
@@ -262,15 +265,6 @@ AC_SUBST([LTLIBGCC])
 
 AC_SUBST([LTFLAGS])
 AC_SUBST([SO], [$acl_shlibext])
-
-AS_IF([test "x$CY_EXECUTE" = x1], [
-    AC_CHECK_HEADER([mach/mach.h], [
-        AC_CHECK_TOOLS([_LIPO], [lipo], [AC_MSG_ERROR([missing "lipo"])])
-        AC_CHECK_TOOLS([_NM], [nm], [AC_MSG_ERROR([missing "nm"])])
-        AC_CHECK_TOOLS([_OTOOL], [otool], [AC_MSG_ERROR([missing "otool"])])
-        AC_SUBST([CY_ATTACH_GROUP], [procmod])
-        AC_SUBST([CY_MACH], [1])])])
-AM_CONDITIONAL([CY_MACH], [test "x$CY_MACH" = x1])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
