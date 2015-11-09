@@ -82,7 +82,7 @@ libcycript_la_LIBADD += $(LTOBJECTIVEC)
 endif
 
 if CY_MACH
-libcycript_la_SOURCES += Handler.mm
+libcycript_la_SOURCES += Handler.cpp
 
 if CY_CONSOLE
 cycript_SOURCES += Mach/Inject.cpp

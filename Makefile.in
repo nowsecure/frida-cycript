@@ -112,7 +112,7 @@ host_triplet = @host@
 @CY_OBJECTIVEC_TRUE@am__append_9 = ObjectiveC
 @CY_OBJECTIVEC_TRUE@am__append_10 = ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm
 @CY_OBJECTIVEC_TRUE@am__append_11 = $(LTOBJECTIVEC)
-@CY_MACH_TRUE@am__append_12 = Handler.mm
+@CY_MACH_TRUE@am__append_12 = Handler.cpp
 @CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__append_13 = Mach/Inject.cpp
 @CY_CONSOLE_TRUE@@CY_MACH_TRUE@am__append_14 = -DCY_ATTACH
 subdir = .
@@ -176,7 +176,7 @@ am__libcycript_la_SOURCES_DIST = ConvertUTF.c Decode.cpp Driver.cpp \
 	Replace.cpp Cycript.tab.cc lex.cy.cpp sig/ffi_type.cpp \
 	sig/parse.cpp sig/copy.cpp Bridge.cpp Execute.cpp \
 	JavaScriptCore.cpp Java/Execute.cpp ObjectiveC/Output.cpp \
-	ObjectiveC/Replace.cpp ObjectiveC/Library.mm Handler.mm
+	ObjectiveC/Replace.cpp ObjectiveC/Library.mm Handler.cpp
 am__dirstamp = $(am__leading_dot)dirstamp
 @CY_EXECUTE_TRUE@am__objects_1 = sig/ffi_type.lo sig/parse.lo \
 @CY_EXECUTE_TRUE@	sig/copy.lo Bridge.lo Execute.lo \

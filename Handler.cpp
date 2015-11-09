@@ -19,7 +19,6 @@
 **/
 /* }}} */
 
-#include <Foundation/Foundation.h>
 #include <dlfcn.h>
 #include <pthread.h>
 #include <unistd.h>
@@ -30,6 +29,10 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/un.h>
+
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#endif
 
 #include "cycript.hpp"
 
@@ -43,26 +46,21 @@
 struct CYExecute_ {
     CYPool &pool_;
     const char * volatile data_;
+    pthread_mutex_t mutex_;
+    pthread_cond_t condition_;
 };
 
-// XXX: this is "tre lame"
-@interface CYClient_ : NSObject {
-}
+void CYPerform(void *arg) {
+    CYExecute_ *execute(reinterpret_cast<CYExecute_ *>(arg));
 
-- (void) execute:(NSValue *)value;
-
-@end
-
-@implementation CYClient_
-
-- (void) execute:(NSValue *)value {
-    CYExecute_ *execute(reinterpret_cast<CYExecute_ *>([value pointerValue]));
     const char *data(execute->data_);
     execute->data_ = NULL;
     execute->data_ = CYExecute(CYGetJSContext(), execute->pool_, CYUTF8String(data));
-}
 
-@end
+    pthread_mutex_lock(&execute->mutex_);
+    pthread_cond_signal(&execute->condition_);
+    pthread_mutex_unlock(&execute->mutex_);
+}
 
 struct CYClient :
     CYData
@@ -80,15 +78,14 @@ struct CYClient :
     }
 
     void Handle() {
-        NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-
-        CYClient_ *client = [[[CYClient_ alloc] init] autorelease];
-
         bool dispatch;
-        if (CFStringRef mode = CFRunLoopCopyCurrentMode(CFRunLoopGetMain())) {
+#ifdef __APPLE__
+        CFRunLoopRef loop(CFRunLoopGetMain());
+        if (CFStringRef mode = CFRunLoopCopyCurrentMode(loop)) {
             dispatch = true;
             CFRelease(mode);
         } else
+#endif
             dispatch = false;
 
         for (;;) {
@@ -102,20 +99,43 @@ struct CYClient :
                 return;
             data[size] = '\0';
 
-            NSAutoreleasePool *ar = [[NSAutoreleasePool alloc] init];
-
             std::string code(data, size);
             CYExecute_ execute = {pool, code.c_str()};
-            NSValue *value([NSValue valueWithPointer:&execute]);
-            if (dispatch)
-                [client performSelectorOnMainThread:@selector(execute:) withObject:value waitUntilDone:YES];
-            else
-                [client execute:value];
+
+            pthread_mutex_init(&execute.mutex_, NULL);
+            pthread_cond_init(&execute.condition_, NULL);
+
+            if (!dispatch)
+                CYPerform(&execute);
+#ifdef __APPLE__
+            else {
+                CFRunLoopSourceContext context;
+                memset(&context, 0, sizeof(context));
+                context.version = 0;
+                context.info = &execute;
+                context.perform = &CYPerform;
+
+                CFRunLoopSourceRef source(CFRunLoopSourceCreate(kCFAllocatorDefault, 0, &context));
+
+                pthread_mutex_lock(&execute.mutex_);
+
+                CFRunLoopAddSource(loop, source, kCFRunLoopCommonModes);
+                CFRunLoopSourceSignal(source);
+
+                CFRunLoopWakeUp(loop);
+                pthread_cond_wait(&execute.condition_, &execute.mutex_);
+                pthread_mutex_unlock(&execute.mutex_);
+
+                CFRunLoopRemoveSource(loop, source, kCFRunLoopCommonModes);
+                CFRelease(source);
+            }
+#endif
+
+            pthread_cond_destroy(&execute.condition_);
+            pthread_mutex_destroy(&execute.mutex_);
 
             const char *json(execute.data_);
             size = json == NULL ? _not(uint32_t) : strlen(json);
-
-            [ar release];
 
             if (!CYSendAll(socket_, &size, sizeof(size)))
                 return;
@@ -123,8 +143,6 @@ struct CYClient :
                 if (!CYSendAll(socket_, json, size))
                     return;
         }
-
-        [pool release];
     }
 };
 
