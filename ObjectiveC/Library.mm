@@ -2336,11 +2336,14 @@ JSValueRef CYSendMessage(CYPool &pool, JSContextRef context, id self, Class _cla
         imp = NULL;
 
         CYPoolTry {
-            NSMethodSignature *method([self methodSignatureForSelector:_cmd]);
-            if (method == nil)
-                throw CYJSError(context, "unrecognized selector %s sent to object %p", sel_getName(_cmd), self);
-            type = CYPoolCString(pool, context, [method _typeString]);
+            if (NSMethodSignature *method = [self methodSignatureForSelector:_cmd])
+                type = CYPoolCString(pool, context, [method _typeString]);
+            else
+                type = NULL;
         } CYPoolCatch(NULL)
+
+        if (type == NULL)
+            throw CYJSError(context, "unrecognized selector %s sent to object %p", sel_getName(_cmd), self);
     }
 
     void *setup[2];
@@ -2961,6 +2964,15 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     CYSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Selector, prototype_s)), Function_prototype);
 } CYPoolCatch() }
 
+static void *CYObjectiveC_CastSymbol(const char *name) {
+    if (false);
+#ifdef __GNU_LIBOBJC__
+    else if (strcmp(name, "object_getClass") == 0)
+        return reinterpret_cast<void *>(&object_getClass);
+#endif
+    return NULL;
+}
+
 static CYHook CYObjectiveCHook = {
     &CYObjectiveC_ExecuteStart,
     &CYObjectiveC_ExecuteEnd,
@@ -2969,6 +2981,7 @@ static CYHook CYObjectiveCHook = {
     &CYObjectiveC_SetupContext,
     &CYObjectiveC_PoolFFI,
     &CYObjectiveC_FromFFI,
+    &CYObjectiveC_CastSymbol,
 };
 
 CYRegisterHook CYObjectiveC(&CYObjectiveCHook);

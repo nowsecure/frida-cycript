@@ -131,6 +131,8 @@ struct CYHook {
 
     bool (*PoolFFI)(CYPool *, JSContextRef, sig::Type *, ffi_type *, void *, JSValueRef);
     JSValueRef (*FromFFI)(JSContextRef, sig::Type *, ffi_type *, void *, bool, JSObjectRef);
+
+    void *(*CastSymbol)(const char *);
 };
 
 struct CYRegisterHook {

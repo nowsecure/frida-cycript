@@ -261,6 +261,10 @@ JSObjectRef CYMakeStruct(JSContextRef context, void *data, sig::Type *type, ffi_
 }
 
 static void *CYCastSymbol(const char *name) {
+    for (CYHook *hook : GetHooks())
+        if (hook->CastSymbol != NULL)
+            if (void *value = (*hook->CastSymbol)(name))
+                return value;
     return dlsym(RTLD_DEFAULT, name);
 }
 
