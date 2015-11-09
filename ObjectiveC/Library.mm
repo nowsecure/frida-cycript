@@ -264,7 +264,6 @@ static Class __NSMallocBlock__;
 static Class NSCFBoolean_;
 static Class NSCFType_;
 static Class NSGenericDeallocHandler_;
-static Class NSZombie_;
 #else
 static Class NSBoolNumber_;
 #endif
@@ -274,6 +273,7 @@ static Class NSBlock_;
 static Class NSDictionary_;
 static Class NSNumber_;
 static Class NSString_;
+static Class NSZombie_;
 static Class Object_;
 
 static Type_privateData *Object_type;
@@ -451,10 +451,8 @@ NSString *CYCastNSCYON(id value, bool objective, std::set<void *> &objects) {
             return [NSString stringWithUTF8String:name];
     }
 
-#ifdef __APPLE__
     if (_class == NSZombie_)
         return [NSString stringWithFormat:@"<_NSZombie_: %p>", value];
-#endif
 
     SEL sel(@selector(cy$toCYON:inSet:));
 
@@ -476,7 +474,6 @@ NSString *CYCastNSCYON(id value, bool objective, std::set<void *> *objects) {
     }
 }
 
-#ifdef __APPLE__
 struct PropertyAttributes {
     CYPool pool_;
 
@@ -564,7 +561,6 @@ struct PropertyAttributes {
     }
 
 };
-#endif
 
 @interface CYWebUndefined : NSObject {
 }
@@ -935,11 +931,7 @@ NSObject *CYCopyNSObject(CYPool &pool, JSContextRef context, JSValueRef value) {
     if ([name isEqualToString:@"length"]) {
         // XXX: is this not intelligent?
         NSNumber *number(reinterpret_cast<NSNumber *>(value));
-#ifdef __APPLE__
         NSUInteger size([number unsignedIntegerValue]);
-#else
-        NSUInteger size([number unsignedIntValue]);
-#endif
         NSUInteger count([self count]);
         if (size < count)
             [self removeObjectsInRange:NSMakeRange(size, count - size)];
@@ -1195,11 +1187,7 @@ NSObject *CYCopyNSObject(CYPool &pool, JSContextRef context, JSValueRef value) {
 /* }}} */
 
 static bool CYIsClass(id self) {
-#ifdef __APPLE__
     return class_isMetaClass(object_getClass(self));
-#else
-    return GSObjCIsClass(self);
-#endif
 }
 
 Class CYCastClass(CYPool &pool, JSContextRef context, JSValueRef value) {
@@ -1578,12 +1566,8 @@ static bool CYImplements(id object, Class _class, SEL selector, bool devoid = fa
     if (objc_method *method = class_getInstanceMethod(_class, selector)) {
         if (!devoid)
             return true;
-#if OBJC_API_VERSION >= 2
         char type[16];
         method_getReturnType(method, type, sizeof(type));
-#else
-        const char *type(method_getTypeEncoding(method));
-#endif
         if (type[0] != 'v')
             return true;
     }
@@ -1725,10 +1709,8 @@ static bool Instance_hasProperty(JSContextRef context, JSObjectRef object, JSStr
 
     const char *string(CYPoolCString(pool, context, name));
 
-#ifdef __APPLE__
     if (class_getProperty(_class, string) != NULL)
         return true;
-#endif
 
     if (CYHasImplicitProperties(_class))
         if (SEL sel = sel_getUid(string))
@@ -1760,13 +1742,11 @@ static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object,
     const char *string(CYPoolCString(pool, context, name));
     Class _class(object_getClass(self));
 
-#ifdef __APPLE__
     if (objc_property_t property = class_getProperty(_class, string)) {
         PropertyAttributes attributes(property);
         SEL sel(sel_registerName(attributes.Getter()));
         return CYSendMessage(pool, context, self, NULL, sel, 0, NULL, false);
     }
-#endif
 
     if (CYHasImplicitProperties(_class))
         if (SEL sel = sel_getUid(string))
@@ -1793,7 +1773,6 @@ static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStr
     const char *string(CYPoolCString(pool, context, name));
     Class _class(object_getClass(self));
 
-#ifdef __APPLE__
     if (objc_property_t property = class_getProperty(_class, string)) {
         PropertyAttributes attributes(property);
         if (const char *setter = attributes.Setter()) {
@@ -1803,7 +1782,6 @@ static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStr
             return true;
         }
     }
-#endif
 
     size_t length(strlen(string));
 
@@ -1865,7 +1843,6 @@ static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, 
     CYPool pool;
     Class _class(object_getClass(self));
 
-#ifdef __APPLE__
     {
         unsigned int size;
         objc_property_t *data(class_copyPropertyList(_class, &size));
@@ -1873,7 +1850,6 @@ static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, 
             JSPropertyNameAccumulatorAddName(names, CYJSString(property_getName(data[i])));
         free(data);
     }
-#endif
 
     if (CYHasImplicitProperties(_class))
         for (Class current(_class); current != nil; current = class_getSuperclass(current)) {
@@ -2131,7 +2107,7 @@ static void ObjectiveC_Classes_getPropertyNames(JSContextRef context, JSObjectRe
     }
 }
 
-#if OBJC_API_VERSION >= 2
+#ifdef __APPLE__
 static JSValueRef ObjectiveC_Image_Classes_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     const char *internal(reinterpret_cast<const char *>(JSObjectGetPrivate(object)));
 
@@ -2201,15 +2177,11 @@ static JSValueRef ObjectiveC_Protocols_getProperty(JSContextRef context, JSObjec
 } CYCatch(NULL) }
 
 static void ObjectiveC_Protocols_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
-#if OBJC_API_VERSION >= 2
     unsigned int size;
     Protocol **data(objc_copyProtocolList(&size));
     for (size_t i(0); i != size; ++i)
         JSPropertyNameAccumulatorAddName(names, CYJSString(protocol_getName(data[i])));
     free(data);
-#else
-    // XXX: fix this!
-#endif
 }
 
 static JSValueRef ObjectiveC_Constants_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
@@ -2345,6 +2317,8 @@ static bool stret(ffi_type *ffi_type) {
     );
 }
 #endif
+#else
+#define CY_NO_STRET
 #endif
 
 JSValueRef CYSendMessage(CYPool &pool, JSContextRef context, id self, Class _class, SEL _cmd, size_t count, const JSValueRef arguments[], bool initialize) {
@@ -2400,17 +2374,12 @@ JSValueRef CYSendMessage(CYPool &pool, JSContextRef context, id self, Class _cla
     sig::sig_ffi_cif(pool, &sig::ObjectiveC, &signature, &cif);
 
     if (imp == NULL) {
-#ifdef __APPLE__
 #ifndef CY_NO_STRET
         if (stret(cif.rtype))
             imp = class_getMethodImplementation_stret(_class, _cmd);
         else
 #endif
             imp = class_getMethodImplementation(_class, _cmd);
-#else
-        objc_super super = {self, _class};
-        imp = objc_msg_lookup_super(&super, _cmd);
-#endif
     }
 
     void (*function)() = reinterpret_cast<void (*)()>(imp);
@@ -2770,6 +2739,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     NSZombie_ = objc_getClass("_NSZombie_");
 #else
     NSBoolNumber_ = objc_getClass("NSBoolNumber");
+    NSZombie_ = objc_getClass("NSZombie");
 #endif
 
     JSClassDefinition definition;
@@ -2867,7 +2837,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     definition.getPropertyNames = &ObjectiveC_Constants_getPropertyNames;
     ObjectiveC_Constants_ = JSClassCreate(&definition);
 
-#if OBJC_API_VERSION >= 2
+#ifdef __APPLE__
     definition = kJSClassDefinitionEmpty;
     definition.className = "ObjectiveC::Images";
     definition.getProperty = &ObjectiveC_Images_getProperty;
@@ -2921,7 +2891,7 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     CYSetProperty(context, ObjectiveC, CYJSString("constants"), constants);
     CYArrayPush(context, alls, constants);
 
-#if OBJC_API_VERSION >= 2
+#ifdef __APPLE__
     CYSetProperty(context, ObjectiveC, CYJSString("images"), JSObjectMake(context, ObjectiveC_Images_, NULL));
 #endif
 
