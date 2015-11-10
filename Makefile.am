@@ -28,6 +28,8 @@ ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -DYYDEBUG=1
 AM_CPPFLAGS += -include config.h -include $(srcdir)/unconfig.h
 
+AM_OBJCXXFLAGS = -fobjc-exceptions
+
 CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
 
 lib_LTLIBRARIES = 

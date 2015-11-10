@@ -159,7 +159,7 @@ const char *CYPoolCString(CYPool &pool, JSContextRef context, NSString *value) {
     return string;
 }
 
-#ifdef __APPLE__
+#ifdef __clang__
 JSStringRef CYCopyJSString(JSContextRef context, NSString *value) {
     return JSStringCreateWithCFString(reinterpret_cast<CFStringRef>(value));
 }
@@ -170,7 +170,7 @@ JSStringRef CYCopyJSString(JSContextRef context, NSObject *value) {
         return NULL;
     // XXX: this definition scares me; is anyone using this?!
     NSString *string([value description]);
-#ifdef __APPLE__
+#ifdef __clang__
     return CYCopyJSString(context, string);
 #else
     CYPool pool;
@@ -767,7 +767,7 @@ NSObject *CYCopyNSObject(CYPool &pool, JSContextRef context, JSValueRef value) {
     [json appendString:@"@["];
 
     bool comma(false);
-#ifdef __APPLE__
+#ifdef __clang__
     for (id object in self) {
 #else
     for (size_t index(0), count([self count]); index != count; ++index) {
@@ -877,7 +877,7 @@ NSObject *CYCopyNSObject(CYPool &pool, JSContextRef context, JSValueRef value) {
     [json appendString:@"@{"];
 
     bool comma(false);
-#ifdef __APPLE__
+#ifdef __clang__
     for (NSObject *key in self) {
 #else
     NSEnumerator *keys([self keyEnumerator]);
@@ -908,7 +908,7 @@ NSObject *CYCopyNSObject(CYPool &pool, JSContextRef context, JSValueRef value) {
 - (void) cy$getPropertyNames:(JSPropertyNameAccumulatorRef)names inContext:(JSContextRef)context {
     [super cy$getPropertyNames:names inContext:context];
 
-#ifdef __APPLE__
+#ifdef __clang__
     for (NSObject *key in self) {
 #else
     NSEnumerator *keys([self keyEnumerator]);
@@ -2255,7 +2255,7 @@ static JSValueRef choose(JSContextRef context, JSObjectRef object, JSObjectRef _
     CYGarbageCollect(context);
 
     CYPool pool;
-    Class _class(CYCastNSObject(&pool, context, arguments[0]));
+    id _class(CYCastNSObject(&pool, context, arguments[0]));
 
     vm_address_t *zones(NULL);
     unsigned size(0);

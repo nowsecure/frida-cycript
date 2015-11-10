@@ -28,6 +28,8 @@
 #include "Pooling.hpp"
 
 #if defined(__APPLE__) && (defined(__i386__) || defined(__x86_64__))
+#include <unistd.h>
+
 #include <sys/fcntl.h>
 #include <sys/mman.h>
 
@@ -65,7 +67,8 @@ void InjectLibrary(int pid, int argc, const char *argv[]) {
     off_t offset;
     _assert(csops(pid, CS_OPS_PIDOFFSET, &offset, sizeof(offset)) != -1);
 
-    char path[PATH_MAX];
+    // XXX: implement a safe version of this
+    char path[4096];
     int writ(proc_pidpath(pid, path, sizeof(path)));
     _assert(writ != 0);
 

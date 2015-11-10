@@ -538,6 +538,7 @@ SUBDIRS =
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -DYYDEBUG=1 -include config.h -include \
 	$(srcdir)/unconfig.h $(am__append_3) $(am__append_14)
+AM_OBJCXXFLAGS = -fobjc-exceptions
 CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
 lib_LTLIBRARIES = libcycript.la
 libcycript_la_LDFLAGS = $(CY_LDFLAGS)
