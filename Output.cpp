@@ -249,7 +249,7 @@ void CYDeclaration::Output(CYOutput &out, CYFlags flags) const {
 
 void CYForDeclarations::Output(CYOutput &out, CYFlags flags) const {
     out << "var";
-    Output(out, CYRight(flags));
+    declarations_->Output(out, CYRight(flags));
 }
 
 void CYDeclarations::Output(CYOutput &out) const {
