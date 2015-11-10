@@ -137,19 +137,6 @@ AC_DEFUN([CY_LT_LIB], [
     AC_SUBST(]$1[)
 ])
 
-dnl -arch * {{{
-for cy_arch in ppc ppc64 i386 x86_64 armv6 arm64; do
-    AC_MSG_CHECKING([for -arch $cy_arch])
-    CY_TRY([CXXFLAGS], ["-arch $cy_arch"], [
-        AC_TRY_LINK([], [], [CY_SUCCESS], [CY_FAILURE])
-    ], [
-        AC_MSG_RESULT([yes])
-        AC_LIB_APPENDTOVAR([CY_ARCH], ["-arch $cy_arch"])
-    ], [AC_MSG_RESULT([no])])
-done
-AC_SUBST([CY_ARCH])
-dnl }}}
-
 dnl --enable-javascript {{{
 AC_DEFUN([CY_CHECK_JAVASCRIPTCORE], [
     CY_LT_LIB([LTJAVASCRIPTCORE], [AC_SEARCH_LIBS([JSEvaluateScript], [JavaScriptCore], [
