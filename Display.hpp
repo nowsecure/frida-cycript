@@ -1,5 +1,5 @@
 /* Cycript - Optimizing JavaScript Compiler/Runtime
- * Copyright (C) 2009-2014  Jay Freeman (saurik)
+ * Copyright (C) 2009-2015  Jay Freeman (saurik)
 */
 
 /* GNU Affero General Public License, Version 3 {{{ */
