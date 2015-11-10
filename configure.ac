@@ -122,8 +122,10 @@ dnl XXX: this is used to support GNU Objective-C struct objc_method
 CY_TEST_FLAG([-Wno-deprecated-declarations])
 
 CY_TEST_FLAG([-Wno-dangling-else])
+CY_TEST_FLAG([-Wno-empty-body])
 CY_TEST_FLAG([-Wno-overloaded-virtual])
 CY_TEST_FLAG([-Wno-parentheses])
+CY_TEST_FLAG([-Wno-tautological-undefined-compare])
 CY_TEST_FLAG([-Wno-unneeded-internal-declaration])
 
 AX_PTHREAD
