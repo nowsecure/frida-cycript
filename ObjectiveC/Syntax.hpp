@@ -130,12 +130,10 @@ struct CYMessageParameter :
 {
     CYWord *tag_;
     CYTypedIdentifier *type_;
-    CYIdentifier *name_;
 
-    CYMessageParameter(CYWord *tag, CYTypedIdentifier *type, CYIdentifier *name) :
+    CYMessageParameter(CYWord *tag, CYTypedIdentifier *type) :
         tag_(tag),
-        type_(type),
-        name_(name)
+        type_(type)
     {
     }
 

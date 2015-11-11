@@ -1490,12 +1490,12 @@ MessageScope
     ;
 
 TypeOpt
-    : "(" LexSetRegExp TypedIdentifier ")" { $$ = $3; }
-    | { $$ = NULL; }
+    : "(" LexSetRegExp TypedIdentifier ")" { if ($3->identifier_ != NULL) error($3->location_, "unexpected identifier"); $$ = $3; }
+    | { $$ = CYNew CYTypedIdentifier(CYNew CYTypeVariable("id")); }
     ;
 
 MessageParameter
-    : Word ":" TypeOpt Identifier { $$ = CYNew CYMessageParameter($1, $3, $4); }
+    : Word ":" TypeOpt Identifier { $3->identifier_ = $4; $$ = CYNew CYMessageParameter($1, $3); }
     ;
 
 MessageParameterList
@@ -1509,7 +1509,7 @@ MessageParameterListOpt
 
 MessageParameters
     : MessageParameterList { $$ = $1; }
-    | Word { $$ = CYNew CYMessageParameter($1, NULL, NULL); }
+    | Word { $$ = CYNew CYMessageParameter($1, NULL); }
     ;
 
 ClassMessageDeclaration

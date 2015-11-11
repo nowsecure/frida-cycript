@@ -25,14 +25,11 @@
 #include <sstream>
 
 static CYExpression *MessageType(CYContext &context, CYTypedIdentifier *type, CYMessageParameter *next, CYExpression *extra = NULL) {
-    if (type == NULL)
-        return NULL;
-
     CYExpression *left($C0($M(type->Replace(context), $S("toString"))));
     if (extra != NULL)
         left = $ CYAdd(left, extra);
 
-    if (next == NULL || next->name_ == NULL)
+    if (next == NULL || next->type_ == NULL)
         return left;
 
     CYExpression *right(next->TypeSignature(context));
@@ -102,12 +99,10 @@ CYStatement *CYMessage::Replace(CYContext &context, bool replace) const { $T(NUL
     CYVariable *self($V("self"));
     CYVariable *_class($V(instance_ ? "$cys" : "$cyp"));
 
-    CYExpression *type(TypeSignature(context) ?: $C1($M(cyn, $S("type")), _class));
-
     return $ CYBlock($$->*
         next_->Replace(context, replace)->*
         $E($ CYAssign(cyn, parameters_->Selector(context)))->*
-        $E($ CYAssign(cyt, type))->*
+        $E($ CYAssign(cyt, TypeSignature(context)))->*
         $E($C4($V(replace ? "class_replaceMethod" : "class_addMethod"),
             $V(instance_ ? "$cyc" : "$cym"),
             cyn,
@@ -126,7 +121,7 @@ CYExpression *CYMessage::TypeSignature(CYContext &context) const {
 
 CYFunctionParameter *CYMessageParameter::Parameters(CYContext &context) const { $T(NULL)
     CYFunctionParameter *next(next_->Parameters(context));
-    return name_ == NULL ? next : $ CYFunctionParameter($ CYDeclaration(name_), next);
+    return type_ == NULL ? next : $ CYFunctionParameter($ CYDeclaration(type_->identifier_), next);
 }
 
 CYSelector *CYMessageParameter::Selector(CYContext &context) const {
@@ -135,7 +130,7 @@ CYSelector *CYMessageParameter::Selector(CYContext &context) const {
 
 CYSelectorPart *CYMessageParameter::SelectorPart(CYContext &context) const { $T(NULL)
     CYSelectorPart *next(next_->SelectorPart(context));
-    return tag_ == NULL ? next : $ CYSelectorPart(tag_, name_ != NULL, next);
+    return tag_ == NULL ? next : $ CYSelectorPart(tag_, type_ != NULL, next);
 }
 
 CYExpression *CYMessageParameter::TypeSignature(CYContext &context) const {

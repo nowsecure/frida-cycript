@@ -88,8 +88,8 @@ void CYMessage::Output(CYOutput &out, bool replace) const {
     CYForEach (parameter, parameters_)
         if (parameter->tag_ != NULL) {
             out << ' ' << *parameter->tag_;
-            if (parameter->name_ != NULL)
-                out << ':' << *parameter->name_;
+            if (parameter->type_ != NULL)
+                out << ':' << *parameter->type_->identifier_;
         }
 
     out << code_;
