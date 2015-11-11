@@ -112,6 +112,7 @@ _finline Type_ CYCastPointer(JSContextRef context, JSValueRef value) {
 void CYPoolFFI(CYPool *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value);
 JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, bool initialize = false, JSObjectRef owner = NULL);
 
+void CYCallFunction(CYPool &pool, JSContextRef context, ffi_cif *cif, void (*function)(), void *value, void **values);
 JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, void *setup[], size_t count, const JSValueRef arguments[], bool initialize, sig::Signature *signature, ffi_cif *cif, void (*function)());
 
 bool CYIsCallable(JSContextRef context, JSValueRef value);
@@ -124,7 +125,7 @@ struct CYHook {
     void *(*ExecuteStart)(JSContextRef);
     void (*ExecuteEnd)(JSContextRef, void *);
 
-    void (*CallFunction)(JSContextRef, ffi_cif *, void (*)(), uint8_t *, void **);
+    void (*CallFunction)(CYPool &, JSContextRef, ffi_cif *, void (*)(), void *, void **);
 
     void (*Initialize)();
     void (*SetupContext)(JSContextRef);

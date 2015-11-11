@@ -994,6 +994,10 @@ static void Struct_getPropertyNames(JSContextRef context, JSObjectRef object, JS
     }
 }
 
+void CYCallFunction(CYPool &pool, JSContextRef context, ffi_cif *cif, void (*function)(), void *value, void **values) {
+    ffi_call(cif, function, value, values);
+}
+
 JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, void *setup[], size_t count, const JSValueRef arguments[], bool initialize, sig::Signature *signature, ffi_cif *cif, void (*function)()) {
     if (setups + count != signature->count - 1)
         throw CYJSError(context, "incorrect number of arguments to ffi function");
@@ -1012,15 +1016,13 @@ JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, voi
 
     uint8_t value[cif->rtype->size];
 
+    void (*call)(CYPool &, JSContextRef, ffi_cif *, void (*)(), void *, void **) = &CYCallFunction;
+    // XXX: this only supports one hook, but it is a bad idea anyway
     for (CYHook *hook : GetHooks())
-        if (hook->CallFunction != NULL) {
-            // XXX: this only supports one hook, but it is a bad idea anyway
-            (*hook->CallFunction)(context, cif, function, value, values);
-            goto from;
-        }
-    ffi_call(cif, function, value, values);
+        if (hook->CallFunction != NULL)
+            call = hook->CallFunction;
 
-  from:
+    call(pool, context, cif, function, value, values);
     return CYFromFFI(context, signature->elements[0].type, cif->rtype, value, initialize);
 }
 

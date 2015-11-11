@@ -1454,8 +1454,8 @@ void CYObjectiveC_ExecuteEnd(JSContextRef context, void *handle) { CYSadTry {
     return [(NSAutoreleasePool *) handle release];
 } CYSadCatch() }
 
-static void CYObjectiveC_CallFunction(JSContextRef context, ffi_cif *cif, void (*function)(), uint8_t *value, void **values) { CYSadTry {
-    ffi_call(cif, function, value, values);
+static void CYObjectiveC_CallFunction(CYPool &pool, JSContextRef context, ffi_cif *cif, void (*function)(), void *value, void **values) { CYSadTry {
+    CYCallFunction(pool, context, cif, function, value, values);
 } CYSadCatch() }
 
 #ifdef __APPLE__
