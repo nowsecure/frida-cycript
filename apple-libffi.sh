@@ -41,7 +41,7 @@ function arch() {
     flags=()
     flags+=(-isysroot "${isysroot}")
     flags+=(-m${os}-version-min="${min}")
-    flags+=(-no-integrated-as)
+    flags+=(-DPAGE_MAX_SIZE=16384 -DPAGE_MAX_SHIFT=14)
     flags+=(-fno-stack-protector)
     flags+=(-O3 -g3)
 
@@ -50,7 +50,7 @@ function arch() {
     fi
 
     cd "libffi.${arch}"
-    CC="clang -arch ${arch}" CFLAGS="${flags[*]}" CPPFLAGS="${flags[*]} $*" ../libffi/configure --host="${host}"
+    CC="clang -arch ${arch}" CXX="clang++ -arch ${arch}" CFLAGS="${flags[*]}" CPPFLAGS="${flags[*]} $*" ../libffi/configure --host="${host}"
     make
     cd ..
 }
