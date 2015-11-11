@@ -752,7 +752,7 @@ JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void 
     }
 }
 
-void CYExecuteClosure(ffi_cif *cif, void *result, void **arguments, void *arg, JSValueRef (*adapter)(JSContextRef, size_t, JSValueRef[], JSObjectRef)) {
+void CYExecuteClosure(ffi_cif *cif, void *result, void **arguments, void *arg) {
     Closure_privateData *internal(reinterpret_cast<Closure_privateData *>(arg));
 
     JSContextRef context(internal->context_);
@@ -763,7 +763,7 @@ void CYExecuteClosure(ffi_cif *cif, void *result, void **arguments, void *arg, J
     for (size_t index(0); index != count; ++index)
         values[index] = CYFromFFI(context, internal->signature_.elements[1 + index].type, internal->cif_.arg_types[index], arguments[index]);
 
-    JSValueRef value(adapter(context, count, values, internal->function_));
+    JSValueRef value(internal->adapter_(context, count, values, internal->function_));
     CYPoolFFI(NULL, context, internal->signature_.elements[0].type, internal->cif_.rtype, result, value);
 }
 
@@ -771,20 +771,16 @@ static JSValueRef FunctionAdapter_(JSContextRef context, size_t count, JSValueRe
     return CYCallAsFunction(context, function, NULL, count, values);
 }
 
-static void FunctionClosure_(ffi_cif *cif, void *result, void **arguments, void *arg) {
-    CYExecuteClosure(cif, result, arguments, arg, &FunctionAdapter_);
-}
-
-Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, const sig::Signature &signature, void (*callback)(ffi_cif *, void *, void **, void *)) {
+Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, const sig::Signature &signature, JSValueRef (*adapter)(JSContextRef, size_t, JSValueRef[], JSObjectRef)) {
     // XXX: in case of exceptions this will leak
     // XXX: in point of fact, this may /need/ to leak :(
-    Closure_privateData *internal(new Closure_privateData(context, function, signature));
+    Closure_privateData *internal(new Closure_privateData(context, function, adapter, signature));
 
 #if defined(__APPLE__) && (defined(__arm__) || defined(__arm64__))
     void *executable;
     ffi_closure *writable(reinterpret_cast<ffi_closure *>(ffi_closure_alloc(sizeof(ffi_closure), &executable)));
 
-    ffi_status status(ffi_prep_closure_loc(writable, &internal->cif_, callback, internal, executable));
+    ffi_status status(ffi_prep_closure_loc(writable, &internal->cif_, &CYExecuteClosure, internal, executable));
     _assert(status == FFI_OK);
 
     internal->value_ = executable;
@@ -795,7 +791,7 @@ Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, 
         -1, 0
     )));
 
-    ffi_status status(ffi_prep_closure(closure, &internal->cif_, callback, internal));
+    ffi_status status(ffi_prep_closure(closure, &internal->cif_, &CYExecuteClosure, internal));
     _assert(status == FFI_OK);
 
     _syscall(mprotect(closure, sizeof(*closure), PROT_READ | PROT_EXEC));
@@ -807,7 +803,7 @@ Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, 
 }
 
 static JSObjectRef CYMakeFunctor(JSContextRef context, JSObjectRef function, const sig::Signature &signature) {
-    Closure_privateData *internal(CYMakeFunctor_(context, function, signature, &FunctionClosure_));
+    Closure_privateData *internal(CYMakeFunctor_(context, function, signature, &FunctionAdapter_));
     JSObjectRef object(JSObjectMake(context, Functor_, internal));
     // XXX: see above notes about needing to leak
     JSValueProtect(CYGetJSContext(context), object);

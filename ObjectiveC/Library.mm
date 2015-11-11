@@ -644,10 +644,6 @@ static JSValueRef BlockAdapter_(JSContextRef context, size_t count, JSValueRef v
     return CYCallAsFunction(context, function, _this, count - 1, values + 1);
 }
 
-static void BlockClosure_(ffi_cif *cif, void *result, void **arguments, void *arg) {
-    CYExecuteClosure(cif, result, arguments, arg, &BlockAdapter_);
-}
-
 NSBlock *CYMakeBlock(JSContextRef context, JSObjectRef function, sig::Signature &signature) {
     _assert(__NSMallocBlock__ != Nil);
     BlockLiteral *literal(reinterpret_cast<BlockLiteral *>(malloc(sizeof(BlockLiteral))));
@@ -655,7 +651,7 @@ NSBlock *CYMakeBlock(JSContextRef context, JSObjectRef function, sig::Signature 
     CYBlockDescriptor *descriptor(new CYBlockDescriptor);
     memset(&descriptor->d_, 0, sizeof(descriptor->d_));
 
-    descriptor->internal_ = CYMakeFunctor_(context, function, signature, &BlockClosure_);
+    descriptor->internal_ = CYMakeFunctor_(context, function, signature, &BlockAdapter_);
     literal->invoke = reinterpret_cast<void (*)(void *, ...)>(descriptor->internal_->GetValue());
 
     literal->isa = __NSMallocBlock__;
@@ -1581,10 +1577,6 @@ static JSValueRef MessageAdapter_(JSContextRef context, size_t count, JSValueRef
     return CYCallAsFunction(context, function, _this, count - 2, values + 2);
 }
 
-static void MessageClosure_(ffi_cif *cif, void *result, void **arguments, void *arg) {
-    CYExecuteClosure(cif, result, arguments, arg, &MessageAdapter_);
-}
-
 static JSObjectRef CYMakeMessage(JSContextRef context, SEL sel, IMP imp, const char *type) {
     Message_privateData *internal(new Message_privateData(sel, type, imp));
     return JSObjectMake(context, Message_, internal);
@@ -1595,7 +1587,7 @@ static IMP CYMakeMessage(JSContextRef context, JSValueRef value, const char *enc
     CYPool pool;
     sig::Signature signature;
     sig::Parse(pool, &signature, encoding, &Structor_);
-    Closure_privateData *internal(CYMakeFunctor_(context, function, signature, &MessageClosure_));
+    Closure_privateData *internal(CYMakeFunctor_(context, function, signature, &MessageAdapter_));
     // XXX: see notes in Library.cpp about needing to leak
     return reinterpret_cast<IMP>(internal->GetValue());
 }

@@ -197,11 +197,13 @@ struct Closure_privateData :
 {
     JSGlobalContextRef context_;
     JSObjectRef function_;
+    JSValueRef (*adapter_)(JSContextRef, size_t, JSValueRef[], JSObjectRef);
 
-    Closure_privateData(JSContextRef context, JSObjectRef function, const sig::Signature &signature) :
+    Closure_privateData(JSContextRef context, JSObjectRef function, JSValueRef (*adapter)(JSContextRef, size_t, JSValueRef[], JSObjectRef), const sig::Signature &signature) :
         cy::Functor(signature, NULL),
         context_(CYGetJSContext(context)),
-        function_(function)
+        function_(function),
+        adapter_(adapter)
     {
         //XXX:JSGlobalContextRetain(context_);
         JSValueProtect(context_, function_);
@@ -213,7 +215,7 @@ struct Closure_privateData :
     }
 };
 
-Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, const sig::Signature &signature, void (*callback)(ffi_cif *, void *, void **, void *));
+Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, const sig::Signature &signature, JSValueRef (*adapter)(JSContextRef, size_t, JSValueRef[], JSObjectRef));
 void CYExecuteClosure(ffi_cif *cif, void *result, void **arguments, void *arg, JSValueRef (*adapter)(JSContextRef, size_t, JSValueRef[], JSObjectRef));
 
 #endif/*CYCRIPT_INTERNAL_HPP*/
