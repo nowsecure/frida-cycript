@@ -1833,6 +1833,9 @@ static JSValueRef require(JSContextRef context, JSObjectRef object, JSObjectRef 
     return CYGetProperty(context, module, property);
 } CYCatch(NULL) }
 
+extern "C" void CYDestroyWeak(JSWeakObjectMapRef weak, void *data) {
+}
+
 extern "C" void CYSetupContext(JSGlobalContextRef context) {
     CYInitializeDynamic();
 
@@ -1934,7 +1937,7 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
 
 #ifdef __APPLE__
     if (&JSWeakObjectMapCreate != NULL) {
-        JSWeakObjectMapRef weak(JSWeakObjectMapCreate(context, NULL, NULL));
+        JSWeakObjectMapRef weak(JSWeakObjectMapCreate(context, NULL, &CYDestroyWeak));
         CYSetProperty(context, cy, weak_s, CYCastJSValue(context, reinterpret_cast<uintptr_t>(weak)));
     }
 #endif
