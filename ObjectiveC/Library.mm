@@ -1085,6 +1085,21 @@ NSObject *CYCopyNSObject(CYPool &pool, JSContextRef context, JSValueRef value) {
 
 @end
 /* }}} */
+/* Bridge: NSOrderedSet {{{ */
+@implementation NSOrderedSet (Cycript)
+
+- (NSString *) cy$toCYON:(bool)objective inSet:(std::set<void *> &)objects {
+    _oassert(objects.insert(self).second);
+
+    NSMutableString *json([[[NSMutableString alloc] init] autorelease]);
+    [json appendString:@"[NSOrderedSet orderedSetWithArray:"];
+    [json appendString:CYCastNSCYON([self array], true, objects)];
+    [json appendString:@"]]"];
+    return json;
+}
+
+@end
+/* }}} */
 /* Bridge: NSProxy {{{ */
 @implementation NSProxy (Cycript)
 
