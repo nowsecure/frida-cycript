@@ -85,7 +85,8 @@ static void sigint(int) {
         case Parsing:
             longjmp(ctrlc_, 1);
         case Running:
-            throw "*** Ctrl-C";
+            CYCancel();
+            return;
         case Sending:
             return;
         case Waiting:

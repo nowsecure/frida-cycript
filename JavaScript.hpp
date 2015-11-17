@@ -61,6 +61,7 @@ JSObjectRef CYGetGlobalObject(JSContextRef context);
 
 extern "C" void CYSetupContext(JSGlobalContextRef context);
 const char *CYExecute(JSContextRef context, CYPool &pool, CYUTF8String code);
+void CYCancel();
 
 void CYSetArgs(int argc, const char *argv[]);
 
@@ -217,6 +218,9 @@ extern "C" void JSWeakObjectMapSet(JSContextRef ctx, JSWeakObjectMapRef map, voi
 extern "C" JSObjectRef JSWeakObjectMapGet(JSContextRef ctx, JSWeakObjectMapRef map, void *key) __attribute__((__weak_import__));
 extern "C" bool JSWeakObjectMapClear(JSContextRef ctx, JSWeakObjectMapRef map, void *key, JSObjectRef object) __attribute__((__weak_import__));
 extern "C" void JSWeakObjectMapRemove(JSContextRef ctx, JSWeakObjectMapRef map, void* key) __attribute__((__weak_import__));
+
+typedef bool (*JSShouldTerminateCallback)(JSContextRef ctx, void *context);
+extern "C" void JSContextGroupSetExecutionTimeLimit(JSContextGroupRef, double limit, JSShouldTerminateCallback, void *context) __attribute__((__weak_import__));
 #endif
 
 #endif/*CYCRIPT_JAVASCRIPT_HPP*/

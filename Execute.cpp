@@ -1590,36 +1590,42 @@ class ExecutionHandle {
     }
 };
 
+static volatile bool cancel_;
+
+static bool CYShouldTerminate(JSContextRef context, void *arg) {
+    return cancel_;
+}
+
 const char *CYExecute(JSContextRef context, CYPool &pool, CYUTF8String code) {
     JSValueRef exception(NULL);
+    if (false) error:
+        return CYPoolCString(pool, context, CYJSString(context, exception));
 
     ExecutionHandle handle(context);
 
-    JSValueRef result; try {
-        result = JSEvaluateScript(context, CYJSString(code), NULL, NULL, 0, &exception);
-    } catch (const char *error) {
-        return error;
-    }
+    cancel_ = false;
+    if (&JSContextGroupSetExecutionTimeLimit != NULL)
+        JSContextGroupSetExecutionTimeLimit(JSContextGetGroup(context), 0.5, &CYShouldTerminate, NULL);
 
-    if (exception != NULL) error:
-        return CYPoolCString(pool, context, CYJSString(context, exception));
+    JSValueRef result(JSEvaluateScript(context, CYJSString(code), NULL, NULL, 0, &exception));
+    if (exception != NULL)
+        goto error;
 
     if (JSValueIsUndefined(context, result))
         return NULL;
 
-    const char *json; try {
-        std::set<void *> objects;
-        json = CYPoolCCYON(pool, context, result, objects, &exception);
-    } catch (const char *error) {
-        return error;
-    }
-
+    std::set<void *> objects;
+    const char *json(CYPoolCCYON(pool, context, result, objects, &exception));
     if (exception != NULL)
         goto error;
 
     CYSetProperty(context, CYGetGlobalObject(context), Result_, result);
 
     return json;
+}
+
+void CYCancel() {
+    cancel_ = true;
 }
 
 static bool initialized_ = false;
