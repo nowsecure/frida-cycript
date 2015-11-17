@@ -123,11 +123,16 @@ int H(char c) {
 %option prefix="cy"
 %option bison-bridge
 %option bison-locations
+%option nodefault
 %option noyywrap
 %option yylineno
 %option nounput
+%option nounistd
+%option 8bit
+%option backup
 %option batch
 %option never-interactive
+%option pointer
 %option reentrant
 %option stack
 
