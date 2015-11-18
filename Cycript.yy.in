@@ -1707,7 +1707,7 @@ Statement__
 /* }}} */
 /* Cycript (C): extern "C" {{{ */
 Statement__
-    : "extern" StringLiteral { if (strcmp($2->Value(), "C") != 0) YYABORT; } TypedIdentifier { if ($4->identifier_ == NULL) error($4->location_, "expected identifier"); } Terminator { $$ = CYNew CYExternal($2, $4); }
+    : "extern" StringLiteral { if (strcmp($2->Value(), "C") != 0) error(@2, "unknown extern binding"); } TypedIdentifier { if ($4->identifier_ == NULL) error($4->location_, "expected identifier"); } Terminator { $$ = CYNew CYExternal($2, $4); }
     ;
 /* }}} */
 
