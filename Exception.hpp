@@ -78,7 +78,7 @@ while (false)
 _value; })
 
 #define _trace() do { \
-    fprintf(stderr, "_trace():%u\n", __LINE__); \
+    fprintf(stderr, "_trace(%s:%u)\n", __FILE__, __LINE__); \
 } while (false)
 
 static _finline bool CYContains(int value, size_t many, const int *okay) {
