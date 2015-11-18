@@ -625,7 +625,7 @@ Word
     | "continue" NewLineOpt { $$ = $1; }
     | "debugger" { $$ = $1; }
     | "default" { $$ = $1; }
-    | "delete" { $$ = $1; }
+    | "delete" LexSetRegExp { $$ = $1; }
     | "do" { $$ = $1; }
     | "else" { $$ = $1; }
     | "enum" { $$ = $1; }
@@ -644,7 +644,7 @@ Word
     // XXX: as it currently is not an Identifier
     | "let" { $$ = $1; }
 
-    | "new" { $$ = $1; }
+    | "new" LexSetRegExp { $$ = $1; }
     | "null" { $$ = $1; }
     | "return" NewLineOpt { $$ = $1; }
     | "super" { $$ = $1; }
@@ -653,9 +653,9 @@ Word
     | "throw" NewLineOpt { $$ = $1; }
     | "true" { $$ = $1; }
     | "try" { $$ = $1; }
-    | "typeof" { $$ = $1; }
+    | "typeof" LexSetRegExp { $$ = $1; }
     | "var" { $$ = $1; }
-    | "void" { $$ = $1; }
+    | "void" LexSetRegExp { $$ = $1; }
     | "while" { $$ = $1; }
     | "with" { $$ = $1; }
     ;
@@ -925,6 +925,7 @@ ArgumentList_
 
 ArgumentList
     : AssignmentExpression ArgumentList_ { $$ = CYNew CYArgument(NULL, $1, $2); }
+    | LexSetRegExp Word ":" AssignmentExpression ArgumentList_ { $$ = CYNew CYArgument($2, $4, $5); }
     ;
 
 ArgumentListOpt
