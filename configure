@@ -21224,7 +21224,74 @@ fi
 
 
 
-    ac_fn_cxx_check_header_mongrel "$LINENO" "jni.h" "ac_cv_header_jni_h" "$ac_includes_default"
+
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaVM" >&5
+$as_echo_n "checking for framework JavaVM... " >&6; }
+if ${ac_cv_framework_JavaVM+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+		ac_check_framework_save_LIBS=$LIBS
+		LIBS="-framework JavaVM  $LIBS"
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+        #include <JavaVM/jni.h>
+
+int
+main ()
+{
+JNI_GetCreatedJavaVMs(NULL, 0, NULL);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+
+			ac_cv_framework_JavaVM=yes
+
+else
+  ac_cv_framework_JavaVM=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+		LIBS=$ac_check_framework_save_LIBS
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_framework_JavaVM" >&5
+$as_echo "$ac_cv_framework_JavaVM" >&6; }
+	if test $ac_cv_framework_JavaVM = yes; then :
+
+
+  for element in "-framework JavaVM"; do
+    haveit=
+    for x in $LIBS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LIBS="${LIBS}${LIBS:+ }$element"
+    fi
+  done
+
+
+        CY_JAVA=1
+
+
+
+else
+  ac_fn_cxx_check_header_mongrel "$LINENO" "jni.h" "ac_cv_header_jni_h" "$ac_includes_default"
 if test "x$ac_cv_header_jni_h" = xyes; then :
 
         CY_JAVA=1
@@ -21302,6 +21369,7 @@ else
 fi
 
 
+fi
 
     ac_ext=mm
 ac_cpp='$OBJCXXCPP $CPPFLAGS'

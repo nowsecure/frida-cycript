@@ -19,4 +19,8 @@
 **/
 /* }}} */
 
+#ifdef __APPLE__
+#include <JavaVM/jni.h>
+#else
 #include <jni.h>
+#endif
