@@ -435,7 +435,6 @@ int cylex(YYSTYPE *, CYLocation *, void *);
 %type <null_> NullLiteral
 %type <literal_> ObjectLiteral
 %type <compound_> Parenthetical
-//%type <compound_> ParentheticalOpt
 %type <expression_> PostfixExpression
 %type <expression_> PrimaryExpression
 %type <statement_> Program
@@ -769,11 +768,6 @@ TerminatorOpt
 Parenthetical
     : "(" LexPushInOff Expression ")" LexPopIn { $$ = $3; }
     ;
-
-/*ParentheticalOpt
-    : Parenthetical { $$ = $1; }
-    | { $$ = NULL; }
-    ;*/
 
 Variable
     : Identifier { $$ = CYNew CYVariable($1); }
@@ -1380,7 +1374,8 @@ ArrowFunction
 
 ArrowParameters
     : BindingIdentifier { $$ = CYNew CYFunctionParameter(CYNew CYDeclaration($1)); }
-    //| ParentheticalOpt { $$ = $1; }
+    | "(" LexPushInOff LexSetRegExp ")" LexPopIn { $$ = NULL; }
+    | Parenthetical { $$ = $1->Parameters(); if ($$ == NULL) error(@1, "invalid parameter list"); }
     ;
 
 ConciseBody

@@ -482,6 +482,8 @@ struct CYForInInitialiser {
     virtual void Output(CYOutput &out, CYFlags flags) const = 0;
 };
 
+struct CYFunctionParameter;
+
 struct CYNumber;
 struct CYString;
 
@@ -515,6 +517,9 @@ struct CYExpression :
     virtual CYExpression *Primitive(CYContext &context) {
         return NULL;
     }
+
+    virtual CYFunctionParameter *Parameter() const;
+    virtual CYFunctionParameter *Parameters() const;
 
     virtual CYNumber *Number(CYContext &context) {
         return NULL;
@@ -566,6 +571,7 @@ struct CYCompound :
     void Output(CYOutput &out, CYFlags flags) const;
 
     virtual CYExpression *Primitive(CYContext &context);
+    virtual CYFunctionParameter *Parameters() const;
 };
 
 struct CYDeclaration;
@@ -911,6 +917,8 @@ struct CYVariable :
 
     virtual CYExpression *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
+
+    virtual CYFunctionParameter *Parameter() const;
 };
 
 struct CYPrefix :

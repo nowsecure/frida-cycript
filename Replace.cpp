@@ -169,6 +169,24 @@ CYExpression *CYCompound::Primitive(CYContext &context) {
     return expression->Primitive(context);
 }
 
+CYFunctionParameter *CYCompound::Parameters() const {
+    CYFunctionParameter *next;
+    if (next_ == NULL)
+        next = NULL;
+    else {
+        next = next_->Parameters();
+        if (next == NULL)
+            return NULL;
+    }
+
+    CYFunctionParameter *parameter(expression_->Parameter());
+    if (parameter == NULL)
+        return NULL;
+
+    parameter->SetNext(next);
+    return parameter;
+}
+
 CYFunctionParameter *CYComprehension::Parameters(CYContext &context) const { $T(NULL)
     CYFunctionParameter *next(next_->Parameters(context));
     if (CYFunctionParameter *parameter = Parameter(context)) {
@@ -324,6 +342,14 @@ CYStatement *CYExpression::ForEachIn(CYContext &context, CYExpression *value) {
 }
 
 CYAssignment *CYExpression::Assignment(CYContext &context) {
+    return NULL;
+}
+
+CYFunctionParameter *CYExpression::Parameter() const {
+    return NULL;
+}
+
+CYFunctionParameter *CYExpression::Parameters() const {
     return NULL;
 }
 
@@ -994,6 +1020,10 @@ CYStatement *CYVar::Replace(CYContext &context) {
 CYExpression *CYVariable::Replace(CYContext &context) {
     context.Replace(name_);
     return this;
+}
+
+CYFunctionParameter *CYVariable::Parameter() const {
+    return $ CYFunctionParameter($ CYDeclaration(name_));
 }
 
 CYStatement *CYWhile::Replace(CYContext &context) {
