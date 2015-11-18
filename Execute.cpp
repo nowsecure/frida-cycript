@@ -425,7 +425,7 @@ const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSObjectRef object, 
     JSValueRef toCYON(CYGetProperty(context, object, toCYON_s));
     if (CYIsCallable(context, toCYON)) {
         // XXX: this needs to be abstracted behind some kind of function
-        JSValueRef arguments[1] = {CYCastJSValue(context, static_cast<double>(reinterpret_cast<uintptr_t>(&objects)))};
+        JSValueRef arguments[1] = {CYCastJSValue(context, reinterpret_cast<uintptr_t>(&objects))};
         JSValueRef value(CYCallAsFunction(context, (JSObjectRef) toCYON, object, 1, arguments));
         _assert(value != NULL);
         return CYPoolCString(pool, context, value);
