@@ -218,6 +218,9 @@ struct CYServer {
 
     void Listen() {
         socket_ = _syscall(::socket(PF_INET, SOCK_STREAM, 0)); try {
+            int value;
+            _syscall(::setsockopt(socket_, SOL_SOCKET, SO_REUSEADDR, &(value = 1), sizeof(value)));
+
             sockaddr_in address;
             address.sin_family = AF_INET;
             address.sin_addr.s_addr = INADDR_ANY;
