@@ -2,7 +2,6 @@ lol
 unicode identifier support (native and \u)
 support unions (right now 0-1 fields parsed as struct)
 look into what String is, and whether to bridge it
-think about bridging NSNumber with Number prototype
 some JS callbacks don't use exception pointers at all...
 a newline needs to not be allowed after a unary *
 finish implementing default xml namespace statement
@@ -16,7 +15,6 @@ consider a mode where unicode string content is saved
   https://bugzilla.mozilla.org/show_bug.cgi?id=274152
 
 NSDictionaries that have NSNumber keys don't getProperty
-errors in another process aren't displayed; to fix this, parse errors should get converted to exceptions and thrown
 CYPoolTry/Catch now carefully save the exception after it /no longer needs the exception/... uhh... wtf?
 throw CYJSError should probably be replaced with CYThrow() across the board
 figure out what to do about global context refs: I really really want to retain the bastards
@@ -25,7 +23,6 @@ NSArray's .toString() and .toLocaleString() fail hard, as Array.prototype.to*Str
 applyOnMainThread, when done at console, loops the cyonifier
 special work needs to be done to correctly handle the "arguments" symbol: Declare("arguments", ...Special)
 at the Program level I seem to be eating away all of the var statements
-function pointers are ?; note that blocks are currently block_P = '?'
 I should probably attempt to use the auto_ flag somehow to not do contexts_ push when compiling
 Object_callAsFunction_toCYON should be implemented
 
@@ -35,10 +32,8 @@ GS #defines should be _finline
 replace procmod g+s with gdb's macosx_get_task_for_pid_rights
 non-local return prologue is not being Replace()d: multipass compiler!
 interpretation of documentation comments should be compiler-only and off by default
-don't ever generate $ CYWith, in particular for CYLet... use CYFunctionExpression
 
 semi-colon insertion warnings should mark after the previous token, not on the current one: makes a /lot/ more sense
-new for pools should take a reference, not a pointer
 
 output errors during Trampoline to some kind of log file
 
@@ -54,7 +49,6 @@ store the last exception in a variable
 should WebUndefined be @undefined?
 
 if something is a function, it should be output differently
-evaluate usages of CYTry in ObjectiveC/Library for CYObjectiveTry
 verify name targets of "incorrect number of arguments to"
 maybe support __objc_{yes,no} intrinisic primitives
 
@@ -73,14 +67,15 @@ and:
 
 use JSObjectMakeError to build exception objects
 replace cy$getProperty's return value with JSValueRef
-flatten compound expressions made up of compound expressions
 
 cy# {{5,6};6;{7;{8;5}}}
 got: {5,6;6;{7;8,5}}
 wanted: 5,6,6,7,8,5
 
 cy# for each (var i = 9 in [1, 2]) system.print(i);
-got: {i=9;(function(e,t){for(t in e){i=e[t];system.print(i)}})([1,2])}
+cy= {i=9;(function($cys,$cyt){for($cyt in $cys){i=$cys[$cyt];system.print(i)}})([1,2])}
+cy# {i=9;(function($cys,$cyt){for($cyt in $cys){i=$cys[$cyt];system.print(i)}})([1,2])}
+cy= i=9,function(e,t){var e,t;for(t in e)i=e[t],system.print(i)}([1,2])
 wanted: i=9,function(e,t){for(t in e)i=e[t],system.print(i)}([1,2])
 
 with is being translated in a manner that doesn't handle variables
@@ -89,13 +84,13 @@ function b(){var e,t,n;with({t:a,n:undefined})for(n in t)e=t[n]}
 
 [[self description] cy$toCYON:] seems like a poor implementation of toCYON
 implement cy$toJSON:inContext: for NSDictionary and NSArray
+probably should use toll-free bridging and CF to check for boolean-ness
 
 the non-local transform used for let is ludicrous... :( :(
 
 cy# function q(e) { }
 function q(e){var e}
 
-CYCompound needs to be able to replace itself away without causing multiple Replace
 fat arrows are currently output with too much verbosity
 
 CYJSString <- wrap JavaScript strings and provide them back to Objective-C
@@ -105,17 +100,101 @@ Objective-C strings might should be cyonified using double-quotes
 apparently you can have random escape sequences in strings, like \!
 cycript -p with processes that have spaces doesn't work
 CYDriver uses std::istream, but it should use std::streambuf
-the mechanism I used to autodetect readline is horrible: use autoconf
 
 constant flags on types are encoded using something horribly wrong
 http://developer.apple.com/library/ios/#documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtTypeEncodings.html
 http://gcc.gnu.org/onlinedocs/gcc/Type-encoding.html
 http://gcc.gnu.org/onlinedocs/gcc/Legacy-type-encoding.html
 
-using .withName from the grammar is a horrible hack that makes other uses impossible
-
 blocks should be allowed to return blocks/functions: ModifiedType needs to go
   instead, TypedParameterList should be folded into a TypeModifier with the other types
 
+look up identifiers in the bridge for highlighting (and remove special case tokens)
+
+when ?bypass, you are unable to send multi-line commands
+the current line-extension detector doesn't handle multi-line tokens
+
+what the hell did I mean by (*name - 10) in the sig/parse error messages?
+syntax highlight embedded components of strings and regular expressions
+replace the lex-assisted syntax highlighter with a grammar-assisted one
+tell brian that alt-minus-3 and alt-minus-(alt)-3 are somehow different
+the lexer turns "@encodenew" into "@encode""new"... word breaks, anyone?
+.prototype of a Class returns "undefined", which is very confusing
+
+!! :( if you have a regular expression followed by an alphabetic operator
+      then the output engine needs to put a space character between them
+
+I should support arbitrary objects as the keys for NSDictionary literals
+add a special syntax highlight color for message selector parts
+there are numerous paths through Console that fail to free(line)
+
+if the grammar sanity checks fail, they don't delete the grammar output
+
+cy# a.constructor.class.$cya().valueOf()
+0x1619ee64
+^ this is different EVERY TIME?!?
+
+MPMusicPlayerController.iPodMusicPlayer.shuffleMode is either id /or/ int
+
+NSObject instanceof Type //<- should this be true?
+
+I probably don't need to override SHELL to _BASH anymore
+
 LT_INIT([pic-only]) doesn't work, because the default is only used if unset, and it has a default setting...
 even when using --pic-only, libtool insists on building every file twice... with the same fucking arguments
+
+JSContextGroupSetExecutionTimeLimit
+
+cy# throw
+cy> 5
+cy> ;
+cy> ^C
+
+if you use "arguments", you have to protect it if you attempt to use it inside of a generated function; example: array comprehension over one fails
+
+support Nil in addition to nil
+
+1.7976931348623157e+308 == DBL_MAX
+
+-    } else
+-        return CYCastPointer<SEL>(context, value);
++    } else {
++        // XXX: should call .valueOf and, if a number, cast as a pointer
++        CYPool pool;
++        return sel_registerName(CYPoolCString(pool, context, value));
++    }
+
+cy# @[].concat([3,4])
+[@[],3,4]
+cy# [].concat([3,4])
+[3,4]
+
+@synchronized, maybe @autorelease
+
+support leaving off the block return type if the block has no return value; statements
+
+cy# var a = 4; {let a = 3; }; a
+cy= a=4;a=3;a
+
+abstract method_copyMethodList to something more reasonable
+
+cy# "\x00"
+cy= "\x00"
+wanted: "\0"
+(does JS really support \0? node seems to think so)
+
+cy# ({$a:5,$b:3}).$<TAB> <- fails to tab complete to a list
+
+auto-complete partial string keys
+
+cy# @encode(const char *)(@encode(void *(*)(const char *))(dlsym(RTLD_DEFAULT, "strdup")))
+"[object Pointer]"
+
+the error regime when using MS.hookMessage destroys Objective-C exceptions that are thrown
+
+the restrict keyword should be supported in type specifiers
+
+
+support (void) argument lists
+typedef int;
+typedef should be creating local variables
