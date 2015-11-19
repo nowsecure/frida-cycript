@@ -91,7 +91,7 @@ typedef struct {
 
 @begin ObjectiveC
         CYClassName *className_;
-        CYField *field_;
+        CYClassField *classField_;
         CYMessage *message_;
         CYMessageParameter *messageParameter_;
         CYProtocol *protocol_;
@@ -496,8 +496,8 @@ int cylex(YYSTYPE *, CYLocation *, void *);
 %type <expression_> BoxableExpression
 %type <statement_> CategoryStatement
 %type <expression_> ClassExpression
-%type <field_> ClassFieldListOpt
-%type <field_> ClassFields
+%type <classField_> ClassFieldListOpt
+%type <classField_> ClassFields
 %type <statement_> ClassStatement
 %type <expression_> ClassSuperOpt
 %type <message_> ClassMessageDeclaration
@@ -1472,7 +1472,7 @@ ClassSuperOpt
     ;
 
 ClassFieldListOpt
-    : TypedIdentifier ";" ClassFieldListOpt { $$ = CYNew CYField($1, $3); }
+    : TypedIdentifier ";" ClassFieldListOpt { $$ = CYNew CYClassField($1, $3); }
     | LexSetRegExp { $$ = NULL; }
     ;
 

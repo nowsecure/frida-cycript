@@ -110,13 +110,13 @@ struct CYSelector :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CYField :
-    CYNext<CYField>
+struct CYClassField :
+    CYNext<CYClassField>
 {
     CYTypedIdentifier *typed_;
 
-    CYField(CYTypedIdentifier *typed, CYField *next = NULL) :
-        CYNext<CYField>(next),
+    CYClassField(CYTypedIdentifier *typed, CYClassField *next = NULL) :
+        CYNext<CYClassField>(next),
         typed_(typed)
     {
     }
@@ -185,10 +185,10 @@ struct CYClass {
     CYClassName *name_;
     CYExpression *super_;
     CYProtocol *protocols_;
-    CYField *fields_;
+    CYClassField *fields_;
     CYMessage *messages_;
 
-    CYClass(CYClassName *name, CYExpression *super, CYProtocol *protocols, CYField *fields, CYMessage *messages) :
+    CYClass(CYClassName *name, CYExpression *super, CYProtocol *protocols, CYClassField *fields, CYMessage *messages) :
         name_(name),
         super_(super),
         protocols_(protocols),
@@ -208,7 +208,7 @@ struct CYClassExpression :
     CYClass,
     CYExpression
 {
-    CYClassExpression(CYClassName *name, CYExpression *super, CYProtocol *protocols, CYField *fields, CYMessage *messages) :
+    CYClassExpression(CYClassName *name, CYExpression *super, CYProtocol *protocols, CYClassField *fields, CYMessage *messages) :
         CYClass(name, super, protocols, fields, messages)
     {
     }
@@ -223,7 +223,7 @@ struct CYClassStatement :
     CYClass,
     CYStatement
 {
-    CYClassStatement(CYClassName *name, CYExpression *super, CYProtocol *protocols, CYField *fields, CYMessage *messages) :
+    CYClassStatement(CYClassName *name, CYExpression *super, CYProtocol *protocols, CYClassField *fields, CYMessage *messages) :
         CYClass(name, super, protocols, fields, messages)
     {
     }

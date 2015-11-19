@@ -75,7 +75,7 @@ CYStatement *CYClassStatement::Replace(CYContext &context) {
     return $E(Replace_(context));
 }
 
-CYStatement *CYField::Replace(CYContext &context) const { $T(NULL)
+CYStatement *CYClassField::Replace(CYContext &context) const { $T(NULL)
     CYVariable *cyn($V("$cyn"));
     CYVariable *cyt($V("$cyt"));
 

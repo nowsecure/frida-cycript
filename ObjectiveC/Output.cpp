@@ -74,7 +74,7 @@ void CYClassStatement::Output(CYOutput &out, CYFlags flags) const {
     CYClass::Output(out, flags);
 }
 
-void CYField::Output(CYOutput &out) const {
+void CYClassField::Output(CYOutput &out) const {
 }
 
 void CYInstanceLiteral::Output(CYOutput &out, CYFlags flags) const {
