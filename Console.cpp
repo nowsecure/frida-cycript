@@ -387,7 +387,7 @@ static char **Complete(const char *word, int start, int end) {
 
 // need char *, not const char *
 static char name_[] = "cycript";
-static char break_[] = " \t\n\"\\'`@$><=;|&{(" ")}" ".:[]";
+static char break_[] = " \t\n\"\\'`@><=;|&{(" ")}" ".:[]";
 
 class History {
   private:
