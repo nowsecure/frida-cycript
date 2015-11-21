@@ -313,24 +313,17 @@ typedef std::vector<CYIdentifierUsage> CYIdentifierUsageVector;
 
 struct CYScope {
     bool transparent_;
-
-    CYContext &context_;
-    CYStatement *&statements_;
-
     CYScope *parent_;
 
     CYIdentifierAddressFlagsMap internal_;
     CYIdentifierValueSet identifiers_;
 
-    CYScope(bool transparent, CYContext &context, CYStatement *&statements);
-    virtual ~CYScope();
-
-    void Close();
+    CYScope(bool transparent, CYContext &context);
 
     void Declare(CYContext &context, CYIdentifier *identifier, CYIdentifierFlags flags);
     virtual CYIdentifier *Lookup(CYContext &context, CYIdentifier *identifier);
     void Merge(CYContext &context, CYIdentifier *identifier);
-    void Scope(CYContext &context, CYStatement *&statements);
+    void Close(CYContext &context, CYStatement *&statements);
 };
 
 struct CYProgram :

@@ -124,13 +124,13 @@ namespace cy {
 namespace Syntax {
 
 void Catch::Replace(CYContext &context) { $T()
-    CYScope scope(true, context, code_.statements_);
+    CYScope scope(true, context);
 
     context.Replace(name_);
     context.scope_->Declare(context, name_, CYIdentifierCatch);
 
     code_.Replace(context);
-    scope.Close();
+    scope.Close(context, code_.statements_);
 }
 
 } }
@@ -468,7 +468,7 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
         context.nextlocal_ = nonlocal_;
     }
 
-    CYScope scope(!localize, context, code_.statements_);
+    CYScope scope(!localize, context);
 
     if (!outer && name_ != NULL)
         Inject(context);
@@ -489,7 +489,7 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
 
     context.this_ = _this;
 
-    scope.Close();
+    scope.Close(context, code_.statements_);
 }
 
 CYExpression *CYFunctionExpression::Replace(CYContext &context) {
@@ -651,13 +651,13 @@ namespace {
 }
 
 void CYProgram::Replace(CYContext &context) {
-    CYScope scope(true, context, statements_);
+    CYScope scope(true, context);
 
     context.nextlocal_ = $ CYNonLocal();
     context.ReplaceAll(statements_);
     context.NonLocal(statements_);
 
-    scope.Close();
+    scope.Close(context, statements_);
 
     size_t offset(0);
 
@@ -734,21 +734,11 @@ CYExpression *CYRubyProc::Replace(CYContext &context) {
     return CYNonLocalize(context, $ CYFunctionExpression(NULL, parameters_, code_));
 }
 
-CYScope::CYScope(bool transparent, CYContext &context, CYStatement *&statements) :
+CYScope::CYScope(bool transparent, CYContext &context) :
     transparent_(transparent),
-    context_(context),
-    statements_(statements),
     parent_(context.scope_)
 {
-    context_.scope_ = this;
-}
-
-CYScope::~CYScope() {
-}
-
-void CYScope::Close() {
-    context_.scope_ = parent_;
-    Scope(context_, statements_);
+    context.scope_ = this;
 }
 
 void CYScope::Declare(CYContext &context, CYIdentifier *identifier, CYIdentifierFlags flags) {
@@ -806,7 +796,9 @@ namespace {
     typedef std::set<IdentifierOffset, IdentifierOffsetLess> IdentifierOffsets;
 }
 
-void CYScope::Scope(CYContext &context, CYStatement *&statements) {
+void CYScope::Close(CYContext &context, CYStatement *&statements) {
+    context.scope_ = parent_;
+
     if (parent_ == NULL)
         return;
 
