@@ -146,13 +146,15 @@ _finline CYFlags CYCenter(CYFlags flags) {
 }
 
 struct CYStatement :
-    CYNext<CYStatement>
+    CYNext<CYStatement>,
+    CYThing
 {
     virtual ~CYStatement() {
     }
 
     void Single(CYOutput &out, CYFlags flags) const;
     void Multiple(CYOutput &out, CYFlags flags = CYNoFlags) const;
+    virtual void Output(CYOutput &out) const;
 
     virtual CYStatement *Replace(CYContext &context) = 0;
 
@@ -329,10 +331,10 @@ struct CYScope {
 struct CYProgram :
     CYThing
 {
-    CYStatement *statements_;
+    CYStatement *code_;
 
-    CYProgram(CYStatement *statements) :
-        statements_(statements)
+    CYProgram(CYStatement *code) :
+        code_(code)
     {
     }
 
@@ -368,14 +370,18 @@ struct CYContext {
     virtual ~CYContext() {
     }
 
-    template <typename Type_>
-    void ReplaceAll(Type_ *&values) {
-        Type_ **last(&values);
-        CYForEach (next, values) {
-            Replace(*last = next);
-            if (*last != NULL)
-                last = &(*last)->next_;
-        }
+    void ReplaceAll(CYStatement *&statement) {
+        if (statement == NULL)
+            return;
+        CYStatement *next(statement->next_);
+
+        Replace(statement);
+        ReplaceAll(next);
+
+        if (statement == NULL)
+            statement = next;
+        else
+            statement->SetNext(next);
     }
 
     template <typename Type_>
@@ -429,28 +435,17 @@ struct CYThisScope :
 };
 
 struct CYBlock :
-    CYStatement,
-    CYThing
+    CYStatement
 {
-    CYStatement *statements_;
+    CYStatement *code_;
 
-    CYBlock(CYStatement *statements) :
-        statements_(statements)
+    CYBlock(CYStatement *code) :
+        code_(code)
     {
-    }
-
-    operator CYStatement *() const {
-        return statements_;
-    }
-
-    void AddPrev(CYStatement *statement) {
-        CYSetLast(statement) = statements_;
-        statements_ = statement;
     }
 
     virtual CYStatement *Replace(CYContext &context);
 
-    virtual void Output(CYOutput &out) const;
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
@@ -512,7 +507,6 @@ struct CYExpression :
     }
 
     virtual CYFunctionParameter *Parameter() const;
-    virtual CYFunctionParameter *Parameters() const;
 
     virtual CYNumber *Number(CYContext &context) {
         return NULL;
@@ -549,13 +543,12 @@ struct CYCompound :
     CYExpression *expression_;
     CYExpression *next_;
 
-    CYCompound(CYExpression *expression, CYExpression *next = NULL) :
+    CYCompound(CYExpression *expression, CYExpression *next) :
         expression_(expression),
         next_(next)
     {
-        if (expression_ == NULL)
-            throw;
         _assert(expression_ != NULL);
+        _assert(next != NULL);
     }
 
     CYPrecedence(17)
@@ -563,8 +556,23 @@ struct CYCompound :
     virtual CYExpression *Replace(CYContext &context);
     void Output(CYOutput &out, CYFlags flags) const;
 
-    virtual CYExpression *Primitive(CYContext &context);
-    virtual CYFunctionParameter *Parameters() const;
+    virtual CYFunctionParameter *Parameter() const;
+};
+
+struct CYParenthetical :
+    CYExpression
+{
+    CYExpression *expression_;
+
+    CYParenthetical(CYExpression *expression) :
+        expression_(expression)
+    {
+    }
+
+    CYPrecedence(0)
+
+    virtual CYExpression *Replace(CYContext &context);
+    void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYDeclaration;
@@ -581,7 +589,7 @@ struct CYFunctionParameter :
     {
     }
 
-    void Replace(CYContext &context, CYBlock &code);
+    void Replace(CYContext &context, CYStatement *&statements);
     void Output(CYOutput &out) const;
 };
 
@@ -1037,11 +1045,11 @@ struct CYClause :
     CYNext<CYClause>
 {
     CYExpression *case_;
-    CYStatement *statements_;
+    CYStatement *code_;
 
-    CYClause(CYExpression *_case, CYStatement *statements) :
+    CYClause(CYExpression *_case, CYStatement *code) :
         case_(_case),
-        statements_(statements)
+        code_(code)
     {
     }
 
@@ -1134,7 +1142,7 @@ struct CYDeclarations :
 
     void Replace(CYContext &context);
 
-    CYCompound *Compound(CYContext &context);
+    CYExpression *Expression(CYContext &context);
     CYProperty *Property(CYContext &context);
     CYArgument *Argument(CYContext &context);
     CYFunctionParameter *Parameter(CYContext &context);
@@ -1153,7 +1161,7 @@ struct CYForDeclarations :
     {
     }
 
-    virtual CYCompound *Replace(CYContext &context);
+    virtual CYExpression *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
@@ -1429,15 +1437,15 @@ struct CYWhile :
 struct CYFunction {
     CYIdentifier *name_;
     CYFunctionParameter *parameters_;
-    CYBlock code_;
+    CYStatement *code_;
 
     CYNonLocal *nonlocal_;
     CYThisScope this_;
 
-    CYFunction(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *statements) :
+    CYFunction(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *code) :
         name_(name),
         parameters_(parameters),
-        code_(statements),
+        code_(code),
         nonlocal_(NULL)
     {
     }
@@ -1455,8 +1463,8 @@ struct CYFunctionExpression :
     CYFunction,
     CYExpression
 {
-    CYFunctionExpression(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *statements) :
-        CYFunction(name, parameters, statements)
+    CYFunctionExpression(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *code) :
+        CYFunction(name, parameters, code)
     {
     }
 
@@ -1472,8 +1480,8 @@ struct CYFatArrow :
     CYFunction,
     CYExpression
 {
-    CYFatArrow(CYFunctionParameter *parameters, CYStatement *statements) :
-        CYFunction(NULL, parameters, statements)
+    CYFatArrow(CYFunctionParameter *parameters, CYStatement *code) :
+        CYFunction(NULL, parameters, code)
     {
     }
 
@@ -1488,8 +1496,8 @@ struct CYFatArrow :
 struct CYRubyProc :
     CYFunctionExpression
 {
-    CYRubyProc(CYFunctionParameter *parameters, CYStatement *statements) :
-        CYFunctionExpression(NULL, parameters, statements)
+    CYRubyProc(CYFunctionParameter *parameters, CYStatement *code) :
+        CYFunctionExpression(NULL, parameters, code)
     {
     }
 
@@ -1502,8 +1510,8 @@ struct CYFunctionStatement :
     CYFunction,
     CYStatement
 {
-    CYFunctionStatement(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *statements) :
-        CYFunction(name, parameters, statements)
+    CYFunctionStatement(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *code) :
+        CYFunction(name, parameters, code)
     {
     }
 
@@ -1579,10 +1587,10 @@ struct CYEmpty :
 struct CYFinally :
     CYThing
 {
-    CYBlock code_;
+    CYStatement *code_;
 
-    CYFinally(CYStatement *statements) :
-        code_(statements)
+    CYFinally(CYStatement *code) :
+        code_(code)
     {
     }
 
@@ -1846,12 +1854,12 @@ struct CYLambda :
 {
     CYTypedIdentifier *typed_;
     CYTypedParameter *parameters_;
-    CYStatement *statements_;
+    CYStatement *code_;
 
-    CYLambda(CYTypedIdentifier *typed, CYTypedParameter *parameters, CYStatement *statements) :
+    CYLambda(CYTypedIdentifier *typed, CYTypedParameter *parameters, CYStatement *code) :
         typed_(typed),
         parameters_(parameters),
-        statements_(statements)
+        code_(code)
     {
     }
 
@@ -1964,11 +1972,11 @@ struct Catch :
     CYThing
 {
     CYIdentifier *name_;
-    CYBlock code_;
+    CYStatement *code_;
 
-    Catch(CYIdentifier *name, CYStatement *statements) :
+    Catch(CYIdentifier *name, CYStatement *code) :
         name_(name),
-        code_(statements)
+        code_(code)
     {
     }
 
@@ -1979,12 +1987,12 @@ struct Catch :
 struct Try :
     CYStatement
 {
-    CYBlock code_;
+    CYStatement *code_;
     Catch *catch_;
     CYFinally *finally_;
 
-    Try(CYStatement *statements, Catch *_catch, CYFinally *finally) :
-        code_(statements),
+    Try(CYStatement *code, Catch *_catch, CYFinally *finally) :
+        code_(code),
         catch_(_catch),
         finally_(finally)
     {

@@ -137,22 +137,12 @@ void CYAssignment::Output(CYOutput &out, CYFlags flags) const {
     rhs_->Output(out, Precedence(), CYRight(flags));
 }
 
-void CYBlock::Output(CYOutput &out) const {
+void CYBlock::Output(CYOutput &out, CYFlags flags) const {
     out << '{' << '\n';
     ++out.indent_;
-    if (statements_ != NULL)
-        statements_->Multiple(out);
+    out << code_;
     --out.indent_;
     out << '\t' << '}';
-}
-
-void CYBlock::Output(CYOutput &out, CYFlags flags) const {
-    if (statements_ == NULL)
-        out.Terminate();
-    else if (statements_->next_ == NULL)
-        statements_->Single(out, flags);
-    else
-        Output(out);
 }
 
 void CYBoolean::Output(CYOutput &out, CYFlags flags) const {
@@ -180,7 +170,12 @@ namespace cy {
 namespace Syntax {
 
 void Catch::Output(CYOutput &out) const {
-    out << ' ' << "catch" << ' ' << '(' << *name_ << ')' << ' ' << code_;
+    out << ' ' << "catch" << ' ' << '(' << *name_ << ')' << ' ';
+    out << '{' << '\n';
+    ++out.indent_;
+    out << code_;
+    --out.indent_;
+    out << '\t' << '}';
 }
 
 } }
@@ -224,8 +219,7 @@ void CYClause::Output(CYOutput &out) const {
     else
         out << "default";
     out << ':' << '\n';
-    if (statements_ != NULL)
-        statements_->Multiple(out);
+    out << code_;
     out << next_;
 }
 
@@ -334,11 +328,16 @@ void CYExternal::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYFatArrow::Output(CYOutput &out, CYFlags flags) const {
-    out << '(' << parameters_ << ')' << ' ' << "=>" << ' ' << code_;
+    out << '(' << parameters_ << ')' << ' ' << "=>" << ' ' << '{' << code_ << '}';
 }
 
 void CYFinally::Output(CYOutput &out) const {
-    out << ' ' << "finally" << ' ' << code_;
+    out << ' ' << "finally" << ' ';
+    out << '{' << '\n';
+    ++out.indent_;
+    out << code_;
+    --out.indent_;
+    out << '\t' << '}';
 }
 
 void CYFor::Output(CYOutput &out, CYFlags flags) const {
@@ -388,8 +387,12 @@ void CYFunction::Output(CYOutput &out, CYFlags flags) const {
     out << "function";
     if (name_ != NULL)
         out << ' ' << *name_;
-    out << '(' << parameters_ << ')';
-    out << ' ' << code_;
+    out << '(' << parameters_ << ')' << ' ';
+    out << '{' << '\n';
+    ++out.indent_;
+    out << code_;
+    --out.indent_;
+    out << '\t' << '}';
     if (protect)
         out << ')';
 }
@@ -473,6 +476,16 @@ void CYInfix::Output(CYOutput &out, CYFlags flags) const {
 void CYLabel::Output(CYOutput &out, CYFlags flags) const {
     out << *name_ << ':' << ' ';
     statement_->Single(out, CYRight(flags));
+}
+
+void CYParenthetical::Output(CYOutput &out, CYFlags flags) const {
+    out << '(';
+    expression_->Output(out, CYCompound::Precedence_, CYNoFlags);
+    out << ')';
+}
+
+void CYStatement::Output(CYOutput &out) const {
+    Multiple(out);
 }
 
 void CYTypeArrayOf::Output(CYOutput &out, CYIdentifier *identifier) const {
@@ -619,8 +632,7 @@ void CYPrefix::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYProgram::Output(CYOutput &out) const {
-    if (statements_ != NULL)
-        statements_->Multiple(out);
+    out << code_;
 }
 
 void CYProperty::Output(CYOutput &out) const {
@@ -653,7 +665,11 @@ void CYRubyBlock::Output(CYOutput &out, CYFlags flags) const {
 
 void CYRubyProc::Output(CYOutput &out, CYFlags flags) const {
     // XXX: this is not outputting the parameters
+    out << '{' << '\n';
+    ++out.indent_;
     out << code_;
+    --out.indent_;
+    out << '\t' << '}';
 }
 
 void CYStatement::Multiple(CYOutput &out, CYFlags flags) const {
@@ -750,7 +766,13 @@ void Throw::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void Try::Output(CYOutput &out, CYFlags flags) const {
-    out << "try" << ' ' << code_ << catch_ << finally_;
+    out << "try" << ' ';
+    out << '{' << '\n';
+    ++out.indent_;
+    out << code_;
+    --out.indent_;
+    out << '\t' << '}';
+    out << catch_ << finally_;
 }
 
 } }

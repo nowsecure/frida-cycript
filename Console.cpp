@@ -226,14 +226,17 @@ static CYExpression *ParseExpression(CYUTF8String code) {
     CYOptions options;
     CYContext context(options);
 
-    CYStatement *statement(driver.program_->statements_);
+    CYStatement *statement(driver.program_->code_);
     _assert(statement != NULL);
     _assert(statement->next_ == NULL);
 
-    CYExpress *express(dynamic_cast<CYExpress *>(driver.program_->statements_));
+    CYExpress *express(dynamic_cast<CYExpress *>(driver.program_->code_));
     _assert(express != NULL);
 
-    return express->expression_;
+    CYParenthetical *parenthetical(dynamic_cast<CYParenthetical *>(express->expression_));
+    _assert(parenthetical != NULL);
+
+    return parenthetical->expression_;
 }
 
 static int client_;

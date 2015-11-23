@@ -96,8 +96,8 @@ CYExpression *CYAssignment::Replace(CYContext &context) {
 }
 
 CYStatement *CYBlock::Replace(CYContext &context) {
-    context.ReplaceAll(statements_);
-    if (statements_ == NULL)
+    context.ReplaceAll(code_);
+    if (code_ == NULL)
         return $ CYEmpty();
     return this;
 }
@@ -129,15 +129,15 @@ void Catch::Replace(CYContext &context) { $T()
     context.Replace(name_);
     context.scope_->Declare(context, name_, CYIdentifierCatch);
 
-    code_.Replace(context);
-    scope.Close(context, code_.statements_);
+    context.ReplaceAll(code_);
+    scope.Close(context, code_);
 }
 
 } }
 
 void CYClause::Replace(CYContext &context) { $T()
     context.Replace(case_);
-    context.ReplaceAll(statements_);
+    context.ReplaceAll(code_);
     next_->Replace(context);
 }
 
@@ -146,9 +146,6 @@ CYStatement *CYComment::Replace(CYContext &context) {
 }
 
 CYExpression *CYCompound::Replace(CYContext &context) {
-    if (next_ == NULL)
-        return expression_;
-
     context.Replace(expression_);
     context.Replace(next_);
 
@@ -162,22 +159,10 @@ CYExpression *CYCompound::Replace(CYContext &context) {
     return this;
 }
 
-CYExpression *CYCompound::Primitive(CYContext &context) {
-    CYExpression *expression(expression_);
-    if (expression == NULL || next_ != NULL)
+CYFunctionParameter *CYCompound::Parameter() const {
+    CYFunctionParameter *next(next_->Parameter());
+    if (next == NULL)
         return NULL;
-    return expression->Primitive(context);
-}
-
-CYFunctionParameter *CYCompound::Parameters() const {
-    CYFunctionParameter *next;
-    if (next_ == NULL)
-        next = NULL;
-    else {
-        next = next_->Parameters();
-        if (next == NULL)
-            return NULL;
-    }
 
     CYFunctionParameter *parameter(expression_->Parameter());
     if (parameter == NULL)
@@ -223,6 +208,7 @@ void CYContext::NonLocal(CYStatement *&statements) {
                     $ CYReturn($M($V(cye), $S("$cyv"))))->*
                 $ cy::Syntax::Throw($V(cye))));
 
+        // XXX: I don't understand any of this
         context.Replace(declare);
         rescue->Replace(context);
 
@@ -284,10 +270,13 @@ CYArgument *CYDeclarations::Argument(CYContext &context) { $T(NULL)
     return $ CYArgument(declaration_->initialiser_, next_->Argument(context));
 }
 
-CYCompound *CYDeclarations::Compound(CYContext &context) { $T(NULL)
-    CYCompound *compound(next_->Compound(context));
+CYExpression *CYDeclarations::Expression(CYContext &context) { $T(NULL)
+    CYExpression *compound(next_->Expression(context));
     if (CYAssignment *assignment = declaration_->Assignment(context))
-        compound = $ CYCompound(assignment, compound);
+        if (compound == NULL)
+            compound = assignment;
+        else
+            compound = $ CYCompound(assignment, compound);
     return compound;
 }
 
@@ -299,7 +288,7 @@ CYExpression *CYDirectMember::Replace(CYContext &context) {
 
 CYStatement *CYDoWhile::Replace(CYContext &context) {
     context.Replace(test_);
-    context.Replace(code_);
+    context.ReplaceAll(code_);
     return this;
 }
 
@@ -317,15 +306,7 @@ CYExpression *CYEncodedType::Replace(CYContext &context) {
 }
 
 CYStatement *CYExpress::Replace(CYContext &context) {
-    while (CYExpress *express = dynamic_cast<CYExpress *>(next_)) {
-        expression_ = $ CYCompound(expression_, express->expression_);
-        SetNext(express->next_);
-    }
-
     context.Replace(expression_);
-    if (expression_ == NULL)
-        return $ CYEmpty();
-
     return this;
 }
 
@@ -349,10 +330,6 @@ CYFunctionParameter *CYExpression::Parameter() const {
     return NULL;
 }
 
-CYFunctionParameter *CYExpression::Parameters() const {
-    return NULL;
-}
-
 CYStatement *CYExternal::Replace(CYContext &context) {
     return $E($ CYAssign($V(typed_->identifier_), $C1(typed_->Replace(context), $C2($V("dlsym"), $V("RTLD_DEFAULT"), $S(typed_->identifier_->Word())))));
 }
@@ -372,20 +349,20 @@ CYExpression *CYFatArrow::Replace(CYContext &context) {
 }
 
 void CYFinally::Replace(CYContext &context) { $T()
-    code_.Replace(context);
+    context.ReplaceAll(code_);
 }
 
 CYStatement *CYFor::Replace(CYContext &context) {
     context.Replace(initialiser_);
     context.Replace(test_);
     context.Replace(increment_);
-    context.Replace(code_);
+    context.ReplaceAll(code_);
     return this;
 }
 
-CYCompound *CYForDeclarations::Replace(CYContext &context) {
+CYExpression *CYForDeclarations::Replace(CYContext &context) {
     declarations_->Replace(context);
-    return declarations_->Compound(context);
+    return declarations_->Expression(context);
 }
 
 // XXX: this still feels highly suboptimal
@@ -398,7 +375,7 @@ CYStatement *CYForIn::Replace(CYContext &context) {
 
     context.Replace(initialiser_);
     context.Replace(set_);
-    context.Replace(code_);
+    context.ReplaceAll(code_);
     return this;
 }
 
@@ -474,22 +451,22 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
         Inject(context);
 
     parameters_->Replace(context, code_);
-    code_.Replace(context);
+    context.ReplaceAll(code_);
 
     if (CYIdentifier *identifier = this_.identifier_)
-        code_.statements_ = $$->*
+        code_ = $$->*
             $ CYVar($L1($ CYDeclaration(identifier, $ CYThis())))->*
-            code_.statements_;
+            code_;
 
     if (localize)
-        context.NonLocal(code_.statements_);
+        context.NonLocal(code_);
 
     context.nextlocal_ = nextlocal;
     context.nonlocal_ = nonlocal;
 
     context.this_ = _this;
 
-    scope.Close(context, code_.statements_);
+    scope.Close(context, code_);
 }
 
 CYExpression *CYFunctionExpression::Replace(CYContext &context) {
@@ -497,17 +474,19 @@ CYExpression *CYFunctionExpression::Replace(CYContext &context) {
     return this;
 }
 
-void CYFunctionParameter::Replace(CYContext &context, CYBlock &code) { $T()
+void CYFunctionParameter::Replace(CYContext &context, CYStatement *&statements) { $T()
     CYAssignment *assignment(initialiser_->Assignment(context));
     context.Replace(initialiser_);
 
-    next_->Replace(context, code);
+    next_->Replace(context, statements);
 
     if (assignment != NULL)
-        // XXX: this cast is quite incorrect
-        code.AddPrev($ CYIf($ CYIdentical($ CYTypeOf(dynamic_cast<CYExpression *>(initialiser_)), $S("undefined")), $$->*
-            $E(assignment)
-        ));
+        statements = $$->*
+            // XXX: this cast is quite incorrect
+            $ CYIf($ CYIdentical($ CYTypeOf(dynamic_cast<CYExpression *>(initialiser_)), $S("undefined")), $$->*
+                $E(assignment)
+            )->*
+            statements;
 }
 
 CYStatement *CYFunctionStatement::Replace(CYContext &context) {
@@ -524,8 +503,8 @@ CYIdentifier *CYIdentifier::Replace(CYContext &context) {
 
 CYStatement *CYIf::Replace(CYContext &context) {
     context.Replace(test_);
-    context.Replace(true_);
-    context.Replace(false_);
+    context.ReplaceAll(true_);
+    context.ReplaceAll(false_);
     return this;
 }
 
@@ -561,7 +540,7 @@ CYStatement *CYLabel::Replace(CYContext &context) {
 }
 
 CYExpression *CYLambda::Replace(CYContext &context) {
-    return $N2($V("Functor"), $ CYFunctionExpression(NULL, parameters_->Parameters(context), statements_), parameters_->TypeSignature(context, typed_->Replace(context)));
+    return $N2($V("Functor"), $ CYFunctionExpression(NULL, parameters_->Parameters(context), code_), parameters_->TypeSignature(context, typed_->Replace(context)));
 }
 
 CYStatement *CYLetStatement::Replace(CYContext &context) {
@@ -622,6 +601,10 @@ CYExpression *CYObject::Replace(CYContext &context) {
     return this;
 }
 
+CYExpression *CYParenthetical::Replace(CYContext &context) {
+    return expression_;
+}
+
 CYExpression *CYPostfix::Replace(CYContext &context) {
     context.Replace(lhs_);
     return this;
@@ -654,10 +637,10 @@ void CYProgram::Replace(CYContext &context) {
     CYScope scope(true, context);
 
     context.nextlocal_ = $ CYNonLocal();
-    context.ReplaceAll(statements_);
-    context.NonLocal(statements_);
+    context.ReplaceAll(code_);
+    context.NonLocal(code_);
 
-    scope.Close(context, statements_);
+    scope.Close(context, code_);
 
     size_t offset(0);
 
@@ -904,7 +887,7 @@ namespace cy {
 namespace Syntax {
 
 CYStatement *Try::Replace(CYContext &context) {
-    code_.Replace(context);
+    context.ReplaceAll(code_);
     catch_->Replace(context);
     finally_->Replace(context);
     return this;
@@ -1004,8 +987,8 @@ CYExpression *CYTypedParameter::TypeSignature(CYContext &context, CYExpression *
 
 CYStatement *CYVar::Replace(CYContext &context) {
     declarations_->Replace(context);
-    if (CYCompound *compound = declarations_->Compound(context))
-        return $E(compound);
+    if (CYExpression *expression = declarations_->Expression(context))
+        return $E(expression);
     return $ CYEmpty();
 }
 
@@ -1020,13 +1003,13 @@ CYFunctionParameter *CYVariable::Parameter() const {
 
 CYStatement *CYWhile::Replace(CYContext &context) {
     context.Replace(test_);
-    context.Replace(code_);
+    context.ReplaceAll(code_);
     return this;
 }
 
 CYStatement *CYWith::Replace(CYContext &context) {
     context.Replace(scope_);
-    context.Replace(code_);
+    context.ReplaceAll(code_);
     return this;
 }
 

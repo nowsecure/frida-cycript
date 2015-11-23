@@ -45,12 +45,12 @@ struct CYObjCBlock :
 {
     CYTypedIdentifier *typed_;
     CYTypedParameter *parameters_;
-    CYStatement *statements_;
+    CYStatement *code_;
 
-    CYObjCBlock(CYTypedIdentifier *typed, CYTypedParameter *parameters, CYStatement *statements) :
+    CYObjCBlock(CYTypedIdentifier *typed, CYTypedParameter *parameters, CYStatement *code) :
         typed_(typed),
         parameters_(parameters),
-        statements_(statements)
+        code_(code)
     {
     }
 
@@ -151,11 +151,11 @@ struct CYMessage :
     CYMessageParameter *parameters_;
     CYBlock code_;
 
-    CYMessage(bool instance, CYTypedIdentifier *type, CYMessageParameter *parameter, CYStatement *statements) :
+    CYMessage(bool instance, CYTypedIdentifier *type, CYMessageParameter *parameter, CYStatement *code) :
         instance_(instance),
         type_(type),
         parameters_(parameter),
-        code_(statements)
+        code_(code)
     {
     }
 

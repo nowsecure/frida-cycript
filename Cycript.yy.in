@@ -55,7 +55,6 @@ typedef struct {
         cy::Syntax::Catch *catch_;
         CYComment *comment_;
         CYComprehension *comprehension_;
-        CYCompound *compound_;
         CYDeclaration *declaration_;
         CYDeclarations *declarations_;
         CYElement *element_;
@@ -72,6 +71,7 @@ typedef struct {
         CYModule *module_;
         CYNull *null_;
         CYNumber *number_;
+        CYParenthetical *parenthetical_;
         CYProgram *program_;
         CYProperty *property_;
         CYPropertyName *propertyName_;
@@ -396,8 +396,7 @@ int cylex(YYSTYPE *, CYLocation *, void *);
 %type <statement_> ElseStatementOpt
 %type <statement_> EmptyStatement
 %type <expression_> EqualityExpression
-%type <compound_> Expression_
-%type <compound_> Expression
+%type <expression_> Expression
 %type <expression_> ExpressionOpt
 %type <statement_> ExpressionStatement
 %type <finally_> FinallyOpt
@@ -434,7 +433,7 @@ int cylex(YYSTYPE *, CYLocation *, void *);
 %type <expression_> NewExpression
 %type <null_> NullLiteral
 %type <literal_> ObjectLiteral
-%type <compound_> Parenthetical
+%type <parenthetical_> Parenthetical
 %type <expression_> PostfixExpression
 %type <expression_> PrimaryExpression
 %type <statement_> Program
@@ -766,7 +765,7 @@ TerminatorOpt
 
 /* 11.1 Primary Expressions {{{ */
 Parenthetical
-    : "(" LexPushInOff Expression ")" LexPopIn { $$ = $3; }
+    : "(" LexPushInOff Expression ")" LexPopIn { $$ = CYNew CYParenthetical($3); }
     ;
 
 Variable
@@ -1055,13 +1054,9 @@ AssignmentExpression
     ;
 /* }}} */
 /* 11.14 Comma Operator {{{ */
-Expression_
-    : "," Expression { $$ = $2; }
-    | { $$ = NULL; }
-    ;
-
 Expression
-    : AssignmentExpression Expression_ { $$ = CYNew CYCompound($1, $2); }
+    : AssignmentExpression { $$ = $1; }
+    | AssignmentExpression "," Expression { $$ = CYNew CYCompound($1, $3); }
     ;
 
 ExpressionOpt
@@ -1375,7 +1370,7 @@ ArrowFunction
 ArrowParameters
     : BindingIdentifier { $$ = CYNew CYFunctionParameter(CYNew CYDeclaration($1)); }
     | "(" LexPushInOff LexSetRegExp ")" LexPopIn { $$ = NULL; }
-    | Parenthetical { $$ = $1->Parameters(); if ($$ == NULL) error(@1, "invalid parameter list"); }
+    | Parenthetical { $$ = $1->expression_->Parameter(); if ($$ == NULL) error(@1, "invalid parameter list"); }
     ;
 
 ConciseBody

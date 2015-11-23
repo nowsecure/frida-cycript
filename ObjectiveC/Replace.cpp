@@ -108,7 +108,7 @@ CYStatement *CYMessage::Replace(CYContext &context, bool replace) const { $T(NUL
             cyn,
             $N2($V("Functor"), $F(NULL, $P2($L("self"), $L("_cmd"), parameters_->Parameters(context)), $$->*
                 $ CYVar($L1($L("$cyr", $N2($V("objc_super"), self, _class))))->*
-                $ CYReturn($C1($M($F(NULL, NULL, code_), $S("call")), self))
+                $ CYReturn($C1($M($F(NULL, NULL, code_.code_), $S("call")), self))
             ), cyt),
             cyt
         ))
@@ -142,7 +142,7 @@ CYExpression *CYBox::Replace(CYContext &context) {
 }
 
 CYExpression *CYObjCBlock::Replace(CYContext &context) {
-    return $C1($ CYEncodedType(($ CYTypedIdentifier(*typed_))->Modify($ CYTypeBlockWith(parameters_))), $ CYFunctionExpression(NULL, parameters_->Parameters(context), statements_));
+    return $C1($ CYEncodedType(($ CYTypedIdentifier(*typed_))->Modify($ CYTypeBlockWith(parameters_))), $ CYFunctionExpression(NULL, parameters_->Parameters(context), code_));
 }
 
 CYStatement *CYProtocol::Replace(CYContext &context) const { $T(NULL)
