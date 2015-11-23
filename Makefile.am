@@ -99,7 +99,8 @@ Cycript.l: Cycript.l.in
 
 CLEANFILES += lex.cy.cpp
 lex.cy.cpp: Cycript.l
-	$(FLEX) -t $< | $(SED) -e 's/int yyl;/yy_size_t yyl;/;s/int yyleng_r;/yy_size_t yyleng_r;/' >$@
+	$(FLEX) -b -t $< | $(SED) -e 's/int yyl;/yy_size_t yyl;/;s/int yyleng_r;/yy_size_t yyleng_r;/;s/yyg =/yyg __attribute__((__unused__)) =/' >$@
+	grep -F 'No backing up.' lex.backup >/dev/null
 
 Console.$(OBJEXT) Cycript.tab.lo Driver.lo Handler.lo Highlight.lo Library.lo lex.cy.lo: Cycript.tab.hh
 

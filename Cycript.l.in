@@ -98,6 +98,14 @@ typedef cy::parser::token tk;
     } \
 }
 
+#define E(message) { \
+    CYDriver::Error error; \
+    error.location_ = *yylloc; \
+    error.message_ = "syntax error, " message; \
+    yyextra->errors_.push_back(error); \
+    yyterminate(); \
+}
+
 int H(char c) {
     if (c >= '0' && c <= '9')
         return c - '0';
@@ -131,12 +139,12 @@ int H(char c) {
 %option 8bit
 %option backup
 %option batch
+%option full
 %option never-interactive
 %option pointer
 %option reentrant
 %option stack
 
-Exponent [eE][+-]?[0-9]+
 Escape   \\[\\'"bfnrtv]|\\0|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\\n
 
 IdentifierStart [a-zA-Z$_]
@@ -167,6 +175,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 %%
 
 <RegExp>\/{RegularExpressionBody}\/{RegularExpressionFlags} L C I(literal, RegEx(Y), tk::RegularExpressionLiteral, hi::Constant);
+<RegExp>\/{RegularExpressionBody}?\\? L E("unterminated regex")
 
 #![^\n]* L M
 
@@ -176,6 +185,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 	/* XXX: unify these two rules using !? */
 \/\*!([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+\/ V() C I(comment, Comment(Y), tk::Comment, hi::Comment);
 \/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+\/ V(N) M
+\/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\** V() E("invalid comment")
 
 @begin E4X
 <RegExp>"<>"      L F(tk::LeftRight, hi::Structure);
@@ -200,6 +210,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 @end
 
 "..."  L C F(tk::PeriodPeriodPeriod, hi::Meta);
+".."   L E("invalid operator")
 
 @begin E4X
 "::"   L C F(tk::ColonColon, hi::Operator);
@@ -383,11 +394,14 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
 {IdentifierStart}{IdentifierPart}* L C I(identifier, Identifier(Y), tk::Identifier_, hi::Identifier);
 
-(\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?){Exponent}? L C I(number, Number(strtod(yytext, NULL)), tk::NumericLiteral, hi::Constant);
 
 0[xX][0-9a-fA-F]+ L C I(number, Number(strtoull(yytext + 2, NULL, 16)), tk::NumericLiteral, hi::Constant);
 0[0-7]+ L C I(number, Number(strtoull(yytext + 1, NULL, 8)), tk::NumericLiteral, hi::Constant);
 0[bB][0-1]+ L C I(number, Number(strtoull(yytext + 2, NULL, 2)), tk::NumericLiteral, hi::Constant);
+
+(\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?)([eE][+-]?[0-9]+)? L C I(number, Number(strtod(yytext, NULL)), tk::NumericLiteral, hi::Constant);
+(\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?)[eE][+-]?{IdentifierPart}* L E("invalid exponent")
+(\.?[0-9]|(0|[1-9][0-9]*)?\.){IdentifierPart}* L E("invalid number")
 
 \"([^"\\\n]|{Escape})*\"|'([^'\\\n]|{Escape})*' L C {
     char *value(A char[yyleng]);
@@ -423,19 +437,15 @@ XMLName {XMLNameStart}{XMLNamePart}*
     I(string, String(value, local - value), tk::StringLiteral, hi::Constant);
 }
 
+(\"([^"\\\n]|{Escape})*|'([^'\\\n]|{Escape})*)(\\(x.{0,2}|u.{0,4})?)? L E("invalid escape")
+
 \r?\n|\r|\xe2\x80[\xa8\xa9] yylloc->step(); yylloc->end.lines(); N
 
 [ \t] L
 
 <<EOF>> if (yyextra->auto_) { yyextra->auto_ = false; F(tk::AutoComplete, hi::Nothing); } L yyterminate();
 
-. L {
-    CYDriver::Error error;
-    error.location_ = *yylloc;
-    error.message_ = "syntax error, unknown token";
-    yyextra->errors_.push_back(error);
-    yyterminate();
-}
+@{IdentifierPart}+|\xe2.|. L E("unknown token")
 
 %%
 

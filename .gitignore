@@ -24,6 +24,7 @@ stack.hh
 sysroot.ios
 sysroot.sim
 lex.cy.cpp
+lex.backup
 /cycript
 Bridge.hpp
 package
