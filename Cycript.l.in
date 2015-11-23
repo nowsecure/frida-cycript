@@ -133,7 +133,7 @@ int H(char c) {
 %option bison-locations
 %option nodefault
 %option noyywrap
-%option yylineno
+%option noyylineno
 %option nounput
 %option nounistd
 %option 8bit
