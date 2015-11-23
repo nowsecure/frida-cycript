@@ -139,11 +139,14 @@ int H(char c) {
 %option 8bit
 %option backup
 %option batch
-%option full
 %option never-interactive
 %option pointer
 %option reentrant
 %option stack
+
+%option full
+%option ecs
+%option align
 
 Escape   \\[\\'"bfnrtv]|\\0|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\\n
 
@@ -401,7 +404,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
 (\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?)([eE][+-]?[0-9]+)? L C I(number, Number(strtod(yytext, NULL)), tk::NumericLiteral, hi::Constant);
 (\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?)[eE][+-]?{IdentifierPart}* L E("invalid exponent")
-(\.?[0-9]|(0|[1-9][0-9]*)?\.){IdentifierPart}* L E("invalid number")
+(\.?[0-9]|(0|[1-9][0-9]*)\.){IdentifierPart}* L E("invalid number")
 
 \"([^"\\\n]|{Escape})*\"|'([^'\\\n]|{Escape})*' L C {
     char *value(A char[yyleng]);
