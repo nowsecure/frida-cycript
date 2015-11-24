@@ -228,6 +228,8 @@ struct CYClassStatement :
     {
     }
 
+    CYCompact(None)
+
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -243,6 +245,8 @@ struct CYCategory :
         messages_(messages)
     {
     }
+
+    CYCompact(None)
 
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;

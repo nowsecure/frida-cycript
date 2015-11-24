@@ -22,8 +22,7 @@
 #ifndef CYCRIPT_PARSER_HPP
 #define CYCRIPT_PARSER_HPP
 
-#include <iostream>
-
+#include <streambuf>
 #include <string>
 #include <vector>
 #include <map>
@@ -47,10 +46,13 @@ struct CYThing {
 };
 
 struct CYOutput {
-    std::ostream &out_;
+    std::streambuf &out_;
+    CYPosition position_;
+
     CYOptions &options_;
     bool pretty_;
     unsigned indent_;
+    unsigned recent_;
     bool right_;
 
     enum {
@@ -61,11 +63,12 @@ struct CYOutput {
         Terminated
     } mode_;
 
-    CYOutput(std::ostream &out, CYOptions &options) :
+    CYOutput(std::streambuf &out, CYOptions &options) :
         out_(out),
         options_(options),
         pretty_(false),
         indent_(0),
+        recent_(0),
         right_(false),
         mode_(NoMode)
     {
@@ -73,6 +76,25 @@ struct CYOutput {
 
     void Check(char value);
     void Terminate();
+
+    _finline void operator ()(char value) {
+        _assert(out_.sputc(value) != EOF);
+        recent_ = indent_;
+        if (value == '\n')
+            position_.lines(1);
+        else
+            position_.columns(1);
+    }
+
+    _finline void operator ()(const char *data, std::streamsize size) {
+        _assert(out_.sputn(data, size) == size);
+        recent_ = indent_;
+        position_.columns(size);
+    }
+
+    _finline void operator ()(const char *data) {
+        return operator ()(data, strlen(data));
+    }
 
     CYOutput &operator <<(char rhs);
     CYOutput &operator <<(const char *rhs);
@@ -145,6 +167,17 @@ _finline CYFlags CYCenter(CYFlags flags) {
     return CYLeft(CYRight(flags));
 }
 
+enum CYCompactType {
+    CYCompactNone,
+    CYCompactLong,
+    CYCompactShort,
+};
+
+#define CYCompact(type) \
+    virtual CYCompactType Compact() const { \
+        return CYCompact ## type; \
+    }
+
 struct CYStatement :
     CYNext<CYStatement>,
     CYThing
@@ -152,12 +185,13 @@ struct CYStatement :
     virtual ~CYStatement() {
     }
 
-    void Single(CYOutput &out, CYFlags flags) const;
+    void Single(CYOutput &out, CYFlags flags, CYCompactType request) const;
     void Multiple(CYOutput &out, CYFlags flags = CYNoFlags) const;
     virtual void Output(CYOutput &out) const;
 
     virtual CYStatement *Replace(CYContext &context) = 0;
 
+    virtual CYCompactType Compact() const = 0;
     virtual CYStatement *Return();
 
   private:
@@ -260,6 +294,8 @@ struct CYComment :
     {
     }
 
+    CYCompact(None)
+
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -275,6 +311,8 @@ struct CYLabel :
         statement_(statement)
     {
     }
+
+    CYCompact(Short)
 
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
@@ -445,6 +483,8 @@ struct CYBlock :
         code_(code)
     {
     }
+
+    CYCompact(Short)
 
     virtual CYStatement *Replace(CYContext &context);
 
@@ -1179,6 +1219,8 @@ struct CYVar :
     {
     }
 
+    CYCompact(None)
+
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -1194,6 +1236,8 @@ struct CYLetStatement :
         code_(code)
     {
     }
+
+    CYCompact(Long)
 
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
@@ -1215,6 +1259,8 @@ struct CYFor :
     {
     }
 
+    CYCompact(Long)
+
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -1233,6 +1279,8 @@ struct CYForIn :
     {
     }
 
+    CYCompact(Long)
+
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -1250,6 +1298,8 @@ struct CYForOf :
         code_(code)
     {
     }
+
+    CYCompact(Long)
 
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
@@ -1401,6 +1451,8 @@ struct CYIf :
     {
     }
 
+    CYCompact(Long)
+
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 
@@ -1419,6 +1471,8 @@ struct CYDoWhile :
     {
     }
 
+    CYCompact(None)
+
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -1434,6 +1488,8 @@ struct CYWhile :
         code_(code)
     {
     }
+
+    CYCompact(Long)
 
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
@@ -1523,6 +1579,8 @@ struct CYFunctionStatement :
     {
     }
 
+    CYCompact(None)
+
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -1538,6 +1596,8 @@ struct CYExpress :
         if (expression_ == NULL)
             throw;
     }
+
+    CYCompact(None)
 
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
@@ -1555,6 +1615,8 @@ struct CYContinue :
     {
     }
 
+    CYCompact(Short)
+
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -1568,6 +1630,8 @@ struct CYBreak :
         label_(label)
     {
     }
+
+    CYCompact(Short)
 
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
@@ -1583,6 +1647,8 @@ struct CYReturn :
     {
     }
 
+    CYCompact(None)
+
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -1590,6 +1656,8 @@ struct CYReturn :
 struct CYEmpty :
     CYStatement
 {
+    CYCompact(Short)
+
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -1905,6 +1973,8 @@ struct CYImport :
     {
     }
 
+    CYCompact(None)
+
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -1921,6 +1991,8 @@ struct CYExternal :
     {
     }
 
+    CYCompact(None)
+
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -1934,6 +2006,8 @@ struct CYTypeDefinition :
         typed_(typed)
     {
     }
+
+    CYCompact(None)
 
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
@@ -2008,6 +2082,8 @@ struct Try :
     {
     }
 
+    CYCompact(Short)
+
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -2021,6 +2097,8 @@ struct Throw :
         value_(value)
     {
     }
+
+    CYCompact(None)
 
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
@@ -2040,6 +2118,8 @@ struct CYWith :
     {
     }
 
+    CYCompact(Long)
+
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -2056,6 +2136,8 @@ struct CYSwitch :
     {
     }
 
+    CYCompact(Long)
+
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -2066,6 +2148,8 @@ struct CYDebugger :
     CYDebugger()
     {
     }
+
+    CYCompact(None)
 
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;

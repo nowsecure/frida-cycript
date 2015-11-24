@@ -309,7 +309,7 @@ static char **Complete(const char *word, int start, int end) {
 
     driver.program_->Replace(context);
 
-    std::ostringstream str;
+    std::stringbuf str;
     CYOutput out(str, options);
     out << *driver.program_;
 
@@ -593,7 +593,7 @@ static void Console(CYOptions &options) {
             if (driver.program_ == NULL)
                 goto restart;
 
-            std::ostringstream str;
+            std::stringbuf str;
             CYOutput out(str, options);
             Setup(out, driver, options, lower);
             out << *driver.program_;
@@ -924,7 +924,7 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
             for (CYDriver::Errors::const_iterator i(driver.errors_.begin()); i != driver.errors_.end(); ++i)
                 std::cerr << i->location_.begin << ": " << i->message_ << std::endl;
         } else if (driver.program_ != NULL) {
-            std::ostringstream str;
+            std::stringbuf str;
             CYOutput out(str, options);
             Setup(out, driver, options, true);
             out << *driver.program_;

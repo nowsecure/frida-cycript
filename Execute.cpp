@@ -1464,7 +1464,7 @@ static JSValueRef Type_callAsFunction_toString(JSContextRef context, JSObjectRef
 static JSValueRef Type_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
     CYLocalPool pool;
-    std::ostringstream out;
+    std::stringbuf out;
     CYOptions options;
     CYOutput output(out, options);
     (new(pool) CYEncodedType(Decode(pool, internal->type_)))->Output(output, CYNoFlags);

@@ -25,23 +25,23 @@
 #include <sstream>
 
 void CYOutput::Terminate() {
-    out_ << ';';
+    operator ()(';');
     mode_ = NoMode;
 }
 
 CYOutput &CYOutput::operator <<(char rhs) {
     if (rhs == ' ' || rhs == '\n')
         if (pretty_)
-            out_ << rhs;
+            operator ()(rhs);
         else goto done;
     else if (rhs == '\t')
         if (pretty_)
             for (unsigned i(0); i != indent_; ++i)
-                out_ << "    ";
+                operator ()("    ", 4);
         else goto done;
     else if (rhs == '\r') {
         if (right_) {
-            out_ << '\n';
+            operator ()('\n');
             right_ = false;
         } goto done;
     } else goto work;
@@ -53,7 +53,7 @@ CYOutput &CYOutput::operator <<(char rhs) {
   work:
     if (mode_ == Terminated && rhs != '}') {
         right_ = true;
-        out_ << ';';
+        operator ()(';');
     }
 
     if (rhs == ';') {
@@ -65,21 +65,21 @@ CYOutput &CYOutput::operator <<(char rhs) {
         }
     } else if (rhs == '+') {
         if (mode_ == NoPlus)
-            out_ << ' ';
+            operator ()(' ');
         mode_ = NoPlus;
     } else if (rhs == '-') {
         if (mode_ == NoHyphen)
-            out_ << ' ';
+            operator ()(' ');
         mode_ = NoHyphen;
     } else if (WordEndRange_[rhs]) {
         if (mode_ == NoLetter)
-            out_ << ' ';
+            operator ()(' ');
         mode_ = NoLetter;
     } else none:
         mode_ = NoMode;
 
     right_ = true;
-    out_ << rhs;
+    operator ()(rhs);
   done:
     return *this;
 }
@@ -91,13 +91,13 @@ CYOutput &CYOutput::operator <<(const char *rhs) {
         return *this << *rhs;
 
     if (mode_ == Terminated)
-        out_ << ';';
+        operator ()(';');
     else if (
         mode_ == NoPlus && *rhs == '+' ||
         mode_ == NoHyphen && *rhs == '-' ||
         mode_ == NoLetter && WordEndRange_[*rhs]
     )
-        out_ << ' ';
+        operator ()(' ');
 
     char last(rhs[size - 1]);
     if (WordEndRange_[last] || last == '/')
@@ -106,7 +106,7 @@ CYOutput &CYOutput::operator <<(const char *rhs) {
         mode_ = NoMode;
 
     right_ = true;
-    out_ << rhs;
+    operator ()(rhs, size);
     return *this;
 }
 
@@ -183,7 +183,7 @@ void Catch::Output(CYOutput &out) const {
 
 void CYComment::Output(CYOutput &out, CYFlags flags) const {
     out << '\r';
-    out.out_ << value_;
+    out(value_);
     out.right_ = true;
     out << '\r';
 }
@@ -215,12 +215,15 @@ void CYContinue::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYClause::Output(CYOutput &out) const {
+    out << '\t';
     if (case_ != NULL)
         out << "case" << ' ' << *case_;
     else
         out << "default";
     out << ':' << '\n';
+    ++out.indent_;
     out << code_;
+    --out.indent_;
     out << next_;
 }
 
@@ -229,7 +232,7 @@ void CYDebugger::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYDeclaration::ForIn(CYOutput &out, CYFlags flags) const {
-    out << "var";
+    out << "var" << ' ';
     Output(out, CYRight(flags));
 }
 
@@ -243,7 +246,7 @@ void CYDeclaration::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYForDeclarations::Output(CYOutput &out, CYFlags flags) const {
-    out << "var";
+    out << "var" << ' ';
     declarations_->Output(out, CYRight(flags));
 }
 
@@ -280,7 +283,16 @@ void CYDirectMember::Output(CYOutput &out, CYFlags flags) const {
 
 void CYDoWhile::Output(CYOutput &out, CYFlags flags) const {
     out << "do";
-    code_->Single(out, CYCenter(flags));
+
+    unsigned line(out.position_.line);
+    unsigned indent(out.indent_);
+    code_->Single(out, CYCenter(flags), CYCompactLong);
+
+    if (out.position_.line != line && out.recent_ == indent)
+        out << ' ';
+    else
+        out << '\n' << '\t';
+
     out << "while" << ' ' << '(' << *test_ << ')';
 }
 
@@ -354,14 +366,14 @@ void CYFor::Output(CYOutput &out, CYFlags flags) const {
         out << ' ';
     out << increment_;
     out << ')';
-    code_->Single(out, CYRight(flags));
+    code_->Single(out, CYRight(flags), CYCompactShort);
 }
 
 void CYForOf::Output(CYOutput &out, CYFlags flags) const {
     out << "for" << ' ' << "each" << ' ' << '(';
     initialiser_->ForIn(out, CYNoIn);
-    out << "in" << *set_ << ')';
-    code_->Single(out, CYRight(flags));
+    out << ' ' << "in" << ' ' << *set_ << ')';
+    code_->Single(out, CYRight(flags), CYCompactShort);
 }
 
 void CYForOfComprehension::Output(CYOutput &out) const {
@@ -372,8 +384,8 @@ void CYForIn::Output(CYOutput &out, CYFlags flags) const {
     out << "for" << ' ' << '(';
     if (initialiser_ != NULL)
         initialiser_->ForIn(out, CYNoIn);
-    out << "in" << *set_ << ')';
-    code_->Single(out, CYRight(flags));
+    out << ' ' << "in" << ' ' << *set_ << ')';
+    code_->Single(out, CYRight(flags), CYCompactShort);
 }
 
 void CYForInComprehension::Output(CYOutput &out) const {
@@ -433,11 +445,18 @@ void CYIf::Output(CYOutput &out, CYFlags flags) const {
     else
         jacks |= protect ? CYNoFlags : CYCenter(flags);
 
-    true_->Single(out, jacks);
+    unsigned line(out.position_.line);
+    unsigned indent(out.indent_);
+    true_->Single(out, jacks, CYCompactShort);
 
     if (false_ != NULL) {
-        out << '\t' << "else";
-        false_->Single(out, right);
+        if (out.position_.line != line && out.recent_ == indent)
+            out << ' ';
+        else
+            out << '\n' << '\t';
+
+        out << "else";
+        false_->Single(out, right, CYCompactLong);
     }
 
     if (protect)
@@ -475,8 +494,8 @@ void CYInfix::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYLabel::Output(CYOutput &out, CYFlags flags) const {
-    out << *name_ << ':' << ' ';
-    statement_->Single(out, CYRight(flags));
+    out << *name_ << ':';
+    statement_->Single(out, CYRight(flags), CYCompactShort);
 }
 
 void CYParenthetical::Output(CYOutput &out, CYFlags flags) const {
@@ -503,7 +522,7 @@ void CYTypeBlockWith::Output(CYOutput &out, CYIdentifier *identifier) const {
 }
 
 void CYTypeConstant::Output(CYOutput &out, CYIdentifier *identifier) const {
-    out << "const";
+    out << "const" << ' ';
     next_->Output(out, Precedence(), identifier);
 }
 
@@ -561,12 +580,12 @@ void CYLambda::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYTypeDefinition::Output(CYOutput &out, CYFlags flags) const {
-    out << "typedef" << *typed_;
+    out << "typedef" << ' ' << *typed_;
 }
 
 void CYLetStatement::Output(CYOutput &out, CYFlags flags) const {
     out << "let" << ' ' << '(' << *declarations_ << ')';
-    code_->Single(out, CYRight(flags));
+    code_->Single(out, CYRight(flags), CYCompactShort);
 }
 
 void CYModule::Output(CYOutput &out) const {
@@ -685,17 +704,26 @@ void CYStatement::Multiple(CYOutput &out, CYFlags flags) const {
     }
 }
 
-void CYStatement::Single(CYOutput &out, CYFlags flags) const {
+void CYStatement::Single(CYOutput &out, CYFlags flags, CYCompactType request) const {
     if (this == NULL)
         return out.Terminate();
 
     _assert(next_ == NULL);
-    out << '\n';
-    ++out.indent_;
-    out << '\t';
+
+    CYCompactType compact(Compact());
+
+    if (compact >= request)
+        out << ' ';
+    else {
+        out << '\n';
+        ++out.indent_;
+        out << '\t';
+    }
+
     Output(out, flags);
-    out << '\n';
-    --out.indent_;
+
+    if (compact < request)
+        --out.indent_;
 }
 
 void CYString::Output(CYOutput &out, CYFlags flags) const {
@@ -747,9 +775,11 @@ const char *CYString::Word() const {
 }
 
 void CYSwitch::Output(CYOutput &out, CYFlags flags) const {
-    out << "switch" << ' ' << '(' << *value_ << ')' << ' ' << '{';
+    out << "switch" << ' ' << '(' << *value_ << ')' << ' ' << '{' << '\n';
+    ++out.indent_;
     out << clauses_;
-    out << '}';
+    --out.indent_;
+    out << '\t' << '}';
 }
 
 void CYThis::Output(CYOutput &out, CYFlags flags) const {
@@ -807,7 +837,7 @@ void CYTypeVoid::Output(CYOutput &out) const {
 }
 
 void CYVar::Output(CYOutput &out, CYFlags flags) const {
-    out << "var";
+    out << "var" << ' ';
     declarations_->Output(out, flags);
     out << ';';
 }
@@ -817,13 +847,13 @@ void CYVariable::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYWhile::Output(CYOutput &out, CYFlags flags) const {
-    out << "while" << '(' << *test_ << ')';
-    code_->Single(out, CYRight(flags));
+    out << "while" << ' ' << '(' << *test_ << ')';
+    code_->Single(out, CYRight(flags), CYCompactShort);
 }
 
 void CYWith::Output(CYOutput &out, CYFlags flags) const {
-    out << "with" << '(' << *scope_ << ')';
-    code_->Single(out, CYRight(flags));
+    out << "with" << ' ' << '(' << *scope_ << ')';
+    code_->Single(out, CYRight(flags), CYCompactShort);
 }
 
 void CYWord::ClassName(CYOutput &out, bool object) const {
@@ -836,8 +866,12 @@ void CYWord::ClassName(CYOutput &out, bool object) const {
 
 void CYWord::Output(CYOutput &out) const {
     out << Word();
-    if (out.options_.verbose_)
-        out.out_ << '@' << this;
+    if (out.options_.verbose_) {
+        out('@');
+        char number[32];
+        sprintf(number, "%p", this);
+        out(number);
+    }
 }
 
 void CYWord::PropertyName(CYOutput &out) const {

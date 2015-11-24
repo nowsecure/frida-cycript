@@ -206,7 +206,7 @@ CYUTF8String CYPoolCode(CYPool &pool, std::istream &stream) {
     CYContext context(options);
     driver.program_->Replace(context);
 
-    std::ostringstream str;
+    std::stringbuf str;
     CYOutput out(str, options);
     out << *driver.program_;
     return $pool.strdup(str.str().c_str());
