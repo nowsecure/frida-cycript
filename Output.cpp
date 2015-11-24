@@ -684,8 +684,7 @@ void CYRubyBlock::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYRubyProc::Output(CYOutput &out, CYFlags flags) const {
-    // XXX: this is not outputting the parameters
-    out << '{' << '\n';
+    out << '{' << ' ' << '|' << parameters_ << '|' << '\n';
     ++out.indent_;
     out << code_;
     --out.indent_;
