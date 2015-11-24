@@ -99,7 +99,8 @@ CYOutput &CYOutput::operator <<(const char *rhs) {
     )
         out_ << ' ';
 
-    if (WordEndRange_[rhs[size - 1]])
+    char last(rhs[size - 1]);
+    if (WordEndRange_[last] || last == '/')
         mode_ = NoLetter;
     else
         mode_ = NoMode;
