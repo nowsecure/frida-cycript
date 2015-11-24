@@ -158,6 +158,8 @@ struct CYStatement :
 
     virtual CYStatement *Replace(CYContext &context) = 0;
 
+    virtual CYStatement *Return();
+
   private:
     virtual void Output(CYOutput &out, CYFlags flags) const = 0;
 };
@@ -447,6 +449,8 @@ struct CYBlock :
     virtual CYStatement *Replace(CYContext &context);
 
     virtual void Output(CYOutput &out, CYFlags flags) const;
+
+    virtual CYStatement *Return();
 };
 
 struct CYForInitialiser {
@@ -1399,6 +1403,8 @@ struct CYIf :
 
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
+
+    virtual CYStatement *Return();
 };
 
 struct CYDoWhile :
@@ -1440,13 +1446,15 @@ struct CYFunction {
     CYStatement *code_;
 
     CYNonLocal *nonlocal_;
+    bool implicit_;
     CYThisScope this_;
 
     CYFunction(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *code) :
         name_(name),
         parameters_(parameters),
         code_(code),
-        nonlocal_(NULL)
+        nonlocal_(NULL),
+        implicit_(false)
     {
     }
 
@@ -1533,6 +1541,8 @@ struct CYExpress :
 
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
+
+    virtual CYStatement *Return();
 };
 
 struct CYContinue :

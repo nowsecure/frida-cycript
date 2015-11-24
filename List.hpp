@@ -53,14 +53,14 @@ Type_ *&CYSetLast(Type_ *&list) {
 }
 
 template <typename Type_>
-Type_ *CYGetLast(Type_ *list) {
+Type_ *&CYGetLast(Type_ *&list) {
     if (list == NULL)
-        return NULL;
+        return list;
 
-    Type_ *next(list);
-    while (next->next_ != NULL)
-        next = next->next_;
-    return next;
+    Type_ **next(&list);
+    while ((*next)->next_ != NULL)
+        next = &(*next)->next_;
+    return *next;
 }
 
 #define CYForEach(value, list) \

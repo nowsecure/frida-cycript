@@ -29,6 +29,11 @@ CYFunctionExpression *CYNonLocalize(CYContext &context, CYFunctionExpression *fu
     return function;
 }
 
+static void CYImplicitReturn(CYStatement *&code) {
+    if (CYStatement *&last = CYGetLast(code))
+        last = last->Return();
+}
+
 CYExpression *CYAdd::Replace(CYContext &context) {
     CYInfix::Replace(context);
 
@@ -92,6 +97,11 @@ CYExpression *CYArrayComprehension::Replace(CYContext &context) {
 CYExpression *CYAssignment::Replace(CYContext &context) {
     context.Replace(lhs_);
     context.Replace(rhs_);
+    return this;
+}
+
+CYStatement *CYBlock::Return() {
+    CYImplicitReturn(code_);
     return this;
 }
 
@@ -305,6 +315,10 @@ CYExpression *CYEncodedType::Replace(CYContext &context) {
     return typed_->Replace(context);
 }
 
+CYStatement *CYExpress::Return() {
+    return $ CYReturn(expression_);
+}
+
 CYStatement *CYExpress::Replace(CYContext &context) {
     context.Replace(expression_);
     return this;
@@ -430,7 +444,8 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
         Inject(context);
 
     CYThisScope *_this(context.this_);
-    context.this_ = CYGetLast(&this_);
+    context.this_ = &this_;
+    context.this_ = CYGetLast(context.this_);
 
     CYNonLocal *nonlocal(context.nonlocal_);
     CYNonLocal *nextlocal(context.nextlocal_);
@@ -452,6 +467,9 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
 
     parameters_->Replace(context, code_);
     context.ReplaceAll(code_);
+
+    if (implicit_)
+        CYImplicitReturn(code_);
 
     if (CYIdentifier *identifier = this_.identifier_)
         code_ = $$->*
@@ -499,6 +517,12 @@ CYIdentifier *CYIdentifier::Replace(CYContext &context) {
         return replace_->Replace(context);
     replace_ = context.scope_->Lookup(context, this);
     return replace_;
+}
+
+CYStatement *CYIf::Return() {
+    CYImplicitReturn(true_);
+    CYImplicitReturn(false_);
+    return this;
 }
 
 CYStatement *CYIf::Replace(CYContext &context) {
@@ -709,12 +733,14 @@ CYStatement *CYReturn::Replace(CYContext &context) {
 }
 
 CYExpression *CYRubyBlock::Replace(CYContext &context) {
-    // XXX: this needs to do something much more epic to handle return
     return call_->AddArgument(context, proc_->Replace(context));
 }
 
 CYExpression *CYRubyProc::Replace(CYContext &context) {
-    return CYNonLocalize(context, $ CYFunctionExpression(NULL, parameters_, code_));
+    CYFunctionExpression *function($ CYFunctionExpression(NULL, parameters_, code_));
+    function = CYNonLocalize(context, function);
+    function->implicit_ = true;
+    return function;
 }
 
 CYScope::CYScope(bool transparent, CYContext &context) :
@@ -829,6 +855,10 @@ void CYScope::Close(CYContext &context, CYStatement *&statements) {
                 (*i)->offset_ = offset;
             parent_->Merge(context, *i);
         }
+}
+
+CYStatement *CYStatement::Return() {
+    return this;
 }
 
 CYString *CYString::Concat(CYContext &context, CYString *rhs) const {
