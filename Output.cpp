@@ -147,7 +147,9 @@ void CYBlock::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYBoolean::Output(CYOutput &out, CYFlags flags) const {
-    out << (Value() ? "true" : "false");
+    out << '!' << (Value() ? "0" : "1");
+    if ((flags & CYNoInteger) != 0)
+        out << '.';
 }
 
 void CYBreak::Output(CYOutput &out, CYFlags flags) const {
