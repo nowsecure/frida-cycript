@@ -91,11 +91,11 @@ endif
 
 CLEANFILES += Cycript.yy
 Cycript.yy: Cycript.yy.in
-	$(srcdir)/Filter.sh <$< >$@ $(filters)
+	$(srcdir)/Filter.sh $< >$@ $(filters)
 
 CLEANFILES += Cycript.l
-Cycript.l: Cycript.l.in
-	$(srcdir)/Filter.sh <$< >$@ $(filters)
+Cycript.l: Cycript.l.in UnicodeIDStart.l UnicodeIDContinue.l
+	$(srcdir)/Filter.sh $< >$@ $(filters)
 
 CLEANFILES += lex.cy.cpp
 lex.cy.cpp: Cycript.l

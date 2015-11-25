@@ -120,7 +120,7 @@ void CYStringify(std::ostringstream &str, const char *data, size_t size) {
     str << (single ? '\'' : '"');
 
     for (const char *value(data), *end(data + size); value != end; ++value)
-        switch (*value) {
+        switch (uint8_t next = *value) {
             case '\\': str << "\\\\"; break;
             case '\b': str << "\\b"; break;
             case '\f': str << "\\f"; break;
@@ -141,12 +141,35 @@ void CYStringify(std::ostringstream &str, const char *data, size_t size) {
                 else goto simple;
             break;
 
+            case '\0':
+                if (value[1] >= '0' && value[1] <= '9')
+                    str << "\\x00";
+                else
+                    str << "\\0";
+            break;
+
             default:
-                // this test is designed to be "awesome", generating neither warnings nor incorrect results
-                if (*value < 0x20 || *value >= 0x7f)
-                    str << "\\x" << std::setbase(16) << std::setw(2) << std::setfill('0') << unsigned(uint8_t(*value));
-                else simple:
+                if (next >= 0x20 && next < 0x7f) simple:
                     str << *value;
+                else {
+                    unsigned levels(1);
+                    if ((next & 0x80) != 0)
+                        while ((next & 0x80 >> ++levels) != 0);
+
+                    unsigned point(next & 0xff >> levels);
+                    while (--levels != 0)
+                        point = point << 6 | uint8_t(*++value) & 0x3f;
+
+                    if (point < 0x100)
+                        str << "\\x" << std::setbase(16) << std::setw(2) << std::setfill('0') << point;
+                    else if (point < 0x10000)
+                        str << "\\u" << std::setbase(16) << std::setw(4) << std::setfill('0') << point;
+                    else {
+                        point -= 0x10000;
+                        str << "\\u" << std::setbase(16) << std::setw(4) << std::setfill('0') << (0xd800 | point >> 0x0a);
+                        str << "\\u" << std::setbase(16) << std::setw(4) << std::setfill('0') << (0xdc00 | point & 0x3ff);
+                    }
+                }
         }
 
     str << (single ? '\'' : '"');

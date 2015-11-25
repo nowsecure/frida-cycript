@@ -19,29 +19,49 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # }}}
 
+file=$1
+shift
+
 filters=("$@")
 
-while IFS= read -r line; do
-    if [[ ${line} = @if* ]]; then
-        line=${line#@if }
-        for name in "${filters[@]}"; do
-            if [[ ${line} = ${name}' '* ]]; then
-                echo "${line#${name} }"
-            fi
-        done
-    elif [[ ${line} = @begin* ]]; then
-        set ${line}; shift
-        filter=
-        for name in "${filters[@]}"; do
-            for side in "$@"; do
-                if [[ ${name} == ${side} ]]; then
-                    unset filter
+function include() {
+    file=$1
+    shift
+
+    dir=/${file}
+    dir=${dir%/*}
+    dir=${dir:-/.}
+    dir=${dir#/}
+    dir=${dir}/
+
+    while IFS= read -r line; do
+        if false; then :
+        elif [[ ${line} = @if* ]]; then
+            line=${line#@if }
+            for name in "${filters[@]}"; do
+                if [[ ${line} = ${name}' '* ]]; then
+                    echo "${line#${name} }"
                 fi
             done
-        done
-    elif [[ ${line} = @end ]]; then
-        unset filter
-    elif [[ -z ${filter+@} ]]; then
-        echo "${line}"
-    fi
-done
+        elif [[ ${line} = @begin* ]]; then
+            set ${line}; shift
+            filter=
+            for name in "${filters[@]}"; do
+                for side in "$@"; do
+                    if [[ ${name} == ${side} ]]; then
+                        unset filter
+                    fi
+                done
+            done
+        elif [[ ${line} = @end ]]; then
+            unset filter
+        elif [[ ${line} = @include* ]]; then
+            line=${line#@include }
+            include "${dir}${line}"
+        elif [[ -z ${filter+@} ]]; then
+            echo "${line}"
+        fi
+    done <"${file}"
+}
+
+include "${file}"

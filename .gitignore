@@ -41,3 +41,5 @@ build.*
 Cycript.ios
 Cycript.osx
 Cycript.lib
+DerivedCoreProperties.txt
+PropList.txt

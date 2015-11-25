@@ -116,6 +116,46 @@ int H(char c) {
     return -1;
 }
 
+static void U(char *&local, unsigned point) {
+    if (false) {
+    } else if (point < 0x000080) {
+        *local++ = point;
+    } else if (point < 0x000800) {
+        *local++ = 0xc0 | point >> 0x06 & 0x1f;
+        goto one;
+    } else if (point < 0x010000) {
+        *local++ = 0xe0 | point >> 0x0c & 0x0f;
+        goto two;
+    } else if (point < 0x110000) {
+        *local++ = 0xf0 | point >> 0x12 & 0x07;
+        *local++ = 0x80 | point >> 0x0c & 0x3f;
+      two:
+        *local++ = 0x80 | point >> 0x06 & 0x3f;
+      one:
+        *local++ = 0x80 | point >> 0x00 & 0x3f;
+    } else _assert(false);
+}
+
+static void U(char *&local, const char *text, yy_size_t &i) {
+    unsigned point;
+
+    char next(text[++i]);
+    if (next != '{') {
+        point = H(text[i + 0]) << 12 | H(text[i + 1]) << 8 | H(text[i + 2]) << 4 | H(text[i + 3]);
+        i += 3;
+    } else {
+        point = 0;
+        for (;;) {
+            next = text[++i];
+            if (next == '}')
+                break;
+            point = (point << 4) | H(next);
+        }
+    }
+
+    U(local, point);
+}
+
 #define YY_INPUT(data, value, size) { \
     if (yyextra->data_.eof()) \
         value = YY_NULL; \
@@ -146,18 +186,45 @@ int H(char c) {
 
 %option full
 %option ecs
-%option align
 
-Escape \\[\\'"bfnrtv]|\\[0-7]|\\[4-7][0-7]|\\[0-3][0-7][0-7]?|\\x[0-9a-fA-F]{2}|\\u[0-9a-fA-F]{4}|\\\n
+U1 [\x00-\x7f]
+U0 [\x80-\xbf]
+U2 [\xc2-\xdf]
+U3 [\xe0-\xef]
+U4 [\xf0-\xf4]
 
-IdentifierStart [a-zA-Z$_]
-IdentifierPart  [a-zA-Z$_0-9]
+HexDigit [0-9a-fA-F]
+LineTerminatorSequence \r?\n|\r|\xe2\x80[\xa8\xa9]
+WhiteSpace [\x09\x0b\x0c\x20]|\xc2\xa0|\xef\xbb\xbf
+UnicodeEscape \\u({HexDigit}{4}|\{{HexDigit}+\})
+
+OctalEscape \\[1-7]|\\[4-7][0-7]|\\[0-3][0-7][0-7]?
+StringEscape \\['"\\bfnrtv]|\\0|{OctalEscape}|\\x{HexDigit}{2}|{UnicodeEscape}
+StringExtra {StringEscape}|\\{LineTerminatorSequence}
+SingleString ([^'\\\n]|{StringExtra})*
+DoubleString ([^"\\\n]|{StringExtra})*
+StringPrefix '{SingleString}|\"{DoubleString}
+
+@include UnicodeIDStart.l
+@include UnicodeIDContinue.l
+
+IdentifierMore [$_]
+
+UnicodeStart {IdentifierMore}|{UnicodeIDStart}
+UnicodePart {IdentifierMore}|\xe2\x80[\x8c\x8d]|{UnicodeIDContinue}
+UnicodeFail {U2}|{U3}|{U3}{U0}|{U4}|{U4}{U0}|{U4}{U0}{U0}
+UnicodeScrap {UnicodePart}*{UnicodeFail}?
+
+IdentifierStart {UnicodeStart}|{UnicodeEscape}
+IdentifierPart {UnicodePart}|{UnicodeEscape}
+IdentifierFail {UnicodeFail}|\\(u({HexDigit}{0,3}|\{{HexDigit}*))?
+IdentifierScrap {IdentifierPart}*{IdentifierFail}?
 
 NonTerminator [^\n]
 BackslashSequence \\{NonTerminator}
 RegularExpressionFirstChar [^\n*\\/]|{BackslashSequence}
 RegularExpressionChar [^\n\\/]|{BackslashSequence}
-RegularExpressionFlags {IdentifierPart}*
+RegularExpressionFlags {UnicodePart}*
 RegularExpressionChars {RegularExpressionChar}*
 RegularExpressionBody {RegularExpressionFirstChar}{RegularExpressionChars}
 
@@ -178,6 +245,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 %%
 
 <RegExp>\/{RegularExpressionBody}\/{RegularExpressionFlags} L C I(literal, RegEx(Y), tk::RegularExpressionLiteral, hi::Constant);
+<RegExp>\/{RegularExpressionBody}\/{RegularExpressionFlags}{UnicodeFail} L E("invalid flags")
 <RegExp>\/{RegularExpressionBody}?\\? L E("unterminated regex")
 
 #![^\n]* L M
@@ -401,7 +469,25 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "xml"          L C I(identifier, Identifier("xml"), tk::XML, hi::Meta);
 @end
 
-{IdentifierStart}{IdentifierPart}* L C I(identifier, Identifier(Y), tk::Identifier_, hi::Identifier);
+{UnicodeStart}{UnicodePart}* L C I(identifier, Identifier(Y), tk::Identifier_, hi::Identifier);
+
+{IdentifierStart}{IdentifierPart}* L C {
+    char *value(A char[yyleng + 1]);
+    char *local(value);
+
+    for (yy_size_t i(0), e(yyleng); i != e; ++i) {
+        char next(yytext[i]);
+        if (next != '\\')
+            *local++ = next;
+        else
+            U(local, yytext, ++i);
+    }
+
+    *local = '\0';
+    I(identifier, Identifier(value), tk::Identifier_, hi::Identifier);
+}
+
+({IdentifierStart}{IdentifierPart}*)?{IdentifierFail} L E("invalid identifier")
 
 0[0-7]+ L C I(number, Number(strtoull(yytext + 1, NULL, 8)), tk::NumericLiteral, hi::Constant);
 0[0-9]+ L C I(number, Number(strtoull(yytext + 1, NULL, 10)), tk::NumericLiteral, hi::Constant);
@@ -411,10 +497,10 @@ XMLName {XMLNameStart}{XMLNamePart}*
 0[bB][0-1]+ L C I(number, Number(strtoull(yytext + 2, NULL, 2)), tk::NumericLiteral, hi::Constant);
 
 (\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?)([eE][+-]?[0-9]+)? L C I(number, Number(strtod(yytext, NULL)), tk::NumericLiteral, hi::Constant);
-(\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?)[eE][+-]?{IdentifierPart}* L E("invalid exponent")
-(\.?[0-9]|(0|[1-9][0-9]*)\.){IdentifierPart}* L E("invalid number")
+(\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?)[eE][+-]?{IdentifierScrap} L E("invalid exponent")
+(\.?[0-9]|(0|[1-9][0-9]*)\.){IdentifierScrap} L E("invalid number")
 
-\"([^"\\\n]|{Escape})*\"|'([^'\\\n]|{Escape})*' L C {
+'{SingleString}'|\"{DoubleString}\" L C {
     char *value(A char[yyleng]);
     char *local(value);
 
@@ -422,8 +508,13 @@ XMLName {XMLNameStart}{XMLNamePart}*
         char next(yytext[i]);
 
         if (yytext[i] == '\\')
-            switch (next = yytext[++i]) {
-                case '\n': continue;
+            // XXX: support more line continuation characters
+            if (false) line: {
+                yylloc->end.lines(1);
+                yylloc->end.columns(yyleng - i);
+            } else switch (next = yytext[++i]) {
+                case '\n': goto line;
+
                 case '\\': next = '\\'; break;
                 case '\'': next = '\''; break;
                 case '"': next = '"'; break;
@@ -451,9 +542,13 @@ XMLName {XMLNameStart}{XMLNamePart}*
                 break;
 
                 case 'x':
-                    next = H(yytext[i + 1]) << 4 | H(yytext[i + 2]);
+                    U(local, H(yytext[i + 1]) << 4 | H(yytext[i + 2]));
                     i += 2;
-                break;
+                continue;
+
+                case 'u':
+                    U(local, yytext, i);
+                continue;
             }
 
         *local++ = next;
@@ -463,15 +558,18 @@ XMLName {XMLNameStart}{XMLNamePart}*
     I(string, String(value, local - value), tk::StringLiteral, hi::Constant);
 }
 
-(\"([^"\\\n]|{Escape})*|'([^'\\\n]|{Escape})*)(\\(x.{0,2}|u.{0,4})?)? L E("invalid escape")
+{StringPrefix}\\(x.{0,2}|u([^{].{0,3}|\{[^}]*)?|{UnicodeFail})? L E("invalid escape")
+{StringPrefix} L E("invalid string")
 
-\r?\n|\r|\xe2\x80[\xa8\xa9] yylloc->step(); yylloc->end.lines(); N
+{LineTerminatorSequence} yylloc->step(); yylloc->end.lines(); N
 
-[ \t] L
+{WhiteSpace} L
 
 <<EOF>> if (yyextra->auto_) { yyextra->auto_ = false; F(tk::AutoComplete, hi::Nothing); } L yyterminate();
 
-@{IdentifierStart}{IdentifierPart}*|\xe2.|. L E("unknown token")
+@({UnicodeStart}{UnicodeScrap}|{UnicodeFail}) L E("invalid keyword")
+
+. L E("invalid character")
 
 %%
 
