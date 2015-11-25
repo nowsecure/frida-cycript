@@ -249,6 +249,11 @@ int cylex(YYSTYPE *, CYLocation *, void *);
 %token AtImport "@import"
 %token AtEnd "@end"
 %token AtSelector "@selector"
+%token AtNull "@null"
+%token AtYes "@YES"
+%token AtNo "@NO"
+%token AtTrue "@true"
+%token AtFalse "@false"
 %token <identifier_> Yes "YES"
 %token <identifier_> No "NO"
 @end
@@ -1641,6 +1646,11 @@ BoxableExpression
 
 PrimaryExpression
     : "@" BoxableExpression { $$ = CYNew CYBox($2); }
+    | "@YES" { $$ = CYNew CYBox(CYNew CYTrue()); }
+    | "@NO" { $$ = CYNew CYBox(CYNew CYFalse()); }
+    | "@true" { $$ = CYNew CYBox(CYNew CYTrue()); }
+    | "@false" { $$ = CYNew CYBox(CYNew CYFalse()); }
+    | "@null" { $$ = CYNew CYBox(CYNew CYNull()); }
     ;
 /* }}} */
 /* Cycript (Objective-C): Block Expressions {{{ */

@@ -304,6 +304,12 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "@import"         L C F(tk::AtImport, hi::Special);
 "@selector"       L C F(tk::AtSelector, hi::Meta);
 
+"@null"           L C F(tk::AtNull, hi::Constant);
+"@YES"            L C F(tk::AtYes, hi::Constant);
+"@NO"             L C F(tk::AtNo, hi::Constant);
+"@true"           L C F(tk::AtTrue, hi::Constant);
+"@false"          L C F(tk::AtFalse, hi::Constant);
+
 "NULL"         L C I(identifier, Identifier("NULL"), tk::Identifier_, hi::Constant);
 "nil"          L C I(identifier, Identifier("nil"), tk::Identifier_, hi::Constant);
 "YES"          L C I(identifier, Identifier("YES"), tk::Yes, hi::Constant);
@@ -465,7 +471,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
 <<EOF>> if (yyextra->auto_) { yyextra->auto_ = false; F(tk::AutoComplete, hi::Nothing); } L yyterminate();
 
-@{IdentifierPart}+|\xe2.|. L E("unknown token")
+@{IdentifierStart}{IdentifierPart}*|\xe2.|. L E("unknown token")
 
 %%
 
