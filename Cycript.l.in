@@ -301,7 +301,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "="    L C F(tk::Equal, hi::Operator);
 "=="   L C F(tk::EqualEqual, hi::Operator);
 "==="  L C F(tk::EqualEqualEqual, hi::Operator);
-"=>"   L C F(tk::EqualRight, hi::Operator);
+"=>"   L C F(yylval->newline_ ? tk::EqualRight_ : tk::EqualRight, hi::Operator);
 "!"    L C F(tk::Exclamation, hi::Operator);
 "!="   L C F(tk::ExclamationEqual, hi::Operator);
 "!=="  L C F(tk::ExclamationEqualEqual, hi::Operator);
@@ -459,7 +459,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "volatile"     L C I(identifier, Identifier("volatile"), tk::Volatile, hi::Meta);
 
 "let"          L C I(identifier, Identifier("let"), tk::Let, hi::Meta);
-"yield"        L C I(identifier, Identifier("yield"), tk::Yield, hi::Control);
+"yield"        L R I(identifier, Identifier("yield"), tk::Yield, hi::Control);
 
 "each"         L C I(identifier, Identifier("each"), tk::Each, hi::Control);
 "of"           L C I(identifier, Identifier("of"), tk::Of, hi::Operator);

@@ -172,6 +172,7 @@ int cylex(YYSTYPE *, CYLocation *, void *);
 %token EqualEqual "=="
 %token EqualEqualEqual "==="
 %token EqualRight "=>"
+%token EqualRight_ "\n=>"
 %token Exclamation "!"
 %token ExclamationEqual "!="
 %token ExclamationEqualEqual "!=="
@@ -696,7 +697,7 @@ IdentifierType
     // XXX: currently I only have this as Word
     // | "let" { $$ = $1; }
 
-    | "yield" { $$ = $1; }
+    | "yield" NewLineOpt { $$ = $1; }
 
     | "each" { $$ = $1; }
     | "of" { $$ = $1; }
@@ -1306,7 +1307,7 @@ LabelledStatement
 /* }}} */
 /* 12.13 The throw Statement {{{ */
 ThrowStatement
-    : "throw" LexSetRegExp "\n" StrictSemi { YYABORT; }
+    : "throw" LexSetRegExp "\n" StrictSemi { error(@1, "throw without exception"); }
     | "throw" Expression Terminator { $$ = CYNew cy::Syntax::Throw($2); }
     ;
 /* }}} */

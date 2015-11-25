@@ -416,7 +416,7 @@ class History {
     }
 
     void operator +=(const std::string &command) {
-        add_history(command_.c_str());
+        add_history(command.c_str());
         ++histlines_;
     }
 };
@@ -530,6 +530,7 @@ static void Console(CYOptions &options) {
         }
 
         command_ += line;
+        command_ += "\n";
 
         char *begin(line), *end(line + strlen(line));
         while (char *nl = reinterpret_cast<char *>(memchr(begin, '\n', end - begin))) {
@@ -558,7 +559,7 @@ static void Console(CYOptions &options) {
             if (parser.parse() != 0 || !driver.errors_.empty()) {
                 for (CYDriver::Errors::const_iterator error(driver.errors_.begin()); error != driver.errors_.end(); ++error) {
                     CYPosition begin(error->location_.begin);
-                    if (begin.line != lines.size() || begin.column < lines.back().size() || error->warning_) {
+                    if (begin.line != lines.size() + 1 || error->warning_) {
                         CYPosition end(error->location_.end);
 
                         if (begin.line != lines.size()) {
@@ -578,14 +579,13 @@ static void Console(CYOptions &options) {
                         std::cerr << "  | ";
                         std::cerr << error->message_ << std::endl;
 
-                        history += command_;
+                        history += command_.substr(0, command_.size() - 1);
                         goto restart;
                     }
                 }
 
                 driver.errors_.clear();
 
-                command_ += '\n';
                 prompt = "cy> ";
                 goto read;
             }
@@ -600,7 +600,7 @@ static void Console(CYOptions &options) {
             code = str.str();
         }
 
-        history += command_;
+        history += command_.substr(0, command_.size() - 1);
 
         if (debug) {
             std::cout << "cy= ";
