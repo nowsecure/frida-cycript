@@ -115,12 +115,12 @@ class CYPool {
         return copy;
     }
 
-    char *strndup(const char *data, size_t size) const {
+    char *strndup(const char *data, size_t size) {
         return strmemdup(data, strnlen(data, size));
     }
 
-    char *strmemdup(const char *data, size_t size) const {
-        char *copy(new char[size + 1]);
+    char *strmemdup(const char *data, size_t size) {
+        char *copy(malloc<char>(size + 1));
         memcpy(copy, data, size);
         copy[size] = '\0';
         return copy;
