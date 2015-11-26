@@ -178,7 +178,12 @@ cycript: cycript.in
 	cp -af $< $@
 	chmod 755 $@
 
-install: Cycript.lib/cycript Cycript.lib/libcycript.dylib Cycript.lib/libcycript-sys.dylib Cycript.lib/libcycript-sim.dylib
+local := Cycript.lib/cycript Cycript.lib/libcycript.dylib Cycript.lib/libcycript-sys.dylib Cycript.lib/libcycript-sim.dylib
+
+debug: $(local)
+	DYLD_LIBRARY_PATH=Cycript.lib lldb Cycript.lib/cycript
+
+install: $(local)
 	sudo cp -af $(filter-out %.dylib,$^) /usr/bin
 	sudo cp -af $(filter %.dylib,$^) /usr/lib
 
@@ -186,4 +191,4 @@ install: Cycript.lib/cycript Cycript.lib/libcycript.dylib Cycript.lib/libcycript
 cast: $(zip)
 	appcast.sh cycript/mac $(monotonic) $(version) $< "$(CYCRIPT_CHANGES)"
 
-.PHONY: all cast clean install zip
+.PHONY: all cast clean debug install zip
