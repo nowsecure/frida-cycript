@@ -153,7 +153,7 @@ static void *OnClient(void *data) {
     return NULL;
 }
 
-extern "C" void CYHandleClient(int socket) {
+void CYHandleClient(int socket) {
     // XXX: this leaks memory... really?
     CYPool *pool(new CYPool());
     CYClient *client(new(*pool) CYClient(socket));
@@ -174,7 +174,7 @@ static void CYHandleSocket(const char *path) {
     CYHandleClient(socket);
 }
 
-extern "C" void CYHandleServer(pid_t pid) { try {
+_extern void CYHandleServer(pid_t pid) { try {
     char path[1024];
     sprintf(path, "/tmp/.s.cy.%u", pid);
     CYHandleSocket(path);
@@ -183,7 +183,7 @@ extern "C" void CYHandleServer(pid_t pid) { try {
     fprintf(stderr, "%s\n", error.PoolCString(pool));
 } }
 
-extern "C" char *MSmain0(int argc, char *argv[]) { try {
+_extern char *MSmain0(int argc, char *argv[]) { try {
     _assert(argc == 2);
     CYHandleSocket(argv[1]);
 
@@ -248,7 +248,7 @@ static void *OnServer(void *data) {
     return NULL;
 }
 
-extern "C" void CYListenServer(short port) {
+_extern void CYListenServer(short port) {
     CYInitializeDynamic();
 
     CYServer *server(new CYServer(port));

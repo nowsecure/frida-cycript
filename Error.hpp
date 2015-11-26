@@ -45,7 +45,7 @@ struct CYJSError :
 };
 #endif
 
-struct CYPoolError :
+struct _visible CYPoolError :
     CYException
 {
     CYPool pool_;

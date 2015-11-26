@@ -22,7 +22,6 @@
 #ifndef CYCRIPT_STRING_HPP
 #define CYCRIPT_STRING_HPP
 
-#include "cycript.hpp"
 #include "Pooling.hpp"
 
 #include <iostream>

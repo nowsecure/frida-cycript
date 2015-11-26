@@ -368,7 +368,7 @@ static JSValueRef $cyq(JSContextRef context, JSObjectRef object, JSObjectRef _th
 
 static void (*JSSynchronousGarbageCollectForDebugging$)(JSContextRef);
 
-void CYGarbageCollect(JSContextRef context) {
+_visible void CYGarbageCollect(JSContextRef context) {
     (JSSynchronousGarbageCollectForDebugging$ ?: &JSGarbageCollect)(context);
 }
 
@@ -1538,7 +1538,7 @@ static JSStaticFunction Type_staticFunctions[14] = {
 
 static JSObjectRef (*JSObjectMakeArray$)(JSContextRef, size_t, const JSValueRef[], JSValueRef *);
 
-void CYSetArgs(int argc, const char *argv[]) {
+_visible void CYSetArgs(int argc, const char *argv[]) {
     JSContextRef context(CYGetJSContext());
     JSValueRef args[argc];
     for (int i(0); i != argc; ++i)
@@ -1596,7 +1596,7 @@ static bool CYShouldTerminate(JSContextRef context, void *arg) {
     return cancel_;
 }
 
-const char *CYExecute(JSContextRef context, CYPool &pool, CYUTF8String code) {
+_visible const char *CYExecute(JSContextRef context, CYPool &pool, CYUTF8String code) {
     JSValueRef exception(NULL);
     if (false) error:
         return CYPoolCString(pool, context, CYJSString(context, exception));
@@ -1624,7 +1624,7 @@ const char *CYExecute(JSContextRef context, CYPool &pool, CYUTF8String code) {
     return json;
 }
 
-void CYCancel() {
+_visible void CYCancel() {
     cancel_ = true;
 }
 
@@ -1758,8 +1758,6 @@ CYJSError::CYJSError(JSContextRef context, const char *format, ...) {
 JSGlobalContextRef CYGetJSContext(JSContextRef context) {
     return reinterpret_cast<Context *>(JSObjectGetPrivate(CYCastJSObject(context, CYGetProperty(context, CYGetGlobalObject(context), cy_s))))->context_;
 }
-
-extern "C" bool CydgetMemoryParse(const uint16_t **data, size_t *size);
 
 void *CYMapFile(const char *path, size_t *psize) {
     int fd(_syscall_(open(path, O_RDONLY), 1, ENOENT));
@@ -1960,7 +1958,7 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
 
 static JSGlobalContextRef context_;
 
-JSGlobalContextRef CYGetJSContext() {
+_visible JSGlobalContextRef CYGetJSContext() {
     CYInitializeDynamic();
 
     if (context_ == NULL) {
@@ -1971,7 +1969,7 @@ JSGlobalContextRef CYGetJSContext() {
     return context_;
 }
 
-void CYDestroyContext() {
+_visible void CYDestroyContext() {
     if (context_ == NULL)
         return;
     JSGlobalContextRelease(context_);

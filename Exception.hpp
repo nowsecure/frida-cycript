@@ -35,7 +35,7 @@
 
 class CYPool;
 
-struct CYException {
+struct _visible CYException {
     virtual ~CYException() {
     }
 

@@ -240,7 +240,7 @@ CYPool &CYGetGlobalPool() {
     return pool;
 }
 
-void CYThrow(const char *format, ...) {
+_visible void CYThrow(const char *format, ...) {
     va_list args;
     va_start(args, format);
     throw CYPoolError(format, args);

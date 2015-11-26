@@ -39,4 +39,9 @@
 #define _noreturn \
     __attribute__((__noreturn__))
 
+#define _visible \
+    __attribute__((__visibility__("default")))
+#define _extern \
+    extern "C" _visible
+
 #endif/*CYCRIPT_STANDARD_HPP*/

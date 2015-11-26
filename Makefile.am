@@ -28,7 +28,12 @@ ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -DYYDEBUG=1
 AM_CPPFLAGS += -include config.h -include $(srcdir)/unconfig.h
 
-AM_OBJCXXFLAGS = -fobjc-exceptions
+AM_CFLAGS = -fvisibility=hidden
+AM_CXXFLAGS = -fvisibility=hidden
+AM_OBJCXXFLAGS = -fvisibility=hidden
+AM_LDFLAGS = -fvisibility=hidden
+
+AM_OBJCXXFLAGS += -fobjc-exceptions
 
 CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
 
@@ -47,6 +52,7 @@ if CY_CONSOLE
 bin_PROGRAMS = cycript
 cycript_SOURCES = Console.cpp Display.cpp
 cycript_LDADD = libcycript.la $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) $(PTHREAD_CFLAGS) -ldl
+libcycript_la_SOURCES += Complete.cpp
 endif
 
 if CY_EXECUTE

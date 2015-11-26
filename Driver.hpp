@@ -37,7 +37,7 @@ enum CYState {
     CYNewLine
 };
 
-class CYDriver {
+class _visible CYDriver {
   public:
     void *scanner_;
 
@@ -52,6 +52,7 @@ class CYDriver {
 
     std::istream &data_;
 
+    int debug_;
     bool strict_;
     bool commented_;
 
@@ -108,6 +109,9 @@ class CYDriver {
   public:
     CYDriver(std::istream &data, const std::string &filename = "");
     ~CYDriver();
+
+    bool Parse(CYPool &pool);
+    void Replace(CYPool &pool, CYOptions &options);
 
     Condition GetCondition();
     void SetCondition(Condition condition);

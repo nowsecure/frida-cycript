@@ -25,6 +25,7 @@
 CYDriver::CYDriver(std::istream &data, const std::string &filename) :
     state_(CYClear),
     data_(data),
+    debug_(0),
     strict_(false),
     commented_(false),
     filename_(filename),
@@ -40,6 +41,21 @@ CYDriver::CYDriver(std::istream &data, const std::string &filename) :
 
 CYDriver::~CYDriver() {
     ScannerDestroy();
+}
+
+bool CYDriver::Parse(CYPool &pool) {
+    CYLocal<CYPool> local(&pool);
+    cy::parser parser(*this);
+#ifdef YYDEBUG
+    parser.set_debug_level(debug_);
+#endif
+    return parser.parse() != 0;
+}
+
+void CYDriver::Replace(CYPool &pool, CYOptions &options) {
+    CYLocal<CYPool> local(&pool);
+    CYContext context(options);
+    program_->Replace(context);
 }
 
 void CYDriver::Warning(const cy::parser::location_type &location, const char *message) {

@@ -2995,11 +2995,11 @@ static CYHook CYObjectiveCHook = {
 
 CYRegisterHook CYObjectiveC(&CYObjectiveCHook);
 
-extern "C" void CydgetSetupContext(JSGlobalContextRef context) { CYObjectiveTry_ {
+_extern void CydgetSetupContext(JSGlobalContextRef context) { CYObjectiveTry_ {
     CYSetupContext(context);
 } CYObjectiveCatch }
 
-extern "C" void CydgetMemoryParse(const uint16_t **data, size_t *size) { try {
+_extern void CydgetMemoryParse(const uint16_t **data, size_t *size) { try {
     CYPool pool;
 
     CYUTF8String utf8(CYPoolUTF8String(pool, CYUTF16String(*data, *size)));
