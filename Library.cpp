@@ -219,7 +219,7 @@ double CYCastDouble(const char *value) {
 
 CYUTF8String CYPoolCode(CYPool &pool, std::istream &stream) {
     CYLocalPool local;
-    CYDriver driver(stream);
+    CYDriver driver(local, stream);
 
     cy::parser parser(driver);
     _assert(parser.parse() == 0);

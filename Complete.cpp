@@ -26,10 +26,10 @@
 #include "Replace.hpp"
 #include "String.hpp"
 
-static CYExpression *ParseExpression(CYUTF8String code) {
+static CYExpression *ParseExpression(CYPool &pool, CYUTF8String code) {
     std::stringstream stream;
     stream << '(' << code << ')';
-    CYDriver driver(stream);
+    CYDriver driver(pool, stream);
 
     cy::parser parser(driver);
     if (parser.parse() != 0 || !driver.errors_.empty())
@@ -55,7 +55,7 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
     CYLocalPool pool;
 
     std::istringstream stream(line);
-    CYDriver driver(stream);
+    CYDriver driver(pool, stream);
 
     driver.auto_ = true;
 
@@ -99,7 +99,7 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
 
     std::string begin(prefix.str());
 
-    driver.program_ = $ CYProgram($ CYExpress($C3(ParseExpression(
+    driver.program_ = $ CYProgram($ CYExpress($C3(ParseExpression(pool,
     "   function(object, prefix, word) {\n"
     "       var names = [];\n"
     "       var before = prefix.length;\n"
@@ -122,7 +122,7 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
     CYUTF8String json(run(pool, code));
     // XXX: if this fails we should not try to parse it
 
-    CYExpression *result(ParseExpression(json));
+    CYExpression *result(ParseExpression(pool, json));
     if (result == NULL)
         return NULL;
 

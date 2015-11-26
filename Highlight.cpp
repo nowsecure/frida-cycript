@@ -56,14 +56,14 @@ struct CYColor {
 };
 
 _visible void CYLexerHighlight(const char *data, size_t size, std::ostream &output, bool ignore) {
+    CYLocalPool pool;
+
     CYStream stream(data, data + size);
-    CYDriver driver(stream);
+    CYDriver driver(pool, stream);
     driver.commented_ = true;
 
     size_t offset(0);
     CYPosition current;
-
-    CYLocalPool pool;
 
     YYSTYPE value;
     CYLocation location;

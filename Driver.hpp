@@ -39,6 +39,7 @@ enum CYState {
 
 class _visible CYDriver {
   public:
+    CYPool &pool_;
     void *scanner_;
 
     CYState state_;
@@ -107,11 +108,11 @@ class _visible CYDriver {
     void ScannerDestroy();
 
   public:
-    CYDriver(std::istream &data, const std::string &filename = "");
+    CYDriver(CYPool &pool, std::istream &data, const std::string &filename = "");
     ~CYDriver();
 
-    bool Parse(CYPool &pool);
-    void Replace(CYPool &pool, CYOptions &options);
+    bool Parse();
+    void Replace(CYOptions &options);
 
     Condition GetCondition();
     void SetCondition(Condition condition);

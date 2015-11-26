@@ -22,7 +22,8 @@
 #include "Cycript.tab.hh"
 #include "Driver.hpp"
 
-CYDriver::CYDriver(std::istream &data, const std::string &filename) :
+CYDriver::CYDriver(CYPool &pool, std::istream &data, const std::string &filename) :
+    pool_(pool),
     state_(CYClear),
     data_(data),
     debug_(0),
@@ -43,8 +44,8 @@ CYDriver::~CYDriver() {
     ScannerDestroy();
 }
 
-bool CYDriver::Parse(CYPool &pool) {
-    CYLocal<CYPool> local(&pool);
+bool CYDriver::Parse() {
+    CYLocal<CYPool> local(&pool_);
     cy::parser parser(*this);
 #ifdef YYDEBUG
     parser.set_debug_level(debug_);
@@ -52,8 +53,8 @@ bool CYDriver::Parse(CYPool &pool) {
     return parser.parse() != 0;
 }
 
-void CYDriver::Replace(CYPool &pool, CYOptions &options) {
-    CYLocal<CYPool> local(&pool);
+void CYDriver::Replace(CYOptions &options) {
+    CYLocal<CYPool> local(&pool_);
     CYContext context(options);
     program_->Replace(context);
 }

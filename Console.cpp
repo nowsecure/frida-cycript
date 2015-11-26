@@ -104,10 +104,10 @@ void Setup(CYDriver &driver) {
         driver.strict_ = true;
 }
 
-void Setup(CYPool &pool, CYOutput &out, CYDriver &driver, CYOptions &options, bool lower) {
+void Setup(CYOutput &out, CYDriver &driver, CYOptions &options, bool lower) {
     out.pretty_ = pretty_;
     if (lower)
-        driver.Replace(pool, options);
+        driver.Replace(options);
 }
 
 static CYUTF8String Run(CYPool &pool, int client, CYUTF8String code) {
@@ -379,11 +379,12 @@ static void Console(CYOptions &options) {
             code = command_;
         else {
             std::istringstream stream(command_);
-            CYDriver driver(stream);
-            Setup(driver);
 
             CYPool pool;
-            bool failed(driver.Parse(pool));
+            CYDriver driver(pool, stream);
+            Setup(driver);
+
+            bool failed(driver.Parse());
 
             if (failed || !driver.errors_.empty()) {
                 for (CYDriver::Errors::const_iterator error(driver.errors_.begin()); error != driver.errors_.end(); ++error) {
@@ -424,7 +425,7 @@ static void Console(CYOptions &options) {
 
             std::stringbuf str;
             CYOutput out(str, options);
-            Setup(pool, out, driver, options, lower);
+            Setup(out, driver, options, lower);
             out << *driver.program_;
             code = str.str();
         }
@@ -743,11 +744,11 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
             _assert(!stream->fail());
         }
 
-        CYDriver driver(*stream, script);
+        CYPool pool;
+        CYDriver driver(pool, *stream, script);
         Setup(driver);
 
-        CYPool pool;
-        bool failed(driver.Parse(pool));
+        bool failed(driver.Parse());
 
         if (failed || !driver.errors_.empty()) {
             for (CYDriver::Errors::const_iterator i(driver.errors_.begin()); i != driver.errors_.end(); ++i)
@@ -755,7 +756,7 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
         } else if (driver.program_ != NULL) {
             std::stringbuf str;
             CYOutput out(str, options);
-            Setup(pool, out, driver, options, true);
+            Setup(out, driver, options, true);
             out << *driver.program_;
             std::string code(str.str());
             if (compile)
