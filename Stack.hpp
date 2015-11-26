@@ -30,62 +30,68 @@ class stack {
     typedef std::reverse_iterator<Type_ *> const_iterator;
 
   private:
-    Type_ *data_;
-    size_t size_;
-    size_t capacity_;
+    Type_ *begin_;
+    Type_ *end_;
+    Type_ *capacity_;
 
     void destroy() {
-        data_ -= size_;
-        for (size_t i(0); i != size_; ++i)
-            data_[i].~Type_();
+        for (Type_ *i(begin_); i != end_; ++i)
+            i->~Type_();
     }
 
-    void reserve(size_t capacity) {
-        capacity_ = capacity;
-        Type_ *data(static_cast<Type_ *>(::operator new(sizeof(Type_) * capacity_)));
+    void reserve() {
+        size_t capacity(capacity_ - begin_);
+        if (capacity == 0)
+            capacity = 200;
+        else
+            capacity *= 2;
 
-        data_ -= size_;
-        for (size_t i(0); i != size_; ++i) {
-            Type_ &old(data_[i]);
+        Type_ *data(static_cast<Type_ *>(::operator new(sizeof(Type_) * capacity)));
+
+        size_t size(end_ - begin_);
+        for (size_t i(0); i != size; ++i) {
+            Type_ &old(begin_[i]);
             new (data + i) Type_(old);
             old.~Type_();
         }
 
-        ::operator delete(data_);
-        data_ = data + size_;
+        ::operator delete(begin_);
+
+        begin_ = data;
+        end_ = data + size;
+        capacity_ = data + capacity;
     }
 
   public:
     stack() :
-        data_(NULL),
-        size_(0)
+        begin_(NULL),
+        end_(NULL),
+        capacity_(NULL)
     {
-        reserve(200);
+        reserve();
     }
 
     ~stack() {
         destroy();
-        ::operator delete(data_);
+        ::operator delete(begin_);
     }
 
     _finline Type_ &operator [](size_t i) {
-        return data_[-1 - i];
+        return end_[-1 - i];
     }
 
     _finline const Type_ &operator [](size_t i) const {
-        return data_[-1 - i];
+        return end_[-1 - i];
     }
 
     _finline void push(Type_ &t) {
-        if (size_ == capacity_)
-            reserve(capacity_ * 2);
-        new (data_++) Type_(t);
-        ++size_;
+        if (end_ == capacity_)
+            reserve();
+        new (end_++) Type_(t);
     }
 
     _finline void pop() {
-        (--data_)->~Type_();
-        --size_;
+        (--end_)->~Type_();
     }
 
     _finline void pop(unsigned int size) {
@@ -95,19 +101,19 @@ class stack {
 
     void clear() {
         destroy();
-        size_ = 0;
+        end_ = begin_;
     }
 
     _finline size_t size() const {
-        return size_;
+        return end_ - begin_;
     }
 
     _finline const_iterator begin() const {
-        return const_iterator(data_);
+        return const_iterator(end_);
     }
 
     _finline const_iterator end() const {
-        return const_iterator(data_ - size_);
+        return const_iterator(begin_);
     }
 
   private:
