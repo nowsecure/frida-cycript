@@ -74,8 +74,7 @@ $(deb): Cycript.lib/cycript Cycript.lib/libcycript.dylib
 deb: $(deb)
 	ln -sf $< cycript.deb
 
-clean:
-	rm -rf cycript Cycript.lib libcycript*.o
+clean := 
 
 # make stubbornly refuses to believe that these @'s are bugs
 # http://osdir.com/ml/help-make-gnu/2012-04/msg00008.html
@@ -86,6 +85,9 @@ build-$(1)-$(2):
 	$$(MAKE) -C build.$(1)-$(2)
 build.$(1)-$(2)/.libs/libcycript.a: build-$(1)-$(2)
 	@
+clean-$(1)-$(2):
+	$$(MAKE) -C build.$(1)-$(2) clean
+clean += clean-$(1)-$(2)
 endef
 
 define build_lib
@@ -127,6 +129,9 @@ $(call build_lib,ios,$(1))
 endef
 
 $(foreach arch,armv6 arm64,$(eval $(call build_arm,$(arch))))
+
+clean: $(clean)
+	rm -rf cycript Cycript.lib libcycript*.o
 
 Cycript.lib/libcycript.dylib: build.osx-i386/.libs/libcycript.dylib build.osx-x86_64/.libs/libcycript.dylib build.ios-armv6/.libs/libcycript.dylib build.ios-arm64/.libs/libcycript.dylib
 	@mkdir -p $(dir $@)
