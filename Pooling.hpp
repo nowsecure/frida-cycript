@@ -43,6 +43,7 @@ class CYPool {
   private:
     uint8_t *data_;
     size_t size_;
+    size_t next_;
 
     struct Cleaner {
         Cleaner *next_;
@@ -70,9 +71,10 @@ class CYPool {
     CYPool(const CYPool &);
 
   public:
-    CYPool() :
+    CYPool(size_t next = 64) :
         data_(NULL),
         size_(0),
+        next_(next),
         cleaner_(NULL)
     {
     }
@@ -90,8 +92,8 @@ class CYPool {
         size = align(size);
 
         if (size > size_) {
-            // XXX: is this an optimal malloc size?
-            size_ = std::max<size_t>(size, size + align(sizeof(Cleaner)));
+            size_ = std::max<size_t>(next_, size + align(sizeof(Cleaner)));
+            next_ *= 2;
             data_ = reinterpret_cast<uint8_t *>(::malloc(size_));
             atexit(free, data_);
             _assert(size <= size_);
