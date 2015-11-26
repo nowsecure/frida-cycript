@@ -612,7 +612,7 @@ static void Console(CYOptions &options) {
     }
 }
 
-void InjectLibrary(pid_t, int, const char *[]);
+void InjectLibrary(pid_t, int, const char *const []);
 
 int Main(int argc, char * const argv[], char const * const envp[]) {
     bool tty(isatty(STDIN_FILENO));
@@ -719,7 +719,8 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
                     // XXX: arg needs to be escaped in some horrendous way of doom
                     // XXX: this is a memory leak now because I just don't care enough
                     char *command;
-                    asprintf(&command, "ps axc|sed -e '/^ *[0-9]/{s/^ *\\([0-9]*\\)\\( *[^ ]*\\)\\{3\\} *-*\\([^ ]*\\)/\\3 \\1/;/^%s /{s/^[^ ]* //;q;};};d'", optarg);
+                    int writ(asprintf(&command, "ps axc|sed -e '/^ *[0-9]/{s/^ *\\([0-9]*\\)\\( *[^ ]*\\)\\{3\\} *-*\\([^ ]*\\)/\\3 \\1/;/^%s /{s/^[^ ]* //;q;};};d'", optarg));
+                    _assert(writ != -1);
 
                     if (FILE *pids = popen(command, "r")) {
                         char value[32];
@@ -867,7 +868,8 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
         _syscall(chmod(address.sun_path, 0777));
 
         _syscall(listen(server, 1));
-        InjectLibrary(pid, 1, (const char *[]) {address.sun_path, NULL});
+        const char *const argv[] = {address.sun_path, NULL};
+        InjectLibrary(pid, 1, argv);
         client_ = _syscall(accept(server, NULL, NULL));
     }
 #else

@@ -1086,6 +1086,7 @@ NSObject *CYCopyNSObject(CYPool &pool, JSContextRef context, JSValueRef value) {
 @end
 /* }}} */
 /* Bridge: NSOrderedSet {{{ */
+#ifdef __APPLE__
 @implementation NSOrderedSet (Cycript)
 
 - (NSString *) cy$toCYON:(bool)objective inSet:(std::set<void *> &)objects {
@@ -1099,6 +1100,7 @@ NSObject *CYCopyNSObject(CYPool &pool, JSContextRef context, JSValueRef value) {
 }
 
 @end
+#endif
 /* }}} */
 /* Bridge: NSProxy {{{ */
 @implementation NSProxy (Cycript)

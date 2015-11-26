@@ -150,7 +150,7 @@ AC_DEFUN([CY_CHECK_JAVASCRIPTCORE], [
     ], [
         AC_SUBST([CY_EXECUTE], [1])
     ], [
-        for cy_webkit_pkg in "webkit-1.0" "WebKitGtk"; do
+        for cy_webkit_pkg in "javascriptcoregtk-4.0"; do
             PKG_CHECK_MODULES([WEBKIT], [$cy_webkit_pkg], [
                 AC_SUBST([CY_EXECUTE], [1])
                 AC_LIB_APPENDTOVAR([CPPFLAGS], [`$PKG_CONFIG --cflags $cy_webkit_pkg`])

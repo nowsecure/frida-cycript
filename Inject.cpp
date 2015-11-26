@@ -55,7 +55,7 @@ Type_ *shift(Type_ *data, size_t size) {
     return reinterpret_cast<Type_ *>(reinterpret_cast<uint8_t *>(data) + size);
 }
 
-void InjectLibrary(int pid, int argc, const char *argv[]) {
+void InjectLibrary(int pid, int argc, const char *const argv[]) {
     auto cynject(LibraryFor(reinterpret_cast<void *>(&main)));
     auto slash(cynject.rfind('/'));
     _assert(slash != std::string::npos);

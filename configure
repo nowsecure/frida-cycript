@@ -20178,7 +20178,7 @@ $as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
 
 else
 
-        for cy_webkit_pkg in "webkit-1.0" "WebKitGtk"; do
+        for cy_webkit_pkg in "javascriptcoregtk-4.0"; do
 
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
@@ -20447,7 +20447,7 @@ $as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
 
 else
 
-        for cy_webkit_pkg in "webkit-1.0" "WebKitGtk"; do
+        for cy_webkit_pkg in "javascriptcoregtk-4.0"; do
 
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5
@@ -20716,7 +20716,7 @@ $as_echo "$ac_cv_framework_JavaScriptCore" >&6; }
 
 else
 
-        for cy_webkit_pkg in "webkit-1.0" "WebKitGtk"; do
+        for cy_webkit_pkg in "javascriptcoregtk-4.0"; do
 
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for WEBKIT" >&5

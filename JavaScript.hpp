@@ -210,17 +210,21 @@ class CYJSString {
 };
 
 #ifdef __APPLE__
+#define _weak __attribute__((__weak_import__));
+#else
+#define _weak
+#endif
+
 typedef struct OpaqueJSWeakObjectMap *JSWeakObjectMapRef;
 typedef void (*JSWeakMapDestroyedCallback)(JSWeakObjectMapRef map, void *data);
 
-extern "C" JSWeakObjectMapRef JSWeakObjectMapCreate(JSContextRef ctx, void *data, JSWeakMapDestroyedCallback destructor) __attribute__((__weak_import__));
-extern "C" void JSWeakObjectMapSet(JSContextRef ctx, JSWeakObjectMapRef map, void *key, JSObjectRef) __attribute__((__weak_import__));
-extern "C" JSObjectRef JSWeakObjectMapGet(JSContextRef ctx, JSWeakObjectMapRef map, void *key) __attribute__((__weak_import__));
-extern "C" bool JSWeakObjectMapClear(JSContextRef ctx, JSWeakObjectMapRef map, void *key, JSObjectRef object) __attribute__((__weak_import__));
-extern "C" void JSWeakObjectMapRemove(JSContextRef ctx, JSWeakObjectMapRef map, void* key) __attribute__((__weak_import__));
+extern "C" JSWeakObjectMapRef JSWeakObjectMapCreate(JSContextRef ctx, void *data, JSWeakMapDestroyedCallback destructor) _weak;
+extern "C" void JSWeakObjectMapSet(JSContextRef ctx, JSWeakObjectMapRef map, void *key, JSObjectRef) _weak;
+extern "C" JSObjectRef JSWeakObjectMapGet(JSContextRef ctx, JSWeakObjectMapRef map, void *key) _weak;
+extern "C" bool JSWeakObjectMapClear(JSContextRef ctx, JSWeakObjectMapRef map, void *key, JSObjectRef object) _weak;
+extern "C" void JSWeakObjectMapRemove(JSContextRef ctx, JSWeakObjectMapRef map, void* key) _weak;
 
 typedef bool (*JSShouldTerminateCallback)(JSContextRef ctx, void *context);
-extern "C" void JSContextGroupSetExecutionTimeLimit(JSContextGroupRef, double limit, JSShouldTerminateCallback, void *context) __attribute__((__weak_import__));
-#endif
+extern "C" void JSContextGroupSetExecutionTimeLimit(JSContextGroupRef, double limit, JSShouldTerminateCallback, void *context) _weak;
 
 #endif/*CYCRIPT_JAVASCRIPT_HPP*/
