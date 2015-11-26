@@ -27,6 +27,7 @@
 %code requires {
 #include "Driver.hpp"
 #include "Parser.hpp"
+#include "Stack.hpp"
 #define CYNew new($pool)
 
 @begin ObjectiveC
