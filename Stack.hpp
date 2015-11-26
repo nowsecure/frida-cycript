@@ -24,6 +24,63 @@
 
 namespace cy {
 
+#if 0
+template <class Type_>
+class stack {
+  public:
+    typedef std::vector<Type_> Data_;
+    typedef typename Data_::const_reverse_iterator const_iterator;
+
+  private:
+    Data_ data_;
+
+  public:
+    stack() {
+        data_.reserve(200);
+    }
+
+    _finline Type_ &operator [](size_t i) {
+        return data_[data_.size() - 1 - i];
+    }
+
+    _finline const Type_ &operator [](size_t i) const {
+        return data_[data_.size() - 1 - i];
+    }
+
+    _finline void push(Type_ &t) {
+        data_.push_back(t);
+    }
+
+    _finline void pop() {
+        data_.pop_back();
+    }
+
+    _finline void pop(unsigned int size) {
+        for (; size != 0; --size)
+            pop();
+    }
+
+    void clear() {
+        data_.clear();
+    }
+
+    _finline size_t size() const {
+        return data_.size();
+    }
+
+    _finline const_iterator begin() const {
+        return data_.rbegin();
+    }
+
+    _finline const_iterator end() const {
+        return data_.rend();
+    }
+
+  private:
+    stack(const stack &);
+    stack &operator =(const stack &);
+};
+#else
 template <class Type_>
 class stack {
   public:
@@ -120,6 +177,7 @@ class stack {
     stack(const stack &);
     stack &operator =(const stack &);
 };
+#endif
 
 template <class Type_, class Stack_ = stack<Type_> >
 class slice {
