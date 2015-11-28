@@ -39,9 +39,6 @@
 struct CYContext;
 
 struct CYThing {
-    virtual ~CYThing() {
-    }
-
     virtual void Output(struct CYOutput &out) const = 0;
 };
 
@@ -113,9 +110,6 @@ struct CYOutput {
 
 struct CYPropertyName {
     virtual void PropertyName(CYOutput &out) const = 0;
-
-    virtual ~CYPropertyName() {
-    }
 };
 
 struct CYExpression;
@@ -182,9 +176,6 @@ struct CYStatement :
     CYNext<CYStatement>,
     CYThing
 {
-    virtual ~CYStatement() {
-    }
-
     void Single(CYOutput &out, CYFlags flags, CYCompactType request) const;
     void Multiple(CYOutput &out, CYFlags flags = CYNoFlags) const;
     virtual void Output(CYOutput &out) const;
@@ -228,9 +219,6 @@ struct CYStatements {
 };
 
 struct CYClassName {
-    virtual ~CYClassName() {
-    }
-
     virtual CYExpression *ClassName(CYContext &context, bool object) = 0;
     virtual void ClassName(CYOutput &out, bool object) const = 0;
 };
@@ -407,9 +395,6 @@ struct CYContext {
     {
     }
 
-    virtual ~CYContext() {
-    }
-
     void ReplaceAll(CYStatement *&statement) {
         if (statement == NULL)
             return;
@@ -494,17 +479,11 @@ struct CYBlock :
 };
 
 struct CYForInitialiser {
-    virtual ~CYForInitialiser() {
-    }
-
     virtual CYExpression *Replace(CYContext &context) = 0;
     virtual void Output(CYOutput &out, CYFlags flags) const = 0;
 };
 
 struct CYForInInitialiser {
-    virtual ~CYForInInitialiser() {
-    }
-
     virtual void ForIn(CYOutput &out, CYFlags flags) const = 0;
     virtual CYStatement *ForEachIn(CYContext &out, CYExpression *value) = 0;
 
@@ -1512,9 +1491,6 @@ struct CYFunction {
         nonlocal_(NULL),
         implicit_(false)
     {
-    }
-
-    virtual ~CYFunction() {
     }
 
     void Inject(CYContext &context);
