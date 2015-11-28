@@ -260,53 +260,53 @@ int cylex(YYSTYPE *, CYLocation *, void *);
 %token <identifier_> No "NO"
 @end
 
-%token <false_> False "false"
-%token <null_> Null "null"
-%token <true_> True "true"
+%token False "false"
+%token Null "null"
+%token True "true"
 
 // ES3/ES5/WIE/JSC Reserved
-%token <word_> Auto "auto"
-%token <word_> Break "break"
-%token <word_> Case "case"
-%token <word_> Catch "catch"
-%token <word_> Continue "continue"
-%token <word_> Default "default"
-%token <word_> Delete "delete"
-%token <word_> Do "do"
-%token <word_> Else "else"
-%token <word_> Finally "finally"
-%token <word_> For "for"
-%token <word_> Function "function"
-%token <word_> Function_ ";function"
-%token <word_> If "if"
-%token <word_> In "in"
-%token <word_> In_ "!in"
-%token <word_> InstanceOf "instanceof"
-%token <word_> New "new"
-%token <word_> Return "return"
-%token <word_> Switch "switch"
-%token <this_> This "this"
-%token <word_> Throw "throw"
-%token <word_> Try "try"
-%token <word_> TypeOf "typeof"
-%token <word_> Var "var"
-%token <word_> Void "void"
-%token <word_> While "while"
-%token <word_> With "with"
+%token Auto "auto"
+%token Break "break"
+%token Case "case"
+%token Catch "catch"
+%token Continue "continue"
+%token Default "default"
+%token Delete "delete"
+%token Do "do"
+%token Else "else"
+%token Finally "finally"
+%token For "for"
+%token Function "function"
+%token Function_ ";function"
+%token If "if"
+%token In "in"
+%token In_ "!in"
+%token InstanceOf "instanceof"
+%token New "new"
+%token Return "return"
+%token Switch "switch"
+%token This "this"
+%token Throw "throw"
+%token Try "try"
+%token TypeOf "typeof"
+%token Var "var"
+%token Void "void"
+%token While "while"
+%token With "with"
 
 // ES3/IE6 Future, ES5/JSC Reserved
-%token <word_> Debugger "debugger"
+%token Debugger "debugger"
 
 // ES3/ES5/IE6 Future, JSC Reserved
-%token <word_> Const "const"
+%token Const "const"
 
 // ES3/ES5/IE6/JSC Future
-%token <word_> Class "class"
-%token <word_> Enum "enum"
-%token <word_> Export "export"
-%token <word_> Extends "extends"
-%token <word_> Import "import"
-%token <word_> Super "super"
+%token Class "class"
+%token Enum "enum"
+%token Export "export"
+%token Extends "extends"
+%token Import "import"
+%token Super "super"
 
 // ES3 Future, ES5 Strict Future
 %token <identifier_> Implements "implements"
@@ -621,48 +621,48 @@ NewLineOpt
 
 Word
     : Identifier { $$ = $1; }
-    | "auto" { $$ = $1; }
-    | "break" NewLineOpt { $$ = $1; }
-    | "case" { $$ = $1; }
-    | "catch" { $$ = $1; }
-    | "class" { $$ = $1; }
-    | "const" { $$ = $1; }
-    | "continue" NewLineOpt { $$ = $1; }
-    | "debugger" { $$ = $1; }
-    | "default" { $$ = $1; }
-    | "delete" LexSetRegExp { $$ = $1; }
-    | "do" { $$ = $1; }
-    | "else" { $$ = $1; }
-    | "enum" { $$ = $1; }
-    | "export" { $$ = $1; }
-    | "extends" { $$ = $1; }
-    | "false" { $$ = $1; }
-    | "finally" { $$ = $1; }
-    /* XXX: | "for" { $$ = $1; } */
-    | "function" { $$ = $1; }
-    | "if" { $$ = $1; }
-    | "import" { $$ = $1; }
-    /* XXX: | "in" { $$ = $1; } */
-    | "!in" { $$ = $1; }
-    /* XXX: | "instanceof" { $$ = $1; } */
+    | "auto" { $$ = CYNew CYWord("auto"); }
+    | "break" NewLineOpt { $$ = CYNew CYWord("break"); }
+    | "case" { $$ = CYNew CYWord("case"); }
+    | "catch" { $$ = CYNew CYWord("catch"); }
+    | "class" { $$ = CYNew CYWord("class"); }
+    | "const" { $$ = CYNew CYWord("const"); }
+    | "continue" NewLineOpt { $$ = CYNew CYWord("continue"); }
+    | "debugger" { $$ = CYNew CYWord("debugger"); }
+    | "default" { $$ = CYNew CYWord("default"); }
+    | "delete" LexSetRegExp { $$ = CYNew CYWord("delete"); }
+    | "do" { $$ = CYNew CYWord("do"); }
+    | "else" { $$ = CYNew CYWord("else"); }
+    | "enum" { $$ = CYNew CYWord("enum"); }
+    | "export" { $$ = CYNew CYWord("export"); }
+    | "extends" { $$ = CYNew CYWord("extends"); }
+    | "false" { $$ = CYNew CYWord("false"); }
+    | "finally" { $$ = CYNew CYWord("finally"); }
+    /* XXX: | "for" { $$ = CYNew CYWord("for"); } */
+    | "function" { $$ = CYNew CYWord("function"); }
+    | "if" { $$ = CYNew CYWord("if"); }
+    | "import" { $$ = CYNew CYWord("import"); }
+    /* XXX: | "in" { $$ = CYNew CYWord("in"); } */
+    | "!in" { $$ = CYNew CYWord("in"); }
+    /* XXX: | "instanceof" { $$ = CYNew CYWord("instanceof"); } */
 
     // XXX: as it currently is not an Identifier
     | "let" { $$ = $1; }
 
-    | "new" LexSetRegExp { $$ = $1; }
-    | "null" { $$ = $1; }
-    | "return" NewLineOpt { $$ = $1; }
-    | "super" { $$ = $1; }
-    | "switch" { $$ = $1; }
-    | "this" { $$ = $1; }
-    | "throw" NewLineOpt { $$ = $1; }
-    | "true" { $$ = $1; }
-    | "try" { $$ = $1; }
-    | "typeof" LexSetRegExp { $$ = $1; }
-    | "var" { $$ = $1; }
-    | "void" LexSetRegExp { $$ = $1; }
-    | "while" { $$ = $1; }
-    | "with" { $$ = $1; }
+    | "new" LexSetRegExp { $$ = CYNew CYWord("new"); }
+    | "null" { $$ = CYNew CYWord("null"); }
+    | "return" NewLineOpt { $$ = CYNew CYWord("return"); }
+    | "super" { $$ = CYNew CYWord("super"); }
+    | "switch" { $$ = CYNew CYWord("switch"); }
+    | "this" { $$ = CYNew CYWord("this"); }
+    | "throw" NewLineOpt { $$ = CYNew CYWord("throw"); }
+    | "true" { $$ = CYNew CYWord("true"); }
+    | "try" { $$ = CYNew CYWord("try"); }
+    | "typeof" LexSetRegExp { $$ = CYNew CYWord("typeof"); }
+    | "var" { $$ = CYNew CYWord("var"); }
+    | "void" LexSetRegExp { $$ = CYNew CYWord("void"); }
+    | "while" { $$ = CYNew CYWord("while"); }
+    | "with" { $$ = CYNew CYWord("with"); }
     ;
 
 @begin ObjectiveC
@@ -744,13 +744,13 @@ ValueLiteral
 /* }}} */
 /* 7.8.1 Null Literals {{{ */
 NullLiteral
-    : "null" { $$ = $1; }
+    : "null" { $$ = CYNew CYNull(); }
     ;
 /* }}} */
 /* 7.8.2 Boolean Literals {{{ */
 BooleanLiteral
-    : "true" { $$ = $1; }
-    | "false" { $$ = $1; }
+    : "true" { $$ = CYNew CYTrue(); }
+    | "false" { $$ = CYNew CYFalse(); }
     ;
 /* }}} */
 
@@ -780,7 +780,7 @@ Variable
     ;
 
 PrimaryExpression
-    : "this" { $$ = $1; }
+    : "this" { $$ = CYNew CYThis(); }
     | Variable { $$ = $1; }
     | Literal { $$ = $1; }
     | ArrayInitialiser { $$ = $1; }

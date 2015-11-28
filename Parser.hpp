@@ -853,14 +853,8 @@ struct CYRegEx :
 };
 
 struct CYNull :
-    CYWord,
     CYTrivial
 {
-    CYNull() :
-        CYWord("null")
-    {
-    }
-
     virtual CYNumber *Number(CYContext &context);
     virtual CYString *String(CYContext &context);
 
@@ -868,14 +862,8 @@ struct CYNull :
 };
 
 struct CYThis :
-    CYWord,
     CYMagic
 {
-    CYThis() :
-        CYWord("this")
-    {
-    }
-
     virtual CYExpression *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -888,14 +876,8 @@ struct CYBoolean :
 };
 
 struct CYFalse :
-    CYWord,
     CYBoolean
 {
-    CYFalse() :
-        CYWord("false")
-    {
-    }
-
     virtual bool Value() const {
         return false;
     }
@@ -905,14 +887,8 @@ struct CYFalse :
 };
 
 struct CYTrue :
-    CYWord,
     CYBoolean
 {
-    CYTrue() :
-        CYWord("true")
-    {
-    }
-
     virtual bool Value() const {
         return true;
     }

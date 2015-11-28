@@ -392,47 +392,47 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
 "undefined"    L C I(identifier, Identifier("undefined"), tk::Identifier_, hi::Operator);
 
-"false"        L C I(false, False(), tk::False, hi::Constant);
-"null"         L C I(null, Null(), tk::Null, hi::Constant);
-"true"         L C I(true, True(), tk::True, hi::Constant);
+"false"        L C F(tk::False, hi::Constant);
+"null"         L C F(tk::Null, hi::Constant);
+"true"         L C F(tk::True, hi::Constant);
 
-"auto"         L C I(word, Word("auto"), tk::Auto, hi::Meta);
-"break"        L R I(word, Word("break"), tk::Break, hi::Control);
-"case"         L C I(word, Word("case"), tk::Case, hi::Control);
-"catch"        L C I(word, Word("catch"), tk::Catch, hi::Control);
-"continue"     L R I(word, Word("continue"), tk::Continue, hi::Control);
-"default"      L C I(word, Word("default"), tk::Default, hi::Control);
-"delete"       L C I(word, Word("delete"), tk::Delete, hi::Operator);
-"do"           L C I(word, Word("do"), tk::Do, hi::Control);
-"else"         L C I(word, Word("else"), tk::Else, hi::Control);
-"finally"      L C I(word, Word("finally"), tk::Finally, hi::Control);
-"for"          L C I(word, Word("for"), tk::For, hi::Control);
-"function"     L C I(word, Word("function"), yyextra->no_.Function ? tk::Function_ : tk::Function, hi::Meta);
-"if"           L C I(word, Word("if"), tk::If, hi::Control);
-"in"           L C I(word, Word("in"), yyextra->in_.top() ? tk::In_ : tk::In, hi::Operator);
-"instanceof"   L C I(word, Word("instanceof"), tk::InstanceOf, hi::Operator);
-"new"          L C I(word, Word("new"), tk::New, hi::Operator);
-"return"       L R I(word, Word("return"), tk::Return, hi::Control);
-"switch"       L C I(word, Word("switch"), tk::Switch, hi::Control);
-"this"         L C I(this, This(), tk::This, hi::Constant);
-"throw"        L R I(word, Word("throw"), tk::Throw, hi::Control);
-"try"          L C I(word, Word("try"), tk::Try, hi::Control);
-"typeof"       L C I(word, Word("typeof"), tk::TypeOf, hi::Operator);
-"var"          L C I(word, Word("var"), tk::Var, hi::Meta);
-"void"         L C I(word, Word("void"), tk::Void, hi::Operator);
-"while"        L C I(word, Word("while"), tk::While, hi::Control);
-"with"         L C I(word, Word("with"), tk::With, hi::Control);
+"auto"         L C F(tk::Auto, hi::Meta);
+"break"        L R F(tk::Break, hi::Control);
+"case"         L C F(tk::Case, hi::Control);
+"catch"        L C F(tk::Catch, hi::Control);
+"continue"     L R F(tk::Continue, hi::Control);
+"default"      L C F(tk::Default, hi::Control);
+"delete"       L C F(tk::Delete, hi::Operator);
+"do"           L C F(tk::Do, hi::Control);
+"else"         L C F(tk::Else, hi::Control);
+"finally"      L C F(tk::Finally, hi::Control);
+"for"          L C F(tk::For, hi::Control);
+"function"     L C F(yyextra->no_.Function ? tk::Function_ : tk::Function, hi::Meta);
+"if"           L C F(tk::If, hi::Control);
+"in"           L C F(yyextra->in_.top() ? tk::In_ : tk::In, hi::Operator);
+"instanceof"   L C F(tk::InstanceOf, hi::Operator);
+"new"          L C F(tk::New, hi::Operator);
+"return"       L R F(tk::Return, hi::Control);
+"switch"       L C F(tk::Switch, hi::Control);
+"this"         L C F(tk::This, hi::Constant);
+"throw"        L R F(tk::Throw, hi::Control);
+"try"          L C F(tk::Try, hi::Control);
+"typeof"       L C F(tk::TypeOf, hi::Operator);
+"var"          L C F(tk::Var, hi::Meta);
+"void"         L C F(tk::Void, hi::Operator);
+"while"        L C F(tk::While, hi::Control);
+"with"         L C F(tk::With, hi::Control);
 
-"debugger"     L C I(word, Word("debugger"), tk::Debugger, hi::Meta);
+"debugger"     L C F(tk::Debugger, hi::Meta);
 
-"const"        L C I(word, Word("const"), tk::Const, hi::Meta);
+"const"        L C F(tk::Const, hi::Meta);
 
-"class"        L C I(word, Word("class"), tk::Class, hi::Meta);
-"enum"         L C I(word, Word("enum"), tk::Enum, hi::Meta);
-"export"       L C I(word, Word("export"), tk::Export, hi::Meta);
-"extends"      L C I(word, Word("extends"), tk::Extends, hi::Meta);
-"import"       L C I(word, Word("import"), tk::Import, hi::Meta);
-"super"        L C I(word, Word("super"), tk::Super, hi::Constant);
+"class"        L C F(tk::Class, hi::Meta);
+"enum"         L C F(tk::Enum, hi::Meta);
+"export"       L C F(tk::Export, hi::Meta);
+"extends"      L C F(tk::Extends, hi::Meta);
+"import"       L C F(tk::Import, hi::Meta);
+"super"        L C F(tk::Super, hi::Constant);
 
 "implements"   L C I(identifier, Identifier("implements"), tk::Implements, hi::Meta);
 "interface"    L C I(identifier, Identifier("interface"), tk::Interface, hi::Meta);

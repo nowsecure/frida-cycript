@@ -610,7 +610,7 @@ void New::Output(CYOutput &out, CYFlags flags) const {
 } }
 
 void CYNull::Output(CYOutput &out, CYFlags flags) const {
-    CYWord::Output(out);
+    out << "null";
 }
 
 void CYNumber::Output(CYOutput &out, CYFlags flags) const {
@@ -784,7 +784,7 @@ void CYSwitch::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYThis::Output(CYOutput &out, CYFlags flags) const {
-    CYWord::Output(out);
+    out << "this";
 }
 
 namespace cy {
