@@ -1030,15 +1030,6 @@ struct CYArgument :
     void Output(CYOutput &out) const;
 };
 
-struct CYBlank :
-    public CYWord
-{
-    CYBlank() :
-        CYWord("")
-    {
-    }
-};
-
 struct CYClause :
     CYThing,
     CYNext<CYClause>

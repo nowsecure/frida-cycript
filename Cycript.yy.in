@@ -1587,7 +1587,7 @@ SelectorCall_
     ;
 
 SelectorCall
-    : SelectorWordOpt ":" AssignmentExpression SelectorCall_ { $$ = CYNew CYArgument($1 ?: CYNew CYBlank(), $3, $4); }
+    : SelectorWordOpt ":" AssignmentExpression SelectorCall_ { $$ = CYNew CYArgument($1 ?: CYNew CYWord(""), $3, $4); }
     ;
 
 SelectorList
