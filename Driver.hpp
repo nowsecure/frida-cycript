@@ -31,24 +31,21 @@
 #include "Location.hpp"
 #include "Parser.hpp"
 
-enum CYState {
-    CYClear,
-    CYRestricted,
-    CYNewLine
-};
-
 class _visible CYDriver {
   public:
     CYPool &pool_;
     void *scanner_;
 
-    CYState state_;
     std::stack<bool> in_;
+
+    bool newline_;
+    bool last_;
 
     struct {
         bool AtImplementation;
         bool Function;
         bool OpenBrace;
+        bool NewLine;
     } no_;
 
     std::istream &data_;

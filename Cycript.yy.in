@@ -39,77 +39,87 @@
 @end
 
 #include "Highlight.hpp"
+}
 
-typedef struct {
-    bool newline_;
-    hi::Value highlight_;
+%union { bool bool_; }
 
-    union {
-        bool bool_;
-
-        CYArgument *argument_;
-        CYAssignment *assignment_;
-        CYBoolean *boolean_;
-        CYClause *clause_;
-        cy::Syntax::Catch *catch_;
-        CYComment *comment_;
-        CYComprehension *comprehension_;
-        CYDeclaration *declaration_;
-        CYDeclarations *declarations_;
-        CYElement *element_;
-        CYExpression *expression_;
-        CYFalse *false_;
-        CYFinally *finally_;
-        CYForInitialiser *for_;
-        CYForInInitialiser *forin_;
-        CYFunctionParameter *functionParameter_;
-        CYIdentifier *identifier_;
-        CYInfix *infix_;
-        CYLiteral *literal_;
-        CYMember *member_;
-        CYModule *module_;
-        CYNull *null_;
-        CYNumber *number_;
-        CYParenthetical *parenthetical_;
-        CYProgram *program_;
-        CYProperty *property_;
-        CYPropertyName *propertyName_;
-        CYRubyProc *rubyProc_;
-        CYStatement *statement_;
-        CYString *string_;
-        CYThis *this_;
-        CYTrue *true_;
-        CYWord *word_;
+%union { CYArgument *argument_; }
+%union { CYAssignment *assignment_; }
+%union { CYBoolean *boolean_; }
+%union { CYClause *clause_; }
+%union { cy::Syntax::Catch *catch_; }
+%union { CYComment *comment_; }
+%union { CYComprehension *comprehension_; }
+%union { CYDeclaration *declaration_; }
+%union { CYDeclarations *declarations_; }
+%union { CYElement *element_; }
+%union { CYExpression *expression_; }
+%union { CYFalse *false_; }
+%union { CYFinally *finally_; }
+%union { CYForInitialiser *for_; }
+%union { CYForInInitialiser *forin_; }
+%union { CYFunctionParameter *functionParameter_; }
+%union { CYIdentifier *identifier_; }
+%union { CYInfix *infix_; }
+%union { CYLiteral *literal_; }
+%union { CYMember *member_; }
+%union { CYModule *module_; }
+%union { CYNull *null_; }
+%union { CYNumber *number_; }
+%union { CYParenthetical *parenthetical_; }
+%union { CYProgram *program_; }
+%union { CYProperty *property_; }
+%union { CYPropertyName *propertyName_; }
+%union { CYRubyProc *rubyProc_; }
+%union { CYStatement *statement_; }
+%union { CYString *string_; }
+%union { CYThis *this_; }
+%union { CYTrue *true_; }
+%union { CYWord *word_; }
 
 @begin C
-        CYTypeModifier *modifier_;
-        CYTypeSpecifier *specifier_;
-        CYTypedIdentifier *typedIdentifier_;
-        CYTypedParameter *typedParameter_;
+%union { CYTypeModifier *modifier_; }
+%union { CYTypeSpecifier *specifier_; }
+%union { CYTypedIdentifier *typedIdentifier_; }
+%union { CYTypedParameter *typedParameter_; }
 @end
 
 @begin ObjectiveC
-        CYClassName *className_;
-        CYClassField *classField_;
-        CYMessage *message_;
-        CYMessageParameter *messageParameter_;
-        CYProtocol *protocol_;
-        CYSelectorPart *selector_;
+%union { CYClassName *className_; }
+%union { CYClassField *classField_; }
+%union { CYMessage *message_; }
+%union { CYMessageParameter *messageParameter_; }
+%union { CYProtocol *protocol_; }
+%union { CYSelectorPart *selector_; }
 @end
 
 @begin E4X
-        CYAttribute *attribute_;
-        CYPropertyIdentifier *propertyIdentifier_;
-        CYSelector *selector_;
+%union { CYAttribute *attribute_; }
+%union { CYPropertyIdentifier *propertyIdentifier_; }
+%union { CYSelector *selector_; }
 @end
-    };
-} YYSTYPE;
-
-#define YYSTYPE YYSTYPE
-}
 
 %code provides {
+
+struct YYSTYPE {
+    cy::parser::semantic_type semantic_;
+    hi::Value highlight_;
+};
+
 int cylex(YYSTYPE *, CYLocation *, void *);
+
+}
+
+%code {
+
+#undef yylex
+_finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, void *scanner) {
+    YYSTYPE data;
+    int token(cylex(&data, location, scanner));
+    *semantic = data.semantic_;
+    return token;
+}
+
 }
 
 %name-prefix "cy"
@@ -576,6 +586,10 @@ LexSetRegExp
     : { driver.SetCondition(CYDriver::RegExpCondition); }
     ;
 
+LexNoNewLine
+    : { if (!yyla.empty() && yyla.type_get() != yyeof_) error(@$, "unexpected lookahead"); driver.no_.NewLine = true; }
+    ;
+
 LexNoBrace
     : { if (yyla.empty()) driver.no_.OpenBrace = true; else if (yyla.type == yytranslate_(token::OpenBrace) || yyla.type == yytranslate_(token::OpenBrace_)) yyla.type = yytranslate_(token::OpenBrace__); }
     ;
@@ -610,21 +624,16 @@ IdentifierName
     : Word { $$ = $1; }
     ;
 
-NewLineOpt
-    : "\n"
-    |
-    ;
-
 Word
     : Identifier { $$ = $1; }
 
     | "auto" { $$ = CYNew CYWord("auto"); }
-    | "break" NewLineOpt { $$ = CYNew CYWord("break"); }
+    | "break" { $$ = CYNew CYWord("break"); }
     | "case" { $$ = CYNew CYWord("case"); }
     | "catch" { $$ = CYNew CYWord("catch"); }
     | "class" { $$ = CYNew CYWord("class"); }
     | "const" { $$ = CYNew CYWord("const"); }
-    | "continue" NewLineOpt { $$ = CYNew CYWord("continue"); }
+    | "continue" { $$ = CYNew CYWord("continue"); }
     | "debugger" { $$ = CYNew CYWord("debugger"); }
     | "default" { $$ = CYNew CYWord("default"); }
     | "delete" LexSetRegExp { $$ = CYNew CYWord("delete"); }
@@ -648,11 +657,11 @@ Word
 
     | "new" LexSetRegExp { $$ = CYNew CYWord("new"); }
     | "null" { $$ = CYNew CYWord("null"); }
-    | "return" NewLineOpt { $$ = CYNew CYWord("return"); }
+    | "return" { $$ = CYNew CYWord("return"); }
     | "super" { $$ = CYNew CYWord("super"); }
     | "switch" { $$ = CYNew CYWord("switch"); }
     | "this" { $$ = CYNew CYWord("this"); }
-    | "throw" NewLineOpt { $$ = CYNew CYWord("throw"); }
+    | "throw" { $$ = CYNew CYWord("throw"); }
     | "true" { $$ = CYNew CYWord("true"); }
     | "try" { $$ = CYNew CYWord("try"); }
     | "typeof" LexSetRegExp { $$ = CYNew CYWord("typeof"); }
@@ -695,7 +704,7 @@ IdentifierType
     // XXX: currently I only have this as Word
     // | "let" { $$ = CYNew CYIdentifier("let"); }
 
-    | "yield" NewLineOpt { $$ = CYNew CYIdentifier("yield"); }
+    | "yield" { $$ = CYNew CYIdentifier("yield"); }
 
     | "each" { $$ = CYNew CYIdentifier("each"); }
     | "of" { $$ = CYNew CYIdentifier("of"); }
@@ -766,9 +775,14 @@ StrictSemi
     : { driver.Warning(@$, "warning, automatic semi-colon insertion required"); }
     ;
 
+TerminatorSoft
+    : ";"
+    | "\n" StrictSemi
+    ;
+
 Terminator
     : ";"
-    | error { if (yyla.type_get() != yyeof_ && yyla.type != yytranslate_(token::CloseBrace) && !yyla.value.newline_) { error(@1, "required semi-colon"); } else { yyerrok; driver.errors_.pop_back(); } } StrictSemi
+    | error { if (yyla.type_get() != yyeof_ && yyla.type != yytranslate_(token::CloseBrace) && !driver.newline_) { error(@1, "required semi-colon"); } else { yyerrok; driver.errors_.pop_back(); } } StrictSemi
     ;
 
 TerminatorOpt
@@ -1262,21 +1276,33 @@ ForInStatementInitialiser
 /* }}} */
 
 /* 12.7 The continue Statement {{{ */
+Continue
+    : "continue" LexNoNewLine
+    ;
+
 ContinueStatement
-    : "continue" "\n" StrictSemi { $$ = CYNew CYContinue(NULL); }
-    | "continue" IdentifierOpt Terminator { $$ = CYNew CYContinue($2); }
+    : Continue TerminatorSoft { $$ = CYNew CYContinue(NULL); }
+    | Continue Identifier Terminator { $$ = CYNew CYContinue($2); }
     ;
 /* }}} */
 /* 12.8 The break Statement {{{ */
+Break
+    : "break" LexNoNewLine
+    ;
+
 BreakStatement
-    : "break" "\n" StrictSemi { $$ = CYNew CYBreak(NULL); }
-    | "break" IdentifierOpt Terminator { $$ = CYNew CYBreak($2); }
+    : Break TerminatorSoft { $$ = CYNew CYBreak(NULL); }
+    | Break Identifier Terminator { $$ = CYNew CYBreak($2); }
     ;
 /* }}} */
 /* 12.9 The return Statement {{{ */
+Return
+    : "return" LexNoNewLine
+    ;
+
 ReturnStatement
-    : "return" LexSetRegExp "\n" StrictSemi { $$ = CYNew CYReturn(NULL); }
-    | "return" ExpressionOpt Terminator { $$ = CYNew CYReturn($2); }
+    : Return LexSetRegExp TerminatorSoft { $$ = CYNew CYReturn(NULL); }
+    | Return Expression Terminator { $$ = CYNew CYReturn($2); }
     ;
 /* }}} */
 /* 12.10 The with Statement {{{ */
@@ -1314,9 +1340,13 @@ LabelledStatement
     ;
 /* }}} */
 /* 12.13 The throw Statement {{{ */
+ThrowWord
+    : "throw" LexNoNewLine
+    ;
+
 ThrowStatement
-    : "throw" LexSetRegExp "\n" StrictSemi { error(@1, "throw without exception"); }
-    | "throw" Expression Terminator { $$ = CYNew cy::Syntax::Throw($2); }
+    : ThrowWord LexSetRegExp TerminatorSoft { error(@1, "throw without exception"); }
+    | ThrowWord Expression Terminator { $$ = CYNew cy::Syntax::Throw($2); }
     ;
 /* }}} */
 /* 12.14 The try Statement {{{ */

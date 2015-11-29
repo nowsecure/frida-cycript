@@ -51,6 +51,7 @@ typedef cy::parser::token tk;
     yyextra->no_.AtImplementation = false; \
 @end
     yyextra->no_.Function = false; \
+    yyextra->no_.NewLine = false; \
     yyextra->no_.OpenBrace = false; \
     yylval->highlight_ = highlight; \
     return token; \
@@ -61,23 +62,19 @@ typedef cy::parser::token tk;
 #define Y P.strmemdup(yytext, yyleng)
 
 #define I(type, Type, value, highlight) do { \
-    yylval->type ## _ = A CY ## Type; \
+    yylval->semantic_.type ## _ = A CY ## Type; \
     F(value, highlight); \
 } while (false)
 
-#define T yylval->newline_ = yyextra->state_ == CYNewLine; BEGIN(Div);
-#define C T yyextra->state_ = CYClear;
-#define R T yyextra->state_ = CYRestricted;
+#define C \
+    yyextra->newline_ = yyextra->last_; \
+    yyextra->last_ = false; \
+    BEGIN(Div);
 
 #define N \
-    if (yyextra->state_ != CYNewLine) { \
-        if (yyextra->state_ != CYRestricted) \
-            yyextra->state_ = CYNewLine; \
-        else { \
-            yyextra->state_ = CYClear; \
-            F(tk::NewLine, hi::Nothing); \
-        } \
-    }
+    yyextra->last_ = true; \
+    if (yyextra->no_.NewLine) \
+        F(tk::NewLine, hi::Nothing);
 
 #define V(more) { \
     if (const char *nl = reinterpret_cast<const char *>(memchr(yytext, '\n', yyleng))) { \
@@ -312,13 +309,13 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "="    L C F(tk::Equal, hi::Operator);
 "=="   L C F(tk::EqualEqual, hi::Operator);
 "==="  L C F(tk::EqualEqualEqual, hi::Operator);
-"=>"   L C F(yylval->newline_ ? tk::EqualRight_ : tk::EqualRight, hi::Operator);
+"=>"   L C F(yyextra->newline_ ? tk::EqualRight_ : tk::EqualRight, hi::Operator);
 "!"    L C F(tk::Exclamation, hi::Operator);
 "!="   L C F(tk::ExclamationEqual, hi::Operator);
 "!=="  L C F(tk::ExclamationEqualEqual, hi::Operator);
 "-"    L C F(tk::Hyphen, hi::Operator);
 "-="   L C F(tk::HyphenEqual, hi::Operator);
-"--"   L C F(yylval->newline_ ? tk::HyphenHyphen_ : tk::HyphenHyphen, hi::Operator);
+"--"   L C F(yyextra->newline_ ? tk::HyphenHyphen_ : tk::HyphenHyphen, hi::Operator);
 "->"   L C F(tk::HyphenRight, hi::Operator);
 "<"    L C F(tk::Left, hi::Operator);
 "<="   L C F(tk::LeftEqual, hi::Operator);
@@ -332,7 +329,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "||"   L C F(tk::PipePipe, hi::Operator);
 "+"    L C F(tk::Plus, hi::Operator);
 "+="   L C F(tk::PlusEqual, hi::Operator);
-"++"   L C F(yylval->newline_ ? tk::PlusPlus_ : tk::PlusPlus, hi::Operator);
+"++"   L C F(yyextra->newline_ ? tk::PlusPlus_ : tk::PlusPlus, hi::Operator);
 ">"    L C F(tk::Right, hi::Operator);
 ">="   L C F(tk::RightEqual, hi::Operator);
 ">>"   L C F(tk::RightRight, hi::Operator);
@@ -354,7 +351,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "("    L C F(tk::OpenParen, hi::Structure);
 ")"    L C F(tk::CloseParen, hi::Structure);
 
-"{"    L C F(yyextra->no_.OpenBrace ? tk::OpenBrace__ : yylval->newline_ ? tk::OpenBrace_ : tk::OpenBrace, hi::Structure);
+"{"    L C F(yyextra->no_.OpenBrace ? tk::OpenBrace__ : yyextra->newline_ ? tk::OpenBrace_ : tk::OpenBrace, hi::Structure);
 "}"    L C F(tk::CloseBrace, hi::Structure);
 
 "["    L C F(tk::OpenBracket, hi::Structure);
@@ -401,14 +398,14 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "abstract"        L C /*FII*/ F(tk::_abstract_, hi::Meta);
 "await"           L C /*II?*/ F(tk::_await_, hi::Meta);
 "boolean"         L C /*FII*/ F(tk::_boolean_, hi::Type);
-"break"           L R /*KKK*/ F(tk::_break_, hi::Control);
+"break"           L C /*KKK*/ F(tk::_break_, hi::Control);
 "byte"            L C /*FII*/ F(tk::_byte_, hi::Type);
 "case"            L C /*KKK*/ F(tk::_case_, hi::Control);
 "catch"           L C /*KKK*/ F(tk::_catch_, hi::Control);
 "char"            L C /*FII*/ F(tk::_char_, hi::Type);
 "class"           L C /*FFK*/ F(tk::_class_, hi::Meta);
 "const"           L C /*FFK*/ F(tk::_const_, hi::Meta);
-"continue"        L R /*KKK*/ F(tk::_continue_, hi::Control);
+"continue"        L C /*KKK*/ F(tk::_continue_, hi::Control);
 "debugger"        L C /*FKK*/ F(tk::_debugger_, hi::Meta);
 "default"         L C /*KKK*/ F(tk::_default_, hi::Control);
 "delete"          L C /*KKK*/ F(tk::_delete_, hi::Operator);
@@ -441,14 +438,14 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "private"         L C /*FSS*/ F(tk::_private_, hi::Meta);
 "protected"       L C /*FSS*/ F(tk::_protected_, hi::Meta);
 "public"          L C /*FSS*/ F(tk::_public_, hi::Meta);
-"return"          L R /*KKK*/ F(tk::_return_, hi::Control);
+"return"          L C /*KKK*/ F(tk::_return_, hi::Control);
 "short"           L C /*FII*/ F(tk::_short_, hi::Type);
 "static"          L C /*FS?*/ F(tk::_static_, hi::Meta);
 "super"           L C /*FFK*/ F(tk::_super_, hi::Constant);
 "switch"          L C /*KKK*/ F(tk::_switch_, hi::Control);
 "synchronized"    L C /*FII*/ F(tk::_synchronized_, hi::Meta);
 "this"            L C /*KKK*/ F(tk::_this_, hi::Constant);
-"throw"           L R /*KKK*/ F(tk::_throw_, hi::Control);
+"throw"           L C /*KKK*/ F(tk::_throw_, hi::Control);
 "throws"          L C /*FII*/ F(tk::_throws_, hi::Meta);
 "transient"       L C /*FII*/ F(tk::_transient_, hi::Meta);
 "true"            L C /*LLL*/ F(tk::_true_, hi::Constant);
@@ -459,7 +456,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "volatile"        L C /*FII*/ F(tk::_volatile_, hi::Meta);
 "while"           L C /*KKK*/ F(tk::_while_, hi::Control);
 "with"            L C /*KKK*/ F(tk::_with_, hi::Control);
-"yield"           L R /*IS?*/ F(tk::_yield_, hi::Control);
+"yield"           L C /*IS?*/ F(tk::_yield_, hi::Control);
 
 "auto"            L C F(tk::_auto_, hi::Meta);
 "each"            L C F(tk::_each_, hi::Control);

@@ -24,7 +24,8 @@
 
 CYDriver::CYDriver(CYPool &pool, std::istream &data, const std::string &filename) :
     pool_(pool),
-    state_(CYClear),
+    newline_(false),
+    last_(false),
     data_(data),
     debug_(0),
     strict_(false),
