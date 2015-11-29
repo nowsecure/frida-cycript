@@ -226,112 +226,123 @@ int cylex(YYSTYPE *, CYLocation *, void *);
 %token OpenBracket "["
 %token CloseBracket "]"
 
-%token AtError "@error"
+%token At_error_ "@error"
 
 @begin Java
-%token AtClass "@class"
+%token At_class_ "@class"
 @end
 
 @begin C
-%token Typedef "typedef"
-%token Unsigned "unsigned"
-%token Signed "signed"
-%token Extern "extern"
+%token _typedef_ "typedef"
+%token _unsigned_ "unsigned"
+%token _signed_ "signed"
+%token _extern_ "extern"
 @end
 
 @begin C
-%token AtEncode "@encode"
+%token At_encode_ "@encode"
 @end
 
 @begin ObjectiveC
-%token AtImplementation "@implementation"
-%token AtImplementation_ ";@implementation"
-%token AtImport "@import"
-%token AtEnd "@end"
-%token AtSelector "@selector"
-%token AtNull "@null"
-%token AtYes "@YES"
-%token AtNo "@NO"
-%token AtTrue "@true"
-%token AtFalse "@false"
-%token Yes "YES"
-%token No "NO"
+%token At_implementation_ "@implementation"
+%token At_implementation__ ";@implementation"
+%token At_import_ "@import"
+%token At_end_ "@end"
+%token At_selector_ "@selector"
+%token At_null_ "@null"
+%token At_YES_ "@YES"
+%token At_NO_ "@NO"
+%token At_true_ "@true"
+%token At_false_ "@false"
+%token _YES_ "YES"
+%token _NO_ "NO"
 @end
 
-%token False "false"
-%token Null "null"
-%token True "true"
+%token _false_ "false"
+%token _null_ "null"
+%token _true_ "true"
 
-%token Break "break"
-%token Case "case"
-%token Catch "catch"
-%token Class "class"
-%token Const "const"
-%token Continue "continue"
-%token Debugger "debugger"
-%token Default "default"
-%token Delete "delete"
-%token Do "do"
-%token Else "else"
-%token Enum "enum"
-%token Export "export"
-%token Extends "extends"
-%token Finally "finally"
-%token For "for"
-%token Function "function"
-%token Function_ ";function"
-%token If "if"
-%token Import "import"
-%token In "in"
-%token In_ "!in"
-%token InstanceOf "instanceof"
-%token New "new"
-%token Return "return"
-%token Super "super"
-%token Switch "switch"
-%token This "this"
-%token Throw "throw"
-%token Try "try"
-%token TypeOf "typeof"
-%token Var "var"
-%token Void "void"
-%token While "while"
-%token With "with"
+%token _break_ "break"
+%token _case_ "case"
+%token _catch_ "catch"
+%token _class_ "class"
+%token _const_ "const"
+%token _continue_ "continue"
+%token _debugger_ "debugger"
+%token _default_ "default"
+%token _delete_ "delete"
+%token _do_ "do"
+%token _else_ "else"
+%token _enum_ "enum"
+%token _export_ "export"
+%token _extends_ "extends"
+%token _finally_ "finally"
+%token _for_ "for"
+%token _function_ "function"
+%token _function__ ";function"
+%token _if_ "if"
+%token _import_ "import"
+%token _in_ "in"
+%token _in__ "!in"
+%token _instanceof_ "instanceof"
+%token _new_ "new"
+%token _return_ "return"
+%token _super_ "super"
+%token _switch_ "switch"
+%token _this_ "this"
+%token _throw_ "throw"
+%token _try_ "try"
+%token _typeof_ "typeof"
+%token _var_ "var"
+%token _void_ "void"
+%token _while_ "while"
+%token _with_ "with"
 
-%token Abstract "abstract"
-%token Await "await"
-%token Boolean "boolean"
-%token Byte "byte"
-%token Char "char"
-%token Double "double"
-%token Final "final"
-%token Float "float"
-%token Goto "goto"
-%token Implements "implements"
-%token Int "int"
-%token Interface "interface"
-%token Let "let"
-%token Long "long"
-%token Native "native"
-%token Package "package"
-%token Private "private"
-%token Protected "protected"
-%token Public "public"
-%token Short "short"
-%token Static "static"
-%token Synchronized "synchronized"
-%token Throws "throws"
-%token Transient "transient"
-%token Volatile "volatile"
-%token Yield "yield"
+%token _abstract_ "abstract"
+%token _await_ "await"
+%token _boolean_ "boolean"
+%token _byte_ "byte"
+%token _char_ "char"
+%token _double_ "double"
+%token _final_ "final"
+%token _float_ "float"
+%token _goto_ "goto"
+%token _implements_ "implements"
+%token _int_ "int"
+%token _interface_ "interface"
+%token _let_ "let"
+%token _long_ "long"
+%token _native_ "native"
+%token _package_ "package"
+%token _private_ "private"
+%token _protected_ "protected"
+%token _public_ "public"
+%token _short_ "short"
+%token _static_ "static"
+%token _synchronized_ "synchronized"
+%token _throws_ "throws"
+%token _transient_ "transient"
+%token _volatile_ "volatile"
+%token _yield_ "yield"
 
-%token Auto "auto"
-%token Each "each"
-%token Of "of"
+%token _undefined_ "undefined"
+
+@begin ObjectiveC
+%token _bool_ "bool"
+%token _BOOL_ "BOOL"
+%token _id_ "id"
+%token _nil_ "nil"
+%token _NULL_ "NULL"
+%token _SEL_ "SEL"
+@end
+
+%token _auto_ "auto"
+%token _each_ "each"
+%token _of_ "of"
 
 @begin E4X
-%token Namespace "namespace"
-%token XML "xml"
+%token _namespace_ "namespace"
+%token _xml_ "xml"
 @end
 
 %token AutoComplete
@@ -570,12 +581,12 @@ LexNoBrace
     ;
 
 LexNoFunction
-    : { if (yyla.empty()) driver.no_.Function = true; else if (yyla.type == yytranslate_(token::Function)) yyla.type = yytranslate_(token::Function_); }
+    : { if (yyla.empty()) driver.no_.Function = true; else if (yyla.type == yytranslate_(token::_function_)) yyla.type = yytranslate_(token::_function__); }
     ;
 
 LexNoAtImplementation :
 @begin ObjectiveC
-    { if (yyla.empty()) driver.no_.AtImplementation = true; else if (yyla.type == yytranslate_(token::AtImplementation)) yyla.type = yytranslate_(token::AtImplementation_); }
+    { if (yyla.empty()) driver.no_.AtImplementation = true; else if (yyla.type == yytranslate_(token::At_implementation_)) yyla.type = yytranslate_(token::At_implementation__); }
 @end
     ;
 
@@ -688,6 +699,13 @@ IdentifierType
 
     | "each" { $$ = CYNew CYIdentifier("each"); }
     | "of" { $$ = CYNew CYIdentifier("of"); }
+
+@begin ObjectiveC
+    | "bool" { $$ = CYNew CYIdentifier("bool"); }
+    | "BOOL" { $$ = CYNew CYIdentifier("BOOL"); }
+    | "id" { $$ = CYNew CYIdentifier("id"); }
+    | "SEL" { $$ = CYNew CYIdentifier("SEL"); }
+@end
     ;
 
 Identifier
@@ -696,6 +714,7 @@ Identifier
     | "int" { $$ = CYNew CYIdentifier("int"); }
     | "long" { $$ = CYNew CYIdentifier("long"); }
     | "short" { $$ = CYNew CYIdentifier("short"); }
+    | "undefined" { $$ = CYNew CYIdentifier("undefined"); }
     | "volatile" { $$ = CYNew CYIdentifier("volatile"); }
 @begin C
     | "extern" { $$ = CYNew CYIdentifier("extern"); }
@@ -704,7 +723,9 @@ Identifier
     | "unsigned" { $$ = CYNew CYIdentifier("unsigned"); }
 @end
 @begin ObjectiveC
+    | "nil" { $$ = CYNew CYIdentifier("nil"); }
     | "NO" { $$ = CYNew CYIdentifier("NO"); }
+    | "NULL" { $$ = CYNew CYIdentifier("NULL"); }
     | "YES" { $$ = CYNew CYIdentifier("YES"); }
 @end
     ;

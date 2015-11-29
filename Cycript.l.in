@@ -361,125 +361,125 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "]"    L C F(tk::CloseBracket, hi::Structure);
     /* }}} */
     /* Keyword {{{ */
-"@error"          L C F(tk::AtError, hi::Error);
+"@error"          L C F(tk::At_error_, hi::Error);
 
 @begin Java
-"@class"          L C F(tk::AtClass, hi::Meta);
+"@class"          L C F(tk::At_class_, hi::Meta);
 @end
 
 @begin C
-"@encode"         L C F(tk::AtEncode, hi::Meta);
+"@encode"         L C F(tk::At_encode_, hi::Meta);
 @end
 
 @begin ObjectiveC
-"@end"            L C F(tk::AtEnd, hi::Meta);
-"@false"          L C F(tk::AtFalse, hi::Constant);
-"@implementation" L C F(yyextra->no_.AtImplementation ? tk::AtImplementation_ : tk::AtImplementation, hi::Meta);
-"@import"         L C F(tk::AtImport, hi::Special);
-"@NO"             L C F(tk::AtNo, hi::Constant);
-"@null"           L C F(tk::AtNull, hi::Constant);
-"@selector"       L C F(tk::AtSelector, hi::Meta);
-"@true"           L C F(tk::AtTrue, hi::Constant);
-"@YES"            L C F(tk::AtYes, hi::Constant);
+"@end"            L C F(tk::At_end_, hi::Meta);
+"@false"          L C F(tk::At_false_, hi::Constant);
+"@implementation" L C F(yyextra->no_.AtImplementation ? tk::At_implementation__ : tk::At_implementation_, hi::Meta);
+"@import"         L C F(tk::At_import_, hi::Special);
+"@NO"             L C F(tk::At_NO_, hi::Constant);
+"@null"           L C F(tk::At_null_, hi::Constant);
+"@selector"       L C F(tk::At_selector_, hi::Meta);
+"@true"           L C F(tk::At_true_, hi::Constant);
+"@YES"            L C F(tk::At_YES_, hi::Constant);
 @end
 
 @({UnicodeStart}{UnicodeScrap}|{UnicodeFail}) L E("invalid keyword")
     /* }}} */
     /* Highlight {{{ */
-"undefined"       L C I(identifier, Identifier("undefined"), tk::Identifier_, hi::Operator);
+"undefined"       L C F(tk::_undefined_, hi::Operator);
 
 @begin ObjectiveC
-"bool"            L C I(identifier, Identifier("bool"), tk::Identifier_, hi::Type);
-"BOOL"            L C I(identifier, Identifier("BOOL"), tk::Identifier_, hi::Type);
-"id"              L C I(identifier, Identifier("id"), tk::Identifier_, hi::Type);
-"nil"             L C I(identifier, Identifier("nil"), tk::Identifier_, hi::Constant);
-"NULL"            L C I(identifier, Identifier("NULL"), tk::Identifier_, hi::Constant);
-"SEL"             L C I(identifier, Identifier("SEL"), tk::Identifier_, hi::Type);
+"bool"            L C F(tk::_bool_, hi::Type);
+"BOOL"            L C F(tk::_BOOL_, hi::Type);
+"id"              L C F(tk::_id_, hi::Type);
+"nil"             L C F(tk::_nil_, hi::Constant);
+"NULL"            L C F(tk::_NULL_, hi::Constant);
+"SEL"             L C F(tk::_SEL_, hi::Type);
 @end
     /* }}} */
     /* Reserved {{{ */
-"abstract"        L C /*FII*/ F(tk::Abstract, hi::Meta);
-"await"           L C /*II?*/ F(tk::Await, hi::Meta);
-"boolean"         L C /*FII*/ F(tk::Boolean, hi::Type);
-"break"           L R /*KKK*/ F(tk::Break, hi::Control);
-"byte"            L C /*FII*/ F(tk::Byte, hi::Type);
-"case"            L C /*KKK*/ F(tk::Case, hi::Control);
-"catch"           L C /*KKK*/ F(tk::Catch, hi::Control);
-"char"            L C /*FII*/ F(tk::Char, hi::Type);
-"class"           L C /*FFK*/ F(tk::Class, hi::Meta);
-"const"           L C /*FFK*/ F(tk::Const, hi::Meta);
-"continue"        L R /*KKK*/ F(tk::Continue, hi::Control);
-"debugger"        L C /*FKK*/ F(tk::Debugger, hi::Meta);
-"default"         L C /*KKK*/ F(tk::Default, hi::Control);
-"delete"          L C /*KKK*/ F(tk::Delete, hi::Operator);
-"do"              L C /*KKK*/ F(tk::Do, hi::Control);
-"double"          L C /*FII*/ F(tk::Double, hi::Type);
-"else"            L C /*KKK*/ F(tk::Else, hi::Control);
-"enum"            L C /*FFF*/ F(tk::Enum, hi::Meta);
-"export"          L C /*FFK*/ F(tk::Export, hi::Meta);
-"extends"         L C /*FFK*/ F(tk::Extends, hi::Meta);
-"false"           L C /*LLL*/ F(tk::False, hi::Constant);
-"final"           L C /*FII*/ F(tk::Final, hi::Meta);
-"finally"         L C /*KKK*/ F(tk::Finally, hi::Control);
-"float"           L C /*FII*/ F(tk::Float, hi::Type);
-"for"             L C /*KKK*/ F(tk::For, hi::Control);
-"function"        L C /*KKK*/ F(yyextra->no_.Function ? tk::Function_ : tk::Function, hi::Meta);
-"goto"            L C /*FII*/ F(tk::Goto, hi::Control);
-"if"              L C /*KKK*/ F(tk::If, hi::Control);
-"implements"      L C /*FSS*/ F(tk::Implements, hi::Meta);
-"import"          L C /*FFK*/ F(tk::Import, hi::Meta);
-"in"              L C /*KKK*/ F(yyextra->in_.top() ? tk::In_ : tk::In, hi::Operator);
-"instanceof"      L C /*KKK*/ F(tk::InstanceOf, hi::Operator);
-"int"             L C /*FII*/ F(tk::Int, hi::Type);
-"interface"       L C /*FSS*/ F(tk::Interface, hi::Meta);
-"let"             L C /*IS?*/ F(tk::Let, hi::Meta);
-"long"            L C /*FII*/ F(tk::Long, hi::Type);
-"native"          L C /*FII*/ F(tk::Native, hi::Meta);
-"new"             L C /*KKK*/ F(tk::New, hi::Operator);
-"null"            L C /*LLL*/ F(tk::Null, hi::Constant);
-"package"         L C /*FSS*/ F(tk::Package, hi::Meta);
-"private"         L C /*FSS*/ F(tk::Private, hi::Meta);
-"protected"       L C /*FSS*/ F(tk::Protected, hi::Meta);
-"public"          L C /*FSS*/ F(tk::Public, hi::Meta);
-"return"          L R /*KKK*/ F(tk::Return, hi::Control);
-"short"           L C /*FII*/ F(tk::Short, hi::Type);
-"static"          L C /*FS?*/ F(tk::Static, hi::Meta);
-"super"           L C /*FFK*/ F(tk::Super, hi::Constant);
-"switch"          L C /*KKK*/ F(tk::Switch, hi::Control);
-"synchronized"    L C /*FII*/ F(tk::Synchronized, hi::Meta);
-"this"            L C /*KKK*/ F(tk::This, hi::Constant);
-"throw"           L R /*KKK*/ F(tk::Throw, hi::Control);
-"throws"          L C /*FII*/ F(tk::Throws, hi::Meta);
-"transient"       L C /*FII*/ F(tk::Transient, hi::Meta);
-"true"            L C /*LLL*/ F(tk::True, hi::Constant);
-"try"             L C /*KKK*/ F(tk::Try, hi::Control);
-"typeof"          L C /*KKK*/ F(tk::TypeOf, hi::Operator);
-"var"             L C /*KKK*/ F(tk::Var, hi::Meta);
-"void"            L C /*KKK*/ F(tk::Void, hi::Operator);
-"volatile"        L C /*FII*/ F(tk::Volatile, hi::Meta);
-"while"           L C /*KKK*/ F(tk::While, hi::Control);
-"with"            L C /*KKK*/ F(tk::With, hi::Control);
-"yield"           L R /*IS?*/ F(tk::Yield, hi::Control);
+"abstract"        L C /*FII*/ F(tk::_abstract_, hi::Meta);
+"await"           L C /*II?*/ F(tk::_await_, hi::Meta);
+"boolean"         L C /*FII*/ F(tk::_boolean_, hi::Type);
+"break"           L R /*KKK*/ F(tk::_break_, hi::Control);
+"byte"            L C /*FII*/ F(tk::_byte_, hi::Type);
+"case"            L C /*KKK*/ F(tk::_case_, hi::Control);
+"catch"           L C /*KKK*/ F(tk::_catch_, hi::Control);
+"char"            L C /*FII*/ F(tk::_char_, hi::Type);
+"class"           L C /*FFK*/ F(tk::_class_, hi::Meta);
+"const"           L C /*FFK*/ F(tk::_const_, hi::Meta);
+"continue"        L R /*KKK*/ F(tk::_continue_, hi::Control);
+"debugger"        L C /*FKK*/ F(tk::_debugger_, hi::Meta);
+"default"         L C /*KKK*/ F(tk::_default_, hi::Control);
+"delete"          L C /*KKK*/ F(tk::_delete_, hi::Operator);
+"do"              L C /*KKK*/ F(tk::_do_, hi::Control);
+"double"          L C /*FII*/ F(tk::_double_, hi::Type);
+"else"            L C /*KKK*/ F(tk::_else_, hi::Control);
+"enum"            L C /*FFF*/ F(tk::_enum_, hi::Meta);
+"export"          L C /*FFK*/ F(tk::_export_, hi::Meta);
+"extends"         L C /*FFK*/ F(tk::_extends_, hi::Meta);
+"false"           L C /*LLL*/ F(tk::_false_, hi::Constant);
+"final"           L C /*FII*/ F(tk::_final_, hi::Meta);
+"finally"         L C /*KKK*/ F(tk::_finally_, hi::Control);
+"float"           L C /*FII*/ F(tk::_float_, hi::Type);
+"for"             L C /*KKK*/ F(tk::_for_, hi::Control);
+"function"        L C /*KKK*/ F(yyextra->no_.Function ? tk::_function__ : tk::_function_, hi::Meta);
+"goto"            L C /*FII*/ F(tk::_goto_, hi::Control);
+"if"              L C /*KKK*/ F(tk::_if_, hi::Control);
+"implements"      L C /*FSS*/ F(tk::_implements_, hi::Meta);
+"import"          L C /*FFK*/ F(tk::_import_, hi::Meta);
+"in"              L C /*KKK*/ F(yyextra->in_.top() ? tk::_in__ : tk::_in_, hi::Operator);
+"instanceof"      L C /*KKK*/ F(tk::_instanceof_, hi::Operator);
+"int"             L C /*FII*/ F(tk::_int_, hi::Type);
+"interface"       L C /*FSS*/ F(tk::_interface_, hi::Meta);
+"let"             L C /*IS?*/ F(tk::_let_, hi::Meta);
+"long"            L C /*FII*/ F(tk::_long_, hi::Type);
+"native"          L C /*FII*/ F(tk::_native_, hi::Meta);
+"new"             L C /*KKK*/ F(tk::_new_, hi::Operator);
+"null"            L C /*LLL*/ F(tk::_null_, hi::Constant);
+"package"         L C /*FSS*/ F(tk::_package_, hi::Meta);
+"private"         L C /*FSS*/ F(tk::_private_, hi::Meta);
+"protected"       L C /*FSS*/ F(tk::_protected_, hi::Meta);
+"public"          L C /*FSS*/ F(tk::_public_, hi::Meta);
+"return"          L R /*KKK*/ F(tk::_return_, hi::Control);
+"short"           L C /*FII*/ F(tk::_short_, hi::Type);
+"static"          L C /*FS?*/ F(tk::_static_, hi::Meta);
+"super"           L C /*FFK*/ F(tk::_super_, hi::Constant);
+"switch"          L C /*KKK*/ F(tk::_switch_, hi::Control);
+"synchronized"    L C /*FII*/ F(tk::_synchronized_, hi::Meta);
+"this"            L C /*KKK*/ F(tk::_this_, hi::Constant);
+"throw"           L R /*KKK*/ F(tk::_throw_, hi::Control);
+"throws"          L C /*FII*/ F(tk::_throws_, hi::Meta);
+"transient"       L C /*FII*/ F(tk::_transient_, hi::Meta);
+"true"            L C /*LLL*/ F(tk::_true_, hi::Constant);
+"try"             L C /*KKK*/ F(tk::_try_, hi::Control);
+"typeof"          L C /*KKK*/ F(tk::_typeof_, hi::Operator);
+"var"             L C /*KKK*/ F(tk::_var_, hi::Meta);
+"void"            L C /*KKK*/ F(tk::_void_, hi::Operator);
+"volatile"        L C /*FII*/ F(tk::_volatile_, hi::Meta);
+"while"           L C /*KKK*/ F(tk::_while_, hi::Control);
+"with"            L C /*KKK*/ F(tk::_with_, hi::Control);
+"yield"           L R /*IS?*/ F(tk::_yield_, hi::Control);
 
-"auto"            L C F(tk::Auto, hi::Meta);
-"each"            L C F(tk::Each, hi::Control);
-"of"              L C F(tk::Of, hi::Operator);
+"auto"            L C F(tk::_auto_, hi::Meta);
+"each"            L C F(tk::_each_, hi::Control);
+"of"              L C F(tk::_of_, hi::Operator);
 
 @begin C
-"extern"          L C F(tk::Extern, hi::Type);
-"signed"          L C F(tk::Signed, hi::Type);
-"typedef"         L C F(tk::Typedef, hi::Meta);
-"unsigned"        L C F(tk::Unsigned, hi::Type);
+"extern"          L C F(tk::_extern_, hi::Type);
+"signed"          L C F(tk::_signed_, hi::Type);
+"typedef"         L C F(tk::_typedef_, hi::Meta);
+"unsigned"        L C F(tk::_unsigned_, hi::Type);
 @end
 
 @begin ObjectiveC
-"NO"              L C F(tk::No, hi::Constant);
-"YES"             L C F(tk::Yes, hi::Constant);
+"NO"              L C F(tk::_NO_, hi::Constant);
+"YES"             L C F(tk::_YES_, hi::Constant);
 @end
 
 @begin E4X
-"namespace"       L C F(tk::Namespace, hi::Meta);
-"xml"             L C F(tk::XML, hi::Meta);
+"namespace"       L C F(tk::_namespace_, hi::Meta);
+"xml"             L C F(tk::_xml_, hi::Meta);
 @end
     /* }}} */
     /* Identifier {{{ */
