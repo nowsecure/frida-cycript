@@ -235,10 +235,10 @@ int cylex(YYSTYPE *, CYLocation *, void *);
 @end
 
 @begin C
-%token <identifier_> Typedef "typedef"
-%token <identifier_> Unsigned "unsigned"
-%token <identifier_> Signed "signed"
-%token <identifier_> Extern "extern"
+%token Typedef "typedef"
+%token Unsigned "unsigned"
+%token Signed "signed"
+%token Extern "extern"
 @end
 
 @begin C
@@ -256,8 +256,8 @@ int cylex(YYSTYPE *, CYLocation *, void *);
 %token AtNo "@NO"
 %token AtTrue "@true"
 %token AtFalse "@false"
-%token <identifier_> Yes "YES"
-%token <identifier_> No "NO"
+%token Yes "YES"
+%token No "NO"
 @end
 
 %token False "false"
@@ -300,40 +300,40 @@ int cylex(YYSTYPE *, CYLocation *, void *);
 %token While "while"
 %token With "with"
 
-%token <identifier_> Abstract "abstract"
-%token <identifier_> Await "await"
-%token <identifier_> Boolean "boolean"
-%token <identifier_> Byte "byte"
-%token <identifier_> Char "char"
-%token <identifier_> Double "double"
-%token <identifier_> Final "final"
-%token <identifier_> Float "float"
-%token <identifier_> Goto "goto"
-%token <identifier_> Implements "implements"
-%token <identifier_> Int "int"
-%token <identifier_> Interface "interface"
-%token <identifier_> Let "let"
-%token <identifier_> Long "long"
-%token <identifier_> Native "native"
-%token <identifier_> Package "package"
-%token <identifier_> Private "private"
-%token <identifier_> Protected "protected"
-%token <identifier_> Public "public"
-%token <identifier_> Short "short"
-%token <identifier_> Static "static"
-%token <identifier_> Synchronized "synchronized"
-%token <identifier_> Throws "throws"
-%token <identifier_> Transient "transient"
-%token <identifier_> Volatile "volatile"
-%token <identifier_> Yield "yield"
+%token Abstract "abstract"
+%token Await "await"
+%token Boolean "boolean"
+%token Byte "byte"
+%token Char "char"
+%token Double "double"
+%token Final "final"
+%token Float "float"
+%token Goto "goto"
+%token Implements "implements"
+%token Int "int"
+%token Interface "interface"
+%token Let "let"
+%token Long "long"
+%token Native "native"
+%token Package "package"
+%token Private "private"
+%token Protected "protected"
+%token Public "public"
+%token Short "short"
+%token Static "static"
+%token Synchronized "synchronized"
+%token Throws "throws"
+%token Transient "transient"
+%token Volatile "volatile"
+%token Yield "yield"
 
 %token Auto "auto"
-%token <identifier_> Each "each"
-%token <identifier_> Of "of"
+%token Each "each"
+%token Of "of"
 
 @begin E4X
-%token <identifier_> Namespace "namespace"
-%token <identifier_> XML "xml"
+%token Namespace "namespace"
+%token XML "xml"
 @end
 
 %token AutoComplete
@@ -635,7 +635,7 @@ Word
     /* XXX: | "instanceof" { $$ = CYNew CYWord("instanceof"); } */
 
     // XXX: as it currently is not an Identifier
-    | "let" { $$ = $1; }
+    | "let" { $$ = CYNew CYIdentifier("let"); }
 
     | "new" LexSetRegExp { $$ = CYNew CYWord("new"); }
     | "null" { $$ = CYNew CYWord("null"); }
@@ -663,51 +663,51 @@ WordOpt
 IdentifierType
     : Identifier_ { $$ = $1; }
 
-    | "abstract" { $$ = $1; }
-    | "await" { $$ = $1; }
-    | "boolean" { $$ = $1; }
-    | "byte" { $$ = $1; }
-    | "double" { $$ = $1; }
-    | "final" { $$ = $1; }
-    | "float" { $$ = $1; }
-    | "goto" { $$ = $1; }
-    | "implements" { $$ = $1; }
-    | "interface" { $$ = $1; }
-    | "native" { $$ = $1; }
-    | "package" { $$ = $1; }
-    | "private" { $$ = $1; }
-    | "protected" { $$ = $1; }
-    | "public" { $$ = $1; }
-    | "static" { $$ = $1; }
-    | "synchronized" { $$ = $1; }
-    | "throws" { $$ = $1; }
-    | "transient" { $$ = $1; }
+    | "abstract" { $$ = CYNew CYIdentifier("abstract"); }
+    | "await" { $$ = CYNew CYIdentifier("await"); }
+    | "boolean" { $$ = CYNew CYIdentifier("boolean"); }
+    | "byte" { $$ = CYNew CYIdentifier("byte"); }
+    | "double" { $$ = CYNew CYIdentifier("double"); }
+    | "final" { $$ = CYNew CYIdentifier("final"); }
+    | "float" { $$ = CYNew CYIdentifier("float"); }
+    | "goto" { $$ = CYNew CYIdentifier("goto"); }
+    | "implements" { $$ = CYNew CYIdentifier("implements"); }
+    | "interface" { $$ = CYNew CYIdentifier("interface"); }
+    | "native" { $$ = CYNew CYIdentifier("native"); }
+    | "package" { $$ = CYNew CYIdentifier("package"); }
+    | "private" { $$ = CYNew CYIdentifier("private"); }
+    | "protected" { $$ = CYNew CYIdentifier("protected"); }
+    | "public" { $$ = CYNew CYIdentifier("public"); }
+    | "static" { $$ = CYNew CYIdentifier("static"); }
+    | "synchronized" { $$ = CYNew CYIdentifier("synchronized"); }
+    | "throws" { $$ = CYNew CYIdentifier("throws"); }
+    | "transient" { $$ = CYNew CYIdentifier("transient"); }
 
     // XXX: currently I only have this as Word
-    // | "let" { $$ = $1; }
+    // | "let" { $$ = CYNew CYIdentifier("let"); }
 
-    | "yield" NewLineOpt { $$ = $1; }
+    | "yield" NewLineOpt { $$ = CYNew CYIdentifier("yield"); }
 
-    | "each" { $$ = $1; }
-    | "of" { $$ = $1; }
+    | "each" { $$ = CYNew CYIdentifier("each"); }
+    | "of" { $$ = CYNew CYIdentifier("of"); }
     ;
 
 Identifier
     : IdentifierType
-    | "char" { $$ = $1; }
-    | "int" { $$ = $1; }
-    | "long" { $$ = $1; }
-    | "short" { $$ = $1; }
-    | "volatile" { $$ = $1; }
+    | "char" { $$ = CYNew CYIdentifier("char"); }
+    | "int" { $$ = CYNew CYIdentifier("int"); }
+    | "long" { $$ = CYNew CYIdentifier("long"); }
+    | "short" { $$ = CYNew CYIdentifier("short"); }
+    | "volatile" { $$ = CYNew CYIdentifier("volatile"); }
 @begin C
-    | "extern" { $$ = $1; }
-    | "signed" { $$ = $1; }
-    | "typedef" { $$ = $1; }
-    | "unsigned" { $$ = $1; }
+    | "extern" { $$ = CYNew CYIdentifier("extern"); }
+    | "signed" { $$ = CYNew CYIdentifier("signed"); }
+    | "typedef" { $$ = CYNew CYIdentifier("typedef"); }
+    | "unsigned" { $$ = CYNew CYIdentifier("unsigned"); }
 @end
 @begin ObjectiveC
-    | "NO" { $$ = $1; }
-    | "YES" { $$ = $1; }
+    | "NO" { $$ = CYNew CYIdentifier("NO"); }
+    | "YES" { $$ = CYNew CYIdentifier("YES"); }
 @end
     ;
 
@@ -1749,8 +1749,8 @@ XMLWhitespaceOpt
 
 /* 8.1 Context Keywords {{{ */
 Identifier
-    : "namespace" { $$ = $1; }
-    | "xml" { $$ = $1; }
+    : "namespace" { $$ = CYNew CYIdentifier("namespace"); }
+    | "xml" { $$ = CYNew CYIdentifier("xml"); }
     ;
 /* }}} */
 /* 8.3 XML Initialiser Input Elements {{{ */
