@@ -47,8 +47,6 @@ typedef struct {
     union {
         bool bool_;
 
-        CYDriver::Condition condition_;
-
         CYArgument *argument_;
         CYAssignment *assignment_;
         CYBoolean *boolean_;
