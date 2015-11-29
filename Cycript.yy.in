@@ -56,8 +56,8 @@
 %union { CYExpression *expression_; }
 %union { CYFalse *false_; }
 %union { CYFinally *finally_; }
-%union { CYForInitialiser *for_; }
-%union { CYForInInitialiser *forin_; }
+%union { CYForInitializer *for_; }
+%union { CYForInInitializer *forin_; }
 %union { CYFunctionParameter *functionParameter_; }
 %union { CYIdentifier *identifier_; }
 %union { CYInfix *infix_; }
@@ -67,7 +67,6 @@
 %union { CYNull *null_; }
 %union { CYNumber *number_; }
 %union { CYParenthetical *parenthetical_; }
-%union { CYProgram *program_; }
 %union { CYProperty *property_; }
 %union { CYPropertyName *propertyName_; }
 %union { CYRubyProc *rubyProc_; }
@@ -276,6 +275,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
 %token _case_ "case"
 %token _catch_ "catch"
 %token _class_ "class"
+%token _class__ "!class"
 %token _const_ "const"
 %token _continue_ "continue"
 %token _debugger_ "debugger"
@@ -368,7 +368,6 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
 %type <argument_> ArgumentListOpt
 %type <argument_> Arguments
 %type <expression_> ArrayComprehension
-%type <expression_> ArrayInitialiser
 %type <literal_> ArrayLiteral
 %type <expression_> ArrowFunction
 %type <functionParameter_> ArrowParameters
@@ -376,8 +375,8 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
 %type <identifier_> Binding
 %type <identifier_> BindingIdentifier
 %type <expression_> BitwiseANDExpression
-%type <statement_> Block_
 %type <statement_> Block
+%type <statement_> BlockStatement
 %type <boolean_> BooleanLiteral
 %type <declaration_> BindingElement
 %type <expression_> BitwiseORExpression
@@ -389,7 +388,8 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
 %type <clause_> CaseBlock
 %type <clause_> CaseClause
 %type <clause_> CaseClausesOpt
-%type <catch_> CatchOpt
+%type <catch_> Catch
+%type <identifier_> CatchParameter
 %type <expression_> Comprehension
 %type <comprehension_> ComprehensionFor
 %type <comprehension_> ComprehensionIf
@@ -397,6 +397,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
 %type <expression_> ConditionalExpression
 %type <statement_> ContinueStatement
 %type <statement_> ConciseBody
+%type <parenthetical_> CoverParenthesizedExpressionAndArrowParameterList
 %type <statement_> DebuggerStatement
 %type <statement_> Declaration__
 %type <statement_> Declaration_
@@ -412,9 +413,9 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
 %type <expression_> Expression
 %type <expression_> ExpressionOpt
 %type <statement_> ExpressionStatement
-%type <finally_> FinallyOpt
-%type <for_> ForStatementInitialiser
-%type <forin_> ForInStatementInitialiser
+%type <finally_> Finally
+%type <for_> ForStatementInitializer
+%type <forin_> ForInStatementInitializer
 %type <declaration_> FormalParameter
 %type <functionParameter_> FormalParameterList_
 %type <functionParameter_> FormalParameterList
@@ -422,20 +423,23 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
 %type <statement_> FunctionBody
 %type <statement_> FunctionDeclaration
 %type <expression_> FunctionExpression
+%type <statement_> HoistableDeclaration
 %type <identifier_> Identifier
 %type <identifier_> IdentifierOpt
 %type <identifier_> IdentifierType
 %type <word_> IdentifierName
+%type <expression_> IdentifierReference
 %type <statement_> IfStatement
-%type <expression_> Initialiser
-%type <expression_> InitialiserOpt
+%type <expression_> Initializer
+%type <expression_> InitializerOpt
 %type <statement_> IterationStatement
+%type <identifier_> LabelIdentifier
+%type <statement_> LabelledItem
 %type <statement_> LabelledStatement
 %type <expression_> LeftHandSideExpression
 %type <statement_> LetStatement
 %type <statement_> LexicalDeclaration
 %type <literal_> Literal
-%type <literal_> ValueLiteral
 %type <expression_> LogicalANDExpression
 %type <expression_> LogicalORExpression
 %type <member_> MemberAccess
@@ -446,12 +450,8 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
 %type <expression_> NewExpression
 %type <null_> NullLiteral
 %type <literal_> ObjectLiteral
-%type <parenthetical_> Parenthetical
 %type <expression_> PostfixExpression
 %type <expression_> PrimaryExpression
-%type <statement_> Program
-%type <statement_> ProgramBody
-%type <statement_> ProgramBodyOpt
 %type <propertyName_> PropertyName_
 %type <propertyName_> PropertyName
 %type <property_> PropertyDefinition
@@ -465,6 +465,9 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
 %type <functionParameter_> RubyProcParameterList
 %type <functionParameter_> RubyProcParameters
 %type <functionParameter_> RubyProcParametersOpt
+%type <statement_> Script
+%type <statement_> ScriptBody
+%type <statement_> ScriptBodyOpt
 %type <expression_> ShiftExpression
 %type <declaration_> SingleNameBinding
 %type <statement_> Statement__
@@ -487,7 +490,6 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
 @begin ObjectiveC
 %type <word_> WordOpt
 @end
-%type <expression_> Variable
 
 @begin C
 %type <specifier_> IntegerType
@@ -565,7 +567,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
 %nonassoc "else"
 /* }}} */
 
-%start Program
+%start Script
 
 %%
 
@@ -594,6 +596,10 @@ LexNoBrace
     : { if (yyla.empty()) driver.no_.OpenBrace = true; else if (yyla.type == yytranslate_(token::OpenBrace) || yyla.type == yytranslate_(token::OpenBrace_)) yyla.type = yytranslate_(token::OpenBrace__); }
     ;
 
+LexNoClass
+    : { if (yyla.empty()) driver.no_.Class = true; else if (yyla.type == yytranslate_(token::_class_)) yyla.type = yytranslate_(token::_class__); }
+    ;
+
 LexNoFunction
     : { if (yyla.empty()) driver.no_.Function = true; else if (yyla.type == yytranslate_(token::_function_)) yyla.type = yytranslate_(token::_function__); }
     ;
@@ -605,7 +611,7 @@ LexNoAtImplementation :
     ;
 
 LexSetStatement
-    : LexNoBrace LexNoFunction LexNoAtImplementation
+    : LexNoBrace LexNoClass LexNoFunction LexNoAtImplementation
     ;
 /* }}} */
 /* Virtual Tokens {{{ */
@@ -619,7 +625,7 @@ Var_
     ;
 /* }}} */
 
-/* 7.6 Identifier Names and Identifiers {{{ */
+/* 11.6 Names and Keywords {{{ */
 IdentifierName
     : Word { $$ = $1; }
     ;
@@ -632,6 +638,7 @@ Word
     | "case" { $$ = CYNew CYWord("case"); }
     | "catch" { $$ = CYNew CYWord("catch"); }
     | "class" { $$ = CYNew CYWord("class"); }
+    | "!class" { $$ = CYNew CYWord("class"); }
     | "const" { $$ = CYNew CYWord("const"); }
     | "continue" { $$ = CYNew CYWord("continue"); }
     | "debugger" { $$ = CYNew CYWord("debugger"); }
@@ -677,6 +684,55 @@ WordOpt
     | { $$ = NULL; }
     ;
 @end
+/* }}} */
+/* 11.8.1 Null Literals {{{ */
+NullLiteral
+    : "null" { $$ = CYNew CYNull(); }
+    ;
+/* }}} */
+/* 11.8.2 Boolean Literals {{{ */
+BooleanLiteral
+    : "true" { $$ = CYNew CYTrue(); }
+    | "false" { $$ = CYNew CYFalse(); }
+    ;
+/* }}} */
+
+/* 11.9 Automatic Semicolon Insertion {{{ */
+StrictSemi
+    : { driver.Warning(@$, "warning, automatic semi-colon insertion required"); }
+    ;
+
+TerminatorSoft
+    : ";"
+    | "\n" StrictSemi
+    ;
+
+Terminator
+    : ";"
+    | error { if (yyla.type_get() != yyeof_ && yyla.type != yytranslate_(token::CloseBrace) && !driver.newline_) { error(@1, "required semi-colon"); } else { yyerrok; driver.errors_.pop_back(); } } StrictSemi
+    ;
+
+TerminatorOpt
+    : ";"
+    | error { yyerrok; driver.errors_.pop_back(); } StrictSemi
+    ;
+/* }}} */
+
+/* 12.1 Identifiers {{{ */
+IdentifierReference
+    : Identifier { $$ = CYNew CYVariable($1); }
+    // XXX: | "yield"
+    ;
+
+BindingIdentifier
+    : Identifier { $$ = $1; }
+    // XXX: | "yield"
+    ;
+
+LabelIdentifier
+    : Identifier { $$ = $1; }
+    // XXX: | yield
+    ;
 
 IdentifierType
     : Identifier_ { $$ = $1; }
@@ -744,79 +800,32 @@ IdentifierOpt
     | { $$ = NULL; }
     ;
 /* }}} */
-
-/* 7.8 Literals {{{ */
-Literal
-    : NullLiteral { $$ = $1; }
-    | ValueLiteral { $$ = $1; }
-    ;
-
-ValueLiteral
-    : BooleanLiteral { $$ = $1; }
-    | NumericLiteral { $$ = $1; }
-    | StringLiteral { $$ = $1; }
-    | RegularExpressionLiteral { $$ = $1; }
-    ;
-/* }}} */
-/* 7.8.1 Null Literals {{{ */
-NullLiteral
-    : "null" { $$ = CYNew CYNull(); }
-    ;
-/* }}} */
-/* 7.8.2 Boolean Literals {{{ */
-BooleanLiteral
-    : "true" { $$ = CYNew CYTrue(); }
-    | "false" { $$ = CYNew CYFalse(); }
-    ;
-/* }}} */
-
-/* 7.9 Automatic Semicolon Insertion {{{ */
-StrictSemi
-    : { driver.Warning(@$, "warning, automatic semi-colon insertion required"); }
-    ;
-
-TerminatorSoft
-    : ";"
-    | "\n" StrictSemi
-    ;
-
-Terminator
-    : ";"
-    | error { if (yyla.type_get() != yyeof_ && yyla.type != yytranslate_(token::CloseBrace) && !driver.newline_) { error(@1, "required semi-colon"); } else { yyerrok; driver.errors_.pop_back(); } } StrictSemi
-    ;
-
-TerminatorOpt
-    : ";"
-    | error { yyerrok; driver.errors_.pop_back(); } StrictSemi
-    ;
-/* }}} */
-
-/* 11.1 Primary Expressions {{{ */
-Parenthetical
-    : "(" LexPushInOff Expression ")" LexPopIn { $$ = CYNew CYParenthetical($3); }
-    ;
-
-Variable
-    : Identifier { $$ = CYNew CYVariable($1); }
-    ;
-
+/* 12.2 Primary Expression {{{ */
 PrimaryExpression
     : "this" { $$ = CYNew CYThis(); }
-    | Variable { $$ = $1; }
+    | IdentifierReference { $$ = $1; }
     | Literal { $$ = $1; }
-    | ArrayInitialiser { $$ = $1; }
+    | ArrayLiteral { $$ = $1; }
     | ObjectLiteral { $$ = $1; }
-    | Parenthetical { $$ = $1; }
+    | RegularExpressionLiteral { $$ = $1; }
+    | CoverParenthesizedExpressionAndArrowParameterList { if ($1 == NULL) error(@1, "invalid parenthetical"); $$ = $1; }
     | AutoComplete { driver.mode_ = CYDriver::AutoPrimary; YYACCEPT; }
     ;
-/* }}} */
-/* 11.1.4 Array Initializer {{{ */
-ArrayInitialiser
-    : ArrayLiteral { $$ = $1; }
-    | ArrayComprehension { $$ = $1; }
+
+CoverParenthesizedExpressionAndArrowParameterList
+    : "(" LexPushInOff Expression ")" LexPopIn { $$ = CYNew CYParenthetical($3); }
+    | "(" LexPushInOff LexSetRegExp ")" LexPopIn { $$ = NULL; }
     ;
 /* }}} */
-/* 11.1.4.1 Array Literal {{{ */
+/* 12.2.4 Literals {{{ */
+Literal
+    : NullLiteral { $$ = $1; }
+    | BooleanLiteral { $$ = $1; }
+    | NumericLiteral { $$ = $1; }
+    | StringLiteral { $$ = $1; }
+    ;
+/* }}} */
+/* 12.2.5 Array Initializer {{{ */
 ArrayLiteral
     : "[" LexPushInOff ElementListOpt "]" LexPopIn { $$ = CYNew CYArray($3); }
     ;
@@ -840,30 +849,7 @@ ElementListOpt
     | LexSetRegExp { $$ = NULL; }
     ;
 /* }}} */
-/* 11.1.4.2 Array Comprehension {{{ */
-ArrayComprehension
-    : "[" LexPushInOff Comprehension "]" LexPopIn { $$ = $3; }
-    ;
-
-Comprehension
-    : LexSetRegExp ComprehensionFor ComprehensionTail AssignmentExpression { $$ = CYNew CYArrayComprehension($4, $2->Modify($3)); }
-    ;
-
-ComprehensionTail
-    : { $$ = NULL; }
-    | ComprehensionFor ComprehensionTail { $$ = $1->Modify($2); }
-    | ComprehensionIf ComprehensionTail { $$ = $1->Modify($2); }
-    ;
-
-ComprehensionFor
-    : "for" "(" Binding "of" Expression ")" { $$ = CYNew CYForOfComprehension($3, $5); }
-    ;
-
-ComprehensionIf
-    : "if" "(" AssignmentExpression ")" { $$ = CYNew CYIfComprehension($3); }
-    ;
-/* }}} */
-/* 11.1.5 Object Initialiser {{{ */
+/* 12.2.6 Object Initializer {{{ */
 ObjectLiteral
     : BRACE LexPushInOff PropertyDefinitionListOpt "}" LexPopIn { $$ = CYNew CYObject($3); }
     ;
@@ -899,9 +885,22 @@ PropertyName_
 PropertyName
     : LexSetRegExp PropertyName_ { $$ = $2; }
     ;
+
+
+Initializer
+    : "=" AssignmentExpression { $$ = $2; }
+    ;
+
+InitializerOpt
+    : Initializer { $$ = $1; }
+    | { $$ = NULL; }
+    ;
+/* }}} */
+/* 12.2.9 Template Literals {{{ */
 /* }}} */
 
-/* 11.2 Left-Hand-Side Expressions {{{ */
+
+/* 12.3+ Left-Hand-Side Expressions {{{ */
 MemberAccess
     : "[" LexPushInOff Expression "]" LexPopIn { $$ = CYNew CYDirectMember(NULL, $3); }
     | "." IdentifierName { $$ = CYNew CYDirectMember(NULL, CYNew CYString($2)); }
@@ -959,14 +958,14 @@ LeftHandSideExpression
     | CallExpression { $$ = $1; }
     ;
 /* }}} */
-/* 11.3 Postfix Expressions {{{ */
+/* 12.4 Postfix Expressions {{{ */
 PostfixExpression
     : %prec "" LeftHandSideExpression { $$ = $1; }
     | LeftHandSideExpression "++" { $$ = CYNew CYPostIncrement($1); }
     | LeftHandSideExpression "--" { $$ = CYNew CYPostDecrement($1); }
     ;
 /* }}} */
-/* 11.4 Unary Operators {{{ */
+/* 12.5 Unary Operators {{{ */
 UnaryExpression_
     : "delete" UnaryExpression { $$ = CYNew CYDelete($2); }
     | "void" UnaryExpression { $$ = CYNew CYVoid($2); }
@@ -986,7 +985,7 @@ UnaryExpression
     | LexSetRegExp UnaryExpression_ { $$ = $2; }
     ;
 /* }}} */
-/* 11.5 Multiplicative Operators {{{ */
+/* 12.6 Multiplicative Operators {{{ */
 MultiplicativeExpression
     : UnaryExpression { $$ = $1; }
     | MultiplicativeExpression "*" UnaryExpression { $$ = CYNew CYMultiply($1, $3); }
@@ -994,14 +993,14 @@ MultiplicativeExpression
     | MultiplicativeExpression "%" UnaryExpression { $$ = CYNew CYModulus($1, $3); }
     ;
 /* }}} */
-/* 11.6 Additive Operators {{{ */
+/* 12.7 Additive Operators {{{ */
 AdditiveExpression
     : MultiplicativeExpression { $$ = $1; }
     | AdditiveExpression "+" MultiplicativeExpression { $$ = CYNew CYAdd($1, $3); }
     | AdditiveExpression "-" MultiplicativeExpression { $$ = CYNew CYSubtract($1, $3); }
     ;
 /* }}} */
-/* 11.7 Bitwise Shift Operators {{{ */
+/* 12.8 Bitwise Shift Operators {{{ */
 ShiftExpression
     : AdditiveExpression { $$ = $1; }
     | ShiftExpression "<<" AdditiveExpression { $$ = CYNew CYShiftLeft($1, $3); }
@@ -1009,7 +1008,7 @@ ShiftExpression
     | ShiftExpression ">>>" AdditiveExpression { $$ = CYNew CYShiftRightUnsigned($1, $3); }
     ;
 /* }}} */
-/* 11.8 Relational Operators {{{ */
+/* 12.9 Relational Operators {{{ */
 RelationalExpression
     : ShiftExpression { $$ = $1; }
     | RelationalExpression "<" ShiftExpression { $$ = CYNew CYLess($1, $3); }
@@ -1020,7 +1019,7 @@ RelationalExpression
     | RelationalExpression "in" ShiftExpression { $$ = CYNew CYIn($1, $3); }
     ;
 /* }}} */
-/* 11.9 Equality Operators {{{ */
+/* 12.10 Equality Operators {{{ */
 EqualityExpression
     : RelationalExpression { $$ = $1; }
     | EqualityExpression "==" RelationalExpression { $$ = CYNew CYEqual($1, $3); }
@@ -1029,7 +1028,7 @@ EqualityExpression
     | EqualityExpression "!==" RelationalExpression { $$ = CYNew CYNotIdentical($1, $3); }
     ;
 /* }}} */
-/* 11.10 Binary Bitwise Operators {{{ */
+/* 12.11 Binary Bitwise Operators {{{ */
 BitwiseANDExpression
     : EqualityExpression { $$ = $1; }
     | BitwiseANDExpression "&" EqualityExpression { $$ = CYNew CYBitwiseAnd($1, $3); }
@@ -1045,7 +1044,7 @@ BitwiseORExpression
     | BitwiseORExpression "|" BitwiseXORExpression { $$ = CYNew CYBitwiseOr($1, $3); }
     ;
 /* }}} */
-/* 11.11 Binary Logical Operators {{{ */
+/* 12.12 Binary Logical Operators {{{ */
 LogicalANDExpression
     : BitwiseORExpression { $$ = $1; }
     | LogicalANDExpression "&&" BitwiseORExpression { $$ = CYNew CYLogicalAnd($1, $3); }
@@ -1056,16 +1055,16 @@ LogicalORExpression
     | LogicalORExpression "||" LogicalANDExpression { $$ = CYNew CYLogicalOr($1, $3); }
     ;
 /* }}} */
-/* 11.12 Conditional Operator ( ? : ) {{{ */
+/* 12.13 Conditional Operator ( ? : ) {{{ */
 ConditionalExpression
     : LogicalORExpression { $$ = $1; }
     | LogicalORExpression "?" LexPushInOff AssignmentExpression ":" LexPopIn AssignmentExpression { $$ = CYNew CYCondition($1, $4, $7); }
-    | LogicalORExpression "?" LexPushInOff LexSetRegExp ":" LexPopIn AssignmentExpression { $$ = CYNew CYCondition($1, $1, $7); }
     ;
 /* }}} */
-/* 11.13 Assignment Operators {{{ */
+/* 12.14 Assignment Operators {{{ */
 AssignmentExpression
     : ConditionalExpression { $$ = $1; }
+    // XXX: | YieldExpression { $$ = $1; }
     | ArrowFunction { $$ = $1; }
     | LeftHandSideExpression "=" AssignmentExpression { $$ = CYNew CYAssign($1, $3); }
     | LeftHandSideExpression "*=" AssignmentExpression { $$ = CYNew CYMultiplyAssign($1, $3); }
@@ -1081,9 +1080,10 @@ AssignmentExpression
     | LeftHandSideExpression "|=" AssignmentExpression { $$ = CYNew CYBitwiseOrAssign($1, $3); }
     ;
 /* }}} */
-/* 11.14 Comma Operator {{{ */
+/* 12.15 Comma Operator ( , ) {{{ */
 Expression
     : AssignmentExpression { $$ = $1; }
+    /* XXX: I have this backwards... */
     | AssignmentExpression "," Expression { $$ = CYNew CYCompound($1, $3); }
     ;
 
@@ -1093,9 +1093,9 @@ ExpressionOpt
     ;
 /* }}} */
 
-/* 12 Statements {{{ */
+/* 13 Statements and Declarations {{{ */
 Statement__
-    : Block { $$ = $1; }
+    : BlockStatement { $$ = $1; }
     | VariableStatement { $$ = $1; }
     | EmptyStatement { $$ = $1; }
     | IfStatement { $$ = $1; }
@@ -1120,7 +1120,8 @@ Statement
     ;
 
 Declaration__
-    : FunctionDeclaration { $$ = $1; }
+    : HoistableDeclaration { $$ = $1; }
+    // XXX: | ClassDeclaration { $$ = $1; }
     | LexicalDeclaration { $$ = $1; }
     ;
 
@@ -1132,18 +1133,23 @@ Declaration
     : LexSetStatement Declaration_ { $$ = $2; }
     ;
 
+HoistableDeclaration
+    : FunctionDeclaration
+    // XXX: | GeneratorDeclaration
+    ;
+
 BreakableStatement
     : IterationStatement { $$ = $1; }
     | SwitchStatement { $$ = $1; }
     ;
 /* }}} */
-/* 12.1 Block {{{ */
-Block_
-    : BRACE StatementListOpt "}" { $$ = $2; }
+/* 13.2 Block {{{ */
+BlockStatement
+    : ";{" StatementListOpt "}" { $$ = CYNew CYBlock($2); }
     ;
 
 Block
-    : ";{" StatementListOpt "}" { $$ = CYNew CYBlock($2); }
+    : BRACE StatementListOpt "}" { $$ = $2; }
     ;
 
 StatementList
@@ -1160,19 +1166,7 @@ StatementListItem
     | Declaration { $$ = $1; }
     ;
 /* }}} */
-
-/* 12.2 Declarations {{{ */
-BindingIdentifier
-    : Identifier { $$ = $1; }
-    ;
-
-Binding
-    : BindingIdentifier
-    ;
-
-// XXX: BindingPattern
-/* }}} */
-/* 12.2.1 Let and Const Declarations {{{ */
+/* 13.3+ Let and Const Declarations {{{ */
 LexicalDeclaration
     : LetOrConst VariableDeclarationList Terminator { $$ = CYNew CYVar($2); }
     ;
@@ -1181,8 +1175,14 @@ LetOrConst
     : "let"
     | "const"
     ;
+
+Binding
+    : BindingIdentifier
+    ;
+
+// XXX: lots of binding stuff
 /* }}} */
-/* 12.2.2 Variable Statement {{{ */
+/* 13.3.2+ Variable Statement {{{ */
 VariableStatement
     : Var_ VariableDeclarationList Terminator { $$ = CYNew CYVar($2); }
     ;
@@ -1197,20 +1197,11 @@ VariableDeclarationList
     ;
 
 VariableDeclaration
-    : BindingIdentifier InitialiserOpt { $$ = CYNew CYDeclaration($1, $2); }
-    // XXX: | BindingPattern Initialiser { $$ = CYNew CYDeclaration($1, $2); }
-    ;
-
-Initialiser
-    : "=" AssignmentExpression { $$ = $2; }
-    ;
-
-InitialiserOpt
-    : Initialiser { $$ = $1; }
-    | { $$ = NULL; }
+    : BindingIdentifier InitializerOpt { $$ = CYNew CYDeclaration($1, $2); }
+    // XXX: | BindingPattern Initializer { $$ = CYNew CYDeclaration($1, $2); }
     ;
 /* }}} */
-/* 12.2.4 Destructuring Binding Patterns {{{ */
+/* 13.3.3+ Destructuring Binding Patterns {{{ */
 // XXX: *
 
 BindingElement
@@ -1218,21 +1209,20 @@ BindingElement
     ;
 
 SingleNameBinding
-    : BindingIdentifier InitialiserOpt { $$ = CYNew CYDeclaration($1, $2); }
+    : BindingIdentifier InitializerOpt { $$ = CYNew CYDeclaration($1, $2); }
     ;
 /* }}} */
-
-/* 12.3 Empty Statement {{{ */
+/* 13.4 Empty Statement {{{ */
 EmptyStatement
     : ";" { $$ = CYNew CYEmpty(); }
     ;
 /* }}} */
-/* 12.4 Expression Statement {{{ */
+/* 13.5 Expression Statement {{{ */
 ExpressionStatement
     : Expression Terminator { $$ = CYNew CYExpress($1); }
     ;
 /* }}} */
-/* 12.5 The if Statement {{{ */
+/* 13.6 The if Statement {{{ */
 ElseStatementOpt
     : "else" Statement { $$ = $2; }
     | %prec "if" { $$ = NULL; }
@@ -1242,40 +1232,26 @@ IfStatement
     : "if" "(" Expression ")" Statement ElseStatementOpt { $$ = CYNew CYIf($3, $5, $6); }
     ;
 /* }}} */
-
-/* 12.6.1 The do-while Statement {{{ */
+/* 13.7+ Iteration Statements {{{ */
 IterationStatement
     : "do" Statement "while" "(" Expression ")" TerminatorOpt { $$ = CYNew CYDoWhile($5, $2); }
-    ;
-/* }}} */
-/* 12.6.2 The while Statement {{{ */
-IterationStatement
-    : "while" "(" Expression ")" Statement { $$ = CYNew CYWhile($3, $5); }
-    ;
-/* }}} */
-/* 12.6.3 The for Statement {{{ */
-IterationStatement
-    : "for" "(" LexPushInOn ForStatementInitialiser ";" LexPopIn ExpressionOpt ";" ExpressionOpt ")" Statement { $$ = CYNew CYFor($4, $7, $9, $11); }
+    | "while" "(" Expression ")" Statement { $$ = CYNew CYWhile($3, $5); }
+    | "for" "(" LexPushInOn ForStatementInitializer ";" LexPopIn ExpressionOpt ";" ExpressionOpt ")" Statement { $$ = CYNew CYFor($4, $7, $9, $11); }
+    | "for" "(" LexPushInOn ForInStatementInitializer "!in" LexPopIn Expression ")" Statement { $$ = CYNew CYForIn($4, $7, $9); }
+    | "for" "(" LexPushInOn ForInStatementInitializer "of" LexPopIn Expression ")" Statement { $$ = CYNew CYForOf($4, $7, $9); }
     ;
 
-ForStatementInitialiser
+ForStatementInitializer
     : ExpressionOpt { $$ = $1; }
     | LexSetRegExp Var_ VariableDeclarationList { $$ = CYNew CYForDeclarations($3); }
     ;
-/* }}} */
-/* 12.6.4 The for-in and for-of Statements {{{ */
-IterationStatement
-    : "for" "(" LexPushInOn ForInStatementInitialiser "!in" LexPopIn Expression ")" Statement { $$ = CYNew CYForIn($4, $7, $9); }
-    | "for" "(" LexPushInOn ForInStatementInitialiser "of" LexPopIn Expression ")" Statement { $$ = CYNew CYForOf($4, $7, $9); }
-    ;
 
-ForInStatementInitialiser
+ForInStatementInitializer
     : LeftHandSideExpression { $$ = $1; }
     | LexSetRegExp Var_ VariableDeclaration { $$ = $3; }
     ;
 /* }}} */
-
-/* 12.7 The continue Statement {{{ */
+/* 13.8 The continue Statement {{{ */
 Continue
     : "continue" LexNoNewLine
     ;
@@ -1285,7 +1261,7 @@ ContinueStatement
     | Continue Identifier Terminator { $$ = CYNew CYContinue($2); }
     ;
 /* }}} */
-/* 12.8 The break Statement {{{ */
+/* 13.9 The break Statement {{{ */
 Break
     : "break" LexNoNewLine
     ;
@@ -1295,7 +1271,7 @@ BreakStatement
     | Break Identifier Terminator { $$ = CYNew CYBreak($2); }
     ;
 /* }}} */
-/* 12.9 The return Statement {{{ */
+/* 13.10 The return Statement {{{ */
 Return
     : "return" LexNoNewLine
     ;
@@ -1305,13 +1281,12 @@ ReturnStatement
     | Return Expression Terminator { $$ = CYNew CYReturn($2); }
     ;
 /* }}} */
-/* 12.10 The with Statement {{{ */
+/* 13.11 The with Statement {{{ */
 WithStatement
     : "with" "(" Expression ")" Statement { $$ = CYNew CYWith($3, $5); }
     ;
 /* }}} */
-
-/* 12.11 The switch Statement {{{ */
+/* 13.12 The switch Statement {{{ */
 SwitchStatement
     : "switch" "(" Expression ")" CaseBlock { $$ = CYNew CYSwitch($3, $5); }
     ;
@@ -1330,47 +1305,58 @@ CaseClausesOpt
     | { $$ = NULL; }
     ;
 
+// XXX: the standard makes certain you can only have one of these
 DefaultClause
     : "default" ":" StatementListOpt { $$ = CYNew CYClause(NULL, $3); }
     ;
 /* }}} */
-/* 12.12 Labelled Statements {{{ */
+/* 13.13 Labelled Statements {{{ */
 LabelledStatement
-    : Identifier ":" Statement { $$ = CYNew CYLabel($1, $3); }
+    : LabelIdentifier ":" LabelledItem { $$ = CYNew CYLabel($1, $3); }
+    ;
+
+LabelledItem
+    : Statement { $$ = $1; }
+    | LexSetStatement LexSetRegExp FunctionDeclaration { $$ = $3; }
     ;
 /* }}} */
-/* 12.13 The throw Statement {{{ */
-ThrowWord
+/* 13.14 The throw Statement {{{ */
+Throw
     : "throw" LexNoNewLine
     ;
 
 ThrowStatement
-    : ThrowWord LexSetRegExp TerminatorSoft { error(@1, "throw without exception"); }
-    | ThrowWord Expression Terminator { $$ = CYNew cy::Syntax::Throw($2); }
+    : Throw LexSetRegExp TerminatorSoft { error(@1, "throw without exception"); }
+    | Throw Expression Terminator { $$ = CYNew cy::Syntax::Throw($2); }
     ;
 /* }}} */
-/* 12.14 The try Statement {{{ */
+/* 13.15 The try Statement {{{ */
 TryStatement
-    : "try" Block_ CatchOpt FinallyOpt { $$ = CYNew cy::Syntax::Try($2, $3, $4); }
+    : "try" Block Catch { $$ = CYNew cy::Syntax::Try($2, $3, NULL); }
+    | "try" Block Finally { $$ = CYNew cy::Syntax::Try($2, NULL, $3); }
+    | "try" Block Catch Finally { $$ = CYNew cy::Syntax::Try($2, $3, $4); }
     ;
 
-CatchOpt
-    : "catch" "(" Identifier ")" Block_ { $$ = CYNew cy::Syntax::Catch($3, $5); }
-    | { $$ = NULL; }
+Catch
+    : "catch" "(" CatchParameter ")" Block { $$ = CYNew cy::Syntax::Catch($3, $5); }
     ;
 
-FinallyOpt
-    : "finally" Block_ { $$ = CYNew CYFinally($2); }
-    | { $$ = NULL; }
+Finally
+    : "finally" Block { $$ = CYNew CYFinally($2); }
+    ;
+
+CatchParameter
+    : BindingIdentifier { $$ = $1; }
+    // XXX: BindingPattern
     ;
 /* }}} */
-/* 12.14 The debugger Statement {{{ */
+/* 13.16 The debugger Statement {{{ */
 DebuggerStatement
     : "debugger" Terminator { $$ = CYNew CYDebugger(); }
     ;
 /* }}} */
 
-/* 13.1 Function Definitions {{{ */
+/* 14.1+ Function Definitions {{{ */
 FunctionDeclaration
     : ";function" Identifier "(" FormalParameterListOpt ")" BRACE FunctionBody "}" { $$ = CYNew CYFunctionStatement($2, $4, $7); }
     ;
@@ -1406,15 +1392,14 @@ FunctionBody
     : StatementListOpt { $$ = $1; }
     ;
 /* }}} */
-/* 13.2 Arrow Function Definitions {{{ */
+/* 14.2 Arrow Function Definitions {{{ */
 ArrowFunction
     : LexSetRegExp ArrowParameters "=>" LexNoBrace ConciseBody { $$ = CYNew CYFatArrow($2, $5); }
     ;
 
 ArrowParameters
     : BindingIdentifier { $$ = CYNew CYFunctionParameter(CYNew CYDeclaration($1)); }
-    | "(" LexPushInOff LexSetRegExp ")" LexPopIn { $$ = NULL; }
-    | Parenthetical { $$ = $1->expression_->Parameter(); if ($$ == NULL) error(@1, "invalid parameter list"); }
+    | CoverParenthesizedExpressionAndArrowParameterList { $$ = $1->expression_->Parameter(); if ($$ == NULL) error(@1, "invalid parameter list"); }
     ;
 
 ConciseBody
@@ -1422,19 +1407,32 @@ ConciseBody
     | LexSetRegExp ";{" LexPushInOff FunctionBody "}" LexPopIn { $$ = $4; }
     ;
 /* }}} */
-/* 14 Program {{{ */
-Program
-    : ProgramBodyOpt { driver.program_ = CYNew CYProgram($1); }
+/* 14.3+ Method Definitions {{{ */
+/* }}} */
+/* 14.4+ Generator Function Definitions {{{ */
+/* }}} */
+/* 14.5+ Class Definitions {{{ */
+/* }}} */
+
+/* 15.1 Scripts {{{ */
+Script
+    : ScriptBodyOpt { driver.script_ = CYNew CYScript($1); }
     ;
 
-ProgramBody
+ScriptBody
     : StatementList { $$ = $1; }
     ;
 
-ProgramBodyOpt
-    : ProgramBody { $$ = $1; }
+ScriptBodyOpt
+    : ScriptBody { $$ = $1; }
     | LexSetStatement LexSetRegExp { $$ = NULL; }
     ;
+/* }}} */
+/* 15.2+ Modules {{{ */
+/* }}} */
+/* 15.2.2+ Imports {{{ */
+/* }}} */
+/* 15.2.3+ Exports {{{ */
 /* }}} */
 
 @begin C
@@ -1678,7 +1676,7 @@ BoxableExpression
     | StringLiteral { $$ = $1; }
     | ArrayLiteral { $$ = $1; }
     | ObjectLiteral { $$ = $1; }
-    | Parenthetical { $$ = $1; }
+    | CoverParenthesizedExpressionAndArrowParameterList { $$ = $1; }
     | "YES" { $$ = CYNew CYTrue(); }
     | "NO" { $$ = CYNew CYFalse(); }
     ;
@@ -1802,7 +1800,7 @@ Identifier
     | "xml" { $$ = CYNew CYIdentifier("xml"); }
     ;
 /* }}} */
-/* 8.3 XML Initialiser Input Elements {{{ */
+/* 8.3 XML Initializer Input Elements {{{ */
 XMLMarkup
     : XMLComment { $$ = $1; }
     | XMLCDATA { $$ = $1; }
@@ -1853,7 +1851,7 @@ WildcardIdentifier
     : "*" { $$ = CYNew CYWildcard(); }
     ;
 /* }}} */
-/* 11.1.4 XML Initialiser {{{ */
+/* 11.1.4 XML Initializer {{{ */
 XMLInitialiser
     : XMLMarkup { $$ = $1; }
     | XMLElement { $$ = $1; }
@@ -1908,7 +1906,7 @@ XMLElementContentOpt
     |
     ;
 /* }}} */
-/* 11.1.5 XMLList Initialiser {{{ */
+/* 11.1.5 XMLList Initializer {{{ */
 XMLListInitialiser
     : "<>" LexPushInOff LexPushXMLContent XMLElementContent LexPop "</>" LexPopIn { $$ = CYNew CYXMLList($4); }
     ;
@@ -1937,7 +1935,7 @@ Statement__
 /* }}} */
 @end
 
-/* JavaScript 1.7: Array Comprehensions {{{ */
+/* JavaScript FTL: Array Comprehensions {{{ */
 Comprehension
     : AssignmentExpression ComprehensionFor ComprehensionTail { $$ = CYNew CYArrayComprehension($1, $2->Modify($3)); }
     ;
@@ -1947,12 +1945,12 @@ ComprehensionFor
     | "for" "each" "(" Binding "in" Expression ")" { $$ = CYNew CYForOfComprehension($4, $6); }
     ;
 /* }}} */
-/* JavaScript 1.7: for each {{{ */
+/* JavaScript FTL: for each {{{ */
 IterationStatement
-    : "for" "each" "(" LexPushInOn ForInStatementInitialiser "!in" LexPopIn Expression ")" Statement { $$ = CYNew CYForOf($5, $8, $10); }
+    : "for" "each" "(" LexPushInOn ForInStatementInitializer "!in" LexPopIn Expression ")" Statement { $$ = CYNew CYForOf($5, $8, $10); }
     ;
 /* }}} */
-/* JavaScript 1.7: let Statements {{{ */
+/* JavaScript FTL: let Statements {{{ */
 LetStatement
     : "let" "(" VariableDeclarationList ")" Statement { $$ = CYNew CYLetStatement($3, $5); }
     ;
@@ -1962,6 +1960,38 @@ Statement__
     ;
 /* }}} */
 
+/* JavaScript FTW: Array Comprehensions {{{ */
+PrimaryExpression
+    : ArrayComprehension
+    ;
+
+ArrayComprehension
+    : "[" LexPushInOff Comprehension "]" LexPopIn { $$ = $3; }
+    ;
+
+Comprehension
+    : LexSetRegExp ComprehensionFor ComprehensionTail AssignmentExpression { $$ = CYNew CYArrayComprehension($4, $2->Modify($3)); }
+    ;
+
+ComprehensionTail
+    : { $$ = NULL; }
+    | ComprehensionFor ComprehensionTail { $$ = $1->Modify($2); }
+    | ComprehensionIf ComprehensionTail { $$ = $1->Modify($2); }
+    ;
+
+ComprehensionFor
+    : "for" "(" Binding "of" Expression ")" { $$ = CYNew CYForOfComprehension($3, $5); }
+    ;
+
+ComprehensionIf
+    : "if" "(" AssignmentExpression ")" { $$ = CYNew CYIfComprehension($3); }
+    ;
+/* }}} */
+/* JavaScript FTW: Coalesce Operator {{{ */
+ConditionalExpression
+    : LogicalORExpression "?" LexPushInOff LexSetRegExp ":" LexPopIn AssignmentExpression { $$ = CYNew CYCondition($1, $1, $7); }
+    ;
+/* }}} */
 /* JavaScript FTW: Ruby Blocks {{{ */
 RubyProcParameterList_
     : "," RubyProcParameterList { $$ = $2; }

@@ -227,11 +227,11 @@ CYUTF8String CYPoolCode(CYPool &pool, std::istream &stream) {
 
     CYOptions options;
     CYContext context(options);
-    driver.program_->Replace(context);
+    driver.script_->Replace(context);
 
     std::stringbuf str;
     CYOutput out(str, options);
-    out << *driver.program_;
+    out << *driver.script_;
     return $pool.strdup(str.str().c_str());
 }
 

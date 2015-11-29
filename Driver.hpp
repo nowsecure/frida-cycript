@@ -43,6 +43,7 @@ class _visible CYDriver {
 
     struct {
         bool AtImplementation;
+        bool Class;
         bool Function;
         bool OpenBrace;
         bool NewLine;
@@ -70,7 +71,7 @@ class _visible CYDriver {
 
     typedef std::vector<Error> Errors;
 
-    CYProgram *program_;
+    CYScript *script_;
     Errors errors_;
 
     bool auto_;

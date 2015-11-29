@@ -425,13 +425,13 @@ static void Console(CYOptions &options) {
                 goto read;
             }
 
-            if (driver.program_ == NULL)
+            if (driver.script_ == NULL)
                 goto restart;
 
             std::stringbuf str;
             CYOutput out(str, options);
             Setup(out, driver, options, lower);
-            out << *driver.program_;
+            out << *driver.script_;
             code = str.str();
         }
 
@@ -808,11 +808,11 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
         if (failed || !driver.errors_.empty()) {
             for (CYDriver::Errors::const_iterator i(driver.errors_.begin()); i != driver.errors_.end(); ++i)
                 std::cerr << i->location_.begin << ": " << i->message_ << std::endl;
-        } else if (driver.program_ != NULL) {
+        } else if (driver.script_ != NULL) {
             std::stringbuf str;
             CYOutput out(str, options);
             Setup(out, driver, options, true);
-            out << *driver.program_;
+            out << *driver.script_;
             std::string code(str.str());
             if (compile)
                 std::cout << code;

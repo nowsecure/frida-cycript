@@ -653,7 +653,7 @@ void CYPrefix::Output(CYOutput &out, CYFlags flags) const {
     rhs_->Output(out, Precedence(), CYRight(flags));
 }
 
-void CYProgram::Output(CYOutput &out) const {
+void CYScript::Output(CYOutput &out) const {
     out << code_;
 }
 

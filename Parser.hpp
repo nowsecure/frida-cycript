@@ -356,12 +356,12 @@ struct CYScope {
     void Close(CYContext &context, CYStatement *&statements);
 };
 
-struct CYProgram :
+struct CYScript :
     CYThing
 {
     CYStatement *code_;
 
-    CYProgram(CYStatement *code) :
+    CYScript(CYStatement *code) :
         code_(code)
     {
     }
@@ -478,12 +478,12 @@ struct CYBlock :
     virtual CYStatement *Return();
 };
 
-struct CYForInitialiser {
+struct CYForInitializer {
     virtual CYExpression *Replace(CYContext &context) = 0;
     virtual void Output(CYOutput &out, CYFlags flags) const = 0;
 };
 
-struct CYForInInitialiser {
+struct CYForInInitializer {
     virtual void ForIn(CYOutput &out, CYFlags flags) const = 0;
     virtual CYStatement *ForEachIn(CYContext &out, CYExpression *value) = 0;
 
@@ -499,8 +499,8 @@ struct CYNumber;
 struct CYString;
 
 struct CYExpression :
-    CYForInitialiser,
-    CYForInInitialiser,
+    CYForInitializer,
+    CYForInInitializer,
     CYClassName,
     CYThing
 {
@@ -604,9 +604,9 @@ struct CYFunctionParameter :
     CYNext<CYFunctionParameter>,
     CYThing
 {
-    CYForInInitialiser *initialiser_;
+    CYForInInitializer *initialiser_;
 
-    CYFunctionParameter(CYForInInitialiser *initialiser, CYFunctionParameter *next = NULL) :
+    CYFunctionParameter(CYForInInitializer *initialiser, CYFunctionParameter *next = NULL) :
         CYNext<CYFunctionParameter>(next),
         initialiser_(initialiser)
     {
@@ -1096,7 +1096,7 @@ struct CYProperty :
 };
 
 struct CYDeclaration :
-    CYForInInitialiser
+    CYForInInitializer
 {
     CYIdentifier *identifier_;
     CYExpression *initialiser_;
@@ -1142,7 +1142,7 @@ struct CYDeclarations :
 };
 
 struct CYForDeclarations :
-    CYForInitialiser
+    CYForInitializer
 {
     CYDeclarations *declarations_;
 
@@ -1192,12 +1192,12 @@ struct CYLetStatement :
 struct CYFor :
     CYStatement
 {
-    CYForInitialiser *initialiser_;
+    CYForInitializer *initialiser_;
     CYExpression *test_;
     CYExpression *increment_;
     CYStatement *code_;
 
-    CYFor(CYForInitialiser *initialiser, CYExpression *test, CYExpression *increment, CYStatement *code) :
+    CYFor(CYForInitializer *initialiser, CYExpression *test, CYExpression *increment, CYStatement *code) :
         initialiser_(initialiser),
         test_(test),
         increment_(increment),
@@ -1214,11 +1214,11 @@ struct CYFor :
 struct CYForIn :
     CYStatement
 {
-    CYForInInitialiser *initialiser_;
+    CYForInInitializer *initialiser_;
     CYExpression *set_;
     CYStatement *code_;
 
-    CYForIn(CYForInInitialiser *initialiser, CYExpression *set, CYStatement *code) :
+    CYForIn(CYForInInitializer *initialiser, CYExpression *set, CYStatement *code) :
         initialiser_(initialiser),
         set_(set),
         code_(code)
@@ -1234,11 +1234,11 @@ struct CYForIn :
 struct CYForOf :
     CYStatement
 {
-    CYForInInitialiser *initialiser_;
+    CYForInInitializer *initialiser_;
     CYExpression *set_;
     CYStatement *code_;
 
-    CYForOf(CYForInInitialiser *initialiser, CYExpression *set, CYStatement *code) :
+    CYForOf(CYForInInitializer *initialiser, CYExpression *set, CYStatement *code) :
         initialiser_(initialiser),
         set_(set),
         code_(code)

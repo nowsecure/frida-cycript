@@ -38,11 +38,11 @@ static CYExpression *ParseExpression(CYPool &pool, CYUTF8String code) {
     CYOptions options;
     CYContext context(options);
 
-    CYStatement *statement(driver.program_->code_);
+    CYStatement *statement(driver.script_->code_);
     _assert(statement != NULL);
     _assert(statement->next_ == NULL);
 
-    CYExpress *express(dynamic_cast<CYExpress *>(driver.program_->code_));
+    CYExpress *express(dynamic_cast<CYExpress *>(driver.script_->code_));
     _assert(express != NULL);
 
     CYParenthetical *parenthetical(dynamic_cast<CYParenthetical *>(express->expression_));
@@ -99,7 +99,7 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
 
     std::string begin(prefix.str());
 
-    driver.program_ = $ CYProgram($ CYExpress($C3(ParseExpression(pool,
+    driver.script_ = $ CYScript($ CYExpress($C3(ParseExpression(pool,
     "   function(object, prefix, word) {\n"
     "       var names = [];\n"
     "       var before = prefix.length;\n"
@@ -112,11 +112,11 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
     "   }\n"
     ), expression, $S(begin.c_str()), $S(word))));
 
-    driver.program_->Replace(context);
+    driver.script_->Replace(context);
 
     std::stringbuf str;
     CYOutput out(str, options);
-    out << *driver.program_;
+    out << *driver.script_;
 
     std::string code(str.str());
     CYUTF8String json(run(pool, code));

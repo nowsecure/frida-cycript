@@ -657,7 +657,7 @@ namespace {
     typedef std::set<CYIdentifier *, IdentifierUsageLess> IdentifierUsages;
 }
 
-void CYProgram::Replace(CYContext &context) {
+void CYScript::Replace(CYContext &context) {
     CYScope scope(true, context);
 
     context.nextlocal_ = $ CYNonLocal();

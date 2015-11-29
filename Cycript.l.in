@@ -50,6 +50,7 @@ typedef cy::parser::token tk;
 @begin ObjectiveC
     yyextra->no_.AtImplementation = false; \
 @end
+    yyextra->no_.Class = false; \
     yyextra->no_.Function = false; \
     yyextra->no_.NewLine = false; \
     yyextra->no_.OpenBrace = false; \
@@ -403,7 +404,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "case"            L C /*KKK*/ F(tk::_case_, hi::Control);
 "catch"           L C /*KKK*/ F(tk::_catch_, hi::Control);
 "char"            L C /*FII*/ F(tk::_char_, hi::Type);
-"class"           L C /*FFK*/ F(tk::_class_, hi::Meta);
+"class"           L C /*FFK*/ F(yyextra->no_.Class ? tk::_class__ : tk::_class_, hi::Meta);
 "const"           L C /*FFK*/ F(tk::_const_, hi::Meta);
 "continue"        L C /*KKK*/ F(tk::_continue_, hi::Control);
 "debugger"        L C /*FKK*/ F(tk::_debugger_, hi::Meta);

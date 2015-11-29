@@ -31,7 +31,7 @@ CYDriver::CYDriver(CYPool &pool, std::istream &data, const std::string &filename
     strict_(false),
     commented_(false),
     filename_(filename),
-    program_(NULL),
+    script_(NULL),
     auto_(false),
     context_(NULL),
     mode_(AutoNone)
@@ -57,7 +57,7 @@ bool CYDriver::Parse() {
 void CYDriver::Replace(CYOptions &options) {
     CYLocal<CYPool> local(&pool_);
     CYContext context(options);
-    program_->Replace(context);
+    script_->Replace(context);
 }
 
 void CYDriver::Warning(const cy::parser::location_type &location, const char *message) {
