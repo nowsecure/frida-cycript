@@ -62,6 +62,10 @@
 
 #include <dlfcn.h>
 
+#ifdef __APPLE__
+#include <mach/mach_time.h>
+#endif
+
 #include "Display.hpp"
 #include "Driver.hpp"
 #include "Highlight.hpp"
@@ -94,6 +98,7 @@ static void sigint(int) {
 }
 
 static bool bison_;
+static bool timing_;
 static bool strict_;
 static bool pretty_;
 
@@ -444,6 +449,16 @@ static void Console(CYOptions &options) {
 
 void InjectLibrary(pid_t, int, const char *const []);
 
+static uint64_t CYGetTime() {
+#ifdef __APPLE__
+    return mach_absolute_time();
+#else
+    struct timespec spec;
+    clock_gettime(CLOCK_MONOTONIC, &spec);
+    return spec.tv_sec * UINT64_C(1000000000) + spec.tv_nsec;
+#endif
+}
+
 int Main(int argc, char * const argv[], char const * const envp[]) {
     bool tty(isatty(STDIN_FILENO));
     bool compile(false);
@@ -521,6 +536,8 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
                     options.verbose_ = true;
                 else if (strcmp(optarg, "bison") == 0)
                     bison_ = true;
+                else if (strcmp(optarg, "timing") == 0)
+                    timing_ = true;
                 else {
                     fprintf(stderr, "invalid name for -g\n");
                     return 1;
@@ -742,6 +759,44 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
         } else {
             stream = new std::fstream(script, std::ios::in | std::ios::binary);
             _assert(!stream->fail());
+        }
+
+        if (timing_) {
+            std::stringbuf buffer;
+            stream->get(buffer, '\0');
+            _assert(!stream->fail());
+
+            double average(0);
+            int samples(-50);
+            uint64_t start(CYGetTime());
+
+            for (;;) {
+                stream = new std::istringstream(buffer.str());
+
+                CYPool pool;
+                CYDriver driver(pool, *stream, script);
+                Setup(driver);
+
+                uint64_t begin(CYGetTime());
+                driver.Parse();
+                uint64_t end(CYGetTime());
+
+                delete stream;
+
+                average += (end - begin - average) / ++samples;
+
+                uint64_t now(CYGetTime());
+                if (samples == 0)
+                    average = 0;
+                else if ((now - start) / 1000000000 >= 1)
+                    std::cout << std::fixed << average << '\t' << (end - begin) << '\t' << samples << std::endl;
+                else continue;
+
+                start = now;
+            }
+
+            stream = new std::istringstream(buffer.str());
+            std::cin.get();
         }
 
         CYPool pool;
