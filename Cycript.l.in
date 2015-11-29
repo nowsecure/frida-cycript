@@ -21,13 +21,20 @@
 
 /* XXX: supposedly I will be screwed on very very long multi-line comments and need to replace these with a manual lexer. http://websrv.cs.fsu.edu/~engelen/courses/COP5621/Pr2.pdf */
 
-%{
-
+%top{
 #if defined(__clang__)
 #pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunknown-pragmas"
+#pragma clang diagnostic ignored "-Wunused-variable"
 #pragma clang diagnostic ignored "-Wdeprecated-register"
+#else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
+}
+
+%{
 
 #define YYLTYPE CYLocation
 #include "Cycript.tab.hh"
@@ -648,4 +655,7 @@ void CYDriver::PopCondition() {
 
 #if defined(__clang__)
 #pragma clang diagnostic pop
+#else
+// must not pop -Wunused-function
+//#pragma GCC diagnostic pop
 #endif

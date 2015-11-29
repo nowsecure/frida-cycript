@@ -71,7 +71,7 @@ Bridge.gperf: Bridge.def Bridge.sh
 
 CLEANFILES += Bridge.hpp
 Bridge.hpp: Bridge.gperf
-	$(GPERF) $< | $(SED) -e 's/defined __GNUC_STDC_INLINE__ || defined __GNUC_GNU_INLINE__/0/' >$@
+	$(GPERF) $< >$@
 endif
 
 if CY_JAVA
@@ -105,7 +105,7 @@ Cycript.l: Cycript.l.in UnicodeIDStart.l UnicodeIDContinue.l
 
 CLEANFILES += lex.cy.cpp
 lex.cy.cpp: Cycript.l
-	$(FLEX) -b -t $< | $(SED) -e 's/int yyl;/yy_size_t yyl;/;s/int yyleng_r;/yy_size_t yyleng_r;/;s/yyg =/yyg __attribute__((__unused__)) =/' >$@
+	$(FLEX) -o $@ $<
 	grep -F 'No backing up.' lex.backup >/dev/null
 
 Console.$(OBJEXT) Cycript.tab.lo Driver.lo Handler.lo Highlight.lo Library.lo lex.cy.lo: Cycript.tab.hh
