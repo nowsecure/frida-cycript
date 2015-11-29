@@ -628,11 +628,13 @@ Var_
 /* 11.6 Names and Keywords {{{ */
 IdentifierName
     : Word { $$ = $1; }
+    | "for" { $$ = CYNew CYWord("for"); }
+    | "in" { $$ = CYNew CYWord("in"); }
+    | "instanceof" { $$ = CYNew CYWord("instanceof"); }
     ;
 
 Word
     : Identifier { $$ = $1; }
-
     | "auto" { $$ = CYNew CYWord("auto"); }
     | "break" { $$ = CYNew CYWord("break"); }
     | "case" { $$ = CYNew CYWord("case"); }
@@ -651,17 +653,10 @@ Word
     | "extends" { $$ = CYNew CYWord("extends"); }
     | "false" { $$ = CYNew CYWord("false"); }
     | "finally" { $$ = CYNew CYWord("finally"); }
-    /* XXX: | "for" { $$ = CYNew CYWord("for"); } */
     | "function" { $$ = CYNew CYWord("function"); }
     | "if" { $$ = CYNew CYWord("if"); }
     | "import" { $$ = CYNew CYWord("import"); }
-    /* XXX: | "in" { $$ = CYNew CYWord("in"); } */
     | "!in" { $$ = CYNew CYWord("in"); }
-    /* XXX: | "instanceof" { $$ = CYNew CYWord("instanceof"); } */
-
-    // XXX: as it currently is not an Identifier
-    | "let" { $$ = CYNew CYIdentifier("let"); }
-
     | "new" LexSetRegExp { $$ = CYNew CYWord("new"); }
     | "null" { $$ = CYNew CYWord("null"); }
     | "return" { $$ = CYNew CYWord("return"); }
@@ -676,6 +671,9 @@ Word
     | "void" LexSetRegExp { $$ = CYNew CYWord("void"); }
     | "while" { $$ = CYNew CYWord("while"); }
     | "with" { $$ = CYNew CYWord("with"); }
+
+    // XXX: should be Identifier
+    | "let" { $$ = CYNew CYIdentifier("let"); }
     ;
 
 @begin ObjectiveC
@@ -736,18 +734,19 @@ LabelIdentifier
 
 IdentifierType
     : Identifier_ { $$ = $1; }
-
     | "abstract" { $$ = CYNew CYIdentifier("abstract"); }
     | "await" { $$ = CYNew CYIdentifier("await"); }
     | "boolean" { $$ = CYNew CYIdentifier("boolean"); }
     | "byte" { $$ = CYNew CYIdentifier("byte"); }
     | "double" { $$ = CYNew CYIdentifier("double"); }
+    | "each" { $$ = CYNew CYIdentifier("each"); }
     | "final" { $$ = CYNew CYIdentifier("final"); }
     | "float" { $$ = CYNew CYIdentifier("float"); }
     | "goto" { $$ = CYNew CYIdentifier("goto"); }
     | "implements" { $$ = CYNew CYIdentifier("implements"); }
     | "interface" { $$ = CYNew CYIdentifier("interface"); }
     | "native" { $$ = CYNew CYIdentifier("native"); }
+    | "of" { $$ = CYNew CYIdentifier("of"); }
     | "package" { $$ = CYNew CYIdentifier("package"); }
     | "private" { $$ = CYNew CYIdentifier("private"); }
     | "protected" { $$ = CYNew CYIdentifier("protected"); }
@@ -756,15 +755,7 @@ IdentifierType
     | "synchronized" { $$ = CYNew CYIdentifier("synchronized"); }
     | "throws" { $$ = CYNew CYIdentifier("throws"); }
     | "transient" { $$ = CYNew CYIdentifier("transient"); }
-
-    // XXX: currently I only have this as Word
-    // | "let" { $$ = CYNew CYIdentifier("let"); }
-
     | "yield" { $$ = CYNew CYIdentifier("yield"); }
-
-    | "each" { $$ = CYNew CYIdentifier("each"); }
-    | "of" { $$ = CYNew CYIdentifier("of"); }
-
 @begin ObjectiveC
     | "bool" { $$ = CYNew CYIdentifier("bool"); }
     | "BOOL" { $$ = CYNew CYIdentifier("BOOL"); }
