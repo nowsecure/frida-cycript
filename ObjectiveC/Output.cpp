@@ -36,15 +36,12 @@ void CYCategory::Output(CYOutput &out, CYFlags flags) const {
     out << ';';
 }
 
-void CYClass::Output(CYOutput &out, CYFlags flags) const {
+void CYClassStatement::Output(CYOutput &out, CYFlags flags) const {
     // XXX: I don't necc. need the ()s
     out << "(function($cys,$cyp,$cyc,$cyn,$cyt,$cym){";
     out << "$cyp=object_getClass($cys);";
     out << "$cyc=objc_allocateClassPair($cys,";
-    if (name_ != NULL)
-        name_->ClassName(out, false);
-    else
-        out << "$cyq(\"CY$\")";
+    name_->ClassName(out, false);
     out << ",0);";
     out << "$cym=object_getClass($cyc);";
     if (fields_ != NULL)
@@ -64,14 +61,6 @@ void CYClass::Output(CYOutput &out, CYFlags flags) const {
     else
         out << "null";
     out << "))";
-}
-
-void CYClassExpression::Output(CYOutput &out, CYFlags flags) const {
-    CYClass::Output(out, flags);
-}
-
-void CYClassStatement::Output(CYOutput &out, CYFlags flags) const {
-    CYClass::Output(out, flags);
 }
 
 void CYClassField::Output(CYOutput &out) const {

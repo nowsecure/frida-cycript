@@ -358,14 +358,6 @@ static JSValueRef System_print(JSContextRef context, JSObjectRef object, JSObjec
     return CYJSUndefined(context);
 } CYCatch(NULL) }
 
-static size_t Nonce_(0);
-
-static JSValueRef $cyq(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    CYPool pool;
-    const char *name(pool.strcat(CYPoolCString(pool, context, arguments[0]), pool.itoa(Nonce_++), NULL));
-    return CYCastJSValue(context, name);
-} CYCatch(NULL) }
-
 static void (*JSSynchronousGarbageCollectForDebugging$)(JSContextRef);
 
 _visible void CYGarbageCollect(JSContextRef context) {
@@ -1926,8 +1918,6 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
 
         CYSetPrototype(context, last, all);
     }
-
-    CYSetProperty(context, global, CYJSString("$cyq"), &$cyq, kJSPropertyAttributeDontEnum);
 
     JSObjectRef System(JSObjectMake(context, NULL, NULL));
     CYSetProperty(context, cy, CYJSString("System"), System);

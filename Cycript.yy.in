@@ -254,7 +254,6 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
 
 @begin ObjectiveC
 %token At_implementation_ "@implementation"
-%token At_implementation__ ";@implementation"
 %token At_import_ "@import"
 %token At_end_ "@end"
 %token At_selector_ "@selector"
@@ -515,7 +514,6 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
 @begin ObjectiveC
 %type <expression_> BoxableExpression
 %type <statement_> CategoryStatement
-%type <expression_> ClassExpression
 %type <classField_> ClassFieldListOpt
 %type <classField_> ClassFields
 %type <statement_> ClassStatement
@@ -523,7 +521,6 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
 %type <message_> ClassMessageDeclaration
 %type <message_> ClassMessageDeclarationListOpt
 %type <className_> ClassName
-%type <className_> ClassNameOpt
 %type <protocol_> ClassProtocolListOpt
 %type <protocol_> ClassProtocols
 %type <protocol_> ClassProtocolsOpt
@@ -610,14 +607,8 @@ LexNoFunction
     : { if (yyla.empty()) driver.no_.Function = true; else if (yyla.type == yytranslate_(token::_function_)) yyla.type = yytranslate_(token::_function__); }
     ;
 
-LexNoAtImplementation :
-@begin ObjectiveC
-    { if (yyla.empty()) driver.no_.AtImplementation = true; else if (yyla.type == yytranslate_(token::At_implementation_)) yyla.type = yytranslate_(token::At_implementation__); }
-@end
-    ;
-
 LexSetStatement
-    : LexNoBrace LexNoClass LexNoFunction LexNoAtImplementation
+    : LexNoBrace LexNoClass LexNoFunction
     ;
 /* }}} */
 /* Virtual Tokens {{{ */
@@ -1562,11 +1553,6 @@ ClassName
     | "(" AssignmentExpression ")" { $$ = $2; }
     ;
 
-ClassNameOpt
-    : ClassName { $$ = $1; }
-    | { $$ = NULL; }
-    ;
-
 // XXX: this should be AssignmentExpressionNoRight
 ClassProtocols
     : ShiftExpression ClassProtocolsOpt { $$ = CYNew CYProtocol($1, $2); }
@@ -1582,12 +1568,8 @@ ClassProtocolListOpt
     | { $$ = NULL; }
     ;
 
-ClassExpression
-    : "@implementation" LexPushInOff ClassNameOpt ClassSuperOpt ClassProtocolListOpt ClassFields ClassMessageDeclarationListOpt "@end" LexPopIn { $$ = CYNew CYClassExpression($3, $4, $5, $6, $7); }
-    ;
-
 ClassStatement
-    : ";@implementation" ClassName ClassSuperOpt ClassProtocolListOpt ClassFields ClassMessageDeclarationListOpt "@end" { $$ = CYNew CYClassStatement($2, $3, $4, $5, $6); }
+    : "@implementation" ClassName ClassSuperOpt ClassProtocolListOpt ClassFields ClassMessageDeclarationListOpt "@end" { $$ = CYNew CYClassStatement($2, $3, $4, $5, $6); }
     ;
 
 CategoryName
@@ -1595,11 +1577,7 @@ CategoryName
     ;
 
 CategoryStatement
-    : ";@implementation" ClassName CategoryName ClassMessageDeclarationListOpt "@end" { $$ = CYNew CYCategory($2, $4); }
-    ;
-
-PrimaryExpression
-    : ClassExpression { $$ = $1; }
+    : "@implementation" ClassName CategoryName ClassMessageDeclarationListOpt "@end" { $$ = CYNew CYCategory($2, $4); }
     ;
 
 Statement__

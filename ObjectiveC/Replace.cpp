@@ -50,12 +50,12 @@ CYStatement *CYCategory::Replace(CYContext &context) {
     ), name_->ClassName(context, true)));
 }
 
-CYExpression *CYClass::Replace_(CYContext &context) {
+CYStatement *CYClassStatement::Replace(CYContext &context) {
     CYVariable *cyc($V("$cyc")), *cys($V("$cys"));
 
-    CYExpression *name(name_ != NULL ? name_->ClassName(context, false) : $C1($V("$cyq"), $S("CY$")));
+    CYExpression *name(name_->ClassName(context, false));
 
-    return $C1($F(NULL, $P6($L("$cys"), $L("$cyp"), $L("$cyc"), $L("$cyn"), $L("$cyt"), $L("$cym")), $$->*
+    return $E($C1($F(NULL, $P6($L("$cys"), $L("$cyp"), $L("$cyc"), $L("$cyn"), $L("$cyt"), $L("$cym")), $$->*
         $E($ CYAssign($V("$cyp"), $C1($V("object_getClass"), cys)))->*
         $E($ CYAssign(cyc, $C3($V("objc_allocateClassPair"), cys, name, $D(0))))->*
         $E($ CYAssign($V("$cym"), $C1($V("object_getClass"), cyc)))->*
@@ -64,15 +64,7 @@ CYExpression *CYClass::Replace_(CYContext &context) {
         messages_->Replace(context, false)->*
         $E($C1($V("objc_registerClassPair"), cyc))->*
         $ CYReturn(cyc)
-    ), super_ == NULL ? $ CYNull() : super_);
-}
-
-CYExpression *CYClassExpression::Replace(CYContext &context) {
-    return Replace_(context);
-}
-
-CYStatement *CYClassStatement::Replace(CYContext &context) {
-    return $E(Replace_(context));
+    ), super_ == NULL ? $ CYNull() : super_));
 }
 
 CYStatement *CYClassField::Replace(CYContext &context) const { $T(NULL)

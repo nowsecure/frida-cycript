@@ -46,7 +46,6 @@ class _visible CYDriver {
     bool last_;
 
     struct {
-        bool AtImplementation;
         bool Class;
         bool Function;
         bool OpenBrace;

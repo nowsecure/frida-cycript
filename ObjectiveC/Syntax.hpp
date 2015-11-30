@@ -181,50 +181,21 @@ struct CYProtocol :
     void Output(CYOutput &out) const;
 };
 
-struct CYClass {
+struct CYClassStatement :
+    CYStatement
+{
     CYClassName *name_;
     CYExpression *super_;
     CYProtocol *protocols_;
     CYClassField *fields_;
     CYMessage *messages_;
 
-    CYClass(CYClassName *name, CYExpression *super, CYProtocol *protocols, CYClassField *fields, CYMessage *messages) :
+    CYClassStatement(CYClassName *name, CYExpression *super, CYProtocol *protocols, CYClassField *fields, CYMessage *messages) :
         name_(name),
         super_(super),
         protocols_(protocols),
         fields_(fields),
         messages_(messages)
-    {
-    }
-
-    virtual ~CYClass() {
-    }
-
-    CYExpression *Replace_(CYContext &context);
-    virtual void Output(CYOutput &out, CYFlags flags) const;
-};
-
-struct CYClassExpression :
-    CYClass,
-    CYExpression
-{
-    CYClassExpression(CYClassName *name, CYExpression *super, CYProtocol *protocols, CYClassField *fields, CYMessage *messages) :
-        CYClass(name, super, protocols, fields, messages)
-    {
-    }
-
-    CYPrecedence(0)
-
-    virtual CYExpression *Replace(CYContext &context);
-    virtual void Output(CYOutput &out, CYFlags flags) const;
-};
-
-struct CYClassStatement :
-    CYClass,
-    CYStatement
-{
-    CYClassStatement(CYClassName *name, CYExpression *super, CYProtocol *protocols, CYClassField *fields, CYMessage *messages) :
-        CYClass(name, super, protocols, fields, messages)
     {
     }
 
