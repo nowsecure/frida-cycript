@@ -377,6 +377,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
 %type <expression_> ArrowFunction
 %type <functionParameter_> ArrowParameters
 %type <expression_> AssignmentExpression
+%type <expression_> AssignmentExpressionOpt
 %type <identifier_> Binding
 %type <identifier_> BindingIdentifier
 %type <expression_> BitwiseANDExpression
@@ -408,8 +409,6 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
 %type <statement_> Declaration_
 %type <statement_> Declaration
 %type <clause_> DefaultClause
-%type <expression_> Element
-%type <expression_> ElementOpt
 %type <element_> ElementList
 %type <element_> ElementListOpt
 %type <statement_> ElseStatementOpt
@@ -829,18 +828,10 @@ ArrayLiteral
     : "[" LexPushInOff ElementListOpt "]" LexPopIn { $$ = CYNew CYArray($3); }
     ;
 
-Element
-    : AssignmentExpression { $$ = $1; }
-    ;
-
-ElementOpt
-    : Element { $$ = $1; }
-    | LexSetRegExp { $$ = NULL; }
-    ;
-
 ElementList
-    : ElementOpt "," ElementListOpt { $$ = CYNew CYElement($1, $3); }
-    | Element { $$ = CYNew CYElement($1, NULL); }
+    : AssignmentExpressionOpt "," ElementListOpt { $$ = CYNew CYElementValue($1, $3); }
+    | LexSetRegExp "..." AssignmentExpression { $$ = CYNew CYElementSpread($3); }
+    | AssignmentExpression { $$ = CYNew CYElementValue($1, NULL); }
     ;
 
 ElementListOpt
@@ -1085,6 +1076,11 @@ AssignmentExpression
     | LeftHandSideExpression "&=" AssignmentExpression { $$ = CYNew CYBitwiseAndAssign($1, $3); }
     | LeftHandSideExpression "^=" AssignmentExpression { $$ = CYNew CYBitwiseXOrAssign($1, $3); }
     | LeftHandSideExpression "|=" AssignmentExpression { $$ = CYNew CYBitwiseOrAssign($1, $3); }
+    ;
+
+AssignmentExpressionOpt
+    : AssignmentExpression { $$ = $1; }
+    | LexSetRegExp { $$ = NULL; }
     ;
 /* }}} */
 /* 12.15 Comma Operator ( , ) {{{ */

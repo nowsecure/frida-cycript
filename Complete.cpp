@@ -137,8 +137,12 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
     std::string common;
     bool rest(false);
 
-    CYForEach (element, array->elements_) {
-        CYString *string(dynamic_cast<CYString *>(element->value_));
+    for (CYElement *element(array->elements_); element != NULL; ) {
+        CYElementValue *value(dynamic_cast<CYElementValue *>(element));
+        _assert(value != NULL);
+        element = value->next_;
+
+        CYString *string(dynamic_cast<CYString *>(value->value_));
         _assert(string != NULL);
 
         std::string completion;

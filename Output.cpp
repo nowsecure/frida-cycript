@@ -291,12 +291,16 @@ void CYDoWhile::Output(CYOutput &out, CYFlags flags) const {
     out << "while" << ' ' << '(' << *test_ << ')';
 }
 
-void CYElement::Output(CYOutput &out) const {
+void CYElementSpread::Output(CYOutput &out) const {
+    out << "..." << value_;
+}
+
+void CYElementValue::Output(CYOutput &out) const {
     if (value_ != NULL)
         value_->Output(out, CYAssign::Precedence_, CYNoFlags);
     if (next_ != NULL || value_ == NULL) {
         out << ',';
-        if (next_ != NULL && next_->value_ != NULL)
+        if (next_ != NULL && !next_->Elision())
             out << ' ';
     }
     if (next_ != NULL)

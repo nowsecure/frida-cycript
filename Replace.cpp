@@ -80,7 +80,8 @@ CYArgument *CYArgument::Replace(CYContext &context) { $T(NULL)
 }
 
 CYExpression *CYArray::Replace(CYContext &context) {
-    elements_->Replace(context);
+    if (elements_ != NULL)
+        elements_->Replace(context);
     return this;
 }
 
@@ -298,9 +299,14 @@ CYStatement *CYDoWhile::Replace(CYContext &context) {
     return this;
 }
 
-void CYElement::Replace(CYContext &context) { $T()
+void CYElementSpread::Replace(CYContext &context) {
     context.Replace(value_);
-    next_->Replace(context);
+}
+
+void CYElementValue::Replace(CYContext &context) {
+    context.Replace(value_);
+    if (next_ != NULL)
+        next_->Replace(context);
 }
 
 CYStatement *CYEmpty::Replace(CYContext &context) {
@@ -853,8 +859,8 @@ void CYScope::Close(CYContext &context, CYStatement *&statements) {
         }
 }
 
-CYElement *CYSpan::Replace(CYContext &context) { $T(NULL)
-    return $ CYElement(expression_, $ CYElement(string_, next_->Replace(context)));
+CYElementValue *CYSpan::Replace(CYContext &context) { $T(NULL)
+    return $ CYElementValue(expression_, $ CYElementValue(string_, next_->Replace(context)));
 }
 
 CYStatement *CYStatement::Return() {
@@ -886,7 +892,7 @@ CYStatement *CYSwitch::Replace(CYContext &context) {
 }
 
 CYExpression *CYTemplate::Replace(CYContext &context) {
-    return $C2($M($M($M($V("String"), $S("prototype")), $S("concat")), $S("apply")), $S(""), $ CYArray($ CYElement(string_, spans_->Replace(context))));
+    return $C2($M($M($M($V("String"), $S("prototype")), $S("concat")), $S("apply")), $S(""), $ CYArray($ CYElementValue(string_, spans_->Replace(context))));
 }
 
 CYExpression *CYThis::Replace(CYContext &context) {

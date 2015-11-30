@@ -797,7 +797,7 @@ struct CYString :
     virtual void PropertyName(CYOutput &out) const;
 };
 
-struct CYElement;
+struct CYElementValue;
 
 struct CYSpan :
     CYNext<CYSpan>
@@ -812,7 +812,7 @@ struct CYSpan :
     {
     }
 
-    CYElement *Replace(CYContext &context);
+    CYElementValue *Replace(CYContext &context);
 };
 
 struct CYTemplate :
@@ -1069,19 +1069,49 @@ struct CYClause :
 };
 
 struct CYElement :
-    CYNext<CYElement>,
     CYThing
+{
+    virtual bool Elision() const = 0;
+
+    virtual void Replace(CYContext &context) = 0;
+};
+
+struct CYElementValue :
+    CYNext<CYElement>,
+    CYElement
 {
     CYExpression *value_;
 
-    CYElement(CYExpression *value, CYElement *next) :
+    CYElementValue(CYExpression *value, CYElement *next) :
         CYNext<CYElement>(next),
         value_(value)
     {
     }
 
-    void Replace(CYContext &context);
-    void Output(CYOutput &out) const;
+    virtual bool Elision() const {
+        return value_ == NULL;
+    }
+
+    virtual void Replace(CYContext &context);
+    virtual void Output(CYOutput &out) const;
+};
+
+struct CYElementSpread :
+    CYElement
+{
+    CYExpression *value_;
+
+    CYElementSpread(CYExpression *value) :
+        value_(value)
+    {
+    }
+
+    virtual bool Elision() const {
+        return false;
+    }
+
+    virtual void Replace(CYContext &context);
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYArray :
