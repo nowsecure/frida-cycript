@@ -48,7 +48,6 @@
 %union { CYBoolean *boolean_; }
 %union { CYClause *clause_; }
 %union { cy::Syntax::Catch *catch_; }
-%union { CYComment *comment_; }
 %union { CYComprehension *comprehension_; }
 %union { CYDeclaration *declaration_; }
 %union { CYDeclarations *declarations_; }
@@ -70,6 +69,7 @@
 %union { CYProperty *property_; }
 %union { CYPropertyName *propertyName_; }
 %union { CYRubyProc *rubyProc_; }
+%union { CYSpan *span_; }
 %union { CYStatement *statement_; }
 %union { CYString *string_; }
 %union { CYThis *this_; }
@@ -222,7 +222,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
 %token SemiColon ";"
 %token NewLine "\n"
 
-%token <comment_> Comment
+%token Comment
 
 %token OpenParen "("
 %token CloseParen ")"
@@ -362,6 +362,11 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
 %token <string_> StringLiteral
 %token <literal_> RegularExpressionLiteral
 
+%token <string_> NoSubstitutionTemplate
+%token <string_> TemplateHead
+%token <string_> TemplateMiddle
+%token <string_> TemplateTail
+
 %type <expression_> AdditiveExpression
 %type <argument_> ArgumentList_
 %type <argument_> ArgumentList
@@ -477,6 +482,8 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
 %type <statement_> StatementListOpt
 %type <statement_> StatementListItem
 %type <statement_> SwitchStatement
+%type <expression_> TemplateLiteral
+%type <span_> TemplateSpans
 %type <statement_> ThrowStatement
 %type <statement_> TryStatement
 %type <expression_> UnaryExpression_
@@ -799,6 +806,7 @@ PrimaryExpression
     | ArrayLiteral { $$ = $1; }
     | ObjectLiteral { $$ = $1; }
     | RegularExpressionLiteral { $$ = $1; }
+    | TemplateLiteral { $$ = $1; }
     | CoverParenthesizedExpressionAndArrowParameterList { if ($1 == NULL) error(@1, "invalid parenthetical"); $$ = $1; }
     | AutoComplete { driver.mode_ = CYDriver::AutoPrimary; YYACCEPT; }
     ;
@@ -888,8 +896,16 @@ InitializerOpt
     ;
 /* }}} */
 /* 12.2.9 Template Literals {{{ */
-/* }}} */
+TemplateLiteral
+    : NoSubstitutionTemplate { $$ = CYNew CYTemplate($1, NULL); }
+    | TemplateHead TemplateSpans { $$ = CYNew CYTemplate($1, $2); }
+    ;
 
+TemplateSpans
+    : Expression TemplateMiddle TemplateSpans { $$ = CYNew CYSpan($1, $2, $3); }
+    | Expression TemplateTail { $$ = CYNew CYSpan($1, $2, NULL); }
+    ;
+/* }}} */
 
 /* 12.3+ Left-Hand-Side Expressions {{{ */
 MemberAccess
@@ -1542,7 +1558,6 @@ ClassMessageDeclaration
 
 ClassMessageDeclarationListOpt
     : ClassMessageDeclarationListOpt ClassMessageDeclaration { $2->SetNext($1); $$ = $2; }
-    | ClassMessageDeclarationListOpt Comment { $$ = $1; }
     | { $$ = NULL; }
     ;
 
@@ -1745,12 +1760,6 @@ Statement__
 /* }}} */
 
 @end
-
-/* YUI: Documentation Comments {{{ */
-Statement__
-    : Comment { $$ = $1; }
-    ;
-/* }}} */
 
 @begin E4X
 /* Lexer State {{{ */

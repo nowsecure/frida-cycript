@@ -90,6 +90,13 @@ def build(index, tree, units):
     for i in range(0, index):
         item += '[\\x80-\\xbf]'
 
+    if False:
+        item = item.replace('[\\x00-\\x7f]', '{U1}')
+        item = item.replace('[\\x80-\\xbf]', '{U0}')
+        item = item.replace('[\\xc2-\\xdf]', '{U2}')
+        item = item.replace('[\\xe0-\\xef]', '{U3}')
+        item = item.replace('[\\xf0-\\xf4]', '{U4}')
+
     items.append(item)
     return False
 

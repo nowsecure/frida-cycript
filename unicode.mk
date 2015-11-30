@@ -24,10 +24,13 @@ unicode := unicode.sh unicode.py
 unicode += DerivedCoreProperties.txt
 unicode += PropList.txt
 
-all: UnicodeIDStart.l UnicodeIDContinue.l
+all: NotLineTerminator.l UnicodeIDStart.l UnicodeIDContinue.l
 
 %.txt:
 	wget -qc http://www.unicode.org/Public/UCD/latest/ucd/$@
+
+NotLineTerminator.l: unicode.py
+	printf '80..2027\n2029..10ffff\n' | ./unicode.py NotLineTerminator >$@
 
 UnicodeIDStart.l: $(unicode)
 	./unicode.sh UnicodeIDStart ID_Start DerivedCoreProperties.txt Other_ID_Start PropList.txt >$@

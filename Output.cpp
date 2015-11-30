@@ -183,13 +183,6 @@ void Catch::Output(CYOutput &out) const {
 
 } }
 
-void CYComment::Output(CYOutput &out, CYFlags flags) const {
-    out << '\r';
-    out(value_);
-    out.right_ = true;
-    out << '\r';
-}
-
 void CYCompound::Output(CYOutput &out, CYFlags flags) const {
     if (next_ == NULL)
         expression_->Output(out, flags);
@@ -508,6 +501,10 @@ void CYParenthetical::Output(CYOutput &out, CYFlags flags) const {
 
 void CYStatement::Output(CYOutput &out) const {
     Multiple(out);
+}
+
+void CYTemplate::Output(CYOutput &out, CYFlags flags) const {
+    _assert(false);
 }
 
 void CYTypeArrayOf::Output(CYOutput &out, CYIdentifier *identifier) const {

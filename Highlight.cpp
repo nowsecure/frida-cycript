@@ -60,7 +60,7 @@ _visible void CYLexerHighlight(const char *data, size_t size, std::ostream &outp
 
     CYStream stream(data, data + size);
     CYDriver driver(pool, stream);
-    driver.commented_ = true;
+    driver.highlight_ = true;
 
     size_t offset(0);
     CYPosition current;

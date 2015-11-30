@@ -36,7 +36,11 @@ class _visible CYDriver {
     CYPool &pool_;
     void *scanner_;
 
+    std::vector<char> buffer_;
+    bool tail_;
+
     std::stack<bool> in_;
+    std::stack<bool> template_;
 
     bool newline_;
     bool last_;
@@ -53,7 +57,7 @@ class _visible CYDriver {
 
     int debug_;
     bool strict_;
-    bool commented_;
+    bool highlight_;
 
     enum Condition {
         RegExpCondition,
@@ -112,7 +116,6 @@ class _visible CYDriver {
     bool Parse();
     void Replace(CYOptions &options);
 
-    Condition GetCondition();
     void SetCondition(Condition condition);
 
     void PushCondition(Condition condition);

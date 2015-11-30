@@ -272,22 +272,6 @@ struct CYIdentifier :
     CYIdentifier *Replace(CYContext &context);
 };
 
-struct CYComment :
-    CYStatement
-{
-    const char *value_;
-
-    CYComment(const char *value) :
-        value_(value)
-    {
-    }
-
-    CYCompact(None)
-
-    virtual CYStatement *Replace(CYContext &context);
-    virtual void Output(CYOutput &out, CYFlags flags) const;
-};
-
 struct CYLabel :
     CYStatement
 {
@@ -811,6 +795,43 @@ struct CYString :
     CYString *Concat(CYContext &out, CYString *rhs) const;
     virtual void Output(CYOutput &out, CYFlags flags) const;
     virtual void PropertyName(CYOutput &out) const;
+};
+
+struct CYElement;
+
+struct CYSpan :
+    CYNext<CYSpan>
+{
+    CYExpression *expression_;
+    CYString *string_;
+
+    CYSpan(CYExpression *expression, CYString *string, CYSpan *next) :
+        CYNext<CYSpan>(next),
+        expression_(expression),
+        string_(string)
+    {
+    }
+
+    CYElement *Replace(CYContext &context);
+};
+
+struct CYTemplate :
+    CYExpression
+{
+    CYString *string_;
+    CYSpan *spans_;
+
+    CYTemplate(CYString *string, CYSpan *spans) :
+        string_(string),
+        spans_(spans)
+    {
+    }
+
+    CYPrecedence(0)
+    CYRightHand(false)
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYNumber :

@@ -19,13 +19,12 @@
 **/
 /* }}} */
 
-/* XXX: supposedly I will be screwed on very very long multi-line comments and need to replace these with a manual lexer. http://websrv.cs.fsu.edu/~engelen/courses/COP5621/Pr2.pdf */
-
 %top{
 #if defined(__clang__)
 #pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-variable"
 #pragma clang diagnostic ignored "-Wdeprecated-register"
+#pragma clang diagnostic ignored "-Wunused-function"
+#pragma clang diagnostic ignored "-Wunused-variable"
 #else
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-compare"
@@ -70,12 +69,13 @@ typedef cy::parser::token tk;
 #define C \
     yyextra->newline_ = yyextra->last_; \
     yyextra->last_ = false; \
-    BEGIN(Div);
+    BEGIN(yyextra->template_.top() ? DivOrTemplateTail : Div);
 
 #define N \
-    yyextra->last_ = true; \
-    if (yyextra->no_.NewLine) \
-        F(tk::NewLine, hi::Nothing);
+    if (yyextra->last_ && yyextra->no_.NewLine) { \
+        yyextra->last_ = false; \
+        F(tk::NewLine, hi::Nothing); \
+    }
 
 #define V(more) { \
     if (const char *nl = reinterpret_cast<const char *>(memchr(yytext, '\n', yyleng))) { \
@@ -93,16 +93,16 @@ typedef cy::parser::token tk;
     } else L \
 }
 
-#define L { \
-    yylloc->step(); \
-    yylloc->end.columns(yyleng); \
-}
+#define R yylloc->end.columns(yyleng);
+#define L yylloc->step(); R
 
-#define M { \
-    if (yyextra->commented_) { \
-        I(comment, Comment(Y), tk::Comment, hi::Comment); \
-    } \
-}
+#define H(value, highlight) do { \
+    if (yyextra->highlight_) \
+        F(value, highlight); \
+} while (false)
+
+#define M \
+    H(tk::Comment, hi::Comment);
 
 #define E(message) { \
     CYDriver::Error error; \
@@ -112,7 +112,7 @@ typedef cy::parser::token tk;
     yyterminate(); \
 }
 
-int H(char c) {
+int X(char c) {
     if (c >= '0' && c <= '9')
         return c - '0';
     if (c >= 'a' && c <= 'f')
@@ -122,7 +122,8 @@ int H(char c) {
     return -1;
 }
 
-static void U(char *&local, unsigned point) {
+template <typename Type_>
+static void U(Type_ &local, unsigned point) {
     if (false) {
     } else if (point < 0x000080) {
         *local++ = point;
@@ -147,7 +148,7 @@ static void U(char *&local, const char *text, yy_size_t &i) {
 
     char next(text[++i]);
     if (next != '{') {
-        point = H(text[i + 0]) << 12 | H(text[i + 1]) << 8 | H(text[i + 2]) << 4 | H(text[i + 3]);
+        point = X(text[i + 0]) << 12 | X(text[i + 1]) << 8 | X(text[i + 2]) << 4 | X(text[i + 3]);
         i += 3;
     } else {
         point = 0;
@@ -155,12 +156,35 @@ static void U(char *&local, const char *text, yy_size_t &i) {
             next = text[++i];
             if (next == '}')
                 break;
-            point = (point << 4) | H(next);
+            point = (point << 4) | X(next);
         }
     }
 
     U(local, point);
 }
+
+#define CYLexBufferPoint(point) do { \
+    std::back_insert_iterator<std::vector<char> > inserter(yyextra->buffer_); \
+    U(inserter, point); \
+} while (false)
+
+#define CYLexBufferUnit(value) do { \
+    yyextra->buffer_.push_back(value); \
+} while (false)
+
+#define CYLexBufferUnits(data, size) do { \
+    yyextra->buffer_.insert(yyextra->buffer_.end(), data, data + size); \
+} while (false)
+
+#define CYLexBufferStart(condition) do { \
+    yyextra->buffer_.clear(); \
+    yy_push_state(condition, yyscanner); \
+} while (false)
+
+#define CYLexBufferEnd(type, Type, value, highlight) do { \
+    yy_pop_state(yyscanner); \
+    C I(type, Type(P.strmemdup(yyextra->buffer_.data(), yyextra->buffer_.size()), yyextra->buffer_.size()), value, highlight); \
+} while (false)
 
 #define YY_INPUT(data, value, size) { \
     if (yyextra->data_.eof()) \
@@ -198,27 +222,26 @@ U0 [\x80-\xbf]
 U2 [\xc2-\xdf]
 U3 [\xe0-\xef]
 U4 [\xf0-\xf4]
+UN [\xc0-\xc1\xf5-\xff]
 
 HexDigit [0-9a-fA-F]
 LineTerminatorSequence \r?\n|\r|\xe2\x80[\xa8\xa9]
 WhiteSpace [\x09\x0b\x0c\x20]|\xc2\xa0|\xef\xbb\xbf
 UnicodeEscape \\u({HexDigit}{4}|\{{HexDigit}+\})
 
-OctalEscape \\[1-7]|\\[4-7][0-7]|\\[0-3][0-7][0-7]?
-StringEscape \\['"\\bfnrtv]|\\0|{OctalEscape}|\\x{HexDigit}{2}|{UnicodeEscape}
-StringExtra {StringEscape}|\\{LineTerminatorSequence}
-SingleString ([^'\\\n]|{StringExtra})*
-DoubleString ([^"\\\n]|{StringExtra})*
-StringPrefix '{SingleString}|\"{DoubleString}
+@include NotLineTerminator.l
+CommentCharacter [^*/]{-}[\r\n\x80-\xff]|{NotLineTerminator}
+SingleCharacter [^'\\]{-}[\r\n\x80-\xff]|{NotLineTerminator}
+DoubleCharacter [^"\\]{-}[\r\n\x80-\xff]|{NotLineTerminator}
+PlateCharacter [^$`\\]{-}[\r\n\x80-\xff]|{NotLineTerminator}
 
 @include UnicodeIDStart.l
 @include UnicodeIDContinue.l
-
 IdentifierMore [$_]
 
 UnicodeStart {IdentifierMore}|{UnicodeIDStart}
 UnicodePart {IdentifierMore}|\xe2\x80[\x8c\x8d]|{UnicodeIDContinue}
-UnicodeFail {U2}|{U3}|{U3}{U0}|{U4}|{U4}{U0}|{U4}{U0}{U0}
+UnicodeFail {U2}|{U3}|{U3}{U0}|{U4}|{U4}{U0}|{U4}{U0}{U0}|{UN}|{U0}
 UnicodeScrap {UnicodePart}*{UnicodeFail}?
 
 IdentifierStart {UnicodeStart}|{UnicodeEscape}
@@ -240,8 +263,19 @@ XMLNamePart [a-zA-Z0-9.-_:]
 XMLName {XMLNameStart}{XMLNamePart}*
 @end
 
+%x MultiLine
+
+%x LegacySingleString
+%x LegacyDoubleString
+
+%x StrictSingleString
+%x StrictDoubleString
+%x StrictAccentString
+
 %s Div
+%s DivOrTemplateTail
 %s RegExp
+%s RegExpOrTemplateTail
 
 @begin E4X
 %x XMLContent
@@ -251,19 +285,25 @@ XMLName {XMLNameStart}{XMLNamePart}*
 %%
 
     /* RegEx {{{ */
-<RegExp>\/{RegularExpressionBody}\/{RegularExpressionFlags} L C I(literal, RegEx(Y), tk::RegularExpressionLiteral, hi::Constant);
-<RegExp>\/{RegularExpressionBody}\/{RegularExpressionFlags}{UnicodeFail} L E("invalid flags")
-<RegExp>\/{RegularExpressionBody}?\\? L E("unterminated regex")
+<RegExp,RegExpOrTemplateTail>{
+    \/{RegularExpressionBody}\/{RegularExpressionFlags} L C I(literal, RegEx(Y), tk::RegularExpressionLiteral, hi::Constant);
+    \/{RegularExpressionBody}\/{RegularExpressionFlags}{UnicodeFail} L E("invalid flags")
+    \/{RegularExpressionBody}?\\? L E("unterminated regex")
+}
     /* }}} */
     /* Comment {{{ */
 #![^\n]* L M
 \/\/[^\n]* L M
 
-    /* http://ostermiller.org/findcomment.html */
-    /* XXX: unify these two rules using !? */
-\/\*!([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+\/ V() C I(comment, Comment(Y), tk::Comment, hi::Comment);
-\/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+\/ V(N) M
-\/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\** V() E("invalid comment")
+\/\* L yy_push_state(MultiLine, yyscanner);
+
+<MultiLine>{
+    \**\*\/ R yy_pop_state(yyscanner); M N
+    \**{LineTerminatorSequence} yylloc->end.lines(); yyextra->last_ = true;
+    \**{CommentCharacter}|\/ R
+    \**({UnicodeFail}|\*) R E("invalid comment");
+    <<EOF>> R E("invalid comment")
+}
     /* }}} */
     /* Element {{{ */
 @begin E4X
@@ -341,8 +381,8 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "*="   L C F(tk::StarEqual, hi::Operator);
 "~"    L C F(tk::Tilde, hi::Operator);
 
-<Div>"/"  L C F(tk::Slash, hi::Operator);
-<Div>"/=" L C F(tk::SlashEqual, hi::Operator);
+<Div,DivOrTemplateTail>"/"  L C F(tk::Slash, hi::Operator);
+<Div,DivOrTemplateTail>"/=" L C F(tk::SlashEqual, hi::Operator);
 
 ":"    L C F(tk::Colon, hi::Structure);
 ","    L C F(tk::Comma, hi::Structure);
@@ -352,8 +392,8 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "("    L C F(tk::OpenParen, hi::Structure);
 ")"    L C F(tk::CloseParen, hi::Structure);
 
-"{"    L C F(yyextra->no_.OpenBrace ? tk::OpenBrace__ : yyextra->newline_ ? tk::OpenBrace_ : tk::OpenBrace, hi::Structure);
-"}"    L C F(tk::CloseBrace, hi::Structure);
+"{"    L yyextra->template_.push(false); C F(yyextra->no_.OpenBrace ? tk::OpenBrace__ : yyextra->newline_ ? tk::OpenBrace_ : tk::OpenBrace, hi::Structure);
+<Div,RegExp>"}" L yyextra->template_.pop(); C F(tk::CloseBrace, hi::Structure);
 
 "["    L C F(tk::OpenBracket, hi::Structure);
 "]"    L C F(tk::CloseBracket, hi::Structure);
@@ -514,69 +554,77 @@ XMLName {XMLNameStart}{XMLNamePart}*
 (\.?[0-9]|(0|[1-9][0-9]*)\.){IdentifierScrap} L E("invalid number")
     /* }}} */
     /* String {{{ */
-'{SingleString}'|\"{DoubleString}\" L C {
-    char *value(A char[yyleng]);
-    char *local(value);
-
-    for (yy_size_t i(1), e(yyleng - 1); i != e; ++i) {
-        char next(yytext[i]);
-
-        if (yytext[i] == '\\')
-            // XXX: support more line continuation characters
-            if (false) line: {
-                yylloc->end.lines(1);
-                yylloc->end.columns(yyleng - i);
-            } else switch (next = yytext[++i]) {
-                case '\n': goto line;
-
-                case '\\': next = '\\'; break;
-                case '\'': next = '\''; break;
-                case '"': next = '"'; break;
-                case 'b': next = '\b'; break;
-                case 'f': next = '\f'; break;
-                case 'n': next = '\n'; break;
-                case 'r': next = '\r'; break;
-                case 't': next = '\t'; break;
-                case 'v': next = '\v'; break;
-
-                case '0': case '1': case '2': case '3':
-                    if (yytext[i + 1] < '0' || yytext[i + 1] > '7')
-                        next = H(yytext[i]), i += 0;
-                    else if (yytext[i + 2] < '0' || yytext[i + 2] > '7')
-                        next = H(yytext[i]) << 3 | H(yytext[i + 1]), i += 1;
-                    else
-                        next = H(yytext[i]) << 6 | H(yytext[i + 1]) << 3 | H(yytext[i + 2]), i += 2;
-                break;
-
-                case '4': case '5': case '6': case '7':
-                    if (yytext[i + 1] < '0' || yytext[i + 1] > '7')
-                        next = H(yytext[i]), i += 0;
-                    else
-                        next = H(yytext[i]) << 3 | H(yytext[i + 1]), i += 1;
-                break;
-
-                case 'x':
-                    U(local, H(yytext[i + 1]) << 4 | H(yytext[i + 2]));
-                    i += 2;
-                continue;
-
-                case 'u':
-                    U(local, yytext, i);
-                continue;
-            }
-
-        *local++ = next;
-    }
-
-    *local = '\0';
-    I(string, String(value, local - value), tk::StringLiteral, hi::Constant);
+\' L CYLexBufferStart(LegacySingleString);
+<LegacySingleString,StrictSingleString>{
+    \' R CYLexBufferEnd(string, String, tk::StringLiteral, hi::Constant);
+    {SingleCharacter}+ R CYLexBufferUnits(yytext, yyleng);
+    {SingleCharacter}*{UnicodeFail} R E("invalid character");
+    {LineTerminatorSequence} R E("invalid newline");
 }
 
-{StringPrefix}\\(x.{0,2}|u([^{].{0,3}|\{[^}]*)?|{UnicodeFail})? L E("invalid escape")
-{StringPrefix} L E("invalid string")
+\" L CYLexBufferStart(LegacyDoubleString);
+<LegacyDoubleString,StrictDoubleString>{
+    \" R CYLexBufferEnd(string, String, tk::StringLiteral, hi::Constant);
+    {DoubleCharacter}+ R CYLexBufferUnits(yytext, yyleng);
+    {DoubleCharacter}*{UnicodeFail} R E("invalid character");
+    {LineTerminatorSequence} R E("invalid newline");
+}
+    /* }}} */
+    /* Template {{{ */
+"`" L yyextra->tail_ = false; CYLexBufferStart(StrictAccentString);
+<DivOrTemplateTail,RegExpOrTemplateTail>"}" L yyextra->tail_ = true; yyextra->template_.pop(); CYLexBufferStart(StrictAccentString);
+
+<StrictAccentString>{
+    "`" R CYLexBufferEnd(string, String, yyextra->tail_ ? tk::TemplateTail : tk::NoSubstitutionTemplate, hi::Constant);
+    "${" R yyextra->template_.push(true); CYLexBufferEnd(string, String, yyextra->tail_ ? tk::TemplateMiddle : tk::TemplateHead, hi::Constant);
+
+    "$" R CYLexBufferUnit('$');
+
+    {PlateCharacter}+ R CYLexBufferUnits(yytext, yyleng);
+    {PlateCharacter}*{UnicodeFail} R E("invalid character");
+    {LineTerminatorSequence} R E("invalid newline");
+}
+    /* }}} */
+    /* Escapes {{{ */
+<LegacySingleString,LegacyDoubleString>{
+    \\[0-3][0-7][0-7] R CYLexBufferPoint(X(yytext[1]) << 6 | X(yytext[2]) << 3 | X(yytext[3]));
+    \\[0-7][0-7] R CYLexBufferUnit(X(yytext[1]) << 3 | X(yytext[2]));
+    \\[0-7] R CYLexBufferUnit(X(yytext[1]));
+}
+
+<StrictSingleString,StrictDoubleString,StrictAccentString>{
+    \\0[0-7] R E("legacy escape");
+    \\0 R CYLexBufferUnit('\0');
+}
+
+<LegacySingleString,LegacyDoubleString,StrictSingleString,StrictDoubleString,StrictAccentString>{
+    \\b R CYLexBufferUnit('\b');
+    \\f R CYLexBufferUnit('\f');
+    \\n R CYLexBufferUnit('\n');
+    \\r R CYLexBufferUnit('\r');
+    \\t R CYLexBufferUnit('\t');
+    \\v R CYLexBufferUnit('\v');
+
+    \\x{HexDigit}{2} R CYLexBufferPoint(X(yytext[2]) << 4 | X(yytext[3]));
+
+    \\u{HexDigit}{4} R CYLexBufferPoint(X(yytext[2]) << 12 | X(yytext[3]) << 8 | X(yytext[4]) << 4 | X(yytext[5]));
+
+    \\u\{{HexDigit}+\} R {
+        unsigned point(0);
+        for (yy_size_t i(3); i != yyleng - 1; ++i)
+            point = point << 4 | X(yytext[i]);
+        CYLexBufferPoint(point);
+    }
+
+    \\{LineTerminatorSequence} yylloc->end.lines();
+    \\(.|{NotLineTerminator}) R CYLexBufferUnits(yytext + 1, yyleng - 1);
+
+    \\(x{HexDigit}{0,1}|u({HexDigit}{0,3}|\{{HexDigit}*)|{UnicodeFail})? R E("invalid escape");
+    <<EOF>> R E("invalid string");
+}
     /* }}} */
 
-{LineTerminatorSequence} yylloc->step(); yylloc->end.lines(); N
+{LineTerminatorSequence} yylloc->step(); yylloc->end.lines(); yyextra->last_ = true; N
 {WhiteSpace} L
 
 <<EOF>> if (yyextra->auto_) { yyextra->auto_ = false; F(tk::AutoComplete, hi::Nothing); } L yyterminate();
@@ -594,27 +642,12 @@ void CYDriver::ScannerDestroy() {
     cylex_destroy(scanner_);
 }
 
-CYDriver::Condition CYDriver::GetCondition() {
-    switch (yy_top_state(scanner_)) {
-        case RegExp:
-            return RegExpCondition;
-@begin E4X
-        case XMLContent:
-            return XMLContentCondition;
-        case XMLTag:
-            return XMLTagCondition;
-@end
-        default:
-            _assert(false);
-    }
-}
-
 void CYDriver::SetCondition(Condition condition) {
     struct yyguts_t *yyg(reinterpret_cast<struct yyguts_t *>(scanner_));
 
     switch (condition) {
         case RegExpCondition:
-            BEGIN(RegExp);
+            BEGIN(template_.top() ? RegExpOrTemplateTail : RegExp);
             break;
 @begin E4X
         case XMLContentCondition:

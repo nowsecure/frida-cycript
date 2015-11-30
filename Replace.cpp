@@ -151,10 +151,6 @@ void CYClause::Replace(CYContext &context) { $T()
     next_->Replace(context);
 }
 
-CYStatement *CYComment::Replace(CYContext &context) {
-    return this;
-}
-
 CYExpression *CYCompound::Replace(CYContext &context) {
     context.Replace(expression_);
     context.Replace(next_);
@@ -857,6 +853,10 @@ void CYScope::Close(CYContext &context, CYStatement *&statements) {
         }
 }
 
+CYElement *CYSpan::Replace(CYContext &context) { $T(NULL)
+    return $ CYElement(expression_, $ CYElement(string_, next_->Replace(context)));
+}
+
 CYStatement *CYStatement::Return() {
     return this;
 }
@@ -883,6 +883,10 @@ CYStatement *CYSwitch::Replace(CYContext &context) {
     context.Replace(value_);
     clauses_->Replace(context);
     return this;
+}
+
+CYExpression *CYTemplate::Replace(CYContext &context) {
+    return $C2($M($M($M($V("String"), $S("prototype")), $S("concat")), $S("apply")), $S(""), $ CYArray($ CYElement(string_, spans_->Replace(context))));
 }
 
 CYExpression *CYThis::Replace(CYContext &context) {

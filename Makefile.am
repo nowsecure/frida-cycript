@@ -105,8 +105,9 @@ Cycript.l: Cycript.l.in UnicodeIDStart.l UnicodeIDContinue.l
 
 CLEANFILES += lex.cy.cpp
 lex.cy.cpp: Cycript.l
-	$(FLEX) -o $@ $<
+	$(FLEX) -o $@ -T $< 2>lex.output || (grep -F '$<:' lex.output; false)
 	grep -F 'No backing up.' lex.backup >/dev/null
+	! grep -F ': warning, ' lex.output || true
 
 Console.$(OBJEXT) Cycript.tab.lo Driver.lo Handler.lo Highlight.lo Library.lo lex.cy.lo: Cycript.tab.hh
 
