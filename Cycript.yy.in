@@ -119,6 +119,13 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
     return token;
 }
 
+#define CYMAP(to, from) do { \
+    if (yyla.empty()) \
+        yyla.type = yytranslate_(yylex(&yyla.value, &yyla.location, cyscanner)); \
+    if (yyla.type == yytranslate_(token::from)) \
+        yyla.type = yytranslate_(token::to); \
+} while (false)
+
 }
 
 %name-prefix "cy"
@@ -591,20 +598,20 @@ LexSetRegExp
     : { driver.SetCondition(CYDriver::RegExpCondition); }
     ;
 
-LexNoNewLine
-    : { if (!yyla.empty() && yyla.type_get() != yyeof_) error(@$, "unexpected lookahead"); driver.no_.NewLine = true; }
+LexNewLine
+    : { if (!yyla.empty() && yyla.type_get() != yyeof_) error(@$, "unexpected lookahead"); driver.next_ = true; }
     ;
 
 LexNoBrace
-    : { if (yyla.empty()) driver.no_.OpenBrace = true; else if (yyla.type == yytranslate_(token::OpenBrace) || yyla.type == yytranslate_(token::OpenBrace_)) yyla.type = yytranslate_(token::OpenBrace__); }
+    : { CYMAP(OpenBrace__, OpenBrace); CYMAP(OpenBrace__, OpenBrace_); }
     ;
 
 LexNoClass
-    : { if (yyla.empty()) driver.no_.Class = true; else if (yyla.type == yytranslate_(token::_class_)) yyla.type = yytranslate_(token::_class__); }
+    : { CYMAP(_class__, _class_); }
     ;
 
 LexNoFunction
-    : { if (yyla.empty()) driver.no_.Function = true; else if (yyla.type == yytranslate_(token::_function_)) yyla.type = yytranslate_(token::_function__); }
+    : { CYMAP(_function__, _function_); }
     ;
 
 LexSetStatement
@@ -1247,7 +1254,7 @@ ForInStatementInitializer
 /* }}} */
 /* 13.8 The continue Statement {{{ */
 Continue
-    : "continue" LexNoNewLine
+    : "continue" LexNewLine
     ;
 
 ContinueStatement
@@ -1257,7 +1264,7 @@ ContinueStatement
 /* }}} */
 /* 13.9 The break Statement {{{ */
 Break
-    : "break" LexNoNewLine
+    : "break" LexNewLine
     ;
 
 BreakStatement
@@ -1267,7 +1274,7 @@ BreakStatement
 /* }}} */
 /* 13.10 The return Statement {{{ */
 Return
-    : "return" LexNoNewLine
+    : "return" LexNewLine
     ;
 
 ReturnStatement
@@ -1316,7 +1323,7 @@ LabelledItem
 /* }}} */
 /* 13.14 The throw Statement {{{ */
 Throw
-    : "throw" LexNoNewLine
+    : "throw" LexNewLine
     ;
 
 ThrowStatement

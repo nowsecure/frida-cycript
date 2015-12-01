@@ -26,6 +26,7 @@ CYDriver::CYDriver(CYPool &pool, std::istream &data, const std::string &filename
     pool_(pool),
     newline_(false),
     last_(false),
+    next_(false),
     data_(data),
     debug_(0),
     strict_(false),
@@ -36,7 +37,6 @@ CYDriver::CYDriver(CYPool &pool, std::istream &data, const std::string &filename
     context_(NULL),
     mode_(AutoNone)
 {
-    memset(&no_, 0, sizeof(no_));
     in_.push(false);
     template_.push(false);
     ScannerInit();

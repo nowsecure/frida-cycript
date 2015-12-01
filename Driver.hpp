@@ -44,13 +44,7 @@ class _visible CYDriver {
 
     bool newline_;
     bool last_;
-
-    struct {
-        bool Class;
-        bool Function;
-        bool OpenBrace;
-        bool NewLine;
-    } no_;
+    bool next_;
 
     std::istream &data_;
 

@@ -43,15 +43,13 @@ typedef cy::parser::token tk;
 
 #define YY_EXTRA_TYPE CYDriver *
 
-// do /not/ fold token to the return: this is a macro and the ordering is dependent
 #define F(value, highlight) do { \
-    int token(value); \
-    yyextra->no_.Class = false; \
-    yyextra->no_.Function = false; \
-    yyextra->no_.NewLine = false; \
-    yyextra->no_.OpenBrace = false; \
+    yyextra->newline_ = yyextra->last_; \
+    yyextra->last_ = false; \
+    yyextra->next_ = false; \
+    BEGIN(yyextra->template_.top() ? DivOrTemplateTail : Div); \
     yylval->highlight_ = highlight; \
-    return token; \
+    return value; \
 } while (false)
 
 #define P yyextra->pool_
@@ -63,13 +61,8 @@ typedef cy::parser::token tk;
     F(value, highlight); \
 } while (false)
 
-#define C \
-    yyextra->newline_ = yyextra->last_; \
-    yyextra->last_ = false; \
-    BEGIN(yyextra->template_.top() ? DivOrTemplateTail : Div);
-
 #define N \
-    if (yyextra->last_ && yyextra->no_.NewLine) { \
+    if (yyextra->last_ && yyextra->next_) { \
         yyextra->last_ = false; \
         F(tk::NewLine, hi::Nothing); \
     }
@@ -180,7 +173,7 @@ static void U(char *&local, const char *text, yy_size_t &i) {
 
 #define CYLexBufferEnd(type, Type, value, highlight) do { \
     yy_pop_state(yyscanner); \
-    C I(type, Type(P.strmemdup(yyextra->buffer_.data(), yyextra->buffer_.size()), yyextra->buffer_.size()), value, highlight); \
+    I(type, Type(P.strmemdup(yyextra->buffer_.data(), yyextra->buffer_.size()), yyextra->buffer_.size()), value, highlight); \
 } while (false)
 
 #define YY_INPUT(data, value, size) { \
@@ -283,7 +276,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
     /* RegEx {{{ */
 <RegExp,RegExpOrTemplateTail>{
-    \/{RegularExpressionBody}\/{RegularExpressionFlags} L C I(literal, RegEx(Y), tk::RegularExpressionLiteral, hi::Constant);
+    \/{RegularExpressionBody}\/{RegularExpressionFlags} L I(literal, RegEx(Y), tk::RegularExpressionLiteral, hi::Constant);
     \/{RegularExpressionBody}\/{RegularExpressionFlags}{UnicodeFail} L E("invalid flags")
     \/{RegularExpressionBody}?\\? L E("unterminated regex")
 }
@@ -326,201 +319,201 @@ XMLName {XMLNameStart}{XMLNamePart}*
 @end
     /* }}} */
     /* Operator {{{ */
-"..."  L C F(tk::PeriodPeriodPeriod, hi::Meta);
+"..."  L F(tk::PeriodPeriodPeriod, hi::Meta);
 ".."   L E("invalid operator")
 
 @begin E4X
-"::"   L C F(tk::ColonColon, hi::Operator);
-".."   L C F(tk::PeriodPeriod, hi::Operator);
+"::"   L F(tk::ColonColon, hi::Operator);
+".."   L F(tk::PeriodPeriod, hi::Operator);
 @end
 
 @begin E4X ObjectiveC
-"@"    L C F(tk::At, hi::Operator);
-"#"    L C F(tk::Pound, hi::Operator);
+"@"    L F(tk::At, hi::Operator);
+"#"    L F(tk::Pound, hi::Operator);
 @end
 
-"&"    L C F(tk::Ampersand, hi::Operator);
-"&&"   L C F(tk::AmpersandAmpersand, hi::Operator);
-"&="   L C F(tk::AmpersandEqual, hi::Operator);
-"^"    L C F(tk::Carrot, hi::Operator);
-"^="   L C F(tk::CarrotEqual, hi::Operator);
-"="    L C F(tk::Equal, hi::Operator);
-"=="   L C F(tk::EqualEqual, hi::Operator);
-"==="  L C F(tk::EqualEqualEqual, hi::Operator);
-"=>"   L C F(yyextra->newline_ ? tk::EqualRight_ : tk::EqualRight, hi::Operator);
-"!"    L C F(tk::Exclamation, hi::Operator);
-"!="   L C F(tk::ExclamationEqual, hi::Operator);
-"!=="  L C F(tk::ExclamationEqualEqual, hi::Operator);
-"-"    L C F(tk::Hyphen, hi::Operator);
-"-="   L C F(tk::HyphenEqual, hi::Operator);
-"--"   L C F(yyextra->newline_ ? tk::HyphenHyphen_ : tk::HyphenHyphen, hi::Operator);
-"->"   L C F(tk::HyphenRight, hi::Operator);
-"<"    L C F(tk::Left, hi::Operator);
-"<="   L C F(tk::LeftEqual, hi::Operator);
-"<<"   L C F(tk::LeftLeft, hi::Operator);
-"<<="  L C F(tk::LeftLeftEqual, hi::Operator);
-"%"    L C F(tk::Percent, hi::Operator);
-"%="   L C F(tk::PercentEqual, hi::Operator);
-"."    L C F(tk::Period, hi::Operator);
-"|"    L C F(tk::Pipe, hi::Operator);
-"|="   L C F(tk::PipeEqual, hi::Operator);
-"||"   L C F(tk::PipePipe, hi::Operator);
-"+"    L C F(tk::Plus, hi::Operator);
-"+="   L C F(tk::PlusEqual, hi::Operator);
-"++"   L C F(yyextra->newline_ ? tk::PlusPlus_ : tk::PlusPlus, hi::Operator);
-">"    L C F(tk::Right, hi::Operator);
-">="   L C F(tk::RightEqual, hi::Operator);
-">>"   L C F(tk::RightRight, hi::Operator);
-">>="  L C F(tk::RightRightEqual, hi::Operator);
-">>>"  L C F(tk::RightRightRight, hi::Operator);
-">>>=" L C F(tk::RightRightRightEqual, hi::Operator);
-"*"    L C F(tk::Star, hi::Operator);
-"*="   L C F(tk::StarEqual, hi::Operator);
-"~"    L C F(tk::Tilde, hi::Operator);
+"&"    L F(tk::Ampersand, hi::Operator);
+"&&"   L F(tk::AmpersandAmpersand, hi::Operator);
+"&="   L F(tk::AmpersandEqual, hi::Operator);
+"^"    L F(tk::Carrot, hi::Operator);
+"^="   L F(tk::CarrotEqual, hi::Operator);
+"="    L F(tk::Equal, hi::Operator);
+"=="   L F(tk::EqualEqual, hi::Operator);
+"==="  L F(tk::EqualEqualEqual, hi::Operator);
+"=>"   L F(yyextra->newline_ ? tk::EqualRight_ : tk::EqualRight, hi::Operator);
+"!"    L F(tk::Exclamation, hi::Operator);
+"!="   L F(tk::ExclamationEqual, hi::Operator);
+"!=="  L F(tk::ExclamationEqualEqual, hi::Operator);
+"-"    L F(tk::Hyphen, hi::Operator);
+"-="   L F(tk::HyphenEqual, hi::Operator);
+"--"   L F(yyextra->newline_ ? tk::HyphenHyphen_ : tk::HyphenHyphen, hi::Operator);
+"->"   L F(tk::HyphenRight, hi::Operator);
+"<"    L F(tk::Left, hi::Operator);
+"<="   L F(tk::LeftEqual, hi::Operator);
+"<<"   L F(tk::LeftLeft, hi::Operator);
+"<<="  L F(tk::LeftLeftEqual, hi::Operator);
+"%"    L F(tk::Percent, hi::Operator);
+"%="   L F(tk::PercentEqual, hi::Operator);
+"."    L F(tk::Period, hi::Operator);
+"|"    L F(tk::Pipe, hi::Operator);
+"|="   L F(tk::PipeEqual, hi::Operator);
+"||"   L F(tk::PipePipe, hi::Operator);
+"+"    L F(tk::Plus, hi::Operator);
+"+="   L F(tk::PlusEqual, hi::Operator);
+"++"   L F(yyextra->newline_ ? tk::PlusPlus_ : tk::PlusPlus, hi::Operator);
+">"    L F(tk::Right, hi::Operator);
+">="   L F(tk::RightEqual, hi::Operator);
+">>"   L F(tk::RightRight, hi::Operator);
+">>="  L F(tk::RightRightEqual, hi::Operator);
+">>>"  L F(tk::RightRightRight, hi::Operator);
+">>>=" L F(tk::RightRightRightEqual, hi::Operator);
+"*"    L F(tk::Star, hi::Operator);
+"*="   L F(tk::StarEqual, hi::Operator);
+"~"    L F(tk::Tilde, hi::Operator);
 
-<Div,DivOrTemplateTail>"/"  L C F(tk::Slash, hi::Operator);
-<Div,DivOrTemplateTail>"/=" L C F(tk::SlashEqual, hi::Operator);
+<Div,DivOrTemplateTail>"/"  L F(tk::Slash, hi::Operator);
+<Div,DivOrTemplateTail>"/=" L F(tk::SlashEqual, hi::Operator);
 
-":"    L C F(tk::Colon, hi::Structure);
-","    L C F(tk::Comma, hi::Structure);
-"?"    L C F(tk::Question, hi::Structure);
-";"    L C F(tk::SemiColon, hi::Structure);
+":"    L F(tk::Colon, hi::Structure);
+","    L F(tk::Comma, hi::Structure);
+"?"    L F(tk::Question, hi::Structure);
+";"    L F(tk::SemiColon, hi::Structure);
 
-"("    L C F(tk::OpenParen, hi::Structure);
-")"    L C F(tk::CloseParen, hi::Structure);
+"("    L F(tk::OpenParen, hi::Structure);
+")"    L F(tk::CloseParen, hi::Structure);
 
-"{"    L yyextra->template_.push(false); C F(yyextra->no_.OpenBrace ? tk::OpenBrace__ : yyextra->newline_ ? tk::OpenBrace_ : tk::OpenBrace, hi::Structure);
-<Div,RegExp>"}" L yyextra->template_.pop(); C F(tk::CloseBrace, hi::Structure);
+"{"    L yyextra->template_.push(false); F(yyextra->newline_ ? tk::OpenBrace_ : tk::OpenBrace, hi::Structure);
+<Div,RegExp>"}" L yyextra->template_.pop(); F(tk::CloseBrace, hi::Structure);
 
-"["    L C F(tk::OpenBracket, hi::Structure);
-"]"    L C F(tk::CloseBracket, hi::Structure);
+"["    L F(tk::OpenBracket, hi::Structure);
+"]"    L F(tk::CloseBracket, hi::Structure);
     /* }}} */
     /* Keyword {{{ */
-"@error"          L C F(tk::At_error_, hi::Error);
+"@error"          L F(tk::At_error_, hi::Error);
 
 @begin Java
-"@class"          L C F(tk::At_class_, hi::Meta);
+"@class"          L F(tk::At_class_, hi::Meta);
 @end
 
 @begin C
-"@encode"         L C F(tk::At_encode_, hi::Meta);
+"@encode"         L F(tk::At_encode_, hi::Meta);
 @end
 
 @begin ObjectiveC
-"@end"            L C F(tk::At_end_, hi::Meta);
-"@false"          L C F(tk::At_false_, hi::Constant);
-"@implementation" L C F(tk::At_implementation_, hi::Meta);
-"@import"         L C F(tk::At_import_, hi::Special);
-"@NO"             L C F(tk::At_NO_, hi::Constant);
-"@null"           L C F(tk::At_null_, hi::Constant);
-"@selector"       L C F(tk::At_selector_, hi::Meta);
-"@true"           L C F(tk::At_true_, hi::Constant);
-"@YES"            L C F(tk::At_YES_, hi::Constant);
+"@end"            L F(tk::At_end_, hi::Meta);
+"@false"          L F(tk::At_false_, hi::Constant);
+"@implementation" L F(tk::At_implementation_, hi::Meta);
+"@import"         L F(tk::At_import_, hi::Special);
+"@NO"             L F(tk::At_NO_, hi::Constant);
+"@null"           L F(tk::At_null_, hi::Constant);
+"@selector"       L F(tk::At_selector_, hi::Meta);
+"@true"           L F(tk::At_true_, hi::Constant);
+"@YES"            L F(tk::At_YES_, hi::Constant);
 @end
 
 @({UnicodeStart}{UnicodeScrap}|{UnicodeFail}) L E("invalid keyword")
     /* }}} */
     /* Highlight {{{ */
-"undefined"       L C F(tk::_undefined_, hi::Operator);
+"undefined"       L F(tk::_undefined_, hi::Operator);
 
 @begin ObjectiveC
-"bool"            L C F(tk::_bool_, hi::Type);
-"BOOL"            L C F(tk::_BOOL_, hi::Type);
-"id"              L C F(tk::_id_, hi::Type);
-"nil"             L C F(tk::_nil_, hi::Constant);
-"NULL"            L C F(tk::_NULL_, hi::Constant);
-"SEL"             L C F(tk::_SEL_, hi::Type);
+"bool"            L F(tk::_bool_, hi::Type);
+"BOOL"            L F(tk::_BOOL_, hi::Type);
+"id"              L F(tk::_id_, hi::Type);
+"nil"             L F(tk::_nil_, hi::Constant);
+"NULL"            L F(tk::_NULL_, hi::Constant);
+"SEL"             L F(tk::_SEL_, hi::Type);
 @end
     /* }}} */
     /* Reserved {{{ */
-"abstract"        L C /*FII*/ F(tk::_abstract_, hi::Meta);
-"await"           L C /*II?*/ F(tk::_await_, hi::Meta);
-"boolean"         L C /*FII*/ F(tk::_boolean_, hi::Type);
-"break"           L C /*KKK*/ F(tk::_break_, hi::Control);
-"byte"            L C /*FII*/ F(tk::_byte_, hi::Type);
-"case"            L C /*KKK*/ F(tk::_case_, hi::Control);
-"catch"           L C /*KKK*/ F(tk::_catch_, hi::Control);
-"char"            L C /*FII*/ F(tk::_char_, hi::Type);
-"class"           L C /*FFK*/ F(yyextra->no_.Class ? tk::_class__ : tk::_class_, hi::Meta);
-"const"           L C /*FFK*/ F(tk::_const_, hi::Meta);
-"continue"        L C /*KKK*/ F(tk::_continue_, hi::Control);
-"debugger"        L C /*FKK*/ F(tk::_debugger_, hi::Meta);
-"default"         L C /*KKK*/ F(tk::_default_, hi::Control);
-"delete"          L C /*KKK*/ F(tk::_delete_, hi::Operator);
-"do"              L C /*KKK*/ F(tk::_do_, hi::Control);
-"double"          L C /*FII*/ F(tk::_double_, hi::Type);
-"else"            L C /*KKK*/ F(tk::_else_, hi::Control);
-"enum"            L C /*FFF*/ F(tk::_enum_, hi::Meta);
-"export"          L C /*FFK*/ F(tk::_export_, hi::Meta);
-"extends"         L C /*FFK*/ F(tk::_extends_, hi::Meta);
-"false"           L C /*LLL*/ F(tk::_false_, hi::Constant);
-"final"           L C /*FII*/ F(tk::_final_, hi::Meta);
-"finally"         L C /*KKK*/ F(tk::_finally_, hi::Control);
-"float"           L C /*FII*/ F(tk::_float_, hi::Type);
-"for"             L C /*KKK*/ F(tk::_for_, hi::Control);
-"function"        L C /*KKK*/ F(yyextra->no_.Function ? tk::_function__ : tk::_function_, hi::Meta);
-"goto"            L C /*FII*/ F(tk::_goto_, hi::Control);
-"if"              L C /*KKK*/ F(tk::_if_, hi::Control);
-"implements"      L C /*FSS*/ F(tk::_implements_, hi::Meta);
-"import"          L C /*FFK*/ F(tk::_import_, hi::Meta);
-"in"              L C /*KKK*/ F(yyextra->in_.top() ? tk::_in__ : tk::_in_, hi::Operator);
-"instanceof"      L C /*KKK*/ F(tk::_instanceof_, hi::Operator);
-"int"             L C /*FII*/ F(tk::_int_, hi::Type);
-"interface"       L C /*FSS*/ F(tk::_interface_, hi::Meta);
-"let"             L C /*IS?*/ F(tk::_let_, hi::Meta);
-"long"            L C /*FII*/ F(tk::_long_, hi::Type);
-"native"          L C /*FII*/ F(tk::_native_, hi::Meta);
-"new"             L C /*KKK*/ F(tk::_new_, hi::Operator);
-"null"            L C /*LLL*/ F(tk::_null_, hi::Constant);
-"package"         L C /*FSS*/ F(tk::_package_, hi::Meta);
-"private"         L C /*FSS*/ F(tk::_private_, hi::Meta);
-"protected"       L C /*FSS*/ F(tk::_protected_, hi::Meta);
-"public"          L C /*FSS*/ F(tk::_public_, hi::Meta);
-"return"          L C /*KKK*/ F(tk::_return_, hi::Control);
-"short"           L C /*FII*/ F(tk::_short_, hi::Type);
-"static"          L C /*FS?*/ F(tk::_static_, hi::Meta);
-"super"           L C /*FFK*/ F(tk::_super_, hi::Constant);
-"switch"          L C /*KKK*/ F(tk::_switch_, hi::Control);
-"synchronized"    L C /*FII*/ F(tk::_synchronized_, hi::Meta);
-"this"            L C /*KKK*/ F(tk::_this_, hi::Constant);
-"throw"           L C /*KKK*/ F(tk::_throw_, hi::Control);
-"throws"          L C /*FII*/ F(tk::_throws_, hi::Meta);
-"transient"       L C /*FII*/ F(tk::_transient_, hi::Meta);
-"true"            L C /*LLL*/ F(tk::_true_, hi::Constant);
-"try"             L C /*KKK*/ F(tk::_try_, hi::Control);
-"typeof"          L C /*KKK*/ F(tk::_typeof_, hi::Operator);
-"var"             L C /*KKK*/ F(tk::_var_, hi::Meta);
-"void"            L C /*KKK*/ F(tk::_void_, hi::Operator);
-"volatile"        L C /*FII*/ F(tk::_volatile_, hi::Meta);
-"while"           L C /*KKK*/ F(tk::_while_, hi::Control);
-"with"            L C /*KKK*/ F(tk::_with_, hi::Control);
-"yield"           L C /*IS?*/ F(tk::_yield_, hi::Control);
+"abstract"        L /*FII*/ F(tk::_abstract_, hi::Meta);
+"await"           L /*II?*/ F(tk::_await_, hi::Meta);
+"boolean"         L /*FII*/ F(tk::_boolean_, hi::Type);
+"break"           L /*KKK*/ F(tk::_break_, hi::Control);
+"byte"            L /*FII*/ F(tk::_byte_, hi::Type);
+"case"            L /*KKK*/ F(tk::_case_, hi::Control);
+"catch"           L /*KKK*/ F(tk::_catch_, hi::Control);
+"char"            L /*FII*/ F(tk::_char_, hi::Type);
+"class"           L /*FFK*/ F(tk::_class_, hi::Meta);
+"const"           L /*FFK*/ F(tk::_const_, hi::Meta);
+"continue"        L /*KKK*/ F(tk::_continue_, hi::Control);
+"debugger"        L /*FKK*/ F(tk::_debugger_, hi::Meta);
+"default"         L /*KKK*/ F(tk::_default_, hi::Control);
+"delete"          L /*KKK*/ F(tk::_delete_, hi::Operator);
+"do"              L /*KKK*/ F(tk::_do_, hi::Control);
+"double"          L /*FII*/ F(tk::_double_, hi::Type);
+"else"            L /*KKK*/ F(tk::_else_, hi::Control);
+"enum"            L /*FFF*/ F(tk::_enum_, hi::Meta);
+"export"          L /*FFK*/ F(tk::_export_, hi::Meta);
+"extends"         L /*FFK*/ F(tk::_extends_, hi::Meta);
+"false"           L /*LLL*/ F(tk::_false_, hi::Constant);
+"final"           L /*FII*/ F(tk::_final_, hi::Meta);
+"finally"         L /*KKK*/ F(tk::_finally_, hi::Control);
+"float"           L /*FII*/ F(tk::_float_, hi::Type);
+"for"             L /*KKK*/ F(tk::_for_, hi::Control);
+"function"        L /*KKK*/ F(tk::_function_, hi::Meta);
+"goto"            L /*FII*/ F(tk::_goto_, hi::Control);
+"if"              L /*KKK*/ F(tk::_if_, hi::Control);
+"implements"      L /*FSS*/ F(tk::_implements_, hi::Meta);
+"import"          L /*FFK*/ F(tk::_import_, hi::Meta);
+"in"              L /*KKK*/ F(yyextra->in_.top() ? tk::_in__ : tk::_in_, hi::Operator);
+"instanceof"      L /*KKK*/ F(tk::_instanceof_, hi::Operator);
+"int"             L /*FII*/ F(tk::_int_, hi::Type);
+"interface"       L /*FSS*/ F(tk::_interface_, hi::Meta);
+"let"             L /*IS?*/ F(tk::_let_, hi::Meta);
+"long"            L /*FII*/ F(tk::_long_, hi::Type);
+"native"          L /*FII*/ F(tk::_native_, hi::Meta);
+"new"             L /*KKK*/ F(tk::_new_, hi::Operator);
+"null"            L /*LLL*/ F(tk::_null_, hi::Constant);
+"package"         L /*FSS*/ F(tk::_package_, hi::Meta);
+"private"         L /*FSS*/ F(tk::_private_, hi::Meta);
+"protected"       L /*FSS*/ F(tk::_protected_, hi::Meta);
+"public"          L /*FSS*/ F(tk::_public_, hi::Meta);
+"return"          L /*KKK*/ F(tk::_return_, hi::Control);
+"short"           L /*FII*/ F(tk::_short_, hi::Type);
+"static"          L /*FS?*/ F(tk::_static_, hi::Meta);
+"super"           L /*FFK*/ F(tk::_super_, hi::Constant);
+"switch"          L /*KKK*/ F(tk::_switch_, hi::Control);
+"synchronized"    L /*FII*/ F(tk::_synchronized_, hi::Meta);
+"this"            L /*KKK*/ F(tk::_this_, hi::Constant);
+"throw"           L /*KKK*/ F(tk::_throw_, hi::Control);
+"throws"          L /*FII*/ F(tk::_throws_, hi::Meta);
+"transient"       L /*FII*/ F(tk::_transient_, hi::Meta);
+"true"            L /*LLL*/ F(tk::_true_, hi::Constant);
+"try"             L /*KKK*/ F(tk::_try_, hi::Control);
+"typeof"          L /*KKK*/ F(tk::_typeof_, hi::Operator);
+"var"             L /*KKK*/ F(tk::_var_, hi::Meta);
+"void"            L /*KKK*/ F(tk::_void_, hi::Operator);
+"volatile"        L /*FII*/ F(tk::_volatile_, hi::Meta);
+"while"           L /*KKK*/ F(tk::_while_, hi::Control);
+"with"            L /*KKK*/ F(tk::_with_, hi::Control);
+"yield"           L /*IS?*/ F(tk::_yield_, hi::Control);
 
-"auto"            L C F(tk::_auto_, hi::Meta);
-"each"            L C F(tk::_each_, hi::Control);
-"of"              L C F(tk::_of_, hi::Operator);
+"auto"            L F(tk::_auto_, hi::Meta);
+"each"            L F(tk::_each_, hi::Control);
+"of"              L F(tk::_of_, hi::Operator);
 
 @begin C
-"extern"          L C F(tk::_extern_, hi::Type);
-"signed"          L C F(tk::_signed_, hi::Type);
-"typedef"         L C F(tk::_typedef_, hi::Meta);
-"unsigned"        L C F(tk::_unsigned_, hi::Type);
+"extern"          L F(tk::_extern_, hi::Type);
+"signed"          L F(tk::_signed_, hi::Type);
+"typedef"         L F(tk::_typedef_, hi::Meta);
+"unsigned"        L F(tk::_unsigned_, hi::Type);
 @end
 
 @begin ObjectiveC
-"NO"              L C F(tk::_NO_, hi::Constant);
-"YES"             L C F(tk::_YES_, hi::Constant);
+"NO"              L F(tk::_NO_, hi::Constant);
+"YES"             L F(tk::_YES_, hi::Constant);
 @end
 
 @begin E4X
-"namespace"       L C F(tk::_namespace_, hi::Meta);
-"xml"             L C F(tk::_xml_, hi::Meta);
+"namespace"       L F(tk::_namespace_, hi::Meta);
+"xml"             L F(tk::_xml_, hi::Meta);
 @end
     /* }}} */
     /* Identifier {{{ */
-{UnicodeStart}{UnicodePart}* L C I(identifier, Identifier(Y), tk::Identifier_, hi::Identifier);
+{UnicodeStart}{UnicodePart}* L I(identifier, Identifier(Y), tk::Identifier_, hi::Identifier);
 
-{IdentifierStart}{IdentifierPart}* L C {
+{IdentifierStart}{IdentifierPart}* L {
     char *value(A char[yyleng + 1]);
     char *local(value);
 
@@ -539,14 +532,14 @@ XMLName {XMLNameStart}{XMLNamePart}*
 ({IdentifierStart}{IdentifierPart}*)?{IdentifierFail} L E("invalid identifier")
     /* }}} */
     /* Number {{{ */
-0[0-7]+ L C I(number, Number(strtoull(yytext + 1, NULL, 8)), tk::NumericLiteral, hi::Constant);
-0[0-9]+ L C I(number, Number(strtoull(yytext + 1, NULL, 10)), tk::NumericLiteral, hi::Constant);
+0[0-7]+ L I(number, Number(strtoull(yytext + 1, NULL, 8)), tk::NumericLiteral, hi::Constant);
+0[0-9]+ L I(number, Number(strtoull(yytext + 1, NULL, 10)), tk::NumericLiteral, hi::Constant);
 
-0[xX][0-9a-fA-F]+ L C I(number, Number(strtoull(yytext + 2, NULL, 16)), tk::NumericLiteral, hi::Constant);
-0[oO][0-7]+ L C I(number, Number(strtoull(yytext + 2, NULL, 8)), tk::NumericLiteral, hi::Constant);
-0[bB][0-1]+ L C I(number, Number(strtoull(yytext + 2, NULL, 2)), tk::NumericLiteral, hi::Constant);
+0[xX][0-9a-fA-F]+ L I(number, Number(strtoull(yytext + 2, NULL, 16)), tk::NumericLiteral, hi::Constant);
+0[oO][0-7]+ L I(number, Number(strtoull(yytext + 2, NULL, 8)), tk::NumericLiteral, hi::Constant);
+0[bB][0-1]+ L I(number, Number(strtoull(yytext + 2, NULL, 2)), tk::NumericLiteral, hi::Constant);
 
-(\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?)([eE][+-]?[0-9]+)? L C I(number, Number(strtod(yytext, NULL)), tk::NumericLiteral, hi::Constant);
+(\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?)([eE][+-]?[0-9]+)? L I(number, Number(strtod(yytext, NULL)), tk::NumericLiteral, hi::Constant);
 (\.[0-9]+|(0|[1-9][0-9]*)(\.[0-9]*)?)[eE][+-]?{IdentifierScrap} L E("invalid exponent")
 (\.?[0-9]|(0|[1-9][0-9]*)\.){IdentifierScrap} L E("invalid number")
     /* }}} */
