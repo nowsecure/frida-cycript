@@ -1988,11 +1988,6 @@ static JSValueRef Internal_getProperty(JSContextRef context, JSObjectRef object,
     id self(internal->GetValue());
     const char *name(CYPoolCString(pool, context, property));
 
-#ifdef __arm64__
-    if (strcmp(name, "isa") == 0)
-        return CYCastJSValue(context, object_getClass(self));
-#endif
-
     if (objc_ivar *ivar = object_getInstanceVariable(self, name, NULL)) {
         ptrdiff_t offset(ivar_getOffset(ivar));
         void *data(reinterpret_cast<uint8_t *>(self) + offset);
@@ -2008,6 +2003,12 @@ static JSValueRef Internal_getProperty(JSContextRef context, JSObjectRef object,
             uintptr_t mask((1 << length) - 1);
             return CYCastJSValue(context, (field >> shift) & mask);
         } else {
+#if defined(__APPLE__) && defined(__LP64__)
+            // XXX: maybe do even more verifications here
+            if (strcmp(name, "isa") == 0)
+                return CYCastJSValue(context, object_getClass(self));
+#endif
+
             auto type(new(pool) Type_privateData(encoding));
             return CYFromFFI(context, type->type_, type->GetFFI(), data);
         }
@@ -2234,7 +2235,7 @@ static void choose_(task_t task, void *baton, unsigned type, vm_range_t *ranges,
             continue;
 
         uintptr_t *pointers(reinterpret_cast<uintptr_t *>(data));
-#ifdef __arm64__
+#if defined(__APPLE__) && defined(__LP64__)
         Class isa(reinterpret_cast<Class>(pointers[0] & 0x1fffffff8));
 #else
         Class isa(reinterpret_cast<Class>(pointers[0]));
