@@ -126,6 +126,11 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
         yyla.type = yytranslate_(token::to); \
 } while (false)
 
+#define CYERR(location, message) do { \
+    error(location, message); \
+    YYABORT; \
+} while (false)
+
 }
 
 %name-prefix "cy"
@@ -599,7 +604,7 @@ LexSetRegExp
     ;
 
 LexNewLine
-    : { if (!yyla.empty() && yyla.type_get() != yyeof_) error(@$, "unexpected lookahead"); driver.next_ = true; }
+    : { if (!yyla.empty() && yyla.type_get() != yyeof_) CYERR(@$, "unexpected lookahead"); driver.next_ = true; }
     ;
 
 LexNoBrace
@@ -711,7 +716,7 @@ TerminatorSoft
 
 Terminator
     : ";"
-    | error { if (yyla.type_get() != yyeof_ && yyla.type != yytranslate_(token::CloseBrace) && !driver.newline_) { error(@1, "required semi-colon"); } else { yyerrok; driver.errors_.pop_back(); } } StrictSemi
+    | error { if (yyla.type_get() != yyeof_ && yyla.type != yytranslate_(token::CloseBrace) && !driver.newline_) { CYERR(@1, "required semi-colon"); } else { yyerrok; driver.errors_.pop_back(); } } StrictSemi
     ;
 
 TerminatorOpt
@@ -804,7 +809,7 @@ PrimaryExpression
     | ObjectLiteral { $$ = $1; }
     | RegularExpressionLiteral { $$ = $1; }
     | TemplateLiteral { $$ = $1; }
-    | CoverParenthesizedExpressionAndArrowParameterList { if ($1 == NULL) error(@1, "invalid parenthetical"); $$ = $1; }
+    | CoverParenthesizedExpressionAndArrowParameterList { if ($1 == NULL) CYERR(@1, "invalid parenthetical"); $$ = $1; }
     | AutoComplete { driver.mode_ = CYDriver::AutoPrimary; YYACCEPT; }
     ;
 
@@ -1327,7 +1332,7 @@ Throw
     ;
 
 ThrowStatement
-    : Throw LexSetRegExp TerminatorSoft { error(@1, "throw without exception"); }
+    : Throw LexSetRegExp TerminatorSoft { CYERR(@1, "throw without exception"); }
     | Throw Expression Terminator { $$ = CYNew cy::Syntax::Throw($2); }
     ;
 /* }}} */
@@ -1400,7 +1405,7 @@ ArrowFunction
 
 ArrowParameters
     : BindingIdentifier { $$ = CYNew CYFunctionParameter(CYNew CYDeclaration($1)); }
-    | CoverParenthesizedExpressionAndArrowParameterList { $$ = $1->expression_->Parameter(); if ($$ == NULL) error(@1, "invalid parameter list"); }
+    | CoverParenthesizedExpressionAndArrowParameterList { $$ = $1->expression_->Parameter(); if ($$ == NULL) CYERR(@1, "invalid parameter list"); }
     ;
 
 ConciseBody
@@ -1524,7 +1529,7 @@ MessageScope
     ;
 
 TypeOpt
-    : "(" LexSetRegExp TypedIdentifier ")" { if ($3->identifier_ != NULL) error($3->location_, "unexpected identifier"); $$ = $3; }
+    : "(" LexSetRegExp TypedIdentifier ")" { if ($3->identifier_ != NULL) CYERR($3->location_, "unexpected identifier"); $$ = $3; }
     | { $$ = CYNew CYTypedIdentifier(CYNew CYTypeVariable("id")); }
     ;
 
@@ -1679,7 +1684,7 @@ PrimaryExpression
 /* }}} */
 /* Cycript (Objective-C): Block Expressions {{{ */
 PrimaryExpression
-    : "^" TypedIdentifier { if ($2->identifier_ != NULL) error($2->location_, "unexpected identifier"); } BRACE LexPushInOff FunctionBody "}" LexPopIn { if (CYTypeFunctionWith *function = $2->Function()) $$ = CYNew CYObjCBlock($2, function->parameters_, $6); else error($2->location_, "expected parameters"); }
+    : "^" TypedIdentifier { if ($2->identifier_ != NULL) CYERR($2->location_, "unexpected identifier"); } BRACE LexPushInOff FunctionBody "}" LexPopIn { if (CYTypeFunctionWith *function = $2->Function()) $$ = CYNew CYObjCBlock($2, function->parameters_, $6); else CYERR($2->location_, "expected parameters"); }
     ;
 /* }}} */
 /* Cycript (Objective-C): Instance Literals {{{ */
@@ -1731,12 +1736,12 @@ PrimaryExpression
 /* }}} */
 /* Cycript (C): Type Definitions {{{ */
 Statement__
-    : "typedef" TypedIdentifier { if ($2->identifier_ == NULL) error($2->location_, "expected identifier"); } Terminator { $$ = CYNew CYTypeDefinition($2); }
+    : "typedef" TypedIdentifier { if ($2->identifier_ == NULL) CYERR($2->location_, "expected identifier"); } Terminator { $$ = CYNew CYTypeDefinition($2); }
     ;
 /* }}} */
 /* Cycript (C): extern "C" {{{ */
 Statement__
-    : "extern" StringLiteral { if (strcmp($2->Value(), "C") != 0) error(@2, "unknown extern binding"); } TypedIdentifier { if ($4->identifier_ == NULL) error($4->location_, "expected identifier"); } Terminator { $$ = CYNew CYExternal($2, $4); }
+    : "extern" StringLiteral { if (strcmp($2->Value(), "C") != 0) CYERR(@2, "unknown extern binding"); } TypedIdentifier { if ($4->identifier_ == NULL) CYERR($4->location_, "expected identifier"); } Terminator { $$ = CYNew CYExternal($2, $4); }
     ;
 /* }}} */
 
