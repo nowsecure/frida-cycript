@@ -220,6 +220,9 @@ WhiteSpace [\x09\x0b\x0c\x20]|\xc2\xa0|\xef\xbb\xbf
 UnicodeEscape \\u({HexDigit}{4}|\{{HexDigit}+\})
 
 @include NotLineTerminator.l
+NoneTerminatorCharacter [^\r\n\x80-\xff]|{NotLineTerminator}
+RegExCharacter [^/[\\]{-}[\r\n\x80-\xff]|{NotLineTerminator}
+RegClsCharacter [^]\\]{-}[\r\n\x80-\xff]|{NotLineTerminator}
 CommentCharacter [^*/]{-}[\r\n\x80-\xff]|{NotLineTerminator}
 SingleCharacter [^'\\]{-}[\r\n\x80-\xff]|{NotLineTerminator}
 DoubleCharacter [^"\\]{-}[\r\n\x80-\xff]|{NotLineTerminator}
@@ -239,13 +242,8 @@ IdentifierPart {UnicodePart}|{UnicodeEscape}
 IdentifierFail {UnicodeFail}|\\(u({HexDigit}{0,3}|\{{HexDigit}*))?
 IdentifierScrap {IdentifierPart}*{IdentifierFail}?
 
-NonTerminator [^\n]
-BackslashSequence \\{NonTerminator}
-RegularExpressionFirstChar [^\n*\\/]|{BackslashSequence}
-RegularExpressionChar [^\n\\/]|{BackslashSequence}
-RegularExpressionFlags {UnicodePart}*
-RegularExpressionChars {RegularExpressionChar}*
-RegularExpressionBody {RegularExpressionFirstChar}{RegularExpressionChars}
+RegularExpressionBackslashSequence \\{NoneTerminatorCharacter}
+RegularExpressionClassChars ({RegClsCharacter}|{RegularExpressionBackslashSequence})*
 
 @begin E4X
 XMLNameStart [a-zA-Z_:]
@@ -253,6 +251,7 @@ XMLNamePart [a-zA-Z0-9.-_:]
 XMLName {XMLNameStart}{XMLNamePart}*
 @end
 
+%x RegularExpression
 %x MultiLine
 
 %x LegacySingleString
@@ -275,10 +274,25 @@ XMLName {XMLNameStart}{XMLNamePart}*
 %%
 
     /* RegEx {{{ */
-<RegExp,RegExpOrTemplateTail>{
-    \/{RegularExpressionBody}\/{RegularExpressionFlags} L I(literal, RegEx(Y), tk::RegularExpressionLiteral, hi::Constant);
-    \/{RegularExpressionBody}\/{RegularExpressionFlags}{UnicodeFail} L E("invalid flags")
-    \/{RegularExpressionBody}?\\? L E("unterminated regex")
+<RegExp,RegExpOrTemplateTail>\/ L CYLexBufferStart(RegularExpression); CYLexBufferUnit('/');
+
+<RegularExpression>{
+    \/{UnicodePart}* R CYLexBufferUnits(yytext, yyleng); CYLexBufferEnd(literal, RegEx, tk::RegularExpressionLiteral, hi::Constant);
+    \/{UnicodePart}*{UnicodeFail} R E("invalid flags")
+
+    {RegExCharacter}+ R CYLexBufferUnits(yytext, yyleng);
+    {RegExCharacter}*{UnicodeFail} R E("invalid character");
+
+    {RegularExpressionBackslashSequence} R CYLexBufferUnits(yytext, yyleng);
+    \\{UnicodeFail}? R E("invalid escape")
+
+    "["{RegularExpressionClassChars}"]" R CYLexBufferUnits(yytext, yyleng);
+    "["{RegularExpressionClassChars}\\? R E("invalid class");
+    "["{RegularExpressionClassChars}\\?{UnicodeFail} R E("invalid character");
+    "["{RegularExpressionClassChars}\\?{LineTerminatorSequence} R E("invalid newline");
+
+    (\\|{RegExCharacter}+)?{LineTerminatorSequence} R E("invalid newline");
+    <<EOF>> R E("unterminated regex")
 }
     /* }}} */
     /* Comment {{{ */

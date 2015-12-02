@@ -860,9 +860,11 @@ struct CYRegEx :
     CYTrivial
 {
     const char *value_;
+    size_t size_;
 
-    CYRegEx(const char *value) :
-        value_(value)
+    CYRegEx(const char *value, size_t size) :
+        value_(value),
+        size_(size)
     {
     }
 
