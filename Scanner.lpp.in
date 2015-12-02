@@ -36,7 +36,7 @@
 %{
 
 #define YYLTYPE CYLocation
-#include "Cycript.tab.hh"
+#include "Parser.hpp"
 typedef cy::parser::token tk;
 
 #include "Highlight.hpp"

@@ -22,8 +22,8 @@
 #ifndef CYCRIPT_ERROR_HPP
 #define CYCRIPT_ERROR_HPP
 
-#include "Pooling.hpp"
 #include "Exception.hpp"
+#include "Pooling.hpp"
 
 #ifdef CY_EXECUTE
 struct CYJSError :

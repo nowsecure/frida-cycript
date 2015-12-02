@@ -20,9 +20,10 @@
 /* }}} */
 
 #include "cycript.hpp"
-#include "Parser.hpp"
 
 #include <sstream>
+
+#include "Syntax.hpp"
 
 void CYOutput::Terminate() {
     operator ()(';');

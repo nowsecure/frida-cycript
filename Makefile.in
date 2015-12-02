@@ -180,8 +180,8 @@ libcycript_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4)
 am__libcycript_la_SOURCES_DIST = ConvertUTF.c Decode.cpp Driver.cpp \
-	Highlight.cpp Library.cpp Network.cpp Output.cpp Parser.cpp \
-	Replace.cpp Cycript.tab.cc lex.cy.cpp Complete.cpp \
+	Highlight.cpp Library.cpp Network.cpp Output.cpp Replace.cpp \
+	Syntax.cpp Parser.cpp Scanner.cpp Complete.cpp \
 	sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp Bridge.cpp \
 	Execute.cpp JavaScriptCore.cpp Java/Execute.cpp \
 	ObjectiveC/Output.cpp ObjectiveC/Replace.cpp \
@@ -197,8 +197,8 @@ am__dirstamp = $(am__leading_dot)dirstamp
 @CY_OBJECTIVEC_TRUE@	ObjectiveC/Library.lo
 @CY_ATTACH_TRUE@am__objects_5 = Handler.lo
 am_libcycript_la_OBJECTS = ConvertUTF.lo Decode.lo Driver.lo \
-	Highlight.lo Library.lo Network.lo Output.lo Parser.lo \
-	Replace.lo Cycript.tab.lo lex.cy.lo $(am__objects_1) \
+	Highlight.lo Library.lo Network.lo Output.lo Replace.lo \
+	Syntax.lo Parser.lo Scanner.lo $(am__objects_1) \
 	$(am__objects_2) $(am__objects_3) $(am__objects_4) \
 	$(am__objects_5)
 libcycript_la_OBJECTS = $(am_libcycript_la_OBJECTS)
@@ -536,8 +536,9 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = subdir-objects
-CLEANFILES = $(am__append_6) Cycript.yy Cycript.l lex.cy.cpp \
-	Cycript.tab.cc Cycript.tab.hh stack.hh Cycript.output
+CLEANFILES = $(am__append_6) Parser.ypp Scanner.lpp Scanner.cpp \
+	Scanner.output lex.backup Parser.cpp Parser.hpp stack.hh \
+	Parser.output
 SUBDIRS = 
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -DYYDEBUG=1 -include config.h -include \
@@ -552,8 +553,8 @@ libcycript_la_LDFLAGS = $(CY_LDFLAGS)
 libcycript_la_LIBADD = $(LTLIBFFI) $(LTLIBGCC) -ldl $(am__append_3) \
 	$(am__append_9) $(am__append_12)
 libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp \
-	Highlight.cpp Library.cpp Network.cpp Output.cpp Parser.cpp \
-	Replace.cpp Cycript.tab.cc lex.cy.cpp $(am__append_1) \
+	Highlight.cpp Library.cpp Network.cpp Output.cpp Replace.cpp \
+	Syntax.cpp Parser.cpp Scanner.cpp $(am__append_1) \
 	$(am__append_2) $(am__append_8) $(am__append_11) \
 	$(am__append_13)
 filters = $(am__append_5) $(am__append_7) $(am__append_10)
@@ -564,7 +565,7 @@ all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
 .SUFFIXES:
-.SUFFIXES: .c .cc .cpp .lo .mm .o .obj
+.SUFFIXES: .c .cpp .lo .mm .o .obj
 am--refresh: Makefile
 	@:
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
@@ -749,7 +750,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Complete.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Console.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ConvertUTF.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Cycript.tab.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Decode.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Display.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Driver.Plo@am__quote@
@@ -763,7 +763,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Output.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Parser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Replace.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lex.cy.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Scanner.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Syntax.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@Java/$(DEPDIR)/Execute.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/Library.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/Output.Plo@am__quote@
@@ -795,30 +796,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
-
-.cc.o:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
-@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ $<
-
-.cc.obj:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
-@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
-@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-.cc.lo:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
-@am__fastdepCXX_TRUE@	$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -1326,21 +1303,21 @@ uninstall-am: uninstall-binPROGRAMS uninstall-libLTLIBRARIES
 @CY_EXECUTE_TRUE@	$(srcdir)/Bridge.sh $< >$@
 @CY_EXECUTE_TRUE@Bridge.hpp: Bridge.gperf
 @CY_EXECUTE_TRUE@	$(GPERF) $< >$@
-Cycript.yy: Cycript.yy.in
+Parser.ypp: Parser.ypp.in
 	$(srcdir)/Filter.sh $< >$@ $(filters)
-Cycript.l: Cycript.l.in UnicodeIDStart.l UnicodeIDContinue.l
+Scanner.lpp: Scanner.lpp.in UnicodeIDStart.l UnicodeIDContinue.l
 	$(srcdir)/Filter.sh $< >$@ $(filters)
-lex.cy.cpp: Cycript.l
-	$(FLEX) -o $@ -T $< 2>lex.output || (grep -F '$<:' lex.output; false)
-	grep -F 'No backing up.' lex.backup >/dev/null
-	! grep -F ': warning, ' lex.output || true
+Scanner.cpp: Scanner.lpp
+	$(FLEX) -o $@ -T $< 2>Scanner.output || (grep -F '$<:' Scanner.output; false)
+	grep -E '^(No backing up\.|Compressed tables always back up\.)$$' lex.backup >/dev/null
+	! grep -F ': warning, ' Scanner.output || true
 
-lex.cy.lo: Cycript.tab.hh
-Cycript.tab.cc Cycript.tab.hh stack.hh Cycript.output: Cycript.yy
-	$(BISON) -v --report=state -Werror $<
-	! grep -n '^State [0-9]* conflicts:' Cycript.output
-	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Cycript.output -B 2 | grep 'shift, and go to state [0-9]*$$'
-	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Cycript.output -B 2 | grep -v '$$default' | grep 'reduce using rule [0-9]* ([^)]*)$$'
+Scanner.lo: Parser.hpp
+Parser.cpp Parser.hpp stack.hh Parser.output: Parser.ypp
+	$(BISON) -v --report=state -Werror -o Parser.cpp $<
+	! grep -n '^State [0-9]* conflicts:' Parser.output
+	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output -B 2 | grep 'shift, and go to state [0-9]*$$'
+	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output -B 2 | grep -v '$$default' | grep 'reduce using rule [0-9]* ([^)]*)$$'
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

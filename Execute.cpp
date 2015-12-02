@@ -19,23 +19,7 @@
 **/
 /* }}} */
 
-#include "Internal.hpp"
-
-#include <dlfcn.h>
-#include <dirent.h>
-#include <fcntl.h>
-#include <unistd.h>
-
 #include "cycript.hpp"
-
-#include "sig/parse.hpp"
-#include "sig/ffi_type.hpp"
-
-#include "Pooling.hpp"
-#include "Execute.hpp"
-
-#include <sys/mman.h>
-#include <sys/stat.h>
 
 #include <iostream>
 #include <set>
@@ -44,10 +28,24 @@
 #include <sstream>
 #include <cmath>
 
+#include <dlfcn.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+#include <sys/mman.h>
+#include <sys/stat.h>
+
+#include "sig/parse.hpp"
+#include "sig/ffi_type.hpp"
+
 #include "Code.hpp"
 #include "Decode.hpp"
 #include "Error.hpp"
+#include "Execute.hpp"
+#include "Internal.hpp"
 #include "JavaScript.hpp"
+#include "Pooling.hpp"
 #include "String.hpp"
 
 static std::vector<CYHook *> &GetHooks() {

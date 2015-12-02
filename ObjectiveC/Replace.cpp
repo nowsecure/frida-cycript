@@ -19,10 +19,11 @@
 **/
 /* }}} */
 
-#include "Replace.hpp"
-#include "ObjectiveC/Syntax.hpp"
-
 #include <sstream>
+
+#include "Replace.hpp"
+
+#include "ObjectiveC/Syntax.hpp"
 
 static CYExpression *MessageType(CYContext &context, CYTypedIdentifier *type, CYMessageParameter *next, CYExpression *extra = NULL) {
     CYExpression *left($C0($M(type->Replace(context), $S("toString"))));

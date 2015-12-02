@@ -24,7 +24,7 @@
 
 #include <sig/types.hpp>
 
-#include "Parser.hpp"
+#include "Syntax.hpp"
 
 CYTypedIdentifier *Decode(CYPool &pool, struct sig::Type *type);
 

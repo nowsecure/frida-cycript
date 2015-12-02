@@ -32,9 +32,9 @@
 
 #include <sys/ioctl.h>
 
-#include "Highlight.hpp"
-
 #include <term.h>
+
+#include "Highlight.hpp"
 
 typedef std::complex<int> CYCursor;
 

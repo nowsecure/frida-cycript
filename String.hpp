@@ -22,9 +22,9 @@
 #ifndef CYCRIPT_STRING_HPP
 #define CYCRIPT_STRING_HPP
 
-#include "Pooling.hpp"
-
 #include <iostream>
+
+#include "Pooling.hpp"
 
 struct CYUTF8String {
     const char *data;

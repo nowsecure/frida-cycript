@@ -43,8 +43,8 @@ lib_LTLIBRARIES += libcycript.la
 libcycript_la_LDFLAGS = $(CY_LDFLAGS)
 libcycript_la_LIBADD = $(LTLIBFFI) $(LTLIBGCC) -ldl
 
-libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp Highlight.cpp Library.cpp Network.cpp Output.cpp Parser.cpp Replace.cpp
-libcycript_la_SOURCES += Cycript.tab.cc lex.cy.cpp
+libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp Highlight.cpp Library.cpp Network.cpp Output.cpp Replace.cpp Syntax.cpp
+libcycript_la_SOURCES += Parser.cpp Scanner.cpp
 
 filters = 
 
@@ -95,25 +95,25 @@ AM_CPPFLAGS += -DCY_ATTACH
 endif
 endif
 
-CLEANFILES += Cycript.yy
-Cycript.yy: Cycript.yy.in
+CLEANFILES += Parser.ypp
+Parser.ypp: Parser.ypp.in
 	$(srcdir)/Filter.sh $< >$@ $(filters)
 
-CLEANFILES += Cycript.l
-Cycript.l: Cycript.l.in UnicodeIDStart.l UnicodeIDContinue.l
+CLEANFILES += Scanner.lpp
+Scanner.lpp: Scanner.lpp.in UnicodeIDStart.l UnicodeIDContinue.l
 	$(srcdir)/Filter.sh $< >$@ $(filters)
 
-CLEANFILES += lex.cy.cpp
-lex.cy.cpp: Cycript.l
-	$(FLEX) -o $@ -T $< 2>lex.output || (grep -F '$<:' lex.output; false)
-	grep -F 'No backing up.' lex.backup >/dev/null
-	! grep -F ': warning, ' lex.output || true
+CLEANFILES += Scanner.cpp Scanner.output lex.backup
+Scanner.cpp: Scanner.lpp
+	$(FLEX) -o $@ -T $< 2>Scanner.output || (grep -F '$<:' Scanner.output; false)
+	grep -E '^(No backing up\.|Compressed tables always back up\.)$$' lex.backup >/dev/null
+	! grep -F ': warning, ' Scanner.output || true
 
-lex.cy.lo: Cycript.tab.hh
+Scanner.lo: Parser.hpp
 
-CLEANFILES += Cycript.tab.cc Cycript.tab.hh stack.hh Cycript.output
-Cycript.tab.cc Cycript.tab.hh stack.hh Cycript.output: Cycript.yy
-	$(BISON) -v --report=state -Werror $<
-	! grep -n '^State [0-9]* conflicts:' Cycript.output
-	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Cycript.output -B 2 | grep 'shift, and go to state [0-9]*$$'
-	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Cycript.output -B 2 | grep -v '$$default' | grep 'reduce using rule [0-9]* ([^)]*)$$'
+CLEANFILES += Parser.cpp Parser.hpp stack.hh Parser.output
+Parser.cpp Parser.hpp stack.hh Parser.output: Parser.ypp
+	$(BISON) -v --report=state -Werror -o Parser.cpp $<
+	! grep -n '^State [0-9]* conflicts:' Parser.output
+	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output -B 2 | grep 'shift, and go to state [0-9]*$$'
+	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output -B 2 | grep -v '$$default' | grep 'reduce using rule [0-9]* ([^)]*)$$'

@@ -22,7 +22,7 @@
 #ifndef CYCRIPT_REPLACE_HPP
 #define CYCRIPT_REPLACE_HPP
 
-#include "Parser.hpp"
+#include "Syntax.hpp"
 
 #define $ new($pool)
 

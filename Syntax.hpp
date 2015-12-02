@@ -19,8 +19,11 @@
 **/
 /* }}} */
 
-#ifndef CYCRIPT_PARSER_HPP
-#define CYCRIPT_PARSER_HPP
+#ifndef CYCRIPT_SYNTAX_HPP
+#define CYCRIPT_SYNTAX_HPP
+
+#include <cstdio>
+#include <cstdlib>
 
 #include <streambuf>
 #include <string>
@@ -28,13 +31,10 @@
 #include <map>
 #include <set>
 
-#include <cstdio>
-#include <cstdlib>
-
 #include "List.hpp"
 #include "Location.hpp"
-#include "Pooling.hpp"
 #include "Options.hpp"
+#include "Pooling.hpp"
 
 struct CYContext;
 

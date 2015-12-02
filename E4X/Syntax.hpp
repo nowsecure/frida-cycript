@@ -22,7 +22,7 @@
 #ifndef CYCRIPT_E4X_SYNTAX_HPP
 #define CYCRIPT_E4X_SYNTAX_HPP
 
-#include "Parser.hpp"
+#include "Syntax.hpp"
 
 struct CYDefaultXMLNamespace :
     CYStatement

@@ -19,10 +19,11 @@
 **/
 /* }}} */
 
-#include "Replace.hpp"
-#include "ObjectiveC/Syntax.hpp"
-
 #include <sstream>
+
+#include "Replace.hpp"
+
+#include "ObjectiveC/Syntax.hpp"
 
 void CYCategory::Output(CYOutput &out, CYFlags flags) const {
     out << "(function($cys,$cyp,$cyc,$cyn,$cyt){";

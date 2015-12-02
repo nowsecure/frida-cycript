@@ -21,22 +21,27 @@
 
 #include "cycript.hpp"
 
-#include "ObjectiveC/Internal.hpp"
+#include <cmath>
+
+#include <map>
+#include <set>
+
+#include <dlfcn.h>
+
+#ifdef __APPLE__
+#include <malloc/malloc.h>
+#include <mach/mach.h>
+#endif
 
 #include <objc/message.h>
 #include <objc/runtime.h>
-
-#include <Foundation/Foundation.h>
 
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
 #include <JavaScriptCore/JSStringRefCF.h>
 #endif
 
-#ifdef __APPLE__
-#include <malloc/malloc.h>
-#include <mach/mach.h>
-#endif
+#include <Foundation/Foundation.h>
 
 #include "Code.hpp"
 #include "Error.hpp"
@@ -44,11 +49,7 @@
 #include "String.hpp"
 #include "Execute.hpp"
 
-#include <cmath>
-#include <map>
-#include <set>
-
-#include <dlfcn.h>
+#include "ObjectiveC/Internal.hpp"
 
 #define CYObjectiveTry_ { \
     try

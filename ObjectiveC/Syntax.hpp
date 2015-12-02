@@ -22,7 +22,7 @@
 #ifndef CYCRIPT_OBJECTIVEC_SYNTAX_HPP
 #define CYCRIPT_OBJECTIVEC_SYNTAX_HPP
 
-#include "Parser.hpp"
+#include "../Syntax.hpp"
 
 struct CYInstanceLiteral :
     CYExpression

@@ -20,7 +20,7 @@
 /* }}} */
 
 #include "Driver.hpp"
-#include "Parser.hpp"
+#include "Syntax.hpp"
 
 bool CYParser(CYPool &pool, bool debug);
 

@@ -22,8 +22,9 @@
 #ifndef CYCRIPT_OBJECTIVEC_INTERNAL_HPP
 #define CYCRIPT_OBJECTIVEC_INTERNAL_HPP
 
-#include <Internal.hpp>
 #include <objc/objc.h>
+
+#include "../Internal.hpp"
 
 struct Selector_privateData :
     CYValue

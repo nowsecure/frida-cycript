@@ -19,15 +19,15 @@
 **/
 /* }}} */
 
-#include <Pooling.hpp>
-
 #include <CoreFoundation/CFLogUtilities.h>
 #include <CFNetwork/CFNetwork.h>
 
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <sys/un.h>
+
+#include "Pooling.hpp"
 
 struct Client {
     CFHTTPMessageRef message_;

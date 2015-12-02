@@ -19,10 +19,10 @@
 **/
 /* }}} */
 
-#include "Parser.hpp"
-#include "Replace.hpp"
-
 #include <iomanip>
+
+#include "Replace.hpp"
+#include "Syntax.hpp"
 
 CYFunctionExpression *CYNonLocalize(CYContext &context, CYFunctionExpression *function) {
     function->nonlocal_ = context.nextlocal_;

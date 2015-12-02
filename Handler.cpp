@@ -19,6 +19,8 @@
 **/
 /* }}} */
 
+#include "cycript.hpp"
+
 #include <dlfcn.h>
 #include <pthread.h>
 #include <unistd.h>
@@ -34,11 +36,9 @@
 #include <CoreFoundation/CoreFoundation.h>
 #endif
 
-#include "cycript.hpp"
-
 #include "Driver.hpp"
 #include "JavaScript.hpp"
-#include "Parser.hpp"
+#include "Syntax.hpp"
 #include "Pooling.hpp"
 
 struct CYExecute_ {

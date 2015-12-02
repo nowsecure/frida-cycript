@@ -22,8 +22,9 @@
 #ifndef CYCRIPT_HPP
 #define CYCRIPT_HPP
 
-#include <sig/types.hpp>
 #include <sstream>
+
+#include <sig/types.hpp>
 
 #include "Pooling.hpp"
 #include "String.hpp"
