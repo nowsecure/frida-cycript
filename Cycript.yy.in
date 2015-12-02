@@ -576,7 +576,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, vo
 /* }}} */
 /* Token Priorities {{{ */
 %nonassoc ""
-%left "++" "--"
+%left "++" "--" "{"
 
 %nonassoc "if"
 %nonassoc "else"
@@ -1990,12 +1990,12 @@ RubyProcParameterList
     ;
 
 RubyProcParameters
-    : "|" RubyProcParameterList "|" { $$ = $2; }
-    | "||" { $$ = NULL; }
+    : LexSetRegExp "|" RubyProcParameterList "|" { $$ = $3; }
+    | LexSetRegExp "||" { $$ = NULL; }
     ;
 
 RubyProcParametersOpt
-    : RubyProcParameters
+    : RubyProcParameters { $$ = $1; }
     | { $$ = NULL; }
     ;
 
@@ -2004,11 +2004,11 @@ RubyProcExpression
     ;
 
 PrimaryExpression
-    : "{" LexPushInOff RubyProcParameters StatementListOpt "}" LexPopIn { $$ = CYNew CYRubyProc($3, $4); }
+    : BRACE LexPushInOff RubyProcParameters StatementListOpt "}" LexPopIn { $$ = CYNew CYRubyProc($3, $4); }
     ;
 
-CallExpression
-    : CallExpression_ RubyProcExpression { $$ = CYNew CYRubyBlock($1, $2); }
+PostfixExpression
+    : LeftHandSideExpression RubyProcExpression { $$ = CYNew CYRubyBlock($1, $2); }
     ;
 /* }}} */
 
