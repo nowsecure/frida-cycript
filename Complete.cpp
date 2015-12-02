@@ -22,7 +22,6 @@
 #include "cycript.hpp"
 
 #include "Driver.hpp"
-#include "Cycript.tab.hh"
 #include "Replace.hpp"
 #include "String.hpp"
 
@@ -30,9 +29,7 @@ static CYExpression *ParseExpression(CYPool &pool, CYUTF8String code) {
     std::stringstream stream;
     stream << '(' << code << ')';
     CYDriver driver(pool, stream);
-
-    cy::parser parser(driver);
-    if (parser.parse() != 0 || !driver.errors_.empty())
+    if (driver.Parse() || !driver.errors_.empty())
         return NULL;
 
     CYOptions options;
@@ -59,8 +56,7 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
 
     driver.auto_ = true;
 
-    cy::parser parser(driver);
-    if (parser.parse() != 0 || !driver.errors_.empty())
+    if (driver.Parse() || !driver.errors_.empty())
         return NULL;
 
     if (driver.mode_ == CYDriver::AutoNone)

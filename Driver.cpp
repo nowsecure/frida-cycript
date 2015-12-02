@@ -19,8 +19,10 @@
 **/
 /* }}} */
 
-#include "Cycript.tab.hh"
 #include "Driver.hpp"
+#include "Parser.hpp"
+
+bool CYParser(CYPool &pool, bool debug);
 
 CYDriver::CYDriver(CYPool &pool, std::istream &data, const std::string &filename) :
     pool_(pool),
@@ -49,37 +51,8 @@ CYDriver::~CYDriver() {
     ScannerDestroy();
 }
 
-bool CYDriver::Parse(CYMark mark) {
-    mark_ = mark;
-    CYLocal<CYPool> local(&pool_);
-    cy::parser parser(*this);
-#ifdef YYDEBUG
-    parser.set_debug_level(debug_);
-#endif
-    return parser.parse() != 0;
-}
-
 void CYDriver::Replace(CYOptions &options) {
     CYLocal<CYPool> local(&pool_);
     CYContext context(options);
     script_->Replace(context);
-}
-
-void CYDriver::Warning(const cy::parser::location_type &location, const char *message) {
-    if (!strict_)
-        return;
-
-    CYDriver::Error error;
-    error.warning_ = true;
-    error.location_ = location;
-    error.message_ = message;
-    errors_.push_back(error);
-}
-
-void cy::parser::error(const cy::parser::location_type &location, const std::string &message) {
-    CYDriver::Error error;
-    error.warning_ = false;
-    error.location_ = location;
-    error.message_ = message;
-    driver.errors_.push_back(error);
 }

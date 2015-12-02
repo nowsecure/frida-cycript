@@ -34,13 +34,11 @@
 #include <sstream>
 #include <cmath>
 
+#include "Driver.hpp"
 #include "Error.hpp"
 #include "Execute.hpp"
 #include "Parser.hpp"
 #include "String.hpp"
-
-#include "Cycript.tab.hh"
-#include "Driver.hpp"
 
 #include "ConvertUTF.h"
 
@@ -220,9 +218,7 @@ double CYCastDouble(const char *value) {
 CYUTF8String CYPoolCode(CYPool &pool, std::istream &stream) {
     CYLocalPool local;
     CYDriver driver(local, stream);
-
-    cy::parser parser(driver);
-    _assert(parser.parse() == 0);
+    _assert(!driver.Parse());
     _assert(driver.errors_.empty());
 
     CYOptions options;

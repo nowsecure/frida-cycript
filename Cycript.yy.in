@@ -297,7 +297,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %token _case_ "case"
 %token _catch_ "catch"
 %token _class_ "class"
-%token _class__ "!class"
+%token _class__ ";class"
 %token _const_ "const"
 %token _continue_ "continue"
 %token _debugger_ "debugger"
@@ -692,7 +692,7 @@ Word
     | "case" { $$ = CYNew CYWord("case"); }
     | "catch" { $$ = CYNew CYWord("catch"); }
     | "class" { $$ = CYNew CYWord("class"); }
-    | "!class" { $$ = CYNew CYWord("class"); }
+    | ";class" { $$ = CYNew CYWord("class"); }
     | "const" { $$ = CYNew CYWord("const"); }
     | "continue" { $$ = CYNew CYWord("continue"); }
     | "debugger" { $$ = CYNew CYWord("debugger"); }
@@ -962,7 +962,7 @@ TemplateSpans
     ;
 /* }}} */
 
-/* 12.3+ Left-Hand-Side Expressions {{{ */
+/* 12.3 Left-Hand-Side Expressions {{{ */
 MemberAccess
     : "[" LexPushInOff Expression "]" LexPopIn { $$ = CYNew CYDirectMember(NULL, $3); }
     | "." IdentifierName { $$ = CYNew CYDirectMember(NULL, CYNew CYString($2)); }
@@ -2334,3 +2334,32 @@ PostfixExpression
 /* }}} */
 
 %%
+
+bool CYDriver::Parse(CYMark mark) {
+    mark_ = mark;
+    CYLocal<CYPool> local(&pool_);
+    cy::parser parser(*this);
+#ifdef YYDEBUG
+    parser.set_debug_level(debug_);
+#endif
+    return parser.parse() != 0;
+}
+
+void CYDriver::Warning(const cy::parser::location_type &location, const char *message) {
+    if (!strict_)
+        return;
+
+    CYDriver::Error error;
+    error.warning_ = true;
+    error.location_ = location;
+    error.message_ = message;
+    errors_.push_back(error);
+}
+
+void cy::parser::error(const cy::parser::location_type &location, const std::string &message) {
+    CYDriver::Error error;
+    error.warning_ = false;
+    error.location_ = location;
+    error.message_ = message;
+    driver.errors_.push_back(error);
+}

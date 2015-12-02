@@ -36,12 +36,10 @@
 
 #include "cycript.hpp"
 
+#include "Driver.hpp"
 #include "JavaScript.hpp"
 #include "Parser.hpp"
 #include "Pooling.hpp"
-
-#include "Cycript.tab.hh"
-#include "Driver.hpp"
 
 struct CYExecute_ {
     CYPool &pool_;

@@ -29,7 +29,13 @@
 #include <vector>
 
 #include "Location.hpp"
-#include "Parser.hpp"
+#include "Options.hpp"
+#include "Pooling.hpp"
+#include "Standard.hpp"
+
+struct CYExpression;
+struct CYScript;
+struct CYWord;
 
 enum CYMark {
     CYMarkIgnore,

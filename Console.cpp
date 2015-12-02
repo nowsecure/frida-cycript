@@ -69,7 +69,7 @@
 #include "Display.hpp"
 #include "Driver.hpp"
 #include "Highlight.hpp"
-#include "Replace.hpp"
+#include "Parser.hpp"
 
 static volatile enum {
     Working,

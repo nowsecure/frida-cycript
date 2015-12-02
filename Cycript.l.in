@@ -677,6 +677,14 @@ void CYDriver::PopCondition() {
     yy_pop_state(scanner_);
 }
 
+bool CYLexerHighlight(hi::Value &highlight, CYLocation &location, void *scanner) {
+    YYSTYPE value;
+    if (cylex(&value, &location, scanner) == 0)
+        return false;
+    highlight = value.highlight_;
+    return true;
+}
+
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #else

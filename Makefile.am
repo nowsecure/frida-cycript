@@ -109,7 +109,7 @@ lex.cy.cpp: Cycript.l
 	grep -F 'No backing up.' lex.backup >/dev/null
 	! grep -F ': warning, ' lex.output || true
 
-Console.$(OBJEXT) Cycript.tab.lo Driver.lo Handler.lo Highlight.lo Library.lo lex.cy.lo: Cycript.tab.hh
+lex.cy.lo: Cycript.tab.hh
 
 CLEANFILES += Cycript.tab.cc Cycript.tab.hh stack.hh Cycript.output
 Cycript.tab.cc Cycript.tab.hh stack.hh Cycript.output: Cycript.yy

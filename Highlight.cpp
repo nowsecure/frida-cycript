@@ -19,12 +19,11 @@
 **/
 /* }}} */
 
-#include "Highlight.hpp"
-#include "Parser.hpp"
-
-#include "Cycript.tab.hh"
-#include "Driver.hpp"
 #include "Code.hpp"
+#include "Driver.hpp"
+#include "Highlight.hpp"
+
+bool CYLexerHighlight(hi::Value &highlight, CYLocation &location, void *scanner);
 
 static void Skip(const char *data, size_t size, std::ostream &output, size_t &offset, CYPosition &current, CYPosition target) {
     while (current.line != target.line || current.column != target.column) {
@@ -65,13 +64,13 @@ _visible void CYLexerHighlight(const char *data, size_t size, std::ostream &outp
     size_t offset(0);
     CYPosition current;
 
-    YYSTYPE value;
+    hi::Value highlight;
     CYLocation location;
 
-    while (cylex(&value, &location, driver.scanner_) != 0) {
+    while (CYLexerHighlight(highlight, location, driver.scanner_)) {
         CYColor color;
 
-        switch (value.highlight_) {
+        switch (highlight) {
             case hi::Comment: color = CYColor(true, 30); break;
             case hi::Constant: color = CYColor(false, 31); break;
             case hi::Control: color = CYColor(false, 33); break;
