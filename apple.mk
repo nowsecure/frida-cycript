@@ -69,7 +69,7 @@ $(deb): Cycript.lib/cycript Cycript.lib/libcycript.dylib
 	$(lipo) -extract armv6 -output package/usr/bin/cycript Cycript.lib/cycript
 	$(lipo) -extract armv6 -extract arm64 -output package/usr/lib/libcycript.dylib Cycript.lib/libcycript.dylib
 	ln -s libcycript.dylib package/usr/lib/libcycript.0.dylib
-	dpkg-deb -Zlzma -b package $@
+	fauxsu dpkg-deb -Zlzma -b package $@
 
 deb: $(deb)
 	ln -sf $< cycript.deb
