@@ -1647,6 +1647,38 @@ struct CYReturn :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
+struct CYYieldGenerator :
+    CYExpression
+{
+    CYExpression *value_;
+
+    CYYieldGenerator(CYExpression *value) :
+        value_(value)
+    {
+    }
+
+    CYPrecedence(0)
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYYieldValue :
+    CYExpression
+{
+    CYExpression *value_;
+
+    CYYieldValue(CYExpression *value) :
+        value_(value)
+    {
+    }
+
+    CYPrecedence(0)
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
 struct CYEmpty :
     CYStatement
 {

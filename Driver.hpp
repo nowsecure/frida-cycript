@@ -31,6 +31,12 @@
 #include "Location.hpp"
 #include "Parser.hpp"
 
+enum CYMark {
+    CYMarkIgnore,
+    CYMarkScript,
+    CYMarkModule,
+};
+
 class _visible CYDriver {
   public:
     CYPool &pool_;
@@ -40,13 +46,16 @@ class _visible CYDriver {
     bool tail_;
 
     std::stack<bool> in_;
+    std::stack<bool> return_;
     std::stack<bool> template_;
+    std::stack<bool> yield_;
 
     bool newline_;
     bool last_;
     bool next_;
 
     std::istream &data_;
+    CYMark mark_;
 
     int debug_;
     bool strict_;
@@ -106,7 +115,7 @@ class _visible CYDriver {
     CYDriver(CYPool &pool, std::istream &data, const std::string &filename = "");
     ~CYDriver();
 
-    bool Parse();
+    bool Parse(CYMark mark = CYMarkScript);
     void Replace(CYOptions &options);
 
     void SetCondition(Condition condition);

@@ -451,8 +451,10 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "finally"         L /*KKK*/ F(tk::_finally_, hi::Control);
 "float"           L /*FII*/ F(tk::_float_, hi::Type);
 "for"             L /*KKK*/ F(tk::_for_, hi::Control);
+"from"            L /*III*/ F(tk::_from_, hi::Meta);
 "function"        L /*KKK*/ F(tk::_function_, hi::Meta);
 "goto"            L /*FII*/ F(tk::_goto_, hi::Control);
+"get"             L /*III*/ F(tk::_get_, hi::Meta);
 "if"              L /*KKK*/ F(tk::_if_, hi::Control);
 "implements"      L /*FSS*/ F(tk::_implements_, hi::Meta);
 "import"          L /*FFK*/ F(tk::_import_, hi::Meta);
@@ -469,7 +471,8 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "private"         L /*FSS*/ F(tk::_private_, hi::Meta);
 "protected"       L /*FSS*/ F(tk::_protected_, hi::Meta);
 "public"          L /*FSS*/ F(tk::_public_, hi::Meta);
-"return"          L /*KKK*/ F(tk::_return_, hi::Control);
+"return"          L /*KKK*/ F(yyextra->return_.top() ? tk::_return__ : tk::_return_, hi::Control);
+"set"             L /*III*/ F(tk::_set_, hi::Meta);
 "short"           L /*FII*/ F(tk::_short_, hi::Type);
 "static"          L /*FS?*/ F(tk::_static_, hi::Meta);
 "super"           L /*FFK*/ F(tk::_super_, hi::Constant);
@@ -487,7 +490,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "volatile"        L /*FII*/ F(tk::_volatile_, hi::Meta);
 "while"           L /*KKK*/ F(tk::_while_, hi::Control);
 "with"            L /*KKK*/ F(tk::_with_, hi::Control);
-"yield"           L /*IS?*/ F(tk::_yield_, hi::Control);
+"yield"           L /*IS?*/ F(yyextra->yield_.top() ? tk::_yield__ : tk::_yield_, hi::Control);
 
 "auto"            L F(tk::_auto_, hi::Meta);
 "each"            L F(tk::_each_, hi::Control);

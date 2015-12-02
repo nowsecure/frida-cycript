@@ -38,7 +38,10 @@ CYDriver::CYDriver(CYPool &pool, std::istream &data, const std::string &filename
     mode_(AutoNone)
 {
     in_.push(false);
+    return_.push(false);
     template_.push(false);
+    yield_.push(false);
+
     ScannerInit();
 }
 
@@ -46,7 +49,8 @@ CYDriver::~CYDriver() {
     ScannerDestroy();
 }
 
-bool CYDriver::Parse() {
+bool CYDriver::Parse(CYMark mark) {
+    mark_ = mark;
     CYLocal<CYPool> local(&pool_);
     cy::parser parser(*this);
 #ifdef YYDEBUG
