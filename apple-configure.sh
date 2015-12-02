@@ -116,5 +116,5 @@ for arch in armv6 armv7 armv7s arm64; do
 
     build "ios-${arch}" iphoneos "-arch ${arch} -miphoneos-version-min=${min}" --host=arm-apple-darwin10 \
         CFLAGS="${gof[*]}" CXXFLAGS="${gof[*]}" OBJCXXFLAGS="${gof[*]}" \
-        CPPFLAGS="${cpf}" LDFLAGS="${ldf}" "${flg[@]}" --host=arm-apple-darwin10
+        CPPFLAGS="${cpf}" LDFLAGS="${ldf}" LFLAGS="--ecs --meta-ecs" "${flg[@]}"
 done

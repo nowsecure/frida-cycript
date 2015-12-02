@@ -93,6 +93,9 @@ AC_DEFUN([CY_TRY], [
     AS_IF([test "x$cy_good" = x1], ]$4[, ]$5[)
 ]) dnl }}}
 
+AC_ARG_VAR([LFLAGS], [flex flags])
+AS_IF([test "x$LFLAGS" = x], [LFLAGS="--full --ecs"])
+
 AC_DEFUN([CY_TEST_FLAG_], [
     AC_LANG_PUSH(]$2[)
     AC_MSG_CHECKING([for ]]$4[[ ]]$1[)

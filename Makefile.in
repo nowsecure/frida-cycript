@@ -426,6 +426,7 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
+LFLAGS = @LFLAGS@
 LIBFFI_CFLAGS = @LIBFFI_CFLAGS@
 LIBFFI_LIBS = @LIBFFI_LIBS@
 LIBOBJS = @LIBOBJS@
@@ -1308,7 +1309,7 @@ Parser.ypp: Parser.ypp.in
 Scanner.lpp: Scanner.lpp.in UnicodeIDStart.l UnicodeIDContinue.l
 	$(srcdir)/Filter.sh $< >$@ $(filters)
 Scanner.cpp: Scanner.lpp
-	$(FLEX) -o $@ -T $< 2>Scanner.output || (grep -F '$<:' Scanner.output; false)
+	$(FLEX) $(LFLAGS) -o $@ -T $< 2>Scanner.output || (grep -F '$<:' Scanner.output; false)
 	grep -E '^(No backing up\.|Compressed tables always back up\.)$$' lex.backup >/dev/null
 	! grep -F ': warning, ' Scanner.output || true
 

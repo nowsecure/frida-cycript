@@ -204,9 +204,6 @@ static void U(char *&local, const char *text, yy_size_t &i) {
 %option reentrant
 %option stack
 
-%option full
-%option ecs
-
 U1 [\x00-\x7f]
 U0 [\x80-\xbf]
 U2 [\xc2-\xdf]

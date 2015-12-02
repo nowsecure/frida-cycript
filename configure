@@ -669,6 +669,7 @@ PTHREAD_CFLAGS
 PTHREAD_LIBS
 PTHREAD_CC
 ax_pthread_config
+LFLAGS
 GNUTAR
 GPERF
 FLEX
@@ -849,6 +850,7 @@ BISON
 FLEX
 GPERF
 GNUTAR
+LFLAGS
 WEBKIT_CFLAGS
 WEBKIT_LIBS
 LIBFFI_CFLAGS
@@ -1530,6 +1532,7 @@ Some influential environment variables:
   FLEX        the fast lexical analyser generator
   GPERF       perfect hash function generator
   GNUTAR      a very sticky lump of files
+  LFLAGS      flex flags
   WEBKIT_CFLAGS
               C compiler flags for WEBKIT, overriding pkg-config
   WEBKIT_LIBS linker flags for WEBKIT, overriding pkg-config
@@ -17227,6 +17230,11 @@ fi
 
 
 
+
+
+if test "x$LFLAGS" = x; then :
+  LFLAGS="--full --ecs"
+fi
 
 
 
