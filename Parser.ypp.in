@@ -1546,7 +1546,7 @@ ArrowFunction
 
 ArrowParameters
     : BindingIdentifier { $$ = CYNew CYFunctionParameter(CYNew CYDeclaration($1)); }
-    | CoverParenthesizedExpressionAndArrowParameterList { $$ = $1->expression_->Parameter(); if ($$ == NULL) CYERR(@1, "invalid parameter list"); }
+    | CoverParenthesizedExpressionAndArrowParameterList { if ($1 == NULL) $$ = NULL; else { $$ = $1->expression_->Parameter(); if ($$ == NULL) CYERR(@1, "invalid parameter list"); } }
     ;
 
 ConciseBody
