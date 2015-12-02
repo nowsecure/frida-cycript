@@ -396,11 +396,11 @@ CYStatement *CYForIn::Replace(CYContext &context) {
 }
 
 CYFunctionParameter *CYForInComprehension::Parameter(CYContext &context) const {
-    return $ CYFunctionParameter($ CYDeclaration(name_));
+    return $ CYFunctionParameter(declaration_);
 }
 
 CYStatement *CYForInComprehension::Replace(CYContext &context, CYStatement *statement) const {
-    return $ CYForIn($V(name_), set_, CYComprehension::Replace(context, statement));
+    return $ CYForIn(declaration_->Variable(context), set_, CYComprehension::Replace(context, statement));
 }
 
 CYStatement *CYForOf::Replace(CYContext &context) {
@@ -421,7 +421,7 @@ CYStatement *CYForOf::Replace(CYContext &context) {
 }
 
 CYFunctionParameter *CYForOfComprehension::Parameter(CYContext &context) const {
-    return $ CYFunctionParameter($ CYDeclaration(name_));
+    return $ CYFunctionParameter(declaration_);
 }
 
 CYStatement *CYForOfComprehension::Replace(CYContext &context, CYStatement *statement) const {
@@ -429,8 +429,8 @@ CYStatement *CYForOfComprehension::Replace(CYContext &context, CYStatement *stat
 
     return $E($C0($F(NULL, $P1($L("$cys")), $$->*
         $E($ CYAssign($V(cys), set_))->*
-        $ CYForIn($V(name_), $V(cys), $ CYBlock($$->*
-            $E($ CYAssign($V(name_), $M($V(cys), $V(name_))))->*
+        $ CYForIn(declaration_->Variable(context), $V(cys), $ CYBlock($$->*
+            $E($ CYAssign(declaration_->Variable(context), $M($V(cys), declaration_->Variable(context))))->*
             CYComprehension::Replace(context, statement)
         ))
     )));

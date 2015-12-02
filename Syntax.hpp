@@ -614,8 +614,6 @@ struct CYComprehension :
         return this;
     }
 
-    virtual const char *Name() const = 0;
-
     virtual CYFunctionParameter *Parameter(CYContext &context) const = 0;
     CYFunctionParameter *Parameters(CYContext &context) const;
     virtual CYStatement *Replace(CYContext &context, CYStatement *statement) const;
@@ -625,18 +623,14 @@ struct CYComprehension :
 struct CYForInComprehension :
     CYComprehension
 {
-    CYIdentifier *name_;
+    CYDeclaration *declaration_;
     CYExpression *set_;
 
-    CYForInComprehension(CYIdentifier *name, CYExpression *set, CYComprehension *next = NULL) :
+    CYForInComprehension(CYDeclaration *declaration, CYExpression *set, CYComprehension *next = NULL) :
         CYComprehension(next),
-        name_(name),
+        declaration_(declaration),
         set_(set)
     {
-    }
-
-    virtual const char *Name() const {
-        return name_->Word();
     }
 
     virtual CYFunctionParameter *Parameter(CYContext &context) const;
@@ -647,18 +641,14 @@ struct CYForInComprehension :
 struct CYForOfComprehension :
     CYComprehension
 {
-    CYIdentifier *name_;
+    CYDeclaration *declaration_;
     CYExpression *set_;
 
-    CYForOfComprehension(CYIdentifier *name, CYExpression *set, CYComprehension *next = NULL) :
+    CYForOfComprehension(CYDeclaration *declaration, CYExpression *set, CYComprehension *next = NULL) :
         CYComprehension(next),
-        name_(name),
+        declaration_(declaration),
         set_(set)
     {
-    }
-
-    virtual const char *Name() const {
-        return name_->Word();
     }
 
     virtual CYFunctionParameter *Parameter(CYContext &context) const;
@@ -675,10 +665,6 @@ struct CYIfComprehension :
         CYComprehension(next),
         test_(test)
     {
-    }
-
-    virtual const char *Name() const {
-        return NULL;
     }
 
     virtual CYFunctionParameter *Parameter(CYContext &context) const;

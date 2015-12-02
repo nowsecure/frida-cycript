@@ -406,9 +406,10 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <functionParameter_> ArrowParameters
 %type <expression_> AssignmentExpression
 %type <expression_> AssignmentExpressionOpt
-%type <identifier_> Binding
 %type <identifier_> BindingIdentifier
 %type <identifier_> BindingIdentifierOpt
+%type <declarations_> BindingList_
+%type <declarations_> BindingList
 %type <expression_> BitwiseANDExpression
 %type <statement_> Block
 %type <statement_> BlockStatement
@@ -450,8 +451,10 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <expression_> ExpressionOpt
 %type <statement_> ExpressionStatement
 %type <finally_> Finally
-%type <for_> ForStatementInitializer
+%type <declaration_> ForBinding
+%type <declaration_> ForDeclaration
 %type <forin_> ForInStatementInitializer
+%type <for_> ForStatementInitializer
 %type <declaration_> FormalParameter
 %type <functionParameter_> FormalParameterList_
 %type <functionParameter_> FormalParameterList
@@ -478,6 +481,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <statement_> LabelledStatement
 %type <expression_> LeftHandSideExpression
 %type <statement_> LetStatement
+%type <declaration_> LexicalBinding
 %type <statement_> LexicalDeclaration
 %type <literal_> Literal
 %type <propertyName_> LiteralPropertyName
@@ -1247,9 +1251,9 @@ StatementListItem
     | Declaration { $$ = $1; }
     ;
 /* }}} */
-/* 13.3+ Let and Const Declarations {{{ */
+/* 13.3 Let and Const Declarations {{{ */
 LexicalDeclaration
-    : LetOrConst VariableDeclarationList Terminator { $$ = CYNew CYVar($2); }
+    : LetOrConst BindingList Terminator { $$ = CYNew CYVar($2); }
     ;
 
 LetOrConst
@@ -1257,13 +1261,21 @@ LetOrConst
     | "const"
     ;
 
-Binding
-    : BindingIdentifier
+BindingList_
+    : "," BindingList { $$ = $2; }
+    | { $$ = NULL; }
     ;
 
-// XXX: lots of binding stuff
+BindingList
+    : LexicalBinding BindingList_ { $$ = CYNew CYDeclarations($1, $2); }
+    ;
+
+LexicalBinding
+    : BindingIdentifier InitializerOpt { $$ = CYNew CYDeclaration($1, $2); }
+    | BindingPattern Initializer { CYNOT(@1); }
+    ;
 /* }}} */
-/* 13.3.2+ Variable Statement {{{ */
+/* 13.3.2 Variable Statement {{{ */
 VariableStatement
     : Var_ VariableDeclarationList Terminator { $$ = CYNew CYVar($2); }
     ;
@@ -1279,7 +1291,7 @@ VariableDeclarationList
 
 VariableDeclaration
     : BindingIdentifier InitializerOpt { $$ = CYNew CYDeclaration($1, $2); }
-    // XXX: | BindingPattern Initializer { $$ = CYNew CYDeclaration($1, $2); }
+    | BindingPattern Initializer { CYNOT(@1); }
     ;
 /* }}} */
 /* 13.3.3 Destructuring Binding Patterns {{{ */
@@ -1348,7 +1360,7 @@ IfStatement
     : "if" "(" Expression ")" Statement ElseStatementOpt { $$ = CYNew CYIf($3, $5, $6); }
     ;
 /* }}} */
-/* 13.7+ Iteration Statements {{{ */
+/* 13.7 Iteration Statements {{{ */
 IterationStatement
     : "do" Statement "while" "(" Expression ")" TerminatorOpt { $$ = CYNew CYDoWhile($5, $2); }
     | "while" "(" Expression ")" Statement { $$ = CYNew CYWhile($3, $5); }
@@ -1360,11 +1372,22 @@ IterationStatement
 ForStatementInitializer
     : ExpressionOpt { $$ = $1; }
     | LexSetRegExp Var_ VariableDeclarationList { $$ = CYNew CYForDeclarations($3); }
+    | LexSetRegExp LexicalDeclaration { CYNOT(@$); }
     ;
 
 ForInStatementInitializer
     : LeftHandSideExpression { $$ = $1; }
-    | LexSetRegExp Var_ VariableDeclaration { $$ = $3; }
+    | LexSetRegExp Var_ ForBinding { $$ = $3; }
+    | LexSetRegExp ForDeclaration { $$ = $2; }
+    ;
+
+ForDeclaration
+    : LetOrConst ForBinding { $$ = $2; }
+    ;
+
+ForBinding
+    : BindingIdentifier { $$ = CYNew CYDeclaration($1, NULL); }
+    | BindingPattern { CYNOT(@1); }
     ;
 /* }}} */
 /* 13.8 The continue Statement {{{ */
@@ -2243,8 +2266,7 @@ Comprehension
     ;
 
 ComprehensionFor
-    : "for" "(" Binding "in" Expression ")" { $$ = CYNew CYForInComprehension($3, $5); }
-    | "for" "each" "(" Binding "in" Expression ")" { $$ = CYNew CYForOfComprehension($4, $6); }
+    : "for" "each" "(" LexPushInOn LexicalBinding "!in" LexPopIn Expression ")" { $$ = CYNew CYForOfComprehension($5, $8); }
     ;
 /* }}} */
 /* JavaScript FTL: for each {{{ */
@@ -2282,7 +2304,8 @@ ComprehensionTail
     ;
 
 ComprehensionFor
-    : "for" "(" Binding "of" Expression ")" { $$ = CYNew CYForOfComprehension($3, $5); }
+    : "for" "(" LexPushInOn LexicalBinding "!in" LexPopIn Expression ")" { $$ = CYNew CYForInComprehension($4, $7); }
+    | "for" "(" LexPushInOn LexicalBinding "of" LexPopIn Expression ")" { $$ = CYNew CYForOfComprehension($4, $7); }
     ;
 
 ComprehensionIf

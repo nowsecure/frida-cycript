@@ -377,7 +377,9 @@ void CYForOf::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYForOfComprehension::Output(CYOutput &out) const {
-    out << "for" << ' ' << "each" << ' ' << '(' << *name_ << ' ' << "in" << ' ' << *set_ << ')' << next_;
+    out << "for" << ' ' << "each" << ' ' << '(';
+    declaration_->Output(out, CYNoIn);
+    out << ' ' << "in" << ' ' << *set_ << ')' << next_;
 }
 
 void CYForIn::Output(CYOutput &out, CYFlags flags) const {
@@ -389,7 +391,9 @@ void CYForIn::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYForInComprehension::Output(CYOutput &out) const {
-    out << "for" << ' ' << '(' << *name_ << ' ' << "in" << ' ' << *set_ << ')';
+    out << "for" << ' ' << '(';
+    declaration_->Output(out, CYNoIn);
+    out << ' ' << "in" << ' ' << *set_ << ')';
 }
 
 void CYFunction::Output(CYOutput &out, CYFlags flags) const {
