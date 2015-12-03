@@ -52,6 +52,12 @@ typedef cy::parser::token tk;
     return value; \
 } while (false)
 
+#define S(stack) do { \
+    if (yyextra->stack.size() == 1) \
+        E("invalid brace") \
+    yyextra->stack.pop(); \
+} while (false)
+
 #define P yyextra->pool_
 #define A new(P)
 #define Y P.strmemdup(yytext, yyleng)
@@ -394,7 +400,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 ")"    L F(tk::CloseParen, hi::Structure);
 
 "{"    L yyextra->template_.push(false); F(yyextra->newline_ ? tk::OpenBrace_ : tk::OpenBrace, hi::Structure);
-<Div,RegExp>"}" L yyextra->template_.pop(); F(tk::CloseBrace, hi::Structure);
+<Div,RegExp>"}" L S(template_); F(tk::CloseBrace, hi::Structure);
 
 "["    L F(tk::OpenBracket, hi::Structure);
 "]"    L F(tk::CloseBracket, hi::Structure);
@@ -576,7 +582,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
     /* }}} */
     /* Template {{{ */
 "`" L yyextra->tail_ = false; CYLexBufferStart(StrictAccentString);
-<DivOrTemplateTail,RegExpOrTemplateTail>"}" L yyextra->tail_ = true; yyextra->template_.pop(); CYLexBufferStart(StrictAccentString);
+<DivOrTemplateTail,RegExpOrTemplateTail>"}" L yyextra->tail_ = true; S(template_); CYLexBufferStart(StrictAccentString);
 
 <StrictAccentString>{
     "`" R CYLexBufferEnd(string, String, yyextra->tail_ ? tk::TemplateTail : tk::NoSubstitutionTemplate, hi::Constant);
