@@ -41,7 +41,7 @@ lib_LTLIBRARIES =
 
 lib_LTLIBRARIES += libcycript.la
 libcycript_la_LDFLAGS = $(CY_LDFLAGS)
-libcycript_la_LIBADD = $(LTLIBFFI) $(LTLIBGCC) -ldl
+libcycript_la_LIBADD = $(LTLIBUV) $(LTLIBFFI) $(LTLIBGCC) -ldl
 
 libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp Highlight.cpp Library.cpp Network.cpp Output.cpp Replace.cpp Syntax.cpp
 libcycript_la_SOURCES += Parser.cpp Scanner.cpp

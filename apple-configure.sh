@@ -23,11 +23,6 @@ set -e
 
 cd "${0%%/*}"
 
-if [[ ! -e readline.osx/libreadline.a ]]; then
-    ./apple-readline.sh; fi
-if [[ ! -e libffi.a ]]; then
-    ./libffi.sh; fi
-
 if ! which aclocal; then
     touch aclocal.m4; fi
 if ! which autoconf; then
@@ -38,6 +33,7 @@ if ! which autoheader; then
     touch config.h.in; fi
 
 flags=("$@")
+ccf=(-g0 -O3)
 
 function path() {
     xcodebuild -sdk "$1" -version Path
@@ -49,51 +45,56 @@ mac=$(path macosx)
 function configure() {
     local dir=$1
     local sdk=$2
-    local flg=$3
-    shift 3
+    local arc=$3
+    local min=$4
+    local ffi=$5
+    local cpf=$6
+    local ldf=$7
+    local obc=$8
+    shift 8
+
+    set -- "$@" --enable-static --with-pic
 
     cc=$(xcrun --sdk "${sdk}" -f clang)
     cxx=$(xcrun --sdk "${sdk}" -f clang++)
+
+    flg="-arch ${arc} ${min}"
     flg+=" -isysroot $(path "${sdk}")"
 
     rm -rf build."${dir}"
     mkdir build."${dir}"
     cd build."${dir}"
 
-    CC="${cc} ${flg}" CXX="${cxx} ${flg}" OBJCXX="${cxx} ${flg}" \
-        ../configure --enable-maintainer-mode "${flags[@]}" --prefix="/usr" "$@"
+    if "${ffi}"; then
+        cpf+=" -I../libffi.${arch}/include"
+        ldf+=" -L../libffi.${arch}/.libs"
+    fi
+
+    cpf+=" -I../libuv/include"
+    ldf+=" -L../libuv.${arch}/.libs"
+
+    ../configure --enable-maintainer-mode "${flags[@]}" --prefix="/usr" "$@" \
+        CC="${cc} ${flg}" CXX="${cxx} ${flg}" OBJCXX="${cxx} ${flg}" \
+        CFLAGS="${ccf[*]}" CXXFLAGS="${ccf[*]}" OBJCXXFLAGS="${ccf[*]} ${obc}" \
+        CPPFLAGS="${cpf}" LDFLAGS="${ldf}"
 
     cd ..
 }
 
-function build() {
-    local dir=$1
-    local sdk=$2
-    local flg=$3
-    shift 3
-
-    configure "${dir}" "${sdk}" "${flg}" "$@" --enable-static --with-pic
-}
-
-gof=(-g0 -O3)
-
 for arch in i386 x86_64; do
-    build "osx-${arch}" "${mac}" "-arch ${arch} -mmacosx-version-min=10.6" \
-        CFLAGS="${gof[*]}" CXXFLAGS="${gof[*]}" OBJCXXFLAGS="${gof[*]}" \
-        CPPFLAGS="-I../readline.osx" LDFLAGS="-L../readline.osx"
+    configure "osx-${arch}" "${mac}" "${arch}" "-mmacosx-version-min=10.6" \
+        false "-I../readline.osx" "-L../readline.osx" ""
 done
 
 for arch in i386 x86_64; do
-    build "sim-${arch}" iphonesimulator "-arch ${arch} -mios-simulator-version-min=4.0" \
-        CFLAGS="${gof[*]}" CXXFLAGS="${gof[*]}" OBJCXXFLAGS="${gof[*]} -fobjc-abi-version=2 -fobjc-legacy-dispatch" \
-        CPPFLAGS="-I../libffi.${arch}/include" \
-        LDFLAGS="-L.." \
-    --disable-console
+    configure "sim-${arch}" iphonesimulator "${arch}" "-mios-simulator-version-min=4.0" \
+        true "" "" "-fobjc-abi-version=2 -fobjc-legacy-dispatch" \
+        --disable-console
 done
 
 for arch in armv6 armv7 armv7s arm64; do
-    cpf="-I../libffi.${arch}/include"
-    ldf="-L.."
+    cpf=""
+    ldf=""
 
     flg=()
     if [[ ${arch} != armv6 ]]; then
@@ -114,7 +115,7 @@ for arch in armv6 armv7 armv7s arm64; do
         #cpf+=" -mthumb"
     fi
 
-    build "ios-${arch}" iphoneos "-arch ${arch} -miphoneos-version-min=${min}" --host=arm-apple-darwin10 \
-        CFLAGS="${gof[*]}" CXXFLAGS="${gof[*]}" OBJCXXFLAGS="${gof[*]}" \
-        CPPFLAGS="${cpf}" LDFLAGS="${ldf}" LFLAGS="--ecs --meta-ecs" "${flg[@]}"
+    configure "ios-${arch}" iphoneos "${arch}" "-miphoneos-version-min=${min}" \
+        true "${cpf[*]}" "${ldf[*]}" "" \
+        --host=arm-apple-darwin10 LFLAGS="--ecs --meta-ecs" "${flg[@]}"
 done

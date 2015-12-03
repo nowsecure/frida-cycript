@@ -5,3 +5,6 @@
 	path = readline
 	url = git://git.savannah.gnu.org/readline.git
 	ignore = dirty
+[submodule "libuv"]
+	path = libuv
+	url = https://github.com/joyent/libuv.git

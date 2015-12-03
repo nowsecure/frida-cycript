@@ -76,8 +76,14 @@ deb: $(deb)
 
 clean := 
 
+library := libffi libuv
+
 # make stubbornly refuses to believe that these @'s are bugs
 # http://osdir.com/ml/help-make-gnu/2012-04/msg00008.html
+
+define build_lar
+Cycript.lib/$(1).a: $(1).$(2)/.libs/$(1).a
+endef
 
 define build_any
 .PHONY: build-$(1)-$(2)
@@ -88,6 +94,11 @@ build.$(1)-$(2)/.libs/libcycript.a: build-$(1)-$(2)
 clean-$(1)-$(2):
 	$$(MAKE) -C build.$(1)-$(2) clean
 clean += clean-$(1)-$(2)
+ifneq ($(1),sim)
+$(foreach lib,$(library),
+$(call build_lar,$(lib),$(2))
+)
+endif
 endef
 
 define build_lib
@@ -133,6 +144,10 @@ $(foreach arch,armv6 arm64,$(eval $(call build_arm,$(arch))))
 clean: $(clean)
 	rm -rf cycript Cycript.lib libcycript*.o
 
+$(patsubst %,Cycript.lib/%.a,$(library)):
+	@mkdir -p $(dir $@)
+	$(lipo) -create -output $@ $^
+
 Cycript.lib/libcycript.dylib: build.osx-i386/.libs/libcycript.dylib build.osx-x86_64/.libs/libcycript.dylib build.ios-armv6/.libs/libcycript.dylib build.ios-arm64/.libs/libcycript.dylib
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
@@ -157,9 +172,9 @@ Cycript.lib/libcycript-sim.dylib: build.sim-i386/.libs/libcycript.dylib build.si
 	$(lipo) -create -output $@ $^
 	codesign -s $(codesign) $@
 
-libcycript-%.o: build.%/.libs/libcycript.a xcode.map
+libcycript-%.o: build.%/.libs/libcycript.a $(patsubst %,Cycript.lib/%.a,$(library)) xcode.map
 	@mkdir -p $(dir $@)
-	ld -r -arch $$($(lipo) -detailed_info $< | sed -e '/^Non-fat file: / ! d; s/.*: //') -o $@ -all_load -exported_symbols_list xcode.map -x $< libffi.a
+	ld -r -arch $$($(lipo) -detailed_info $< | sed -e '/^Non-fat file: / ! d; s/.*: //') -o $@ -all_load -exported_symbols_list xcode.map -x $(filter %.a,$^)
 
 libcycript-ios.o: libcycript-ios-armv6.o libcycript-ios-armv7.o libcycript-ios-armv7s.o libcycript-ios-arm64.o libcycript-sim-i386.o libcycript-sim-x86_64.o
 	$(lipo) -create -output $@ $^

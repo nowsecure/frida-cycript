@@ -177,8 +177,9 @@ am__DEPENDENCIES_1 =
 @CY_JAVA_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
 @CY_OBJECTIVEC_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
 libcycript_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3) \
+	$(am__DEPENDENCIES_4)
 am__libcycript_la_SOURCES_DIST = ConvertUTF.c Decode.cpp Driver.cpp \
 	Highlight.cpp Library.cpp Network.cpp Output.cpp Replace.cpp \
 	Syntax.cpp Parser.cpp Scanner.cpp Complete.cpp \
@@ -442,6 +443,7 @@ LTLIBGCC = @LTLIBGCC@
 LTLIBOBJS = @LTLIBOBJS@
 LTLIBREADLINE = @LTLIBREADLINE@
 LTLIBTERMCAP = @LTLIBTERMCAP@
+LTLIBUV = @LTLIBUV@
 LTOBJECTIVEC = @LTOBJECTIVEC@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 MAINT = @MAINT@
@@ -551,8 +553,8 @@ AM_LDFLAGS = -fvisibility=hidden
 CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
 lib_LTLIBRARIES = libcycript.la
 libcycript_la_LDFLAGS = $(CY_LDFLAGS)
-libcycript_la_LIBADD = $(LTLIBFFI) $(LTLIBGCC) -ldl $(am__append_3) \
-	$(am__append_9) $(am__append_12)
+libcycript_la_LIBADD = $(LTLIBUV) $(LTLIBFFI) $(LTLIBGCC) -ldl \
+	$(am__append_3) $(am__append_9) $(am__append_12)
 libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp \
 	Highlight.cpp Library.cpp Network.cpp Output.cpp Replace.cpp \
 	Syntax.cpp Parser.cpp Scanner.cpp $(am__append_1) \

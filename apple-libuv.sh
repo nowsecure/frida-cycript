@@ -19,4 +19,4 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # }}}
 
-exec ./apple-lib.sh ffi -DPAGE_MAX_SIZE=16384 -DPAGE_MAX_SHIFT=14 -fno-stack-protector
+exec ./apple-lib.sh uv

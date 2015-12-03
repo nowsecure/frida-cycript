@@ -39,6 +39,7 @@ readline-6.2
 readline-6.2.tar.gz
 readline.*
 libffi.*
+libuv.*
 build.*
 Cycript.ios
 Cycript.osx

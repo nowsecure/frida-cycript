@@ -196,6 +196,10 @@ AC_DEFUN([CY_CHECK_PKG_CONFIG_LIBFFI], [
 AM_CONDITIONAL([CY_EXECUTE], [test "x$CY_EXECUTE" = x1])
 
 AS_CASE([$CY_EXECUTE], [1], [
+    CY_LT_LIB([LTLIBUV], [AC_CHECK_HEADERS([uv.h], [
+        AC_SEARCH_LIBS([uv_loop_init], [uv])
+    ])])
+
     AC_CHECK_HEADERS([ffi.h ffi/ffi.h], [break])
 
     CY_LT_LIB([LTLIBFFI], AS_IF([test "x$ac_cv_header_ffi_h" = xno && test "x$ac_cv_header_ffi_ffi_h" = xno], [

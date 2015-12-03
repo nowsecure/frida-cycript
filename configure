@@ -655,6 +655,7 @@ CY_JAVA
 LTLIBFFI
 LIBFFI_LIBS
 LIBFFI_CFLAGS
+LTLIBUV
 CY_EXECUTE_FALSE
 CY_EXECUTE_TRUE
 CY_ATTACH_FALSE
@@ -20900,6 +20901,83 @@ fi
 
 case $CY_EXECUTE in #(
   1) :
+
+
+    cy_save=$LIBS
+    LIBS=
+    for ac_header in uv.h
+do :
+  ac_fn_cxx_check_header_mongrel "$LINENO" "uv.h" "ac_cv_header_uv_h" "$ac_includes_default"
+if test "x$ac_cv_header_uv_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_UV_H 1
+_ACEOF
+
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing uv_loop_init" >&5
+$as_echo_n "checking for library containing uv_loop_init... " >&6; }
+if ${ac_cv_search_uv_loop_init+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char uv_loop_init ();
+int
+main ()
+{
+return uv_loop_init ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' uv; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_uv_loop_init=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_uv_loop_init+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_uv_loop_init+:} false; then :
+
+else
+  ac_cv_search_uv_loop_init=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_uv_loop_init" >&5
+$as_echo "$ac_cv_search_uv_loop_init" >&6; }
+ac_res=$ac_cv_search_uv_loop_init
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+
+fi
+
+done
+
+    LTLIBUV=$LIBS
+    LIBS=$cy_save
+
+
 
     for ac_header in ffi.h ffi/ffi.h
 do :
