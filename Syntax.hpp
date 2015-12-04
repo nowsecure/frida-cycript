@@ -1480,7 +1480,6 @@ struct CYWhile :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-// XXX: this should be split up into CYAnonymousFunction and CYNamedFunction (subclass)
 struct CYFunction {
     CYIdentifier *name_;
     CYFunctionParameter *parameters_;
@@ -1504,7 +1503,6 @@ struct CYFunction {
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-// XXX: this should be split up into CYAnonymousFunctionExpression and CYNamedFunctionExpression
 struct CYFunctionExpression :
     CYFunction,
     CYExpression
@@ -1521,7 +1519,6 @@ struct CYFunctionExpression :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-// XXX: this should derive from CYAnonymousFunction
 struct CYFatArrow :
     CYFunction,
     CYExpression
@@ -1538,12 +1535,12 @@ struct CYFatArrow :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-// XXX: this should derive from CYAnonymousFunctionExpression
 struct CYRubyProc :
-    CYFunctionExpression
+    CYFunction,
+    CYExpression
 {
     CYRubyProc(CYFunctionParameter *parameters, CYStatement *code) :
-        CYFunctionExpression(NULL, parameters, code)
+        CYFunction(NULL, parameters, code)
     {
     }
 
@@ -1551,7 +1548,6 @@ struct CYRubyProc :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-// XXX: this should derive from CYNamedFunction
 struct CYFunctionStatement :
     CYFunction,
     CYStatement
