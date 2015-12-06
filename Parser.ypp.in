@@ -1062,7 +1062,7 @@ UnaryExpression_
     ;
 
 UnaryExpression
-    : PostfixExpression { $$ = $1; }
+    : %prec "" PostfixExpression { $$ = $1; }
     | LexSetRegExp UnaryExpression_ { $$ = $2; }
     ;
 /* }}} */
@@ -2352,7 +2352,7 @@ PrimaryExpression
     ;
 
 PostfixExpression
-    : LeftHandSideExpression RubyProcExpression { $$ = CYNew CYRubyBlock($1, $2); }
+    : PostfixExpression RubyProcExpression { $$ = CYNew CYRubyBlock($1, $2); }
     ;
 /* }}} */
 

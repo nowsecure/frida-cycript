@@ -738,6 +738,10 @@ CYExpression *CYRubyBlock::Replace(CYContext &context) {
     return call_->AddArgument(context, proc_->Replace(context));
 }
 
+CYExpression *CYRubyBlock::AddArgument(CYContext &context, CYExpression *value) {
+    return Replace(context)->AddArgument(context, value);
+}
+
 CYExpression *CYRubyProc::Replace(CYContext &context) {
     CYFunctionExpression *function($ CYFunctionExpression(NULL, parameters_, code_));
     function = CYNonLocalize(context, function);

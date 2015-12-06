@@ -1420,6 +1420,8 @@ struct CYRubyBlock :
 
     virtual CYExpression *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
+
+    virtual CYExpression *AddArgument(CYContext &context, CYExpression *value);
 };
 
 struct CYIf :
