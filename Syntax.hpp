@@ -1231,9 +1231,9 @@ struct CYProperty :
     }
 
     CYProperty *ReplaceAll(CYContext &context, CYBuilder &builder, CYExpression *self, bool update);
-    void Replace(CYContext &context, CYBuilder &builder, CYExpression *self, bool computed);
+    void Replace(CYContext &context, CYBuilder &builder, CYExpression *self, bool protect);
 
-    virtual void Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name) = 0;
+    virtual void Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name, bool protect) = 0;
 
     virtual void Replace(CYContext &context) = 0;
     virtual void Output(CYOutput &out) const;
@@ -1250,7 +1250,7 @@ struct CYPropertyValue :
     {
     }
 
-    virtual void Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name);
+    virtual void Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name, bool protect);
     virtual void Replace(CYContext &context);
     virtual void Output(CYOutput &out) const;
 };
@@ -1626,7 +1626,7 @@ struct CYPropertyGetter :
     {
     }
 
-    virtual void Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name);
+    virtual void Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name, bool protect);
     virtual void Output(CYOutput &out) const;
 };
 
@@ -1638,7 +1638,7 @@ struct CYPropertySetter :
     {
     }
 
-    virtual void Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name);
+    virtual void Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name, bool protect);
     virtual void Output(CYOutput &out) const;
 };
 
@@ -1652,7 +1652,7 @@ struct CYPropertyMethod :
 
     virtual CYFunctionExpression *Constructor();
 
-    virtual void Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name);
+    virtual void Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name, bool protect);
     virtual void Output(CYOutput &out) const;
 };
 

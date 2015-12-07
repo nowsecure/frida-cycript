@@ -34,6 +34,13 @@ CYFunctionExpression *CYSuperize(CYContext &context, CYFunctionExpression *funct
     return function;
 }
 
+CYStatement *CYDefineProperty(CYExpression *object, CYExpression *name, bool configurable, bool enumerable, CYProperty *descriptor) {
+    return $E($C3($M($V("Object"), $S("defineProperty")), object, name, $ CYObject(CYList<CYProperty>()
+        ->* (configurable ? $ CYPropertyValue($S("configurable"), $ CYTrue()) : NULL)
+        ->* (enumerable ? $ CYPropertyValue($S("enumerable"), $ CYTrue()) : NULL)
+        ->* descriptor)));
+}
+
 static void CYImplicitReturn(CYStatement *&code) {
     if (CYStatement *&last = CYGetLast(code))
         last = last->Return();
@@ -178,10 +185,10 @@ CYExpression *CYClassExpression::Replace(CYContext &context) {
         ->* $ CYVar($L1($L(prototype, $ CYFunctionExpression(NULL, NULL, NULL))))
         ->* $E($ CYAssign($M($V(prototype), $S("prototype")), $M($V(super), $S("prototype"))))
         ->* $E($ CYAssign($V(prototype), $N($V(prototype))))
-        ->* $E($ CYAssign($M($V(prototype), $S("constructor")), $V(constructor)))
+        ->* CYDefineProperty($V(prototype), $S("constructor"), false, false, $ CYPropertyValue($S("value"), $V(constructor)))
         ->* $ CYVar(builder.declarations_)
         ->* builder.statements_
-        ->* $E($ CYAssign($M($V(constructor), $S("prototype")), $V(prototype)))
+        ->* CYDefineProperty($V(constructor), $S("prototype"), false, false, $ CYPropertyValue($S("value"), $V(prototype)))
         ->* $ CYReturn($V(constructor))
     ), tail_->extends_ ?: $V($I("Object")));
 }
@@ -710,60 +717,54 @@ CYExpression *CYPrefix::Replace(CYContext &context) {
 CYProperty *CYProperty::ReplaceAll(CYContext &context, CYBuilder &builder, CYExpression *self, bool update) {
     update |= name_->Computed();
     if (update)
-        Replace(context, builder, self, true);
+        Replace(context, builder, self, false);
     if (next_ != NULL)
         next_ = next_->ReplaceAll(context, builder, self, update);
     return update ? next_ : this;
 }
 
-void CYProperty::Replace(CYContext &context, CYBuilder &builder, CYExpression *self, bool computed) {
+void CYProperty::Replace(CYContext &context, CYBuilder &builder, CYExpression *self, bool protect) {
     CYExpression *name(name_->PropertyName(context));
-    if (computed) {
+    if (name_->Computed()) {
         CYIdentifier *unique(context.Unique());
         builder.declarations_->*$L1($L(unique, name));
         name = $V(unique);
     }
 
-    Replace(context, builder, self, name);
+    Replace(context, builder, self, name, protect);
 }
 
-void CYPropertyGetter::Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name) {
+void CYPropertyGetter::Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name, bool protect) {
     CYIdentifier *unique(context.Unique());
     builder.declarations_
         ->* $L1($L(unique, CYSuperize(context, $ CYFunctionExpression(NULL, parameters_, code_))));
     builder.statements_
-        ->* $E($C3($M($V("Object"), $S("defineProperty")), self, name, $ CYObject(CYList<CYProperty>()
-            ->* $ CYPropertyValue($S("configurable"), $ CYTrue())
-            ->* $ CYPropertyValue($S("enumerable"), $ CYTrue())
-            ->* $ CYPropertyValue($S("get"), $V(unique))
-        )));
+        ->* CYDefineProperty(self, name, true, !protect, $ CYPropertyValue($S("get"), $V(unique)));
 }
 
 CYFunctionExpression *CYPropertyMethod::Constructor() {
     return name_->Constructor() ? $ CYFunctionExpression(NULL, parameters_, code_) : NULL;
 }
 
-void CYPropertyMethod::Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name) {
+void CYPropertyMethod::Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name, bool protect) {
     CYIdentifier *unique(context.Unique());
     builder.declarations_
         ->* $L1($L(unique, CYSuperize(context, $ CYFunctionExpression(NULL, parameters_, code_))));
     builder.statements_
-        ->* $E($ CYAssign($M(self, name), $V(unique)));
+        ->* (!protect ? $E($ CYAssign($M(self, name), $V(unique))) :
+            CYDefineProperty(self, name, true, !protect, $ CYPropertyValue($S("value"), $V(unique), $ CYPropertyValue($S("writable"), $ CYTrue()))));
 }
 
-void CYPropertySetter::Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name) {
+void CYPropertySetter::Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name, bool protect) {
     CYIdentifier *unique(context.Unique());
     builder.declarations_
         ->* $L1($L(unique, CYSuperize(context, $ CYFunctionExpression(NULL, parameters_, code_))));
     builder.statements_
-        ->* $E($C3($M($V("Object"), $S("defineProperty")), self, name, $ CYObject(CYList<CYProperty>()
-            ->* $ CYPropertyValue($S("configurable"), $ CYTrue())
-            ->* $ CYPropertyValue($S("enumerable"), $ CYTrue())
-            ->* $ CYPropertyValue($S("set"), $V(unique))
-        )));
+        ->* CYDefineProperty(self, name, true, !protect, $ CYPropertyValue($S("set"), $V(unique)));
 }
 
-void CYPropertyValue::Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name) {
+void CYPropertyValue::Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name, bool protect) {
+    _assert(!protect);
     CYIdentifier *unique(context.Unique());
     builder.declarations_
         ->* $L1($L(unique, value_));
