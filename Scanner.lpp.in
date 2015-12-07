@@ -453,6 +453,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "char"            L /*FII*/ F(tk::_char_, hi::Type);
 "class"           L /*FFK*/ F(tk::_class_, hi::Meta);
 "const"           L /*FFK*/ F(tk::_const_, hi::Meta);
+"constructor"     L /*III*/ F(tk::_constructor_, hi::Special);
 "continue"        L /*KKK*/ F(tk::_continue_, hi::Control);
 "debugger"        L /*FKK*/ F(tk::_debugger_, hi::Meta);
 "default"         L /*KKK*/ F(tk::_default_, hi::Control);
@@ -487,12 +488,13 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "package"         L /*FSS*/ F(tk::_package_, hi::Meta);
 "private"         L /*FSS*/ F(tk::_private_, hi::Meta);
 "protected"       L /*FSS*/ F(tk::_protected_, hi::Meta);
+"prototype"       L /*III*/ F(tk::_prototype_, hi::Special);
 "public"          L /*FSS*/ F(tk::_public_, hi::Meta);
 "return"          L /*KKK*/ F(yyextra->return_.top() ? tk::_return__ : tk::_return_, hi::Control);
 "set"             L /*III*/ F(tk::_set_, hi::Meta);
 "short"           L /*FII*/ F(tk::_short_, hi::Type);
 "static"          L /*FS?*/ F(tk::_static_, hi::Meta);
-"super"           L /*FFK*/ F(tk::_super_, hi::Constant);
+"super"           L /*FFK*/ F(yyextra->super_.top() ? tk::_super__ : tk::_super_, hi::Constant);
 "switch"          L /*KKK*/ F(tk::_switch_, hi::Control);
 "synchronized"    L /*FII*/ F(tk::_synchronized_, hi::Meta);
 "this"            L /*KKK*/ F(tk::_this_, hi::Constant);

@@ -110,13 +110,13 @@ struct CYSelector :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CYClassField :
-    CYNext<CYClassField>
+struct CYImplementationField :
+    CYNext<CYImplementationField>
 {
     CYTypedIdentifier *typed_;
 
-    CYClassField(CYTypedIdentifier *typed, CYClassField *next = NULL) :
-        CYNext<CYClassField>(next),
+    CYImplementationField(CYTypedIdentifier *typed, CYImplementationField *next = NULL) :
+        CYNext<CYImplementationField>(next),
         typed_(typed)
     {
     }
@@ -160,7 +160,7 @@ struct CYMessage :
     }
 
     CYStatement *Replace(CYContext &context, bool replace) const;
-    void Output(CYOutput &out, bool replace) const;
+    void Output(CYOutput &out) const;
 
     CYExpression *TypeSignature(CYContext &context) const;
 };
@@ -181,16 +181,16 @@ struct CYProtocol :
     void Output(CYOutput &out) const;
 };
 
-struct CYClassStatement :
+struct CYImplementation :
     CYStatement
 {
-    CYClassName *name_;
+    CYIdentifier *name_;
     CYExpression *super_;
     CYProtocol *protocols_;
-    CYClassField *fields_;
+    CYImplementationField *fields_;
     CYMessage *messages_;
 
-    CYClassStatement(CYClassName *name, CYExpression *super, CYProtocol *protocols, CYClassField *fields, CYMessage *messages) :
+    CYImplementation(CYIdentifier *name, CYExpression *super, CYProtocol *protocols, CYImplementationField *fields, CYMessage *messages) :
         name_(name),
         super_(super),
         protocols_(protocols),
@@ -208,10 +208,10 @@ struct CYClassStatement :
 struct CYCategory :
     CYStatement
 {
-    CYClassName *name_;
+    CYIdentifier *name_;
     CYMessage *messages_;
 
-    CYCategory(CYClassName *name, CYMessage *messages) :
+    CYCategory(CYIdentifier *name, CYMessage *messages) :
         name_(name),
         messages_(messages)
     {

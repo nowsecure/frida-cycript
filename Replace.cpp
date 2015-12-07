@@ -29,6 +29,11 @@ CYFunctionExpression *CYNonLocalize(CYContext &context, CYFunctionExpression *fu
     return function;
 }
 
+CYFunctionExpression *CYSuperize(CYContext &context, CYFunctionExpression *function) {
+    function->super_ = context.super_;
+    return function;
+}
+
 static void CYImplicitReturn(CYStatement *&code) {
     if (CYStatement *&last = CYGetLast(code))
         last = last->Return();
@@ -88,7 +93,7 @@ CYExpression *CYArray::Replace(CYContext &context) {
 CYExpression *CYArrayComprehension::Replace(CYContext &context) {
     CYVariable *cyv($V("$cyv"));
 
-    return $C0($F(NULL, $P1($L("$cyv"), comprehensions_->Parameters(context)), $$->*
+    return $C0($F(NULL, $P1($L($I("$cyv")), comprehensions_->Parameters(context)), $$->*
         $E($ CYAssign(cyv, $ CYArray()))->*
         comprehensions_->Replace(context, $E($C1($M(cyv, $S("push")), expression_)))->*
         $ CYReturn(cyv)
@@ -146,6 +151,45 @@ void Catch::Replace(CYContext &context) { $T()
 
 } }
 
+CYExpression *CYClassExpression::Replace(CYContext &context) {
+    CYBuilder builder;
+
+    CYIdentifier *super(context.Unique());
+
+    CYIdentifier *old(context.super_);
+    context.super_ = super;
+
+    CYIdentifier *constructor(context.Unique());
+    CYForEach (member, tail_->static_)
+        member->Replace(context, builder, $V(constructor), true);
+
+    CYIdentifier *prototype(context.Unique());
+    CYForEach (member, tail_->instance_)
+        member->Replace(context, builder, $V(prototype), true);
+
+    if (tail_->constructor_ == NULL)
+        tail_->constructor_ = $ CYFunctionExpression(NULL, NULL, NULL);
+    tail_->constructor_ = CYSuperize(context, tail_->constructor_);
+
+    context.super_ = old;
+
+    return $C1($ CYFunctionExpression(NULL, $P($L(super)), $$
+        ->* $ CYVar($L1($L(constructor, tail_->constructor_)))
+        ->* $ CYVar($L1($L(prototype, $ CYFunctionExpression(NULL, NULL, NULL))))
+        ->* $E($ CYAssign($M($V(prototype), $S("prototype")), $M($V(super), $S("prototype"))))
+        ->* $E($ CYAssign($V(prototype), $N($V(prototype))))
+        ->* $E($ CYAssign($M($V(prototype), $S("constructor")), $V(constructor)))
+        ->* $ CYVar(builder.declarations_)
+        ->* builder.statements_
+        ->* $E($ CYAssign($M($V(constructor), $S("prototype")), $V(prototype)))
+        ->* $ CYReturn($V(constructor))
+    ), tail_->extends_ ?: $V($I("Object")));
+}
+
+CYStatement *CYClassStatement::Replace(CYContext &context) {
+    return $ CYVar($L1($L(name_, $ CYClassExpression(name_, tail_))));
+}
+
 void CYClause::Replace(CYContext &context) { $T()
     context.Replace(case_);
     context.ReplaceAll(code_);
@@ -192,6 +236,10 @@ CYStatement *CYComprehension::Replace(CYContext &context, CYStatement *statement
     return next_ == NULL ? statement : next_->Replace(context, statement);
 }
 
+CYExpression *CYComputed::PropertyName(CYContext &context) {
+    return expression_;
+}
+
 CYExpression *CYCondition::Replace(CYContext &context) {
     context.Replace(test_);
     context.Replace(true_);
@@ -207,7 +255,7 @@ void CYContext::NonLocal(CYStatement *&statements) {
         CYIdentifier *unique(nextlocal_->identifier_->Replace(context));
 
         CYStatement *declare(
-            $ CYVar($L1($ CYDeclaration(unique, $ CYObject()))));
+            $ CYVar($L1($L(unique, $ CYObject()))));
 
         cy::Syntax::Catch *rescue(
             $ cy::Syntax::Catch(cye, $$->*
@@ -263,10 +311,6 @@ CYExpression *CYDeclaration::Replace(CYContext &context) {
 void CYDeclarations::Replace(CYContext &context) { $T()
     declaration_->Replace(context);
     next_->Replace(context);
-}
-
-CYProperty *CYDeclarations::Property(CYContext &context) { $T(NULL)
-    return $ CYProperty(declaration_->identifier_, declaration_->initialiser_, next_->Property(context));
 }
 
 CYFunctionParameter *CYDeclarations::Parameter(CYContext &context) { $T(NULL)
@@ -328,10 +372,6 @@ CYStatement *CYExpress::Replace(CYContext &context) {
 
 CYExpression *CYExpression::AddArgument(CYContext &context, CYExpression *value) {
     return $C1(this, value);
-}
-
-CYExpression *CYExpression::ClassName(CYContext &context, bool object) {
-    return this;
 }
 
 CYStatement *CYExpression::ForEachIn(CYContext &context, CYExpression *value) {
@@ -427,7 +467,7 @@ CYFunctionParameter *CYForOfComprehension::Parameter(CYContext &context) const {
 CYStatement *CYForOfComprehension::Replace(CYContext &context, CYStatement *statement) const {
     CYIdentifier *cys($I("$cys"));
 
-    return $E($C0($F(NULL, $P1($L("$cys")), $$->*
+    return $E($C0($F(NULL, $P1($L($I("$cys"))), $$->*
         $E($ CYAssign($V(cys), set_))->*
         $ CYForIn(declaration_->Variable(context), $V(cys), $ CYBlock($$->*
             $E($ CYAssign(declaration_->Variable(context), $M($V(cys), declaration_->Variable(context))))->*
@@ -436,18 +476,13 @@ CYStatement *CYForOfComprehension::Replace(CYContext &context, CYStatement *stat
     )));
 }
 
-void CYFunction::Inject(CYContext &context) {
-    context.Replace(name_);
-    context.scope_->Declare(context, name_, CYIdentifierOther);
-}
-
-void CYFunction::Replace_(CYContext &context, bool outer) {
-    if (outer)
-        Inject(context);
-
+void CYFunction::Replace(CYContext &context) {
     CYThisScope *_this(context.this_);
     context.this_ = &this_;
     context.this_ = CYGetLast(context.this_);
+
+    CYIdentifier *super(context.super_);
+    context.super_ = super_;
 
     CYNonLocal *nonlocal(context.nonlocal_);
     CYNonLocal *nextlocal(context.nextlocal_);
@@ -464,19 +499,20 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
 
     CYScope scope(!localize, context);
 
-    if (!outer && name_ != NULL)
-        Inject(context);
-
     parameters_->Replace(context, code_);
+
     context.ReplaceAll(code_);
 
     if (implicit_)
         CYImplicitReturn(code_);
 
-    if (CYIdentifier *identifier = this_.identifier_)
-        code_ = $$->*
-            $ CYVar($L1($ CYDeclaration(identifier, $ CYThis())))->*
-            code_;
+    if (CYIdentifier *identifier = this_.identifier_) {
+        context.scope_->Declare(context, identifier, CYIdentifierVariable);
+        code_ = $$
+            ->*$E($ CYAssign($V(identifier), $ CYThis()))
+            ->*code_
+        ;
+    }
 
     if (localize)
         context.NonLocal(code_);
@@ -484,13 +520,18 @@ void CYFunction::Replace_(CYContext &context, bool outer) {
     context.nextlocal_ = nextlocal;
     context.nonlocal_ = nonlocal;
 
+    context.super_ = super;
     context.this_ = _this;
 
     scope.Close(context, code_);
 }
 
 CYExpression *CYFunctionExpression::Replace(CYContext &context) {
-    Replace_(context, false);
+    CYScope scope(false, context);
+    if (name_ != NULL)
+        context.scope_->Declare(context, name_, CYIdentifierOther);
+    CYFunction::Replace(context);
+    scope.Close(context, code_);
     return this;
 }
 
@@ -510,7 +551,8 @@ void CYFunctionParameter::Replace(CYContext &context, CYStatement *&statements) 
 }
 
 CYStatement *CYFunctionStatement::Replace(CYContext &context) {
-    Replace_(context, true);
+    context.scope_->Declare(context, name_, CYIdentifierOther);
+    CYFunction::Replace(context);
     return this;
 }
 
@@ -543,7 +585,7 @@ CYStatement *CYIfComprehension::Replace(CYContext &context, CYStatement *stateme
 }
 
 CYStatement *CYImport::Replace(CYContext &context) {
-    return $ CYVar($L1($L(module_->part_->Word(), $C1($V("require"), module_->Replace(context, "/")))));
+    return $ CYVar($L1($L($I(module_->part_->Word()), $C1($V("require"), module_->Replace(context, "/")))));
 }
 
 CYExpression *CYIndirect::Replace(CYContext &context) {
@@ -571,6 +613,14 @@ CYExpression *CYLambda::Replace(CYContext &context) {
 
 CYStatement *CYLetStatement::Replace(CYContext &context) {
     return $E($ CYCall(CYNonLocalize(context, $ CYFunctionExpression(NULL, declarations_->Parameter(context), code_)), declarations_->Argument(context)));
+}
+
+CYFunctionExpression *CYMethod::Constructor() {
+    return NULL;
+}
+
+void CYMethod::Replace(CYContext &context) {
+    CYFunction::Replace(context);
 }
 
 CYString *CYModule::Replace(CYContext &context, const char *separator) const {
@@ -622,8 +672,24 @@ CYString *CYNumber::String(CYContext &context) {
     return $S($pool.sprintf(24, "%.17g", Value()));
 }
 
+CYExpression *CYNumber::PropertyName(CYContext &context) {
+    return String(context);
+}
+
 CYExpression *CYObject::Replace(CYContext &context) {
-    properties_->Replace(context);
+    CYBuilder builder;
+    if (properties_ != NULL)
+        properties_ = properties_->ReplaceAll(context, builder, $ CYThis(), false);
+
+    if (builder) {
+        return $C1($M($ CYFunctionExpression(NULL, builder.declarations_->Parameter(context),
+            builder.statements_->*
+                $ CYReturn($ CYThis())
+        ), $S("call")), this, builder.declarations_->Argument(context));
+    }
+
+    CYForEach (property, properties_)
+        property->Replace(context);
     return this;
 }
 
@@ -639,6 +705,74 @@ CYExpression *CYPostfix::Replace(CYContext &context) {
 CYExpression *CYPrefix::Replace(CYContext &context) {
     context.Replace(rhs_);
     return this;
+}
+
+CYProperty *CYProperty::ReplaceAll(CYContext &context, CYBuilder &builder, CYExpression *self, bool update) {
+    update |= name_->Computed();
+    if (update)
+        Replace(context, builder, self, true);
+    if (next_ != NULL)
+        next_ = next_->ReplaceAll(context, builder, self, update);
+    return update ? next_ : this;
+}
+
+void CYProperty::Replace(CYContext &context, CYBuilder &builder, CYExpression *self, bool computed) {
+    CYExpression *name(name_->PropertyName(context));
+    if (computed) {
+        CYIdentifier *unique(context.Unique());
+        builder.declarations_->*$L1($L(unique, name));
+        name = $V(unique);
+    }
+
+    Replace(context, builder, self, name);
+}
+
+void CYPropertyGetter::Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name) {
+    CYIdentifier *unique(context.Unique());
+    builder.declarations_
+        ->* $L1($L(unique, CYSuperize(context, $ CYFunctionExpression(NULL, parameters_, code_))));
+    builder.statements_
+        ->* $E($C3($M($V("Object"), $S("defineProperty")), self, name, $ CYObject(CYList<CYProperty>()
+            ->* $ CYPropertyValue($S("configurable"), $ CYTrue())
+            ->* $ CYPropertyValue($S("enumerable"), $ CYTrue())
+            ->* $ CYPropertyValue($S("get"), $V(unique))
+        )));
+}
+
+CYFunctionExpression *CYPropertyMethod::Constructor() {
+    return name_->Constructor() ? $ CYFunctionExpression(NULL, parameters_, code_) : NULL;
+}
+
+void CYPropertyMethod::Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name) {
+    CYIdentifier *unique(context.Unique());
+    builder.declarations_
+        ->* $L1($L(unique, CYSuperize(context, $ CYFunctionExpression(NULL, parameters_, code_))));
+    builder.statements_
+        ->* $E($ CYAssign($M(self, name), $V(unique)));
+}
+
+void CYPropertySetter::Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name) {
+    CYIdentifier *unique(context.Unique());
+    builder.declarations_
+        ->* $L1($L(unique, CYSuperize(context, $ CYFunctionExpression(NULL, parameters_, code_))));
+    builder.statements_
+        ->* $E($C3($M($V("Object"), $S("defineProperty")), self, name, $ CYObject(CYList<CYProperty>()
+            ->* $ CYPropertyValue($S("configurable"), $ CYTrue())
+            ->* $ CYPropertyValue($S("enumerable"), $ CYTrue())
+            ->* $ CYPropertyValue($S("set"), $V(unique))
+        )));
+}
+
+void CYPropertyValue::Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name) {
+    CYIdentifier *unique(context.Unique());
+    builder.declarations_
+        ->* $L1($L(unique, value_));
+    builder.statements_
+        ->* $E($ CYAssign($M(self, name), $V(unique)));
+}
+
+void CYPropertyValue::Replace(CYContext &context) {
+    context.Replace(value_);
 }
 
 // XXX: this is evil evil black magic. don't ask, don't tell... don't believe!
@@ -715,18 +849,11 @@ void CYScript::Replace(CYContext &context) {
     }
 }
 
-void CYProperty::Replace(CYContext &context) { $T()
-    context.Replace(value_);
-    next_->Replace(context);
-    if (value_ == NULL)
-        value_ = $U;
-}
-
 CYStatement *CYReturn::Replace(CYContext &context) {
     if (context.nonlocal_ != NULL) {
-        CYProperty *value(value_ == NULL ? NULL : $ CYProperty($S("$cyv"), value_));
+        CYProperty *value(value_ == NULL ? NULL : $ CYPropertyValue($S("$cyv"), value_));
         return $ cy::Syntax::Throw($ CYObject(
-            $ CYProperty($S("$cyk"), $V(context.nonlocal_->Target(context)), value)
+            $ CYPropertyValue($S("$cyk"), $V(context.nonlocal_->Target(context)), value)
         ));
     }
 
@@ -885,8 +1012,20 @@ CYNumber *CYString::Number(CYContext &context) {
     return NULL;
 }
 
+CYExpression *CYString::PropertyName(CYContext &context) {
+    return this;
+}
+
 CYString *CYString::String(CYContext &context) {
     return this;
+}
+
+CYExpression *CYSuperAccess::Replace(CYContext &context) {
+    return $C1($M($M($M($V(context.super_), $S("prototype")), property_), $S("bind")), $ CYThis());
+}
+
+CYExpression *CYSuperCall::Replace(CYContext &context) {
+    return $C($C1($M($V(context.super_), $S("bind")), $ CYThis()), arguments_);
 }
 
 CYStatement *CYSwitch::Replace(CYContext &context) {
@@ -1057,10 +1196,6 @@ CYStatement *CYWith::Replace(CYContext &context) {
     return this;
 }
 
-CYExpression *CYWord::ClassName(CYContext &context, bool object) {
-    CYString *name($S(this));
-    if (object)
-        return $C1($V("objc_getClass"), name);
-    else
-        return name;
+CYExpression *CYWord::PropertyName(CYContext &context) {
+    return $S(this);
 }

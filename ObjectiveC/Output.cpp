@@ -26,45 +26,29 @@
 #include "ObjectiveC/Syntax.hpp"
 
 void CYCategory::Output(CYOutput &out, CYFlags flags) const {
-    out << "(function($cys,$cyp,$cyc,$cyn,$cyt){";
-    out << "$cyp=object_getClass($cys);";
-    out << "$cyc=$cys;";
-    if (messages_ != NULL)
-        messages_->Output(out, true);
-    out << "})(";
-    name_->ClassName(out, true);
-    out << ')';
-    out << ';';
-}
+    out << "@implementation" << ' ' << *name_ << ' ' << '(' << ')' << '\n';
+    ++out.indent_;
 
-void CYClassStatement::Output(CYOutput &out, CYFlags flags) const {
-    // XXX: I don't necc. need the ()s
-    out << "(function($cys,$cyp,$cyc,$cyn,$cyt,$cym){";
-    out << "$cyp=object_getClass($cys);";
-    out << "$cyc=objc_allocateClassPair($cys,";
-    name_->ClassName(out, false);
-    out << ",0);";
-    out << "$cym=object_getClass($cyc);";
-    if (fields_ != NULL)
-        fields_->Output(out);
-    if (messages_ != NULL)
-        messages_->Output(out, false);
-    if (protocols_ != NULL) {
-        out << '<';
-        out << *protocols_;
-        out << '>';
+    CYForEach (message, messages_) {
+        message->Output(out);
+        out << '\n';
     }
-    out << "objc_registerClassPair($cyc);";
-    out << "return $cyc;";
-    out << "}(";
-    if (super_ != NULL)
-        super_->Output(out, CYAssign::Precedence_, CYNoFlags);
-    else
-        out << "null";
-    out << "))";
+
+    --out.indent_;
+    out << "@end";
 }
 
-void CYClassField::Output(CYOutput &out) const {
+void CYImplementation::Output(CYOutput &out, CYFlags flags) const {
+    out << "@implementation" << ' ' << *name_ << '\n';
+    ++out.indent_;
+
+    // XXX: implement
+
+    --out.indent_;
+    out << "@end";
+}
+
+void CYImplementationField::Output(CYOutput &out) const {
 }
 
 void CYInstanceLiteral::Output(CYOutput &out, CYFlags flags) const {
@@ -72,7 +56,7 @@ void CYInstanceLiteral::Output(CYOutput &out, CYFlags flags) const {
     number_->Output(out, CYRight(flags));
 }
 
-void CYMessage::Output(CYOutput &out, bool replace) const {
+void CYMessage::Output(CYOutput &out) const {
     out << (instance_ ? '-' : '+');
 
     CYForEach (parameter, parameters_)

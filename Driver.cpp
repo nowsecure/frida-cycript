@@ -41,6 +41,7 @@ CYDriver::CYDriver(CYPool &pool, std::istream &data, const std::string &filename
 {
     in_.push(false);
     return_.push(false);
+    super_.push(false);
     template_.push(false);
     yield_.push(false);
 

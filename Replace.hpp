@@ -110,8 +110,8 @@
 #define $N5(func, args...) \
     $N(func, $C5_(args))
 
-#define $L(arg0, args...) \
-    $ CYDeclaration($I(arg0), ##args)
+#define $L(args...) \
+    $ CYDeclaration(args)
 #define $L1(arg0) \
     $ CYDeclarations(arg0)
 #define $L2(arg0, args...) \

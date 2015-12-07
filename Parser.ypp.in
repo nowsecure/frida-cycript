@@ -42,11 +42,13 @@
 
 %union { bool bool_; }
 
+%union { CYMember *access_; }
 %union { CYArgument *argument_; }
 %union { CYAssignment *assignment_; }
 %union { CYBoolean *boolean_; }
 %union { CYClause *clause_; }
 %union { cy::Syntax::Catch *catch_; }
+%union { CYClassTail *classTail_; }
 %union { CYComprehension *comprehension_; }
 %union { CYDeclaration *declaration_; }
 %union { CYDeclarations *declarations_; }
@@ -61,7 +63,7 @@
 %union { CYIdentifier *identifier_; }
 %union { CYInfix *infix_; }
 %union { CYLiteral *literal_; }
-%union { CYMember *member_; }
+%union { CYMethod *method_; }
 %union { CYModule *module_; }
 %union { CYNull *null_; }
 %union { CYNumber *number_; }
@@ -84,10 +86,9 @@
 @end
 
 @begin ObjectiveC
-%union { CYClassName *className_; }
-%union { CYClassField *classField_; }
 %union { CYMessage *message_; }
 %union { CYMessageParameter *messageParameter_; }
+%union { CYImplementationField *implementationField_; }
 %union { CYProtocol *protocol_; }
 %union { CYSelectorPart *selector_; }
 @end
@@ -321,6 +322,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %token _return_ "return"
 %token _return__ "!return"
 %token _super_ "super"
+%token _super__ "!super"
 %token _switch_ "switch"
 %token _this_ "this"
 %token _throw_ "throw"
@@ -336,6 +338,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %token _boolean_ "boolean"
 %token _byte_ "byte"
 %token _char_ "char"
+%token _constructor_ "constructor"
 %token _double_ "double"
 %token _final_ "final"
 %token _float_ "float"
@@ -351,6 +354,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %token _package_ "package"
 %token _private_ "private"
 %token _protected_ "protected"
+%token _prototype_ "prototype"
 %token _public_ "public"
 %token _set_ "set"
 %token _short_ "short"
@@ -428,11 +432,14 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <identifier_> CatchParameter
 %type <statement_> ClassDeclaration
 %type <expression_> ClassExpression
+%type <classTail_> ClassHeritage
+%type <classTail_> ClassHeritageOpt
+%type <classTail_> ClassTail
 %type <expression_> Comprehension
 %type <comprehension_> ComprehensionFor
 %type <comprehension_> ComprehensionIf
 %type <comprehension_> ComprehensionTail
-%type <expression_> ComputedPropertyName
+%type <propertyName_> ComputedPropertyName
 %type <expression_> ConditionalExpression
 %type <statement_> ContinueStatement
 %type <statement_> ConciseBody
@@ -466,7 +473,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <statement_> GeneratorBody
 %type <statement_> GeneratorDeclaration
 %type <expression_> GeneratorExpression
-%type <property_> GeneratorMethod
+%type <method_> GeneratorMethod
 %type <statement_> HoistableDeclaration
 %type <identifier_> Identifier
 %type <identifier_> IdentifierType
@@ -487,9 +494,9 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <propertyName_> LiteralPropertyName
 %type <expression_> LogicalANDExpression
 %type <expression_> LogicalORExpression
-%type <member_> MemberAccess
+%type <access_> MemberAccess
 %type <expression_> MemberExpression
-%type <property_> MethodDefinition
+%type <method_> MethodDefinition
 %type <module_> ModulePath
 %type <expression_> MultiplicativeExpression
 %type <expression_> NewExpression
@@ -522,6 +529,8 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <statement_> StatementListOpt
 %type <statement_> StatementListItem
 %type <functionParameter_> StrictFormalParameters
+%type <expression_> SuperCall
+%type <expression_> SuperProperty
 %type <statement_> SwitchStatement
 %type <expression_> TemplateLiteral
 %type <span_> TemplateSpans
@@ -558,16 +567,15 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 @begin ObjectiveC
 %type <expression_> BoxableExpression
 %type <statement_> CategoryStatement
-%type <classField_> ClassFieldListOpt
-%type <classField_> ClassFields
-%type <statement_> ClassStatement
 %type <expression_> ClassSuperOpt
+%type <implementationField_> ImplementationFieldListOpt
+%type <implementationField_> ImplementationFields
 %type <message_> ClassMessageDeclaration
 %type <message_> ClassMessageDeclarationListOpt
-%type <className_> ClassName
 %type <protocol_> ClassProtocolListOpt
 %type <protocol_> ClassProtocols
 %type <protocol_> ClassProtocolsOpt
+%type <statement_> ImplementationStatement
 %type <expression_> MessageExpression
 %type <messageParameter_> MessageParameter
 %type <messageParameter_> MessageParameters
@@ -632,6 +640,10 @@ LexPopIn: { driver.in_.pop(); };
 
 LexPushReturnOn: { driver.return_.push(true); };
 LexPopReturn: { driver.return_.pop(); };
+
+LexPushSuperOn: { driver.super_.push(true); };
+LexPushSuperOff: { driver.super_.push(false); };
+LexPopSuper: { driver.super_.pop(); };
 
 LexPushYieldOn: { driver.yield_.push(true); };
 LexPushYieldOff: { driver.yield_.push(false); };
@@ -718,6 +730,7 @@ Word
     | "return" { $$ = CYNew CYWord("return"); }
     | "!return" { $$ = CYNew CYWord("return"); }
     | "super" { $$ = CYNew CYWord("super"); }
+    | "!super" { $$ = CYNew CYWord("super"); }
     | "switch" { $$ = CYNew CYWord("switch"); }
     | "this" { $$ = CYNew CYWord("this"); }
     | "throw" { $$ = CYNew CYWord("throw"); }
@@ -803,10 +816,13 @@ IdentifierType
     | "await" { $$ = CYNew CYIdentifier("await"); }
     | "boolean" { $$ = CYNew CYIdentifier("boolean"); }
     | "byte" { $$ = CYNew CYIdentifier("byte"); }
+    | "constructor" { $$ = CYNew CYIdentifier("constructor"); }
     | "double" { $$ = CYNew CYIdentifier("double"); }
     | "each" { $$ = CYNew CYIdentifier("each"); }
     | "final" { $$ = CYNew CYIdentifier("final"); }
     | "float" { $$ = CYNew CYIdentifier("float"); }
+    | "from" { $$ = CYNew CYIdentifier("from"); }
+    | "get" { $$ = CYNew CYIdentifier("get"); }
     | "goto" { $$ = CYNew CYIdentifier("goto"); }
     | "implements" { $$ = CYNew CYIdentifier("implements"); }
     | "interface" { $$ = CYNew CYIdentifier("interface"); }
@@ -815,11 +831,13 @@ IdentifierType
     | "package" { $$ = CYNew CYIdentifier("package"); }
     | "private" { $$ = CYNew CYIdentifier("private"); }
     | "protected" { $$ = CYNew CYIdentifier("protected"); }
+    | "prototype" { $$ = CYNew CYIdentifier("prototype"); }
     | "public" { $$ = CYNew CYIdentifier("public"); }
-    | "static" { $$ = CYNew CYIdentifier("static"); }
+    | "set" { $$ = CYNew CYIdentifier("set"); }
     | "synchronized" { $$ = CYNew CYIdentifier("synchronized"); }
     | "throws" { $$ = CYNew CYIdentifier("throws"); }
     | "transient" { $$ = CYNew CYIdentifier("transient"); }
+    | "undefined" { $$ = CYNew CYIdentifier("undefined"); }
 @begin ObjectiveC
     | "bool" { $$ = CYNew CYIdentifier("bool"); }
     | "BOOL" { $$ = CYNew CYIdentifier("BOOL"); }
@@ -831,13 +849,10 @@ IdentifierType
 Identifier
     : IdentifierType
     | "char" { $$ = CYNew CYIdentifier("char"); }
-    | "from" { $$ = CYNew CYIdentifier("from"); }
-    | "get" { $$ = CYNew CYIdentifier("get"); }
     | "int" { $$ = CYNew CYIdentifier("int"); }
     | "long" { $$ = CYNew CYIdentifier("long"); }
-    | "set" { $$ = CYNew CYIdentifier("set"); }
     | "short" { $$ = CYNew CYIdentifier("short"); }
-    | "undefined" { $$ = CYNew CYIdentifier("undefined"); }
+    | "static" { $$ = CYNew CYIdentifier("static"); }
     | "volatile" { $$ = CYNew CYIdentifier("volatile"); }
 @begin C
     | "extern" { $$ = CYNew CYIdentifier("extern"); }
@@ -920,15 +935,15 @@ PropertyDefinitionListOpt
     ;
 
 PropertyDefinition
-    : IdentifierReference { $$ = CYNew CYProperty($1->name_, $1); }
+    : IdentifierReference { $$ = CYNew CYPropertyValue($1->name_, $1); }
     | CoverInitializedName { CYNOT(@$); }
-    | PropertyName ":" AssignmentExpression { $$ = CYNew CYProperty($1, $3); }
+    | PropertyName ":" AssignmentExpression { $$ = CYNew CYPropertyValue($1, $3); }
     | MethodDefinition { $$ = $1; }
     ;
 
 PropertyName
     : LiteralPropertyName { $$ = $1; }
-    | ComputedPropertyName { CYNOT(@$); /* $$ = $1; */ }
+    | ComputedPropertyName { $$ = $1; }
     ;
 
 LiteralPropertyName
@@ -938,7 +953,7 @@ LiteralPropertyName
     ;
 
 ComputedPropertyName
-    : "[" AssignmentExpression "]" { $$ = $2; }
+    : "[" AssignmentExpression "]" { $$ = CYNew CYComputed($2); }
     ;
 
 CoverInitializedName
@@ -977,14 +992,14 @@ MemberAccess
 MemberExpression
     : LexSetRegExp PrimaryExpression { $$ = $2; }
     | MemberExpression { driver.context_ = $1; } MemberAccess { $3->SetLeft($1); $$ = $3; }
-    | SuperProperty { CYNOT(@$); }
+    | SuperProperty { $$ = $1; }
     | MetaProperty { CYNOT(@$); }
     | LexSetRegExp "new" MemberExpression Arguments { $$ = CYNew cy::Syntax::New($3, $4); }
     ;
 
 SuperProperty
-    : LexSetRegExp "super" "[" Expression "]"
-    | LexSetRegExp "super" "." IdentifierName
+    : LexSetRegExp "!super" "[" Expression "]" { $$ = CYNew CYSuperAccess($4); }
+    | LexSetRegExp "!super" "." IdentifierName { $$ = CYNew CYSuperAccess(CYNew CYString($4)); }
     ;
 
 MetaProperty
@@ -1007,12 +1022,12 @@ CallExpression_
 
 CallExpression
     : CallExpression_ Arguments { $$ = CYNew CYCall($1, $2); }
-    | SuperCall { CYNOT(@$); }
+    | SuperCall { $$ = $1; }
     | CallExpression { driver.context_ = $1; } MemberAccess { $3->SetLeft($1); $$ = $3; }
     ;
 
 SuperCall
-    : LexSetRegExp "super" Arguments
+    : LexSetRegExp "!super" Arguments { $$ = CYNew CYSuperCall($3); }
     ;
 
 Arguments
@@ -1497,11 +1512,11 @@ DebuggerStatement
 
 /* 14.1 Function Definitions {{{ */
 FunctionDeclaration
-    : ";function" BindingIdentifier "(" FormalParameters ")" BRACE FunctionBody "}" { $$ = CYNew CYFunctionStatement($2, $4, $7); }
+    : ";function" BindingIdentifier "(" FormalParameters ")" BRACE LexPushSuperOff FunctionBody "}" LexPopSuper { $$ = CYNew CYFunctionStatement($2, $4, $8); }
     ;
 
 FunctionExpression
-    : "function" BindingIdentifierOpt "(" LexPushInOff FormalParameters ")" LexPopIn BRACE LexPushInOff FunctionBody "}" LexPopIn { $$ = CYNew CYFunctionExpression($2, $5, $10); }
+    : "function" BindingIdentifierOpt "(" LexPushInOff FormalParameters ")" LexPopIn BRACE LexPushSuperOff LexPushInOff FunctionBody "}" LexPopIn LexPopSuper { $$ = CYNew CYFunctionExpression($2, $5, $11); }
     ;
 
 StrictFormalParameters
@@ -1556,10 +1571,10 @@ ConciseBody
 /* }}} */
 /* 14.3 Method Definitions {{{ */
 MethodDefinition
-    : PropertyName "(" StrictFormalParameters ")" BRACE FunctionBody "}" { CYNOT(@$); /* $$ = CYNew CYFunctionMethod($1, $3, $6); */ }
+    : PropertyName "(" StrictFormalParameters ")" BRACE FunctionBody "}" { $$ = CYNew CYPropertyMethod($1, $3, $6); }
     | GeneratorMethod { $$ = $1; }
-    | "get" PropertyName "(" ")" BRACE FunctionBody "}" { CYNOT(@$); /* $$ = CYNew CYMethodGet($2, $6); */ }
-    | "set" PropertyName "(" PropertySetParameterList ")" BRACE FunctionBody "}" { CYNOT(@$); /* $$ = CYNew CYMethodSet($2, $4); */ }
+    | "get" PropertyName "(" ")" BRACE FunctionBody "}" { $$ = CYNew CYPropertyGetter($2, $6); }
+    | "set" PropertyName "(" PropertySetParameterList ")" BRACE FunctionBody "}" { $$ = CYNew CYPropertySetter($2, CYNew CYFunctionParameter($4), $7); }
     ;
 
 PropertySetParameterList
@@ -1595,24 +1610,24 @@ YieldExpression
 /* }}} */
 /* 14.5 Class Definitions {{{ */
 ClassDeclaration
-    : ";class" BindingIdentifier ClassTail { CYNOT(@$); }
+    : ";class" BindingIdentifier ClassTail { $$ = CYNew CYClassStatement($2, $3); }
     ;
 
 ClassExpression
-    : "class" BindingIdentifierOpt ClassTail { CYNOT(@$); }
+    : "class" BindingIdentifierOpt ClassTail { $$ = CYNew CYClassExpression($2, $3); }
     ;
 
 ClassTail
-    : ClassHeritageOpt BRACE ClassBodyOpt "}"
+    : ClassHeritageOpt { driver.class_.push($1); } BRACE LexPushSuperOn ClassBodyOpt "}" LexPopSuper { driver.class_.pop(); $$ = $1; }
     ;
 
 ClassHeritage
-    : "extends" LeftHandSideExpression
+    : "extends" LeftHandSideExpression { $$ = CYNew CYClassTail($2); }
     ;
 
 ClassHeritageOpt
-    : ClassHeritage
-    |
+    : ClassHeritage { $$ = $1; }
+    | { $$ = CYNew CYClassTail(NULL); }
     ;
 
 ClassBody
@@ -1634,8 +1649,8 @@ ClassElementListOpt
     ;
 
 ClassElement
-    : MethodDefinition
-    | "static" MethodDefinition
+    : MethodDefinition { if (CYFunctionExpression *constructor = $1->Constructor()) driver.class_.top()->constructor_ = constructor; else driver.class_.top()->instance_->*$1; }
+    | "static" MethodDefinition { driver.class_.top()->static_->*$2; }
     | ";"
     ;
 /* }}} */
@@ -1853,13 +1868,13 @@ ClassSuperOpt
     | { $$ = NULL; }
     ;
 
-ClassFieldListOpt
-    : TypedIdentifier ";" ClassFieldListOpt { $$ = CYNew CYClassField($1, $3); }
+ImplementationFieldListOpt
+    : TypedIdentifier ";" ImplementationFieldListOpt { $$ = CYNew CYImplementationField($1, $3); }
     | LexSetRegExp { $$ = NULL; }
     ;
 
-ClassFields
-    : BRACE ClassFieldListOpt "}" { $$ = $2; }
+ImplementationFields
+    : BRACE ImplementationFieldListOpt "}" { $$ = $2; }
     ;
 
 MessageScope
@@ -1891,17 +1906,12 @@ MessageParameters
     ;
 
 ClassMessageDeclaration
-    : MessageScope TypeOpt MessageParameters BRACE FunctionBody "}" { $$ = CYNew CYMessage($1, $2, $3, $5); }
+    : MessageScope TypeOpt MessageParameters BRACE LexPushSuperOn FunctionBody "}" LexPopSuper { $$ = CYNew CYMessage($1, $2, $3, $6); }
     ;
 
 ClassMessageDeclarationListOpt
     : ClassMessageDeclarationListOpt ClassMessageDeclaration { $2->SetNext($1); $$ = $2; }
     | { $$ = NULL; }
-    ;
-
-ClassName
-    : Identifier { $$ = $1; }
-    | "(" AssignmentExpression ")" { $$ = $2; }
     ;
 
 // XXX: this should be AssignmentExpressionNoRight
@@ -1919,8 +1929,8 @@ ClassProtocolListOpt
     | { $$ = NULL; }
     ;
 
-ClassStatement
-    : "@implementation" ClassName ClassSuperOpt ClassProtocolListOpt ClassFields ClassMessageDeclarationListOpt "@end" { $$ = CYNew CYClassStatement($2, $3, $4, $5, $6); }
+ImplementationStatement
+    : "@implementation" Identifier ClassSuperOpt ClassProtocolListOpt ImplementationFields ClassMessageDeclarationListOpt "@end" { $$ = CYNew CYImplementation($2, $3, $4, $5, $6); }
     ;
 
 CategoryName
@@ -1928,11 +1938,11 @@ CategoryName
     ;
 
 CategoryStatement
-    : "@implementation" ClassName CategoryName ClassMessageDeclarationListOpt "@end" { $$ = CYNew CYCategory($2, $4); }
+    : "@implementation" Identifier CategoryName ClassMessageDeclarationListOpt "@end" { $$ = CYNew CYCategory($2, $4); }
     ;
 
 Statement__
-    : ClassStatement { $$ = $1; }
+    : ImplementationStatement { $$ = $1; }
     | CategoryStatement { $$ = $1; }
     ;
 /* }}} */
@@ -1963,7 +1973,7 @@ SelectorList
 
 MessageExpression
     : "[" LexPushInOff AssignmentExpression { driver.contexts_.push_back($3); } SelectorList "]" LexPopIn { driver.contexts_.pop_back(); } { $$ = CYNew CYSendDirect($3, $5); }
-    | "[" LexPushInOff LexSetRegExp "super" { driver.context_ = NULL; } SelectorList "]" LexPopIn { $$ = CYNew CYSendSuper($6); }
+    | "[" LexPushInOff LexSetRegExp "!super" { driver.context_ = NULL; } SelectorList "]" LexPopIn { $$ = CYNew CYSendSuper($6); }
     ;
 
 SelectorExpression_

@@ -43,22 +43,20 @@ static CYExpression *MessageType(CYContext &context, CYTypedIdentifier *type, CY
 CYStatement *CYCategory::Replace(CYContext &context) {
     CYVariable *cyc($V("$cyc")), *cys($V("$cys"));
 
-    return $E($C1($F(NULL, $P6($L("$cys"), $L("$cyp"), $L("$cyc"), $L("$cyn"), $L("$cyt"), $L("$cym")), $$->*
+    return $E($C1($F(NULL, $P6($L($I("$cys")), $L($I("$cyp")), $L($I("$cyc")), $L($I("$cyn")), $L($I("$cyt")), $L($I("$cym"))), $$->*
         $E($ CYAssign($V("$cyp"), $C1($V("object_getClass"), cys)))->*
         $E($ CYAssign(cyc, cys))->*
         $E($ CYAssign($V("$cym"), $C1($V("object_getClass"), cyc)))->*
         messages_->Replace(context, true)
-    ), name_->ClassName(context, true)));
+    ), $C1($V("objc_getClass"), $S(name_))));
 }
 
-CYStatement *CYClassStatement::Replace(CYContext &context) {
+CYStatement *CYImplementation::Replace(CYContext &context) {
     CYVariable *cyc($V("$cyc")), *cys($V("$cys"));
 
-    CYExpression *name(name_->ClassName(context, false));
-
-    return $E($C1($F(NULL, $P6($L("$cys"), $L("$cyp"), $L("$cyc"), $L("$cyn"), $L("$cyt"), $L("$cym")), $$->*
+    return $E($C1($F(NULL, $P6($L($I("$cys")), $L($I("$cyp")), $L($I("$cyc")), $L($I("$cyn")), $L($I("$cyt")), $L($I("$cym"))), $$->*
         $E($ CYAssign($V("$cyp"), $C1($V("object_getClass"), cys)))->*
-        $E($ CYAssign(cyc, $C3($V("objc_allocateClassPair"), cys, name, $D(0))))->*
+        $E($ CYAssign(cyc, $C3($V("objc_allocateClassPair"), cys, $S(name_), $D(0))))->*
         $E($ CYAssign($V("$cym"), $C1($V("object_getClass"), cyc)))->*
         protocols_->Replace(context)->*
         fields_->Replace(context)->*
@@ -68,7 +66,7 @@ CYStatement *CYClassStatement::Replace(CYContext &context) {
     ), super_ == NULL ? $ CYNull() : super_));
 }
 
-CYStatement *CYClassField::Replace(CYContext &context) const { $T(NULL)
+CYStatement *CYImplementationField::Replace(CYContext &context) const { $T(NULL)
     CYVariable *cyn($V("$cyn"));
     CYVariable *cyt($V("$cyt"));
 
@@ -99,8 +97,8 @@ CYStatement *CYMessage::Replace(CYContext &context, bool replace) const { $T(NUL
         $E($C4($V(replace ? "class_replaceMethod" : "class_addMethod"),
             $V(instance_ ? "$cyc" : "$cym"),
             cyn,
-            $N2($V("Functor"), $F(NULL, $P2($L("self"), $L("_cmd"), parameters_->Parameters(context)), $$->*
-                $ CYVar($L1($L("$cyr", $N2($V("objc_super"), self, _class))))->*
+            $N2($V("Functor"), $F(NULL, $P2($L($I("self")), $L($I("_cmd")), parameters_->Parameters(context)), $$->*
+                $ CYVar($L1($L($I("$cyr"), $N2($V("objc_super"), self, _class))))->*
                 $ CYReturn($C1($M($F(NULL, NULL, code_.code_), $S("call")), self))
             ), cyt),
             cyt

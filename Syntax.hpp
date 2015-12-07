@@ -108,12 +108,21 @@ struct CYOutput {
     }
 };
 
-struct CYPropertyName {
-    virtual void PropertyName(CYOutput &out) const = 0;
-};
-
 struct CYExpression;
 struct CYAssignment;
+
+struct CYPropertyName {
+    virtual bool Computed() const {
+        return false;
+    }
+
+    virtual bool Constructor() const {
+        return false;
+    }
+
+    virtual CYExpression *PropertyName(CYContext &context) = 0;
+    virtual void PropertyName(CYOutput &out) const = 0;
+};
 
 enum CYNeeded {
     CYNever     = -1,
@@ -125,12 +134,13 @@ enum CYFlags {
     CYNoFlags =      0,
     CYNoBrace =      (1 << 0),
     CYNoFunction =   (1 << 1),
-    CYNoIn =         (1 << 2),
-    CYNoCall =       (1 << 3),
-    CYNoRightHand =  (1 << 4),
-    CYNoDangle =     (1 << 5),
-    CYNoInteger =    (1 << 6),
-    CYNoBF =         (CYNoBrace | CYNoFunction),
+    CYNoClass =      (1 << 2),
+    CYNoIn =         (1 << 3),
+    CYNoCall =       (1 << 4),
+    CYNoRightHand =  (1 << 5),
+    CYNoDangle =     (1 << 6),
+    CYNoInteger =    (1 << 7),
+    CYNoBFC =        (CYNoBrace | CYNoFunction | CYNoClass),
 };
 
 _finline CYFlags operator ~(CYFlags rhs) {
@@ -154,7 +164,7 @@ _finline CYFlags CYLeft(CYFlags flags) {
 }
 
 _finline CYFlags CYRight(CYFlags flags) {
-    return flags & ~CYNoBF;
+    return flags & ~CYNoBFC;
 }
 
 _finline CYFlags CYCenter(CYFlags flags) {
@@ -189,44 +199,11 @@ struct CYStatement :
     virtual void Output(CYOutput &out, CYFlags flags) const = 0;
 };
 
-struct CYStatements {
-    CYStatement *first_;
-    CYStatement *last_;
-
-    CYStatements() :
-        first_(NULL),
-        last_(NULL)
-    {
-    }
-
-    operator CYStatement *() const {
-        return first_;
-    }
-
-    CYStatements &operator ->*(CYStatement *next) {
-        if (next != NULL)
-            if (first_ == NULL) {
-                first_ = next;
-                last_ = next;
-            } else for (;; last_ = last_->next_)
-                if (last_->next_ == NULL) {
-                    last_->next_ = next;
-                    last_ = next;
-                    break;
-                }
-        return *this;
-    }
-};
-
-struct CYClassName {
-    virtual CYExpression *ClassName(CYContext &context, bool object) = 0;
-    virtual void ClassName(CYOutput &out, bool object) const = 0;
-};
+typedef CYList<CYStatement> CYStatements;
 
 struct CYWord :
     CYThing,
-    CYPropertyName,
-    CYClassName
+    CYPropertyName
 {
     const char *word_;
 
@@ -239,11 +216,14 @@ struct CYWord :
         word_ = value;
     }
 
+    virtual bool Constructor() const {
+        return strcmp(word_, "constructor") == 0;
+    }
+
     virtual const char *Word() const;
     virtual void Output(CYOutput &out) const;
 
-    virtual CYExpression *ClassName(CYContext &context, bool object);
-    virtual void ClassName(CYOutput &out, bool object) const;
+    virtual CYExpression *PropertyName(CYContext &context);
     virtual void PropertyName(CYOutput &out) const;
 };
 
@@ -362,6 +342,7 @@ struct CYContext {
 
     CYScope *scope_;
     CYThisScope *this_;
+    CYIdentifier *super_;
 
     CYIdentifierUsageVector rename_;
 
@@ -373,6 +354,7 @@ struct CYContext {
         options_(options),
         scope_(NULL),
         this_(NULL),
+        super_(NULL),
         nonlocal_(NULL),
         nextlocal_(NULL),
         unique_(0)
@@ -485,7 +467,6 @@ struct CYString;
 struct CYExpression :
     CYForInitializer,
     CYForInInitializer,
-    CYClassName,
     CYThing
 {
     virtual int Precedence() const = 0;
@@ -502,9 +483,6 @@ struct CYExpression :
     virtual void Output(CYOutput &out) const;
     virtual void Output(CYOutput &out, CYFlags flags) const = 0;
     void Output(CYOutput &out, int precedence, CYFlags flags) const;
-
-    virtual CYExpression *ClassName(CYContext &context, bool object);
-    virtual void ClassName(CYOutput &out, bool object) const;
 
     virtual CYExpression *Replace(CYContext &context) = 0;
     virtual CYAssignment *Assignment(CYContext &context);
@@ -780,6 +758,8 @@ struct CYString :
 
     CYString *Concat(CYContext &out, CYString *rhs) const;
     virtual void Output(CYOutput &out, CYFlags flags) const;
+
+    virtual CYExpression *PropertyName(CYContext &context);
     virtual void PropertyName(CYOutput &out) const;
 };
 
@@ -839,6 +819,26 @@ struct CYNumber :
     virtual CYString *String(CYContext &context);
 
     virtual void Output(CYOutput &out, CYFlags flags) const;
+
+    virtual CYExpression *PropertyName(CYContext &context);
+    virtual void PropertyName(CYOutput &out) const;
+};
+
+struct CYComputed :
+    CYPropertyName
+{
+    CYExpression *expression_;
+
+    CYComputed(CYExpression *expression) :
+        expression_(expression)
+    {
+    }
+
+    virtual bool Computed() const {
+        return true;
+    }
+
+    virtual CYExpression *PropertyName(CYContext &context);
     virtual void PropertyName(CYOutput &out) const;
 };
 
@@ -1116,24 +1116,6 @@ struct CYArray :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CYProperty :
-    CYNext<CYProperty>,
-    CYThing
-{
-    CYPropertyName *name_;
-    CYExpression *value_;
-
-    CYProperty(CYPropertyName *name, CYExpression *value, CYProperty *next = NULL) :
-        CYNext<CYProperty>(next),
-        name_(name),
-        value_(value)
-    {
-    }
-
-    void Replace(CYContext &context);
-    virtual void Output(CYOutput &out) const;
-};
-
 struct CYDeclaration :
     CYForInInitializer
 {
@@ -1172,7 +1154,6 @@ struct CYDeclarations :
     void Replace(CYContext &context);
 
     CYExpression *Expression(CYContext &context);
-    CYProperty *Property(CYContext &context);
     CYArgument *Argument(CYContext &context);
     CYFunctionParameter *Parameter(CYContext &context);
 
@@ -1226,6 +1207,52 @@ struct CYLetStatement :
 
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYBuilder {
+    CYList<CYDeclarations> declarations_;
+    CYList<CYStatement> statements_;
+
+    operator bool() const {
+        return statements_ != NULL;
+    }
+};
+
+struct CYProperty :
+    CYNext<CYProperty>,
+    CYThing
+{
+    CYPropertyName *name_;
+
+    CYProperty(CYPropertyName *name, CYProperty *next = NULL) :
+        CYNext<CYProperty>(next),
+        name_(name)
+    {
+    }
+
+    CYProperty *ReplaceAll(CYContext &context, CYBuilder &builder, CYExpression *self, bool update);
+    void Replace(CYContext &context, CYBuilder &builder, CYExpression *self, bool computed);
+
+    virtual void Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name) = 0;
+
+    virtual void Replace(CYContext &context) = 0;
+    virtual void Output(CYOutput &out) const;
+};
+
+struct CYPropertyValue :
+    CYProperty
+{
+    CYExpression *value_;
+
+    CYPropertyValue(CYPropertyName *name, CYExpression *value, CYProperty *next = NULL) :
+        CYProperty(name, next),
+        value_(value)
+    {
+    }
+
+    virtual void Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name);
+    virtual void Replace(CYContext &context);
+    virtual void Output(CYOutput &out) const;
 };
 
 struct CYFor :
@@ -1360,7 +1387,7 @@ struct New :
     CYExpression *constructor_;
     CYArgument *arguments_;
 
-    New(CYExpression *constructor, CYArgument *arguments) :
+    New(CYExpression *constructor, CYArgument *arguments = NULL) :
         constructor_(constructor),
         arguments_(arguments)
     {
@@ -1483,34 +1510,36 @@ struct CYWhile :
 };
 
 struct CYFunction {
-    CYIdentifier *name_;
     CYFunctionParameter *parameters_;
     CYStatement *code_;
 
     CYNonLocal *nonlocal_;
     bool implicit_;
     CYThisScope this_;
+    CYIdentifier *super_;
 
-    CYFunction(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *code) :
-        name_(name),
+    CYFunction(CYFunctionParameter *parameters, CYStatement *code) :
         parameters_(parameters),
         code_(code),
         nonlocal_(NULL),
-        implicit_(false)
+        implicit_(false),
+        super_(NULL)
     {
     }
 
-    void Inject(CYContext &context);
-    virtual void Replace_(CYContext &context, bool outer);
-    virtual void Output(CYOutput &out, CYFlags flags) const;
+    void Replace(CYContext &context);
+    void Output(CYOutput &out) const;
 };
 
 struct CYFunctionExpression :
     CYFunction,
     CYExpression
 {
+    CYIdentifier *name_;
+
     CYFunctionExpression(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *code) :
-        CYFunction(name, parameters, code)
+        CYFunction(parameters, code),
+        name_(name)
     {
     }
 
@@ -1526,7 +1555,7 @@ struct CYFatArrow :
     CYExpression
 {
     CYFatArrow(CYFunctionParameter *parameters, CYStatement *code) :
-        CYFunction(NULL, parameters, code)
+        CYFunction(parameters, code)
     {
     }
 
@@ -1542,9 +1571,12 @@ struct CYRubyProc :
     CYExpression
 {
     CYRubyProc(CYFunctionParameter *parameters, CYStatement *code) :
-        CYFunction(NULL, parameters, code)
+        CYFunction(parameters, code)
     {
     }
+
+    CYPrecedence(0)
+    CYRightHand(false)
 
     virtual CYExpression *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
@@ -1554,14 +1586,162 @@ struct CYFunctionStatement :
     CYFunction,
     CYStatement
 {
+    CYIdentifier *name_;
+
     CYFunctionStatement(CYIdentifier *name, CYFunctionParameter *parameters, CYStatement *code) :
-        CYFunction(name, parameters, code)
+        CYFunction(parameters, code),
+        name_(name)
     {
     }
 
     CYCompact(None)
 
     virtual CYStatement *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYPropertyMethod;
+
+struct CYMethod :
+    CYFunction,
+    CYProperty
+{
+    CYMethod(CYPropertyName *name, CYFunctionParameter *parameters, CYStatement *code, CYProperty *next = NULL) :
+        CYFunction(parameters, code),
+        CYProperty(name, next)
+    {
+    }
+
+    virtual CYFunctionExpression *Constructor();
+
+    using CYProperty::Replace;
+    virtual void Replace(CYContext &context);
+};
+
+struct CYPropertyGetter :
+    CYMethod
+{
+    CYPropertyGetter(CYPropertyName *name, CYStatement *code, CYProperty *next = NULL) :
+        CYMethod(name, NULL, code, next)
+    {
+    }
+
+    virtual void Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name);
+    virtual void Output(CYOutput &out) const;
+};
+
+struct CYPropertySetter :
+    CYMethod
+{
+    CYPropertySetter(CYPropertyName *name, CYFunctionParameter *parameters, CYStatement *code, CYProperty *next = NULL) :
+        CYMethod(name, parameters, code, next)
+    {
+    }
+
+    virtual void Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name);
+    virtual void Output(CYOutput &out) const;
+};
+
+struct CYPropertyMethod :
+    CYMethod
+{
+    CYPropertyMethod(CYPropertyName *name, CYFunctionParameter *parameters, CYStatement *code, CYProperty *next = NULL) :
+        CYMethod(name, parameters, code, next)
+    {
+    }
+
+    virtual CYFunctionExpression *Constructor();
+
+    virtual void Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name);
+    virtual void Output(CYOutput &out) const;
+};
+
+struct CYClassTail :
+    CYThing
+{
+    CYExpression *extends_;
+
+    CYFunctionExpression *constructor_;
+    CYList<CYProperty> instance_;
+    CYList<CYProperty> static_;
+
+    CYClassTail(CYExpression *extends) :
+        extends_(extends),
+        constructor_(NULL)
+    {
+    }
+
+    void Output(CYOutput &out) const;
+};
+
+struct CYClassExpression :
+    CYExpression
+{
+    CYIdentifier *name_;
+    CYClassTail *tail_;
+
+    CYClassExpression(CYIdentifier *name, CYClassTail *tail) :
+        name_(name),
+        tail_(tail)
+    {
+    }
+
+    CYPrecedence(0)
+    CYRightHand(false)
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYClassStatement :
+    CYStatement
+{
+    CYIdentifier *name_;
+    CYClassTail *tail_;
+
+    CYClassStatement(CYIdentifier *name, CYClassTail *tail) :
+        name_(name),
+        tail_(tail)
+    {
+    }
+
+    CYCompact(Long)
+
+    virtual CYStatement *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYSuperCall :
+    CYExpression
+{
+    CYArgument *arguments_;
+
+    CYSuperCall(CYArgument *arguments) :
+        arguments_(arguments)
+    {
+    }
+
+    CYPrecedence(2)
+    CYRightHand(false)
+
+    virtual CYExpression *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYSuperAccess :
+    CYExpression
+{
+    CYExpression *property_;
+
+    CYSuperAccess(CYExpression *property) :
+        property_(property)
+    {
+    }
+
+    CYPrecedence(1)
+    CYRightHand(false)
+
+    virtual CYExpression *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 

@@ -184,6 +184,41 @@ void Catch::Output(CYOutput &out) const {
 
 } }
 
+void CYClassExpression::Output(CYOutput &out, CYFlags flags) const {
+    bool protect((flags & CYNoClass) != 0);
+    if (protect)
+        out << '(';
+    out << "class";
+    if (name_ != NULL)
+        out << ' ' << *name_;
+    out << *tail_;;
+    if (protect)
+        out << ')';
+}
+
+void CYClassStatement::Output(CYOutput &out, CYFlags flags) const {
+    out << "class" << ' ' << *name_  << *tail_;
+}
+
+void CYClassTail::Output(CYOutput &out) const {
+    if (extends_ == NULL)
+        out << ' ';
+    else {
+        out << '\n';
+        ++out.indent_;
+        out << "extends" << ' ';
+        extends_->Output(out, CYAssign::Precedence_ - 1, CYNoFlags);
+        out << '\n';
+        --out.indent_;
+    }
+
+    out << '{' << '\n';
+    ++out.indent_;
+
+    --out.indent_;
+    out << '}';
+}
+
 void CYCompound::Output(CYOutput &out, CYFlags flags) const {
     if (next_ == NULL)
         expression_->Output(out, flags);
@@ -192,6 +227,12 @@ void CYCompound::Output(CYOutput &out, CYFlags flags) const {
         out << ',' << ' ';
         next_->Output(out, CYRight(flags));
     }
+}
+
+void CYComputed::PropertyName(CYOutput &out) const {
+    out << '[';
+    expression_->Output(out, CYAssign::Precedence_, CYNoFlags);
+    out << ']';
 }
 
 void CYCondition::Output(CYOutput &out, CYFlags flags) const {
@@ -313,12 +354,8 @@ void CYEmpty::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYExpress::Output(CYOutput &out, CYFlags flags) const {
-    expression_->Output(out, flags | CYNoBF);
+    expression_->Output(out, flags | CYNoBFC);
     out << ';';
-}
-
-void CYExpression::ClassName(CYOutput &out, bool object) const {
-    Output(out, CYAssign::Precedence_, CYNoFlags);
 }
 
 void CYExpression::ForIn(CYOutput &out, CYFlags flags) const {
@@ -396,7 +433,16 @@ void CYForInComprehension::Output(CYOutput &out) const {
     out << ' ' << "in" << ' ' << *set_ << ')';
 }
 
-void CYFunction::Output(CYOutput &out, CYFlags flags) const {
+void CYFunction::Output(CYOutput &out) const {
+    out << '(' << parameters_ << ')' << ' ';
+    out << '{' << '\n';
+    ++out.indent_;
+    out << code_;
+    --out.indent_;
+    out << '\t' << '}';
+}
+
+void CYFunctionExpression::Output(CYOutput &out, CYFlags flags) const {
     // XXX: one could imagine using + here to save a byte
     bool protect((flags & CYNoFunction) != 0);
     if (protect)
@@ -404,22 +450,14 @@ void CYFunction::Output(CYOutput &out, CYFlags flags) const {
     out << "function";
     if (name_ != NULL)
         out << ' ' << *name_;
-    out << '(' << parameters_ << ')' << ' ';
-    out << '{' << '\n';
-    ++out.indent_;
-    out << code_;
-    --out.indent_;
-    out << '\t' << '}';
+    CYFunction::Output(out);
     if (protect)
         out << ')';
 }
 
-void CYFunctionExpression::Output(CYOutput &out, CYFlags flags) const {
-    CYFunction::Output(out, flags);
-}
-
 void CYFunctionStatement::Output(CYOutput &out, CYFlags flags) const {
-    CYFunction::Output(out, flags);
+    out << "function" << ' ' << *name_;
+    CYFunction::Output(out);
 }
 
 void CYFunctionParameter::Output(CYOutput &out) const {
@@ -664,14 +702,37 @@ void CYScript::Output(CYOutput &out) const {
 }
 
 void CYProperty::Output(CYOutput &out) const {
+    if (next_ != NULL || out.pretty_)
+        out << ',';
+    out << '\n' <<  next_;
+}
+
+void CYPropertyGetter::Output(CYOutput &out) const {
+    out << "get" << ' ';
+    name_->PropertyName(out);
+    CYFunction::Output(out);
+    CYProperty::Output(out);
+}
+
+void CYPropertyMethod::Output(CYOutput &out) const {
+    name_->PropertyName(out);
+    CYFunction::Output(out);
+    CYProperty::Output(out);
+}
+
+void CYPropertySetter::Output(CYOutput &out) const {
+    out << "set" << ' ';
+    name_->PropertyName(out);
+    CYFunction::Output(out);
+    CYProperty::Output(out);
+}
+
+void CYPropertyValue::Output(CYOutput &out) const {
     out << '\t';
     name_->PropertyName(out);
     out << ':' << ' ';
     value_->Output(out, CYAssign::Precedence_, CYNoFlags);
-    if (next_ != NULL)
-        out << ',' << '\n' << *next_;
-    else
-        out << '\n';
+    CYProperty::Output(out);
 }
 
 void CYRegEx::Output(CYOutput &out, CYFlags flags) const {
@@ -781,6 +842,18 @@ const char *CYString::Word() const {
     return value;
 }
 
+void CYSuperAccess::Output(CYOutput &out, CYFlags flags) const {
+    out << "super";
+    if (const char *word = property_->Word())
+        out << '.' << word;
+    else
+        out << '[' << *property_ << ']';
+}
+
+void CYSuperCall::Output(CYOutput &out, CYFlags flags) const {
+    out << "super" << '(' << arguments_ << ')';
+}
+
 void CYSwitch::Output(CYOutput &out, CYFlags flags) const {
     out << "switch" << ' ' << '(' << *value_ << ')' << ' ' << '{' << '\n';
     ++out.indent_;
@@ -861,14 +934,6 @@ void CYWhile::Output(CYOutput &out, CYFlags flags) const {
 void CYWith::Output(CYOutput &out, CYFlags flags) const {
     out << "with" << ' ' << '(' << *scope_ << ')';
     code_->Single(out, CYRight(flags), CYCompactShort);
-}
-
-void CYWord::ClassName(CYOutput &out, bool object) const {
-    if (object)
-        out << "objc_getClass(";
-    out << '"' << Word() << '"';
-    if (object)
-        out << ')';
 }
 
 void CYWord::Output(CYOutput &out) const {

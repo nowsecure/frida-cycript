@@ -63,6 +63,50 @@ Type_ *&CYGetLast(Type_ *&list) {
     return *next;
 }
 
+template <typename Type_>
+struct CYList {
+    Type_ *first_;
+    Type_ *last_;
+
+    CYList(Type_ *first = NULL) :
+        first_(first),
+        last_(CYGetLast(first))
+    {
+    }
+
+    operator Type_ *() const {
+        return first_;
+    }
+
+    Type_ *operator ->() const {
+        return first_;
+    }
+
+    CYList &operator ->*(Type_ *next) {
+        if (next != NULL)
+            if (first_ == NULL) {
+                first_ = next;
+                last_ = next;
+            } else for (;; last_ = last_->next_)
+                if (last_->next_ == NULL) {
+                    last_->next_ = next;
+                    last_ = next;
+                    break;
+                }
+        return *this;
+    }
+
+    CYList &operator ->*(CYList &next) {
+        if (*this == NULL)
+            *this = next;
+        else if (next != NULL) {
+            last_->next_ = next.first_;
+            last_ = next.last_;
+        }
+        return *this;
+    }
+};
+
 #define CYForEach(value, list) \
     for (__typeof__(*list) *value(list); value != NULL; value = value->next_)
 

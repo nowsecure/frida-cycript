@@ -33,6 +33,7 @@
 #include "Pooling.hpp"
 #include "Standard.hpp"
 
+struct CYClassTail;
 struct CYExpression;
 struct CYScript;
 struct CYWord;
@@ -53,8 +54,11 @@ class _visible CYDriver {
 
     std::stack<bool> in_;
     std::stack<bool> return_;
+    std::stack<bool> super_;
     std::stack<bool> template_;
     std::stack<bool> yield_;
+
+    std::stack<CYClassTail *> class_;
 
     bool newline_;
     bool last_;
