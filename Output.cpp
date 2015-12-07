@@ -629,9 +629,10 @@ void CYTypeDefinition::Output(CYOutput &out, CYFlags flags) const {
     out << "typedef" << ' ' << *typed_;
 }
 
-void CYLetStatement::Output(CYOutput &out, CYFlags flags) const {
-    out << "let" << ' ' << '(' << *declarations_ << ')';
-    code_->Single(out, CYRight(flags), CYCompactShort);
+void CYLet::Output(CYOutput &out, CYFlags flags) const {
+    out << "let" << ' ';
+    declarations_->Output(out, flags); // XXX: flags
+    out << ';';
 }
 
 void CYModule::Output(CYOutput &out) const {
@@ -918,7 +919,7 @@ void CYTypeVoid::Output(CYOutput &out) const {
 
 void CYVar::Output(CYOutput &out, CYFlags flags) const {
     out << "var" << ' ';
-    declarations_->Output(out, flags);
+    declarations_->Output(out, flags); // XXX: flags
     out << ';';
 }
 

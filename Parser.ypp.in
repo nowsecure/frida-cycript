@@ -487,7 +487,6 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <statement_> LabelledItem
 %type <statement_> LabelledStatement
 %type <expression_> LeftHandSideExpression
-%type <statement_> LetStatement
 %type <declaration_> LexicalBinding
 %type <statement_> LexicalDeclaration
 %type <literal_> Literal
@@ -1268,7 +1267,7 @@ StatementListItem
 /* }}} */
 /* 13.3 Let and Const Declarations {{{ */
 LexicalDeclaration
-    : LetOrConst BindingList Terminator { $$ = CYNew CYVar($2); }
+    : LetOrConst BindingList Terminator { $$ = CYNew CYLet($2); }
     ;
 
 LetOrConst
@@ -2282,15 +2281,6 @@ ComprehensionFor
 /* JavaScript FTL: for each {{{ */
 IterationStatement
     : "for" "each" "(" LexPushInOn ForInStatementInitializer "!in" LexPopIn Expression ")" Statement { $$ = CYNew CYForOf($5, $8, $10); }
-    ;
-/* }}} */
-/* JavaScript FTL: let Statements {{{ */
-LetStatement
-    : "let" "(" VariableDeclarationList ")" Statement { $$ = CYNew CYLetStatement($3, $5); }
-    ;
-
-Statement__
-    : LetStatement
     ;
 /* }}} */
 

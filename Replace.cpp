@@ -457,14 +457,14 @@ CYStatement *CYForOf::Replace(CYContext &context) {
             this
         );
 
-    CYIdentifier *cys($I("$cys")), *cyt($I("$cyt"));
+    CYIdentifier *cys(context.Unique()), *cyt(context.Unique());
 
-    return $ CYLetStatement($L2($ CYDeclaration(cys, set_), $ CYDeclaration(cyt)), $$->*
-        $ CYForIn($V(cyt), $V(cys), $ CYBlock($$->*
-            initialiser_->ForEachIn(context, $M($V(cys), $V(cyt)))->*
-            code_
-        ))
-    );
+    return $ CYBlock($$
+        ->* $ CYLet($L2($L(cys, set_), $L(cyt)))
+        ->* $ CYForIn($V(cyt), $V(cys), $ CYBlock($$
+            ->* initialiser_->ForEachIn(context, $M($V(cys), $V(cyt)))
+            ->* code_
+    )));
 }
 
 CYFunctionParameter *CYForOfComprehension::Parameter(CYContext &context) const {
@@ -618,8 +618,11 @@ CYExpression *CYLambda::Replace(CYContext &context) {
     return $N2($V("Functor"), $ CYFunctionExpression(NULL, parameters_->Parameters(context), code_), parameters_->TypeSignature(context, typed_->Replace(context)));
 }
 
-CYStatement *CYLetStatement::Replace(CYContext &context) {
-    return $E($ CYCall(CYNonLocalize(context, $ CYFunctionExpression(NULL, declarations_->Parameter(context), code_)), declarations_->Argument(context)));
+CYStatement *CYLet::Replace(CYContext &context) {
+    declarations_->Replace(context);
+    if (CYExpression *expression = declarations_->Expression(context))
+        return $E(expression);
+    return $ CYEmpty();
 }
 
 CYFunctionExpression *CYMethod::Constructor() {

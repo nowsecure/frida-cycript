@@ -1191,19 +1191,17 @@ struct CYVar :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CYLetStatement :
+struct CYLet :
     CYStatement
 {
     CYDeclarations *declarations_;
-    CYStatement *code_;
 
-    CYLetStatement(CYDeclarations *declarations, CYStatement *code) :
-        declarations_(declarations),
-        code_(code)
+    CYLet(CYDeclarations *declarations) :
+        declarations_(declarations)
     {
     }
 
-    CYCompact(Long)
+    CYCompact(None)
 
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
