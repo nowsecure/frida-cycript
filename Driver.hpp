@@ -72,7 +72,6 @@ class _visible CYDriver {
     bool highlight_;
 
     enum Condition {
-        RegExpCondition,
         XMLContentCondition,
         XMLTagCondition,
     };
@@ -128,6 +127,7 @@ class _visible CYDriver {
     bool Parse(CYMark mark = CYMarkScript);
     void Replace(CYOptions &options);
 
+    void SetRegEx(bool equal);
     void SetCondition(Condition condition);
 
     void PushCondition(Condition condition);

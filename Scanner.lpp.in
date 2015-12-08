@@ -266,8 +266,6 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
 %s Div
 %s DivOrTemplateTail
-%s RegExp
-%s RegExpOrTemplateTail
 
 @begin E4X
 %x XMLContent
@@ -277,8 +275,6 @@ XMLName {XMLNameStart}{XMLNamePart}*
 %%
 
     /* RegEx {{{ */
-<RegExp,RegExpOrTemplateTail>\/ L CYLexBufferStart(RegularExpression); CYLexBufferUnit('/');
-
 <RegularExpression>{
     \/{UnicodePart}* R CYLexBufferUnits(yytext, yyleng); CYLexBufferEnd(literal, RegEx, tk::RegularExpressionLiteral, hi::Constant);
     \/{UnicodePart}*{UnicodeFail} R E("invalid flags")
@@ -388,8 +384,8 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "*="   L F(tk::StarEqual, hi::Operator);
 "~"    L F(tk::Tilde, hi::Operator);
 
-<Div,DivOrTemplateTail>"/"  L F(tk::Slash, hi::Operator);
-<Div,DivOrTemplateTail>"/=" L F(tk::SlashEqual, hi::Operator);
+"/"  L F(tk::Slash, hi::Operator);
+"/=" L F(tk::SlashEqual, hi::Operator);
 
 ":"    L F(tk::Colon, hi::Structure);
 ","    L F(tk::Comma, hi::Structure);
@@ -400,7 +396,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 ")"    L F(tk::CloseParen, hi::Structure);
 
 "{"    L yyextra->template_.push(false); F(yyextra->newline_ ? tk::OpenBrace_ : tk::OpenBrace, hi::Structure);
-<Div,RegExp>"}" L S(template_); F(tk::CloseBrace, hi::Structure);
+<Div>"}" L S(template_); F(tk::CloseBrace, hi::Structure);
 
 "["    L F(tk::OpenBracket, hi::Structure);
 "]"    L F(tk::CloseBracket, hi::Structure);
@@ -584,7 +580,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
     /* }}} */
     /* Template {{{ */
 "`" L yyextra->tail_ = false; CYLexBufferStart(StrictAccentString);
-<DivOrTemplateTail,RegExpOrTemplateTail>"}" L yyextra->tail_ = true; S(template_); CYLexBufferStart(StrictAccentString);
+<DivOrTemplateTail>"}" L yyextra->tail_ = true; S(template_); CYLexBufferStart(StrictAccentString);
 
 <StrictAccentString>{
     "`" R CYLexBufferEnd(string, String, yyextra->tail_ ? tk::TemplateTail : tk::NoSubstitutionTemplate, hi::Constant);
@@ -645,6 +641,10 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
 %%
 
+#undef yyextra
+#define yyextra this
+#define yyscanner scanner_
+
 void CYDriver::ScannerInit() {
     cylex_init(&scanner_);
     cyset_extra(this, scanner_);
@@ -654,13 +654,17 @@ void CYDriver::ScannerDestroy() {
     cylex_destroy(scanner_);
 }
 
+void CYDriver::SetRegEx(bool equal) {
+    CYLexBufferStart(RegularExpression);
+    CYLexBufferUnit('/');
+    if (equal)
+        CYLexBufferUnit('=');
+}
+
 void CYDriver::SetCondition(Condition condition) {
     struct yyguts_t *yyg(reinterpret_cast<struct yyguts_t *>(scanner_));
 
     switch (condition) {
-        case RegExpCondition:
-            BEGIN(template_.top() ? RegExpOrTemplateTail : RegExp);
-            break;
 @begin E4X
         case XMLContentCondition:
             BEGIN(XMLContent);
@@ -676,9 +680,6 @@ void CYDriver::SetCondition(Condition condition) {
 
 void CYDriver::PushCondition(Condition condition) {
     switch (condition) {
-        case RegExpCondition:
-            yy_push_state(RegExp, scanner_);
-            break;
 @begin E4X
         case XMLContentCondition:
             yy_push_state(XMLContent, scanner_);

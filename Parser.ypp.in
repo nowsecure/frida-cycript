@@ -129,9 +129,14 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
     return token;
 }
 
+#define CYLEX() do if (yyla.empty()) { \
+    YYCDEBUG << "Mapping a token: "; \
+    yyla.type = yytranslate_(yylex(&yyla.value, &yyla.location, driver)); \
+    YY_SYMBOL_PRINT("Next token is", yyla); \
+} while (false)
+
 #define CYMAP(to, from) do { \
-    if (yyla.empty()) \
-        yyla.type = yytranslate_(yylex(&yyla.value, &yyla.location, driver)); \
+    CYLEX(); \
     if (yyla.type == yytranslate_(token::from)) \
         yyla.type = yytranslate_(token::to); \
 } while (false)
@@ -649,7 +654,7 @@ LexPushYieldOff: { driver.yield_.push(false); };
 LexPopYield: { driver.yield_.pop(); };
 
 LexSetRegExp
-    : { driver.SetCondition(CYDriver::RegExpCondition); }
+    : { CYLEX(); if (yyla.type == yytranslate_(token::Slash)) { yyla.clear(); driver.SetRegEx(false); } else if (yyla.type == yytranslate_(token::SlashEqual)) { yyla.clear(); driver.SetRegEx(true); } }
     ;
 
 LexNewLine
