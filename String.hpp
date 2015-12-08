@@ -54,7 +54,7 @@ struct CYUTF8String {
     }
 };
 
-static inline std::ostream &operator <<(std::ostream &lhs, CYUTF8String &rhs) {
+static inline std::ostream &operator <<(std::ostream &lhs, const CYUTF8String &rhs) {
     lhs.write(rhs.data, rhs.size);
     return lhs;
 }
@@ -73,6 +73,8 @@ struct CYUTF16String {
 size_t CYGetIndex(const CYUTF8String &value);
 bool CYIsKey(CYUTF8String value);
 bool CYGetOffset(const char *value, ssize_t &index);
+
+bool CYStartsWith(const CYUTF8String &haystack, const CYUTF8String &needle);
 
 CYUTF8String CYPoolUTF8String(CYPool &pool, CYUTF16String utf16);
 CYUTF16String CYPoolUTF16String(CYPool &pool, CYUTF8String utf8);

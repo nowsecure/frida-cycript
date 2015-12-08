@@ -526,6 +526,21 @@ static JSValueRef Array_callAsFunction_toCYON(JSContextRef context, JSObjectRef 
     return CYCastJSValue(context, CYJSString(CYUTF8String(value.c_str(), value.size())));
 } CYCatch(NULL) }
 
+static JSValueRef Error_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    CYPool pool;
+    std::ostringstream str;
+
+    str << "new " << CYPoolUTF8String(pool, context, CYJSString(context, CYGetProperty(context, _this, name_s))) << "(";
+
+    CYUTF8String string(CYPoolUTF8String(pool, context, CYJSString(context, CYGetProperty(context, _this, message_s))));
+    CYStringify(str, string.data, string.size);
+
+    str << ")";
+
+    std::string value(str.str());
+    return CYCastJSValue(context, CYJSString(CYUTF8String(value.c_str(), value.size())));
+} CYCatch(NULL) }
+
 static JSValueRef String_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CYPool pool;
     std::ostringstream str;
@@ -1587,31 +1602,25 @@ static bool CYShouldTerminate(JSContextRef context, void *arg) {
 }
 
 _visible const char *CYExecute(JSContextRef context, CYPool &pool, CYUTF8String code) {
-    JSValueRef exception(NULL);
-    if (false) error:
-        return CYPoolCString(pool, context, CYJSString(context, exception));
-
     ExecutionHandle handle(context);
 
     cancel_ = false;
     if (&JSContextGroupSetExecutionTimeLimit != NULL)
         JSContextGroupSetExecutionTimeLimit(JSContextGetGroup(context), 0.5, &CYShouldTerminate, NULL);
 
-    JSValueRef result(JSEvaluateScript(context, CYJSString(code), NULL, NULL, 0, &exception));
-    if (exception != NULL)
-        goto error;
+    try {
+        JSValueRef result(_jsccall(JSEvaluateScript, context, CYJSString(code), NULL, NULL, 0));
+        if (JSValueIsUndefined(context, result))
+            return NULL;
 
-    if (JSValueIsUndefined(context, result))
-        return NULL;
+        std::set<void *> objects;
+        const char *json(_jsccall(CYPoolCCYON, pool, context, result, objects));
+        CYSetProperty(context, CYGetGlobalObject(context), Result_, result);
 
-    std::set<void *> objects;
-    const char *json(CYPoolCCYON(pool, context, result, objects, &exception));
-    if (exception != NULL)
-        goto error;
-
-    CYSetProperty(context, CYGetGlobalObject(context), Result_, result);
-
-    return json;
+        return json;
+    } catch (const CYException &error) {
+        return pool.strcat("throw ", error.PoolCString(pool), NULL);
+    }
 }
 
 _visible void CYCancel() {
@@ -1854,6 +1863,9 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     JSObjectRef Error(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Error"))));
     CYSetProperty(context, cy, CYJSString("Error"), Error);
 
+    JSObjectRef Error_prototype(CYCastJSObject(context, CYGetProperty(context, Error, prototype_s)));
+    CYSetProperty(context, cy, CYJSString("Error_prototype"), Error_prototype);
+
     JSObjectRef Function(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Function"))));
     CYSetProperty(context, cy, CYJSString("Function"), Function);
 
@@ -1880,6 +1892,7 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
 /* }}} */
 
     CYSetProperty(context, Array_prototype, toCYON_s, &Array_callAsFunction_toCYON, kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, Error_prototype, toCYON_s, &Error_callAsFunction_toCYON, kJSPropertyAttributeDontEnum);
     CYSetProperty(context, String_prototype, toCYON_s, &String_callAsFunction_toCYON, kJSPropertyAttributeDontEnum);
 
     JSObjectRef cycript(JSObjectMake(context, NULL, NULL));

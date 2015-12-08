@@ -68,6 +68,7 @@
 
 #include "Display.hpp"
 #include "Driver.hpp"
+#include "Error.hpp"
 #include "Highlight.hpp"
 #include "Syntax.hpp"
 
@@ -158,14 +159,7 @@ static CYUTF8String Run(CYPool &pool, int client, const std::string &code) {
 
 static std::ostream *out_;
 
-static void Write(bool syntax, const char *data, size_t size, std::ostream &out) {
-    if (syntax)
-        CYLexerHighlight(data, size, out);
-    else
-        out.write(data, size);
-}
-
-static void Output(bool syntax, CYUTF8String json, std::ostream *out, bool expand = false) {
+static void Output(CYUTF8String json, std::ostream *out, bool expand = false) {
     const char *data(json.data);
     size_t size(json.size);
 
@@ -176,7 +170,7 @@ static void Output(bool syntax, CYUTF8String json, std::ostream *out, bool expan
         data[0] != '@' && data[0] != '"' && data[0] != '\'' ||
         data[0] == '@' && data[1] != '"' && data[1] != '\''
     )
-        Write(syntax, data, size, *out);
+        CYLexerHighlight(data, size, *out);
     else for (size_t i(0); i != size; ++i)
         if (data[i] != '\\')
             *out << data[i];
@@ -196,15 +190,6 @@ static void Output(bool syntax, CYUTF8String json, std::ostream *out, bool expan
 
   done:
     *out << std::endl;
-}
-
-static void Run(int client, bool syntax, const char *data, size_t size, std::ostream *out = NULL, bool expand = false) {
-    CYPool pool;
-    Output(syntax, Run(pool, client, CYUTF8String(data, size)), out, expand);
-}
-
-static void Run(int client, bool syntax, std::string &code, std::ostream *out = NULL, bool expand = false) {
-    Run(client, syntax, code.c_str(), code.size(), out, expand);
 }
 
 int (*append_history$)(int, const char *);
@@ -281,7 +266,6 @@ static void Console(CYOptions &options) {
     bool debug(false);
     bool expand(false);
     bool lower(true);
-    bool syntax(true);
 
     out_ = &std::cout;
 
@@ -291,6 +275,10 @@ static void Console(CYOptions &options) {
     rl_completer_word_break_characters = break_;
     rl_attempted_completion_function = &Complete;
     rl_bind_key('\t', rl_complete);
+
+#if RL_READLINE_VERSION >= 0x0600
+    rl_redisplay_function = CYDisplayUpdate;
+#endif
 
     struct sigaction action;
     sigemptyset(&action.sa_mask);
@@ -312,14 +300,6 @@ static void Console(CYOptions &options) {
         }
 
       read:
-
-#if RL_READLINE_VERSION >= 0x0600
-        if (syntax)
-            rl_redisplay_function = CYDisplayUpdate;
-        else
-            rl_redisplay_function = rl_redisplay;
-#endif
-
         mode_ = Parsing;
         char *line(readline(prompt));
         mode_ = Working;
@@ -354,9 +334,6 @@ static void Console(CYOptions &options) {
                 } else if (data == "lower") {
                     lower = !lower;
                     *out_ << "lower == " << (lower ? "true" : "false") << std::endl;
-                } else if (data == "syntax") {
-                    syntax = !syntax;
-                    *out_ << "syntax == " << (syntax ? "true" : "false") << std::endl;
                 }
                 command_ = line;
                 history += command_;
@@ -439,11 +416,12 @@ static void Console(CYOptions &options) {
 
         if (debug) {
             std::cout << "cy= ";
-            Write(syntax, code.c_str(), code.size(), std::cout);
+            CYLexerHighlight(code.c_str(), code.size(), std::cout);
             std::cout << std::endl;
         }
 
-        Run(client_, syntax, code, out_, expand);
+        CYPool pool;
+        Output(Run(pool, client_, code), &std::cout, expand);
     }
 }
 
@@ -816,8 +794,14 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
             std::string code(str.str());
             if (compile)
                 std::cout << code;
-            else
-                Run(client_, false, code, &std::cout);
+            else {
+                CYUTF8String json(Run(pool, client_, code));
+                if (CYStartsWith(json, "throw ")) {
+                    CYLexerHighlight(json.data, json.size, std::cerr);
+                    std::cerr << std::endl;
+                    return 1;
+                }
+            }
         }
     }
 
