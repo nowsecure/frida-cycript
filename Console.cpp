@@ -384,8 +384,9 @@ class History {
 static int CYConsoleKeyReturn(int count, int key) {
     rl_insert(count, '\n');
 
+    bool done(false);
     if (rl_end != 0 && rl_point == rl_end && rl_line_buffer[0] == '?')
-        rl_done = 1;
+        done = true;
     else if (rl_point == rl_end) {
         std::string command(rl_line_buffer, rl_end);
         std::istringstream stream(command);
@@ -399,15 +400,15 @@ static int CYConsoleKeyReturn(int count, int key) {
         if (driver.Parse() || !driver.errors_.empty())
             for (CYDriver::Errors::const_iterator error(driver.errors_.begin()); error != driver.errors_.end(); ++error) {
                 if (error->location_.begin.line != last + 1)
-                    rl_done = 1;
+                    done = true;
                 break;
             }
         else
-            rl_done = 1;
+            done = true;
     }
 
-    if (rl_done)
-        std::cout << std::endl;
+    if (done)
+        return rl_newline(count, key);
     return 0;
 }
 
