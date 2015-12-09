@@ -411,6 +411,57 @@ static int CYConsoleKeyReturn(int count, int key) {
     return 0;
 }
 
+template <typename Type_>
+static Type_ *CYmemrchr(Type_ *data, Type_ value, size_t size) {
+    while (size != 0)
+        if (data[--size] == value)
+            return data + size;
+    return NULL;
+}
+
+static int CYConsoleKeyUp(int count, int key) {
+    char *after(CYmemrchr(rl_line_buffer, '\n', rl_point));
+    if (after == NULL) {
+        if (int value = rl_get_previous_history(count, key))
+            return value;
+        return 0;
+    }
+
+    char *before(CYmemrchr(rl_line_buffer, '\n', after - rl_line_buffer));
+    if (before == NULL)
+        before = rl_line_buffer - 1;
+
+    ptrdiff_t offset(rl_line_buffer + rl_point - after);
+    if (offset > after - before)
+        rl_point = after - 1 - rl_line_buffer;
+    else
+        rl_point = before + offset - rl_line_buffer;
+
+    return 0;
+}
+
+static int CYConsoleKeyDown(int count, int key) {
+    char *after(static_cast<char *>(memchr(rl_line_buffer + rl_point, '\n', rl_end - rl_point)));
+    if (after == NULL) {
+        if (int value = rl_get_next_history(count, key))
+            return value;
+        rl_point = 0;
+        return 0;
+    }
+
+    char *before(CYmemrchr(rl_line_buffer, '\n', rl_point));
+    if (before == NULL)
+        before = rl_line_buffer - 1;
+
+    ptrdiff_t offset(rl_line_buffer + rl_point - before);
+    if (offset > rl_line_buffer + rl_end - after)
+        rl_point = rl_end;
+    else
+        rl_point = after + offset - rl_line_buffer;
+
+    return 0;
+}
+
 static void Console(CYOptions &options) {
     std::string basedir;
     if (const char *home = getenv("HOME"))
@@ -444,6 +495,21 @@ static void Console(CYOptions &options) {
     rl_bind_key('\t', rl_complete);
 
     rl_redisplay_function = CYDisplayUpdate;
+
+#if defined (__MSDOS__)
+    rl_bind_keyseq("\033[0A", &CYConsoleKeyUp);
+    rl_bind_keyseq("\033[0D", &CYConsoleKeyDown);
+#endif
+    rl_bind_keyseq("\033[A", &CYConsoleKeyUp);
+    rl_bind_keyseq("\033[B", &CYConsoleKeyDown);
+    rl_bind_keyseq("\033OA", &CYConsoleKeyUp);
+    rl_bind_keyseq("\033OB", &CYConsoleKeyDown);
+#if defined (__MINGW32__)
+    rl_bind_keyseq("\340H", &CYConsoleKeyUp);
+    rl_bind_keyseq("\340P", &CYConsoleKeyDown);
+    rl_bind_keyseq("\\000H", &CYConsoleKeyUp);
+    rl_bind_keyseq("\\000P", &CYConsoleKeyDown);
+#endif
 
     struct sigaction action;
     sigemptyset(&action.sa_mask);
