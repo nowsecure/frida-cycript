@@ -381,6 +381,14 @@ class History {
     }
 };
 
+template <typename Type_>
+static Type_ *CYmemrchr(Type_ *data, Type_ value, size_t size) {
+    while (size != 0)
+        if (data[--size] == value)
+            return data + size;
+    return NULL;
+}
+
 static int CYConsoleKeyBypass(int count, int key) {
     rl_point = rl_end;
     rl_insert(count, '\n');
@@ -391,7 +399,23 @@ static int CYConsoleKeyReturn(int count, int key) {
     if (rl_point != rl_end) {
         if (memchr(rl_line_buffer, '\n', rl_end) == NULL)
             return CYConsoleKeyBypass(count, key);
+
+        char *before(CYmemrchr(rl_line_buffer, '\n', rl_point));
+        if (before == NULL)
+            before = rl_line_buffer;
+
+        int space(before + 1 - rl_line_buffer);
+        while (space != rl_point && rl_line_buffer[space] == ' ')
+            ++space;
+
+        int adjust(rl_line_buffer + space - 1 - before);
+        if (space == rl_point && adjust != 0)
+            rl_rubout(adjust, '\b');
+
         rl_insert(count, '\n');
+        if (adjust != 0)
+            rl_insert(adjust, ' ');
+
         return 0;
     }
 
@@ -425,55 +449,123 @@ static int CYConsoleKeyReturn(int count, int key) {
     return 0;
 }
 
-template <typename Type_>
-static Type_ *CYmemrchr(Type_ *data, Type_ value, size_t size) {
-    while (size != 0)
-        if (data[--size] == value)
-            return data + size;
-    return NULL;
-}
-
 static int CYConsoleKeyUp(int count, int key) {
-    char *after(CYmemrchr(rl_line_buffer, '\n', rl_point));
-    if (after == NULL) {
-        if (int value = rl_get_previous_history(count, key))
-            return value;
-        return 0;
+    while (count-- != 0) {
+        char *after(CYmemrchr(rl_line_buffer, '\n', rl_point));
+        if (after == NULL) {
+            if (int value = rl_get_previous_history(1, key))
+                return value;
+            continue;
+        }
+
+        char *before(CYmemrchr(rl_line_buffer, '\n', after - rl_line_buffer));
+        if (before == NULL)
+            before = rl_line_buffer - 1;
+
+        ptrdiff_t offset(rl_line_buffer + rl_point - after);
+        if (offset > after - before)
+            rl_point = after - rl_line_buffer;
+        else
+            rl_point = before + offset - rl_line_buffer;
     }
-
-    char *before(CYmemrchr(rl_line_buffer, '\n', after - rl_line_buffer));
-    if (before == NULL)
-        before = rl_line_buffer - 1;
-
-    ptrdiff_t offset(rl_line_buffer + rl_point - after);
-    if (offset > after - before)
-        rl_point = after - 1 - rl_line_buffer;
-    else
-        rl_point = before + offset - rl_line_buffer;
 
     return 0;
 }
 
 static int CYConsoleKeyDown(int count, int key) {
-    char *after(static_cast<char *>(memchr(rl_line_buffer + rl_point, '\n', rl_end - rl_point)));
-    if (after == NULL) {
-        if (int value = rl_get_next_history(count, key))
-            return value;
-        rl_point = 0;
-        return 0;
+    while (count-- != 0) {
+        char *after(static_cast<char *>(memchr(rl_line_buffer + rl_point, '\n', rl_end - rl_point)));
+        if (after == NULL) {
+            int where(where_history());
+            if (int value = rl_get_next_history(1, key))
+                return value;
+            if (where != where_history()) {
+                char *first(static_cast<char *>(memchr(rl_line_buffer, '\n', rl_end)));
+                if (first != NULL)
+                    rl_point = first - 1 - rl_line_buffer;
+            }
+            continue;
+        }
+
+        char *before(CYmemrchr(rl_line_buffer, '\n', rl_point));
+        if (before == NULL)
+            before = rl_line_buffer - 1;
+
+        char *next(static_cast<char *>(memchr(after + 1, '\n', rl_line_buffer + rl_end - after - 1)));
+        if (next == NULL)
+            next = rl_line_buffer + rl_end;
+
+        ptrdiff_t offset(rl_line_buffer + rl_point - before);
+        if (offset > next - after)
+            rl_point = next - rl_line_buffer;
+        else
+            rl_point = after + offset - rl_line_buffer;
     }
 
-    char *before(CYmemrchr(rl_line_buffer, '\n', rl_point));
-    if (before == NULL)
-        before = rl_line_buffer - 1;
+    return 0;
+}
 
-    ptrdiff_t offset(rl_line_buffer + rl_point - before);
-    if (offset > rl_line_buffer + rl_end - after)
-        rl_point = rl_end;
-    else
-        rl_point = after + offset - rl_line_buffer;
+static int CYConsoleLineBegin(int count, int key) {
+    while (rl_point != 0 && rl_line_buffer[rl_point - 1] != '\n')
+        --rl_point;
+    return 0;
+}
+
+static int CYConsoleLineEnd(int count, int key) {
+    while (rl_point != rl_end && rl_line_buffer[rl_point] != '\n')
+        ++rl_point;
+    return 0;
+}
+
+static int CYConsoleKeyBack(int count, int key) {
+    while (count-- != 0) {
+        char *before(CYmemrchr(rl_line_buffer, '\n', rl_point));
+        if (before == NULL)
+            return rl_rubout(count, key);
+
+        int start(before + 1 - rl_line_buffer);
+        if (start == rl_point) rubout: {
+            rl_rubout(1, key);
+            continue;
+        }
+
+        for (int i(start); i != rl_point; ++i)
+            if (rl_line_buffer[i] != ' ')
+                goto rubout;
+        rl_rubout((rl_point - start) % 4 ?: 4, key);
+    }
 
     return 0;
+}
+
+static int CYConsoleKeyTab(int count, int key) {
+    char *before(CYmemrchr(rl_line_buffer, '\n', rl_point));
+    if (before == NULL) complete:
+        return rl_complete_internal(rl_completion_mode(&CYConsoleKeyTab));
+    int start(before + 1 - rl_line_buffer);
+    for (int i(start); i != rl_point; ++i)
+        if (rl_line_buffer[i] != ' ')
+            goto complete;
+    return rl_insert(4 - (rl_point - start) % 4, ' ');
+}
+
+static void CYConsoleRemapBind(rl_command_func_t *from, rl_command_func_t *to) {
+    char **keyseqs(rl_invoking_keyseqs(from));
+    if (keyseqs == NULL)
+        return;
+    for (char **keyseq(keyseqs); *keyseq != NULL; ++keyseq) {
+        rl_bind_keyseq(*keyseq, to);
+        free(*keyseq);
+    }
+    free(keyseqs);
+}
+
+static void CYConsolePrepTerm(int meta) {
+    rl_prep_terminal(meta);
+
+    CYConsoleRemapBind(&rl_beg_of_line, &CYConsoleLineBegin);
+    CYConsoleRemapBind(&rl_end_of_line, &CYConsoleLineEnd);
+    CYConsoleRemapBind(&rl_rubout, &CYConsoleKeyBack);
 }
 
 static void Console(CYOptions &options) {
@@ -506,9 +598,11 @@ static void Console(CYOptions &options) {
 
     rl_completer_word_break_characters = break_;
     rl_attempted_completion_function = &Complete;
-    rl_bind_key('\t', rl_complete);
+
+    rl_bind_key(TAB, &CYConsoleKeyTab);
 
     rl_redisplay_function = CYDisplayUpdate;
+    rl_prep_term_function = CYConsolePrepTerm;
 
 #if defined (__MSDOS__)
     rl_bind_keyseq("\033[0A", &CYConsoleKeyUp);
