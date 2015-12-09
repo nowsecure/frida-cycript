@@ -34,9 +34,9 @@ static void Skip(const char *data, size_t size, std::ostream &output, size_t &of
 
         _assert(current.line < target.line || current.line == target.line && current.column < target.column);
         if (next == '\n')
-            current.lines();
+            current.Lines();
         else
-            current.columns();
+            current.Columns();
     }
 }
 

@@ -26,10 +26,9 @@
 #endif
 
 #include <cstdio>
+#include <complex>
 #include <fstream>
 #include <sstream>
-
-#include <setjmp.h>
 
 #ifdef HAVE_READLINE_H
 #include <readline.h>
@@ -45,6 +44,7 @@
 
 #include <errno.h>
 #include <getopt.h>
+#include <setjmp.h>
 #include <signal.h>
 #include <unistd.h>
 
@@ -54,23 +54,153 @@
 #include <fcntl.h>
 #include <netdb.h>
 
+#include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/un.h>
-#include <pwd.h>
 
 #include <dlfcn.h>
+#include <pwd.h>
+#include <term.h>
 
 #ifdef __APPLE__
 #include <mach/mach_time.h>
 #endif
 
-#include "Display.hpp"
 #include "Driver.hpp"
 #include "Error.hpp"
 #include "Highlight.hpp"
 #include "Syntax.hpp"
+
+extern "C" int rl_display_fixed;
+extern "C" int _rl_vis_botlin;
+extern "C" int _rl_last_c_pos;
+extern "C" int _rl_last_v_pos;
+
+typedef std::complex<int> CYCursor;
+
+static CYCursor current_;
+static int width_;
+static size_t point_;
+
+unsigned CYDisplayWidth() {
+    struct winsize info;
+    if (ioctl(1, TIOCGWINSZ, &info) != -1)
+        return info.ws_col;
+    return tgetnum(const_cast<char *>("co"));
+}
+
+void CYDisplayOutput_(bool display, const char *&data) {
+    for (;; ++data) {
+        char next(*data);
+        if (next == '\0' || next == CYIgnoreEnd)
+            return;
+        if (display)
+            putchar(next);
+    }
+}
+
+CYCursor CYDisplayOutput(bool display, int width, const char *data, ssize_t offset = 0) {
+    CYCursor point(current_);
+
+    for (;;) {
+        if (offset-- == 0)
+            point = current_;
+        switch (char next = *data++) {
+            case '\0':
+                return point;
+            break;
+
+            case CYIgnoreStart:
+                CYDisplayOutput_(display, data);
+            case CYIgnoreEnd:
+                ++offset;
+            break;
+
+            default:
+                if (display)
+                    putchar(next);
+                current_ += CYCursor(0, 1);
+                if (current_.imag() != width)
+                    break;
+                current_ = CYCursor(current_.real() + 1, 0);
+                if (display)
+                    putp(clr_eos);
+            break;
+
+            case '\n':
+                current_ = CYCursor(current_.real() + 1, 4);
+                if (display) {
+                    putp(clr_eol);
+                    putchar('\n');
+                    putchar(' ');
+                    putchar(' ');
+                    putchar(' ');
+                    putchar(' ');
+                }
+            break;
+
+        }
+    }
+}
+
+void CYDisplayMove_(char *negative, char *positive, int offset) {
+    if (offset < 0)
+        putp(tparm(negative, -offset));
+    else if (offset > 0)
+        putp(tparm(positive, offset));
+}
+
+void CYDisplayMove(CYCursor target) {
+    CYCursor offset(target - current_);
+
+    CYDisplayMove_(parm_up_cursor, parm_down_cursor, offset.real());
+
+    if (char *parm = tparm(column_address, target.imag()))
+        putp(parm);
+    else
+        CYDisplayMove_(parm_left_cursor, parm_right_cursor, offset.imag());
+
+    current_ = target;
+}
+
+void CYDisplayUpdate() {
+    current_ = CYCursor(_rl_last_v_pos, _rl_last_c_pos);
+
+    const char *prompt(rl_display_prompt);
+
+    std::ostringstream stream;
+    CYLexerHighlight(rl_line_buffer, rl_end, stream, true);
+    std::string string(stream.str());
+    const char *buffer(string.c_str());
+
+    int width(CYDisplayWidth());
+    if (width_ != width) {
+        current_ = CYCursor();
+        CYDisplayOutput(false, width, prompt);
+        current_ = CYDisplayOutput(false, width, buffer, point_);
+    }
+
+    CYDisplayMove(CYCursor());
+    CYDisplayOutput(true, width, prompt);
+    CYCursor target(CYDisplayOutput(true, width, stream.str().c_str(), rl_point));
+
+    _rl_vis_botlin = current_.real();
+
+    if (current_.imag() == 0)
+        CYDisplayOutput(true, width, " ");
+    putp(clr_eos);
+
+    CYDisplayMove(target);
+    fflush(stdout);
+
+    _rl_last_v_pos = current_.real();
+    _rl_last_c_pos = current_.imag();
+
+    width_ = width;
+    point_ = rl_point;
+}
 
 static volatile enum {
     Working,
@@ -205,7 +335,8 @@ static CYUTF8String Run(CYPool &pool, const std::string &code) {
 static char **Complete(const char *word, int start, int end) {
     rl_attempted_completion_over = ~0;
     std::string line(rl_line_buffer, start);
-    return CYComplete(word, command_ + line, &Run);
+    char **values(CYComplete(word, command_ + line, &Run));
+    return values;
 }
 
 // need char *, not const char *
@@ -223,9 +354,17 @@ class History {
         histlines_(0)
     {
         read_history(histfile_.c_str());
+
+        for (HIST_ENTRY *history((history_set_pos(0), current_history())); history; history = next_history())
+            for (char *character(history->line); *character; ++character)
+                if (*character == '\x01') *character = '\n';
     }
 
     ~History() {
+        for (HIST_ENTRY *history((history_set_pos(0), current_history())); history; history = next_history())
+            for (char *character(history->line); *character; ++character)
+                if (*character == '\n') *character = '\x01';
+
         if (append_history$ != NULL) {
             int fd(_syscall(open(histfile_.c_str(), O_CREAT | O_WRONLY, 0600)));
             _syscall(close(fd));
@@ -235,11 +374,41 @@ class History {
         }
     }
 
-    void operator +=(const std::string &command) {
+    void operator +=(std::string command) {
         add_history(command.c_str());
         ++histlines_;
     }
 };
+
+static int CYConsoleKeyReturn(int count, int key) {
+    rl_insert(count, '\n');
+
+    if (rl_end != 0 && rl_point == rl_end && rl_line_buffer[0] == '?')
+        rl_done = 1;
+    else if (rl_point == rl_end) {
+        std::string command(rl_line_buffer, rl_end);
+        std::istringstream stream(command);
+
+        size_t last(std::string::npos);
+        for (size_t i(0); i != std::string::npos; i = command.find('\n', i + 1))
+            ++last;
+
+        CYPool pool;
+        CYDriver driver(pool, stream);
+        if (driver.Parse() || !driver.errors_.empty())
+            for (CYDriver::Errors::const_iterator error(driver.errors_.begin()); error != driver.errors_.end(); ++error) {
+                if (error->location_.begin.line != last + 1)
+                    rl_done = 1;
+                break;
+            }
+        else
+            rl_done = 1;
+    }
+
+    if (rl_done)
+        std::cout << std::endl;
+    return 0;
+}
 
 static void Console(CYOptions &options) {
     std::string basedir;
@@ -269,16 +438,11 @@ static void Console(CYOptions &options) {
 
     out_ = &std::cout;
 
-    // rl_completer_word_break_characters is broken in libedit
-    rl_basic_word_break_characters = break_;
-
     rl_completer_word_break_characters = break_;
     rl_attempted_completion_function = &Complete;
     rl_bind_key('\t', rl_complete);
 
-#if RL_READLINE_VERSION >= 0x0600
     rl_redisplay_function = CYDisplayUpdate;
-#endif
 
     struct sigaction action;
     sigemptyset(&action.sa_mask);
@@ -286,124 +450,104 @@ static void Console(CYOptions &options) {
     action.sa_flags = 0;
     sigaction(SIGINT, &action, NULL);
 
-    restart: for (;;) {
-        command_.clear();
-        std::vector<std::string> lines;
-
-        bool extra(false);
-        const char *prompt("cy# ");
-
+    for (;;) {
         if (setjmp(ctrlc_) != 0) {
             mode_ = Working;
             *out_ << std::endl;
-            goto restart;
+            continue;
         }
 
-      read:
+        if (bypass)
+            rl_bind_key('\r', &rl_newline);
+        else
+            rl_bind_key('\r', &CYConsoleKeyReturn);
+
         mode_ = Parsing;
-        char *line(readline(prompt));
+        char *line(readline("cy# "));
         mode_ = Working;
 
         if (line == NULL) {
             *out_ << std::endl;
             break;
-        } else if (line[0] == '\0')
-            goto read;
-
-        if (!extra) {
-            extra = true;
-            if (line[0] == '?') {
-                std::string data(line + 1);
-                if (data == "bypass") {
-                    bypass = !bypass;
-                    *out_ << "bypass == " << (bypass ? "true" : "false") << std::endl;
-                } else if (data == "debug") {
-                    debug = !debug;
-                    *out_ << "debug == " << (debug ? "true" : "false") << std::endl;
-                } else if (data == "destroy") {
-                    CYDestroyContext();
-                } else if (data == "gc") {
-                    *out_ << "collecting... " << std::flush;
-                    CYGarbageCollect(CYGetJSContext());
-                    *out_ << "done." << std::endl;
-                } else if (data == "exit") {
-                    return;
-                } else if (data == "expand") {
-                    expand = !expand;
-                    *out_ << "expand == " << (expand ? "true" : "false") << std::endl;
-                } else if (data == "lower") {
-                    lower = !lower;
-                    *out_ << "lower == " << (lower ? "true" : "false") << std::endl;
-                }
-                command_ = line;
-                history += command_;
-                goto restart;
-            }
         }
 
-        command_ += line;
-        command_ += "\n";
-
-        char *begin(line), *end(line + strlen(line));
-        while (char *nl = reinterpret_cast<char *>(memchr(begin, '\n', end - begin))) {
-            *nl = '\0';
-            lines.push_back(begin);
-            begin = nl + 1;
-        }
-
-        lines.push_back(begin);
-
+        std::string command(line);
         free(line);
+        _assert(!command.empty());
+        _assert(command[command.size() - 1] == '\n');
+        command.resize(command.size() - 1);
+        if (command.empty())
+            continue;
+
+        if (command[0] == '?') {
+            std::string data(command.substr(1));
+            if (data == "bypass") {
+                bypass = !bypass;
+                *out_ << "bypass == " << (bypass ? "true" : "false") << std::endl;
+            } else if (data == "debug") {
+                debug = !debug;
+                *out_ << "debug == " << (debug ? "true" : "false") << std::endl;
+            } else if (data == "destroy") {
+                CYDestroyContext();
+            } else if (data == "gc") {
+                *out_ << "collecting... " << std::flush;
+                CYGarbageCollect(CYGetJSContext());
+                *out_ << "done." << std::endl;
+            } else if (data == "exit") {
+                return;
+            } else if (data == "expand") {
+                expand = !expand;
+                *out_ << "expand == " << (expand ? "true" : "false") << std::endl;
+            } else if (data == "lower") {
+                lower = !lower;
+                *out_ << "lower == " << (lower ? "true" : "false") << std::endl;
+            }
+
+            history += command;
+            continue;
+        }
 
         std::string code;
-
         if (bypass)
-            code = command_;
+            code = command;
         else {
-            std::istringstream stream(command_);
+            std::istringstream stream(command);
 
             CYPool pool;
             CYDriver driver(pool, stream);
             Setup(driver);
 
-            bool failed(driver.Parse());
-
-            if (failed || !driver.errors_.empty()) {
+            if (driver.Parse() || !driver.errors_.empty()) {
                 for (CYDriver::Errors::const_iterator error(driver.errors_.begin()); error != driver.errors_.end(); ++error) {
                     CYPosition begin(error->location_.begin);
-                    if (begin.line != lines.size() + 1 || error->warning_) {
-                        CYPosition end(error->location_.end);
+                    CYPosition end(error->location_.end);
 
-                        if (begin.line != lines.size()) {
-                            std::cerr << "  | ";
-                            std::cerr << lines[begin.line - 1] << std::endl;
-                        }
-
-                        std::cerr << "....";
-                        for (size_t i(0); i != begin.column; ++i)
-                            std::cerr << '.';
-                        if (begin.line != end.line || begin.column == end.column)
-                            std::cerr << '^';
-                        else for (size_t i(0), e(end.column - begin.column); i != e; ++i)
-                            std::cerr << '^';
-                        std::cerr << std::endl;
-
+                    /*if (begin.line != lines2.size()) {
                         std::cerr << "  | ";
-                        std::cerr << error->message_ << std::endl;
+                        std::cerr << lines2[begin.line - 1] << std::endl;
+                    }*/
 
-                        history += command_.substr(0, command_.size() - 1);
-                        goto restart;
-                    }
+                    std::cerr << "....";
+                    for (size_t i(0); i != begin.column; ++i)
+                        std::cerr << '.';
+                    if (begin.line != end.line || begin.column == end.column)
+                        std::cerr << '^';
+                    else for (size_t i(0), e(end.column - begin.column); i != e; ++i)
+                        std::cerr << '^';
+                    std::cerr << std::endl;
+
+                    std::cerr << "  | ";
+                    std::cerr << error->message_ << std::endl;
+
+                    history += command;
+                    break;
                 }
 
-                driver.errors_.clear();
-
-                prompt = "cy> ";
-                goto read;
+                continue;
             }
 
             if (driver.script_ == NULL)
-                goto restart;
+                continue;
 
             std::stringbuf str;
             CYOutput out(str, options);
@@ -412,7 +556,7 @@ static void Console(CYOptions &options) {
             code = str.str();
         }
 
-        history += command_.substr(0, command_.size() - 1);
+        history += command;
 
         if (debug) {
             std::cout << "cy= ";

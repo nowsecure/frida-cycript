@@ -37,12 +37,12 @@ class CYPosition {
     {
     }
 
-    void lines(unsigned count = 1) {
+    void Lines(unsigned count = 1) {
         column = 0;
         line += count;
     }
 
-    void columns(unsigned count = 1) {
+    void Columns(unsigned count = 1) {
         column += count;
     }
 };

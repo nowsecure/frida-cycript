@@ -211,10 +211,10 @@ libcycript_la_LINK = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(OBJCXXLD) $(AM_OBJCXXFLAGS) \
 	$(OBJCXXFLAGS) $(libcycript_la_LDFLAGS) $(LDFLAGS) -o $@
 PROGRAMS = $(bin_PROGRAMS)
-am__cycript_SOURCES_DIST = Console.cpp Display.cpp Inject.cpp
+am__cycript_SOURCES_DIST = Console.cpp Inject.cpp
 @CY_ATTACH_TRUE@@CY_CONSOLE_TRUE@am__objects_6 = Inject.$(OBJEXT)
 @CY_CONSOLE_TRUE@am_cycript_OBJECTS = Console.$(OBJEXT) \
-@CY_CONSOLE_TRUE@	Display.$(OBJEXT) $(am__objects_6)
+@CY_CONSOLE_TRUE@	$(am__objects_6)
 cycript_OBJECTS = $(am_cycript_OBJECTS)
 @CY_CONSOLE_TRUE@cycript_DEPENDENCIES = libcycript.la \
 @CY_CONSOLE_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
@@ -561,8 +561,7 @@ libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp \
 	$(am__append_2) $(am__append_8) $(am__append_11) \
 	$(am__append_13)
 filters = $(am__append_5) $(am__append_7) $(am__append_10)
-@CY_CONSOLE_TRUE@cycript_SOURCES = Console.cpp Display.cpp \
-@CY_CONSOLE_TRUE@	$(am__append_14)
+@CY_CONSOLE_TRUE@cycript_SOURCES = Console.cpp $(am__append_14)
 @CY_CONSOLE_TRUE@cycript_LDADD = libcycript.la $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) $(PTHREAD_CFLAGS) -ldl
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
@@ -754,7 +753,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Console.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ConvertUTF.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Decode.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Display.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Driver.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Execute.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Handler.Plo@am__quote@

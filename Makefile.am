@@ -50,7 +50,7 @@ filters =
 
 if CY_CONSOLE
 bin_PROGRAMS = cycript
-cycript_SOURCES = Console.cpp Display.cpp
+cycript_SOURCES = Console.cpp
 cycript_LDADD = libcycript.la $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) $(PTHREAD_CFLAGS) -ldl
 libcycript_la_SOURCES += Complete.cpp
 endif

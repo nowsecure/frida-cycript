@@ -78,15 +78,15 @@ struct CYOutput {
         _assert(out_.sputc(value) != EOF);
         recent_ = indent_;
         if (value == '\n')
-            position_.lines(1);
+            position_.Lines(1);
         else
-            position_.columns(1);
+            position_.Columns(1);
     }
 
     _finline void operator ()(const char *data, std::streamsize size) {
         _assert(out_.sputn(data, size) == size);
         recent_ = indent_;
-        position_.columns(size);
+        position_.Columns(size);
     }
 
     _finline void operator ()(const char *data) {

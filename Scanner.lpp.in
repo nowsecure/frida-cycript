@@ -83,13 +83,13 @@ typedef cy::parser::token tk;
             nl = reinterpret_cast<const char *>(memchr(nl + 1, '\n', left)); \
         } while (nl != NULL); \
         yylloc->step(); \
-        yylloc->end.lines(lines); \
-        yylloc->end.columns(left); \
+        yylloc->end.Lines(lines); \
+        yylloc->end.Columns(left); \
         more \
     } else L \
 }
 
-#define R yylloc->end.columns(yyleng);
+#define R yylloc->end.Columns(yyleng);
 #define L yylloc->step(); R
 
 #define H(value, highlight) do { \
@@ -302,7 +302,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
 <MultiLine>{
     \**\*\/ R yy_pop_state(yyscanner); M N
-    \**{LineTerminatorSequence} yylloc->end.lines(); yyextra->last_ = true;
+    \**{LineTerminatorSequence} yylloc->end.Lines(); yyextra->last_ = true;
     \**{CommentCharacter}|\/ R
     \**({UnicodeFail}|\*) R E("invalid comment");
     <<EOF>> R E("invalid comment")
@@ -624,7 +624,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
         CYLexBufferPoint(point);
     }
 
-    \\{LineTerminatorSequence} yylloc->end.lines();
+    \\{LineTerminatorSequence} yylloc->end.Lines();
     \\(.|{NotLineTerminator}) R CYLexBufferUnits(yytext + 1, yyleng - 1);
 
     \\(x{HexDigit}{0,1}|u({HexDigit}{0,3}|\{{HexDigit}*)|{UnicodeFail})? R E("invalid escape");
@@ -632,7 +632,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 }
     /* }}} */
 
-{LineTerminatorSequence} yylloc->step(); yylloc->end.lines(); yyextra->last_ = true; N
+{LineTerminatorSequence} yylloc->step(); yylloc->end.Lines(); yyextra->last_ = true; N
 {WhiteSpace} L
 
 <<EOF>> if (yyextra->auto_) { yyextra->auto_ = false; F(tk::AutoComplete, hi::Nothing); } L yyterminate();
