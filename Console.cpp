@@ -381,13 +381,26 @@ class History {
     }
 };
 
+static int CYConsoleKeyBypass(int count, int key) {
+    rl_point = rl_end;
+    rl_insert(count, '\n');
+    return rl_newline(count, key);
+}
+
 static int CYConsoleKeyReturn(int count, int key) {
+    if (rl_point != rl_end) {
+        if (memchr(rl_line_buffer, '\n', rl_end) == NULL)
+            return CYConsoleKeyBypass(count, key);
+        rl_insert(count, '\n');
+        return 0;
+    }
+
     rl_insert(count, '\n');
 
     bool done(false);
-    if (rl_end != 0 && rl_point == rl_end && rl_line_buffer[0] == '?')
+    if (rl_line_buffer[0] == '?')
         done = true;
-    else if (rl_point == rl_end) {
+    else {
         std::string command(rl_line_buffer, rl_end);
         std::istringstream stream(command);
 
@@ -525,10 +538,13 @@ static void Console(CYOptions &options) {
             continue;
         }
 
-        if (bypass)
-            rl_bind_key('\r', &rl_newline);
-        else
+        if (bypass) {
+            rl_bind_key('\r', &CYConsoleKeyBypass);
+            rl_bind_key('\n', &CYConsoleKeyBypass);
+        } else {
             rl_bind_key('\r', &CYConsoleKeyReturn);
+            rl_bind_key('\n', &CYConsoleKeyReturn);
+        }
 
         mode_ = Parsing;
         char *line(readline("cy# "));
