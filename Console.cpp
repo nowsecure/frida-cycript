@@ -336,6 +336,7 @@ static char **Complete(const char *word, int start, int end) {
     rl_attempted_completion_over = ~0;
     std::string line(rl_line_buffer, start);
     char **values(CYComplete(word, command_ + line, &Run));
+    mode_ = Parsing;
     return values;
 }
 
