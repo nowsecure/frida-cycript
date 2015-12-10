@@ -389,16 +389,10 @@ static Type_ *CYmemrchr(Type_ *data, Type_ value, size_t size) {
     return NULL;
 }
 
-static int CYConsoleKeyBypass(int count, int key) {
-    rl_point = rl_end;
-    rl_insert(count, '\n');
-    return rl_newline(count, key);
-}
-
 static int CYConsoleKeyReturn(int count, int key) {
     if (rl_point != rl_end) {
         if (memchr(rl_line_buffer, '\n', rl_end) == NULL)
-            return CYConsoleKeyBypass(count, key);
+            return rl_newline(count, key);
 
         char *before(CYmemrchr(rl_line_buffer, '\n', rl_point));
         if (before == NULL)
@@ -419,13 +413,12 @@ static int CYConsoleKeyReturn(int count, int key) {
         return 0;
     }
 
-    rl_insert(count, '\n');
-
     bool done(false);
     if (rl_line_buffer[0] == '?')
         done = true;
     else {
         std::string command(rl_line_buffer, rl_end);
+        command += '\n';
         std::istringstream stream(command);
 
         size_t last(std::string::npos);
@@ -446,6 +439,8 @@ static int CYConsoleKeyReturn(int count, int key) {
 
     if (done)
         return rl_newline(count, key);
+
+    rl_insert(count, '\n');
     return 0;
 }
 
@@ -633,8 +628,8 @@ static void Console(CYOptions &options) {
         }
 
         if (bypass) {
-            rl_bind_key('\r', &CYConsoleKeyBypass);
-            rl_bind_key('\n', &CYConsoleKeyBypass);
+            rl_bind_key('\r', &rl_newline);
+            rl_bind_key('\n', &rl_newline);
         } else {
             rl_bind_key('\r', &CYConsoleKeyReturn);
             rl_bind_key('\n', &CYConsoleKeyReturn);
@@ -651,9 +646,6 @@ static void Console(CYOptions &options) {
 
         std::string command(line);
         free(line);
-        _assert(!command.empty());
-        _assert(command[command.size() - 1] == '\n');
-        command.resize(command.size() - 1);
         if (command.empty())
             continue;
 
