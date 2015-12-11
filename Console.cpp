@@ -509,6 +509,8 @@ static int CYConsoleLineBegin(int count, int key) {
 static int CYConsoleLineEnd(int count, int key) {
     while (rl_point != rl_end && rl_line_buffer[rl_point] != '\n')
         ++rl_point;
+    if (rl_point != rl_end && rl_editing_mode == 0)
+        --rl_point;
     return 0;
 }
 
@@ -544,23 +546,36 @@ static int CYConsoleKeyTab(int count, int key) {
     return rl_insert(4 - (rl_point - start) % 4, ' ');
 }
 
-static void CYConsoleRemapBind(rl_command_func_t *from, rl_command_func_t *to) {
-    char **keyseqs(rl_invoking_keyseqs(from));
+static void CYConsoleRemapBind(Keymap map, rl_command_func_t *from, rl_command_func_t *to) {
+    char **keyseqs(rl_invoking_keyseqs_in_map(from, map));
     if (keyseqs == NULL)
         return;
     for (char **keyseq(keyseqs); *keyseq != NULL; ++keyseq) {
-        rl_bind_keyseq(*keyseq, to);
+        rl_bind_keyseq_in_map(*keyseq, to, map);
         free(*keyseq);
     }
     free(keyseqs);
 }
 
+static void CYConsoleRemapKeys(Keymap map) {
+    CYConsoleRemapBind(map, &rl_beg_of_line, &CYConsoleLineBegin);
+    CYConsoleRemapBind(map, &rl_end_of_line, &CYConsoleLineEnd);
+
+    CYConsoleRemapBind(map, &rl_get_previous_history, &CYConsoleKeyUp);
+    CYConsoleRemapBind(map, &rl_get_next_history, &CYConsoleKeyDown);
+
+    CYConsoleRemapBind(map, &rl_rubout, &CYConsoleKeyBack);
+    CYConsoleRemapBind(map, &rl_complete, &CYConsoleKeyTab);
+}
+
 static void CYConsolePrepTerm(int meta) {
     rl_prep_terminal(meta);
 
-    CYConsoleRemapBind(&rl_beg_of_line, &CYConsoleLineBegin);
-    CYConsoleRemapBind(&rl_end_of_line, &CYConsoleLineEnd);
-    CYConsoleRemapBind(&rl_rubout, &CYConsoleKeyBack);
+    CYConsoleRemapKeys(emacs_standard_keymap);
+    CYConsoleRemapKeys(emacs_meta_keymap);
+    CYConsoleRemapKeys(emacs_ctlx_keymap);
+    CYConsoleRemapKeys(vi_insertion_keymap);
+    CYConsoleRemapKeys(vi_movement_keymap);
 }
 
 static void Console(CYOptions &options) {
@@ -594,25 +609,8 @@ static void Console(CYOptions &options) {
     rl_completer_word_break_characters = break_;
     rl_attempted_completion_function = &Complete;
 
-    rl_bind_key(TAB, &CYConsoleKeyTab);
-
     rl_redisplay_function = CYDisplayUpdate;
     rl_prep_term_function = CYConsolePrepTerm;
-
-#if defined (__MSDOS__)
-    rl_bind_keyseq("\033[0A", &CYConsoleKeyUp);
-    rl_bind_keyseq("\033[0D", &CYConsoleKeyDown);
-#endif
-    rl_bind_keyseq("\033[A", &CYConsoleKeyUp);
-    rl_bind_keyseq("\033[B", &CYConsoleKeyDown);
-    rl_bind_keyseq("\033OA", &CYConsoleKeyUp);
-    rl_bind_keyseq("\033OB", &CYConsoleKeyDown);
-#if defined (__MINGW32__)
-    rl_bind_keyseq("\340H", &CYConsoleKeyUp);
-    rl_bind_keyseq("\340P", &CYConsoleKeyDown);
-    rl_bind_keyseq("\\000H", &CYConsoleKeyUp);
-    rl_bind_keyseq("\\000P", &CYConsoleKeyDown);
-#endif
 
     struct sigaction action;
     sigemptyset(&action.sa_mask);
