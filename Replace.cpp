@@ -449,6 +449,13 @@ CYStatement *CYForIn::Replace(CYContext &context) {
     return this;
 }
 
+CYStatement *CYForInitialized::Replace(CYContext &context) {
+    CYAssignment *assignment(declaration_->Replace(context, CYIdentifierVariable));
+    return $ CYBlock($$
+        ->* (assignment == NULL ? NULL : $ CYExpress(assignment))
+        ->* $ CYForIn(declaration_->Target(context), set_, code_));
+}
+
 CYFunctionParameter *CYForInComprehension::Parameter(CYContext &context) const {
     return $ CYFunctionParameter(declaration_);
 }

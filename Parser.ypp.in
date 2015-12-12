@@ -1402,6 +1402,7 @@ IterationStatement
     : "do" Statement "while" "(" Expression ")" TerminatorOpt { $$ = CYNew CYDoWhile($5, $2); }
     | "while" "(" Expression ")" Statement { $$ = CYNew CYWhile($3, $5); }
     | "for" "(" LexPushInOn ForStatementInitializer LexPopIn ExpressionOpt ";" ExpressionOpt ")" Statement { $$ = CYNew CYFor($4, $6, $8, $10); }
+    | "for" "(" LexPushInOn LexSetRegExp Var_ BindingIdentifier Initializer "!in" LexPopIn Expression ")" Statement { $$ = CYNew CYForInitialized(CYNew CYDeclaration($6, $7), $10, $12); }
     | "for" "(" LexPushInOn ForInStatementInitializer "!in" LexPopIn Expression ")" Statement { $$ = CYNew CYForIn($4, $7, $9); }
     | "for" "(" LexPushInOn ForInStatementInitializer "of" LexPopIn AssignmentExpression ")" Statement { $$ = CYNew CYForOf($4, $7, $9); }
     ;

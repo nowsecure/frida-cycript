@@ -408,6 +408,13 @@ void CYForIn::Output(CYOutput &out, CYFlags flags) const {
     code_->Single(out, CYRight(flags), CYCompactShort);
 }
 
+void CYForInitialized::Output(CYOutput &out, CYFlags flags) const {
+    out << "for" << ' ' << '(' << "var" << ' ';
+    declaration_->Output(out, CYNoIn | CYNoRightHand);
+    out << ' ' << "in" << ' ' << *set_ << ')';
+    code_->Single(out, CYRight(flags), CYCompactShort);
+}
+
 void CYForInComprehension::Output(CYOutput &out) const {
     out << "for" << ' ' << '(';
     declaration_->Output(out, CYNoIn | CYNoRightHand);

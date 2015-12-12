@@ -1328,6 +1328,26 @@ struct CYForIn :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
+struct CYForInitialized :
+    CYStatement
+{
+    CYDeclaration *declaration_;
+    CYExpression *set_;
+    CYStatement *code_;
+
+    CYForInitialized(CYDeclaration *declaration, CYExpression *set, CYStatement *code) :
+        declaration_(declaration),
+        set_(set),
+        code_(code)
+    {
+    }
+
+    CYCompact(Long)
+
+    virtual CYStatement *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
 struct CYForOf :
     CYStatement
 {
