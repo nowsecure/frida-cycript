@@ -109,10 +109,10 @@ CYTarget *CYArray::Replace(CYContext &context) {
 CYTarget *CYArrayComprehension::Replace(CYContext &context) {
     CYVariable *cyv($V("$cyv"));
 
-    return $C0($F(NULL, $P1($L($I("$cyv")), comprehensions_->Parameters(context)), $$->*
-        $E($ CYAssign(cyv, $ CYArray()))->*
-        comprehensions_->Replace(context, $E($C1($M(cyv, $S("push")), expression_)))->*
-        $ CYReturn(cyv)
+    return $C0($F(NULL, $P1($L($I("$cyv")), comprehensions_->Parameters(context)), $$
+        ->* $E($ CYAssign(cyv, $ CYArray()))
+        ->* comprehensions_->Replace(context, $E($C1($M(cyv, $S("push")), expression_)))
+        ->* $ CYReturn(cyv)
     ));
 }
 
@@ -268,17 +268,17 @@ void CYContext::NonLocal(CYStatement *&statements) {
             $ CYVar($L1($L(unique, $ CYObject()))));
 
         cy::Syntax::Catch *rescue(
-            $ cy::Syntax::Catch(cye, $$->*
-                $ CYIf($ CYIdentical($M($V(cye), $S("$cyk")), $V(unique)), $$->*
-                    $ CYReturn($M($V(cye), $S("$cyv"))))->*
-                $ cy::Syntax::Throw($V(cye))));
+            $ cy::Syntax::Catch(cye, $$
+                ->* $ CYIf($ CYIdentical($M($V(cye), $S("$cyk")), $V(unique)), $$
+                    ->* $ CYReturn($M($V(cye), $S("$cyv"))))
+                ->* $ cy::Syntax::Throw($V(cye))));
 
         context.Replace(declare);
         rescue->Replace(context);
 
-        statements = $$->*
-            declare->*
-            $ cy::Syntax::Try(statements, rescue, NULL);
+        statements = $$
+            ->* declare
+            ->* $ cy::Syntax::Try(statements, rescue, NULL);
     }
 }
 
@@ -476,11 +476,11 @@ CYFunctionParameter *CYForOfComprehension::Parameter(CYContext &context) const {
 CYStatement *CYForOfComprehension::Replace(CYContext &context, CYStatement *statement) const {
     CYIdentifier *cys($I("$cys"));
 
-    return $E($C0($F(NULL, $P1($L($I("$cys"))), $$->*
-        $E($ CYAssign($V(cys), set_))->*
-        $ CYForIn(declaration_->Target(context), $V(cys), $ CYBlock($$->*
-            $E($ CYAssign(declaration_->Target(context), $M($V(cys), declaration_->Target(context))))->*
-            CYComprehension::Replace(context, statement)
+    return $E($C0($F(NULL, $P1($L($I("$cys"))), $$
+        ->* $E($ CYAssign($V(cys), set_))
+        ->* $ CYForIn(declaration_->Target(context), $V(cys), $ CYBlock($$
+            ->* $E($ CYAssign(declaration_->Target(context), $M($V(cys), declaration_->Target(context))))
+            ->* CYComprehension::Replace(context, statement)
         ))
     )));
 }
@@ -537,9 +537,8 @@ void CYFunction::Replace(CYContext &context) {
     if (CYIdentifier *identifier = this_.identifier_) {
         context.scope_->Declare(context, identifier, CYIdentifierVariable);
         code_ = $$
-            ->*$E($ CYAssign($V(identifier), $ CYThis()))
-            ->*code_
-        ;
+            ->* $E($ CYAssign($V(identifier), $ CYThis()))
+            ->* code_;
     }
 
     if (localize)
@@ -570,11 +569,10 @@ void CYFunctionParameter::Replace(CYContext &context, CYStatement *&statements) 
     next_->Replace(context, statements);
 
     if (assignment != NULL)
-        statements = $$->*
-            $ CYIf($ CYIdentical($ CYTypeOf(initialiser_->Target(context)), $S("undefined")), $$->*
-                $E(assignment)
-            )->*
-            statements;
+        statements = $$
+            ->* $ CYIf($ CYIdentical($ CYTypeOf(initialiser_->Target(context)), $S("undefined")), $$
+                ->* $E(assignment))
+            ->* statements;
 }
 
 CYStatement *CYFunctionStatement::Replace(CYContext &context) {
@@ -714,8 +712,8 @@ CYTarget *CYObject::Replace(CYContext &context) {
 
     if (builder) {
         return $C1($M($ CYFunctionExpression(NULL, builder.declarations_->Parameter(context),
-            builder.statements_->*
-                $ CYReturn($ CYThis())
+            builder.statements_
+                ->* $ CYReturn($ CYThis())
         ), $S("call")), this, builder.declarations_->Argument(context));
     }
 
@@ -753,7 +751,8 @@ void CYProperty::Replace(CYContext &context, CYBuilder &builder, CYExpression *s
     CYExpression *name(name_->PropertyName(context));
     if (name_->Computed()) {
         CYIdentifier *unique(context.Unique());
-        builder.declarations_->*$L1($L(unique, name));
+        builder.declarations_
+            ->* $L1($L(unique, name));
         name = $V(unique);
     }
 
@@ -945,7 +944,8 @@ void CYScope::Close(CYContext &context, CYStatement *&statements) {
 
     CYForEach (i, internal_)
         if (i->kind_ == CYIdentifierVariable)
-            declarations ->* $ CYDeclarations($ CYDeclaration(i->identifier_));
+            declarations
+                ->* $ CYDeclarations($ CYDeclaration(i->identifier_));
 
     if (declarations) {
         CYVar *var($ CYVar(declarations));
