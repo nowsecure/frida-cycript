@@ -459,10 +459,11 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <element_> ElementList
 %type <element_> ElementListOpt
 %type <statement_> ElseStatementOpt
-%type <statement_> EmptyStatement
+%type <for_> EmptyStatement
 %type <expression_> EqualityExpression
 %type <expression_> Expression
 %type <expression_> ExpressionOpt
+%type <for_> ExpressionStatement_
 %type <statement_> ExpressionStatement
 %type <finally_> Finally
 %type <declaration_> ForBinding
@@ -496,6 +497,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <target_> LeftHandSideExpression
 %type <bool_> LetOrConst
 %type <declaration_> LexicalBinding
+%type <for_> LexicalDeclaration_
 %type <statement_> LexicalDeclaration
 %type <literal_> Literal
 %type <propertyName_> LiteralPropertyName
@@ -548,6 +550,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <declaration_> VariableDeclaration
 %type <declarations_> VariableDeclarationList_
 %type <declarations_> VariableDeclarationList
+%type <for_> VariableStatement_
 %type <statement_> VariableStatement
 %type <statement_> WithStatement
 %type <word_> Word
@@ -1275,8 +1278,12 @@ StatementListItem
     ;
 /* }}} */
 /* 13.3 Let and Const Declarations {{{ */
+LexicalDeclaration_
+    : LetOrConst BindingList { $$ = CYNew CYLet($1, $2); }
+    ;
+
 LexicalDeclaration
-    : LetOrConst BindingList Terminator { $$ = CYNew CYLet($1, $2); }
+    : LexicalDeclaration_ Terminator { $$ = $1; }
     ;
 
 LetOrConst
@@ -1299,8 +1306,12 @@ LexicalBinding
     ;
 /* }}} */
 /* 13.3.2 Variable Statement {{{ */
+VariableStatement_
+    : Var_ VariableDeclarationList { $$ = CYNew CYVar($2); }
+    ;
+
 VariableStatement
-    : Var_ VariableDeclarationList Terminator { $$ = CYNew CYVar($2); }
+    : VariableStatement_ Terminator { $$ = $1; }
     ;
 
 VariableDeclarationList_
@@ -1369,8 +1380,11 @@ EmptyStatement
     ;
 /* }}} */
 /* 13.5 Expression Statement {{{ */
+ExpressionStatement_
+    : Expression { $$ = CYNew CYExpress($1); }
+
 ExpressionStatement
-    : Expression Terminator { $$ = CYNew CYExpress($1); }
+    : ExpressionStatement_ Terminator { $$ = $1; }
     ;
 /* }}} */
 /* 13.6 The if Statement {{{ */
@@ -1387,15 +1401,16 @@ IfStatement
 IterationStatement
     : "do" Statement "while" "(" Expression ")" TerminatorOpt { $$ = CYNew CYDoWhile($5, $2); }
     | "while" "(" Expression ")" Statement { $$ = CYNew CYWhile($3, $5); }
-    | "for" "(" LexPushInOn ForStatementInitializer ";" LexPopIn ExpressionOpt ";" ExpressionOpt ")" Statement { $$ = CYNew CYFor($4, $7, $9, $11); }
+    | "for" "(" LexPushInOn ForStatementInitializer LexPopIn ExpressionOpt ";" ExpressionOpt ")" Statement { $$ = CYNew CYFor($4, $6, $8, $10); }
     | "for" "(" LexPushInOn ForInStatementInitializer "!in" LexPopIn Expression ")" Statement { $$ = CYNew CYForIn($4, $7, $9); }
     | "for" "(" LexPushInOn ForInStatementInitializer "of" LexPopIn AssignmentExpression ")" Statement { $$ = CYNew CYForOf($4, $7, $9); }
     ;
 
 ForStatementInitializer
-    : ExpressionOpt { $$ = $1; }
-    | LexSetRegExp Var_ VariableDeclarationList { $$ = CYNew CYForDeclarations($3); }
-    | LexSetRegExp LexicalDeclaration { CYNOT(@$); }
+    : LexSetRegExp EmptyStatement { $$ = $2; }
+    | ExpressionStatement_ ";" { $$ = $1; }
+    | LexSetRegExp VariableStatement_ ";" { $$ = $2; }
+    | LexSetRegExp LexicalDeclaration_ ";" { $$ = $2; }
     ;
 
 ForInStatementInitializer

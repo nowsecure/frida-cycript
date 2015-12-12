@@ -396,11 +396,6 @@ void CYFor::Output(CYOutput &out, CYFlags flags) const {
     code_->Single(out, CYRight(flags), CYCompactShort);
 }
 
-void CYForDeclarations::Output(CYOutput &out, CYFlags flags) const {
-    out << "var" << ' ';
-    declarations_->Output(out, CYRight(flags));
-}
-
 void CYForLexical::Output(CYOutput &out, CYFlags flags) const {
     out << (constant_ ? "const" : "let") << ' ';
     declaration_->Output(out, CYRight(flags));

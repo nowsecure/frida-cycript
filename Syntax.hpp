@@ -199,6 +199,13 @@ struct CYStatement :
 
 typedef CYList<CYStatement> CYStatements;
 
+struct CYForInitializer :
+    CYStatement
+{
+    virtual CYForInitializer *Replace(CYContext &context) = 0;
+    virtual void Output(CYOutput &out, CYFlags flags) const = 0;
+};
+
 struct CYWord :
     CYThing,
     CYPropertyName
@@ -452,11 +459,6 @@ struct CYBlock :
     virtual CYStatement *Return();
 };
 
-struct CYForInitializer {
-    virtual CYExpression *Replace(CYContext &context) = 0;
-    virtual void Output(CYOutput &out, CYFlags flags) const = 0;
-};
-
 struct CYTarget;
 struct CYVar;
 
@@ -473,7 +475,6 @@ struct CYNumber;
 struct CYString;
 
 struct CYExpression :
-    CYForInitializer,
     CYThing
 {
     virtual int Precedence() const = 0;
@@ -1205,22 +1206,8 @@ struct CYDeclarations :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CYForDeclarations :
-    CYForInitializer
-{
-    CYDeclarations *declarations_;
-
-    CYForDeclarations(CYDeclarations *declarations) :
-        declarations_(declarations)
-    {
-    }
-
-    virtual CYExpression *Replace(CYContext &context);
-    virtual void Output(CYOutput &out, CYFlags flags) const;
-};
-
 struct CYVar :
-    CYStatement
+    CYForInitializer
 {
     CYDeclarations *declarations_;
 
@@ -1231,12 +1218,12 @@ struct CYVar :
 
     CYCompact(None)
 
-    virtual CYStatement *Replace(CYContext &context);
+    virtual CYForInitializer *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYLet :
-    CYStatement
+    CYForInitializer
 {
     bool constant_;
     CYDeclarations *declarations_;
@@ -1249,7 +1236,7 @@ struct CYLet :
 
     CYCompact(None)
 
-    virtual CYStatement *Replace(CYContext &context);
+    virtual CYForInitializer *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
@@ -1801,7 +1788,7 @@ struct CYSuperAccess :
 };
 
 struct CYExpress :
-    CYStatement
+    CYForInitializer
 {
     CYExpression *expression_;
 
@@ -1814,7 +1801,7 @@ struct CYExpress :
 
     CYCompact(None)
 
-    CYStatement *Replace(CYContext &context) override;
+    CYForInitializer *Replace(CYContext &context) override;
     virtual void Output(CYOutput &out, CYFlags flags) const;
 
     virtual CYStatement *Return();
@@ -1901,11 +1888,11 @@ struct CYYieldValue :
 };
 
 struct CYEmpty :
-    CYStatement
+    CYForInitializer
 {
     CYCompact(Short)
 
-    virtual CYStatement *Replace(CYContext &context);
+    virtual CYForInitializer *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 

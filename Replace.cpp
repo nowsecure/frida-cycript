@@ -351,7 +351,7 @@ void CYElementValue::Replace(CYContext &context) {
         next_->Replace(context);
 }
 
-CYStatement *CYEmpty::Replace(CYContext &context) {
+CYForInitializer *CYEmpty::Replace(CYContext &context) {
     return NULL;
 }
 
@@ -370,7 +370,7 @@ CYStatement *CYExpress::Return() {
     return $ CYReturn(expression_);
 }
 
-CYStatement *CYExpress::Replace(CYContext &context) {
+CYForInitializer *CYExpress::Replace(CYContext &context) {
     context.Replace(expression_);
     return this;
 }
@@ -423,10 +423,6 @@ CYStatement *CYFor::Replace(CYContext &context) {
 
     outer.Close(context);
     return this;
-}
-
-CYExpression *CYForDeclarations::Replace(CYContext &context) {
-    return declarations_->Replace(context, CYIdentifierVariable);
 }
 
 CYStatement *CYForLexical::Initialize(CYContext &context, CYExpression *value) {
@@ -644,7 +640,7 @@ CYTarget *CYLambda::Replace(CYContext &context) {
     return $N2($V("Functor"), $ CYFunctionExpression(NULL, parameters_->Parameters(context), code_), parameters_->TypeSignature(context, typed_->Replace(context)));
 }
 
-CYStatement *CYLet::Replace(CYContext &context) {
+CYForInitializer *CYLet::Replace(CYContext &context) {
     if (CYExpression *expression = declarations_->Replace(context, CYIdentifierLexical))
         return $E(expression);
     return $ CYEmpty();
@@ -1224,7 +1220,7 @@ CYExpression *CYTypedParameter::TypeSignature(CYContext &context, CYExpression *
     return next_->TypeSignature(context, $ CYAdd(prefix, typed_->Replace(context)));
 }
 
-CYStatement *CYVar::Replace(CYContext &context) {
+CYForInitializer *CYVar::Replace(CYContext &context) {
     if (CYExpression *expression = declarations_->Replace(context, CYIdentifierVariable))
         return $E(expression);
     return $ CYEmpty();
