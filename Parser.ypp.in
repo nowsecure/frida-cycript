@@ -323,6 +323,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %token _import_ "import"
 %token _in_ "in"
 %token _in__ "!in"
+%token _Infinity_ "Infinity"
 %token _instanceof_ "instanceof"
 %token _new_ "new"
 %token _return_ "return"
@@ -703,6 +704,7 @@ IdentifierName
     : Word { $$ = $1; }
     | "for" { $$ = CYNew CYWord("for"); }
     | "in" { $$ = CYNew CYWord("in"); }
+    | "Infinity" { $$ = CYNew CYIdentifier("Infinity"); }
     | "instanceof" { $$ = CYNew CYWord("instanceof"); }
     ;
 
@@ -907,6 +909,7 @@ Literal
     : NullLiteral { $$ = $1; }
     | BooleanLiteral { $$ = $1; }
     | NumericLiteral { $$ = $1; }
+    | "Infinity" { $$ = CYNew CYNumber(std::numeric_limits<double>::infinity()); }
     | StringLiteral { $$ = $1; }
     ;
 /* }}} */

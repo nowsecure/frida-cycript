@@ -172,6 +172,13 @@ void CYStringify(std::ostringstream &str, const char *data, size_t size) {
 }
 
 void CYNumerify(std::ostringstream &str, double value) {
+    if (std::isinf(value)) {
+        if (value < 0)
+            str << '-';
+        str << "Infinity";
+        return;
+    }
+
     char string[32];
     // XXX: I want this to print 1e3 rather than 1000
     sprintf(string, "%.17g", value);

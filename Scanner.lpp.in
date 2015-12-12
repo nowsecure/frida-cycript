@@ -475,6 +475,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "implements"      L /*FSS*/ F(tk::_implements_, hi::Meta);
 "import"          L /*FFK*/ F(tk::_import_, hi::Meta);
 "in"              L /*KKK*/ F(yyextra->in_.top() ? tk::_in__ : tk::_in_, hi::Operator);
+"Infinity"        L /*III*/ F(tk::_Infinity_, hi::Constant);
 "instanceof"      L /*KKK*/ F(tk::_instanceof_, hi::Operator);
 "int"             L /*FII*/ F(tk::_int_, hi::Type);
 "interface"       L /*FSS*/ F(tk::_interface_, hi::Meta);
