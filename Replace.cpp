@@ -20,6 +20,7 @@
 /* }}} */
 
 #include <iomanip>
+#include <map>
 
 #include "Replace.hpp"
 #include "Syntax.hpp"
@@ -77,6 +78,14 @@ CYExpression *CYAddressOf::Replace(CYContext &context) {
     return $C0($M(rhs_, $S("$cya")));
 }
 
+CYTarget *CYApply::AddArgument(CYContext &context, CYExpression *value) {
+    CYArgument **argument(&arguments_);
+    while (*argument != NULL)
+        argument = &(*argument)->next_;
+    *argument = $ CYArgument(value);
+    return this;
+}
+
 CYArgument *CYArgument::Replace(CYContext &context) { $T(NULL)
     context.Replace(value_);
     next_ = next_->Replace(context);
@@ -91,13 +100,13 @@ CYArgument *CYArgument::Replace(CYContext &context) { $T(NULL)
     return this;
 }
 
-CYExpression *CYArray::Replace(CYContext &context) {
+CYTarget *CYArray::Replace(CYContext &context) {
     if (elements_ != NULL)
         elements_->Replace(context);
     return this;
 }
 
-CYExpression *CYArrayComprehension::Replace(CYContext &context) {
+CYTarget *CYArrayComprehension::Replace(CYContext &context) {
     CYVariable *cyv($V("$cyv"));
 
     return $C0($F(NULL, $P1($L($I("$cyv")), comprehensions_->Parameters(context)), $$->*
@@ -119,7 +128,10 @@ CYStatement *CYBlock::Return() {
 }
 
 CYStatement *CYBlock::Replace(CYContext &context) {
+    CYScope scope(true, context);
     context.ReplaceAll(code_);
+    scope.Close(context);
+
     if (code_ == NULL)
         return $ CYEmpty();
     return this;
@@ -129,15 +141,7 @@ CYStatement *CYBreak::Replace(CYContext &context) {
     return this;
 }
 
-CYExpression *CYCall::AddArgument(CYContext &context, CYExpression *value) {
-    CYArgument **argument(&arguments_);
-    while (*argument != NULL)
-        argument = &(*argument)->next_;
-    *argument = $ CYArgument(value);
-    return this;
-}
-
-CYExpression *CYCall::Replace(CYContext &context) {
+CYTarget *CYCall::Replace(CYContext &context) {
     context.Replace(function_);
     arguments_->Replace(context);
     return this;
@@ -149,16 +153,15 @@ namespace Syntax {
 void Catch::Replace(CYContext &context) { $T()
     CYScope scope(true, context);
 
-    context.Replace(name_);
-    context.scope_->Declare(context, name_, CYIdentifierCatch);
+    name_ = name_->Replace(context, CYIdentifierCatch);
 
     context.ReplaceAll(code_);
-    scope.Close(context, code_);
+    scope.Close(context);
 }
 
 } }
 
-CYExpression *CYClassExpression::Replace(CYContext &context) {
+CYTarget *CYClassExpression::Replace(CYContext &context) {
     CYBuilder builder;
 
     CYIdentifier *super(context.Unique());
@@ -258,8 +261,8 @@ void CYContext::NonLocal(CYStatement *&statements) {
     CYContext &context(*this);
 
     if (nextlocal_ != NULL && nextlocal_->identifier_ != NULL) {
-        CYIdentifier *cye($I("$cye")->Replace(context));
-        CYIdentifier *unique(nextlocal_->identifier_->Replace(context));
+        CYIdentifier *cye($I("$cye")->Replace(context, CYIdentifierGlobal));
+        CYIdentifier *unique(nextlocal_->identifier_->Replace(context, CYIdentifierGlobal));
 
         CYStatement *declare(
             $ CYVar($L1($L(unique, $ CYObject()))));
@@ -270,7 +273,6 @@ void CYContext::NonLocal(CYStatement *&statements) {
                     $ CYReturn($M($V(cye), $S("$cyv"))))->*
                 $ cy::Syntax::Throw($V(cye))));
 
-        // XXX: I don't understand any of this
         context.Replace(declare);
         rescue->Replace(context);
 
@@ -292,32 +294,31 @@ CYStatement *CYDebugger::Replace(CYContext &context) {
     return this;
 }
 
-CYAssignment *CYDeclaration::Assignment(CYContext &context) {
+CYTarget *CYDeclaration::Target(CYContext &context) {
+    return $V(identifier_);
+}
+
+CYAssignment *CYDeclaration::Replace(CYContext &context, CYIdentifierKind kind) {
+    identifier_ = identifier_->Replace(context, kind);
+
     if (initialiser_ == NULL)
         return NULL;
 
-    CYAssignment *value($ CYAssign(Variable(context), initialiser_));
+    CYAssignment *value($ CYAssign(Target(context), initialiser_));
     initialiser_ = NULL;
     return value;
 }
 
-CYVariable *CYDeclaration::Variable(CYContext &context) {
-    return $V(identifier_);
-}
+CYExpression *CYDeclarations::Replace(CYContext &context, CYIdentifierKind kind) { $T(NULL)
+    CYAssignment *assignment(declaration_->Replace(context, kind));
+    CYExpression *compound(next_->Replace(context, kind));
 
-CYStatement *CYDeclaration::ForEachIn(CYContext &context, CYExpression *value) {
-    return $ CYVar($L1($ CYDeclaration(identifier_, value)));
-}
-
-CYExpression *CYDeclaration::Replace(CYContext &context) {
-    context.Replace(identifier_);
-    context.scope_->Declare(context, identifier_, CYIdentifierVariable);
-    return Variable(context);
-}
-
-void CYDeclarations::Replace(CYContext &context) { $T()
-    declaration_->Replace(context);
-    next_->Replace(context);
+    if (assignment != NULL)
+        if (compound == NULL)
+            compound = assignment;
+        else
+            compound = $ CYCompound(assignment, compound);
+    return compound;
 }
 
 CYFunctionParameter *CYDeclarations::Parameter(CYContext &context) { $T(NULL)
@@ -328,17 +329,7 @@ CYArgument *CYDeclarations::Argument(CYContext &context) { $T(NULL)
     return $ CYArgument(declaration_->initialiser_, next_->Argument(context));
 }
 
-CYExpression *CYDeclarations::Expression(CYContext &context) { $T(NULL)
-    CYExpression *compound(next_->Expression(context));
-    if (CYAssignment *assignment = declaration_->Assignment(context))
-        if (compound == NULL)
-            compound = assignment;
-        else
-            compound = $ CYCompound(assignment, compound);
-    return compound;
-}
-
-CYExpression *CYDirectMember::Replace(CYContext &context) {
+CYTarget *CYDirectMember::Replace(CYContext &context) {
     context.Replace(object_);
     context.Replace(property_);
     return this;
@@ -364,8 +355,15 @@ CYStatement *CYEmpty::Replace(CYContext &context) {
     return NULL;
 }
 
-CYExpression *CYEncodedType::Replace(CYContext &context) {
+CYTarget *CYEncodedType::Replace(CYContext &context) {
     return typed_->Replace(context);
+}
+
+CYTarget *CYEval::Replace(CYContext &context) {
+    context.scope_->Damage();
+    if (arguments_ != NULL)
+        arguments_->value_ = $C1($M($V("Cycript"), $S("compile")), arguments_->value_);
+    return $C($V("eval"), arguments_);
 }
 
 CYStatement *CYExpress::Return() {
@@ -377,16 +375,8 @@ CYStatement *CYExpress::Replace(CYContext &context) {
     return this;
 }
 
-CYExpression *CYExpression::AddArgument(CYContext &context, CYExpression *value) {
+CYTarget *CYExpression::AddArgument(CYContext &context, CYExpression *value) {
     return $C1(this, value);
-}
-
-CYStatement *CYExpression::ForEachIn(CYContext &context, CYExpression *value) {
-    return $E($ CYAssign(this, value));
-}
-
-CYAssignment *CYExpression::Assignment(CYContext &context) {
-    return NULL;
 }
 
 CYFunctionParameter *CYExpression::Parameter() const {
@@ -412,33 +402,54 @@ CYExpression *CYFatArrow::Replace(CYContext &context) {
 }
 
 void CYFinally::Replace(CYContext &context) { $T()
+    CYScope scope(true, context);
     context.ReplaceAll(code_);
+    scope.Close(context);
 }
 
 CYStatement *CYFor::Replace(CYContext &context) {
+    CYScope outer(true, context);
     context.Replace(initialiser_);
+
     context.Replace(test_);
+
+    {
+        CYScope inner(true, context);
+        context.ReplaceAll(code_);
+        inner.Close(context);
+    }
+
     context.Replace(increment_);
-    context.ReplaceAll(code_);
+
+    outer.Close(context);
     return this;
 }
 
 CYExpression *CYForDeclarations::Replace(CYContext &context) {
-    declarations_->Replace(context);
-    return declarations_->Expression(context);
+    return declarations_->Replace(context, CYIdentifierVariable);
 }
 
-// XXX: this still feels highly suboptimal
-CYStatement *CYForIn::Replace(CYContext &context) {
-    if (CYAssignment *assignment = initialiser_->Assignment(context))
-        return $ CYBlock($$->*
-            $E(assignment)->*
-            this
-        );
+CYStatement *CYForLexical::Initialize(CYContext &context, CYExpression *value) {
+    if (value == NULL) {
+        if (declaration_->initialiser_ == NULL)
+            return NULL;
+        value = declaration_->initialiser_;
+    }
 
+    return $ CYLet(constant_, $L1($ CYDeclaration(declaration_->identifier_, value)));
+}
+
+CYTarget *CYForLexical::Replace(CYContext &context) {
+    _assert(declaration_->Replace(context, CYIdentifierLexical) == NULL);
+    return declaration_->Target(context);
+}
+
+CYStatement *CYForIn::Replace(CYContext &context) {
+    CYScope scope(true, context);
     context.Replace(initialiser_);
     context.Replace(set_);
     context.ReplaceAll(code_);
+    scope.Close(context);
     return this;
 }
 
@@ -447,22 +458,17 @@ CYFunctionParameter *CYForInComprehension::Parameter(CYContext &context) const {
 }
 
 CYStatement *CYForInComprehension::Replace(CYContext &context, CYStatement *statement) const {
-    return $ CYForIn(declaration_->Variable(context), set_, CYComprehension::Replace(context, statement));
+    return $ CYForIn(declaration_->Target(context), set_, CYComprehension::Replace(context, statement));
 }
 
 CYStatement *CYForOf::Replace(CYContext &context) {
-    if (CYAssignment *assignment = initialiser_->Assignment(context))
-        return $ CYBlock($$->*
-            $E(assignment)->*
-            this
-        );
-
-    CYIdentifier *cys(context.Unique()), *cyt(context.Unique());
+    CYIdentifier *item(context.Unique()), *list(context.Unique());
 
     return $ CYBlock($$
-        ->* $ CYLet($L2($L(cys, set_), $L(cyt)))
-        ->* $ CYForIn($V(cyt), $V(cys), $ CYBlock($$
-            ->* initialiser_->ForEachIn(context, $M($V(cys), $V(cyt)))
+        ->* initialiser_->Initialize(context, NULL)
+        ->* $ CYLet(false, $L2($L(list, set_), $L(item)))
+        ->* $ CYForIn($V(item), $V(list), $ CYBlock($$
+            ->* initialiser_->Initialize(context, $M($V(list), $V(item)))
             ->* code_
     )));
 }
@@ -476,12 +482,31 @@ CYStatement *CYForOfComprehension::Replace(CYContext &context, CYStatement *stat
 
     return $E($C0($F(NULL, $P1($L($I("$cys"))), $$->*
         $E($ CYAssign($V(cys), set_))->*
-        $ CYForIn(declaration_->Variable(context), $V(cys), $ CYBlock($$->*
-            $E($ CYAssign(declaration_->Variable(context), $M($V(cys), declaration_->Variable(context))))->*
+        $ CYForIn(declaration_->Target(context), $V(cys), $ CYBlock($$->*
+            $E($ CYAssign(declaration_->Target(context), $M($V(cys), declaration_->Target(context))))->*
             CYComprehension::Replace(context, statement)
         ))
     )));
 }
+
+CYStatement *CYForVariable::Initialize(CYContext &context, CYExpression *value) {
+    if (value == NULL) {
+        if (declaration_->initialiser_ == NULL)
+            return NULL;
+        value = declaration_->initialiser_;
+    }
+
+    return $ CYVar($L1($ CYDeclaration(declaration_->identifier_, value)));
+}
+
+CYTarget *CYForVariable::Replace(CYContext &context) {
+    _assert(declaration_->Replace(context, CYIdentifierVariable) == NULL);
+    return declaration_->Target(context);
+}
+
+// XXX: this is evil evil black magic. don't ask, don't tell... don't believe!
+#define MappingSet "0etnirsoalfucdphmgyvbxTwSNECAFjDLkMOIBPqzRH$_WXUVGYKQJZ"
+//#define MappingSet "0abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$_"
 
 void CYFunction::Replace(CYContext &context) {
     CYThisScope *_this(context.this_);
@@ -533,41 +558,42 @@ void CYFunction::Replace(CYContext &context) {
     scope.Close(context, code_);
 }
 
-CYExpression *CYFunctionExpression::Replace(CYContext &context) {
+CYTarget *CYFunctionExpression::Replace(CYContext &context) {
     CYScope scope(false, context);
     if (name_ != NULL)
-        context.scope_->Declare(context, name_, CYIdentifierOther);
+        name_ = name_->Replace(context, CYIdentifierOther);
+
     CYFunction::Replace(context);
-    scope.Close(context, code_);
+    scope.Close(context);
     return this;
 }
 
 void CYFunctionParameter::Replace(CYContext &context, CYStatement *&statements) { $T()
-    CYAssignment *assignment(initialiser_->Assignment(context));
-    context.Replace(initialiser_);
+    CYAssignment *assignment(initialiser_->Replace(context, CYIdentifierArgument));
 
     next_->Replace(context, statements);
 
     if (assignment != NULL)
         statements = $$->*
-            // XXX: this cast is quite incorrect
-            $ CYIf($ CYIdentical($ CYTypeOf(dynamic_cast<CYExpression *>(initialiser_)), $S("undefined")), $$->*
+            $ CYIf($ CYIdentical($ CYTypeOf(initialiser_->Target(context)), $S("undefined")), $$->*
                 $E(assignment)
             )->*
             statements;
 }
 
 CYStatement *CYFunctionStatement::Replace(CYContext &context) {
-    context.scope_->Declare(context, name_, CYIdentifierOther);
+    name_ = name_->Replace(context, CYIdentifierOther);
     CYFunction::Replace(context);
     return this;
 }
 
-CYIdentifier *CYIdentifier::Replace(CYContext &context) {
-    if (replace_ != NULL && replace_ != this)
-        return replace_->Replace(context);
-    replace_ = context.scope_->Lookup(context, this);
-    return replace_;
+CYIdentifier *CYIdentifier::Replace(CYContext &context, CYIdentifierKind kind) {
+    if (next_ == this)
+        return this;
+    if (next_ != NULL)
+        return next_->Replace(context, kind);
+    next_ = context.scope_->Declare(context, this, kind)->identifier_;
+    return next_;
 }
 
 CYStatement *CYIf::Return() {
@@ -595,11 +621,11 @@ CYStatement *CYImport::Replace(CYContext &context) {
     return $ CYVar($L1($L($I(module_->part_->Word()), $C1($V("require"), module_->Replace(context, "/")))));
 }
 
-CYExpression *CYIndirect::Replace(CYContext &context) {
+CYTarget *CYIndirect::Replace(CYContext &context) {
     return $M(rhs_, $S("$cyi"));
 }
 
-CYExpression *CYIndirectMember::Replace(CYContext &context) {
+CYTarget *CYIndirectMember::Replace(CYContext &context) {
     return $M($ CYIndirect(object_), property_);
 }
 
@@ -614,13 +640,12 @@ CYStatement *CYLabel::Replace(CYContext &context) {
     return this;
 }
 
-CYExpression *CYLambda::Replace(CYContext &context) {
+CYTarget *CYLambda::Replace(CYContext &context) {
     return $N2($V("Functor"), $ CYFunctionExpression(NULL, parameters_->Parameters(context), code_), parameters_->TypeSignature(context, typed_->Replace(context)));
 }
 
 CYStatement *CYLet::Replace(CYContext &context) {
-    declarations_->Replace(context);
-    if (CYExpression *expression = declarations_->Expression(context))
+    if (CYExpression *expression = declarations_->Replace(context, CYIdentifierLexical))
         return $E(expression);
     return $ CYEmpty();
 }
@@ -652,12 +677,12 @@ CYExpression *CYMultiply::Replace(CYContext &context) {
 namespace cy {
 namespace Syntax {
 
-CYExpression *New::AddArgument(CYContext &context, CYExpression *value) {
+CYTarget *New::AddArgument(CYContext &context, CYExpression *value) {
     CYSetLast(arguments_) = $ CYArgument(value);
     return this;
 }
 
-CYExpression *New::Replace(CYContext &context) {
+CYTarget *New::Replace(CYContext &context) {
     context.Replace(constructor_);
     arguments_->Replace(context);
     return this;
@@ -686,7 +711,7 @@ CYExpression *CYNumber::PropertyName(CYContext &context) {
     return String(context);
 }
 
-CYExpression *CYObject::Replace(CYContext &context) {
+CYTarget *CYObject::Replace(CYContext &context) {
     CYBuilder builder;
     if (properties_ != NULL)
         properties_ = properties_->ReplaceAll(context, builder, $ CYThis(), false);
@@ -703,8 +728,10 @@ CYExpression *CYObject::Replace(CYContext &context) {
     return this;
 }
 
-CYExpression *CYParenthetical::Replace(CYContext &context) {
-    return expression_;
+CYTarget *CYParenthetical::Replace(CYContext &context) {
+    // XXX: return expression_;
+    context.Replace(expression_);
+    return this;
 }
 
 CYExpression *CYPostfix::Replace(CYContext &context) {
@@ -779,26 +806,9 @@ void CYPropertyValue::Replace(CYContext &context) {
     context.Replace(value_);
 }
 
-// XXX: this is evil evil black magic. don't ask, don't tell... don't believe!
-#define MappingSet "0etnirsoalfucdphmgyvbxTwSNECAFjDLkMOIBPqzRH$_WXUVGYKQJZ"
-//#define MappingSet "0abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$_"
-
-namespace {
-    struct IdentifierUsageLess :
-        std::binary_function<CYIdentifier *, CYIdentifier *, bool>
-    {
-        _finline bool operator ()(CYIdentifier *lhs, CYIdentifier *rhs) const {
-            if (lhs->usage_ != rhs->usage_)
-                return lhs->usage_ > rhs->usage_;
-            return lhs < rhs;
-        }
-    };
-
-    typedef std::set<CYIdentifier *, IdentifierUsageLess> IdentifierUsages;
-}
-
 void CYScript::Replace(CYContext &context) {
-    CYScope scope(true, context);
+    CYScope scope(false, context);
+    context.scope_->Damage();
 
     context.nextlocal_ = $ CYNonLocal();
     context.ReplaceAll(code_);
@@ -806,32 +816,18 @@ void CYScript::Replace(CYContext &context) {
 
     scope.Close(context, code_);
 
-    size_t offset(0);
+    unsigned offset(0);
 
-    CYCStringSet external;
-    for (CYIdentifierValueSet::const_iterator i(scope.identifiers_.begin()); i != scope.identifiers_.end(); ++i)
-        external.insert((*i)->Word());
-
-    IdentifierUsages usages;
-
-    if (offset < context.rename_.size())
-        CYForEach (i, context.rename_[offset].identifier_)
-            usages.insert(i);
-
-    // XXX: totalling the probable occurrences and sorting by them would improve the result
-    for (CYIdentifierUsageVector::const_iterator i(context.rename_.begin()); i != context.rename_.end(); ++i, ++offset) {
-        //std::cout << *i << ":" << (*i)->offset_ << std::endl;
-
+    for (std::vector<CYIdentifier *>::const_iterator i(context.replace_.begin()); i != context.replace_.end(); ++i) {
         const char *name;
-
         if (context.options_.verbose_)
-            name = $pool.strcat("$", $pool.itoa(offset), NULL);
+            name = $pool.strcat("$", $pool.itoa(offset++), NULL);
         else {
             char id[8];
             id[7] = '\0';
 
           id:
-            unsigned position(7), local(offset + 1);
+            unsigned position(7), local(offset++ + 1);
 
             do {
                 unsigned index(local % (sizeof(MappingSet) - 1));
@@ -839,17 +835,16 @@ void CYScript::Replace(CYContext &context) {
                 id[--position] = MappingSet[index];
             } while (local != 0);
 
-            if (external.find(id + position) != external.end()) {
-                ++offset;
+            if (scope.Lookup(context, id + position) != NULL)
                 goto id;
-            }
+            // XXX: at some point, this could become a keyword
 
             name = $pool.strmemdup(id + position, 7 - position);
-            // XXX: at some point, this could become a keyword
         }
 
-        CYForEach (identifier, i->identifier_)
-            identifier->Set(name);
+        CYIdentifier *identifier(*i);
+        _assert(identifier->next_ == identifier);
+        identifier->next_ = $I(name);
     }
 }
 
@@ -865,15 +860,15 @@ CYStatement *CYReturn::Replace(CYContext &context) {
     return this;
 }
 
-CYExpression *CYRubyBlock::Replace(CYContext &context) {
+CYTarget *CYRubyBlock::Replace(CYContext &context) {
     return call_->AddArgument(context, proc_->Replace(context));
 }
 
-CYExpression *CYRubyBlock::AddArgument(CYContext &context, CYExpression *value) {
+CYTarget *CYRubyBlock::AddArgument(CYContext &context, CYExpression *value) {
     return Replace(context)->AddArgument(context, value);
 }
 
-CYExpression *CYRubyProc::Replace(CYContext &context) {
+CYTarget *CYRubyProc::Replace(CYContext &context) {
     CYFunctionExpression *function($ CYFunctionExpression(NULL, parameters_, code_));
     function = CYNonLocalize(context, function);
     function->implicit_ = true;
@@ -882,116 +877,164 @@ CYExpression *CYRubyProc::Replace(CYContext &context) {
 
 CYScope::CYScope(bool transparent, CYContext &context) :
     transparent_(transparent),
-    parent_(context.scope_)
+    parent_(context.scope_),
+    damaged_(false),
+    shadow_(NULL),
+    internal_(NULL)
 {
+    _assert(!transparent_ || parent_ != NULL);
     context.scope_ = this;
 }
 
-void CYScope::Declare(CYContext &context, CYIdentifier *identifier, CYIdentifierFlags flags) {
-    if (!transparent_ || flags == CYIdentifierArgument || flags == CYIdentifierCatch)
-        internal_.insert(CYIdentifierAddressFlagsMap::value_type(identifier, flags));
-    else if (parent_ != NULL)
-        parent_->Declare(context, identifier, flags);
+void CYScope::Damage() {
+    damaged_ = true;
+    if (parent_ != NULL)
+        parent_->Damage();
 }
 
-CYIdentifier *CYScope::Lookup(CYContext &context, CYIdentifier *identifier) {
-    std::pair<CYIdentifierValueSet::iterator, bool> insert(identifiers_.insert(identifier));
-    return *insert.first;
+CYIdentifierFlags *CYScope::Lookup(CYContext &context, const char *word) {
+    CYForEach (i, internal_)
+        if (strcmp(i->identifier_->Word(), word) == 0)
+            return i;
+    return NULL;
 }
 
-void CYScope::Merge(CYContext &context, CYIdentifier *identifier) {
-    std::pair<CYIdentifierValueSet::iterator, bool> insert(identifiers_.insert(identifier));
-    if (!insert.second) {
-        if ((*insert.first)->offset_ < identifier->offset_)
-            (*insert.first)->offset_ = identifier->offset_;
-        identifier->replace_ = *insert.first;
-        (*insert.first)->usage_ += identifier->usage_ + 1;
+CYIdentifierFlags *CYScope::Lookup(CYContext &context, CYIdentifier *identifier) {
+    return Lookup(context, identifier->Word());
+}
+
+CYIdentifierFlags *CYScope::Declare(CYContext &context, CYIdentifier *identifier, CYIdentifierKind kind) {
+    _assert(identifier->next_ == NULL || identifier->next_ == identifier);
+
+    CYIdentifierFlags *existing(Lookup(context, identifier));
+    if (existing == NULL)
+        internal_ = $ CYIdentifierFlags(identifier, kind, internal_);
+    ++internal_->count_;
+    if (existing == NULL)
+        return internal_;
+
+    switch (kind) {
+        case CYIdentifierArgument:
+        case CYIdentifierCatch:
+        case CYIdentifierMagic:
+            _assert(false);
+        default:
+            break;
     }
+
+    if (existing->kind_ == CYIdentifierGlobal)
+        existing->kind_ = kind;
+    else if (kind == CYIdentifierGlobal)
+        ;
+    else if (existing->kind_ == CYIdentifierLexical || kind == CYIdentifierLexical)
+        _assert(false); // XXX: throw new SyntaxError()
+
+    return existing;
 }
 
-namespace {
-    struct IdentifierOffset {
-        size_t offset_;
-        CYIdentifierFlags flags_;
-        size_t usage_;
-        CYIdentifier *identifier_;
+void CYScope::Merge(CYContext &context, const CYIdentifierFlags *flags) {
+    _assert(flags->identifier_->next_ == flags->identifier_);
+    CYIdentifierFlags *existing(Declare(context, flags->identifier_, flags->kind_));
+    flags->identifier_->next_ = existing->identifier_;
 
-        IdentifierOffset(CYIdentifier *identifier, CYIdentifierFlags flags) :
-            offset_(identifier->offset_),
-            flags_(flags),
-            usage_(identifier->usage_),
-            identifier_(identifier)
-        {
-        }
-    };
-
-    struct IdentifierOffsetLess :
-        std::binary_function<const IdentifierOffset &, const IdentifierOffset &, bool>
-    {
-        _finline bool operator ()(const IdentifierOffset &lhs, const IdentifierOffset &rhs) const {
-            if (lhs.offset_ != rhs.offset_)
-                return lhs.offset_ < rhs.offset_;
-            if (lhs.flags_ != rhs.flags_)
-                return lhs.flags_ < rhs.flags_;
-            /*if (lhs.usage_ != rhs.usage_)
-                return lhs.usage_ < rhs.usage_;*/
-            return lhs.identifier_ < rhs.identifier_;
-        }
-    };
-
-    typedef std::set<IdentifierOffset, IdentifierOffsetLess> IdentifierOffsets;
+    existing->count_ += flags->count_;
+    if (existing->offset_ < flags->offset_)
+        existing->offset_ = flags->offset_;
 }
 
 void CYScope::Close(CYContext &context, CYStatement *&statements) {
+    Close(context);
+
+    CYList<CYDeclarations> declarations;
+
+    CYForEach (i, internal_)
+        if (i->kind_ == CYIdentifierVariable)
+            declarations ->* $ CYDeclarations($ CYDeclaration(i->identifier_));
+
+    if (declarations) {
+        CYVar *var($ CYVar(declarations));
+        var->SetNext(statements);
+        statements = var;
+    }
+}
+
+void CYScope::Close(CYContext &context) {
     context.scope_ = parent_;
+
+    CYForEach (i, internal_) {
+        _assert(i->identifier_->next_ == i->identifier_);
+    switch (i->kind_) {
+        case CYIdentifierArgument: {
+            _assert(!transparent_);
+        } break;
+
+        case CYIdentifierLexical: {
+            if (!damaged_) {
+                CYIdentifier *replace(context.Unique());
+                replace->next_ = replace;
+                i->identifier_->next_ = replace;
+                i->identifier_ = replace;
+            }
+
+            if (!transparent_)
+                i->kind_ = CYIdentifierVariable;
+            else
+                parent_->Declare(context, i->identifier_, CYIdentifierVariable);
+        } break;
+
+        case CYIdentifierVariable: {
+            if (transparent_) {
+                parent_->Declare(context, i->identifier_, i->kind_);
+                i->kind_ = CYIdentifierGlobal;
+            }
+        } break;
+    default:; } }
+
+    if (damaged_)
+        return;
+
+    typedef std::multimap<unsigned, CYIdentifier *> CYIdentifierOffsetMap;
+    CYIdentifierOffsetMap offsets;
+
+    CYForEach (i, internal_) {
+        _assert(i->identifier_->next_ == i->identifier_);
+    switch (i->kind_) {
+        case CYIdentifierArgument:
+        case CYIdentifierVariable:
+            offsets.insert(CYIdentifierOffsetMap::value_type(i->offset_, i->identifier_));
+        break;
+    default:; } }
+
+    unsigned offset(0);
+
+    for (CYIdentifierOffsetMap::const_iterator i(offsets.begin()); i != offsets.end(); ++i) {
+        if (offset < i->first)
+            offset = i->first;
+        CYIdentifier *identifier(i->second);
+
+        if (offset >= context.replace_.size())
+            context.replace_.resize(offset + 1, NULL);
+        CYIdentifier *&replace(context.replace_[offset++]);
+
+        if (replace == NULL)
+            replace = identifier;
+        else {
+            _assert(replace->next_ == replace);
+            identifier->next_ = replace;
+        }
+    }
 
     if (parent_ == NULL)
         return;
 
-    CYDeclarations *last(NULL), *curr(NULL);
-
-    IdentifierOffsets offsets;
-
-    for (CYIdentifierAddressFlagsMap::const_iterator i(internal_.begin()); i != internal_.end(); ++i)
-        if (i->second != CYIdentifierMagic)
-            offsets.insert(IdentifierOffset(i->first, i->second));
-
-    size_t offset(0);
-
-    for (IdentifierOffsets::const_iterator i(offsets.begin()); i != offsets.end(); ++i) {
-        if (i->flags_ == CYIdentifierVariable) {
-            CYDeclarations *next($ CYDeclarations($ CYDeclaration(i->identifier_)));
-            if (last == NULL)
-                last = next;
-            if (curr != NULL)
-                curr->SetNext(next);
-            curr = next;
-        }
-
-        if (offset < i->offset_)
-            offset = i->offset_;
-        if (context.rename_.size() <= offset)
-            context.rename_.resize(offset + 1);
-
-        CYIdentifierUsage &rename(context.rename_[offset++]);
-        i->identifier_->SetNext(rename.identifier_);
-        rename.identifier_ = i->identifier_;
-        rename.usage_ += i->identifier_->usage_ + 1;
-    }
-
-    if (last != NULL) {
-        CYVar *var($ CYVar(last));
-        var->SetNext(statements);
-        statements = var;
-    }
-
-    for (CYIdentifierValueSet::const_iterator i(identifiers_.begin()); i != identifiers_.end(); ++i)
-        if (internal_.find(*i) == internal_.end()) {
-            //std::cout << *i << '=' << offset << std::endl;
-            if ((*i)->offset_ < offset)
-                (*i)->offset_ = offset;
-            parent_->Merge(context, *i);
-        }
+    CYForEach (i, internal_) {
+    switch (i->kind_) {
+        case CYIdentifierGlobal: {
+            if (i->offset_ < offset)
+                i->offset_ = offset;
+            parent_->Merge(context, i);
+        } break;
+    default:; } }
 }
 
 CYElementValue *CYSpan::Replace(CYContext &context) { $T(NULL)
@@ -1024,11 +1067,11 @@ CYString *CYString::String(CYContext &context) {
     return this;
 }
 
-CYExpression *CYSuperAccess::Replace(CYContext &context) {
+CYTarget *CYSuperAccess::Replace(CYContext &context) {
     return $C1($M($M($M($V(context.super_), $S("prototype")), property_), $S("bind")), $ CYThis());
 }
 
-CYExpression *CYSuperCall::Replace(CYContext &context) {
+CYTarget *CYSuperCall::Replace(CYContext &context) {
     return $C($C1($M($V(context.super_), $S("bind")), $ CYThis()), arguments_);
 }
 
@@ -1038,11 +1081,17 @@ CYStatement *CYSwitch::Replace(CYContext &context) {
     return this;
 }
 
-CYExpression *CYTemplate::Replace(CYContext &context) {
+CYStatement *CYTarget::Initialize(CYContext &context, CYExpression *value) {
+    if (value == NULL)
+        return NULL;
+    return $E($ CYAssign(this, value));
+}
+
+CYTarget *CYTemplate::Replace(CYContext &context) {
     return $C2($M($M($M($V("String"), $S("prototype")), $S("concat")), $S("apply")), $S(""), $ CYArray($ CYElementValue(string_, spans_->Replace(context))));
 }
 
-CYExpression *CYThis::Replace(CYContext &context) {
+CYTarget *CYThis::Replace(CYContext &context) {
     if (context.this_ != NULL)
         return $V(context.this_->Identifier(context));
     return this;
@@ -1058,7 +1107,7 @@ CYStatement *Throw::Replace(CYContext &context) {
 
 } }
 
-CYExpression *CYTrivial::Replace(CYContext &context) {
+CYTarget *CYTrivial::Replace(CYContext &context) {
     return this;
 }
 
@@ -1074,7 +1123,10 @@ namespace cy {
 namespace Syntax {
 
 CYStatement *Try::Replace(CYContext &context) {
+    CYScope scope(true, context);
     context.ReplaceAll(code_);
+    scope.Close(context);
+
     catch_->Replace(context);
     finally_->Replace(context);
     return this;
@@ -1082,15 +1134,15 @@ CYStatement *Try::Replace(CYContext &context) {
 
 } }
 
-CYExpression *CYTypeArrayOf::Replace_(CYContext &context, CYExpression *type) {
+CYTarget *CYTypeArrayOf::Replace_(CYContext &context, CYTarget *type) {
     return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("arrayOf")), $ CYArgument(size_)));
 }
 
-CYExpression *CYTypeBlockWith::Replace_(CYContext &context, CYExpression *type) {
+CYTarget *CYTypeBlockWith::Replace_(CYContext &context, CYTarget *type) {
     return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("blockWith")), parameters_->Argument(context)));
 }
 
-CYExpression *CYTypeConstant::Replace_(CYContext &context, CYExpression *type) {
+CYTarget *CYTypeConstant::Replace_(CYContext &context, CYTarget *type) {
     return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("constant"))));
 }
 
@@ -1098,52 +1150,52 @@ CYStatement *CYTypeDefinition::Replace(CYContext &context) {
     return $E($ CYAssign($V(typed_->identifier_), typed_->Replace(context)));
 }
 
-CYExpression *CYTypeError::Replace(CYContext &context) {
+CYTarget *CYTypeError::Replace(CYContext &context) {
     _assert(false);
     return NULL;
 }
 
-CYExpression *CYTypeModifier::Replace(CYContext &context, CYExpression *type) { $T(type)
+CYTarget *CYTypeModifier::Replace(CYContext &context, CYTarget *type) { $T(type)
     return Replace_(context, type);
 }
 
-CYExpression *CYTypeFunctionWith::Replace_(CYContext &context, CYExpression *type) {
+CYTarget *CYTypeFunctionWith::Replace_(CYContext &context, CYTarget *type) {
     return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("functionWith")), parameters_->Argument(context)));
 }
 
-CYExpression *CYTypeLong::Replace(CYContext &context) {
+CYTarget *CYTypeLong::Replace(CYContext &context) {
     return $ CYCall($ CYDirectMember(specifier_->Replace(context), $ CYString("long")));
 }
 
-CYExpression *CYTypePointerTo::Replace_(CYContext &context, CYExpression *type) {
+CYTarget *CYTypePointerTo::Replace_(CYContext &context, CYTarget *type) {
     return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("pointerTo"))));
 }
 
-CYExpression *CYTypeShort::Replace(CYContext &context) {
+CYTarget *CYTypeShort::Replace(CYContext &context) {
     return $ CYCall($ CYDirectMember(specifier_->Replace(context), $ CYString("short")));
 }
 
-CYExpression *CYTypeSigned::Replace(CYContext &context) {
+CYTarget *CYTypeSigned::Replace(CYContext &context) {
     return $ CYCall($ CYDirectMember(specifier_->Replace(context), $ CYString("signed")));
 }
 
-CYExpression *CYTypeUnsigned::Replace(CYContext &context) {
+CYTarget *CYTypeUnsigned::Replace(CYContext &context) {
     return $ CYCall($ CYDirectMember(specifier_->Replace(context), $ CYString("unsigned")));
 }
 
-CYExpression *CYTypeVariable::Replace(CYContext &context) {
+CYTarget *CYTypeVariable::Replace(CYContext &context) {
     return $V(name_);
 }
 
-CYExpression *CYTypeVoid::Replace(CYContext &context) {
+CYTarget *CYTypeVoid::Replace(CYContext &context) {
     return $N1($V("Type"), $ CYString("v"));
 }
 
-CYExpression *CYTypeVolatile::Replace_(CYContext &context, CYExpression *type) {
+CYTarget *CYTypeVolatile::Replace_(CYContext &context, CYTarget *type) {
     return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("volatile"))));
 }
 
-CYExpression *CYTypedIdentifier::Replace(CYContext &context) {
+CYTarget *CYTypedIdentifier::Replace(CYContext &context) {
     return modifier_->Replace(context, specifier_->Replace(context));
 }
 
@@ -1173,14 +1225,13 @@ CYExpression *CYTypedParameter::TypeSignature(CYContext &context, CYExpression *
 }
 
 CYStatement *CYVar::Replace(CYContext &context) {
-    declarations_->Replace(context);
-    if (CYExpression *expression = declarations_->Expression(context))
+    if (CYExpression *expression = declarations_->Replace(context, CYIdentifierVariable))
         return $E(expression);
     return $ CYEmpty();
 }
 
-CYExpression *CYVariable::Replace(CYContext &context) {
-    context.Replace(name_);
+CYTarget *CYVariable::Replace(CYContext &context) {
+    name_ = name_->Replace(context, CYIdentifierGlobal);
     return this;
 }
 

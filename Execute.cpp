@@ -362,6 +362,13 @@ _visible void CYGarbageCollect(JSContextRef context) {
     (JSSynchronousGarbageCollectForDebugging$ ?: &JSGarbageCollect)(context);
 }
 
+static JSValueRef Cycript_compile_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    CYPool pool;
+    std::stringstream value(CYPoolCString(pool, context, arguments[0]));
+    CYUTF8String code(CYPoolCode(pool, value));
+    return CYCastJSValue(context, CYJSString(code));
+} CYCatch(NULL) }
+
 static JSValueRef Cycript_gc_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CYGarbageCollect(context);
     return CYJSUndefined(context);
@@ -1897,6 +1904,7 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
 
     JSObjectRef cycript(JSObjectMake(context, NULL, NULL));
     CYSetProperty(context, global, CYJSString("Cycript"), cycript);
+    CYSetProperty(context, cycript, CYJSString("compile"), &Cycript_compile_callAsFunction);
     CYSetProperty(context, cycript, CYJSString("gc"), &Cycript_gc_callAsFunction);
 
     JSObjectRef Functor(JSObjectMakeConstructor(context, Functor_, &Functor_new));

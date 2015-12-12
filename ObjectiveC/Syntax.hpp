@@ -25,7 +25,7 @@
 #include "../Syntax.hpp"
 
 struct CYInstanceLiteral :
-    CYExpression
+    CYTarget
 {
     CYNumber *number_;
 
@@ -36,12 +36,12 @@ struct CYInstanceLiteral :
 
     CYPrecedence(1)
 
-    virtual CYExpression *Replace(CYContext &context);
+    virtual CYTarget *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYObjCBlock :
-    CYExpression
+    CYTarget
 {
     CYTypedIdentifier *typed_;
     CYTypedParameter *parameters_;
@@ -56,12 +56,12 @@ struct CYObjCBlock :
 
     CYPrecedence(1)
 
-    virtual CYExpression *Replace(CYContext &context);
+    virtual CYTarget *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYBox :
-    CYExpression
+    CYTarget
 {
     CYExpression *value_;
 
@@ -72,7 +72,7 @@ struct CYBox :
 
     CYPrecedence(1)
 
-    virtual CYExpression *Replace(CYContext &context);
+    virtual CYTarget *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
@@ -106,7 +106,7 @@ struct CYSelector :
 
     CYPrecedence(1)
 
-    virtual CYExpression *Replace(CYContext &context);
+    virtual CYTarget *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
@@ -224,7 +224,7 @@ struct CYCategory :
 };
 
 struct CYSend :
-    CYExpression
+    CYTarget
 {
     CYArgument *arguments_;
 
@@ -249,7 +249,7 @@ struct CYSendDirect :
     {
     }
 
-    virtual CYExpression *Replace(CYContext &context);
+    virtual CYTarget *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
@@ -261,7 +261,7 @@ struct CYSendSuper :
     {
     }
 
-    virtual CYExpression *Replace(CYContext &context);
+    virtual CYTarget *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 

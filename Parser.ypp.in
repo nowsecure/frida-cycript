@@ -74,6 +74,7 @@
 %union { CYSpan *span_; }
 %union { CYStatement *statement_; }
 %union { CYString *string_; }
+%union { CYTarget *target_; }
 %union { CYThis *this_; }
 %union { CYTrue *true_; }
 %union { CYWord *word_; }
@@ -345,6 +346,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %token _char_ "char"
 %token _constructor_ "constructor"
 %token _double_ "double"
+%token _eval_ "eval"
 %token _final_ "final"
 %token _float_ "float"
 %token _from_ "from"
@@ -409,7 +411,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <argument_> ArgumentList
 %type <argument_> ArgumentListOpt
 %type <argument_> Arguments
-%type <expression_> ArrayComprehension
+%type <target_> ArrayComprehension
 %type <literal_> ArrayLiteral
 %type <expression_> ArrowFunction
 %type <functionParameter_> ArrowParameters
@@ -429,18 +431,18 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <statement_> BreakStatement
 %type <statement_> BreakableStatement
 %type <expression_> CallExpression_
-%type <expression_> CallExpression
+%type <target_> CallExpression
 %type <clause_> CaseBlock
 %type <clause_> CaseClause
 %type <clause_> CaseClausesOpt
 %type <catch_> Catch
 %type <identifier_> CatchParameter
 %type <statement_> ClassDeclaration
-%type <expression_> ClassExpression
+%type <target_> ClassExpression
 %type <classTail_> ClassHeritage
 %type <classTail_> ClassHeritageOpt
 %type <classTail_> ClassTail
-%type <expression_> Comprehension
+%type <target_> Comprehension
 %type <comprehension_> ComprehensionFor
 %type <comprehension_> ComprehensionIf
 %type <comprehension_> ComprehensionTail
@@ -464,7 +466,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <statement_> ExpressionStatement
 %type <finally_> Finally
 %type <declaration_> ForBinding
-%type <declaration_> ForDeclaration
+%type <forin_> ForDeclaration
 %type <forin_> ForInStatementInitializer
 %type <for_> ForStatementInitializer
 %type <declaration_> FormalParameter
@@ -473,11 +475,11 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <functionParameter_> FormalParameters
 %type <statement_> FunctionBody
 %type <statement_> FunctionDeclaration
-%type <expression_> FunctionExpression
+%type <target_> FunctionExpression
 %type <statement_> FunctionStatementList
 %type <statement_> GeneratorBody
 %type <statement_> GeneratorDeclaration
-%type <expression_> GeneratorExpression
+%type <target_> GeneratorExpression
 %type <method_> GeneratorMethod
 %type <statement_> HoistableDeclaration
 %type <identifier_> Identifier
@@ -491,7 +493,8 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <identifier_> LabelIdentifier
 %type <statement_> LabelledItem
 %type <statement_> LabelledStatement
-%type <expression_> LeftHandSideExpression
+%type <target_> LeftHandSideExpression
+%type <bool_> LetOrConst
 %type <declaration_> LexicalBinding
 %type <statement_> LexicalDeclaration
 %type <literal_> Literal
@@ -499,15 +502,15 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <expression_> LogicalANDExpression
 %type <expression_> LogicalORExpression
 %type <access_> MemberAccess
-%type <expression_> MemberExpression
+%type <target_> MemberExpression
 %type <method_> MethodDefinition
 %type <module_> ModulePath
 %type <expression_> MultiplicativeExpression
-%type <expression_> NewExpression
+%type <target_> NewExpression
 %type <null_> NullLiteral
 %type <literal_> ObjectLiteral
 %type <expression_> PostfixExpression
-%type <expression_> PrimaryExpression
+%type <target_> PrimaryExpression
 %type <propertyName_> PropertyName
 %type <property_> PropertyDefinition
 %type <property_> PropertyDefinitionList_
@@ -533,10 +536,10 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <statement_> StatementListOpt
 %type <statement_> StatementListItem
 %type <functionParameter_> StrictFormalParameters
-%type <expression_> SuperCall
-%type <expression_> SuperProperty
+%type <target_> SuperCall
+%type <target_> SuperProperty
 %type <statement_> SwitchStatement
-%type <expression_> TemplateLiteral
+%type <target_> TemplateLiteral
 %type <span_> TemplateSpans
 %type <statement_> ThrowStatement
 %type <statement_> TryStatement
@@ -580,7 +583,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <protocol_> ClassProtocols
 %type <protocol_> ClassProtocolsOpt
 %type <statement_> ImplementationStatement
-%type <expression_> MessageExpression
+%type <target_> MessageExpression
 %type <messageParameter_> MessageParameter
 %type <messageParameter_> MessageParameters
 %type <messageParameter_> MessageParameterList
@@ -823,6 +826,7 @@ IdentifierType
     | "constructor" { $$ = CYNew CYIdentifier("constructor"); }
     | "double" { $$ = CYNew CYIdentifier("double"); }
     | "each" { $$ = CYNew CYIdentifier("each"); }
+    | "eval" { $$ = CYNew CYIdentifier("eval"); }
     | "final" { $$ = CYNew CYIdentifier("final"); }
     | "float" { $$ = CYNew CYIdentifier("float"); }
     | "from" { $$ = CYNew CYIdentifier("from"); }
@@ -1020,12 +1024,12 @@ NewExpression
     ;
 
 CallExpression_
-    : MemberExpression
-    | CallExpression
+    : MemberExpression { $$ = $1; }
+    | CallExpression { $$ = $1; }
     ;
 
 CallExpression
-    : CallExpression_ Arguments { $$ = CYNew CYCall($1, $2); }
+    : CallExpression_ Arguments { if (!$1->Eval()) $$ = CYNew CYCall($1, $2); else $$ = CYNew CYEval($2); }
     | SuperCall { $$ = $1; }
     | CallExpression { driver.context_ = $1; } MemberAccess { $3->SetLeft($1); $$ = $3; }
     ;
@@ -1272,12 +1276,12 @@ StatementListItem
 /* }}} */
 /* 13.3 Let and Const Declarations {{{ */
 LexicalDeclaration
-    : LetOrConst BindingList Terminator { $$ = CYNew CYLet($2); }
+    : LetOrConst BindingList Terminator { $$ = CYNew CYLet($1, $2); }
     ;
 
 LetOrConst
-    : "let"
-    | "const"
+    : "let" { $$ = false; }
+    | "const" { $$ = true; }
     ;
 
 BindingList_
@@ -1385,7 +1389,7 @@ IterationStatement
     | "while" "(" Expression ")" Statement { $$ = CYNew CYWhile($3, $5); }
     | "for" "(" LexPushInOn ForStatementInitializer ";" LexPopIn ExpressionOpt ";" ExpressionOpt ")" Statement { $$ = CYNew CYFor($4, $7, $9, $11); }
     | "for" "(" LexPushInOn ForInStatementInitializer "!in" LexPopIn Expression ")" Statement { $$ = CYNew CYForIn($4, $7, $9); }
-    | "for" "(" LexPushInOn ForInStatementInitializer "of" LexPopIn Expression ")" Statement { $$ = CYNew CYForOf($4, $7, $9); }
+    | "for" "(" LexPushInOn ForInStatementInitializer "of" LexPopIn AssignmentExpression ")" Statement { $$ = CYNew CYForOf($4, $7, $9); }
     ;
 
 ForStatementInitializer
@@ -1396,12 +1400,12 @@ ForStatementInitializer
 
 ForInStatementInitializer
     : LeftHandSideExpression { $$ = $1; }
-    | LexSetRegExp Var_ ForBinding { $$ = $3; }
+    | LexSetRegExp Var_ ForBinding { $$ = CYNew CYForVariable($3); }
     | LexSetRegExp ForDeclaration { $$ = $2; }
     ;
 
 ForDeclaration
-    : LetOrConst ForBinding { $$ = $2; }
+    : LetOrConst ForBinding { $$ = CYNew CYForLexical($1, $2); }
     ;
 
 ForBinding

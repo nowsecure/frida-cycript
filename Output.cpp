@@ -268,11 +268,6 @@ void CYDebugger::Output(CYOutput &out, CYFlags flags) const {
     out << "debugger" << ';';
 }
 
-void CYDeclaration::ForIn(CYOutput &out, CYFlags flags) const {
-    out << "var" << ' ';
-    Output(out, CYRight(flags));
-}
-
 void CYDeclaration::Output(CYOutput &out, CYFlags flags) const {
     out << *identifier_;
     //out.out_ << ':' << identifier_->usage_ << '#' << identifier_->offset_;
@@ -280,11 +275,6 @@ void CYDeclaration::Output(CYOutput &out, CYFlags flags) const {
         out << ' ' << '=' << ' ';
         initialiser_->Output(out, CYAssign::Precedence_, CYRight(flags));
     }
-}
-
-void CYForDeclarations::Output(CYOutput &out, CYFlags flags) const {
-    out << "var" << ' ';
-    declarations_->Output(out, CYRight(flags));
 }
 
 void CYDeclarations::Output(CYOutput &out) const {
@@ -353,13 +343,13 @@ void CYEmpty::Output(CYOutput &out, CYFlags flags) const {
     out.Terminate();
 }
 
+void CYEval::Output(CYOutput &out, CYFlags flags) const {
+    _assert(false);
+}
+
 void CYExpress::Output(CYOutput &out, CYFlags flags) const {
     expression_->Output(out, flags | CYNoBFC);
     out << ';';
-}
-
-void CYExpression::ForIn(CYOutput &out, CYFlags flags) const {
-    Output(out, flags | CYNoRightHand);
 }
 
 void CYExpression::Output(CYOutput &out) const {
@@ -406,31 +396,45 @@ void CYFor::Output(CYOutput &out, CYFlags flags) const {
     code_->Single(out, CYRight(flags), CYCompactShort);
 }
 
-void CYForOf::Output(CYOutput &out, CYFlags flags) const {
-    out << "for" << ' ' << "each" << ' ' << '(';
-    initialiser_->ForIn(out, CYNoIn);
-    out << ' ' << "in" << ' ' << *set_ << ')';
-    code_->Single(out, CYRight(flags), CYCompactShort);
+void CYForDeclarations::Output(CYOutput &out, CYFlags flags) const {
+    out << "var" << ' ';
+    declarations_->Output(out, CYRight(flags));
 }
 
-void CYForOfComprehension::Output(CYOutput &out) const {
-    out << "for" << ' ' << "each" << ' ' << '(';
-    declaration_->Output(out, CYNoIn);
-    out << ' ' << "in" << ' ' << *set_ << ')' << next_;
+void CYForLexical::Output(CYOutput &out, CYFlags flags) const {
+    out << (constant_ ? "const" : "let") << ' ';
+    declaration_->Output(out, CYRight(flags));
 }
 
 void CYForIn::Output(CYOutput &out, CYFlags flags) const {
     out << "for" << ' ' << '(';
-    if (initialiser_ != NULL)
-        initialiser_->ForIn(out, CYNoIn);
+    initialiser_->Output(out, CYNoIn | CYNoRightHand);
     out << ' ' << "in" << ' ' << *set_ << ')';
     code_->Single(out, CYRight(flags), CYCompactShort);
 }
 
 void CYForInComprehension::Output(CYOutput &out) const {
     out << "for" << ' ' << '(';
-    declaration_->Output(out, CYNoIn);
+    declaration_->Output(out, CYNoIn | CYNoRightHand);
     out << ' ' << "in" << ' ' << *set_ << ')';
+}
+
+void CYForOf::Output(CYOutput &out, CYFlags flags) const {
+    out << "for" << ' ' << '(';
+    initialiser_->Output(out, CYNoRightHand);
+    out << ' ' << "of" << ' ' << *set_ << ')';
+    code_->Single(out, CYRight(flags), CYCompactShort);
+}
+
+void CYForOfComprehension::Output(CYOutput &out) const {
+    out << "for" << ' ' << '(';
+    declaration_->Output(out, CYNoRightHand);
+    out << ' ' << "of" << ' ' << *set_ << ')' << next_;
+}
+
+void CYForVariable::Output(CYOutput &out, CYFlags flags) const {
+    out << "var" << ' ';
+    declaration_->Output(out, CYRight(flags));
 }
 
 void CYFunction::Output(CYOutput &out) const {
@@ -467,7 +471,7 @@ void CYFunctionParameter::Output(CYOutput &out) const {
 }
 
 const char *CYIdentifier::Word() const {
-    return replace_ == NULL || replace_ == this ? CYWord::Word() : replace_->Word();
+    return next_ == NULL || next_ == this ? CYWord::Word() : next_->Word();
 }
 
 void CYIf::Output(CYOutput &out, CYFlags flags) const {
@@ -511,6 +515,11 @@ void CYIfComprehension::Output(CYOutput &out) const {
 
 void CYImport::Output(CYOutput &out, CYFlags flags) const {
     out << "@import";
+}
+
+void CYIndirect::Output(CYOutput &out, CYFlags flags) const {
+    out << "*";
+    rhs_->Output(out, Precedence(), CYRight(flags));
 }
 
 void CYIndirectMember::Output(CYOutput &out, CYFlags flags) const {

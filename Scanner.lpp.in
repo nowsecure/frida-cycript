@@ -64,6 +64,7 @@ typedef cy::parser::token tk;
 
 #define I(type, Type, value, highlight) do { \
     yylval->semantic_.type ## _ = A CY ## Type; \
+    yylval->semantic_.type ## _->location_ = *yylloc; \
     F(value, highlight); \
 } while (false)
 
@@ -460,6 +461,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "enum"            L /*FFF*/ F(tk::_enum_, hi::Meta);
 "export"          L /*FFK*/ F(tk::_export_, hi::Meta);
 "extends"         L /*FFK*/ F(tk::_extends_, hi::Meta);
+"eval"            L /*III*/ F(tk::_eval_, hi::Special);
 "false"           L /*LLL*/ F(tk::_false_, hi::Constant);
 "final"           L /*FII*/ F(tk::_final_, hi::Meta);
 "finally"         L /*KKK*/ F(tk::_finally_, hi::Control);

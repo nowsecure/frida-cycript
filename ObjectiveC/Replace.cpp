@@ -80,7 +80,7 @@ CYStatement *CYImplementationField::Replace(CYContext &context) const { $T(NULL)
     );
 }
 
-CYExpression *CYInstanceLiteral::Replace(CYContext &context) {
+CYTarget *CYInstanceLiteral::Replace(CYContext &context) {
     return $N1($V("Instance"), number_);
 }
 
@@ -128,11 +128,11 @@ CYExpression *CYMessageParameter::TypeSignature(CYContext &context) const {
     return MessageType(context, type_, next_);
 }
 
-CYExpression *CYBox::Replace(CYContext &context) {
+CYTarget *CYBox::Replace(CYContext &context) {
     return $C1($M($V("Instance"), $S("box")), value_);
 }
 
-CYExpression *CYObjCBlock::Replace(CYContext &context) {
+CYTarget *CYObjCBlock::Replace(CYContext &context) {
     return $C1($ CYEncodedType(($ CYTypedIdentifier(*typed_))->Modify($ CYTypeBlockWith(parameters_))), $ CYFunctionExpression(NULL, parameters_->Parameters(context), code_));
 }
 
@@ -145,7 +145,7 @@ CYStatement *CYProtocol::Replace(CYContext &context) const { $T(NULL)
     );
 }
 
-CYExpression *CYSelector::Replace(CYContext &context) {
+CYTarget *CYSelector::Replace(CYContext &context) {
     return $C1($V("sel_registerName"), name_->Replace(context));
 }
 
@@ -160,7 +160,7 @@ CYString *CYSelectorPart::Replace(CYContext &context) {
     return $S($pool.strdup(str.str().c_str()));
 }
 
-CYExpression *CYSendDirect::Replace(CYContext &context) {
+CYTarget *CYSendDirect::Replace(CYContext &context) {
     std::ostringstream name;
     CYArgument **argument(&arguments_);
     CYSelectorPart *selector(NULL), *current(NULL);
@@ -185,6 +185,6 @@ CYExpression *CYSendDirect::Replace(CYContext &context) {
     return $C2($V("objc_msgSend"), self_, selector->Replace(context), arguments_);
 }
 
-CYExpression *CYSendSuper::Replace(CYContext &context) {
+CYTarget *CYSendSuper::Replace(CYContext &context) {
     return $ CYSendDirect($V("$cyr"), arguments_);
 }
