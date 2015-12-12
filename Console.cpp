@@ -646,6 +646,7 @@ static void Console(CYOptions &options) {
         free(line);
         if (command.empty())
             continue;
+        history += command;
 
         if (command[0] == '?') {
             std::string data(command.substr(1));
@@ -671,14 +672,13 @@ static void Console(CYOptions &options) {
                 *out_ << "lower == " << (lower ? "true" : "false") << std::endl;
             }
 
-            history += command;
             continue;
         }
 
         std::string code;
         if (bypass)
             code = command;
-        else {
+        else try {
             std::istringstream stream(command);
 
             CYPool pool;
@@ -707,7 +707,6 @@ static void Console(CYOptions &options) {
                     std::cerr << "  | ";
                     std::cerr << error->message_ << std::endl;
 
-                    history += command;
                     break;
                 }
 
@@ -722,9 +721,11 @@ static void Console(CYOptions &options) {
             Setup(out, driver, options, lower);
             out << *driver.script_;
             code = str.str();
+        } catch (const CYException &error) {
+            CYPool pool;
+            std::cout << error.PoolCString(pool) << std::endl;
+            continue;
         }
-
-        history += command;
 
         if (debug) {
             std::cout << "cy= ";
@@ -1098,6 +1099,7 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
         if (failed || !driver.errors_.empty()) {
             for (CYDriver::Errors::const_iterator i(driver.errors_.begin()); i != driver.errors_.end(); ++i)
                 std::cerr << i->location_.begin << ": " << i->message_ << std::endl;
+            return 1;
         } else if (driver.script_ != NULL) {
             std::stringbuf str;
             CYOutput out(str, options);
