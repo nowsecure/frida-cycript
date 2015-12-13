@@ -106,7 +106,8 @@ Scanner.lpp: Scanner.lpp.in UnicodeIDStart.l UnicodeIDContinue.l
 CLEANFILES += Scanner.cpp Scanner.output lex.backup
 Scanner.cpp: Scanner.lpp
 	$(FLEX) $(LFLAGS) -o $@ -T $< 2>Scanner.output || (grep -F '$<:' Scanner.output; false)
-	grep -E '^(No backing up\.|Compressed tables always back up\.)$$' lex.backup >/dev/null
+	@#grep -E '^(No backing up\.|Compressed tables always back up\.)$$' lex.backup >/dev/null
+	! grep -n '^ jam-transitions: ' lex.backup | grep -v ': EOF \[\(\]\| \\2\)'
 	! grep -F ': warning, ' Scanner.output || true
 
 Scanner.lo: Parser.hpp

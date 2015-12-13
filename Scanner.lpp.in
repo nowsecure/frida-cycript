@@ -217,6 +217,7 @@ U2 [\xc2-\xdf]
 U3 [\xe0-\xef]
 U4 [\xf0-\xf4]
 UN [\xc0-\xc1\xf5-\xff]
+UE {U1}|{U2}|{U3}|{U4}|{UN}
 
 HexDigit [0-9a-fA-F]
 LineTerminatorSequence \r?\n|\r|\xe2\x80[\xa8\xa9]
@@ -238,12 +239,12 @@ IdentifierMore [$_]
 
 UnicodeStart {IdentifierMore}|{UnicodeIDStart}
 UnicodePart {IdentifierMore}|\xe2\x80[\x8c\x8d]|{UnicodeIDContinue}
-UnicodeFail {U2}|{U3}|{U3}{U0}|{U4}|{U4}{U0}|{U4}{U0}{U0}|{UN}|{U0}
-UnicodeScrap {UnicodePart}*{UnicodeFail}?
+UnicodeScrap {U2}|{U3}{U0}{0,1}|{U4}{U0}{0,2}|{UN}|{U0}
+UnicodeError ({U2}|{U3}{U0}{0,1}|{U4}{U0}{0,2}){UE}|{UN}|{U0}
 
 IdentifierStart {UnicodeStart}|{UnicodeEscape}
 IdentifierPart {UnicodePart}|{UnicodeEscape}
-IdentifierFail {UnicodeFail}|\\(u({HexDigit}{0,3}|\{{HexDigit}*))?
+IdentifierFail {UnicodeError}|\\(u({HexDigit}{0,3}|\{{HexDigit}*))?
 IdentifierScrap {IdentifierPart}*{IdentifierFail}?
 
 RegularExpressionBackslashSequence \\{NoneTerminatorCharacter}
@@ -278,20 +279,22 @@ XMLName {XMLNameStart}{XMLNamePart}*
     /* RegEx {{{ */
 <RegularExpression>{
     \/{UnicodePart}* R CYLexBufferUnits(yytext, yyleng); CYLexBufferEnd(literal, RegEx, tk::RegularExpressionLiteral, hi::Constant);
-    \/{UnicodePart}*{UnicodeFail} R E("invalid flags")
+    \/{UnicodePart}*{UnicodeError} R E("invalid character");
 
     {RegExCharacter}+ R CYLexBufferUnits(yytext, yyleng);
-    {RegExCharacter}*{UnicodeFail} R E("invalid character");
 
     {RegularExpressionBackslashSequence} R CYLexBufferUnits(yytext, yyleng);
-    \\{UnicodeFail}? R E("invalid escape")
+    \\ R E("invalid escape")
+
+    (\\|{RegExCharacter}+)?{LineTerminatorSequence} R E("invalid newline");
+    (\\|{RegExCharacter}+)?{UnicodeScrap} R E("invalid character");
 
     "["{RegularExpressionClassChars}"]" R CYLexBufferUnits(yytext, yyleng);
     "["{RegularExpressionClassChars}\\? R E("invalid class");
-    "["{RegularExpressionClassChars}\\?{UnicodeFail} R E("invalid character");
-    "["{RegularExpressionClassChars}\\?{LineTerminatorSequence} R E("invalid newline");
 
-    (\\|{RegExCharacter}+)?{LineTerminatorSequence} R E("invalid newline");
+    "["{RegularExpressionClassChars}\\?{LineTerminatorSequence} R E("invalid newline");
+    "["{RegularExpressionClassChars}\\?{UnicodeScrap} R E("invalid character");
+
     <<EOF>> R E("unterminated regex")
 }
     /* }}} */
@@ -305,7 +308,10 @@ XMLName {XMLNameStart}{XMLNamePart}*
     \**\*\/ R yy_pop_state(yyscanner); M N
     \**{LineTerminatorSequence} yylloc->end.Lines(); yyextra->last_ = true;
     \**{CommentCharacter}|\/ R
-    \**({UnicodeFail}|\*) R E("invalid comment");
+
+    \**{UnicodeScrap} R E("invalid character");
+    \**\* R E("invalid comment");
+
     <<EOF>> R E("invalid comment")
 }
     /* }}} */
@@ -425,7 +431,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "@YES"            L F(tk::At_YES_, hi::Constant);
 @end
 
-@({UnicodeStart}{UnicodeScrap}|{UnicodeFail}) L E("invalid keyword")
+@({UnicodeStart}{UnicodePart}*{UnicodeError}?|{UnicodeError}) L E("invalid keyword")
     /* }}} */
     /* Highlight {{{ */
 "undefined"       L F(tk::_undefined_, hi::Operator);
@@ -569,16 +575,16 @@ XMLName {XMLNameStart}{XMLNamePart}*
 <LegacySingleString,StrictSingleString>{
     \' R CYLexBufferEnd(string, String, tk::StringLiteral, hi::Constant);
     {SingleCharacter}+ R CYLexBufferUnits(yytext, yyleng);
-    {SingleCharacter}*{UnicodeFail} R E("invalid character");
-    {LineTerminatorSequence} R E("invalid newline");
+    {SingleCharacter}*{LineTerminatorSequence} R E("invalid newline");
+    {SingleCharacter}*{UnicodeScrap} R E("invalid character");
 }
 
 \" L CYLexBufferStart(LegacyDoubleString);
 <LegacyDoubleString,StrictDoubleString>{
     \" R CYLexBufferEnd(string, String, tk::StringLiteral, hi::Constant);
     {DoubleCharacter}+ R CYLexBufferUnits(yytext, yyleng);
-    {DoubleCharacter}*{UnicodeFail} R E("invalid character");
-    {LineTerminatorSequence} R E("invalid newline");
+    {DoubleCharacter}*{LineTerminatorSequence} R E("invalid newline");
+    {DoubleCharacter}*{UnicodeScrap} R E("invalid character");
 }
     /* }}} */
     /* Template {{{ */
@@ -592,8 +598,8 @@ XMLName {XMLNameStart}{XMLNamePart}*
     "$" R CYLexBufferUnit('$');
 
     {PlateCharacter}+ R CYLexBufferUnits(yytext, yyleng);
-    {PlateCharacter}*{UnicodeFail} R E("invalid character");
-    {LineTerminatorSequence} R E("invalid newline");
+    {PlateCharacter}*{LineTerminatorSequence} R E("invalid newline");
+    {PlateCharacter}*{UnicodeScrap} R E("invalid character");
 }
     /* }}} */
     /* Escapes {{{ */
@@ -628,19 +634,19 @@ XMLName {XMLNameStart}{XMLNamePart}*
     }
 
     \\{LineTerminatorSequence} yylloc->end.Lines();
-    \\(.|{NotLineTerminator}) R CYLexBufferUnits(yytext + 1, yyleng - 1);
+    \\{NoneTerminatorCharacter} R CYLexBufferUnits(yytext + 1, yyleng - 1);
+    \\{UnicodeScrap} R E("invalid character");
 
-    \\(x{HexDigit}{0,1}|u({HexDigit}{0,3}|\{{HexDigit}*)|{UnicodeFail})? R E("invalid escape");
+    \\(x{HexDigit}{0,1}|u({HexDigit}{0,3}|\{{HexDigit}*))? R E("invalid escape");
     <<EOF>> R E("invalid string");
 }
     /* }}} */
 
 {LineTerminatorSequence} yylloc->step(); yylloc->end.Lines(); yyextra->last_ = true; N
 {WhiteSpace} L
+{U1}|{UnicodeScrap} L E("invalid character");
 
 <<EOF>> if (yyextra->auto_) { yyextra->auto_ = false; F(tk::AutoComplete, hi::Nothing); } L yyterminate();
-
-. L E("invalid character")
 
 %%
 
