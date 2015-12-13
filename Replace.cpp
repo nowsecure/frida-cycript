@@ -107,12 +107,12 @@ CYTarget *CYArray::Replace(CYContext &context) {
 }
 
 CYTarget *CYArrayComprehension::Replace(CYContext &context) {
-    CYVariable *cyv($V("$cyv"));
+    CYIdentifier *cyv(context.Unique());
 
-    return $C0($F(NULL, $P1($L($I("$cyv")), comprehensions_->Parameters(context)), $$
-        ->* $E($ CYAssign(cyv, $ CYArray()))
-        ->* comprehensions_->Replace(context, $E($C1($M(cyv, $S("push")), expression_)))
-        ->* $ CYReturn(cyv)
+    return $C0($F(NULL, $P1($L(cyv), comprehensions_->Parameters(context)), $$
+        ->* $E($ CYAssign($V(cyv), $ CYArray()))
+        ->* comprehensions_->Replace(context, $E($C1($M($V(cyv), $S("push")), expression_)))
+        ->* $ CYReturn($V(cyv))
     ));
 }
 
@@ -481,14 +481,13 @@ CYFunctionParameter *CYForOfComprehension::Parameter(CYContext &context) const {
 }
 
 CYStatement *CYForOfComprehension::Replace(CYContext &context, CYStatement *statement) const {
-    CYIdentifier *cys($I("$cys"));
+    CYIdentifier *cys(context.Unique());
 
-    return $E($C0($F(NULL, $P1($L($I("$cys"))), $$
-        ->* $E($ CYAssign($V(cys), set_))
+    return $ CYBlock($$
+        ->* $ CYLet(false, $L1($L(cys, set_)))
         ->* $ CYForIn(declaration_->Target(context), $V(cys), $ CYBlock($$
             ->* $E($ CYAssign(declaration_->Target(context), $M($V(cys), declaration_->Target(context))))
             ->* CYComprehension::Replace(context, statement)
-        ))
     )));
 }
 
