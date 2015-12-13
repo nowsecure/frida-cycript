@@ -394,6 +394,7 @@ static int CYConsoleKeyReturn(int count, int key) {
         if (memchr(rl_line_buffer, '\n', rl_end) == NULL)
             return rl_newline(count, key);
 
+      insert:
         char *before(CYmemrchr(rl_line_buffer, '\n', rl_point));
         if (before == NULL)
             before = rl_line_buffer;
@@ -440,8 +441,8 @@ static int CYConsoleKeyReturn(int count, int key) {
     if (done)
         return rl_newline(count, key);
 
-    rl_insert(count, '\n');
-    return 0;
+    // XXX: this was the most obvious fix, but is seriously dumb
+    goto insert;
 }
 
 static int CYConsoleKeyUp(int count, int key) {
