@@ -367,7 +367,7 @@ static JSValueRef Cycript_compile_callAsFunction(JSContextRef context, JSObjectR
     std::stringstream value(CYPoolCString(pool, context, arguments[0]));
     CYUTF8String code(CYPoolCode(pool, value));
     return CYCastJSValue(context, CYJSString(code));
-} CYCatch(NULL) }
+} CYCatch_(NULL, "SyntaxError") }
 
 static JSValueRef Cycript_gc_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CYGarbageCollect(context);
@@ -1732,19 +1732,19 @@ const char *CYJSError::PoolCString(CYPool &pool) const {
     return CYPoolCCYON(pool, context_, value_, objects);
 }
 
-JSValueRef CYJSError::CastJSValue(JSContextRef context) const {
-    // XXX: what if the context is different?
+JSValueRef CYJSError::CastJSValue(JSContextRef context, const char *name) const {
+    // XXX: what if the context is different? or the name? I dunno. ("epic" :/)
     return value_;
 }
 
-JSValueRef CYCastJSError(JSContextRef context, const char *message) {
-    JSObjectRef Error(CYGetCachedObject(context, CYJSString("Error")));
+JSValueRef CYCastJSError(JSContextRef context, const char *name, const char *message) {
+    JSObjectRef Error(CYGetCachedObject(context, CYJSString(name)));
     JSValueRef arguments[1] = {CYCastJSValue(context, message)};
     return _jsccall(JSObjectCallAsConstructor, context, Error, 1, arguments);
 }
 
-JSValueRef CYPoolError::CastJSValue(JSContextRef context) const {
-    return CYCastJSError(context, message_);
+JSValueRef CYPoolError::CastJSValue(JSContextRef context, const char *name) const {
+    return CYCastJSError(context, name, message_);
 }
 
 CYJSError::CYJSError(JSContextRef context, const char *format, ...) {
@@ -1758,7 +1758,7 @@ CYJSError::CYJSError(JSContextRef context, const char *format, ...) {
     const char *message(pool.vsprintf(64, format, args));
     va_end(args);
 
-    value_ = CYCastJSError(context, message);
+    value_ = CYCastJSError(context, "Error", message);
 }
 
 JSGlobalContextRef CYGetJSContext(JSContextRef context) {
@@ -1896,6 +1896,9 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
 
     JSObjectRef String_prototype(CYCastJSObject(context, CYGetProperty(context, String, prototype_s)));
     CYSetProperty(context, cy, CYJSString("String_prototype"), String_prototype);
+
+    JSObjectRef SyntaxError(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("SyntaxError"))));
+    CYSetProperty(context, cy, CYJSString("SyntaxError"), SyntaxError);
 /* }}} */
 
     CYSetProperty(context, Array_prototype, toCYON_s, &Array_callAsFunction_toCYON, kJSPropertyAttributeDontEnum);

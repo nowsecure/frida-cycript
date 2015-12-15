@@ -41,7 +41,7 @@ struct _visible CYException {
 
     virtual const char *PoolCString(CYPool &pool) const = 0;
 #ifdef CY_EXECUTE
-    virtual JSValueRef CastJSValue(JSContextRef context) const = 0;
+    virtual JSValueRef CastJSValue(JSContextRef context, const char *name) const = 0;
 #endif
 };
 
@@ -53,14 +53,16 @@ void CYThrow(JSContextRef context, JSValueRef value);
 
 #define CYTry \
     try
-#define CYCatch(value) \
+#define CYCatch_(value, name) \
     catch (const CYException &error) { \
-        *exception = error.CastJSValue(context); \
+        *exception = error.CastJSValue(context, name); \
         return value; \
     } catch (...) { \
         *exception = CYCastJSValue(context, "catch(...)"); \
         return value; \
     }
+#define CYCatch(value) \
+    CYCatch_(value, "Error")
 
 #define _assert_(mode, test, code, format, ...) do \
     if (!(test)) \

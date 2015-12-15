@@ -58,7 +58,7 @@
     try
 #define CYObjectiveCatch \
     catch (const CYException &error) { \
-        @throw CYCastNSObject(NULL, context, error.CastJSValue(context)); \
+        @throw CYCastNSObject(NULL, context, error.CastJSValue(context, "Error")); \
     } \
 }
 
