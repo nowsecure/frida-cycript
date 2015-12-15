@@ -152,12 +152,18 @@ Type_ CYPoolRelease(CYPool *pool, Type_ object) {
 }
 /* }}} */
 /* Objective-C Strings {{{ */
-const char *CYPoolCString(CYPool &pool, JSContextRef context, NSString *value) {
-    size_t size([value maximumLengthOfBytesUsingEncoding:NSUTF8StringEncoding] + 1);
-    char *string(new(pool) char[size]);
+CYUTF8String CYPoolUTF8String(CYPool &pool, JSContextRef context, NSString *value) {
+    size_t size([value maximumLengthOfBytesUsingEncoding:NSUTF8StringEncoding]);
+    char *string(new(pool) char[size + 1]);
     if (![value getCString:string maxLength:size encoding:NSUTF8StringEncoding])
         throw CYJSError(context, "[NSString getCString:maxLength:encoding:] == NO");
-    return string;
+    return CYUTF8String(string, [value lengthOfBytesUsingEncoding:NSUTF8StringEncoding]);
+}
+
+const char *CYPoolCString(CYPool &pool, JSContextRef context, NSString *value) {
+    CYUTF8String utf8(CYPoolUTF8String(pool, context, value));
+    _assert(memchr(utf8.data, '\0', utf8.size) == NULL);
+    return utf8.data;
 }
 
 #ifdef __clang__
@@ -175,7 +181,7 @@ JSStringRef CYCopyJSString(JSContextRef context, NSObject *value) {
     return CYCopyJSString(context, string);
 #else
     CYPool pool;
-    return CYCopyJSString(CYPoolCString(pool, context, string));
+    return CYCopyJSString(CYPoolUTF8String(pool, context, string));
 #endif
 }
 
@@ -2152,22 +2158,20 @@ static void ObjectiveC_Image_Classes_getPropertyNames(JSContextRef context, JSOb
 
 static JSValueRef ObjectiveC_Images_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     CYPool pool;
-    const char *name(CYPoolCString(pool, context, property));
+    CYUTF8String name(CYPoolUTF8String(pool, context, property));
+
     unsigned int size;
     const char **data(objc_copyImageNames(&size));
+    pool.atexit(free, data);
+
     for (size_t i(0); i != size; ++i)
-        if (strcmp(name, data[i]) == 0) {
-            name = data[i];
-            goto free;
+        if (name == data[i]) {
+            JSObjectRef value(JSObjectMake(context, NULL, NULL));
+            CYSetProperty(context, value, CYJSString("classes"), JSObjectMake(context, ObjectiveC_Image_Classes_, const_cast<char *>(data[i])));
+            return value;
         }
-    name = NULL;
-  free:
-    free(data);
-    if (name == NULL)
-        return NULL;
-    JSObjectRef value(JSObjectMake(context, NULL, NULL));
-    CYSetProperty(context, value, CYJSString("classes"), JSObjectMake(context, ObjectiveC_Image_Classes_, const_cast<char *>(name)));
-    return value;
+
+    return NULL;
 } CYCatch(NULL) }
 
 static void ObjectiveC_Images_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {

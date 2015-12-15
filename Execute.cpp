@@ -346,13 +346,17 @@ void CYArrayPush(JSContextRef context, JSObjectRef array, JSValueRef value) {
 }
 
 static JSValueRef System_print(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    FILE *file(stdout);
+
     if (count == 0)
-        printf("\n");
+        fputc('\n', file);
     else {
         CYPool pool;
-        printf("%s\n", CYPoolCString(pool, context, arguments[0]));
+        CYUTF8String string(CYPoolUTF8String(pool, context, CYJSString(context, arguments[0])));
+        fwrite(string.data, string.size, 1, file);
     }
 
+    fflush(file);
     return CYJSUndefined(context);
 } CYCatch(NULL) }
 
@@ -364,9 +368,10 @@ _visible void CYGarbageCollect(JSContextRef context) {
 
 static JSValueRef Cycript_compile_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CYPool pool;
-    std::stringstream value(CYPoolCString(pool, context, arguments[0]));
-    CYUTF8String code(CYPoolCode(pool, value));
-    return CYCastJSValue(context, CYJSString(code));
+    CYUTF8String before(CYPoolUTF8String(pool, context, CYJSString(context, arguments[0])));
+    std::stringstream value(std::string(before.data, before.size));
+    CYUTF8String after(CYPoolCode(pool, value));
+    return CYCastJSValue(context, CYJSString(after));
 } CYCatch_(NULL, "SyntaxError") }
 
 static JSValueRef Cycript_gc_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
