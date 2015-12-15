@@ -495,6 +495,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <identifier_> LabelIdentifier
 %type <statement_> LabelledItem
 %type <statement_> LabelledStatement
+%type <assignment_> LeftHandSideAssignment
 %type <target_> LeftHandSideExpression
 %type <bool_> LetOrConst
 %type <declaration_> LexicalBinding
@@ -576,9 +577,11 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 @end
 
 @begin ObjectiveC
+%type <expression_> AssignmentExpressionClassic
 %type <expression_> BoxableExpression
 %type <statement_> CategoryStatement
 %type <expression_> ClassSuperOpt
+%type <expression_> ConditionalExpressionClassic
 %type <implementationField_> ImplementationFieldListOpt
 %type <implementationField_> ImplementationFields
 %type <message_> ClassMessageDeclaration
@@ -1166,28 +1169,46 @@ LogicalORExpression
     ;
 /* }}} */
 /* 12.13 Conditional Operator ( ? : ) {{{ */
+@begin ObjectiveC
+ConditionalExpressionClassic
+    : LogicalORExpression { $$ = $1; }
+    | LogicalORExpression "?" LexPushInOff AssignmentExpression ":" LexPopIn AssignmentExpressionClassic { $$ = CYNew CYCondition($1, $4, $7); }
+    ;
+@end
+
 ConditionalExpression
     : LogicalORExpression { $$ = $1; }
     | LogicalORExpression "?" LexPushInOff AssignmentExpression ":" LexPopIn AssignmentExpression { $$ = CYNew CYCondition($1, $4, $7); }
     ;
 /* }}} */
 /* 12.14 Assignment Operators {{{ */
+LeftHandSideAssignment
+    : LeftHandSideExpression "=" { $$ = CYNew CYAssign($1, NULL); }
+    | LeftHandSideExpression "*=" { $$ = CYNew CYMultiplyAssign($1, NULL); }
+    | LeftHandSideExpression "/=" { $$ = CYNew CYDivideAssign($1, NULL); }
+    | LeftHandSideExpression "%=" { $$ = CYNew CYModulusAssign($1, NULL); }
+    | LeftHandSideExpression "+=" { $$ = CYNew CYAddAssign($1, NULL); }
+    | LeftHandSideExpression "-=" { $$ = CYNew CYSubtractAssign($1, NULL); }
+    | LeftHandSideExpression "<<=" { $$ = CYNew CYShiftLeftAssign($1, NULL); }
+    | LeftHandSideExpression ">>=" { $$ = CYNew CYShiftRightSignedAssign($1, NULL); }
+    | LeftHandSideExpression ">>>=" { $$ = CYNew CYShiftRightUnsignedAssign($1, NULL); }
+    | LeftHandSideExpression "&=" { $$ = CYNew CYBitwiseAndAssign($1, NULL); }
+    | LeftHandSideExpression "^=" { $$ = CYNew CYBitwiseXOrAssign($1, NULL); }
+    | LeftHandSideExpression "|=" { $$ = CYNew CYBitwiseOrAssign($1, NULL); }
+    ;
+
+@begin ObjectiveC
+AssignmentExpressionClassic
+    : ConditionalExpressionClassic { $$ = $1; }
+    | LeftHandSideAssignment AssignmentExpressionClassic { $1->SetRight($2); $$ = $1; }
+    ;
+@end
+
 AssignmentExpression
     : ConditionalExpression { $$ = $1; }
     | LexSetRegExp YieldExpression { $$ = $2; }
     | ArrowFunction { $$ = $1; }
-    | LeftHandSideExpression "=" AssignmentExpression { $$ = CYNew CYAssign($1, $3); }
-    | LeftHandSideExpression "*=" AssignmentExpression { $$ = CYNew CYMultiplyAssign($1, $3); }
-    | LeftHandSideExpression "/=" AssignmentExpression { $$ = CYNew CYDivideAssign($1, $3); }
-    | LeftHandSideExpression "%=" AssignmentExpression { $$ = CYNew CYModulusAssign($1, $3); }
-    | LeftHandSideExpression "+=" AssignmentExpression { $$ = CYNew CYAddAssign($1, $3); }
-    | LeftHandSideExpression "-=" AssignmentExpression { $$ = CYNew CYSubtractAssign($1, $3); }
-    | LeftHandSideExpression "<<=" AssignmentExpression { $$ = CYNew CYShiftLeftAssign($1, $3); }
-    | LeftHandSideExpression ">>=" AssignmentExpression { $$ = CYNew CYShiftRightSignedAssign($1, $3); }
-    | LeftHandSideExpression ">>>=" AssignmentExpression { $$ = CYNew CYShiftRightUnsignedAssign($1, $3); }
-    | LeftHandSideExpression "&=" AssignmentExpression { $$ = CYNew CYBitwiseAndAssign($1, $3); }
-    | LeftHandSideExpression "^=" AssignmentExpression { $$ = CYNew CYBitwiseXOrAssign($1, $3); }
-    | LeftHandSideExpression "|=" AssignmentExpression { $$ = CYNew CYBitwiseOrAssign($1, $3); }
+    | LeftHandSideAssignment AssignmentExpression { $1->SetRight($2); $$ = $1; }
     ;
 
 AssignmentExpressionOpt
@@ -1630,7 +1651,7 @@ Yield
     ;
 
 YieldExpression
-    : Yield LexSetRegExp "\n" { CYNOT(@$); /* $$ = CYNew CYYieldValue(NULL); */ }
+    : Yield LexSetRegExp NewLineOpt { CYNOT(@$); /* $$ = CYNew CYYieldValue(NULL); */ }
     | Yield AssignmentExpression { CYNOT(@$); /* $$ = CYNew CYYieldValue($2); */ }
     | Yield LexSetRegExp YieldStar AssignmentExpression { CYNOT(@$); /* $$ = CYNew CYYieldGenerator($4); */ }
     ;
@@ -1975,7 +1996,7 @@ Statement__
 /* }}} */
 /* Cycript (Objective-C): Send Message {{{ */
 VariadicCall
-    : "," AssignmentExpression VariadicCall { $$ = CYNew CYArgument(NULL, $2, $3); }
+    : "," AssignmentExpressionClassic VariadicCall { $$ = CYNew CYArgument(NULL, $2, $3); }
     | { $$ = NULL; }
     ;
 
@@ -1990,7 +2011,7 @@ SelectorCall_
     ;
 
 SelectorCall
-    : SelectorWordOpt ":" AssignmentExpression SelectorCall_ { $$ = CYNew CYArgument($1 ?: CYNew CYWord(""), $3, $4); }
+    : SelectorWordOpt ":" AssignmentExpressionClassic SelectorCall_ { $$ = CYNew CYArgument($1 ?: CYNew CYWord(""), $3, $4); }
     ;
 
 SelectorList
@@ -1999,7 +2020,7 @@ SelectorList
     ;
 
 MessageExpression
-    : "[" LexPushInOff AssignmentExpression { driver.contexts_.push_back($3); } SelectorList "]" LexPopIn { driver.contexts_.pop_back(); } { $$ = CYNew CYSendDirect($3, $5); }
+    : "[" LexPushInOff AssignmentExpressionClassic { driver.contexts_.push_back($3); } SelectorList "]" LexPopIn { driver.contexts_.pop_back(); } { $$ = CYNew CYSendDirect($3, $5); }
     | "[" LexPushInOff LexSetRegExp "!super" { driver.context_ = NULL; } SelectorList "]" LexPopIn { $$ = CYNew CYSendSuper($6); }
     ;
 
@@ -2332,8 +2353,8 @@ ComprehensionTail
     ;
 
 ComprehensionFor
-    : "for" "(" LexPushInOn LexicalBinding "!in" LexPopIn Expression ")" { $$ = CYNew CYForInComprehension($4, $7); }
-    | "for" "(" LexPushInOn LexicalBinding "of" LexPopIn Expression ")" { $$ = CYNew CYForOfComprehension($4, $7); }
+    : "for" "(" LexPushInOn ForBinding "!in" LexPopIn Expression ")" { $$ = CYNew CYForInComprehension($4, $7); }
+    | "for" "(" LexPushInOn ForBinding "of" LexPopIn Expression ")" { $$ = CYNew CYForOfComprehension($4, $7); }
     ;
 
 ComprehensionIf

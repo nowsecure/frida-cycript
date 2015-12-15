@@ -1021,8 +1021,8 @@ struct CYAssignment :
     {
     }
 
-    void SetLeft(CYTarget *lhs) {
-        lhs_ = lhs;
+    void SetRight(CYExpression *rhs) {
+        rhs_ = rhs;
     }
 
     virtual const char *Operator() const = 0;
