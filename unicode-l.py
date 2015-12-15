@@ -21,7 +21,28 @@
 
 import sys
 
-trees = [dict(), dict(), dict(), dict()]
+escape = False
+
+trees = [dict(), dict(), dict(), dict(), dict()]
+
+def insert(point):
+    point = list(point)
+    tree = trees[len(point) - 1]
+    for unit in point:
+        unit = ord(unit)
+        tree = tree.setdefault(unit, dict())
+
+def insertmore(point, prefix=''):
+    if len(point) == 0:
+        return insert(prefix)
+
+    next = point[0]
+    point = point[1:]
+    insertmore(point, prefix + next)
+
+    upper = next.upper()
+    if upper != next:
+        insertmore(point, prefix + upper)
 
 for line in sys.stdin:
     line = line[0:14]
@@ -31,35 +52,46 @@ for line in sys.stdin:
         line.append(line[0])
     line = [int(end, 16) for end in line]
     for point in range(line[0], line[1] + 1):
-        # http://stackoverflow.com/questions/7105874/
-        point = "\\U%08x" % point
-        point = point.decode('unicode-escape')
-        point = point.encode('utf-8')
-        point = list(point)
-        tree = trees[len(point) - 1]
-        for unit in point:
-            unit = ord(unit)
-            tree = tree.setdefault(unit, dict())
+        if escape:
+            point = format(point, 'x')
+            insertmore(point)
+        else:
+            # http://stackoverflow.com/questions/7105874/
+            point = "\\U%08x" % point
+            point = point.decode('unicode-escape')
+            point = point.encode('utf-8')
+            insert(point)
 
 items = []
 
-def build(index, tree, units):
+def encode(value):
+    if escape:
+        if ord('A') <= value <= ord('Z') or ord('a') <= value <= ord('z') or ord('0') <= value <= ord('9'):
+            return chr(value)
+    return '\\x%02x' % value
+
+def build(index, tree, units, wrap=()):
     if index == 0:
-        keys = tree.keys()
+        keys = sorted(tree.keys())
     else:
         keys = []
-        for unit, tree in tree.iteritems():
-            if build(index - 1, tree, units + [unit]):
+        for unit, tree in sorted(tree.items()):
+            if build(index - 1, tree, units + [unit], wrap):
                 keys.append(unit)
 
     if len(keys) == 0:
         return False
-    if len(keys) == 0xc0 - 0x80:
-        return True
+
+    if escape:
+        if len(keys) == 10 + 6 + 6:
+            return True
+    else:
+        if len(keys) == 0xc0 - 0x80:
+            return True
 
     item = ''
     for unit in units:
-        item += '\\x%02x' % unit
+        item += encode(unit)
     item += '['
 
     first = -1
@@ -76,19 +108,24 @@ def build(index, tree, units):
                 last = unit
                 continue
 
-        item += '\\x%02x' % first
+        item += encode(first)
         if first != last:
             if last != first + 1:
                 item += '-'
-            item += '\\x%02x' % last
+            item += encode(last)
 
         first = unit
         last = unit
 
     item += ']'
 
-    for i in range(0, index):
-        item += '[\\x80-\\xbf]'
+    if index != 0:
+        if escape:
+            item += '[0-9A-Fa-f]'
+        else:
+            item += '[\\x80-\\xbf]'
+        if index != 1:
+            item += '{' + str(index) + '}'
 
     if False:
         item = item.replace('[\\x00-\\x7f]', '{U1}')
@@ -97,11 +134,22 @@ def build(index, tree, units):
         item = item.replace('[\\xe0-\\xef]', '{U3}')
         item = item.replace('[\\xf0-\\xf4]', '{U4}')
 
-    items.append(item)
+    count = len(units) + 1 + index
+    if wrap == ():
+        if not escape:
+            wrap = ('', '')
+        elif count > 4:
+            return False
+        else:
+            wrap = ('0' * (4 - count), '')
+
+    items.append(wrap[0] + item + wrap[1])
     return False
 
 for index, tree in enumerate(trees):
     build(index, tree, [])
+    if escape:
+        build(index, tree, [], ('\\{0*', '\\}'))
 
 name = sys.argv[1]
 parts = []

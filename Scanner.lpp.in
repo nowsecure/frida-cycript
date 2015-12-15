@@ -41,6 +41,9 @@ typedef cy::parser::token tk;
 
 #include "Highlight.hpp"
 
+#include "IdentifierStart.h"
+#include "IdentifierContinue.h"
+
 #define YY_EXTRA_TYPE CYDriver *
 
 #define F(value, highlight) do { \
@@ -140,7 +143,7 @@ static void U(Type_ &local, unsigned point) {
     } else _assert(false);
 }
 
-static void U(char *&local, const char *text, yy_size_t &i) {
+static unsigned U(char *&local, const char *text, yy_size_t &i) {
     unsigned point;
 
     char next(text[++i]);
@@ -158,6 +161,7 @@ static void U(char *&local, const char *text, yy_size_t &i) {
     }
 
     U(local, point);
+    return point;
 }
 
 #define CYLexBufferPoint(point) do { \
@@ -548,8 +552,12 @@ XMLName {XMLNameStart}{XMLNamePart}*
         char next(yytext[i]);
         if (next != '\\')
             *local++ = next;
-        else
-            U(local, yytext, ++i);
+        else {
+            bool (*is)(unsigned) = (i == 0 ? &IsIdentifierStart : &IsIdentifierContinue);
+            unsigned point(U(local, yytext, ++i));
+            if (!is(point))
+                E("invalid character");
+        }
     }
 
     *local = '\0';

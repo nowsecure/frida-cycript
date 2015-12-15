@@ -1314,7 +1314,7 @@ Scanner.cpp: Scanner.lpp
 	! grep -n '^ jam-transitions: ' lex.backup | grep -v ': EOF \[\(\]\| \\2\)'
 	! grep -F ': warning, ' Scanner.output || true
 
-Scanner.lo: Parser.hpp
+Scanner.lo: Parser.hpp IdentifierStart.h IdentifierContinue.h
 Parser.cpp Parser.hpp stack.hh Parser.output: Parser.ypp
 	$(BISON) -v --report=state -Werror -o Parser.cpp $<
 	! grep -n '^State [0-9]* conflicts:' Parser.output

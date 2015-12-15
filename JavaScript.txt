@@ -1,0 +1,5 @@
+0024          ; JavaScript_ID_Start # Sc       DOLLAR SIGN
+0024          ; JavaScript_ID_Continue # Sc       DOLLAR SIGN
+005F          ; JavaScript_ID_Start # Pc       LOW LINE
+200C..200D    ; JavaScript_ID_Start # Cf   [2] ZERO WIDTH NON-JOINER..ZERO WIDTH JOINER
+200C..200D    ; JavaScript_ID_Continue # Cf   [2] ZERO WIDTH NON-JOINER..ZERO WIDTH JOINER

@@ -19,23 +19,40 @@
 
 .DELETE_ON_ERROR:
 
-unicode := unicode.sh unicode.py
+unicode := unicode.sh
 
 unicode += DerivedCoreProperties.txt
 unicode += PropList.txt
+unicode += JavaScript.txt
 
-all: NotLineTerminator.l UnicodeIDStart.l UnicodeIDContinue.l
+files := 
+
+all: NotLineTerminator.l UnicodeIDStart.l UnicodeIDContinue.l IdentifierStart.h IdentifierContinue.h
 
 %.txt:
 	wget -qc http://www.unicode.org/Public/UCD/latest/ucd/$@
 
-NotLineTerminator.l: unicode.py
-	printf '80..2027\n2029..10ffff\n' | ./unicode.py NotLineTerminator >$@
+files += NotLineTerminator.l
+NotLineTerminator.l: unicode-l.py
+	printf '80..2027\n202a..10ffff\n' | ./unicode-l.py NotLineTerminator >$@
 
-UnicodeIDStart.l: $(unicode)
-	./unicode.sh UnicodeIDStart ID_Start DerivedCoreProperties.txt Other_ID_Start PropList.txt >$@
+files += UnicodeIDStart.l
+UnicodeIDStart.l: $(unicode) unicode-l.py
+	./unicode.sh ID_Start DerivedCoreProperties.txt Other_ID_Start PropList.txt | ./unicode-l.py UnicodeIDStart >$@
 
-UnicodeIDContinue.l: $(unicode)
-	./unicode.sh UnicodeIDContinue ID_Continue DerivedCoreProperties.txt Other_ID_Continue PropList.txt >$@
+files += UnicodeIDContinue.l
+UnicodeIDContinue.l: $(unicode) unicode-l.py
+	./unicode.sh ID_Continue DerivedCoreProperties.txt Other_ID_Continue PropList.txt | ./unicode-l.py UnicodeIDContinue >$@
 
-.PHONY: all
+files += IdentifierStart.h
+IdentifierStart.h: $(unicode) unicode-c.sh
+	./unicode.sh ID_Start DerivedCoreProperties.txt Other_ID_Start PropList.txt JavaScript_ID_Start JavaScript.txt | ./unicode-c.sh IdentifierStart >$@
+
+files += IdentifierContinue.h
+IdentifierContinue.h: $(unicode) unicode-c.sh
+	./unicode.sh ID_Continue DerivedCoreProperties.txt Other_ID_Continue PropList.txt JavaScript_ID_Continue JavaScript.txt | ./unicode-c.sh IdentifierContinue >$@
+
+clean:
+	rm -f $(files)
+
+.PHONY: all clean

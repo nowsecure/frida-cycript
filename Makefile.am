@@ -110,7 +110,7 @@ Scanner.cpp: Scanner.lpp
 	! grep -n '^ jam-transitions: ' lex.backup | grep -v ': EOF \[\(\]\| \\2\)'
 	! grep -F ': warning, ' Scanner.output || true
 
-Scanner.lo: Parser.hpp
+Scanner.lo: Parser.hpp IdentifierStart.h IdentifierContinue.h
 
 CLEANFILES += Parser.cpp Parser.hpp stack.hh Parser.output
 Parser.cpp Parser.hpp stack.hh Parser.output: Parser.ypp

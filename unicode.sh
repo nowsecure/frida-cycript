@@ -21,12 +21,9 @@
 
 set -e
 
-name=$1
-shift 1
-
 while [[ $# != 0 ]]; do
     prop=$1
     data=$2
     shift 2
     grep -F "; ${prop} #" "${data}"
-done | ./unicode.py "${name}"
+done
