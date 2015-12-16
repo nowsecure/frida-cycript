@@ -664,9 +664,6 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 @end
 /* }}} */
 /* Token Priorities {{{ */
-%nonassoc ""
-%left "{"
-
 %nonassoc "if"
 %nonassoc "else"
 /* }}} */
@@ -1136,7 +1133,7 @@ UnaryExpression_
     ;
 
 UnaryExpression
-    : %prec "" PostfixExpression LexOpenBrace { $$ = $1; }
+    : PostfixExpression LexOpenBrace { $$ = $1; }
     | LexSetRegExp UnaryExpression_ { $$ = $2; }
     ;
 /* }}} */
@@ -1717,7 +1714,7 @@ ClassTail
     ;
 
 ClassHeritage
-    : "extends" LeftHandSideExpression { $$ = CYNew CYClassTail($2); }
+    : "extends" AccessExpression { $$ = CYNew CYClassTail($2); }
     ;
 
 ClassHeritageOpt
