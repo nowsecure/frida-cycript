@@ -152,11 +152,6 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
                 token = tk::_yield__;
         break;
 
-        case tk::EqualRight:
-            if (driver.newline_ == CYDriver::NewLineLast)
-                token = tk::EqualRight_;
-        break;
-
         case tk::HyphenHyphen:
             if (driver.newline_ == CYDriver::NewLineLast)
                 token = tk::HyphenHyphen_;
@@ -166,11 +161,6 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
             driver.newline_ = CYDriver::NewLineHere;
             if (!driver.next_)
                 goto lex;
-        break;
-
-        case tk::OpenBrace:
-            if (driver.newline_ == CYDriver::NewLineLast)
-                token = tk::OpenBrace_;
         break;
 
         case tk::PlusPlus:
@@ -193,6 +183,12 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
     CYLEX(); \
     if (yyla.type == yytranslate_(token::from)) \
         yyla.type = yytranslate_(token::to); \
+} while (false)
+
+#define CYLIN(from) do { \
+    CYLEX(); \
+    if (yyla.type == yytranslate_(token::from) && driver.newline_ == CYDriver::NewLineLast) \
+        yyla.type = yytranslate_(token::from ## _); \
 } while (false)
 
 #define CYERR(location, message) do { \
@@ -1146,7 +1142,7 @@ UnaryExpression_
     ;
 
 UnaryExpression
-    : %prec "" PostfixExpression { $$ = $1; }
+    : %prec "" PostfixExpression LexOpenBrace { $$ = $1; }
     | LexSetRegExp UnaryExpression_ { $$ = $2; }
     ;
 /* }}} */
@@ -1655,8 +1651,12 @@ FunctionStatementList
     ;
 /* }}} */
 /* 14.2 Arrow Function Definitions {{{ */
+LexEqualRight
+    : { CYLIN(EqualRight); }
+    ;
+
 ArrowFunction
-    : LexSetRegExp ArrowParameters "=>" LexNoBrace ConciseBody { $$ = CYNew CYFatArrow($2, $5); }
+    : LexSetRegExp ArrowParameters LexEqualRight "=>" LexNoBrace ConciseBody { $$ = CYNew CYFatArrow($2, $6); }
     ;
 
 ArrowParameters
@@ -2444,6 +2444,10 @@ RubyProcParametersOpt
     | LexSetRegExp { $$ = NULL; }
     ;
 
+LexOpenBrace
+    : { CYLIN(OpenBrace); }
+    ;
+
 RubyProcExpression
     : "{" RubyProcParametersOpt StatementListOpt "}" { $$ = CYNew CYRubyProc($2, $3); }
     ;
@@ -2453,7 +2457,7 @@ PrimaryExpression
     ;
 
 PostfixExpression
-    : PostfixExpression RubyProcExpression { $$ = CYNew CYRubyBlock($1, $2); }
+    : PostfixExpression LexOpenBrace RubyProcExpression { $$ = CYNew CYRubyBlock($1, $3); }
     ;
 /* }}} */
 
