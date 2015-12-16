@@ -142,11 +142,6 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
                 token = tk::_in__;
         break;
 
-        case tk::_return_:
-            if (driver.return_.top())
-                token = tk::_return__;
-        break;
-
         case tk::_yield_:
             if (driver.yield_.top())
                 token = tk::_yield__;
@@ -376,7 +371,6 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %token _instanceof_ "instanceof"
 %token _new_ "new"
 %token _return_ "return"
-%token _return__ "!return"
 %token _super_ "super"
 %token _switch_ "switch"
 %token _target_ "target"
@@ -791,7 +785,6 @@ Word
     | "new" LexSetRegExp { $$ = CYNew CYWord("new"); }
     | "null" { $$ = CYNew CYWord("null"); }
     | "return" { $$ = CYNew CYWord("return"); }
-    | "!return" { $$ = CYNew CYWord("return"); }
     | "super" { $$ = CYNew CYWord("super"); }
     | "switch" { $$ = CYNew CYWord("switch"); }
     | "this" { $$ = CYNew CYWord("this"); }
@@ -1523,7 +1516,7 @@ BreakStatement
 /* }}} */
 /* 13.10 The return Statement {{{ */
 Return
-    : "!return" LexNewLine
+    : "return" { if (!driver.return_.top()) CYERR(@1, "invalid return"); } LexNewLine
     ;
 
 ReturnStatement
