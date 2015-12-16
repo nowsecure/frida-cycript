@@ -450,6 +450,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %token <string_> TemplateMiddle
 %token <string_> TemplateTail
 
+%type <target_> AccessExpression
 %type <expression_> AdditiveExpression
 %type <argument_> ArgumentList_
 %type <argument_> ArgumentList
@@ -532,6 +533,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <word_> IdentifierName
 %type <variable_> IdentifierReference
 %type <statement_> IfStatement
+%type <target_> IndirectExpression
 %type <expression_> Initializer
 %type <expression_> InitializerOpt
 %type <statement_> IterationStatement
@@ -673,7 +675,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 /* }}} */
 /* Token Priorities {{{ */
 %nonassoc ""
-%left "++" "--" "{"
+%left "{"
 
 %nonassoc "if"
 %nonassoc "else"
@@ -1107,16 +1109,21 @@ ArgumentListOpt
     | LexSetRegExp { $$ = NULL; }
     ;
 
-LeftHandSideExpression
+AccessExpression
     : NewExpression { $$ = $1; }
     | CallExpression { $$ = $1; }
+    ;
+
+LeftHandSideExpression
+    : AccessExpression { $$ = $1; }
+    | LexSetRegExp IndirectExpression { $$ = $2; }
     ;
 /* }}} */
 /* 12.4 Postfix Expressions {{{ */
 PostfixExpression
-    : %prec "" LeftHandSideExpression { $$ = $1; }
-    | LeftHandSideExpression "++" { $$ = CYNew CYPostIncrement($1); }
-    | LeftHandSideExpression "--" { $$ = CYNew CYPostDecrement($1); }
+    : AccessExpression { $$ = $1; }
+    | AccessExpression "++" { $$ = CYNew CYPostIncrement($1); }
+    | AccessExpression "--" { $$ = CYNew CYPostDecrement($1); }
     ;
 /* }}} */
 /* 12.5 Unary Operators {{{ */
@@ -1480,7 +1487,8 @@ ForStatementInitializer
     ;
 
 ForInStatementInitializer
-    : LeftHandSideExpression { $$ = $1; }
+    : AccessExpression { $$ = $1; }
+    | LexSetRegExp IndirectExpression { $$ = $2; }
     | LexSetRegExp Var_ ForBinding { $$ = CYNew CYForVariable($3); }
     | LexSetRegExp ForDeclaration { $$ = $2; }
     ;
@@ -2138,8 +2146,12 @@ PrimaryExpression
 
 @begin C
 /* Cycript (C): Pointer Indirection/Addressing {{{ */
-LeftHandSideExpression
-    : LexSetRegExp "*" UnaryExpression { $$ = CYNew CYIndirect($3); }
+UnaryExpression_
+    : IndirectExpression { $$ = $1; }
+    ;
+
+IndirectExpression
+    : "*" UnaryExpression { $$ = CYNew CYIndirect($2); }
     ;
 
 UnaryExpression_
@@ -2369,7 +2381,7 @@ Comprehension
     ;
 
 ComprehensionFor
-    : "for" "each" "(" LexPushInOn LexicalBinding "!in" LexPopIn Expression ")" { $$ = CYNew CYForOfComprehension($5, $8); }
+    : "for" "each" "(" LexPushInOn ForBinding "!in" LexPopIn Expression ")" { $$ = CYNew CYForOfComprehension($5, $8); }
     ;
 /* }}} */
 /* JavaScript FTL: for each {{{ */
