@@ -1261,6 +1261,8 @@ struct CYProperty :
     {
     }
 
+    virtual bool Update() const;
+
     CYProperty *ReplaceAll(CYContext &context, CYBuilder &builder, CYExpression *self, bool update);
     void Replace(CYContext &context, CYBuilder &builder, CYExpression *self, bool protect);
 
@@ -1714,6 +1716,8 @@ struct CYPropertyMethod :
         CYMethod(name, parameters, code, next)
     {
     }
+
+    bool Update() const override;
 
     virtual CYFunctionExpression *Constructor();
 

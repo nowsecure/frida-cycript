@@ -745,7 +745,7 @@ CYExpression *CYPrefix::Replace(CYContext &context) {
 }
 
 CYProperty *CYProperty::ReplaceAll(CYContext &context, CYBuilder &builder, CYExpression *self, bool update) {
-    update |= name_->Computed();
+    update |= Update();
     if (update)
         Replace(context, builder, self, false);
     if (next_ != NULL)
@@ -763,6 +763,10 @@ void CYProperty::Replace(CYContext &context, CYBuilder &builder, CYExpression *s
     }
 
     Replace(context, builder, self, name, protect);
+}
+
+bool CYProperty::Update() const {
+    return name_->Computed();
 }
 
 void CYPropertyGetter::Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name, bool protect) {
@@ -784,6 +788,10 @@ void CYPropertyMethod::Replace(CYContext &context, CYBuilder &builder, CYExpress
     builder.statements_
         ->* (!protect ? $E($ CYAssign($M(self, name), $V(unique))) :
             CYDefineProperty(self, name, true, !protect, $ CYPropertyValue($S("value"), $V(unique), $ CYPropertyValue($S("writable"), $ CYTrue()))));
+}
+
+bool CYPropertyMethod::Update() const {
+    return true;
 }
 
 void CYPropertySetter::Replace(CYContext &context, CYBuilder &builder, CYExpression *self, CYExpression *name, bool protect) {
