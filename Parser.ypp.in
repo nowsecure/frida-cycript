@@ -1916,7 +1916,7 @@ ClassSuperOpt
     ;
 
 ImplementationFieldListOpt
-    : TypedIdentifier ";" ImplementationFieldListOpt { $$ = CYNew CYImplementationField($1, $3); }
+    : LexSetRegExp TypedIdentifier ";" ImplementationFieldListOpt { $$ = CYNew CYImplementationField($2, $4); }
     | LexSetRegExp { $$ = NULL; }
     ;
 
@@ -2388,7 +2388,7 @@ RubyProcParameters
 
 RubyProcParametersOpt
     : RubyProcParameters { $$ = $1; }
-    | { $$ = NULL; }
+    | LexSetRegExp { $$ = NULL; }
     ;
 
 RubyProcExpression
