@@ -53,6 +53,12 @@ function include() {
                     fi
                 done
             done
+        elif [[ ${line} = @else ]]; then
+            if [[ -z ${filter+@} ]]; then
+                unset filter
+            else
+                filter=
+            fi
         elif [[ ${line} = @end ]]; then
             unset filter
         elif [[ ${line} = @include* ]]; then
