@@ -707,7 +707,6 @@ IdentifierName
     : Word { $$ = $1; }
     | "for" { $$ = CYNew CYWord("for"); }
     | "in" { $$ = CYNew CYWord("in"); }
-    | "Infinity" { $$ = CYNew CYIdentifier("Infinity"); }
     | "instanceof" { $$ = CYNew CYWord("instanceof"); }
     ;
 
@@ -840,6 +839,7 @@ IdentifierType
     | "get" { $$ = CYNew CYIdentifier("get"); }
     | "goto" { $$ = CYNew CYIdentifier("goto"); }
     | "implements" { $$ = CYNew CYIdentifier("implements"); }
+    | "Infinity" { $$ = CYNew CYIdentifier("Infinity"); }
     | "interface" { $$ = CYNew CYIdentifier("interface"); }
     | "native" { $$ = CYNew CYIdentifier("native"); }
     | "of" { $$ = CYNew CYIdentifier("of"); }
@@ -912,7 +912,6 @@ Literal
     : NullLiteral { $$ = $1; }
     | BooleanLiteral { $$ = $1; }
     | NumericLiteral { $$ = $1; }
-    | "Infinity" { $$ = CYNew CYNumber(std::numeric_limits<double>::infinity()); }
     | StringLiteral { $$ = $1; }
     ;
 /* }}} */
