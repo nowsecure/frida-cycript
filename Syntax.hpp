@@ -896,6 +896,12 @@ struct CYThis :
 struct CYBoolean :
     CYTrivial
 {
+    CYPrecedence(4)
+
+    virtual bool RightHand() const {
+        return true;
+    }
+
     virtual bool Value() const = 0;
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
