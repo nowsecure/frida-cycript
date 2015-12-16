@@ -303,8 +303,10 @@ XMLName {XMLNameStart}{XMLNamePart}*
 }
     /* }}} */
     /* Comment {{{ */
-#![^\n]* L M
-\/\/[^\n]* L M
+    /* XXX: maybe fold LineTerminatorSequence into these definitions */
+#!{NoneTerminatorCharacter}* L M
+\/\/{NoneTerminatorCharacter}* L M
+(#!|\/\/){NoneTerminatorCharacter}*{UnicodeError} L E("invalid character");
 
 \/\* L yy_push_state(MultiLine, yyscanner);
 
