@@ -60,7 +60,12 @@ class _visible CYDriver {
 
     std::stack<CYClassTail *> class_;
 
-    bool newline_;
+    enum {
+        NewLineNone,
+        NewLineLast,
+        NewLineHere,
+    } newline_;
+
     bool last_;
     bool next_;
 

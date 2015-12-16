@@ -113,6 +113,8 @@ int cylex(YYSTYPE *, CYLocation *, void *);
 
 %code {
 
+typedef cy::parser::token tk;
+
 #undef yylex
 _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CYDriver &driver) {
     if (driver.mark_ == CYMarkIgnore);
@@ -124,9 +126,60 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
         return cy::parser::token::MarkModule;
     }
 
+  lex:
+    if (driver.newline_ == CYDriver::NewLineHere)
+        driver.newline_ = CYDriver::NewLineLast;
+    else if (driver.newline_ == CYDriver::NewLineLast)
+        driver.newline_ = CYDriver::NewLineNone;
+
     YYSTYPE data;
     int token(cylex(&data, location, driver.scanner_));
     *semantic = data.semantic_;
+
+    switch (token) {
+        case tk::_in_:
+            if (driver.in_.top())
+                token = tk::_in__;
+        break;
+
+        case tk::_return_:
+            if (driver.return_.top())
+                token = tk::_return__;
+        break;
+
+        case tk::_yield_:
+            if (driver.yield_.top())
+                token = tk::_yield__;
+        break;
+
+        case tk::EqualRight:
+            if (driver.newline_ == CYDriver::NewLineLast)
+                token = tk::EqualRight_;
+        break;
+
+        case tk::HyphenHyphen:
+            if (driver.newline_ == CYDriver::NewLineLast)
+                token = tk::HyphenHyphen_;
+        break;
+
+        case tk::NewLine:
+            driver.newline_ = CYDriver::NewLineHere;
+            if (!driver.next_)
+                goto lex;
+        break;
+
+        case tk::OpenBrace:
+            if (driver.newline_ == CYDriver::NewLineLast)
+                token = tk::OpenBrace_;
+        break;
+
+        case tk::PlusPlus:
+            if (driver.newline_ == CYDriver::NewLineLast)
+                token = tk::PlusPlus_;
+        break;
+    }
+
+    driver.next_ = false;
     return token;
 }
 
@@ -793,7 +846,7 @@ TerminatorSoft
 
 Terminator
     : ";"
-    | error { if (yyla.type_get() != yyeof_ && yyla.type != yytranslate_(token::CloseBrace) && !driver.newline_) { CYERR(@1, "required semi-colon"); } else { yyerrok; driver.errors_.pop_back(); } } StrictSemi
+    | error { if (yyla.type_get() != yyeof_ && yyla.type != yytranslate_(token::CloseBrace) && driver.newline_ == CYDriver::NewLineNone) { CYERR(@1, "required semi-colon"); } else { yyerrok; driver.errors_.pop_back(); } } StrictSemi
     ;
 
 TerminatorOpt

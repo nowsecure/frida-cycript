@@ -47,9 +47,6 @@ typedef cy::parser::token tk;
 #define YY_EXTRA_TYPE CYDriver *
 
 #define F(value, highlight) do { \
-    yyextra->newline_ = yyextra->last_; \
-    yyextra->last_ = false; \
-    yyextra->next_ = false; \
     BEGIN(yyextra->template_.top() ? DivOrTemplateTail : Div); \
     yylval->highlight_ = highlight; \
     return value; \
@@ -72,7 +69,7 @@ typedef cy::parser::token tk;
 } while (false)
 
 #define N \
-    if (yyextra->last_ && yyextra->next_) { \
+    if (yyextra->last_) { \
         yyextra->last_ = false; \
         F(tk::NewLine, hi::Nothing); \
     }
@@ -366,13 +363,13 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "="    L F(tk::Equal, hi::Operator);
 "=="   L F(tk::EqualEqual, hi::Operator);
 "==="  L F(tk::EqualEqualEqual, hi::Operator);
-"=>"   L F(yyextra->newline_ ? tk::EqualRight_ : tk::EqualRight, hi::Operator);
+"=>"   L F(tk::EqualRight, hi::Operator);
 "!"    L F(tk::Exclamation, hi::Operator);
 "!="   L F(tk::ExclamationEqual, hi::Operator);
 "!=="  L F(tk::ExclamationEqualEqual, hi::Operator);
 "-"    L F(tk::Hyphen, hi::Operator);
 "-="   L F(tk::HyphenEqual, hi::Operator);
-"--"   L F(yyextra->newline_ ? tk::HyphenHyphen_ : tk::HyphenHyphen, hi::Operator);
+"--"   L F(tk::HyphenHyphen, hi::Operator);
 "->"   L F(tk::HyphenRight, hi::Operator);
 "<"    L F(tk::Left, hi::Operator);
 "<="   L F(tk::LeftEqual, hi::Operator);
@@ -386,7 +383,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "||"   L F(tk::PipePipe, hi::Operator);
 "+"    L F(tk::Plus, hi::Operator);
 "+="   L F(tk::PlusEqual, hi::Operator);
-"++"   L F(yyextra->newline_ ? tk::PlusPlus_ : tk::PlusPlus, hi::Operator);
+"++"   L F(tk::PlusPlus, hi::Operator);
 ">"    L F(tk::Right, hi::Operator);
 ">="   L F(tk::RightEqual, hi::Operator);
 ">>"   L F(tk::RightRight, hi::Operator);
@@ -408,7 +405,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "("    L F(tk::OpenParen, hi::Structure);
 ")"    L F(tk::CloseParen, hi::Structure);
 
-"{"    L yyextra->template_.push(false); F(yyextra->newline_ ? tk::OpenBrace_ : tk::OpenBrace, hi::Structure);
+"{"    L yyextra->template_.push(false); F(tk::OpenBrace, hi::Structure);
 <Div>"}" L S(template_); F(tk::CloseBrace, hi::Structure);
 
 "["    L F(tk::OpenBracket, hi::Structure);
@@ -486,7 +483,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "if"              L /*KKK*/ F(tk::_if_, hi::Control);
 "implements"      L /*FSS*/ F(tk::_implements_, hi::Meta);
 "import"          L /*FFK*/ F(tk::_import_, hi::Meta);
-"in"              L /*KKK*/ F(yyextra->in_.top() ? tk::_in__ : tk::_in_, hi::Operator);
+"in"              L /*KKK*/ F(tk::_in_, hi::Operator);
 "Infinity"        L /*III*/ F(tk::_Infinity_, hi::Constant);
 "instanceof"      L /*KKK*/ F(tk::_instanceof_, hi::Operator);
 "int"             L /*FII*/ F(tk::_int_, hi::Type);
@@ -501,7 +498,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "protected"       L /*FSS*/ F(tk::_protected_, hi::Meta);
 "prototype"       L /*III*/ F(tk::_prototype_, hi::Special);
 "public"          L /*FSS*/ F(tk::_public_, hi::Meta);
-"return"          L /*KKK*/ F(yyextra->return_.top() ? tk::_return__ : tk::_return_, hi::Control);
+"return"          L /*KKK*/ F(tk::_return_, hi::Control);
 "set"             L /*III*/ F(tk::_set_, hi::Meta);
 "short"           L /*FII*/ F(tk::_short_, hi::Type);
 "static"          L /*FS?*/ F(tk::_static_, hi::Meta);
@@ -521,7 +518,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "volatile"        L /*FII*/ F(tk::_volatile_, hi::Meta);
 "while"           L /*KKK*/ F(tk::_while_, hi::Control);
 "with"            L /*KKK*/ F(tk::_with_, hi::Control);
-"yield"           L /*IS?*/ F(yyextra->yield_.top() ? tk::_yield__ : tk::_yield_, hi::Control);
+"yield"           L /*IS?*/ F(tk::_yield_, hi::Control);
 
 "auto"            L F(tk::_auto_, hi::Meta);
 "each"            L F(tk::_each_, hi::Control);
