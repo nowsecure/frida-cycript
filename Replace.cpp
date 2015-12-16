@@ -924,19 +924,9 @@ CYIdentifierFlags *CYScope::Declare(CYContext &context, CYIdentifier *identifier
     if (existing == NULL)
         return internal_;
 
-    switch (kind) {
-        case CYIdentifierArgument:
-        case CYIdentifierCatch:
-        case CYIdentifierMagic:
-            _assert(false);
-        default:
-            break;
-    }
-
-    if (existing->kind_ == CYIdentifierGlobal)
+    if (kind == CYIdentifierGlobal);
+    else if (existing->kind_ == CYIdentifierGlobal || existing->kind_ == CYIdentifierMagic)
         existing->kind_ = kind;
-    else if (kind == CYIdentifierGlobal)
-        ;
     else if (existing->kind_ == CYIdentifierLexical || kind == CYIdentifierLexical)
         _assert(false); // XXX: throw new SyntaxError()
 
