@@ -147,20 +147,10 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
                 token = tk::_yield__;
         break;
 
-        case tk::HyphenHyphen:
-            if (driver.newline_ == CYDriver::NewLineLast)
-                token = tk::HyphenHyphen_;
-        break;
-
         case tk::NewLine:
             driver.newline_ = CYDriver::NewLineHere;
             if (!driver.next_)
                 goto lex;
-        break;
-
-        case tk::PlusPlus:
-            if (driver.newline_ == CYDriver::NewLineLast)
-                token = tk::PlusPlus_;
         break;
     }
 
@@ -1115,15 +1105,19 @@ AccessExpression
     ;
 
 LeftHandSideExpression
-    : AccessExpression { $$ = $1; }
+    : AccessExpression LexCrement { $$ = $1; }
     | LexSetRegExp IndirectExpression { $$ = $2; }
     ;
 /* }}} */
 /* 12.4 Postfix Expressions {{{ */
+LexCrement
+    : { CYLIN(PlusPlus); CYLIN(HyphenHyphen); }
+    ;
+
 PostfixExpression
-    : AccessExpression { $$ = $1; }
-    | AccessExpression "++" { $$ = CYNew CYPostIncrement($1); }
-    | AccessExpression "--" { $$ = CYNew CYPostDecrement($1); }
+    : AccessExpression LexCrement { $$ = $1; }
+    | AccessExpression LexCrement "++" { $$ = CYNew CYPostIncrement($1); }
+    | AccessExpression LexCrement "--" { $$ = CYNew CYPostDecrement($1); }
     ;
 /* }}} */
 /* 12.5 Unary Operators {{{ */
@@ -1487,7 +1481,7 @@ ForStatementInitializer
     ;
 
 ForInStatementInitializer
-    : AccessExpression { $$ = $1; }
+    : AccessExpression LexCrement { $$ = $1; }
     | LexSetRegExp IndirectExpression { $$ = $2; }
     | LexSetRegExp Var_ ForBinding { $$ = CYNew CYForVariable($3); }
     | LexSetRegExp ForDeclaration { $$ = $2; }
