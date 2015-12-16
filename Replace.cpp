@@ -533,6 +533,8 @@ void CYFunction::Replace(CYContext &context) {
 
     CYScope scope(!localize, context);
 
+    $I("arguments")->Replace(context, CYIdentifierMagic);
+
     parameters_->Replace(context, code_);
 
     context.ReplaceAll(code_);
