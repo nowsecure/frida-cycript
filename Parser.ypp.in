@@ -330,6 +330,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %token _return__ "!return"
 %token _super_ "super"
 %token _switch_ "switch"
+%token _target_ "target"
 %token _this_ "this"
 %token _throw_ "throw"
 %token _try_ "try"
@@ -849,6 +850,7 @@ IdentifierType
     | "public" { $$ = CYNew CYIdentifier("public"); }
     | "set" { $$ = CYNew CYIdentifier("set"); }
     | "synchronized" { $$ = CYNew CYIdentifier("synchronized"); }
+    | "target" { $$ = CYNew CYIdentifier("target"); }
     | "throws" { $$ = CYNew CYIdentifier("throws"); }
     | "transient" { $$ = CYNew CYIdentifier("transient"); }
     | "undefined" { $$ = CYNew CYIdentifier("undefined"); }

@@ -508,6 +508,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "super"           L /*FFK*/ F(tk::_super_, hi::Constant);
 "switch"          L /*KKK*/ F(tk::_switch_, hi::Control);
 "synchronized"    L /*FII*/ F(tk::_synchronized_, hi::Meta);
+"target"          L /*III*/ F(tk::_target_, hi::Identifier);
 "this"            L /*KKK*/ F(tk::_this_, hi::Constant);
 "throw"           L /*KKK*/ F(tk::_throw_, hi::Control);
 "throws"          L /*FII*/ F(tk::_throws_, hi::Meta);
