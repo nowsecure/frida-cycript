@@ -329,7 +329,6 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %token _return_ "return"
 %token _return__ "!return"
 %token _super_ "super"
-%token _super__ "!super"
 %token _switch_ "switch"
 %token _this_ "this"
 %token _throw_ "throw"
@@ -745,7 +744,6 @@ Word
     | "return" { $$ = CYNew CYWord("return"); }
     | "!return" { $$ = CYNew CYWord("return"); }
     | "super" { $$ = CYNew CYWord("super"); }
-    | "!super" { $$ = CYNew CYWord("super"); }
     | "switch" { $$ = CYNew CYWord("switch"); }
     | "this" { $$ = CYNew CYWord("this"); }
     | "throw" { $$ = CYNew CYWord("throw"); }
@@ -1015,8 +1013,8 @@ MemberExpression
     ;
 
 SuperProperty
-    : LexSetRegExp "!super" "[" Expression "]" { $$ = CYNew CYSuperAccess($4); }
-    | LexSetRegExp "!super" "." IdentifierName { $$ = CYNew CYSuperAccess(CYNew CYString($4)); }
+    : LexSetRegExp "super" { if (!driver.super_.top()) CYERR(@2, "invalid super"); } "[" Expression "]" { $$ = CYNew CYSuperAccess($5); }
+    | LexSetRegExp "super" { if (!driver.super_.top()) CYERR(@2, "invalid super"); } "." IdentifierName { $$ = CYNew CYSuperAccess(CYNew CYString($5)); }
     ;
 
 MetaProperty
@@ -1044,7 +1042,7 @@ CallExpression
     ;
 
 SuperCall
-    : LexSetRegExp "!super" Arguments { $$ = CYNew CYSuperCall($3); }
+    : LexSetRegExp "super" { if (!driver.super_.top()) CYERR(@2, "invalid super"); } Arguments { $$ = CYNew CYSuperCall($4); }
     ;
 
 Arguments
@@ -2021,7 +2019,7 @@ SelectorList
 
 MessageExpression
     : "[" LexPushInOff AssignmentExpressionClassic { driver.contexts_.push_back($3); } SelectorList "]" LexPopIn { driver.contexts_.pop_back(); } { $$ = CYNew CYSendDirect($3, $5); }
-    | "[" LexPushInOff LexSetRegExp "!super" { driver.context_ = NULL; } SelectorList "]" LexPopIn { $$ = CYNew CYSendSuper($6); }
+    | "[" LexPushInOff LexSetRegExp "super" { driver.context_ = NULL; } SelectorList "]" LexPopIn { $$ = CYNew CYSendSuper($6); }
     ;
 
 SelectorExpression_
