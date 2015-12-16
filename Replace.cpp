@@ -1249,7 +1249,10 @@ CYStatement *CYWhile::Replace(CYContext &context) {
 
 CYStatement *CYWith::Replace(CYContext &context) {
     context.Replace(scope_);
+    CYScope scope(true, context);
+    scope.Damage();
     context.ReplaceAll(code_);
+    scope.Close(context);
     return this;
 }
 
