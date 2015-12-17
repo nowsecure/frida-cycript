@@ -137,10 +137,23 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
     *semantic = data.semantic_;
 
     switch (token) {
+        case tk::OpenBrace:
+        case tk::OpenBracket:
+        case tk::OpenParen:
+            driver.in_.push(false);
+        break;
+
         case tk::_in_:
             if (driver.in_.top())
                 token = tk::_in__;
         break;
+
+        case tk::CloseBrace:
+        case tk::CloseBracket:
+        case tk::CloseParen:
+            driver.in_.pop();
+        break;
+
 
         case tk::_yield_:
             if (driver.yield_.top())
@@ -961,10 +974,10 @@ PrimaryExpression
     ;
 
 CoverParenthesizedExpressionAndArrowParameterList
-    : "(" LexPushInOff Expression ")" LexPopIn { $$ = CYNew CYParenthetical($3); }
-    | "(" LexPushInOff LexSetRegExp ")" LexPopIn { $$ = NULL; }
-    | "(" LexPushInOff LexSetRegExp "..." BindingIdentifier ")" LexPopIn { CYNOT(@$); }
-    | "(" LexPushInOff Expression "," LexSetRegExp "..." BindingIdentifier ")" LexPopIn { CYNOT(@$); }
+    : "(" Expression ")" { $$ = CYNew CYParenthetical($2); }
+    | "(" LexSetRegExp ")" { $$ = NULL; }
+    | "(" LexSetRegExp "..." BindingIdentifier ")" { CYNOT(@$); }
+    | "(" Expression "," LexSetRegExp "..." BindingIdentifier ")" { CYNOT(@$); }
     ;
 /* }}} */
 /* 12.2.4 Literals {{{ */
@@ -977,7 +990,7 @@ Literal
 /* }}} */
 /* 12.2.5 Array Initializer {{{ */
 ArrayLiteral
-    : "[" LexPushInOff ElementListOpt "]" LexPopIn { $$ = CYNew CYArray($3); }
+    : "[" ElementListOpt "]" { $$ = CYNew CYArray($2); }
     ;
 
 ElementList
@@ -993,7 +1006,7 @@ ElementListOpt
 /* }}} */
 /* 12.2.6 Object Initializer {{{ */
 ObjectLiteral
-    : BRACE LexPushInOff PropertyDefinitionListOpt "}" LexPopIn { $$ = CYNew CYObject($3); }
+    : BRACE PropertyDefinitionListOpt "}" { $$ = CYNew CYObject($2); }
     ;
 
 PropertyDefinitionList_
@@ -1059,7 +1072,7 @@ TemplateSpans
 
 /* 12.3 Left-Hand-Side Expressions {{{ */
 MemberAccess
-    : "[" LexPushInOff Expression "]" LexPopIn { $$ = CYNew CYDirectMember(NULL, $3); }
+    : "[" Expression "]" { $$ = CYNew CYDirectMember(NULL, $2); }
     | "." IdentifierName { $$ = CYNew CYDirectMember(NULL, CYNew CYString($2)); }
     | "." AutoComplete { driver.mode_ = CYDriver::AutoDirect; YYACCEPT; }
     | TemplateLiteral { CYNOT(@$); }
@@ -1107,7 +1120,7 @@ SuperCall
     ;
 
 Arguments
-    : "(" LexPushInOff ArgumentListOpt ")" LexPopIn { $$ = $3; }
+    : "(" ArgumentListOpt ")" { $$ = $2; }
     ;
 
 ArgumentList_
@@ -1641,7 +1654,7 @@ FunctionDeclaration
     ;
 
 FunctionExpression
-    : "function" BindingIdentifierOpt "(" LexPushInOff FormalParameters ")" LexPopIn BRACE LexPushSuperOff LexPushInOff FunctionBody "}" LexPopIn LexPopSuper { $$ = CYNew CYFunctionExpression($2, $5, $11); }
+    : "function" BindingIdentifierOpt "(" FormalParameters ")" BRACE LexPushSuperOff FunctionBody "}" LexPopSuper { $$ = CYNew CYFunctionExpression($2, $4, $8); }
     ;
 
 StrictFormalParameters
@@ -1695,7 +1708,7 @@ ArrowParameters
 
 ConciseBody
     : AssignmentExpression { $$ = CYNew CYReturn($1); }
-    | LexSetRegExp ";{" LexPushInOff FunctionBody "}" LexPopIn { $$ = $4; }
+    | LexSetRegExp ";{" FunctionBody "}" { $$ = $3; }
     ;
 /* }}} */
 /* 14.3 Method Definitions {{{ */
@@ -1928,14 +1941,14 @@ ExportSpecifier
 /* Cycript (C): Type Encoding {{{ */
 TypeSignifier
     : IdentifierType { $$ = CYNew CYTypedIdentifier(@1, $1); }
-    | "(" LexPushInOff "*" TypeQualifierRight ")" LexPopIn { $$ = $4; }
+    | "(" "*" TypeQualifierRight ")" { $$ = $3; }
     ;
 
 SuffixedType
     : SuffixedType "[" NumericLiteral "]" { $$ = $1; $$->modifier_ = CYNew CYTypeArrayOf($3, $$->modifier_); }
-    | "(" LexPushInOff "^" TypeQualifierRight ")" LexPopIn "(" LexPushInOff TypedParameterListOpt ")" LexPopIn { $$ = $4; $$->modifier_ = CYNew CYTypeBlockWith($9, $$->modifier_); }
-    | TypeSignifier "(" LexPushInOff TypedParameterListOpt ")" LexPopIn { $$ = $1; $$->modifier_ = CYNew CYTypeFunctionWith($4, $$->modifier_); }
-    | "(" LexPushInOff TypedParameterListOpt ")" LexPopIn { $$ = CYNew CYTypedIdentifier(@1); $$->modifier_ = CYNew CYTypeFunctionWith($3, $$->modifier_); }
+    | "(" "^" TypeQualifierRight ")" "(" TypedParameterListOpt ")" { $$ = $3; $$->modifier_ = CYNew CYTypeBlockWith($6, $$->modifier_); }
+    | TypeSignifier "(" TypedParameterListOpt ")" { $$ = $1; $$->modifier_ = CYNew CYTypeFunctionWith($3, $$->modifier_); }
+    | "(" TypedParameterListOpt ")" { $$ = CYNew CYTypedIdentifier(@1); $$->modifier_ = CYNew CYTypeFunctionWith($2, $$->modifier_); }
     | TypeSignifier { $$ = $1; }
     | { $$ = CYNew CYTypedIdentifier(@$); }
     ;
@@ -2101,8 +2114,8 @@ SelectorList
     ;
 
 MessageExpression
-    : "[" LexPushInOff AssignmentExpressionClassic { driver.contexts_.push_back($3); } SelectorList "]" LexPopIn { driver.contexts_.pop_back(); } { $$ = CYNew CYSendDirect($3, $5); }
-    | "[" LexPushInOff LexSetRegExp "super" { driver.context_ = NULL; } SelectorList "]" LexPopIn { $$ = CYNew CYSendSuper($6); }
+    : "[" AssignmentExpressionClassic { driver.contexts_.push_back($2); } SelectorList "]" { driver.contexts_.pop_back(); } { $$ = CYNew CYSendDirect($2, $4); }
+    | "[" LexSetRegExp "super" { driver.context_ = NULL; } SelectorList "]" { $$ = CYNew CYSendSuper($5); }
     ;
 
 SelectorExpression_
@@ -2121,7 +2134,7 @@ SelectorExpressionOpt
 
 PrimaryExpression
     : MessageExpression { $$ = $1; }
-    | "@selector" "(" LexPushInOff SelectorExpression ")" LexPopIn { $$ = CYNew CYSelector($4); }
+    | "@selector" "(" SelectorExpression ")" { $$ = CYNew CYSelector($3); }
     ;
 /* }}} */
 @end
@@ -2162,7 +2175,7 @@ PrimaryExpression
 /* }}} */
 /* Cycript (Objective-C): Block Expressions {{{ */
 PrimaryExpression
-    : "^" TypedIdentifier { if ($2->identifier_ != NULL) CYERR($2->location_, "unexpected identifier"); } BRACE LexPushInOff FunctionBody "}" LexPopIn { if (CYTypeFunctionWith *function = $2->Function()) $$ = CYNew CYObjCBlock($2, function->parameters_, $6); else CYERR($2->location_, "expected parameters"); }
+    : "^" TypedIdentifier { if ($2->identifier_ != NULL) CYERR($2->location_, "unexpected identifier"); } BRACE FunctionBody "}" { if (CYTypeFunctionWith *function = $2->Function()) $$ = CYNew CYObjCBlock($2, function->parameters_, $5); else CYERR($2->location_, "expected parameters"); }
     ;
 /* }}} */
 /* Cycript (Objective-C): Instance Literals {{{ */
@@ -2213,7 +2226,7 @@ TypedParameterListOpt
     ;
 
 PrimaryExpression
-    : "[" LexPushInOff LexSetRegExp "&" LexSetRegExp "]" LexPopIn "(" LexPushInOff TypedParameterListOpt ")" LexPopIn "->" TypedIdentifier BRACE LexPushInOff FunctionBody "}" LexPopIn { $$ = CYNew CYLambda($14, $10, $17); }
+    : "[" LexSetRegExp "&" LexSetRegExp "]" "(" TypedParameterListOpt ")" "->" TypedIdentifier BRACE FunctionBody "}" { $$ = CYNew CYLambda($10, $7, $12); }
     ;
 /* }}} */
 /* Cycript (C): Type Definitions {{{ */
@@ -2296,7 +2309,7 @@ AttributeIdentifier
 
 PropertySelector_
     : PropertySelector { $$ = $1; }
-    | "[" LexPushInOff Expression "]" LexPopIn { $$ = CYNew CYSelector($3); }
+    | "[" Expression "]" { $$ = CYNew CYSelector($2); }
     ;
 
 PropertySelector
@@ -2424,7 +2437,7 @@ PrimaryExpression
     ;
 
 ArrayComprehension
-    : "[" LexPushInOff Comprehension "]" LexPopIn { $$ = $3; }
+    : "[" Comprehension "]" { $$ = $2; }
     ;
 
 Comprehension
@@ -2486,7 +2499,7 @@ RubyProcExpression
     ;
 
 PrimaryExpression
-    : BRACE LexPushInOff RubyProcParameters StatementListOpt "}" LexPopIn { $$ = CYNew CYRubyProc($3, $4); }
+    : BRACE RubyProcParameters StatementListOpt "}" { $$ = CYNew CYRubyProc($2, $3); }
     ;
 
 PostfixExpression
