@@ -447,7 +447,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %token <identifier_> Identifier_
 %token <number_> NumericLiteral
 %token <string_> StringLiteral
-%token <literal_> RegularExpressionLiteral
+%token <literal_> RegularExpressionLiteral_
 
 %token <string_> NoSubstitutionTemplate
 %token <string_> TemplateHead
@@ -570,6 +570,8 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %type <property_> PropertyDefinitionList
 %type <property_> PropertyDefinitionListOpt
 %type <declaration_> PropertySetParameterList
+%type <literal_> RegularExpressionLiteral
+%type <bool_> RegularExpressionSlash
 %type <expression_> RelationalExpression
 %type <statement_> ReturnStatement
 %type <rubyProc_> RubyProcExpression
@@ -714,7 +716,7 @@ LexOf
     ;
 
 LexSetRegExp
-    : { CYLEX(); if (yyla.type == yytranslate_(token::Slash)) { yyla.clear(); driver.SetRegEx(false); } else if (yyla.type == yytranslate_(token::SlashEqual)) { yyla.clear(); driver.SetRegEx(true); } } LexOf
+    : LexOf
     ;
 
 LexNewLine
@@ -824,6 +826,16 @@ NullLiteral
 BooleanLiteral
     : "true" { $$ = CYNew CYTrue(); }
     | "false" { $$ = CYNew CYFalse(); }
+    ;
+/* }}} */
+/* 11.8.5 Regular Expression Literals {{{ */
+RegularExpressionSlash
+    : "/" { $$ = false; }
+    | "/=" { $$ = true; }
+    ;
+
+RegularExpressionLiteral
+    : RegularExpressionSlash { CYMPT(@$); driver.SetRegEx($1); } RegularExpressionLiteral_ { $$ = $3; }
     ;
 /* }}} */
 

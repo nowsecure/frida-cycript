@@ -279,7 +279,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
     /* RegEx {{{ */
 <RegularExpression>{
-    \/{UnicodePart}* R CYLexBufferUnits(yytext, yyleng); CYLexBufferEnd(literal, RegEx, tk::RegularExpressionLiteral, hi::Constant);
+    \/{UnicodePart}* R CYLexBufferUnits(yytext, yyleng); CYLexBufferEnd(literal, RegEx, tk::RegularExpressionLiteral_, hi::Constant);
     \/{UnicodePart}*{UnicodeError} R E("invalid character");
 
     {RegExCharacter}+ R CYLexBufferUnits(yytext, yyleng);
