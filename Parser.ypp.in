@@ -181,8 +181,18 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
     YYABORT; \
 } while (false)
 
+#define CYEOK() do { \
+    yyerrok; \
+    driver.errors_.pop_back(); \
+} while (false)
+
 #define CYNOT(location) \
     CYERR(location, "unimplemented feature")
+
+#define CYMPT(location) do { \
+    if (!yyla.empty() && yyla.type_get() != yyeof_) \
+        CYERR(location, "unexpected lookahead"); \
+} while (false)
 
 }
 
@@ -708,7 +718,7 @@ LexSetRegExp
     ;
 
 LexNewLine
-    : { if (!yyla.empty() && yyla.type_get() != yyeof_) CYERR(@$, "unexpected lookahead"); driver.next_ = true; }
+    : { CYMPT(@$); driver.next_ = true; }
     ;
 
 LexNoStar
@@ -829,7 +839,7 @@ TerminatorSoft
 
 Terminator
     : ";"
-    | error { if (yyla.type_get() != yyeof_ && yyla.type != yytranslate_(token::CloseBrace) && driver.newline_ == CYDriver::NewLineNone) { CYERR(@1, "required semi-colon"); } else { yyerrok; driver.errors_.pop_back(); } } StrictSemi
+    | error { if (yyla.type_get() != yyeof_ && yyla.type != yytranslate_(token::CloseBrace) && driver.newline_ == CYDriver::NewLineNone) CYERR(@1, "required semi-colon"); else CYEOK(); } StrictSemi
     ;
 
 TerminatorOpt
