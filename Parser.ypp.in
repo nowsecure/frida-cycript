@@ -294,9 +294,11 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %token OpenBrace "{"
 %token OpenBrace_ "\n{"
 %token OpenBrace__ ";{"
+%token OpenBrace_let "let {"
 %token CloseBrace "}"
 
 %token OpenBracket "["
+%token OpenBracket_let "let ["
 %token CloseBracket "]"
 
 %token At_error_ "@error"
@@ -390,6 +392,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %token _int_ "int"
 %token _interface_ "interface"
 %token _let_ "let"
+%token _let__ "!let"
 %token _long_ "long"
 %token _native_ "native"
 %token _package_ "package"
@@ -421,6 +424,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %token _auto_ "auto"
 %token _each_ "each"
 %token _of_ "of"
+%token _of__ "!of"
 
 @begin E4X
 %token _namespace_ "namespace"
@@ -695,8 +699,12 @@ LexPushYieldOn: { driver.yield_.push(true); };
 LexPushYieldOff: { driver.yield_.push(false); };
 LexPopYield: { driver.yield_.pop(); };
 
+LexOf
+    : { CYMAP(_of__, _of_); }
+    ;
+
 LexSetRegExp
-    : { CYLEX(); if (yyla.type == yytranslate_(token::Slash)) { yyla.clear(); driver.SetRegEx(false); } else if (yyla.type == yytranslate_(token::SlashEqual)) { yyla.clear(); driver.SetRegEx(true); } }
+    : { CYLEX(); if (yyla.type == yytranslate_(token::Slash)) { yyla.clear(); driver.SetRegEx(false); } else if (yyla.type == yytranslate_(token::SlashEqual)) { yyla.clear(); driver.SetRegEx(true); } } LexOf
     ;
 
 LexNewLine
@@ -788,9 +796,6 @@ Word
     | "yield" { $$ = CYNew CYIdentifier("yield"); }
 
     | Yield LexSetRegExp NewLineOpt { $$ = CYNew CYIdentifier("yield"); }
-
-    // XXX: should be Identifier
-    | "let" { $$ = CYNew CYIdentifier("let"); }
     ;
 
 @begin ObjectiveC
@@ -872,8 +877,10 @@ IdentifierType
     | "implements" { $$ = CYNew CYIdentifier("implements"); }
     | "Infinity" { $$ = CYNew CYIdentifier("Infinity"); }
     | "interface" { $$ = CYNew CYIdentifier("interface"); }
+    | "let" { $$ = CYNew CYIdentifier("let"); }
+    | "!let" LexBind { $$ = CYNew CYIdentifier("let"); }
     | "native" { $$ = CYNew CYIdentifier("native"); }
-    | "of" { $$ = CYNew CYIdentifier("of"); }
+    | "!of" { $$ = CYNew CYIdentifier("of"); }
     | "package" { $$ = CYNew CYIdentifier("package"); }
     | "private" { $$ = CYNew CYIdentifier("private"); }
     | "protected" { $$ = CYNew CYIdentifier("protected"); }
@@ -1290,17 +1297,17 @@ Statement_
     ;
 
 Statement
-    : LexSetStatement Statement_ { $$ = $2; }
+    : LexSetStatement LexLet Statement_ { $$ = $3; }
     ;
 
 Declaration__
     : HoistableDeclaration { $$ = $1; }
     | ClassDeclaration { $$ = $1; }
-    | LexicalDeclaration { $$ = $1; }
     ;
 
 Declaration_
-    : LexSetRegExp Declaration__ { $$ = $2; }
+    : LexLet LexSetRegExp Declaration__ { $$ = $3; }
+    | LexicalDeclaration { $$ = $1; }
     ;
 
 Declaration
@@ -1332,7 +1339,7 @@ StatementList
 
 StatementListOpt
     : StatementList { $$ = $1; }
-    | LexSetStatement LexSetRegExp { $$ = NULL; }
+    | LexSetStatement LexLet LexSetRegExp { $$ = NULL; }
     ;
 
 StatementListItem
@@ -1349,13 +1356,21 @@ LexicalDeclaration
     : LexicalDeclaration_ Terminator { $$ = $1; }
     ;
 
+LexLet
+    : { CYMAP(_let__, _let_); }
+    ;
+
+LexBind
+    : { CYMAP(OpenBrace_let, OpenBrace); CYMAP(OpenBracket_let, OpenBracket); } LexOf
+    ;
+
 LetOrConst
-    : "let" { $$ = false; }
-    | "const" { $$ = true; }
+    : LexLet LexSetRegExp "!let" LexBind { $$ = false; }
+    | LexLet LexSetRegExp "const" { $$ = true; }
     ;
 
 BindingList_
-    : "," BindingList { $$ = $2; }
+    : "," LexBind BindingList { $$ = $3; }
     | { $$ = NULL; }
     ;
 
@@ -1383,7 +1398,7 @@ VariableDeclarationList_
     ;
 
 VariableDeclarationList
-    : VariableDeclaration VariableDeclarationList_ { $$ = CYNew CYDeclarations($1, $2); }
+    : LexBind VariableDeclaration VariableDeclarationList_ { $$ = CYNew CYDeclarations($2, $3); }
     ;
 
 VariableDeclaration
@@ -1398,11 +1413,11 @@ BindingPattern
     ;
 
 ObjectBindingPattern
-    : BRACE BindingPropertyListOpt "}"
+    : "let {" BindingPropertyListOpt "}"
     ;
 
 ArrayBindingPattern
-    : "[" { CYNOT(@$); }
+    : "let [" { CYNOT(@$); }
     ;
 
 BindingPropertyList_
@@ -1425,8 +1440,8 @@ BindingProperty
     ;
 
 BindingElement
-    : SingleNameBinding { $$ = $1; }
-    | BindingPattern InitializerOpt { CYNOT(@$); }
+    : LexBind SingleNameBinding { $$ = $2; }
+    | LexBind BindingPattern InitializerOpt { CYNOT(@$); }
     ;
 
 SingleNameBinding
@@ -1465,23 +1480,23 @@ IterationStatement
     : "do" Statement "while" "(" Expression ")" TerminatorOpt { $$ = CYNew CYDoWhile($5, $2); }
     | "while" "(" Expression ")" Statement { $$ = CYNew CYWhile($3, $5); }
     | "for" "(" LexPushInOn ForStatementInitializer LexPopIn ExpressionOpt ";" ExpressionOpt ")" Statement { $$ = CYNew CYFor($4, $6, $8, $10); }
-    | "for" "(" LexPushInOn LexSetRegExp Var_ BindingIdentifier Initializer "!in" LexPopIn Expression ")" Statement { $$ = CYNew CYForInitialized(CYNew CYDeclaration($6, $7), $10, $12); }
+    | "for" "(" LexPushInOn LexLet LexSetRegExp Var_ LexBind BindingIdentifier Initializer "!in" LexPopIn Expression ")" Statement { $$ = CYNew CYForInitialized(CYNew CYDeclaration($8, $9), $12, $14); }
     | "for" "(" LexPushInOn ForInStatementInitializer "!in" LexPopIn Expression ")" Statement { $$ = CYNew CYForIn($4, $7, $9); }
     | "for" "(" LexPushInOn ForInStatementInitializer "of" LexPopIn AssignmentExpression ")" Statement { $$ = CYNew CYForOf($4, $7, $9); }
     ;
 
 ForStatementInitializer
-    : LexSetRegExp EmptyStatement { $$ = $2; }
-    | ExpressionStatement_ ";" { $$ = $1; }
-    | LexSetRegExp VariableStatement_ ";" { $$ = $2; }
-    | LexSetRegExp LexicalDeclaration_ ";" { $$ = $2; }
+    : LexLet LexSetRegExp EmptyStatement { $$ = $3; }
+    | LexLet ExpressionStatement_ ";" { $$ = $2; }
+    | LexLet LexSetRegExp VariableStatement_ ";" { $$ = $3; }
+    | LexicalDeclaration_ ";" { $$ = $1; }
     ;
 
 ForInStatementInitializer
-    : AccessExpression LexCrement { $$ = $1; }
-    | LexSetRegExp IndirectExpression { $$ = $2; }
-    | LexSetRegExp Var_ ForBinding { $$ = CYNew CYForVariable($3); }
-    | LexSetRegExp ForDeclaration { $$ = $2; }
+    : LexLet AccessExpression LexCrement { $$ = $2; }
+    | LexLet LexSetRegExp IndirectExpression { $$ = $3; }
+    | LexLet LexSetRegExp Var_ LexBind ForBinding { $$ = CYNew CYForVariable($5); }
+    | ForDeclaration { $$ = $1; }
     ;
 
 ForDeclaration
@@ -1559,7 +1574,7 @@ LabelledStatement
 
 LabelledItem
     : Statement { $$ = $1; }
-    | LexSetStatement LexSetRegExp FunctionDeclaration { $$ = $3; }
+    | LexSetStatement LexLet LexSetRegExp FunctionDeclaration { $$ = $4; }
     ;
 /* }}} */
 /* 13.14 The throw Statement {{{ */
@@ -1580,7 +1595,7 @@ TryStatement
     ;
 
 Catch
-    : "catch" "(" CatchParameter ")" Block { $$ = CYNew cy::Syntax::Catch($3, $5); }
+    : "catch" "(" LexBind CatchParameter ")" Block { $$ = CYNew cy::Syntax::Catch($4, $6); }
     ;
 
 Finally
@@ -1612,7 +1627,7 @@ StrictFormalParameters
     ;
 
 FormalParameters
-    : { $$ = NULL; }
+    : LexBind { $$ = NULL; }
     | FormalParameterList
     ;
 
@@ -1622,7 +1637,7 @@ FormalParameterList_
     ;
 
 FormalParameterList
-    : FunctionRestParameter { CYNOT(@$); }
+    : LexBind FunctionRestParameter { CYNOT(@$); }
     | FormalParameter FormalParameterList_ { $$ = CYNew CYFunctionParameter($1, $2); }
     ;
 
@@ -1758,7 +1773,7 @@ ScriptBody
 
 ScriptBodyOpt
     : ScriptBody { $$ = $1; }
-    | LexSetStatement LexSetRegExp { $$ = NULL; }
+    | LexSetStatement LexLet LexSetRegExp { $$ = NULL; }
     ;
 /* }}} */
 /* 15.2 Modules {{{ */
@@ -1785,8 +1800,8 @@ ModuleItemListOpt
     ;
 
 ModuleItem
-    : LexSetStatement LexSetRegExp ImportDeclaration
-    | LexSetStatement LexSetRegExp ExportDeclaration
+    : LexSetStatement LexLet LexSetRegExp ImportDeclaration
+    | LexSetStatement LexLet LexSetRegExp ExportDeclaration
     | StatementListItem
     ;
 /* }}} */
@@ -1859,7 +1874,7 @@ ExportDeclaration_
     ;
 
 ExportDeclaration
-    : "export" LexSetStatement LexSetRegExp ExportDeclaration_
+    : "export" LexSetStatement LexLet LexSetRegExp ExportDeclaration_
     | "export" Declaration
     ;
 
@@ -2372,7 +2387,7 @@ Comprehension
     ;
 
 ComprehensionFor
-    : "for" "each" "(" LexPushInOn ForBinding "!in" LexPopIn Expression ")" { $$ = CYNew CYForOfComprehension($5, $8); }
+    : "for" "each" "(" LexPushInOn LexBind ForBinding "!in" LexPopIn Expression ")" { $$ = CYNew CYForOfComprehension($6, $9); }
     ;
 /* }}} */
 /* JavaScript FTL: for each {{{ */
@@ -2401,8 +2416,8 @@ ComprehensionTail
     ;
 
 ComprehensionFor
-    : "for" "(" LexPushInOn ForBinding "!in" LexPopIn Expression ")" { $$ = CYNew CYForInComprehension($4, $7); }
-    | "for" "(" LexPushInOn ForBinding "of" LexPopIn Expression ")" { $$ = CYNew CYForOfComprehension($4, $7); }
+    : "for" "(" LexPushInOn LexBind ForBinding "!in" LexPopIn Expression ")" { $$ = CYNew CYForInComprehension($5, $8); }
+    | "for" "(" LexPushInOn LexBind ForBinding "of" LexPopIn Expression ")" { $$ = CYNew CYForOfComprehension($5, $8); }
     ;
 
 ComprehensionIf
