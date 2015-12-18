@@ -97,10 +97,10 @@ struct CYSelectorPart :
 struct CYSelector :
     CYLiteral
 {
-    CYSelectorPart *name_;
+    CYSelectorPart *parts_;
 
-    CYSelector(CYSelectorPart *name) :
-        name_(name)
+    CYSelector(CYSelectorPart *parts) :
+        parts_(parts)
     {
     }
 
@@ -128,11 +128,11 @@ struct CYImplementationField :
 struct CYMessageParameter :
     CYNext<CYMessageParameter>
 {
-    CYWord *tag_;
+    CYWord *name_;
     CYTypedIdentifier *type_;
 
-    CYMessageParameter(CYWord *tag, CYTypedIdentifier *type) :
-        tag_(tag),
+    CYMessageParameter(CYWord *name, CYTypedIdentifier *type) :
+        name_(name),
         type_(type)
     {
     }
@@ -151,10 +151,10 @@ struct CYMessage :
     CYMessageParameter *parameters_;
     CYBlock code_;
 
-    CYMessage(bool instance, CYTypedIdentifier *type, CYMessageParameter *parameter, CYStatement *code) :
+    CYMessage(bool instance, CYTypedIdentifier *type, CYMessageParameter *parameters, CYStatement *code) :
         instance_(instance),
         type_(type),
-        parameters_(parameter),
+        parameters_(parameters),
         code_(code)
     {
     }
@@ -185,14 +185,14 @@ struct CYImplementation :
     CYStatement
 {
     CYIdentifier *name_;
-    CYExpression *super_;
+    CYExpression *extends_;
     CYProtocol *protocols_;
     CYImplementationField *fields_;
     CYMessage *messages_;
 
-    CYImplementation(CYIdentifier *name, CYExpression *super, CYProtocol *protocols, CYImplementationField *fields, CYMessage *messages) :
+    CYImplementation(CYIdentifier *name, CYExpression *extends, CYProtocol *protocols, CYImplementationField *fields, CYMessage *messages) :
         name_(name),
-        super_(super),
+        extends_(extends),
         protocols_(protocols),
         fields_(fields),
         messages_(messages)

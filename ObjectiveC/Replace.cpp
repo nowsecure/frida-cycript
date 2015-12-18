@@ -43,7 +43,7 @@ static CYExpression *MessageType(CYContext &context, CYTypedIdentifier *type, CY
 CYStatement *CYCategory::Replace(CYContext &context) {
     CYVariable *cyc($V("$cyc")), *cys($V("$cys"));
 
-    return $E($C1($F(NULL, $P6($L($I("$cys")), $L($I("$cyp")), $L($I("$cyc")), $L($I("$cyn")), $L($I("$cyt")), $L($I("$cym"))), $$->*
+    return $E($C1($F(NULL, $P6($B($I("$cys")), $B($I("$cyp")), $B($I("$cyc")), $B($I("$cyn")), $B($I("$cyt")), $B($I("$cym"))), $$->*
         $E($ CYAssign($V("$cyp"), $C1($V("object_getClass"), cys)))->*
         $E($ CYAssign(cyc, cys))->*
         $E($ CYAssign($V("$cym"), $C1($V("object_getClass"), cyc)))->*
@@ -54,7 +54,7 @@ CYStatement *CYCategory::Replace(CYContext &context) {
 CYStatement *CYImplementation::Replace(CYContext &context) {
     CYVariable *cyc($V("$cyc")), *cys($V("$cys"));
 
-    return $E($C1($F(NULL, $P6($L($I("$cys")), $L($I("$cyp")), $L($I("$cyc")), $L($I("$cyn")), $L($I("$cyt")), $L($I("$cym"))), $$->*
+    return $E($C1($F(NULL, $P6($B($I("$cys")), $B($I("$cyp")), $B($I("$cyc")), $B($I("$cyn")), $B($I("$cyt")), $B($I("$cym"))), $$->*
         $E($ CYAssign($V("$cyp"), $C1($V("object_getClass"), cys)))->*
         $E($ CYAssign(cyc, $C3($V("objc_allocateClassPair"), cys, $S(name_), $D(0))))->*
         $E($ CYAssign($V("$cym"), $C1($V("object_getClass"), cyc)))->*
@@ -63,7 +63,7 @@ CYStatement *CYImplementation::Replace(CYContext &context) {
         messages_->Replace(context, false)->*
         $E($C1($V("objc_registerClassPair"), cyc))->*
         $ CYReturn(cyc)
-    ), super_ == NULL ? $ CYNull() : super_));
+    ), extends_ == NULL ? $ CYNull() : extends_));
 }
 
 CYStatement *CYImplementationField::Replace(CYContext &context) const { $T(NULL)
@@ -97,8 +97,8 @@ CYStatement *CYMessage::Replace(CYContext &context, bool replace) const { $T(NUL
         $E($C4($V(replace ? "class_replaceMethod" : "class_addMethod"),
             $V(instance_ ? "$cyc" : "$cym"),
             cyn,
-            $N2($V("Functor"), $F(NULL, $P2($L($I("self")), $L($I("_cmd")), parameters_->Parameters(context)), $$->*
-                $ CYVar($L1($L($I("$cyr"), $N2($V("objc_super"), self, _class))))->*
+            $N2($V("Functor"), $F(NULL, $P2($B($I("self")), $B($I("_cmd")), parameters_->Parameters(context)), $$->*
+                $ CYVar($B1($B($I("$cyr"), $N2($V("objc_super"), self, _class))))->*
                 $ CYReturn($C1($M($F(NULL, NULL, code_.code_), $S("call")), self))
             ), cyt),
             cyt
@@ -112,7 +112,7 @@ CYExpression *CYMessage::TypeSignature(CYContext &context) const {
 
 CYFunctionParameter *CYMessageParameter::Parameters(CYContext &context) const { $T(NULL)
     CYFunctionParameter *next(next_->Parameters(context));
-    return type_ == NULL ? next : $ CYFunctionParameter($ CYDeclaration(type_->identifier_), next);
+    return type_ == NULL ? next : $ CYFunctionParameter($B(type_->identifier_), next);
 }
 
 CYSelector *CYMessageParameter::Selector(CYContext &context) const {
@@ -121,7 +121,7 @@ CYSelector *CYMessageParameter::Selector(CYContext &context) const {
 
 CYSelectorPart *CYMessageParameter::SelectorPart(CYContext &context) const { $T(NULL)
     CYSelectorPart *next(next_->SelectorPart(context));
-    return tag_ == NULL ? next : $ CYSelectorPart(tag_, type_ != NULL, next);
+    return name_ == NULL ? next : $ CYSelectorPart(name_, type_ != NULL, next);
 }
 
 CYExpression *CYMessageParameter::TypeSignature(CYContext &context) const {
@@ -146,7 +146,7 @@ CYStatement *CYProtocol::Replace(CYContext &context) const { $T(NULL)
 }
 
 CYTarget *CYSelector::Replace(CYContext &context) {
-    return $C1($V("sel_registerName"), name_->Replace(context));
+    return $C1($V("sel_registerName"), parts_->Replace(context));
 }
 
 CYString *CYSelectorPart::Replace(CYContext &context) {

@@ -577,17 +577,17 @@ struct CYParenthetical :
     void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CYDeclaration;
+struct CYBinding;
 
 struct CYFunctionParameter :
     CYNext<CYFunctionParameter>,
     CYThing
 {
-    CYDeclaration *initialiser_;
+    CYBinding *binding_;
 
-    CYFunctionParameter(CYDeclaration *initialiser, CYFunctionParameter *next = NULL) :
+    CYFunctionParameter(CYBinding *binding, CYFunctionParameter *next = NULL) :
         CYNext<CYFunctionParameter>(next),
-        initialiser_(initialiser)
+        binding_(binding)
     {
     }
 
@@ -604,11 +604,6 @@ struct CYComprehension :
     {
     }
 
-    CYComprehension *Modify(CYComprehension *next) {
-        next_ = next;
-        return this;
-    }
-
     virtual CYFunctionParameter *Parameter(CYContext &context) const = 0;
     CYFunctionParameter *Parameters(CYContext &context) const;
     virtual CYStatement *Replace(CYContext &context, CYStatement *statement) const;
@@ -618,13 +613,13 @@ struct CYComprehension :
 struct CYForInComprehension :
     CYComprehension
 {
-    CYDeclaration *declaration_;
-    CYExpression *set_;
+    CYBinding *binding_;
+    CYExpression *iterable_;
 
-    CYForInComprehension(CYDeclaration *declaration, CYExpression *set, CYComprehension *next = NULL) :
+    CYForInComprehension(CYBinding *binding, CYExpression *iterable, CYComprehension *next = NULL) :
         CYComprehension(next),
-        declaration_(declaration),
-        set_(set)
+        binding_(binding),
+        iterable_(iterable)
     {
     }
 
@@ -636,13 +631,13 @@ struct CYForInComprehension :
 struct CYForOfComprehension :
     CYComprehension
 {
-    CYDeclaration *declaration_;
-    CYExpression *set_;
+    CYBinding *binding_;
+    CYExpression *iterable_;
 
-    CYForOfComprehension(CYDeclaration *declaration, CYExpression *set, CYComprehension *next = NULL) :
+    CYForOfComprehension(CYBinding *binding, CYExpression *iterable, CYComprehension *next = NULL) :
         CYComprehension(next),
-        declaration_(declaration),
-        set_(set)
+        binding_(binding),
+        iterable_(iterable)
     {
     }
 
@@ -1068,11 +1063,11 @@ struct CYClause :
     CYThing,
     CYNext<CYClause>
 {
-    CYExpression *case_;
+    CYExpression *value_;
     CYStatement *code_;
 
-    CYClause(CYExpression *_case, CYStatement *code) :
-        case_(_case),
+    CYClause(CYExpression *value, CYStatement *code) :
+        value_(value),
         code_(code)
     {
     }
@@ -1141,13 +1136,13 @@ struct CYArray :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CYDeclaration {
+struct CYBinding {
     CYIdentifier *identifier_;
-    CYExpression *initialiser_;
+    CYExpression *initializer_;
 
-    CYDeclaration(CYIdentifier *identifier, CYExpression *initialiser = NULL) :
+    CYBinding(CYIdentifier *identifier, CYExpression *initializer = NULL) :
         identifier_(identifier),
-        initialiser_(initialiser)
+        initializer_(initializer)
     {
     }
 
@@ -1161,11 +1156,11 @@ struct CYForLexical :
     CYForInInitializer
 {
     bool constant_;
-    CYDeclaration *declaration_;
+    CYBinding *binding_;
 
-    CYForLexical(bool constant, CYDeclaration *declaration) :
+    CYForLexical(bool constant, CYBinding *binding) :
         constant_(constant),
-        declaration_(declaration)
+        binding_(binding)
     {
     }
 
@@ -1178,10 +1173,10 @@ struct CYForLexical :
 struct CYForVariable :
     CYForInInitializer
 {
-    CYDeclaration *declaration_;
+    CYBinding *binding_;
 
-    CYForVariable(CYDeclaration *declaration) :
-        declaration_(declaration)
+    CYForVariable(CYBinding *binding) :
+        binding_(binding)
     {
     }
 
@@ -1191,15 +1186,15 @@ struct CYForVariable :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CYDeclarations :
-    CYNext<CYDeclarations>,
+struct CYBindings :
+    CYNext<CYBindings>,
     CYThing
 {
-    CYDeclaration *declaration_;
+    CYBinding *binding_;
 
-    CYDeclarations(CYDeclaration *declaration, CYDeclarations *next = NULL) :
-        CYNext<CYDeclarations>(next),
-        declaration_(declaration)
+    CYBindings(CYBinding *binding, CYBindings *next = NULL) :
+        CYNext<CYBindings>(next),
+        binding_(binding)
     {
     }
 
@@ -1215,10 +1210,10 @@ struct CYDeclarations :
 struct CYVar :
     CYForInitializer
 {
-    CYDeclarations *declarations_;
+    CYBindings *bindings_;
 
-    CYVar(CYDeclarations *declarations) :
-        declarations_(declarations)
+    CYVar(CYBindings *bindings) :
+        bindings_(bindings)
     {
     }
 
@@ -1228,15 +1223,15 @@ struct CYVar :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CYLet :
+struct CYLexical :
     CYForInitializer
 {
     bool constant_;
-    CYDeclarations *declarations_;
+    CYBindings *bindings_;
 
-    CYLet(bool constant, CYDeclarations *declarations) :
+    CYLexical(bool constant, CYBindings *bindings) :
         constant_(constant),
-        declarations_(declarations)
+        bindings_(bindings)
     {
     }
 
@@ -1247,7 +1242,7 @@ struct CYLet :
 };
 
 struct CYBuilder {
-    CYList<CYDeclarations> declarations_;
+    CYList<CYBindings> bindings_;
     CYList<CYStatement> statements_;
 
     operator bool() const {
@@ -1297,13 +1292,13 @@ struct CYPropertyValue :
 struct CYFor :
     CYStatement
 {
-    CYForInitializer *initialiser_;
+    CYForInitializer *initializer_;
     CYExpression *test_;
     CYExpression *increment_;
     CYStatement *code_;
 
-    CYFor(CYForInitializer *initialiser, CYExpression *test, CYExpression *increment, CYStatement *code) :
-        initialiser_(initialiser),
+    CYFor(CYForInitializer *initializer, CYExpression *test, CYExpression *increment, CYStatement *code) :
+        initializer_(initializer),
         test_(test),
         increment_(increment),
         code_(code)
@@ -1319,13 +1314,13 @@ struct CYFor :
 struct CYForIn :
     CYStatement
 {
-    CYForInInitializer *initialiser_;
-    CYExpression *set_;
+    CYForInInitializer *initializer_;
+    CYExpression *iterable_;
     CYStatement *code_;
 
-    CYForIn(CYForInInitializer *initialiser, CYExpression *set, CYStatement *code) :
-        initialiser_(initialiser),
-        set_(set),
+    CYForIn(CYForInInitializer *initializer, CYExpression *iterable, CYStatement *code) :
+        initializer_(initializer),
+        iterable_(iterable),
         code_(code)
     {
     }
@@ -1339,13 +1334,13 @@ struct CYForIn :
 struct CYForInitialized :
     CYStatement
 {
-    CYDeclaration *declaration_;
-    CYExpression *set_;
+    CYBinding *binding_;
+    CYExpression *iterable_;
     CYStatement *code_;
 
-    CYForInitialized(CYDeclaration *declaration, CYExpression *set, CYStatement *code) :
-        declaration_(declaration),
-        set_(set),
+    CYForInitialized(CYBinding *binding, CYExpression *iterable, CYStatement *code) :
+        binding_(binding),
+        iterable_(iterable),
         code_(code)
     {
     }
@@ -1359,13 +1354,13 @@ struct CYForInitialized :
 struct CYForOf :
     CYStatement
 {
-    CYForInInitializer *initialiser_;
-    CYExpression *set_;
+    CYForInInitializer *initializer_;
+    CYExpression *iterable_;
     CYStatement *code_;
 
-    CYForOf(CYForInInitializer *initialiser, CYExpression *set, CYStatement *code) :
-        initialiser_(initialiser),
-        set_(set),
+    CYForOf(CYForInInitializer *initializer, CYExpression *iterable, CYStatement *code) :
+        initializer_(initializer),
+        iterable_(iterable),
         code_(code)
     {
     }

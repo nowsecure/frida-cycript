@@ -110,17 +110,17 @@
 #define $N5(func, args...) \
     $N(func, $C5_(args))
 
-#define $L(args...) \
-    $ CYDeclaration(args)
-#define $L1(arg0) \
-    $ CYDeclarations(arg0)
-#define $L2(arg0, args...) \
-    $ CYDeclarations(arg0, $L1(args))
-#define $L3(arg0, args...) \
-    $ CYDeclarations(arg0, $L2(args))
-#define $L4(arg0, args...) \
-    $ CYDeclarations(arg0, $L3(args))
-#define $L5(arg0, args...) \
-    $ CYDeclarations(arg0, $L4(args))
+#define $B(args...) \
+    $ CYBinding(args)
+#define $B1(arg0) \
+    $ CYBindings(arg0)
+#define $B2(arg0, args...) \
+    $ CYBindings(arg0, $B1(args))
+#define $B3(arg0, args...) \
+    $ CYBindings(arg0, $B2(args))
+#define $B4(arg0, args...) \
+    $ CYBindings(arg0, $B3(args))
+#define $B5(arg0, args...) \
+    $ CYBindings(arg0, $B4(args))
 
 #endif/*CYCRIPT_REPLACE_HPP*/

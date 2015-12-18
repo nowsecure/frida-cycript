@@ -253,8 +253,8 @@ void CYContinue::Output(CYOutput &out, CYFlags flags) const {
 
 void CYClause::Output(CYOutput &out) const {
     out << '\t';
-    if (case_ != NULL)
-        out << "case" << ' ' << *case_;
+    if (value_ != NULL)
+        out << "case" << ' ' << *value_;
     else
         out << "default";
     out << ':' << '\n';
@@ -268,35 +268,35 @@ void CYDebugger::Output(CYOutput &out, CYFlags flags) const {
     out << "debugger" << ';';
 }
 
-void CYDeclaration::Output(CYOutput &out, CYFlags flags) const {
+void CYBinding::Output(CYOutput &out, CYFlags flags) const {
     out << *identifier_;
     //out.out_ << ':' << identifier_->usage_ << '#' << identifier_->offset_;
-    if (initialiser_ != NULL) {
+    if (initializer_ != NULL) {
         out << ' ' << '=' << ' ';
-        initialiser_->Output(out, CYAssign::Precedence_, CYRight(flags));
+        initializer_->Output(out, CYAssign::Precedence_, CYRight(flags));
     }
 }
 
-void CYDeclarations::Output(CYOutput &out) const {
+void CYBindings::Output(CYOutput &out) const {
     Output(out, CYNoFlags);
 }
 
-void CYDeclarations::Output(CYOutput &out, CYFlags flags) const {
-    const CYDeclarations *declaration(this);
+void CYBindings::Output(CYOutput &out, CYFlags flags) const {
+    const CYBindings *binding(this);
     bool first(true);
 
     for (;;) {
-        CYDeclarations *next(declaration->next_);
+        CYBindings *next(binding->next_);
 
         CYFlags jacks(first ? CYLeft(flags) : next == NULL ? CYRight(flags) : CYCenter(flags));
         first = false;
-        declaration->declaration_->Output(out, jacks);
+        binding->binding_->Output(out, jacks);
 
         if (next == NULL)
             break;
 
         out << ',' << ' ';
-        declaration = next;
+        binding = next;
     }
 }
 
@@ -382,8 +382,8 @@ void CYFinally::Output(CYOutput &out) const {
 
 void CYFor::Output(CYOutput &out, CYFlags flags) const {
     out << "for" << ' ' << '(';
-    if (initialiser_ != NULL)
-        initialiser_->Output(out, CYNoIn);
+    if (initializer_ != NULL)
+        initializer_->Output(out, CYNoIn);
     out.Terminate();
     if (test_ != NULL)
         out << ' ';
@@ -398,45 +398,45 @@ void CYFor::Output(CYOutput &out, CYFlags flags) const {
 
 void CYForLexical::Output(CYOutput &out, CYFlags flags) const {
     out << (constant_ ? "const" : "let") << ' ';
-    declaration_->Output(out, CYRight(flags));
+    binding_->Output(out, CYRight(flags));
 }
 
 void CYForIn::Output(CYOutput &out, CYFlags flags) const {
     out << "for" << ' ' << '(';
-    initialiser_->Output(out, CYNoIn | CYNoRightHand);
-    out << ' ' << "in" << ' ' << *set_ << ')';
+    initializer_->Output(out, CYNoIn | CYNoRightHand);
+    out << ' ' << "in" << ' ' << *iterable_ << ')';
     code_->Single(out, CYRight(flags), CYCompactShort);
 }
 
 void CYForInitialized::Output(CYOutput &out, CYFlags flags) const {
     out << "for" << ' ' << '(' << "var" << ' ';
-    declaration_->Output(out, CYNoIn | CYNoRightHand);
-    out << ' ' << "in" << ' ' << *set_ << ')';
+    binding_->Output(out, CYNoIn | CYNoRightHand);
+    out << ' ' << "in" << ' ' << *iterable_ << ')';
     code_->Single(out, CYRight(flags), CYCompactShort);
 }
 
 void CYForInComprehension::Output(CYOutput &out) const {
     out << "for" << ' ' << '(';
-    declaration_->Output(out, CYNoIn | CYNoRightHand);
-    out << ' ' << "in" << ' ' << *set_ << ')';
+    binding_->Output(out, CYNoIn | CYNoRightHand);
+    out << ' ' << "in" << ' ' << *iterable_ << ')';
 }
 
 void CYForOf::Output(CYOutput &out, CYFlags flags) const {
     out << "for" << ' ' << '(';
-    initialiser_->Output(out, CYNoRightHand);
-    out << ' ' << "of" << ' ' << *set_ << ')';
+    initializer_->Output(out, CYNoRightHand);
+    out << ' ' << "of" << ' ' << *iterable_ << ')';
     code_->Single(out, CYRight(flags), CYCompactShort);
 }
 
 void CYForOfComprehension::Output(CYOutput &out) const {
     out << "for" << ' ' << '(';
-    declaration_->Output(out, CYNoRightHand);
-    out << ' ' << "of" << ' ' << *set_ << ')' << next_;
+    binding_->Output(out, CYNoRightHand);
+    out << ' ' << "of" << ' ' << *iterable_ << ')' << next_;
 }
 
 void CYForVariable::Output(CYOutput &out, CYFlags flags) const {
     out << "var" << ' ';
-    declaration_->Output(out, CYRight(flags));
+    binding_->Output(out, CYRight(flags));
 }
 
 void CYFunction::Output(CYOutput &out) const {
@@ -467,7 +467,7 @@ void CYFunctionStatement::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYFunctionParameter::Output(CYOutput &out) const {
-    initialiser_->Output(out, CYNoFlags);
+    binding_->Output(out, CYNoFlags);
     if (next_ != NULL)
         out << ',' << ' ' << *next_;
 }
@@ -640,9 +640,9 @@ void CYTypeDefinition::Output(CYOutput &out, CYFlags flags) const {
     out << "typedef" << ' ' << *typed_;
 }
 
-void CYLet::Output(CYOutput &out, CYFlags flags) const {
+void CYLexical::Output(CYOutput &out, CYFlags flags) const {
     out << "let" << ' ';
-    declarations_->Output(out, flags); // XXX: flags
+    bindings_->Output(out, flags); // XXX: flags
     out << ';';
 }
 
@@ -930,7 +930,7 @@ void CYTypeVoid::Output(CYOutput &out) const {
 
 void CYVar::Output(CYOutput &out, CYFlags flags) const {
     out << "var" << ' ';
-    declarations_->Output(out, flags); // XXX: flags
+    bindings_->Output(out, flags); // XXX: flags
     out << ';';
 }
 

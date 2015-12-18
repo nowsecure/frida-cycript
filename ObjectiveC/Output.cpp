@@ -60,8 +60,8 @@ void CYMessage::Output(CYOutput &out) const {
     out << (instance_ ? '-' : '+');
 
     CYForEach (parameter, parameters_)
-        if (parameter->tag_ != NULL) {
-            out << ' ' << *parameter->tag_;
+        if (parameter->name_ != NULL) {
+            out << ' ' << *parameter->name_;
             if (parameter->type_ != NULL)
                 out << ':' << *parameter->type_->identifier_;
         }
@@ -89,7 +89,7 @@ void CYProtocol::Output(CYOutput &out) const {
 }
 
 void CYSelector::Output(CYOutput &out, CYFlags flags) const {
-    out << "@selector" << '(' << name_ << ')';
+    out << "@selector" << '(' << parts_ << ')';
 }
 
 void CYSelectorPart::Output(CYOutput &out) const {
