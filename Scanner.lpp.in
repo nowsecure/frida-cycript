@@ -520,7 +520,6 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "with"            L /*KKK*/ F(tk::_with_, hi::Control);
 "yield"           L /*IS?*/ F(tk::_yield_, hi::Control);
 
-"auto"            L F(tk::_auto_, hi::Meta);
 "each"            L F(tk::_each_, hi::Control);
 "of"              L F(tk::_of_, hi::Operator);
 

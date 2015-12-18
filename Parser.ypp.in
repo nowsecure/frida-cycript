@@ -439,7 +439,6 @@ type; })
 %token _SEL_ "SEL"
 @end
 
-%token _auto_ "auto"
 %token _each_ "each"
 %token _of_ "of"
 %token _of__ "!of"
@@ -760,7 +759,6 @@ IdentifierName
 
 Word
     : IdentifierNoOf[pass] { $$ = $pass; }
-    | "auto" { $$ = CYNew CYWord("auto"); }
     | "break" { $$ = CYNew CYWord("break"); }
     | "case" { $$ = CYNew CYWord("case"); }
     | "catch" { $$ = CYNew CYWord("catch"); }
@@ -2187,11 +2185,6 @@ MemberAccess
     : "->" "[" Expression[property] "]" { $$ = CYNew CYIndirectMember(NULL, $property); }
     | "->" IdentifierName[property] { $$ = CYNew CYIndirectMember(NULL, CYNew CYString($property)); }
     | "->" AutoComplete { driver.mode_ = CYDriver::AutoIndirect; YYACCEPT; }
-    ;
-/* }}} */
-/* Cycript (C): auto Compatibility {{{ */
-Var_
-    : "auto"
     ;
 /* }}} */
 /* Cycript (C): Lambda Expressions {{{ */
