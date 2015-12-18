@@ -1315,12 +1315,15 @@ Scanner.cpp: Scanner.lpp
 	! grep -F ': warning, ' Scanner.output || true
 
 Scanner.lo: Parser.hpp IdentifierStart.h IdentifierContinue.h
-Parser.cpp Parser.hpp stack.hh Parser.output: Parser.ypp
+Parser.lo: Parser.hpp
+Parser.cpp: Parser.hpp
+Parser.hpp: Parser.ypp
 	$(BISON) -v --report=state -Werror -o Parser.cpp $<
 	! grep -n '^State [0-9]* conflicts:' Parser.output
 	! grep -n '^ *.* *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output | grep -v '$$default'
 	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output -B 2 | grep 'shift, and go to state [0-9]*$$'
 	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output -B 2 | grep -v '$$default' | grep 'reduce using rule [0-9]* ([^)]*)$$'
+	perl -pi -e 's/yytranslate_ \(yylex \(/(yylex_ (/g' Parser.cpp
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

@@ -111,11 +111,14 @@ Scanner.cpp: Scanner.lpp
 	! grep -F ': warning, ' Scanner.output || true
 
 Scanner.lo: Parser.hpp IdentifierStart.h IdentifierContinue.h
+Parser.lo: Parser.hpp
+Parser.cpp: Parser.hpp
 
 CLEANFILES += Parser.cpp Parser.hpp stack.hh Parser.output
-Parser.cpp Parser.hpp stack.hh Parser.output: Parser.ypp
+Parser.hpp: Parser.ypp
 	$(BISON) -v --report=state -Werror -o Parser.cpp $<
 	! grep -n '^State [0-9]* conflicts:' Parser.output
 	! grep -n '^ *.* *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output | grep -v '$$default'
 	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output -B 2 | grep 'shift, and go to state [0-9]*$$'
 	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output -B 2 | grep -v '$$default' | grep 'reduce using rule [0-9]* ([^)]*)$$'
+	perl -pi -e 's/yytranslate_ \(yylex \(/(yylex_ (/g' Parser.cpp

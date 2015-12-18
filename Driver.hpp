@@ -39,7 +39,6 @@ struct CYScript;
 struct CYWord;
 
 enum CYMark {
-    CYMarkIgnore,
     CYMarkScript,
     CYMarkModule,
 };
@@ -60,17 +59,12 @@ class _visible CYDriver {
 
     std::stack<CYClassTail *> class_;
 
-    enum {
-        NewLineNone,
-        NewLineLast,
-        NewLineHere,
-    } newline_;
-
+    CYMark mark_;
+    int hold_;
+    bool newline_;
     bool last_;
-    bool next_;
 
     std::istream &data_;
-    CYMark mark_;
 
     int debug_;
     bool strict_;

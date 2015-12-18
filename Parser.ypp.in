@@ -113,25 +113,13 @@ int cylex(YYSTYPE *, CYLocation *, void *);
 
 %code {
 
+#undef yylex
+
 typedef cy::parser::token tk;
 
-#undef yylex
-_finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CYDriver &driver) {
-    if (driver.mark_ == CYMarkIgnore);
-    else if (driver.mark_ == CYMarkScript) {
-        driver.mark_ = CYMarkIgnore;
-        return cy::parser::token::MarkScript;
-    } else if (driver.mark_ == CYMarkModule) {
-        driver.mark_ = CYMarkIgnore;
-        return cy::parser::token::MarkModule;
-    }
-
+_finline int cylex_(cy::parser::semantic_type *semantic, CYLocation *location, CYDriver &driver) {
+    driver.newline_ = false;
   lex:
-    if (driver.newline_ == CYDriver::NewLineHere)
-        driver.newline_ = CYDriver::NewLineLast;
-    else if (driver.newline_ == CYDriver::NewLineLast)
-        driver.newline_ = CYDriver::NewLineNone;
-
     YYSTYPE data;
     int token(cylex(&data, location, driver.scanner_));
     *semantic = data.semantic_;
@@ -161,19 +149,27 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
         break;
 
         case tk::NewLine:
-            driver.newline_ = CYDriver::NewLineHere;
-            if (!driver.next_)
-                goto lex;
+            driver.newline_ = true;
+            goto lex;
         break;
     }
 
-    driver.next_ = false;
     return token;
 }
 
+#define yylex_(semantic, location, driver) ({ \
+    int type; \
+    if (driver.hold_ == cy::parser::empty_symbol) \
+        type = yytranslate_(cylex_(semantic, location, driver)); \
+    else { \
+        type = driver.hold_; \
+        driver.hold_ = cy::parser::empty_symbol; \
+    } \
+type; })
+
 #define CYLEX() do if (yyla.empty()) { \
     YYCDEBUG << "Mapping a token: "; \
-    yyla.type = yytranslate_(yylex(&yyla.value, &yyla.location, driver)); \
+    yyla.type = yylex_(&yyla.value, &yyla.location, driver); \
     YY_SYMBOL_PRINT("Next token is", yyla); \
 } while (false)
 
@@ -181,12 +177,6 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
     CYLEX(); \
     if (yyla.type == yytranslate_(token::from)) \
         yyla.type = yytranslate_(token::to); \
-} while (false)
-
-#define CYLIN(from) do { \
-    CYLEX(); \
-    if (yyla.type == yytranslate_(token::from) && driver.newline_ == CYDriver::NewLineLast) \
-        yyla.type = yytranslate_(token::from ## _); \
 } while (false)
 
 #define CYERR(location, message) do { \
@@ -215,6 +205,15 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 
 %initial-action {
     @$.begin.filename = @$.end.filename = &driver.filename_;
+
+    switch (driver.mark_) {
+        case CYMarkScript:
+            driver.hold_ = yytranslate_(token::MarkScript);
+            break;
+        case CYMarkModule:
+            driver.hold_ = yytranslate_(token::MarkModule);
+            break;
+    }
 };
 
 %locations
@@ -267,14 +266,12 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %token EqualEqual "=="
 %token EqualEqualEqual "==="
 %token EqualRight "=>"
-%token EqualRight_ "\n=>"
 %token Exclamation "!"
 %token ExclamationEqual "!="
 %token ExclamationEqualEqual "!=="
 %token Hyphen "-"
 %token HyphenEqual "-="
 %token HyphenHyphen "--"
-%token HyphenHyphen_ "\n--"
 %token HyphenRight "->"
 %token Left "<"
 %token LeftEqual "<="
@@ -290,7 +287,6 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %token Plus "+"
 %token PlusEqual "+="
 %token PlusPlus "++"
-%token PlusPlus_ "\n++"
 %token Right ">"
 %token RightEqual ">="
 %token RightRight ">>"
@@ -315,8 +311,7 @@ _finline int yylex(cy::parser::semantic_type *semantic, CYLocation *location, CY
 %token CloseParen ")"
 
 %token OpenBrace "{"
-%token OpenBrace_ "\n{"
-%token OpenBrace__ ";{"
+%token OpenBrace_ ";{"
 %token OpenBrace_let "let {"
 %token CloseBrace "}"
 
@@ -726,7 +721,7 @@ LexPushYieldOff: { driver.yield_.push(false); };
 LexPopYield: { driver.yield_.pop(); };
 
 LexNewLine
-    : { CYMPT(@$); driver.next_ = true; }
+    : { CYLEX(); if (driver.hold_ != empty_symbol) CYERR(@$, "unexpected hold"); if (driver.newline_) { driver.hold_ = yyla.type; yyla.type = yytranslate_(cy::parser::token::NewLine); } }
     ;
 
 LexNoStar
@@ -734,7 +729,7 @@ LexNoStar
     ;
 
 LexNoBrace
-    : { CYMAP(OpenBrace__, OpenBrace); CYMAP(OpenBrace__, OpenBrace_); }
+    : { CYMAP(OpenBrace_, OpenBrace); }
     ;
 
 LexNoClass
@@ -750,11 +745,6 @@ LexSetStatement
     ;
 /* }}} */
 /* Virtual Tokens {{{ */
-BRACE
-    : "{"
-    | "\n{"
-    ;
-
 Var_
     : "var"
     ;
@@ -766,11 +756,6 @@ IdentifierName
     | "for" { $$ = CYNew CYWord("for"); }
     | "in" { $$ = CYNew CYWord("in"); }
     | "instanceof" { $$ = CYNew CYWord("instanceof"); }
-    ;
-
-NewLineOpt
-    : "\n"
-    |
     ;
 
 Word
@@ -813,8 +798,6 @@ Word
     | "while" { $$ = CYNew CYWord("while"); }
     | "with" { $$ = CYNew CYWord("with"); }
     | "yield" { $$ = CYNew CYIdentifier("yield"); }
-
-    | Yield LexOf NewLineOpt { $$ = CYNew CYIdentifier("yield"); }
     ;
 
 @begin ObjectiveC
@@ -858,7 +841,7 @@ TerminatorSoft
 
 Terminator
     : ";"
-    | error { if (yyla.type_get() != yyeof_ && yyla.type != yytranslate_(token::CloseBrace) && driver.newline_ == CYDriver::NewLineNone) CYERR(@error, "required semi-colon"); else CYEOK(); } StrictSemi
+    | error { if (yyla.type_get() != yyeof_ && yyla.type != yytranslate_(token::CloseBrace) && !driver.newline_) CYERR(@error, "required semi-colon"); else CYEOK(); } StrictSemi
     ;
 
 TerminatorOpt
@@ -1011,7 +994,7 @@ ElementListOpt
 /* }}} */
 /* 12.2.6 Object Initializer {{{ */
 ObjectLiteral
-    : BRACE PropertyDefinitionListOpt[properties] "}" { $$ = CYNew CYObject($properties); }
+    : "{" PropertyDefinitionListOpt[properties] "}" { $$ = CYNew CYObject($properties); }
     ;
 
 PropertyDefinitionList_
@@ -1149,19 +1132,15 @@ AccessExpression
     ;
 
 LeftHandSideExpression
-    : AccessExpression[pass] LexCrement { $$ = $pass; }
+    : AccessExpression[pass] LexNewLine { $$ = $pass; }
     | IndirectExpression[pass] { $$ = $pass; }
     ;
 /* }}} */
 /* 12.4 Postfix Expressions {{{ */
-LexCrement
-    : { CYLIN(PlusPlus); CYLIN(HyphenHyphen); }
-    ;
-
 PostfixExpression
-    : AccessExpression[lhs] LexCrement { $$ = $lhs; }
-    | AccessExpression[lhs] LexCrement "++" { $$ = CYNew CYPostIncrement($lhs); }
-    | AccessExpression[lhs] LexCrement "--" { $$ = CYNew CYPostDecrement($lhs); }
+    : AccessExpression[lhs] LexNewLine { $$ = $lhs; }
+    | AccessExpression[lhs] LexNewLine "++" { $$ = CYNew CYPostIncrement($lhs); }
+    | AccessExpression[lhs] LexNewLine "--" { $$ = CYNew CYPostDecrement($lhs); }
     ;
 /* }}} */
 /* 12.5 Unary Operators {{{ */
@@ -1170,9 +1149,7 @@ UnaryExpression_
     | "void" UnaryExpression[rhs] { $$ = CYNew CYVoid($rhs); }
     | "typeof" UnaryExpression[rhs] { $$ = CYNew CYTypeOf($rhs); }
     | "++" UnaryExpression[rhs] { $$ = CYNew CYPreIncrement($rhs); }
-    | "\n++" UnaryExpression[rhs] { $$ = CYNew CYPreIncrement($rhs); }
     | "--" UnaryExpression[rhs] { $$ = CYNew CYPreDecrement($rhs); }
-    | "\n--" UnaryExpression[rhs] { $$ = CYNew CYPreDecrement($rhs); }
     | "+" UnaryExpression[rhs] { $$ = CYNew CYAffirm($rhs); }
     | "-" UnaryExpression[rhs] { $$ = CYNew CYNegate($rhs); }
     | "~" UnaryExpression[rhs] { $$ = CYNew CYBitwiseNot($rhs); }
@@ -1180,7 +1157,8 @@ UnaryExpression_
     ;
 
 UnaryExpression
-    : PostfixExpression[expression] LexOpenBrace { $$ = $expression; }
+    : PostfixExpression[expression] { $$ = $expression; }
+    | PostfixExpression[expression] "\n" { $$ = $expression; }
     | UnaryExpression_[pass] { $$ = $pass; }
     ;
 /* }}} */
@@ -1366,7 +1344,7 @@ BlockStatement
     ;
 
 Block
-    : BRACE StatementListOpt[code] "}" { $$ = $code; }
+    : "{" StatementListOpt[code] "}" { $$ = $code; }
     ;
 
 StatementList
@@ -1533,7 +1511,7 @@ ForStatementInitializer
     ;
 
 ForInStatementInitializer
-    : LexLet LexOf AccessExpression[pass] LexCrement { $$ = $pass; }
+    : LexLet LexOf AccessExpression[pass] LexNewLine { $$ = $pass; }
     | LexLet LexOf IndirectExpression[pass] { $$ = $pass; }
     | LexLet LexOf Var_ LexBind ForBinding[binding] { $$ = CYNew CYForVariable($binding); }
     | ForDeclaration[pass] { $$ = $pass; }
@@ -1549,33 +1527,25 @@ ForBinding
     ;
 /* }}} */
 /* 13.8 The continue Statement {{{ */
-Continue
-    : "continue" LexNewLine
-    ;
-
 ContinueStatement
-    : Continue TerminatorSoft { $$ = CYNew CYContinue(NULL); }
-    | Continue Identifier[label] Terminator { $$ = CYNew CYContinue($label); }
+    : "continue" LexNewLine TerminatorSoft { $$ = CYNew CYContinue(NULL); }
+    | "continue" LexNewLine Identifier[label] Terminator { $$ = CYNew CYContinue($label); }
     ;
 /* }}} */
 /* 13.9 The break Statement {{{ */
-Break
-    : "break" LexNewLine
-    ;
-
 BreakStatement
-    : Break TerminatorSoft { $$ = CYNew CYBreak(NULL); }
-    | Break Identifier[label] Terminator { $$ = CYNew CYBreak($label); }
+    : "break" LexNewLine TerminatorSoft { $$ = CYNew CYBreak(NULL); }
+    | "break" LexNewLine Identifier[label] Terminator { $$ = CYNew CYBreak($label); }
     ;
 /* }}} */
 /* 13.10 The return Statement {{{ */
 Return
-    : "return"[return] { if (!driver.return_.top()) CYERR(@return, "invalid return"); } LexNewLine
+    : "return"[return] { if (!driver.return_.top()) CYERR(@return, "invalid return"); }
     ;
 
 ReturnStatement
-    : Return LexOf TerminatorSoft { $$ = CYNew CYReturn(NULL); }
-    | Return Expression[value] Terminator { $$ = CYNew CYReturn($value); }
+    : Return LexNewLine LexOf TerminatorSoft { $$ = CYNew CYReturn(NULL); }
+    | Return LexNewLine Expression[value] Terminator { $$ = CYNew CYReturn($value); }
     ;
 /* }}} */
 /* 13.11 The with Statement {{{ */
@@ -1589,7 +1559,7 @@ SwitchStatement
     ;
 
 CaseBlock
-    : BRACE CaseClausesOpt[clauses] "}" { $$ = $clauses; }
+    : "{" CaseClausesOpt[clauses] "}" { $$ = $clauses; }
     ;
 
 CaseClause
@@ -1618,13 +1588,9 @@ LabelledItem
     ;
 /* }}} */
 /* 13.14 The throw Statement {{{ */
-Throw
-    : "throw" LexNewLine
-    ;
-
 ThrowStatement
-    : Throw[throw] LexOf TerminatorSoft { CYERR(@throw, "throw without exception"); }
-    | Throw Expression[value] Terminator { $$ = CYNew cy::Syntax::Throw($value); }
+    : "throw"[throw] LexNewLine LexOf TerminatorSoft { CYERR(@throw, "throw without exception"); }
+    | "throw" LexNewLine Expression[value] Terminator { $$ = CYNew cy::Syntax::Throw($value); }
     ;
 /* }}} */
 /* 13.15 The try Statement {{{ */
@@ -1655,11 +1621,11 @@ DebuggerStatement
 
 /* 14.1 Function Definitions {{{ */
 FunctionDeclaration
-    : ";function" BindingIdentifier[name] "(" FormalParameters[parameters] ")" BRACE LexPushSuperOff FunctionBody[code] "}" LexPopSuper { $$ = CYNew CYFunctionStatement($name, $parameters, $code); }
+    : ";function" BindingIdentifier[name] "(" FormalParameters[parameters] ")" "{" LexPushSuperOff FunctionBody[code] "}" LexPopSuper { $$ = CYNew CYFunctionStatement($name, $parameters, $code); }
     ;
 
 FunctionExpression
-    : "function" BindingIdentifierOpt[name] "(" FormalParameters[parameters] ")" BRACE LexPushSuperOff FunctionBody[code] "}" LexPopSuper { $$ = CYNew CYFunctionExpression($name, $parameters, $code); }
+    : "function" BindingIdentifierOpt[name] "(" FormalParameters[parameters] ")" "{" LexPushSuperOff FunctionBody[code] "}" LexPopSuper { $$ = CYNew CYFunctionExpression($name, $parameters, $code); }
     ;
 
 StrictFormalParameters
@@ -1698,12 +1664,8 @@ FunctionStatementList
     ;
 /* }}} */
 /* 14.2 Arrow Function Definitions {{{ */
-LexEqualRight
-    : { CYLIN(EqualRight); }
-    ;
-
 ArrowFunction
-    : ArrowParameters[parameters] LexEqualRight "=>" LexNoBrace ConciseBody[code] { $$ = CYNew CYFatArrow($parameters, $code); }
+    : ArrowParameters[parameters] LexNewLine "=>" LexNoBrace ConciseBody[code] { $$ = CYNew CYFatArrow($parameters, $code); }
     ;
 
 ArrowParameters
@@ -1718,10 +1680,10 @@ ConciseBody
 /* }}} */
 /* 14.3 Method Definitions {{{ */
 MethodDefinition
-    : PropertyName[name] "(" StrictFormalParameters[parameters] ")" BRACE FunctionBody[code] "}" { $$ = CYNew CYPropertyMethod($name, $parameters, $code); }
+    : PropertyName[name] "(" StrictFormalParameters[parameters] ")" "{" FunctionBody[code] "}" { $$ = CYNew CYPropertyMethod($name, $parameters, $code); }
     | GeneratorMethod[pass] { $$ = $pass; }
-    | "get" PropertyName[name] "(" ")" BRACE FunctionBody[code] "}" { $$ = CYNew CYPropertyGetter($name, $code); }
-    | "set" PropertyName[name] "(" PropertySetParameterList[parameter] ")" BRACE FunctionBody[code] "}" { $$ = CYNew CYPropertySetter($name, $parameter, $code); }
+    | "get" PropertyName[name] "(" ")" "{" FunctionBody[code] "}" { $$ = CYNew CYPropertyGetter($name, $code); }
+    | "set" PropertyName[name] "(" PropertySetParameterList[parameter] ")" "{" FunctionBody[code] "}" { $$ = CYNew CYPropertySetter($name, $parameter, $code); }
     ;
 
 PropertySetParameterList
@@ -1730,15 +1692,15 @@ PropertySetParameterList
 /* }}} */
 /* 14.4 Generator Function Definitions {{{ */
 GeneratorMethod
-    : "*" PropertyName[name] "(" StrictFormalParameters[parameters] ")" BRACE GeneratorBody[code] "}" { CYNOT(@$); /* $$ = CYNew CYGeneratorMethod($name, $parameters, $code); */ }
+    : "*" PropertyName[name] "(" StrictFormalParameters[parameters] ")" "{" GeneratorBody[code] "}" { CYNOT(@$); /* $$ = CYNew CYGeneratorMethod($name, $parameters, $code); */ }
     ;
 
 GeneratorDeclaration
-    : ";function" LexOf "*" BindingIdentifier[name] "(" FormalParameters[code] ")" BRACE GeneratorBody[code] "}" { CYNOT(@$); /* $$ = CYNew CYGeneratorStatement($name, $parameters, $code); */ }
+    : ";function" LexOf "*" BindingIdentifier[name] "(" FormalParameters[code] ")" "{" GeneratorBody[code] "}" { CYNOT(@$); /* $$ = CYNew CYGeneratorStatement($name, $parameters, $code); */ }
     ;
 
 GeneratorExpression
-    : "function" LexOf "*" BindingIdentifierOpt[name] "(" FormalParameters[parameters] ")" BRACE GeneratorBody[code] "}" { CYNOT(@$); /* $$ = CYNew CYGeneratorExpression($name, $parameters, $code); */ }
+    : "function" LexOf "*" BindingIdentifierOpt[name] "(" FormalParameters[parameters] ")" "{" GeneratorBody[code] "}" { CYNOT(@$); /* $$ = CYNew CYGeneratorExpression($name, $parameters, $code); */ }
     ;
 
 GeneratorBody
@@ -1750,7 +1712,8 @@ Yield
     ;
 
 YieldExpression
-    : Yield LexOf NewLineOpt { CYNOT(@$); /* $$ = CYNew CYYieldValue(NULL); */ }
+    : Yield LexOf { CYNOT(@$); /* $$ = CYNew CYYieldValue(NULL); */ }
+    | Yield LexOf "\n" { CYNOT(@$); /* $$ = CYNew CYYieldValue(NULL); */ }
     | Yield AssignmentExpression[value] { CYNOT(@$); /* $$ = CYNew CYYieldValue($value); */ }
     | Yield LexOf YieldStar AssignmentExpression[generator] { CYNOT(@$); /* $$ = CYNew CYYieldGenerator($generator); */ }
     ;
@@ -1765,7 +1728,7 @@ ClassExpression
     ;
 
 ClassTail
-    : ClassHeritageOpt[tail] { driver.class_.push($tail); } BRACE LexPushSuperOn ClassBodyOpt "}" LexPopSuper { driver.class_.pop(); $$ = $tail; }
+    : ClassHeritageOpt[tail] { driver.class_.push($tail); } "{" LexPushSuperOn ClassBodyOpt "}" LexPopSuper { driver.class_.pop(); $$ = $tail; }
     ;
 
 ClassHeritage
@@ -1868,7 +1831,7 @@ NameSpaceImport
     ;
 
 NamedImports
-    : BRACE ImportsListOpt "}"
+    : "{" ImportsListOpt "}"
     ;
 
 FromClause
@@ -2021,7 +1984,7 @@ ImplementationFieldListOpt
     ;
 
 ImplementationFields
-    : BRACE ImplementationFieldListOpt[fields] "}" { $$ = $fields; }
+    : "{" ImplementationFieldListOpt[fields] "}" { $$ = $fields; }
     ;
 
 MessageScope
@@ -2053,7 +2016,7 @@ MessageParameters
     ;
 
 ClassMessageDeclaration
-    : MessageScope[instance] TypeOpt[type] MessageParameters[parameters] BRACE LexPushSuperOn FunctionBody[code] "}" LexPopSuper { $$ = CYNew CYMessage($instance, $type, $parameters, $code); }
+    : MessageScope[instance] TypeOpt[type] MessageParameters[parameters] "{" LexPushSuperOn FunctionBody[code] "}" LexPopSuper { $$ = CYNew CYMessage($instance, $type, $parameters, $code); }
     ;
 
 ClassMessageDeclarationListOpt
@@ -2180,7 +2143,7 @@ PrimaryExpression
 /* }}} */
 /* Cycript (Objective-C): Block Expressions {{{ */
 PrimaryExpression
-    : "^" TypedIdentifier[type] { if ($type->identifier_ != NULL) CYERR($type->location_, "unexpected identifier"); } BRACE FunctionBody[code] "}" { if (CYTypeFunctionWith *function = $type->Function()) $$ = CYNew CYObjCBlock($type, function->parameters_, $code); else CYERR($type->location_, "expected parameters"); }
+    : "^" TypedIdentifier[type] { if ($type->identifier_ != NULL) CYERR($type->location_, "unexpected identifier"); } "{" FunctionBody[code] "}" { if (CYTypeFunctionWith *function = $type->Function()) $$ = CYNew CYObjCBlock($type, function->parameters_, $code); else CYERR($type->location_, "expected parameters"); }
     ;
 /* }}} */
 /* Cycript (Objective-C): Instance Literals {{{ */
@@ -2231,7 +2194,7 @@ TypedParameterListOpt
     ;
 
 PrimaryExpression
-    : "[" LexOf "&" "]" "(" TypedParameterListOpt[parameters] ")" "->" TypedIdentifier[type] BRACE FunctionBody[code] "}" { $$ = CYNew CYLambda($type, $parameters, $code); }
+    : "[" LexOf "&" "]" "(" TypedParameterListOpt[parameters] ")" "->" TypedIdentifier[type] "{" FunctionBody[code] "}" { $$ = CYNew CYLambda($type, $parameters, $code); }
     ;
 /* }}} */
 /* Cycript (C): Type Definitions {{{ */
@@ -2353,7 +2316,7 @@ XMLTagContent
     ;
 
 XMLExpression
-    : BRACE LexPushRegExp Expression LexPop "}"
+    : "{" LexPushRegExp Expression LexPop "}"
     ;
 
 XMLTagName
@@ -2495,20 +2458,16 @@ RubyProcParametersOpt
     | { $$ = NULL; }
     ;
 
-LexOpenBrace
-    : { CYLIN(OpenBrace); }
-    ;
-
 RubyProcExpression
     : "{" RubyProcParametersOpt[parameters] StatementListOpt[code] "}" { $$ = CYNew CYRubyProc($parameters, $code); }
     ;
 
 PrimaryExpression
-    : BRACE RubyProcParameters[parameters] StatementListOpt[code] "}" { $$ = CYNew CYRubyProc($parameters, $code); }
+    : "{" RubyProcParameters[parameters] StatementListOpt[code] "}" { $$ = CYNew CYRubyProc($parameters, $code); }
     ;
 
 PostfixExpression
-    : PostfixExpression[lhs] LexOpenBrace RubyProcExpression[rhs] { $$ = CYNew CYRubyBlock($lhs, $rhs); }
+    : PostfixExpression[lhs] RubyProcExpression[rhs] LexNewLine { $$ = CYNew CYRubyBlock($lhs, $rhs); }
     ;
 /* }}} */
 
