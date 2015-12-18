@@ -1435,7 +1435,7 @@ ObjectBindingPattern
     ;
 
 ArrayBindingPattern
-    : "let [" { CYNOT(@$); }
+    : "let [" BindingElementListOpt "]"
     ;
 
 BindingPropertyList_
@@ -1452,6 +1452,17 @@ BindingPropertyListOpt
     | LexOf
     ;
 
+BindingElementList
+    : BindingElementOpt[element] "," BindingElementListOpt[next]
+    | BindingRestElement[element]
+    | BindingElement[element]
+    ;
+
+BindingElementListOpt
+    : BindingElementList[pass]
+    | LexBind LexOf
+    ;
+
 BindingProperty
     : SingleNameBinding
     | LexOf PropertyName ":" BindingElement
@@ -1462,12 +1473,17 @@ BindingElement
     | LexBind LexOf BindingPattern InitializerOpt[initializer] { CYNOT(@$); }
     ;
 
+BindingElementOpt
+    : BindingElement[pass]
+    | LexBind LexOf
+    ;
+
 SingleNameBinding
     : BindingIdentifier[identifier] InitializerOpt[initializer] { $$ = CYNew CYBinding($identifier, $initializer); }
     ;
 
 BindingRestElement
-    : "..." BindingIdentifier
+    : LexBind LexOf "..." BindingIdentifier
     ;
 /* }}} */
 /* 13.4 Empty Statement {{{ */
@@ -1643,7 +1659,7 @@ FormalParameterList_
     ;
 
 FormalParameterList
-    : LexBind LexOf FunctionRestParameter { CYNOT(@$); }
+    : FunctionRestParameter { CYNOT(@$); }
     | FormalParameter[binding] FormalParameterList_[next] { $$ = CYNew CYFunctionParameter($binding, $next); }
     ;
 
