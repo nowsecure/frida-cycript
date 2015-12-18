@@ -1049,12 +1049,12 @@ InitializerOpt
 /* 12.2.9 Template Literals {{{ */
 TemplateLiteral
     : NoSubstitutionTemplate[string] { $$ = CYNew CYTemplate($string, NULL); }
-    | TemplateHead[string] TemplateSpans[spans] { $$ = CYNew CYTemplate($string, $spans); }
+    | TemplateHead[string] LexPushInOff TemplateSpans[spans] { $$ = CYNew CYTemplate($string, $spans); }
     ;
 
 TemplateSpans
     : Expression[value] TemplateMiddle[string] TemplateSpans[spans] { $$ = CYNew CYSpan($value, $string, $spans); }
-    | Expression[value] TemplateTail[string] { $$ = CYNew CYSpan($value, $string, NULL); }
+    | Expression[value] TemplateTail[string] LexPopIn { $$ = CYNew CYSpan($value, $string, NULL); }
     ;
 /* }}} */
 
