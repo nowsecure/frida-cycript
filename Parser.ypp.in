@@ -304,6 +304,7 @@ type; })
 %token Question "?"
 %token SemiColon ";"
 %token NewLine "\n"
+%token __ ""
 
 %token Comment
 
@@ -449,7 +450,7 @@ type; })
 @end
 
 %token AutoComplete
-%token YieldStar
+%token YieldStar "yield *"
 
 %token <identifier_> Identifier_
 %token <number_> NumericLiteral
@@ -719,8 +720,12 @@ LexPushYieldOn: { driver.yield_.push(true); };
 LexPushYieldOff: { driver.yield_.push(false); };
 LexPopYield: { driver.yield_.pop(); };
 
-LexNewLine
+LexNewLineOrOpt
     : { CYLEX(); if (driver.hold_ != empty_symbol) CYERR(@$, "unexpected hold"); if (driver.newline_) { driver.hold_ = yyla.type; yyla.type = yytranslate_(cy::parser::token::NewLine); } }
+    ;
+
+LexNewLineOrNot
+    : { CYLEX(); if (driver.hold_ != empty_symbol) CYERR(@$, "unexpected hold"); driver.hold_ = yyla.type; yyla.type = yytranslate_(driver.newline_ ? cy::parser::token::NewLine : cy::parser::token::__); }
     ;
 
 LexNoStar
@@ -832,9 +837,18 @@ StrictSemi
     : { driver.Warning(@$, "warning, automatic semi-colon insertion required"); }
     ;
 
+NewLineNot
+    : LexNewLineOrNot ""
+    ;
+
+NewLineOpt
+    : LexNewLineOrNot "\n"
+    | NewLineNot
+    ;
+
 TerminatorSoft
-    : ";"
-    | "\n" StrictSemi
+    : LexNewLineOrNot "\n" StrictSemi
+    | NewLineNot LexOf Terminator
     ;
 
 Terminator
@@ -924,9 +938,7 @@ IdentifierNoOf
     | "static" { $$ = CYNew CYIdentifier("static"); }
     | "volatile" { $$ = CYNew CYIdentifier("volatile"); }
 @begin C
-    | "extern" { $$ = CYNew CYIdentifier("extern"); }
     | "signed" { $$ = CYNew CYIdentifier("signed"); }
-    | "typedef" { $$ = CYNew CYIdentifier("typedef"); }
     | "unsigned" { $$ = CYNew CYIdentifier("unsigned"); }
 @end
 @begin ObjectiveC
@@ -1130,15 +1142,15 @@ AccessExpression
     ;
 
 LeftHandSideExpression
-    : AccessExpression[pass] LexNewLine { $$ = $pass; }
+    : AccessExpression[pass] LexNewLineOrOpt { $$ = $pass; }
     | IndirectExpression[pass] { $$ = $pass; }
     ;
 /* }}} */
 /* 12.4 Postfix Expressions {{{ */
 PostfixExpression
-    : AccessExpression[lhs] LexNewLine { $$ = $lhs; }
-    | AccessExpression[lhs] LexNewLine "++" { $$ = CYNew CYPostIncrement($lhs); }
-    | AccessExpression[lhs] LexNewLine "--" { $$ = CYNew CYPostDecrement($lhs); }
+    : AccessExpression[lhs] LexNewLineOrOpt { $$ = $lhs; }
+    | AccessExpression[lhs] LexNewLineOrOpt "++" { $$ = CYNew CYPostIncrement($lhs); }
+    | AccessExpression[lhs] LexNewLineOrOpt "--" { $$ = CYNew CYPostDecrement($lhs); }
     ;
 /* }}} */
 /* 12.5 Unary Operators {{{ */
@@ -1525,7 +1537,7 @@ ForStatementInitializer
     ;
 
 ForInStatementInitializer
-    : LexLet LexOf AccessExpression[pass] LexNewLine { $$ = $pass; }
+    : LexLet LexOf AccessExpression[pass] LexNewLineOrOpt { $$ = $pass; }
     | LexLet LexOf IndirectExpression[pass] { $$ = $pass; }
     | LexLet LexOf Var_ LexBind ForBinding[binding] { $$ = CYNew CYForVariable($binding); }
     | ForDeclaration[pass] { $$ = $pass; }
@@ -1542,14 +1554,14 @@ ForBinding
 /* }}} */
 /* 13.8 The continue Statement {{{ */
 ContinueStatement
-    : "continue" LexNewLine TerminatorSoft { $$ = CYNew CYContinue(NULL); }
-    | "continue" LexNewLine Identifier[label] Terminator { $$ = CYNew CYContinue($label); }
+    : "continue" TerminatorSoft { $$ = CYNew CYContinue(NULL); }
+    | "continue" NewLineNot LexOf Identifier[label] Terminator { $$ = CYNew CYContinue($label); }
     ;
 /* }}} */
 /* 13.9 The break Statement {{{ */
 BreakStatement
-    : "break" LexNewLine TerminatorSoft { $$ = CYNew CYBreak(NULL); }
-    | "break" LexNewLine Identifier[label] Terminator { $$ = CYNew CYBreak($label); }
+    : "break" TerminatorSoft { $$ = CYNew CYBreak(NULL); }
+    | "break" NewLineNot LexOf Identifier[label] Terminator { $$ = CYNew CYBreak($label); }
     ;
 /* }}} */
 /* 13.10 The return Statement {{{ */
@@ -1558,8 +1570,8 @@ Return
     ;
 
 ReturnStatement
-    : Return LexNewLine LexOf TerminatorSoft { $$ = CYNew CYReturn(NULL); }
-    | Return LexNewLine Expression[value] Terminator { $$ = CYNew CYReturn($value); }
+    : Return TerminatorSoft { $$ = CYNew CYReturn(NULL); }
+    | Return NewLineNot Expression[value] Terminator { $$ = CYNew CYReturn($value); }
     ;
 /* }}} */
 /* 13.11 The with Statement {{{ */
@@ -1603,8 +1615,8 @@ LabelledItem
 /* }}} */
 /* 13.14 The throw Statement {{{ */
 ThrowStatement
-    : "throw"[throw] LexNewLine LexOf TerminatorSoft { CYERR(@throw, "throw without exception"); }
-    | "throw" LexNewLine Expression[value] Terminator { $$ = CYNew cy::Syntax::Throw($value); }
+    : "throw"[throw] TerminatorSoft { CYERR(@throw, "throw without exception"); }
+    | "throw" NewLineNot Expression[value] Terminator { $$ = CYNew cy::Syntax::Throw($value); }
     ;
 /* }}} */
 /* 13.15 The try Statement {{{ */
@@ -1679,7 +1691,7 @@ FunctionStatementList
 /* }}} */
 /* 14.2 Arrow Function Definitions {{{ */
 ArrowFunction
-    : ArrowParameters[parameters] LexNewLine "=>" LexNoBrace ConciseBody[code] { $$ = CYNew CYFatArrow($parameters, $code); }
+    : ArrowParameters[parameters] LexNewLineOrOpt "=>" LexNoBrace ConciseBody[code] { $$ = CYNew CYFatArrow($parameters, $code); }
     ;
 
 ArrowParameters
@@ -1721,15 +1733,11 @@ GeneratorBody
     : LexPushYieldOn FunctionStatementList[code] LexPopYield { $$ = $code; }
     ;
 
-Yield
-    : "!yield" LexNewLine LexNoStar
-    ;
-
 YieldExpression
-    : Yield LexOf { CYNOT(@$); /* $$ = CYNew CYYieldValue(NULL); */ }
-    | Yield LexOf "\n" { CYNOT(@$); /* $$ = CYNew CYYieldValue(NULL); */ }
-    | Yield AssignmentExpression[value] { CYNOT(@$); /* $$ = CYNew CYYieldValue($value); */ }
-    | Yield LexOf YieldStar AssignmentExpression[generator] { CYNOT(@$); /* $$ = CYNew CYYieldGenerator($generator); */ }
+    : "!yield" LexNewLineOrNot "\n" LexOf { CYNOT(@$); /* $$ = CYNew CYYieldValue(NULL); */ }
+    | "!yield" LexNewLineOrNot "" LexNoStar LexOf { CYNOT(@$); /* $$ = CYNew CYYieldValue(NULL); */ }
+    | "!yield" LexNewLineOrNot "" LexNoStar AssignmentExpression[value] { CYNOT(@$); /* $$ = CYNew CYYieldValue($value); */ }
+    | "!yield" LexNewLineOrNot "" LexNoStar LexOf "yield *" AssignmentExpression[generator] { CYNOT(@$); /* $$ = CYNew CYYieldGenerator($generator); */ }
     ;
 /* }}} */
 /* 14.5 Class Definitions {{{ */
@@ -2207,13 +2215,21 @@ PrimaryExpression
     ;
 /* }}} */
 /* Cycript (C): Type Definitions {{{ */
+IdentifierNoOf
+    : "typedef" NewLineOpt { $$ = CYNew CYIdentifier("typedef"); }
+    ;
+
 Statement__
-    : "typedef" TypedIdentifier[typed] { if ($typed->identifier_ == NULL) CYERR($typed->location_, "expected identifier"); } Terminator { $$ = CYNew CYTypeDefinition($typed); }
+    : "typedef" NewLineNot TypedIdentifier[typed] { if ($typed->identifier_ == NULL) CYERR($typed->location_, "expected identifier"); } Terminator { $$ = CYNew CYTypeDefinition($typed); }
     ;
 /* }}} */
 /* Cycript (C): extern "C" {{{ */
+IdentifierNoOf
+    : "extern" NewLineOpt { $$ = CYNew CYIdentifier("extern"); }
+    ;
+
 Statement__
-    : "extern" StringLiteral[abi] { if (strcmp($abi->Value(), "C") != 0) CYERR(@abi, "unknown extern binding"); } TypedIdentifier[typed] { if ($typed->identifier_ == NULL) CYERR($typed->location_, "expected identifier"); } Terminator { $$ = CYNew CYExternal($abi, $typed); }
+    : "extern" NewLineNot StringLiteral[abi] { if (strcmp($abi->Value(), "C") != 0) CYERR(@abi, "unknown extern binding"); } TypedIdentifier[typed] { if ($typed->identifier_ == NULL) CYERR($typed->location_, "expected identifier"); } Terminator { $$ = CYNew CYExternal($abi, $typed); }
     ;
 /* }}} */
 
@@ -2476,7 +2492,7 @@ PrimaryExpression
     ;
 
 PostfixExpression
-    : PostfixExpression[lhs] RubyProcExpression[rhs] LexNewLine { $$ = CYNew CYRubyBlock($lhs, $rhs); }
+    : PostfixExpression[lhs] RubyProcExpression[rhs] LexNewLineOrOpt { $$ = CYNew CYRubyBlock($lhs, $rhs); }
     ;
 /* }}} */
 
