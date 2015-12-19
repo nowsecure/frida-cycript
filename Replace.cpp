@@ -1149,12 +1149,18 @@ CYTarget *CYTypeConstant::Replace_(CYContext &context, CYTarget *type) {
 }
 
 CYStatement *CYTypeDefinition::Replace(CYContext &context) {
-    return $E($ CYAssign($V(typed_->identifier_), typed_->Replace(context)));
+    CYIdentifier *identifier(typed_->identifier_);
+    typed_->identifier_ = NULL;
+    return $ CYLexical(false, $B1($B(identifier, $ CYTypeExpression(typed_))));
 }
 
 CYTarget *CYTypeError::Replace(CYContext &context) {
     _assert(false);
     return NULL;
+}
+
+CYTarget *CYTypeExpression::Replace(CYContext &context) {
+    return typed_->Replace(context);
 }
 
 CYTarget *CYTypeModifier::Replace(CYContext &context, CYTarget *type) { $T(type)

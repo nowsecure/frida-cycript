@@ -133,7 +133,7 @@ CYTarget *CYBox::Replace(CYContext &context) {
 }
 
 CYTarget *CYObjCBlock::Replace(CYContext &context) {
-    return $C1($ CYEncodedType(($ CYTypedIdentifier(*typed_))->Modify($ CYTypeBlockWith(parameters_))), $ CYFunctionExpression(NULL, parameters_->Parameters(context), code_));
+    return $C1($ CYTypeExpression(($ CYTypedIdentifier(*typed_))->Modify($ CYTypeBlockWith(parameters_))), $ CYFunctionExpression(NULL, parameters_->Parameters(context), code_));
 }
 
 CYStatement *CYProtocol::Replace(CYContext &context) const { $T(NULL)

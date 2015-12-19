@@ -2256,6 +2256,22 @@ struct CYExternal :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
+struct CYTypeExpression :
+    CYTarget
+{
+    CYTypedIdentifier *typed_;
+
+    CYTypeExpression(CYTypedIdentifier *typed) :
+        typed_(typed)
+    {
+    }
+
+    CYPrecedence(0)
+
+    virtual CYTarget *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
 struct CYTypeDefinition :
     CYStatement
 {

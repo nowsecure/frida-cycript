@@ -640,6 +640,10 @@ void CYTypeDefinition::Output(CYOutput &out, CYFlags flags) const {
     out << "typedef" << ' ' << *typed_;
 }
 
+void CYTypeExpression::Output(CYOutput &out, CYFlags flags) const {
+    out << '(' << "typedef" << ' ' << *typed_ << ')';
+}
+
 void CYLexical::Output(CYOutput &out, CYFlags flags) const {
     out << "let" << ' ';
     bindings_->Output(out, flags); // XXX: flags

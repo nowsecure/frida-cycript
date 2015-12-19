@@ -1484,7 +1484,7 @@ static JSValueRef Type_callAsFunction_toCYON(JSContextRef context, JSObjectRef o
     std::stringbuf out;
     CYOptions options;
     CYOutput output(out, options);
-    (new(pool) CYEncodedType(Decode(pool, internal->type_)))->Output(output, CYNoFlags);
+    (new(pool) CYTypeExpression(Decode(pool, internal->type_)))->Output(output, CYNoFlags);
     return CYCastJSValue(context, CYJSString(out.str().c_str()));
 } CYCatch(NULL) }
 
