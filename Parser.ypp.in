@@ -87,9 +87,9 @@
 @end
 
 @begin ObjectiveC
+%union { CYImplementationField *implementationField_; }
 %union { CYMessage *message_; }
 %union { CYMessageParameter *messageParameter_; }
-%union { CYImplementationField *implementationField_; }
 %union { CYProtocol *protocol_; }
 %union { CYSelectorPart *selector_; }
 @end
@@ -644,13 +644,12 @@ type; })
 %type <statement_> CategoryStatement
 %type <expression_> ClassSuperOpt
 %type <expression_> ConditionalExpressionClassic
-%type <implementationField_> ImplementationFieldListOpt
-%type <implementationField_> ImplementationFields
 %type <message_> ClassMessageDeclaration
 %type <message_> ClassMessageDeclarationListOpt
 %type <protocol_> ClassProtocolListOpt
 %type <protocol_> ClassProtocols
 %type <protocol_> ClassProtocolsOpt
+%type <implementationField_> ImplementationFieldListOpt
 %type <statement_> ImplementationStatement
 %type <target_> MessageExpression
 %type <messageParameter_> MessageParameter
@@ -2015,10 +2014,6 @@ ImplementationFieldListOpt
     | { $$ = NULL; }
     ;
 
-ImplementationFields
-    : "{" ImplementationFieldListOpt[fields] "}" { $$ = $fields; }
-    ;
-
 MessageScope
     : "+" { $$ = false; }
     | "-" { $$ = true; }
@@ -2072,7 +2067,7 @@ ClassProtocolListOpt
     ;
 
 ImplementationStatement
-    : "@implementation" Identifier[name] ClassSuperOpt[extends] ClassProtocolListOpt[protocols] ImplementationFields[fields] ClassMessageDeclarationListOpt[messages] "@end" { $$ = CYNew CYImplementation($name, $extends, $protocols, $fields, $messages); }
+    : "@implementation" Identifier[name] ClassSuperOpt[extends] ClassProtocolListOpt[protocols] "{" ImplementationFieldListOpt[fields] "}" ClassMessageDeclarationListOpt[messages] "@end" { $$ = CYNew CYImplementation($name, $extends, $protocols, $fields, $messages); }
     ;
 
 CategoryName

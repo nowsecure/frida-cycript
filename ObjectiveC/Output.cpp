@@ -49,6 +49,9 @@ void CYImplementation::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYImplementationField::Output(CYOutput &out) const {
+    out << *typed_;
+    out.Terminate();
+    out << '\n';
 }
 
 void CYInstanceLiteral::Output(CYOutput &out, CYFlags flags) const {
