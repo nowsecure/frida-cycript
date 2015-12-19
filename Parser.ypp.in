@@ -719,10 +719,12 @@ LexPopIn: { driver.in_.pop(); };
 
 LexPushReturnOn: { driver.return_.push(true); };
 LexPopReturn: { driver.return_.pop(); };
+Return: "return"[return] { if (!driver.return_.top()) CYERR(@return, "invalid return"); };
 
 LexPushSuperOn: { driver.super_.push(true); };
 LexPushSuperOff: { driver.super_.push(false); };
 LexPopSuper: { driver.super_.pop(); };
+Super: "super"[super] { if (!driver.super_.top()) CYERR(@super, "invalid super"); };
 
 LexPushYieldOn: { driver.yield_.push(true); };
 LexPushYieldOff: { driver.yield_.push(false); };
@@ -1100,8 +1102,8 @@ MemberExpression
     ;
 
 SuperProperty
-    : "super"[super] { if (!driver.super_.top()) CYERR(@super, "invalid super"); } "[" Expression[property] "]" { $$ = CYNew CYSuperAccess($property); }
-    | "super"[super] { if (!driver.super_.top()) CYERR(@super, "invalid super"); } "." IdentifierName[property] { $$ = CYNew CYSuperAccess(CYNew CYString($property)); }
+    : Super "[" Expression[property] "]" { $$ = CYNew CYSuperAccess($property); }
+    | Super "." IdentifierName[property] { $$ = CYNew CYSuperAccess(CYNew CYString($property)); }
     ;
 
 MetaProperty
@@ -1129,7 +1131,7 @@ CallExpression
     ;
 
 SuperCall
-    : "super"[super] { if (!driver.super_.top()) CYERR(@super, "invalid super"); } Arguments[arguments] { $$ = CYNew CYSuperCall($arguments); }
+    : Super Arguments[arguments] { $$ = CYNew CYSuperCall($arguments); }
     ;
 
 Arguments
@@ -1579,10 +1581,6 @@ BreakStatement
     ;
 /* }}} */
 /* 13.10 The return Statement {{{ */
-Return
-    : "return"[return] { if (!driver.return_.top()) CYERR(@return, "invalid return"); }
-    ;
-
 ReturnStatement
     : Return TerminatorSoft { $$ = CYNew CYReturn(NULL); }
     | Return NewLineNot Expression[value] Terminator { $$ = CYNew CYReturn($value); }
