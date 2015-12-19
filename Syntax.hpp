@@ -1090,7 +1090,7 @@ struct CYElementValue :
 {
     CYExpression *value_;
 
-    CYElementValue(CYExpression *value, CYElement *next) :
+    CYElementValue(CYExpression *value, CYElement *next = NULL) :
         CYNext<CYElement>(next),
         value_(value)
     {
@@ -2322,6 +2322,34 @@ struct CYTypeFunctionWith :
     virtual void Output(CYOutput &out, CYIdentifier *identifier) const;
 
     virtual CYTypeFunctionWith *Function() { return this; }
+};
+
+struct CYTypeStructField :
+    CYNext<CYTypeStructField>
+{
+    CYTypedIdentifier *typed_;
+
+    CYTypeStructField(CYTypedIdentifier *typed, CYTypeStructField *next = NULL) :
+        CYNext<CYTypeStructField>(next),
+        typed_(typed)
+    {
+    }
+};
+
+struct CYTypeStruct :
+    CYTypeSpecifier
+{
+    CYIdentifier *name_;
+    CYTypeStructField *fields_;
+
+    CYTypeStruct(CYIdentifier *name, CYTypeStructField *fields) :
+        name_(name),
+        fields_(fields)
+    {
+    }
+
+    virtual CYTarget *Replace(CYContext &context);
+    virtual void Output(CYOutput &out) const;
 };
 
 namespace cy {

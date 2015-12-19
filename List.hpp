@@ -22,6 +22,8 @@
 #ifndef CYCRIPT_LIST_HPP
 #define CYCRIPT_LIST_HPP
 
+#include "Exception.hpp"
+
 template <typename Type_>
 struct CYNext {
     Type_ *next_;
@@ -68,9 +70,21 @@ struct CYList {
     Type_ *first_;
     Type_ *last_;
 
-    CYList(Type_ *first = NULL) :
+    CYList() :
+        first_(NULL),
+        last_(NULL)
+    {
+    }
+
+    CYList(Type_ *first) :
         first_(first),
         last_(CYGetLast(first))
+    {
+    }
+
+    CYList(Type_ *first, Type_ *last) :
+        first_(first),
+        last_(last)
     {
     }
 
@@ -87,12 +101,11 @@ struct CYList {
             if (first_ == NULL) {
                 first_ = next;
                 last_ = next;
-            } else for (;; last_ = last_->next_)
-                if (last_->next_ == NULL) {
-                    last_->next_ = next;
-                    last_ = next;
-                    break;
-                }
+            } else {
+                _assert(last_->next_ == NULL);
+                last_->next_ = next;
+                last_ = next;
+            }
         return *this;
     }
 

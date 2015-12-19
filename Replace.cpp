@@ -1187,6 +1187,28 @@ CYTarget *CYTypeSigned::Replace(CYContext &context) {
     return $ CYCall($ CYDirectMember(specifier_->Replace(context), $ CYString("signed")));
 }
 
+CYTarget *CYTypeStruct::Replace(CYContext &context) {
+    CYList<CYElementValue> types;
+    CYList<CYElementValue> names;
+
+    CYForEach (field, fields_) {
+        CYTypedIdentifier *typed(field->typed_);
+        types->*$ CYElementValue(typed->Replace(context));
+
+        CYExpression *name;
+        if (typed->identifier_ == NULL)
+            name = NULL;
+        else
+            name = $S(typed->identifier_->Word());
+        names->*$ CYElementValue(name);
+    }
+
+    CYTarget *target($N2($V("Type"), $ CYArray(types), $ CYArray(names)));
+    if (name_ != NULL)
+        target = $C1($M(target, $S("withName")), $S(name_->Word()));
+    return target;
+}
+
 CYTarget *CYTypeUnsigned::Replace(CYContext &context) {
     return $ CYCall($ CYDirectMember(specifier_->Replace(context), $ CYString("unsigned")));
 }

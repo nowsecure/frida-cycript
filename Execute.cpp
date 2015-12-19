@@ -1175,11 +1175,46 @@ static JSObjectRef Pointer_new(JSContextRef context, JSObjectRef object, size_t 
 } CYCatch(NULL) }
 
 static JSObjectRef Type_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    if (count != 1)
-        throw CYJSError(context, "incorrect number of arguments to Type constructor");
     CYPool pool;
-    const char *type(CYPoolCString(pool, context, arguments[0]));
-    return CYMakeType(context, type);
+
+    if (false) {
+    } else if (count == 1) {
+        const char *type(CYPoolCString(pool, context, arguments[0]));
+        return CYMakeType(context, type);
+    } else if (count == 2) {
+        JSObjectRef types(CYCastJSObject(context, arguments[0]));
+        size_t count(CYArrayLength(context, types));
+
+        JSObjectRef names(CYCastJSObject(context, arguments[1]));
+
+        sig::Type type;
+        type.name = NULL;
+        type.flags = 0;
+
+        type.primitive = sig::struct_P;
+        type.data.signature.elements = new(pool) sig::Element[count];
+        type.data.signature.count = count;
+
+        for (size_t i(0); i != count; ++i) {
+            sig::Element &element(type.data.signature.elements[i]);
+            element.offset = _not(size_t);
+
+            JSValueRef name(CYArrayGet(context, names, i));
+            if (JSValueIsUndefined(context, name))
+                element.name = NULL;
+            else
+                element.name = CYPoolCString(pool, context, name);
+
+            JSObjectRef object(CYCastJSObject(context, CYArrayGet(context, types, i)));
+            _assert(JSValueIsObjectOfClass(context, object, Type_privateData::Class_));
+            Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
+            element.type = internal->type_;
+        }
+
+        return CYMakeType(context, &type);
+    } else {
+        throw CYJSError(context, "incorrect number of arguments to Type constructor");
+    }
 } CYCatch(NULL) }
 
 static JSValueRef Type_callAsFunction_$With(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], sig::Primitive primitive, JSValueRef *exception) { CYTry {

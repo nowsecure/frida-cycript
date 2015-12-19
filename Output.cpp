@@ -920,6 +920,21 @@ void CYTypeSigned::Output(CYOutput &out) const {
     out << "signed" << specifier_;
 }
 
+void CYTypeStruct::Output(CYOutput &out) const {
+    out << "struct" << ' ';
+    if (name_ != NULL)
+        out << *name_ << ' ';
+    out << '{' << '\n';
+    ++out.indent_;
+    CYForEach (field, fields_) {
+        out << '\t' << *field->typed_;
+        out.Terminate();
+        out << '\n';
+    }
+    --out.indent_;
+    out << '}';
+}
+
 void CYTypeUnsigned::Output(CYOutput &out) const {
     out << "unsigned" << specifier_;
 }

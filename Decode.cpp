@@ -88,8 +88,16 @@ CYTypedIdentifier *Decode_(CYPool &pool, struct sig::Type *type) {
         case sig::void_P: return $ CYTypedIdentifier($ CYTypeVoid());
 
         case sig::struct_P: {
-            _assert(type->name != NULL);
-            return $ CYTypedIdentifier($ CYTypeVariable(type->name));
+            CYTypeStructField *fields(NULL);
+            for (size_t i(type->data.signature.count); i != 0; --i) {
+                sig::Element &element(type->data.signature.elements[i - 1]);
+                CYTypedIdentifier *typed(Decode(pool, element.type));
+                if (element.name != NULL)
+                    typed->identifier_ = $I(element.name);
+                fields = $ CYTypeStructField(typed, fields);
+            }
+            CYIdentifier *name(type->name == NULL ? NULL : $I(type->name));
+            return $ CYTypedIdentifier($ CYTypeStruct(name, fields));
         } break;
     }
 

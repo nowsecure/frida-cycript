@@ -80,6 +80,7 @@
 %union { CYWord *word_; }
 
 @begin C
+%union { CYTypeStructField *structField_; }
 %union { CYTypeModifier *modifier_; }
 %union { CYTypeSpecifier *specifier_; }
 %union { CYTypedIdentifier *typedIdentifier_; }
@@ -330,6 +331,7 @@ type; })
 %token _typedef_ "typedef"
 %token _unsigned_ "unsigned"
 %token _signed_ "signed"
+%token _struct_ "struct"
 %token _extern_ "extern"
 @end
 
@@ -543,6 +545,7 @@ type; })
 %type <identifier_> IdentifierNoOf
 %type <identifier_> IdentifierType
 %type <identifier_> IdentifierTypeNoOf
+%type <identifier_> IdentifierTypeOpt
 %type <word_> IdentifierName
 %type <variable_> IdentifierReference
 %type <statement_> IfStatement
@@ -626,6 +629,7 @@ type; })
 %type <specifier_> IntegerTypeOpt
 %type <typedIdentifier_> PrefixedType
 %type <specifier_> PrimitiveType
+%type <structField_> StructFieldListOpt
 %type <typedIdentifier_> SuffixedType
 %type <typedIdentifier_> TypeSignifier
 %type <modifier_> TypeQualifierLeft
@@ -930,6 +934,11 @@ IdentifierType
     | "of" { $$ = CYNew CYIdentifier("of"); }
     ;
 
+IdentifierTypeOpt
+    : IdentifierType[pass] { $$ = $pass; }
+    | { $$ = NULL; }
+    ;
+
 IdentifierNoOf
     : IdentifierTypeNoOf
     | "char" { $$ = CYNew CYIdentifier("char"); }
@@ -940,6 +949,7 @@ IdentifierNoOf
     | "volatile" { $$ = CYNew CYIdentifier("volatile"); }
 @begin C
     | "signed" { $$ = CYNew CYIdentifier("signed"); }
+    | "struct" { $$ = CYNew CYIdentifier("struct"); }
     | "unsigned" { $$ = CYNew CYIdentifier("unsigned"); }
 @end
 @begin ObjectiveC
@@ -1974,6 +1984,11 @@ IntegerTypeOpt
     | { $$ = CYNew CYTypeVariable("int"); }
     ;
 
+StructFieldListOpt
+    : TypedIdentifierMaybe[typed] ";" StructFieldListOpt[next] { $$ = CYNew CYTypeStructField($typed, $next); }
+    | { $$ = NULL; }
+    ;
+
 PrimitiveType
     : IdentifierType[name] { $$ = CYNew CYTypeVariable($name); }
     | IntegerType[pass] { $$ = $pass; }
@@ -1981,6 +1996,7 @@ PrimitiveType
     | "char" { $$ = CYNew CYTypeVariable("char"); }
     | "signed" "char" { $$ = CYNew CYTypeSigned(CYNew CYTypeVariable("char")); }
     | "unsigned" "char" { $$ = CYNew CYTypeUnsigned(CYNew CYTypeVariable("char")); }
+    | "struct" IdentifierTypeOpt[name] "{" StructFieldListOpt[fields] "}" { $$ = CYNew CYTypeStruct($name, $fields); }
     ;
 
 TypedIdentifierMaybe

@@ -526,6 +526,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 @begin C
 "extern"          L F(tk::_extern_, hi::Type);
 "signed"          L F(tk::_signed_, hi::Type);
+"struct"          L F(tk::_struct_, hi::Meta);
 "typedef"         L F(tk::_typedef_, hi::Meta);
 "unsigned"        L F(tk::_unsigned_, hi::Type);
 @end
