@@ -634,9 +634,13 @@ type; })
 %type <specifier_> PrimitiveType
 %type <structField_> StructFieldListOpt
 %type <typedIdentifier_> SuffixedType
+%type <typedIdentifier_> SuffixedTypeOpt
 %type <typedIdentifier_> TypeSignifier
+%type <typedIdentifier_> TypeSignifierOpt
 %type <modifier_> TypeQualifierLeft
+%type <modifier_> TypeQualifierLeftOpt
 %type <typedIdentifier_> TypeQualifierRight
+%type <typedIdentifier_> TypeQualifierRightOpt
 %type <typedIdentifier_> TypedIdentifierMaybe
 %type <typedIdentifier_> TypedIdentifierNo
 %type <typedIdentifier_> TypedIdentifierYes
@@ -1943,33 +1947,50 @@ ExportSpecifier
 /* Cycript (C): Type Encoding {{{ */
 TypeSignifier
     : IdentifierType[identifier] { $$ = CYNew CYTypedIdentifier(@identifier, $identifier); }
-    | "(" "*" TypeQualifierRight[typed] ")" { $$ = $typed; }
+    | "(" "*" TypeQualifierRightOpt[typed] ")" { $$ = $typed; }
     ;
 
-SuffixedType
-    : SuffixedType[typed] "[" NumericLiteral[size] "]" { $$ = $typed; $$->modifier_ = CYNew CYTypeArrayOf($size, $$->modifier_); }
-    | "(" "^" TypeQualifierRight[typed] ")" "(" TypedParameterListOpt[parameters] ")" { $$ = $typed; $$->modifier_ = CYNew CYTypeBlockWith($parameters, $$->modifier_); }
-    | TypeSignifier[typed] "(" TypedParameterListOpt[parameters] ")" { $$ = $typed; $$->modifier_ = CYNew CYTypeFunctionWith($parameters, $$->modifier_); }
-    | "("[parenthesis] TypedParameterListOpt[parameters] ")" { $$ = CYNew CYTypedIdentifier(@parenthesis); $$->modifier_ = CYNew CYTypeFunctionWith($parameters, $$->modifier_); }
-    | TypeSignifier[pass] { $$ = $pass; }
+TypeSignifierOpt
+    : TypeSignifier[pass] { $$ = $pass; }
     | { $$ = CYNew CYTypedIdentifier(@$); }
     ;
 
+SuffixedType
+    : SuffixedTypeOpt[typed] "[" NumericLiteral[size] "]" { $$ = $typed; $$->modifier_ = CYNew CYTypeArrayOf($size, $$->modifier_); }
+    | "(" "^" TypeQualifierRightOpt[typed] ")" "(" TypedParameterListOpt[parameters] ")" { $$ = $typed; $$->modifier_ = CYNew CYTypeBlockWith($parameters, $$->modifier_); }
+    | TypeSignifier[typed] "(" TypedParameterListOpt[parameters] ")" { $$ = $typed; $$->modifier_ = CYNew CYTypeFunctionWith($parameters, $$->modifier_); }
+    | "("[parenthesis] TypedParameterListOpt[parameters] ")" { $$ = CYNew CYTypedIdentifier(@parenthesis); $$->modifier_ = CYNew CYTypeFunctionWith($parameters, $$->modifier_); }
+    ;
+
+SuffixedTypeOpt
+    : SuffixedType[pass] { $$ = $pass; }
+    | TypeSignifierOpt[pass] { $$ = $pass; }
+    ;
+
 PrefixedType
-    : "*" TypeQualifierRight[typed] { $$ = $typed; $$->modifier_ = CYNew CYTypePointerTo($$->modifier_); }
+    : "*" TypeQualifierRightOpt[typed] { $$ = $typed; $$->modifier_ = CYNew CYTypePointerTo($$->modifier_); }
     ;
 
 TypeQualifierLeft
-    : { $$ = NULL; }
-    | "const" TypeQualifierLeft[modifier] { $$ = $modifier; CYSetLast($$) = CYNew CYTypeConstant(); }
-    | "volatile" TypeQualifierLeft[modifier] { $$ = $modifier; CYSetLast($$) = CYNew CYTypeVolatile(); }
+    : "const" TypeQualifierLeftOpt[modifier] { $$ = $modifier; CYSetLast($$) = CYNew CYTypeConstant(); }
+    | "volatile" TypeQualifierLeftOpt[modifier] { $$ = $modifier; CYSetLast($$) = CYNew CYTypeVolatile(); }
+    ;
+
+TypeQualifierLeftOpt
+    : TypeQualifierLeft[pass] { $$ = $pass; }
+    | { $$ = NULL; }
     ;
 
 TypeQualifierRight
-    : PrefixedType[pass] { $$ = $pass; }
-    | SuffixedType[pass] { $$ = $pass; }
-    | "const" TypeQualifierRight[typed] { $$ = $typed; $$->modifier_ = CYNew CYTypeConstant($$->modifier_); }
-    | "volatile" TypeQualifierRight[typed] { $$ = $typed; $$->modifier_ = CYNew CYTypeVolatile($$->modifier_); }
+    : SuffixedType[pass] { $$ = $pass; }
+    | PrefixedType[pass] { $$ = $pass; }
+    | "const" TypeQualifierRightOpt[typed] { $$ = $typed; $$->modifier_ = CYNew CYTypeConstant($$->modifier_); }
+    | "volatile" TypeQualifierRightOpt[typed] { $$ = $typed; $$->modifier_ = CYNew CYTypeVolatile($$->modifier_); }
+    ;
+
+TypeQualifierRightOpt
+    : TypeQualifierRight[pass] { $$ = $pass; }
+    | TypeSignifierOpt[pass] { $$ = $pass; }
     ;
 
 IntegerType
@@ -1993,7 +2014,6 @@ StructFieldListOpt
 PrimitiveType
     : IdentifierType[name] { $$ = CYNew CYTypeVariable($name); }
     | IntegerType[pass] { $$ = $pass; }
-    | "void" { $$ = CYNew CYTypeVoid(); }
     | "char" { $$ = CYNew CYTypeVariable("char"); }
     | "signed" "char" { $$ = CYNew CYTypeSigned(CYNew CYTypeVariable("char")); }
     | "unsigned" "char" { $$ = CYNew CYTypeUnsigned(CYNew CYTypeVariable("char")); }
@@ -2001,7 +2021,9 @@ PrimitiveType
     ;
 
 TypedIdentifierMaybe
-    : TypeQualifierLeft[modifier] PrimitiveType[specifier] TypeQualifierRight[typed] { $$ = $typed; $$->specifier_ = $specifier; CYSetLast($modifier) = $$->modifier_; $$->modifier_ = $modifier; }
+    : TypeQualifierLeftOpt[modifier] PrimitiveType[specifier] TypeQualifierRightOpt[typed] { $$ = $typed; $$->specifier_ = $specifier; CYSetLast($modifier) = $$->modifier_; $$->modifier_ = $modifier; }
+    | TypeQualifierLeft[modifier] "void" TypeQualifierRight[typed] { $$ = $typed; $$->specifier_ = CYNew CYTypeVoid(); CYSetLast($modifier) = $$->modifier_; $$->modifier_ = $modifier; }
+    | "void" TypeQualifierRight[typed] { $$ = $typed; $$->specifier_ = CYNew CYTypeVoid(); }
     ;
 
 TypedIdentifierYes
@@ -2229,6 +2251,7 @@ TypedParameterList
 
 TypedParameterListOpt
     : TypedParameterList[pass] { $$ = $pass; }
+    | "void" { $$ = NULL; }
     | { $$ = NULL; }
     ;
 
