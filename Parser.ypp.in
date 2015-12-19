@@ -630,7 +630,9 @@ type; })
 %type <typedIdentifier_> TypeSignifier
 %type <modifier_> TypeQualifierLeft
 %type <typedIdentifier_> TypeQualifierRight
-%type <typedIdentifier_> TypedIdentifier
+%type <typedIdentifier_> TypedIdentifierMaybe
+%type <typedIdentifier_> TypedIdentifierNo
+%type <typedIdentifier_> TypedIdentifierYes
 %type <typedParameter_> TypedParameterList_
 %type <typedParameter_> TypedParameterList
 %type <typedParameter_> TypedParameterListOpt
@@ -1982,12 +1984,20 @@ PrimitiveType
     | "unsigned" "char" { $$ = CYNew CYTypeUnsigned(CYNew CYTypeVariable("char")); }
     ;
 
-TypedIdentifier
+TypedIdentifierMaybe
     : TypeQualifierLeft[modifier] PrimitiveType[specifier] TypeQualifierRight[typed] { $$ = $typed; $$->specifier_ = $specifier; CYSetLast($modifier) = $$->modifier_; $$->modifier_ = $modifier; }
     ;
 
+TypedIdentifierYes
+    : TypedIdentifierMaybe[typed] { if ($typed->identifier_ == NULL) CYERR($typed->location_, "expected identifier"); $$ = $typed; }
+    ;
+
+TypedIdentifierNo
+    : TypedIdentifierMaybe[typed] { if ($typed->identifier_ != NULL) CYERR($typed->location_, "unexpected identifier"); $$ = $typed; }
+    ;
+
 PrimaryExpression
-    : "@encode" "(" TypedIdentifier[typed] ")" { $$ = CYNew CYEncodedType($typed); }
+    : "@encode" "(" TypedIdentifierMaybe[typed] ")" { $$ = CYNew CYEncodedType($typed); }
     ;
 /* }}} */
 @end
@@ -2001,7 +2011,7 @@ ClassSuperOpt
     ;
 
 ImplementationFieldListOpt
-    : TypedIdentifier[typed] ";" ImplementationFieldListOpt[next] { $$ = CYNew CYImplementationField($typed, $next); }
+    : TypedIdentifierMaybe[typed] ";" ImplementationFieldListOpt[next] { $$ = CYNew CYImplementationField($typed, $next); }
     | { $$ = NULL; }
     ;
 
@@ -2015,7 +2025,7 @@ MessageScope
     ;
 
 TypeOpt
-    : "(" TypedIdentifier[type] ")" { if ($type->identifier_ != NULL) CYERR($type->location_, "unexpected identifier"); $$ = $type; }
+    : "(" TypedIdentifierNo[type] ")" { $$ = $type; }
     | { $$ = CYNew CYTypedIdentifier(CYNew CYTypeVariable("id")); }
     ;
 
@@ -2165,7 +2175,7 @@ PrimaryExpression
 /* }}} */
 /* Cycript (Objective-C): Block Expressions {{{ */
 PrimaryExpression
-    : "^" TypedIdentifier[type] { if ($type->identifier_ != NULL) CYERR($type->location_, "unexpected identifier"); } "{" FunctionBody[code] "}" { if (CYTypeFunctionWith *function = $type->Function()) $$ = CYNew CYObjCBlock($type, function->parameters_, $code); else CYERR($type->location_, "expected parameters"); }
+    : "^" TypedIdentifierNo[type] "{" FunctionBody[code] "}" { if (CYTypeFunctionWith *function = $type->Function()) $$ = CYNew CYObjCBlock($type, function->parameters_, $code); else CYERR($type->location_, "expected parameters"); }
     ;
 /* }}} */
 /* Cycript (Objective-C): Instance Literals {{{ */
@@ -2202,7 +2212,7 @@ TypedParameterList_
     ;
 
 TypedParameterList
-    : TypedIdentifier[typed] TypedParameterList_[next] { $$ = CYNew CYTypedParameter($typed, $next); }
+    : TypedIdentifierMaybe[typed] TypedParameterList_[next] { $$ = CYNew CYTypedParameter($typed, $next); }
     ;
 
 TypedParameterListOpt
@@ -2211,7 +2221,7 @@ TypedParameterListOpt
     ;
 
 PrimaryExpression
-    : "[" LexOf "&" "]" "(" TypedParameterListOpt[parameters] ")" "->" TypedIdentifier[type] "{" FunctionBody[code] "}" { $$ = CYNew CYLambda($type, $parameters, $code); }
+    : "[" LexOf "&" "]" "(" TypedParameterListOpt[parameters] ")" "->" TypedIdentifierMaybe[type] "{" FunctionBody[code] "}" { $$ = CYNew CYLambda($type, $parameters, $code); }
     ;
 /* }}} */
 /* Cycript (C): Type Definitions {{{ */
@@ -2220,11 +2230,11 @@ IdentifierNoOf
     ;
 
 Statement__
-    : "typedef" NewLineNot TypedIdentifier[typed] { if ($typed->identifier_ == NULL) CYERR($typed->location_, "expected identifier"); } Terminator { $$ = CYNew CYTypeDefinition($typed); }
+    : "typedef" NewLineNot TypedIdentifierYes[typed] Terminator { $$ = CYNew CYTypeDefinition($typed); }
     ;
 
 PrimaryExpression
-    : "(" LexOf "typedef" NewLineOpt TypedIdentifier[typed] { if ($typed->identifier_ != NULL) CYERR($typed->location_, "unexpected identifier"); } ")" { $$ = CYNew CYTypeExpression($typed); }
+    : "(" LexOf "typedef" NewLineOpt TypedIdentifierNo[typed] ")" { $$ = CYNew CYTypeExpression($typed); }
     ;
 /* }}} */
 /* Cycript (C): extern "C" {{{ */
@@ -2233,7 +2243,7 @@ IdentifierNoOf
     ;
 
 Statement__
-    : "extern" NewLineNot StringLiteral[abi] { if (strcmp($abi->Value(), "C") != 0) CYERR(@abi, "unknown extern binding"); } TypedIdentifier[typed] { if ($typed->identifier_ == NULL) CYERR($typed->location_, "expected identifier"); } Terminator { $$ = CYNew CYExternal($abi, $typed); }
+    : "extern" NewLineNot StringLiteral[abi] { if (strcmp($abi->Value(), "C") != 0) CYERR(@abi, "unknown extern binding"); } TypedIdentifierYes[typed] Terminator { $$ = CYNew CYExternal($abi, $typed); }
     ;
 /* }}} */
 
