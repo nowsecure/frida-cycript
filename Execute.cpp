@@ -1515,9 +1515,24 @@ static JSValueRef Pointer_callAsFunction_toCYON(JSContextRef context, JSObjectRe
         JSObjectRef toCYON(CYCastJSObject(context, CYGetProperty(context, Array, toCYON_s)));
         return CYCallAsFunction(context, toCYON, _this, count, arguments);
     } else if (internal->type_->type_ == NULL) pointer: {
-        char string[32];
-        sprintf(string, "%p", internal->value_);
-        return CYCastJSValue(context, string);
+        CYLocalPool pool;
+        std::ostringstream str;
+
+        sig::Type type;
+        type.name = NULL;
+        type.flags = 0;
+
+        type.primitive = sig::pointer_P;
+        type.data.data.type = internal->type_->type_;
+        type.data.data.size = 0;
+
+        CYOptions options;
+        CYOutput output(*str.rdbuf(), options);
+        (new(pool) CYTypeExpression(Decode(pool, &type)))->Output(output, CYNoFlags);
+
+        str << "(" << internal->value_ << ")";
+        std::string value(str.str());
+        return CYCastJSValue(context, CYJSString(CYUTF8String(value.c_str(), value.size())));
     } else try {
         JSValueRef value(CYGetProperty(context, _this, cyi_s));
         if (JSValueIsUndefined(context, value))
