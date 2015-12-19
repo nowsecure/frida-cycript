@@ -157,6 +157,7 @@ const char *CYPoolCString(CYPool &pool, JSContextRef context, JSValueRef value);
 JSStringRef CYCopyJSString(const char *value);
 JSStringRef CYCopyJSString(JSStringRef value);
 JSStringRef CYCopyJSString(CYUTF8String value);
+JSStringRef CYCopyJSString(CYUTF16String value);
 JSStringRef CYCopyJSString(JSContextRef context, JSValueRef value);
 
 void CYGarbageCollect(JSContextRef context);

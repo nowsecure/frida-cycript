@@ -111,8 +111,9 @@ class CYPool {
         return reinterpret_cast<char *>(memdup(data, strlen(data) + 1));
     }
 
-    void *memdup(const void *data, size_t size) {
-        void *copy(malloc<void>(size));
+    template <typename Type_>
+    Type_ *memdup(const Type_ *data, size_t size) {
+        Type_ *copy(malloc<Type_>(size));
         memcpy(copy, data, size);
         return copy;
     }

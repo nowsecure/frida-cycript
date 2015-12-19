@@ -97,8 +97,19 @@ JSStringRef CYCopyJSString(JSStringRef value) {
 }
 
 JSStringRef CYCopyJSString(CYUTF8String value) {
-    // XXX: this is very wrong; it needs to convert to UTF16 and then create from there
-    return CYCopyJSString(value.data);
+    if (memchr(value.data, '\0', value.size) != NULL) {
+        CYPool pool;
+        return CYCopyJSString(pool.memdup(value.data, value.size));
+    } else if (value.data[value.size] != '\0') {
+        CYPool pool;
+        return CYCopyJSString(CYPoolUTF16String(pool, value));
+    } else {
+        return CYCopyJSString(value.data);
+    }
+}
+
+JSStringRef CYCopyJSString(CYUTF16String value) {
+    return JSStringCreateWithCharacters(value.data, value.size);
 }
 
 JSStringRef CYCopyJSString(JSContextRef context, JSValueRef value) {
@@ -133,6 +144,7 @@ size_t CYGetIndex(CYPool &pool, JSContextRef context, JSStringRef value) {
 
 static JSClassRef All_;
 static JSClassRef Context_;
+static JSClassRef CString_;
 JSClassRef Functor_;
 static JSClassRef Global_;
 static JSClassRef Pointer_;
@@ -211,6 +223,15 @@ struct Context :
 
     Context(JSGlobalContextRef context) :
         context_(context)
+    {
+    }
+};
+
+struct CString :
+    CYOwned
+{
+    CString(char *value, JSContextRef context, JSObjectRef owner) :
+        CYOwned(value, context, owner)
     {
     }
 };
@@ -554,6 +575,11 @@ JSObjectRef CYMakePointer(JSContextRef context, void *pointer, size_t length, si
     return JSObjectMake(context, Pointer_, internal);
 }
 
+JSObjectRef CYMakeCString(JSContextRef context, char *pointer, JSObjectRef owner) {
+    CString *internal(new CString(pointer, context, owner));
+    return JSObjectMake(context, CString_, internal);
+}
+
 static JSObjectRef CYMakeFunctor(JSContextRef context, void (*function)(), const sig::Signature &signature) {
     return JSObjectMake(context, Functor_, new cy::Functor(signature, function));
 }
@@ -587,6 +613,10 @@ void *CYCastPointer_(JSContextRef context, JSValueRef value) {
             return NULL;
         case kJSTypeObject: {
             JSObjectRef object((JSObjectRef) value);
+            if (JSValueIsObjectOfClass(context, value, CString_)) {
+                CString *internal(reinterpret_cast<CString *>(JSObjectGetPrivate(object)));
+                return internal->value_;
+            }
             if (JSValueIsObjectOfClass(context, value, Pointer_)) {
                 Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(object)));
                 return internal->value_;
@@ -733,8 +763,8 @@ JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void 
             else goto null;
 
         case sig::string_P:
-            if (char *utf8 = *reinterpret_cast<char **>(data))
-                return CYCastJSValue(context, utf8);
+            if (char *pointer = *reinterpret_cast<char **>(data))
+                return CYMakeCString(context, pointer, owner);
             else goto null;
 
         case sig::struct_P:
@@ -832,6 +862,32 @@ static JSObjectRef CYMakeFunctor(JSContextRef context, JSValueRef value, const s
         return CYMakeFunctor(context, function, signature);
     }
 }
+
+static JSValueRef CString_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
+    CYPool pool;
+    CString *internal(reinterpret_cast<CString *>(JSObjectGetPrivate(object)));
+    char *string(static_cast<char *>(internal->value_));
+
+    ssize_t offset;
+    if (!CYGetOffset(pool, context, property, offset))
+        return NULL;
+
+    return CYCastJSValue(context, CYJSString(CYUTF8String(&string[offset], 1)));
+} CYCatch(NULL) }
+
+static bool CString_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) { CYTry {
+    CYPool pool;
+    CString *internal(reinterpret_cast<CString *>(JSObjectGetPrivate(object)));
+    char *string(static_cast<char *>(internal->value_));
+
+    ssize_t offset;
+    if (!CYGetOffset(pool, context, property, offset))
+        return false;
+
+    const char *data(CYPoolCString(pool, context, value));
+    string[offset] = *data;
+    return true;
+} CYCatch(false) }
 
 static bool Index_(CYPool &pool, JSContextRef context, Struct_privateData *internal, JSStringRef property, ssize_t &index, uint8_t *&base) {
     Type_privateData *typical(internal->type_);
@@ -1144,6 +1200,13 @@ static void All_getPropertyNames(JSContextRef context, JSObjectRef object, JSPro
         }
 }
 
+static JSObjectRef CString_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    if (count != 1)
+        throw CYJSError(context, "incorrect number of arguments to CString constructor");
+    char *value(CYCastPointer<char *>(context, arguments[0]));
+    return CYMakeCString(context, value, NULL);
+} CYCatch(NULL) }
+
 static JSObjectRef Pointer_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 2)
         throw CYJSError(context, "incorrect number of arguments to Pointer constructor");
@@ -1455,7 +1518,7 @@ static JSValueRef Pointer_callAsFunction_toCYON(JSContextRef context, JSObjectRe
         char string[32];
         sprintf(string, "%p", internal->value_);
         return CYCastJSValue(context, string);
-    } try {
+    } else try {
         JSValueRef value(CYGetProperty(context, _this, cyi_s));
         if (JSValueIsUndefined(context, value))
             goto pointer;
@@ -1466,9 +1529,43 @@ static JSValueRef Pointer_callAsFunction_toCYON(JSContextRef context, JSObjectRe
     }
 } CYCatch(NULL) }
 
+static JSValueRef CString_getProperty_length(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
+    CString *internal(reinterpret_cast<CString *>(JSObjectGetPrivate(object)));
+    char *string(static_cast<char *>(internal->value_));
+    return CYCastJSValue(context, strlen(string));
+} CYCatch(NULL) }
+
+static JSValueRef CString_getProperty_type(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
+    sig::Type type;
+    type.name = NULL;
+    type.flags = 0;
+
+    type.primitive = sig::char_P;
+    type.data.data.type = NULL;
+    type.data.data.size = 0;
+
+    return CYMakeType(context, &type);
+} CYCatch(NULL) }
+
 static JSValueRef Pointer_getProperty_type(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(object)));
     return CYMakeType(context, internal->type_->type_);
+} CYCatch(NULL) }
+
+static JSValueRef CString_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(_this)));
+    const char *string(static_cast<const char *>(internal->value_));
+    std::ostringstream str;
+    str << "&";
+    CYStringify(str, string, strlen(string));
+    std::string value(str.str());
+    return CYCastJSValue(context, CYJSString(CYUTF8String(value.c_str(), value.size())));
+} CYCatch(NULL) }
+
+static JSValueRef CString_callAsFunction_toString(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(_this)));
+    const char *string(static_cast<const char *>(internal->value_));
+    return CYCastJSValue(context, string);
 } CYCatch(NULL) }
 
 static JSValueRef Functor_getProperty_type(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
@@ -1511,6 +1608,20 @@ static JSValueRef Type_callAsFunction_toCYON(JSContextRef context, JSObjectRef o
 static JSValueRef Type_callAsFunction_toJSON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
     return Type_callAsFunction_toString(context, object, _this, count, arguments, exception);
 }
+
+static JSStaticFunction CString_staticFunctions[5] = {
+    {"toCYON", &CString_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"toJSON", &CYValue_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"toString", &CString_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"valueOf", &CString_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {NULL, NULL, 0}
+};
+
+static JSStaticValue CString_staticValues[3] = {
+    {"length", &CString_getProperty_length, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"type", &CString_getProperty_type, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {NULL, NULL, NULL, 0}
+};
 
 static JSStaticFunction Pointer_staticFunctions[4] = {
     {"toCYON", &Pointer_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
@@ -1682,6 +1793,15 @@ void CYInitializeDynamic() {
     definition.className = "Context";
     definition.finalize = &CYFinalize;
     Context_ = JSClassCreate(&definition);
+
+    definition = kJSClassDefinitionEmpty;
+    definition.className = "CString";
+    definition.staticFunctions = CString_staticFunctions;
+    definition.staticValues = CString_staticValues;
+    definition.getProperty = &CString_getProperty;
+    definition.setProperty = &CString_setProperty;
+    definition.finalize = &CYFinalize;
+    CString_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "Functor";
@@ -1972,6 +2092,10 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     CYSetProperty(context, global, CYJSString("Cycript"), cycript);
     CYSetProperty(context, cycript, CYJSString("compile"), &Cycript_compile_callAsFunction);
     CYSetProperty(context, cycript, CYJSString("gc"), &Cycript_gc_callAsFunction);
+
+    JSObjectRef CString(JSObjectMakeConstructor(context, CString_, &CString_new));
+    CYSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, CString, prototype_s)), String_prototype);
+    CYSetProperty(context, cycript, CYJSString("CString"), CString);
 
     JSObjectRef Functor(JSObjectMakeConstructor(context, Functor_, &Functor_new));
     CYSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Functor, prototype_s)), Function_prototype);
