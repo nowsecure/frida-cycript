@@ -587,6 +587,8 @@ type; })
 %type <bool_> RegularExpressionSlash
 %type <expression_> RelationalExpression
 %type <statement_> ReturnStatement
+%type <target_> RubyBlockExpression_
+%type <target_> RubyBlockExpression
 %type <rubyProc_> RubyProcExpression
 %type <functionParameter_> RubyProcParameterList_
 %type <functionParameter_> RubyProcParameterList
@@ -1155,13 +1157,13 @@ AccessExpression
     ;
 
 LeftHandSideExpression
-    : AccessExpression[pass] LexNewLineOrOpt { $$ = $pass; }
+    : RubyBlockExpression[pass] { $$ = $pass; }
     | IndirectExpression[pass] { $$ = $pass; }
     ;
 /* }}} */
 /* 12.4 Postfix Expressions {{{ */
 PostfixExpression
-    : AccessExpression[lhs] LexNewLineOrOpt { $$ = $lhs; }
+    : RubyBlockExpression[pass] { $$ = $pass; }
     | AccessExpression[lhs] LexNewLineOrOpt "++" { $$ = CYNew CYPostIncrement($lhs); }
     | AccessExpression[lhs] LexNewLineOrOpt "--" { $$ = CYNew CYPostDecrement($lhs); }
     ;
@@ -1181,7 +1183,6 @@ UnaryExpression_
 
 UnaryExpression
     : PostfixExpression[expression] { $$ = $expression; }
-    | PostfixExpression[expression] "\n" { $$ = $expression; }
     | UnaryExpression_[pass] { $$ = $pass; }
     ;
 /* }}} */
@@ -1550,7 +1551,7 @@ ForStatementInitializer
     ;
 
 ForInStatementInitializer
-    : LexLet LexOf AccessExpression[pass] LexNewLineOrOpt { $$ = $pass; }
+    : LexLet LexOf RubyBlockExpression[pass] { $$ = $pass; }
     | LexLet LexOf IndirectExpression[pass] { $$ = $pass; }
     | LexLet LexOf Var_ LexBind ForBinding[binding] { $$ = CYNew CYForVariable($binding); }
     | ForDeclaration[pass] { $$ = $pass; }
@@ -2518,8 +2519,14 @@ PrimaryExpression
     : "{" RubyProcParameters[parameters] StatementListOpt[code] "}" { $$ = CYNew CYRubyProc($parameters, $code); }
     ;
 
-PostfixExpression
-    : PostfixExpression[lhs] RubyProcExpression[rhs] LexNewLineOrOpt { $$ = CYNew CYRubyBlock($lhs, $rhs); }
+RubyBlockExpression_
+    : AccessExpression[pass] LexNewLineOrOpt { $$ = $pass; }
+    | RubyBlockExpression_[lhs] RubyProcExpression[rhs] LexNewLineOrOpt { $$ = CYNew CYRubyBlock($lhs, $rhs); }
+    ;
+
+RubyBlockExpression
+    : RubyBlockExpression_[pass] "\n" { $$ = $pass; }
+    | RubyBlockExpression_[pass] { $$ = $pass; }
     ;
 /* }}} */
 
