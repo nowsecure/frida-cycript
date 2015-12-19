@@ -224,7 +224,7 @@ _visible bool CYStartsWith(const CYUTF8String &haystack, const CYUTF8String &nee
     return haystack.size >= needle.size && strncmp(haystack.data, needle.data, needle.size) == 0;
 }
 
-CYUTF8String CYPoolCode(CYPool &pool, std::istream &stream) {
+CYUTF8String CYPoolCode(CYPool &pool, std::streambuf &stream) {
     CYLocalPool local;
     CYDriver driver(local, stream);
     _assert(!driver.Parse());

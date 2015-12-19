@@ -420,7 +420,7 @@ static int CYConsoleKeyReturn(int count, int key) {
     else {
         std::string command(rl_line_buffer, rl_end);
         command += '\n';
-        std::istringstream stream(command);
+        std::stringbuf stream(command);
 
         size_t last(std::string::npos);
         for (size_t i(0); i != std::string::npos; i = command.find('\n', i + 1))
@@ -680,7 +680,7 @@ static void Console(CYOptions &options) {
         if (bypass)
             code = command;
         else try {
-            std::istringstream stream(command);
+            std::stringbuf stream(command);
 
             CYPool pool;
             CYDriver driver(pool, stream);
@@ -1066,7 +1066,7 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
                 stream = new std::istringstream(buffer.str());
 
                 CYPool pool;
-                CYDriver driver(pool, *stream, script);
+                CYDriver driver(pool, *stream->rdbuf(), script);
                 Setup(driver);
 
                 uint64_t begin(CYGetTime());
@@ -1092,7 +1092,7 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
         }
 
         CYPool pool;
-        CYDriver driver(pool, *stream, script);
+        CYDriver driver(pool, *stream->rdbuf(), script);
         Setup(driver);
 
         bool failed(driver.Parse());

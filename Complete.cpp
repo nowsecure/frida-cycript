@@ -28,7 +28,7 @@
 static CYExpression *ParseExpression(CYPool &pool, CYUTF8String code) {
     std::stringstream stream;
     stream << '(' << code << ')';
-    CYDriver driver(pool, stream);
+    CYDriver driver(pool, *stream.rdbuf());
     if (driver.Parse() || !driver.errors_.empty())
         return NULL;
 
@@ -51,7 +51,7 @@ static CYExpression *ParseExpression(CYPool &pool, CYUTF8String code) {
 _visible char **CYComplete(const char *word, const std::string &line, CYUTF8String (*run)(CYPool &pool, const std::string &)) {
     CYLocalPool pool;
 
-    std::istringstream stream(line);
+    std::stringbuf stream(line);
     CYDriver driver(pool, stream);
 
     driver.auto_ = true;

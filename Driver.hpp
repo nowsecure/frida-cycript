@@ -64,7 +64,7 @@ class _visible CYDriver {
     bool newline_;
     bool last_;
 
-    std::istream &data_;
+    std::streambuf &data_;
 
     int debug_;
     bool strict_;
@@ -120,7 +120,7 @@ class _visible CYDriver {
     void ScannerDestroy();
 
   public:
-    CYDriver(CYPool &pool, std::istream &data, const std::string &filename = "");
+    CYDriver(CYPool &pool, std::streambuf &data, const std::string &filename = "");
     ~CYDriver();
 
     bool Parse(CYMark mark = CYMarkScript);

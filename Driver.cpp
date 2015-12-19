@@ -24,7 +24,7 @@
 
 bool CYParser(CYPool &pool, bool debug);
 
-CYDriver::CYDriver(CYPool &pool, std::istream &data, const std::string &filename) :
+CYDriver::CYDriver(CYPool &pool, std::streambuf &data, const std::string &filename) :
     pool_(pool),
     newline_(false),
     last_(false),

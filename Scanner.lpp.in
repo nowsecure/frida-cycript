@@ -184,15 +184,9 @@ static unsigned U(char *&local, const char *text, yy_size_t &i) {
     I(type, Type(P.strmemdup(yyextra->buffer_.data(), yyextra->buffer_.size()), yyextra->buffer_.size()), value, highlight); \
 } while (false)
 
-#define YY_INPUT(data, value, size) { \
-    if (yyextra->data_.eof()) \
-        value = YY_NULL; \
-    else { \
-        yyextra->data_.read(data, size); \
-        size_t copy(yyextra->data_.gcount()); \
-        value = copy == 0 ? YY_NULL : copy; \
-    } \
-}
+#define YY_INPUT(data, value, size) do { \
+    value = yyextra->data_.sgetn(data, size) ?: YY_NULL; \
+} while (false)
 
 %}
 

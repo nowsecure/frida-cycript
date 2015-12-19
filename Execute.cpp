@@ -369,7 +369,7 @@ _visible void CYGarbageCollect(JSContextRef context) {
 static JSValueRef Cycript_compile_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CYPool pool;
     CYUTF8String before(CYPoolUTF8String(pool, context, CYJSString(context, arguments[0])));
-    std::stringstream value(std::string(before.data, before.size));
+    std::stringbuf value(std::string(before.data, before.size));
     CYUTF8String after(CYPoolCode(pool, value));
     return CYCastJSValue(context, CYJSString(after));
 } CYCatch_(NULL, "SyntaxError") }
@@ -1871,7 +1871,7 @@ static JSValueRef require(JSContextRef context, JSObjectRef object, JSObjectRef 
 
         std::stringstream wrap;
         wrap << "(function (exports, require, module) { " << code << "\n});";
-        code = CYPoolCode(pool, wrap);
+        code = CYPoolCode(pool, *wrap.rdbuf());
 
         JSValueRef value(_jsccall(JSEvaluateScript, context, CYJSString(code), NULL, NULL, 0));
         JSObjectRef function(CYCastJSObject(context, value));

@@ -27,26 +27,14 @@
 #include "String.hpp"
 
 class CYStream :
-    public std::istream
+    public std::streambuf
 {
-  private:
-    class CYBuffer :
-        public std::streambuf
-    {
-      public:
-        CYBuffer(const char *start, const char *end) {
-            setg(const_cast<char *>(start), const_cast<char *>(start), const_cast<char *>(end));
-        }
-    } buffer_;
-
   public:
-    CYStream(const char *start, const char *end) :
-        std::istream(&buffer_),
-        buffer_(start, end)
-    {
+    CYStream(const char *start, const char *end) {
+        setg(const_cast<char *>(start), const_cast<char *>(start), const_cast<char *>(end));
     }
 };
 
-CYUTF8String CYPoolCode(CYPool &pool, std::istream &stream);
+CYUTF8String CYPoolCode(CYPool &pool, std::streambuf &stream);
 
 #endif//CODE_HPP
