@@ -496,6 +496,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "package"         L /*FSS*/ F(tk::_package_, hi::Meta);
 "private"         L /*FSS*/ F(tk::_private_, hi::Meta);
 "protected"       L /*FSS*/ F(tk::_protected_, hi::Meta);
+"__proto__"       L /*III*/ F(tk::___proto___, hi::Special);
 "prototype"       L /*III*/ F(tk::_prototype_, hi::Special);
 "public"          L /*FSS*/ F(tk::_public_, hi::Meta);
 "return"          L /*KKK*/ F(tk::_return_, hi::Control);

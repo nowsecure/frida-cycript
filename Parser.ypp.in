@@ -419,6 +419,7 @@ type; })
 %token _package_ "package"
 %token _private_ "private"
 %token _protected_ "protected"
+%token ___proto___ "__proto__"
 %token _prototype_ "prototype"
 %token _public_ "public"
 %token _set_ "set"
@@ -913,6 +914,7 @@ IdentifierTypeNoOf
     | "package" { $$ = CYNew CYIdentifier("package"); }
     | "private" { $$ = CYNew CYIdentifier("private"); }
     | "protected" { $$ = CYNew CYIdentifier("protected"); }
+    | "__proto__" { $$ = CYNew CYIdentifier("__proto__"); }
     | "prototype" { $$ = CYNew CYIdentifier("prototype"); }
     | "public" { $$ = CYNew CYIdentifier("public"); }
     | "set" { $$ = CYNew CYIdentifier("set"); }
