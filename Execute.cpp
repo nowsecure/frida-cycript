@@ -538,21 +538,6 @@ static JSValueRef Array_callAsFunction_toCYON(JSContextRef context, JSObjectRef 
     return CYCastJSValue(context, CYJSString(CYUTF8String(value.c_str(), value.size())));
 } CYCatch(NULL) }
 
-static JSValueRef Error_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    CYPool pool;
-    std::ostringstream str;
-
-    str << "new " << CYPoolUTF8String(pool, context, CYJSString(context, CYGetProperty(context, _this, name_s))) << "(";
-
-    CYUTF8String string(CYPoolUTF8String(pool, context, CYJSString(context, CYGetProperty(context, _this, message_s))));
-    CYStringify(str, string.data, string.size);
-
-    str << ")";
-
-    std::string value(str.str());
-    return CYCastJSValue(context, CYJSString(CYUTF8String(value.c_str(), value.size())));
-} CYCatch(NULL) }
-
 static JSValueRef String_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CYPool pool;
     std::ostringstream str;
@@ -1805,7 +1790,23 @@ JSGlobalContextRef CYGetJSContext(JSContextRef context) {
     return reinterpret_cast<Context *>(JSObjectGetPrivate(CYCastJSObject(context, CYGetProperty(context, CYGetGlobalObject(context), cy_s))))->context_;
 }
 
-void *CYMapFile(const char *path, size_t *psize) {
+struct CYFile {
+    void *data_;
+    size_t size_;
+
+    CYFile(void *data, size_t size) :
+        data_(data),
+        size_(size)
+    {
+    }
+};
+
+static void CYFileExit(void *data) {
+    CYFile *file(reinterpret_cast<CYFile *>(data));
+    _syscall(munmap(file->data_, file->size_));
+}
+
+static void *CYPoolFile(CYPool &pool, const char *path, size_t *psize) {
     int fd(_syscall_(open(path, O_RDONLY), 1, ENOENT));
     if (fd == -1)
         return NULL;
@@ -1819,21 +1820,36 @@ void *CYMapFile(const char *path, size_t *psize) {
     void *base;
     _syscall(base = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0));
 
+    CYFile *file(new (pool) CYFile(base, size));
+    pool.atexit(&CYFileExit, file);
+
     _syscall(close(fd));
     return base;
+}
+
+static CYUTF8String CYPoolFileUTF8String(CYPool &pool, const char *path) {
+    CYUTF8String data;
+    data.data = reinterpret_cast<char *>(CYPoolFile(pool, path, &data.size));
+    return data;
+}
+
+static const char *CYPoolLibraryPath(CYPool &pool) {
+    Dl_info addr;
+    _assert(dladdr(reinterpret_cast<void *>(&CYPoolLibraryPath), &addr) != 0);
+    char *lib(pool.strdup(addr.dli_fname));
+
+    char *slash(strrchr(lib, '/'));
+    _assert(slash != NULL);
+    *slash = '\0';
+
+    return lib;
 }
 
 static JSValueRef require(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     _assert(count == 1);
     CYPool pool;
 
-    Dl_info addr;
-    _assert(dladdr(reinterpret_cast<void *>(&require), &addr) != 0);
-    char *lib(pool.strdup(addr.dli_fname));
-
-    char *slash(strrchr(lib, '/'));
-    _assert(slash != NULL);
-    *slash = '\0';
+    const char *lib(CYPoolLibraryPath(pool));
 
     CYJSString property("exports");
     JSObjectRef module;
@@ -1848,8 +1864,7 @@ static JSValueRef require(JSContextRef context, JSObjectRef object, JSObjectRef 
     if (!JSValueIsUndefined(context, cache))
         module = CYCastJSObject(context, cache);
     else {
-        CYUTF8String code;
-        code.data = reinterpret_cast<char *>(CYMapFile(path, &code.size));
+        CYUTF8String code(CYPoolFileUTF8String(pool, path));
 
         if (code.data == NULL) {
             if (strchr(name, '/') == NULL && (
@@ -1883,6 +1898,18 @@ static JSValueRef require(JSContextRef context, JSObjectRef object, JSObjectRef 
     return CYGetProperty(context, module, property);
 } CYCatch(NULL) }
 
+static bool CYRunScript(JSGlobalContextRef context, const char *path) {
+    CYPool pool;
+    CYUTF8String code(CYPoolFileUTF8String(pool, path));
+    if (code.data == NULL)
+        return false;
+
+    CYStream stream(code.data, code.data + code.size);
+    code = CYPoolCode(pool, stream);
+    _jsccall(JSEvaluateScript, context, CYJSString(code), NULL, NULL, 0);
+    return true;
+}
+
 extern "C" void CYDestroyWeak(JSWeakObjectMapRef weak, void *data) {
 }
 
@@ -1909,9 +1936,6 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
 
     JSObjectRef Error(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Error"))));
     CYSetProperty(context, cy, CYJSString("Error"), Error);
-
-    JSObjectRef Error_prototype(CYCastJSObject(context, CYGetProperty(context, Error, prototype_s)));
-    CYSetProperty(context, cy, CYJSString("Error_prototype"), Error_prototype);
 
     JSObjectRef Function(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Function"))));
     CYSetProperty(context, cy, CYJSString("Function"), Function);
@@ -1942,7 +1966,6 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
 /* }}} */
 
     CYSetProperty(context, Array_prototype, toCYON_s, &Array_callAsFunction_toCYON, kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, Error_prototype, toCYON_s, &Error_callAsFunction_toCYON, kJSPropertyAttributeDontEnum);
     CYSetProperty(context, String_prototype, toCYON_s, &String_callAsFunction_toCYON, kJSPropertyAttributeDontEnum);
 
     JSObjectRef cycript(JSObjectMake(context, NULL, NULL));
@@ -2000,6 +2023,8 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
 
     if (CYBridgeEntry *entry = CYBridgeHash("1dlerror", 8))
         entry->cache_ = new cy::Functor(entry->value_, reinterpret_cast<void (*)()>(&dlerror));
+
+    CYRunScript(context, "libcycript.cy");
 
     for (CYHook *hook : GetHooks())
         if (hook->SetupContext != NULL)

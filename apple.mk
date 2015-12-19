@@ -37,6 +37,7 @@ cycript += Cycript.lib/cycript0.9
 cycript += Cycript.lib/libcycript.dylib
 cycript += Cycript.lib/libcycript-sys.dylib
 cycript += Cycript.lib/libcycript-sim.dylib
+cycript += Cycript.lib/libcycript.cy
 
 framework := 
 framework += Cycript
@@ -69,6 +70,7 @@ $(deb): Cycript.lib/cycript Cycript.lib/libcycript.dylib
 	$(lipo) -extract armv6 -output package/usr/bin/cycript Cycript.lib/cycript
 	$(lipo) -extract armv6 -extract arm64 -output package/usr/lib/libcycript.dylib Cycript.lib/libcycript.dylib
 	ln -s libcycript.dylib package/usr/lib/libcycript.0.dylib
+	cp -a libcycript.cy package/usr/lib/libcycript.cy
 	./dpkg-deb.sh -Zlzma -b package $@
 
 deb: $(deb)
@@ -189,6 +191,10 @@ Cycript.%/Cycript.framework/Cycript: libcycript-%.o
 Cycript.%/Cycript.framework/Headers/Cycript.h: Cycript.h
 	@mkdir -p $(dir $@)
 	cp -a $< $@
+
+Cycript.lib/libcycript.cy:
+	@mkdir -p $(dir $@)
+	ln -sf ../libcycript.cy $@
 
 Cycript.lib/cycript0.9:
 	@mkdir -p $(dir $@)
