@@ -1093,6 +1093,14 @@ static JSValueRef Functor_callAsFunction(JSContextRef context, JSObjectRef objec
     return CYCallFunction(pool, context, 0, NULL, count, arguments, false, &internal->signature_, &internal->cif_, internal->GetValue());
 } CYCatch(NULL) }
 
+static JSValueRef Pointer_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(object)));
+    if (internal->type_->type_->primitive != sig::function_P)
+        throw CYJSError(context, "cannot call a pointer to non-function");
+    JSObjectRef functor(CYCastJSObject(context, CYGetProperty(context, object, cyi_s)));
+    return CYCallAsFunction(context, functor, _this, count, arguments);
+} CYCatch(NULL) }
+
 JSObjectRef CYMakeType(JSContextRef context, const char *encoding) {
     Type_privateData *internal(new Type_privateData(encoding));
     return JSObjectMake(context, Type_privateData::Class_, internal);
@@ -1511,7 +1519,7 @@ static JSValueRef CString_callAsFunction_toPointer(JSContextRef context, JSObjec
     return CYMakePointer(context, internal->value_, _not(size_t), &type, NULL, NULL);
 } CYCatch(NULL) }
 
-static JSValueRef Functor_callAsFunction_toPointer(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+static JSValueRef Functor_callAsFunction_$cya(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CYPool pool;
     cy::Functor *internal(reinterpret_cast<cy::Functor *>(JSObjectGetPrivate(_this)));
 
@@ -1697,9 +1705,9 @@ static JSStaticFunction Struct_staticFunctions[2] = {
 };
 
 static JSStaticFunction Functor_staticFunctions[5] = {
+    {"$cya", &Functor_callAsFunction_$cya, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toCYON", &CYValue_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toJSON", &CYValue_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
-    {"toPointer", &Functor_callAsFunction_toPointer, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"valueOf", &CYValue_callAsFunction_valueOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
@@ -1872,6 +1880,7 @@ void CYInitializeDynamic() {
     definition.className = "Pointer";
     definition.staticFunctions = Pointer_staticFunctions;
     definition.staticValues = Pointer_staticValues;
+    definition.callAsFunction = &Pointer_callAsFunction;
     definition.getProperty = &Pointer_getProperty;
     definition.setProperty = &Pointer_setProperty;
     definition.finalize = &CYFinalize;

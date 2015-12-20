@@ -1947,7 +1947,7 @@ ExportSpecifier
 /* Cycript (C): Type Encoding {{{ */
 TypeSignifier
     : IdentifierType[identifier] { $$ = CYNew CYTypedIdentifier(@identifier, $identifier); }
-    | "(" "*" TypeQualifierRightOpt[typed] ")" { $$ = $typed; }
+    | "(" "*" TypeQualifierRightOpt[typed] ")" { $$ = $typed; $$->modifier_ = CYNew CYTypePointerTo($$->modifier_); }
     ;
 
 TypeSignifierOpt
