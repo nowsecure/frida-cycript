@@ -103,15 +103,20 @@ bool CYGetOffset(const char *value, ssize_t &index) {
 }
 /* }}} */
 /* JavaScript *ify {{{ */
-void CYStringify(std::ostringstream &str, const char *data, size_t size) {
-    unsigned quot(0), apos(0);
-    for (const char *value(data), *end(data + size); value != end; ++value)
-        if (*value == '"')
-            ++quot;
-        else if (*value == '\'')
-            ++apos;
+void CYStringify(std::ostringstream &str, const char *data, size_t size, bool c) {
+    bool single;
+    if (c)
+        single = false;
+    else {
+        unsigned quot(0), apos(0);
+        for (const char *value(data), *end(data + size); value != end; ++value)
+            if (*value == '"')
+                ++quot;
+            else if (*value == '\'')
+                ++apos;
 
-    bool single(quot > apos);
+        single = quot > apos;
+    }
 
     str << (single ? '\'' : '"');
 

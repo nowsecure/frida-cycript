@@ -1149,7 +1149,7 @@ NSObject *CYCopyNSObject(CYPool &pool, JSContextRef context, JSValueRef value) {
     if (!objective)
         str << '@';
     CYUTF8String string(CYCastUTF8String(self));
-    CYStringify(str, string.data, string.size);
+    CYStringify(str, string.data, string.size, true);
     std::string value(str.str());
     return CYCastNSString(NULL, CYUTF8String(value.c_str(), value.size()));
 }
