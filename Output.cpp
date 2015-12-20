@@ -364,7 +364,8 @@ void CYExpression::Output(CYOutput &out, int precedence, CYFlags flags) const {
 }
 
 void CYExternal::Output(CYOutput &out, CYFlags flags) const {
-    out << "extern" << abi_ << typed_ << ';';
+    out << "extern" << abi_ << typed_;
+    out.Terminate();
 }
 
 void CYFatArrow::Output(CYOutput &out, CYFlags flags) const {
@@ -638,6 +639,7 @@ void CYLambda::Output(CYOutput &out, CYFlags flags) const {
 
 void CYTypeDefinition::Output(CYOutput &out, CYFlags flags) const {
     out << "typedef" << ' ' << *typed_;
+    out.Terminate();
 }
 
 void CYTypeExpression::Output(CYOutput &out, CYFlags flags) const {

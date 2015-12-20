@@ -524,6 +524,9 @@ type; })
 %type <expression_> ExpressionOpt
 %type <for_> ExpressionStatement_
 %type <statement_> ExpressionStatement
+%type <statement_> ExternC
+%type <statement_> ExternCStatement
+%type <statement_> ExternCStatementListOpt
 %type <finally_> Finally
 %type <binding_> ForBinding
 %type <forin_> ForDeclaration
@@ -613,6 +616,7 @@ type; })
 %type <span_> TemplateSpans
 %type <statement_> ThrowStatement
 %type <statement_> TryStatement
+%type <statement_> TypeDefinition
 %type <expression_> UnaryExpression_
 %type <expression_> UnaryExpression
 %type <binding_> VariableDeclaration
@@ -863,6 +867,11 @@ NewLineOpt
 TerminatorSoft
     : LexNewLineOrNot "\n" StrictSemi
     | NewLineNot LexOf Terminator
+    ;
+
+TerminatorHard
+    : ";"
+    | error { if (yyla.type_get() != yyeof_) CYERR(@error, "required semi-colon"); else CYEOK(); } StrictSemi
     ;
 
 Terminator
@@ -1378,7 +1387,7 @@ Block
     ;
 
 StatementList
-    : StatementListItem[statement] StatementListOpt[next] { $statement->SetNext($next); $$ = $statement; }
+    : StatementListItem[statement] StatementListOpt[next] { $$ = $statement; CYSetLast($$) = $next; }
     ;
 
 StatementListOpt
@@ -2264,8 +2273,12 @@ IdentifierNoOf
     : "typedef" NewLineOpt { $$ = CYNew CYIdentifier("typedef"); }
     ;
 
+TypeDefinition
+    : "typedef" NewLineNot TypedIdentifierYes[typed] TerminatorHard { $$ = CYNew CYTypeDefinition($typed); }
+    ;
+
 Statement__
-    : "typedef" NewLineNot TypedIdentifierYes[typed] Terminator { $$ = CYNew CYTypeDefinition($typed); }
+    : TypeDefinition[pass] { $$ = $pass; }
     ;
 
 PrimaryExpression
@@ -2277,8 +2290,23 @@ IdentifierNoOf
     : "extern" NewLineOpt { $$ = CYNew CYIdentifier("extern"); }
     ;
 
+ExternCStatement
+    : TypedIdentifierYes[typed] TerminatorHard { $$ = CYNew CYExternal(CYNew CYString("C"), $typed); }
+    | TypeDefinition[pass] { $$ = $pass; }
+    ;
+
+ExternCStatementListOpt
+    : ExternCStatement[statement] ExternCStatementListOpt[next] { $$ = $statement; CYSetLast($$) = $next; }
+    | { $$ = NULL; }
+    ;
+
+ExternC
+    : "{" ExternCStatementListOpt[pass] "}" { $$ = $pass; }
+    | ExternCStatement[pass] { $$ = $pass; }
+    ;
+
 Statement__
-    : "extern" NewLineNot StringLiteral[abi] { if (strcmp($abi->Value(), "C") != 0) CYERR(@abi, "unknown extern binding"); } TypedIdentifierYes[typed] Terminator { $$ = CYNew CYExternal($abi, $typed); }
+    : "extern" NewLineNot StringLiteral[abi] { if (strcmp($abi->Value(), "C") != 0) CYERR(@abi, "unknown extern binding"); } ExternC[pass] { $$ = $pass; }
     ;
 /* }}} */
 
