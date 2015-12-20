@@ -103,11 +103,11 @@ JSObjectRef CYCastJSObject(JSContextRef context, JSValueRef value);
 JSValueRef CYJSUndefined(JSContextRef context);
 JSValueRef CYJSNull(JSContextRef context);
 
-void *CYCastPointer_(JSContextRef context, JSValueRef value);
+void *CYCastPointer_(JSContextRef context, JSValueRef value, bool *guess = NULL);
 
 template <typename Type_>
-_finline Type_ CYCastPointer(JSContextRef context, JSValueRef value) {
-    return reinterpret_cast<Type_>(CYCastPointer_(context, value));
+_finline Type_ CYCastPointer(JSContextRef context, JSValueRef value, bool *guess = NULL) {
+    return reinterpret_cast<Type_>(CYCastPointer_(context, value, guess));
 }
 
 void CYPoolFFI(CYPool *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value);

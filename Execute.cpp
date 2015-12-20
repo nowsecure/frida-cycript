@@ -605,7 +605,7 @@ static bool CYGetOffset(CYPool &pool, JSContextRef context, JSStringRef value, s
     return CYGetOffset(CYPoolCString(pool, context, value), index);
 }
 
-void *CYCastPointer_(JSContextRef context, JSValueRef value) {
+void *CYCastPointer_(JSContextRef context, JSValueRef value, bool *guess) {
     if (value == NULL)
         return NULL;
     else switch (JSValueGetType(context, value)) {
@@ -613,10 +613,6 @@ void *CYCastPointer_(JSContextRef context, JSValueRef value) {
             return NULL;
         case kJSTypeObject: {
             JSObjectRef object((JSObjectRef) value);
-            if (JSValueIsObjectOfClass(context, value, CString_)) {
-                CString *internal(reinterpret_cast<CString *>(JSObjectGetPrivate(object)));
-                return internal->value_;
-            }
             if (JSValueIsObjectOfClass(context, value, Pointer_)) {
                 Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(object)));
                 return internal->value_;
@@ -625,13 +621,21 @@ void *CYCastPointer_(JSContextRef context, JSValueRef value) {
             if (CYIsCallable(context, toPointer)) {
                 JSValueRef value(CYCallAsFunction(context, (JSObjectRef) toPointer, object, 0, NULL));
                 _assert(value != NULL);
-                return CYCastPointer_(context, value);
+                return CYCastPointer_(context, value, guess);
             }
         } default:
+            if (guess != NULL)
+                *guess = true;
+        case kJSTypeNumber:
             double number(CYCastDouble(context, value));
-            if (std::isnan(number))
+            if (!std::isnan(number))
+                return reinterpret_cast<void *>(static_cast<uintptr_t>(static_cast<long long>(number)));
+            if (guess == NULL)
                 throw CYJSError(context, "cannot convert value to pointer");
-            return reinterpret_cast<void *>(static_cast<uintptr_t>(static_cast<long long>(number)));
+            else {
+                *guess = true;
+                return NULL;
+            }
     }
 }
 
@@ -684,10 +688,12 @@ void CYPoolFFI(CYPool *pool, JSContextRef context, sig::Type *type, ffi_type *ff
             *reinterpret_cast<void **>(data) = CYCastPointer<void *>(context, value);
         break;
 
-        case sig::string_P:
-            _assert(pool != NULL);
-            *reinterpret_cast<const char **>(data) = CYPoolCString(*pool, context, value);
-        break;
+        case sig::string_P: {
+            bool guess(false);
+            *reinterpret_cast<const char **>(data) = CYCastPointer<const char *>(context, value, &guess);
+            if (guess && pool != NULL)
+                *reinterpret_cast<const char **>(data) = CYPoolCString(*pool, context, value);
+        } break;
 
         case sig::struct_P: {
             uint8_t *base(reinterpret_cast<uint8_t *>(data));
@@ -1490,6 +1496,38 @@ static JSObjectRef Functor_new(JSContextRef context, JSObjectRef object, size_t 
     return CYMakeFunctor(context, arguments[0], signature);
 } CYCatch(NULL) }
 
+static JSValueRef CString_callAsFunction_toPointer(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    CString *internal(reinterpret_cast<CString *>(JSObjectGetPrivate(_this)));
+
+    sig::Type type;
+    type.name = NULL;
+    type.flags = 0;
+
+    type.primitive = sig::char_P;
+    type.data.data.type = NULL;
+    type.data.data.size = 0;
+
+    return CYMakePointer(context, internal->value_, _not(size_t), &type, NULL, NULL);
+} CYCatch(NULL) }
+
+static JSValueRef Functor_callAsFunction_toPointer(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    CYPool pool;
+    cy::Functor *internal(reinterpret_cast<cy::Functor *>(JSObjectGetPrivate(_this)));
+
+    sig::Type type;
+    type.name = NULL;
+    type.flags = 0;
+
+    type.primitive = sig::function_P;
+    sig::Copy(pool, type.data.signature, internal->signature_);
+
+    return CYMakePointer(context, internal->value_, _not(size_t), &type, NULL, NULL);
+} CYCatch(NULL) }
+
+static JSValueRef Pointer_callAsFunction_toPointer(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    return _this;
+} CYCatch(NULL) }
+
 static JSValueRef CYValue_callAsFunction_valueOf(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CYValue *internal(reinterpret_cast<CYValue *>(JSObjectGetPrivate(_this)));
     return CYCastJSValue(context, reinterpret_cast<uintptr_t>(internal->value_));
@@ -1624,9 +1662,10 @@ static JSValueRef Type_callAsFunction_toJSON(JSContextRef context, JSObjectRef o
     return Type_callAsFunction_toString(context, object, _this, count, arguments, exception);
 }
 
-static JSStaticFunction CString_staticFunctions[5] = {
+static JSStaticFunction CString_staticFunctions[6] = {
     {"toCYON", &CString_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toJSON", &CYValue_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"toPointer", &CString_callAsFunction_toPointer, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toString", &CString_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"valueOf", &CString_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
@@ -1638,9 +1677,10 @@ static JSStaticValue CString_staticValues[3] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction Pointer_staticFunctions[4] = {
+static JSStaticFunction Pointer_staticFunctions[5] = {
     {"toCYON", &Pointer_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toJSON", &CYValue_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"toPointer", &Pointer_callAsFunction_toPointer, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"valueOf", &CYValue_callAsFunction_valueOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
@@ -1655,9 +1695,10 @@ static JSStaticFunction Struct_staticFunctions[2] = {
     {NULL, NULL, 0}
 };
 
-static JSStaticFunction Functor_staticFunctions[4] = {
+static JSStaticFunction Functor_staticFunctions[5] = {
     {"toCYON", &CYValue_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toJSON", &CYValue_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"toPointer", &Functor_callAsFunction_toPointer, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"valueOf", &CYValue_callAsFunction_valueOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
