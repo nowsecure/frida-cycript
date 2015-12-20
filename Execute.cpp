@@ -1548,9 +1548,20 @@ static JSValueRef CYValue_callAsFunction_toJSON(JSContextRef context, JSObjectRe
 
 static JSValueRef CYValue_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CYValue *internal(reinterpret_cast<CYValue *>(JSObjectGetPrivate(_this)));
-    char string[32];
-    sprintf(string, "%p", internal->value_);
-    return CYCastJSValue(context, string);
+    std::ostringstream str;
+    Dl_info info;
+    if (internal->value_ == NULL)
+        str << "NULL";
+    else if (dladdr(internal->value_, &info) == 0)
+        str << internal->value_;
+    else {
+        str << info.dli_sname;
+        off_t offset(static_cast<char *>(internal->value_) - static_cast<char *>(info.dli_saddr));
+        if (offset != 0)
+            str << "+0x" << std::hex << offset;
+    }
+    std::string value(str.str());
+    return CYCastJSValue(context, CYJSString(CYUTF8String(value.c_str(), value.size())));
 } CYCatch(NULL) }
 
 static JSValueRef Pointer_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
