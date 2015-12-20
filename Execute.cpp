@@ -297,6 +297,7 @@ JSValueRef CYCastJSValue(JSContextRef context, double value) {
 
 #define CYCastJSValue_(Type_) \
     JSValueRef CYCastJSValue(JSContextRef context, Type_ value) { \
+        _assert(static_cast<Type_>(static_cast<double>(value)) == value); \
         return JSValueMakeNumber(context, static_cast<double>(value)); \
     }
 
