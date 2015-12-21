@@ -101,7 +101,13 @@ let GetLibraryPath = function() {
         if (slash == -1)
             return null;
 
-        return path.substr(0, slash);
+        path = path.substr(0, slash);
+
+        GetLibraryPath = function() {
+            return path;
+        };
+
+        return GetLibraryPath();
     } finally {
         dlclose(handle);
     }
