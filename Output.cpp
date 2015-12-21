@@ -520,6 +520,10 @@ void CYImport::Output(CYOutput &out, CYFlags flags) const {
     out << "@import";
 }
 
+void CYImportDeclaration::Output(CYOutput &out, CYFlags flags) const {
+    _assert(false);
+}
+
 void CYIndirect::Output(CYOutput &out, CYFlags flags) const {
     out << "*";
     rhs_->Output(out, Precedence(), CYRight(flags));

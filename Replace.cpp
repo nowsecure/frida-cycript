@@ -623,6 +623,27 @@ CYStatement *CYImport::Replace(CYContext &context) {
     return $ CYVar($B1($B($I(module_->part_->Word()), $C1($V("require"), module_->Replace(context, "/")))));
 }
 
+CYStatement *CYImportDeclaration::Replace(CYContext &context) {
+    CYIdentifier *module(context.Unique());
+
+    CYList<CYStatement> statements;
+    CYForEach (specifier, specifiers_)
+        statements->*specifier->Replace(context, module);
+
+    return $ CYBlock($$
+        ->* $ CYLexical(false, $B1($B(module, $C1($V("require"), module_))))
+        ->* statements);
+}
+
+CYStatement *CYImportSpecifier::Replace(CYContext &context, CYIdentifier *module) {
+    binding_ = binding_->Replace(context, CYIdentifierLexical);
+
+    CYExpression *import($V(module));
+    if (name_ != NULL)
+        import = $M(import, $S(name_));
+    return $E($ CYAssign($V(binding_), import));
+}
+
 CYTarget *CYIndirect::Replace(CYContext &context) {
     return $M(rhs_, $S("$cyi"));
 }

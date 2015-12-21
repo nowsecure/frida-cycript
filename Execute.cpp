@@ -2092,7 +2092,13 @@ static JSValueRef require(JSContextRef context, JSObjectRef object, JSObjectRef 
         CYCallAsFunction(context, function, NULL, 3, arguments);
     }
 
-    return CYGetProperty(context, module, property);
+    JSObjectRef exports(CYCastJSObject(context, CYGetProperty(context, module, property)));
+
+    CYJSString _default("default");
+    if (JSValueIsUndefined(context, CYGetProperty(context, exports, _default)))
+        CYSetProperty(context, exports, _default, exports, kJSPropertyAttributeDontEnum);
+
+    return exports;
 } CYCatch(NULL) }
 
 static bool CYRunScript(JSGlobalContextRef context, const char *path) {

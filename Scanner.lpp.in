@@ -444,6 +444,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
     /* }}} */
     /* Reserved {{{ */
 "abstract"        L /*FII*/ F(tk::_abstract_, hi::Meta);
+"as"              L /*III*/ F(tk::_as_, hi::Meta);
 "await"           L /*II?*/ F(tk::_await_, hi::Meta);
 "boolean"         L /*FII*/ F(tk::_boolean_, hi::Type);
 "break"           L /*KKK*/ F(tk::_break_, hi::Control);

@@ -123,7 +123,7 @@ class _visible CYDriver {
     CYDriver(CYPool &pool, std::streambuf &data, const std::string &filename = "");
     ~CYDriver();
 
-    bool Parse(CYMark mark = CYMarkScript);
+    bool Parse(CYMark mark = CYMarkModule);
     void Replace(CYOptions &options);
 
     void SetRegEx(bool equal);

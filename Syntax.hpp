@@ -2238,6 +2238,39 @@ struct CYImport :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
+struct CYImportSpecifier :
+    CYNext<CYImportSpecifier>
+{
+    CYWord *name_;
+    CYIdentifier *binding_;
+
+    CYImportSpecifier(CYWord *name, CYIdentifier *binding) :
+        name_(name),
+        binding_(binding)
+    {
+    }
+
+    CYStatement *Replace(CYContext &context, CYIdentifier *module);
+};
+
+struct CYImportDeclaration :
+    CYStatement
+{
+    CYImportSpecifier *specifiers_;
+    CYString *module_;
+
+    CYImportDeclaration(CYImportSpecifier *specifiers, CYString *module) :
+        specifiers_(specifiers),
+        module_(module)
+    {
+    }
+
+    CYCompact(None)
+
+    virtual CYStatement *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
 struct CYExternal :
     CYStatement
 {

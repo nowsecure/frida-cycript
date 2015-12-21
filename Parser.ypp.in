@@ -61,6 +61,7 @@
 %union { CYForInInitializer *forin_; }
 %union { CYFunctionParameter *functionParameter_; }
 %union { CYIdentifier *identifier_; }
+%union { CYImportSpecifier *import_; }
 %union { CYInfix *infix_; }
 %union { CYLiteral *literal_; }
 %union { CYMethod *method_; }
@@ -357,6 +358,7 @@ type; })
 %token _null_ "null"
 %token _true_ "true"
 
+%token _as_ "as"
 %token _break_ "break"
 %token _case_ "case"
 %token _catch_ "catch"
@@ -536,6 +538,7 @@ type; })
 %type <functionParameter_> FormalParameterList_
 %type <functionParameter_> FormalParameterList
 %type <functionParameter_> FormalParameters
+%type <string_> FromClause
 %type <statement_> FunctionBody
 %type <statement_> FunctionDeclaration
 %type <target_> FunctionExpression
@@ -553,6 +556,14 @@ type; })
 %type <word_> IdentifierName
 %type <variable_> IdentifierReference
 %type <statement_> IfStatement
+%type <import_> ImportClause
+%type <statement_> ImportDeclaration
+%type <import_> ImportSpecifier
+%type <identifier_> ImportedBinding
+%type <import_> ImportedDefaultBinding
+%type <import_> ImportsList_
+%type <import_> ImportsList
+%type <import_> ImportsListOpt
 %type <target_> IndirectExpression
 %type <expression_> Initializer
 %type <expression_> InitializerOpt
@@ -573,8 +584,16 @@ type; })
 %type <access_> MemberAccess
 %type <target_> MemberExpression
 %type <method_> MethodDefinition
+%type <statement_> ModuleBody
+%type <statement_> ModuleBodyOpt
+%type <statement_> ModuleItem
+%type <statement_> ModuleItemList
+%type <statement_> ModuleItemListOpt
 %type <module_> ModulePath
+%type <string_> ModuleSpecifier
 %type <expression_> MultiplicativeExpression
+%type <import_> NameSpaceImport
+%type <import_> NamedImports
 %type <target_> NewExpression
 %type <null_> NullLiteral
 %type <literal_> ObjectLiteral
@@ -910,6 +929,7 @@ LabelIdentifier
 IdentifierTypeNoOf
     : Identifier_[pass] { $$ = $pass; }
     | "abstract" { $$ = CYNew CYIdentifier("abstract"); }
+    | "as" { $$ = CYNew CYIdentifier("as"); }
     | "await" { $$ = CYNew CYIdentifier("await"); }
     | "boolean" { $$ = CYNew CYIdentifier("boolean"); }
     | "byte" { $$ = CYNew CYIdentifier("byte"); }
@@ -1828,88 +1848,88 @@ ScriptBodyOpt
 /* }}} */
 /* 15.2 Modules {{{ */
 Module
-    : ModuleBodyOpt
+    : ModuleBodyOpt[code] { driver.script_ = CYNew CYScript($code); }
     ;
 
 ModuleBody
-    : ModuleItemList
+    : ModuleItemList[pass] { $$ = $pass; }
     ;
 
 ModuleBodyOpt
-    : ModuleBody
-    |
+    : ModuleBody[pass] { $$ = $pass; }
+    | LexSetStatement LexLet LexOf { $$ = NULL; }
     ;
 
 ModuleItemList
-    : ModuleItemListOpt ModuleItem
+    : ModuleItem[statement] ModuleItemListOpt[next] { $$ = $statement; CYSetLast($$) = $next; }
     ;
 
 ModuleItemListOpt
-    : ModuleItemList
-    |
+    : ModuleItemList[pass] { $$ = $pass; }
+    | LexSetStatement LexLet LexOf { $$ = NULL; }
     ;
 
 ModuleItem
-    : LexSetStatement LexLet LexOf ImportDeclaration
-    | LexSetStatement LexLet LexOf ExportDeclaration
-    | StatementListItem
+    : LexSetStatement LexLet LexOf ImportDeclaration[pass] { $$ = $pass; }
+    | LexSetStatement LexLet LexOf ExportDeclaration { CYNOT(@$); }
+    | StatementListItem[pass] { $$ = $pass; }
     ;
 /* }}} */
 /* 15.2.2 Imports {{{ */
 ImportDeclaration
-    : "import" ImportClause FromClause Terminator
-    | "import" LexOf ModuleSpecifier Terminator
+    : "import" ImportClause[specifiers] FromClause[module] Terminator { $$ = CYNew CYImportDeclaration($specifiers, $module); }
+    | "import" LexOf ModuleSpecifier[module] Terminator { $$ = CYNew CYImportDeclaration(NULL, $module); }
     ;
 
 ImportClause
-    : ImportedDefaultBinding
-    | LexOf NameSpaceImport
-    | LexOf NamedImports
-    | ImportedDefaultBinding "," NameSpaceImport
-    | ImportedDefaultBinding "," NamedImports
+    : ImportedDefaultBinding[default] { $$ = $default; }
+    | LexOf NameSpaceImport[pass] { $$ = $pass; }
+    | LexOf NamedImports[pass] { $$ = $pass; }
+    | ImportedDefaultBinding[default] "," NameSpaceImport[next] { $$ = $default; CYSetLast($$) = $next; }
+    | ImportedDefaultBinding[default] "," NamedImports[next] { $$ = $default; CYSetLast($$) = $next; }
     ;
 
 ImportedDefaultBinding
-    : ImportedBinding
+    : ImportedBinding[binding] { $$ = CYNew CYImportSpecifier(CYNew CYIdentifier("default"), $binding); }
     ;
 
 NameSpaceImport
-    : "*" "as" ImportedBinding
+    : "*" "as" ImportedBinding[binding] { $$ = CYNew CYImportSpecifier(NULL, $binding); }
     ;
 
 NamedImports
-    : "{" ImportsListOpt "}"
+    : "{" ImportsListOpt[pass] "}" { $$ = $pass; }
     ;
 
 FromClause
-    : "from" ModuleSpecifier
+    : "from" ModuleSpecifier[pass] { $$ = $pass; }
     ;
 
 ImportsList_
-    : "," ImportsListOpt
-    |
+    : "," ImportsListOpt[pass] { $$ = $pass; }
+    | { $$ = NULL; }
     ;
 
 ImportsList
-    : ImportSpecifier ImportsList_
+    : ImportSpecifier[import] ImportsList_[next] { $$ = $import; CYSetLast($$) = $next; }
     ;
 
 ImportsListOpt
-    : ImportsList
-    | LexOf
+    : ImportsList[pass] { $$ = $pass; }
+    | LexOf { $$ = NULL; }
     ;
 
 ImportSpecifier
-    : ImportedBinding
-    | LexOf IdentifierName "as" ImportedBinding
+    : ImportedBinding[binding] { $$ = CYNew CYImportSpecifier($binding, $binding); }
+    | LexOf IdentifierName[name] "as" ImportedBinding[binding] { $$ = CYNew CYImportSpecifier($name, $binding); }
     ;
 
 ModuleSpecifier
-    : StringLiteral
+    : StringLiteral[pass] { $$ = $pass; }
     ;
 
 ImportedBinding
-    : BindingIdentifier
+    : BindingIdentifier[pass] { $$ = $pass; }
     ;
 /* }}} */
 /* 15.2.3 Exports {{{ */
