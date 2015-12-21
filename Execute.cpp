@@ -2042,63 +2042,62 @@ static const char *CYPoolLibraryPath(CYPool &pool) {
     return lib;
 }
 
-static JSValueRef require(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+static JSValueRef require_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     _assert(count == 1);
     CYPool pool;
 
-    const char *lib(CYPoolLibraryPath(pool));
+    const char *name(CYPoolCString(pool, context, arguments[0]));
+    if (strchr(name, '/') == NULL && (
+#ifdef __APPLE__
+        dlopen(pool.strcat("/System/Library/Frameworks/", name, ".framework/", name, NULL), RTLD_LAZY | RTLD_GLOBAL) != NULL ||
+        dlopen(pool.strcat("/System/Library/PrivateFrameworks/", name, ".framework/", name, NULL), RTLD_LAZY | RTLD_GLOBAL) != NULL ||
+#endif
+    false))
+        return CYJSUndefined(context);
+
+    JSObjectRef resolve(CYCastJSObject(context, CYGetProperty(context, object, CYJSString("resolve"))));
+    CYJSString path(context, CYCallAsFunction(context, resolve, NULL, 1, arguments));
 
     CYJSString property("exports");
-    JSObjectRef module;
 
-    const char *name(CYPoolCString(pool, context, arguments[0]));
-    const char *path(pool.strcat(lib, "/cycript0.9/", name, ".cy", NULL));
-
-    CYJSString key(path);
     JSObjectRef modules(CYGetCachedObject(context, CYJSString("modules")));
-    JSValueRef cache(CYGetProperty(context, modules, key));
+    JSValueRef cache(CYGetProperty(context, modules, path));
 
-    if (!JSValueIsUndefined(context, cache))
-        module = CYCastJSObject(context, cache);
-    else {
-        CYUTF8String code(CYPoolFileUTF8String(pool, path));
+    JSValueRef result;
+    if (!JSValueIsUndefined(context, cache)) {
+        JSObjectRef module(CYCastJSObject(context, cache));
+        result = CYGetProperty(context, module, property);
+    } else {
+        CYUTF8String code(CYPoolFileUTF8String(pool, CYPoolCString(pool, context, path)));
+        _assert(code.data != NULL);
 
-        if (code.data == NULL) {
-            if (strchr(name, '/') == NULL && (
-#ifdef __APPLE__
-                dlopen(pool.strcat("/System/Library/Frameworks/", name, ".framework/", name, NULL), RTLD_LAZY | RTLD_GLOBAL) != NULL ||
-                dlopen(pool.strcat("/System/Library/PrivateFrameworks/", name, ".framework/", name, NULL), RTLD_LAZY | RTLD_GLOBAL) != NULL ||
-#endif
-            false))
-                return CYJSUndefined(NULL);
+        size_t length(strlen(name));
+        if (length >= 5 && strcmp(name + length - 5, ".json") == 0) {
+            JSObjectRef JSON(CYGetCachedObject(context, CYJSString("JSON")));
+            JSObjectRef parse(CYCastJSObject(context, CYGetProperty(context, JSON, CYJSString("parse"))));
+            JSValueRef arguments[1] = { CYCastJSValue(context, CYJSString(code)) };
+            result = CYCallAsFunction(context, parse, JSON, 1, arguments);
+        } else {
+            JSObjectRef module(JSObjectMake(context, NULL, NULL));
+            CYSetProperty(context, modules, path, module);
 
-            CYThrow("Can't find module: %s", name);
+            JSObjectRef exports(JSObjectMake(context, NULL, NULL));
+            CYSetProperty(context, module, property, exports);
+
+            std::stringstream wrap;
+            wrap << "(function (exports, require, module, __filename) { " << code << "\n});";
+            code = CYPoolCode(pool, *wrap.rdbuf());
+
+            JSValueRef value(_jsccall(JSEvaluateScript, context, CYJSString(code), NULL, NULL, 0));
+            JSObjectRef function(CYCastJSObject(context, value));
+
+            JSValueRef arguments[4] = { exports, object, module, CYCastJSValue(context, path) };
+            CYCallAsFunction(context, function, NULL, 4, arguments);
+            result = CYGetProperty(context, module, property);
         }
-
-        module = JSObjectMake(context, NULL, NULL);
-        CYSetProperty(context, modules, key, module);
-
-        JSObjectRef exports(JSObjectMake(context, NULL, NULL));
-        CYSetProperty(context, module, property, exports);
-
-        std::stringstream wrap;
-        wrap << "(function (exports, require, module) { " << code << "\n});";
-        code = CYPoolCode(pool, *wrap.rdbuf());
-
-        JSValueRef value(_jsccall(JSEvaluateScript, context, CYJSString(code), NULL, NULL, 0));
-        JSObjectRef function(CYCastJSObject(context, value));
-
-        JSValueRef arguments[3] = { exports, JSObjectMakeFunctionWithCallback(context, CYJSString("require"), &require), module };
-        CYCallAsFunction(context, function, NULL, 3, arguments);
     }
 
-    JSObjectRef exports(CYCastJSObject(context, CYGetProperty(context, module, property)));
-
-    CYJSString _default("default");
-    if (JSValueIsUndefined(context, CYGetProperty(context, exports, _default)))
-        CYSetProperty(context, exports, _default, exports, kJSPropertyAttributeDontEnum);
-
-    return exports;
+    return result;
 } CYCatch(NULL) }
 
 static bool CYRunScript(JSGlobalContextRef context, const char *path) {
@@ -2145,6 +2144,9 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
 
     JSObjectRef Function_prototype(CYCastJSObject(context, CYGetProperty(context, Function, prototype_s)));
     CYSetProperty(context, cy, CYJSString("Function_prototype"), Function_prototype);
+
+    JSObjectRef JSON(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("JSON"))));
+    CYSetProperty(context, cy, CYJSString("JSON"), JSON);
 
     JSObjectRef Number(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Number"))));
     CYSetProperty(context, cy, CYJSString("Number"), Number);
@@ -2214,12 +2216,13 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     JSObjectRef System(JSObjectMake(context, NULL, NULL));
     CYSetProperty(context, cy, CYJSString("System"), System);
 
-    CYSetProperty(context, all, CYJSString("require"), &require, kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, all, CYJSString("require"), &require_callAsFunction, kJSPropertyAttributeDontEnum);
 
     CYSetProperty(context, global, CYJSString("system"), System);
     CYSetProperty(context, System, CYJSString("args"), CYJSNull(context));
-    //CYSetProperty(context, System, CYJSString("global"), global);
     CYSetProperty(context, System, CYJSString("print"), &System_print);
+
+    CYSetProperty(context, global, CYJSString("global"), global);
 
 #ifdef __APPLE__
     if (&JSWeakObjectMapCreate != NULL) {
