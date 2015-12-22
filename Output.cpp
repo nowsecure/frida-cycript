@@ -864,6 +864,22 @@ const char *CYString::Word() const {
     return value;
 }
 
+void CYStructDefinition::Output(CYOutput &out, CYFlags flags) const {
+    out << "struct" << ' ' << *name_ << *tail_;
+}
+
+void CYStructTail::Output(CYOutput &out) const {
+    out << ' ' << '{' << '\n';
+    ++out.indent_;
+    CYForEach (field, fields_) {
+        out << '\t' << *field->typed_;
+        out.Terminate();
+        out << '\n';
+    }
+    --out.indent_;
+    out << '}';
+}
+
 void CYSuperAccess::Output(CYOutput &out, CYFlags flags) const {
     out << "super";
     if (const char *word = property_->Word())
@@ -927,22 +943,19 @@ void CYTypeSigned::Output(CYOutput &out) const {
 }
 
 void CYTypeStruct::Output(CYOutput &out) const {
-    out << "struct" << ' ';
+    out << "struct";
     if (name_ != NULL)
-        out << *name_ << ' ';
-    out << '{' << '\n';
-    ++out.indent_;
-    CYForEach (field, fields_) {
-        out << '\t' << *field->typed_;
-        out.Terminate();
-        out << '\n';
-    }
-    --out.indent_;
-    out << '}';
+        out << ' ' << *name_;
+    else
+        out << *tail_;
 }
 
 void CYTypeUnsigned::Output(CYOutput &out) const {
     out << "unsigned" << specifier_;
+}
+
+void CYTypeReference::Output(CYOutput &out) const {
+    out << "struct" << ' ' << *name_;
 }
 
 void CYTypeVariable::Output(CYOutput &out) const {

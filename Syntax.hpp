@@ -1961,6 +1961,20 @@ struct CYTypeVoid :
     virtual void Output(CYOutput &out) const;
 };
 
+struct CYTypeReference :
+    CYTypeSpecifier
+{
+    CYIdentifier *name_;
+
+    CYTypeReference(CYIdentifier *name) :
+        name_(name)
+    {
+    }
+
+    virtual CYTarget *Replace(CYContext &context);
+    virtual void Output(CYOutput &out) const;
+};
+
 struct CYTypeVariable :
     CYTypeSpecifier
 {
@@ -2369,20 +2383,52 @@ struct CYTypeStructField :
     }
 };
 
+struct CYStructTail :
+    CYThing
+{
+    CYTypeStructField *fields_;
+
+    CYStructTail(CYTypeStructField *fields) :
+        fields_(fields)
+    {
+    }
+
+    CYTarget *Replace(CYContext &context);
+    virtual void Output(CYOutput &out) const;
+};
+
 struct CYTypeStruct :
     CYTypeSpecifier
 {
     CYIdentifier *name_;
-    CYTypeStructField *fields_;
+    CYStructTail *tail_;
 
-    CYTypeStruct(CYIdentifier *name, CYTypeStructField *fields) :
+    CYTypeStruct(CYIdentifier *name, CYStructTail *tail) :
         name_(name),
-        fields_(fields)
+        tail_(tail)
     {
     }
 
     virtual CYTarget *Replace(CYContext &context);
     virtual void Output(CYOutput &out) const;
+};
+
+struct CYStructDefinition :
+    CYStatement
+{
+    CYIdentifier *name_;
+    CYStructTail *tail_;
+
+    CYStructDefinition(CYIdentifier *name, CYStructTail *tail) :
+        name_(name),
+        tail_(tail)
+    {
+    }
+
+    CYCompact(None)
+
+    virtual CYStatement *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 namespace cy {

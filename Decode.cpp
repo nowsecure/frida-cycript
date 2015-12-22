@@ -97,7 +97,7 @@ CYTypedIdentifier *Decode_(CYPool &pool, struct sig::Type *type) {
                 fields = $ CYTypeStructField(typed, fields);
             }
             CYIdentifier *name(type->name == NULL ? NULL : $I(type->name));
-            return $ CYTypedIdentifier($ CYTypeStruct(name, fields));
+            return $ CYTypedIdentifier($ CYTypeStruct(name, $ CYStructTail(fields)));
         } break;
     }
 

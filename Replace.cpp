@@ -1090,6 +1090,32 @@ CYString *CYString::String(CYContext &context) {
     return this;
 }
 
+CYStatement *CYStructDefinition::Replace(CYContext &context) {
+    CYTarget *target(tail_->Replace(context));
+    if (name_ != NULL)
+        target = $C1($M(target, $S("withName")), $S(name_->Word()));
+    return $ CYLexical(false, $B1($B($I($pool.strcat(name_->Word(), "$cy", NULL)), target)));
+}
+
+CYTarget *CYStructTail::Replace(CYContext &context) {
+    CYList<CYElementValue> types;
+    CYList<CYElementValue> names;
+
+    CYForEach (field, fields_) {
+        CYTypedIdentifier *typed(field->typed_);
+        types->*$ CYElementValue(typed->Replace(context));
+
+        CYExpression *name;
+        if (typed->identifier_ == NULL)
+            name = NULL;
+        else
+            name = $S(typed->identifier_->Word());
+        names->*$ CYElementValue(name);
+    }
+
+    return $N2($V("Type"), $ CYArray(types), $ CYArray(names));
+}
+
 CYTarget *CYSuperAccess::Replace(CYContext &context) {
     return $C1($M($M($M($V(context.super_), $S("prototype")), property_), $S("bind")), $ CYThis());
 }
@@ -1200,6 +1226,10 @@ CYTarget *CYTypePointerTo::Replace_(CYContext &context, CYTarget *type) {
     return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("pointerTo"))));
 }
 
+CYTarget *CYTypeReference::Replace(CYContext &context) {
+    return $V($pool.strcat(name_->Word(), "$cy", NULL));
+}
+
 CYTarget *CYTypeShort::Replace(CYContext &context) {
     return $ CYCall($ CYDirectMember(specifier_->Replace(context), $ CYString("short")));
 }
@@ -1209,22 +1239,7 @@ CYTarget *CYTypeSigned::Replace(CYContext &context) {
 }
 
 CYTarget *CYTypeStruct::Replace(CYContext &context) {
-    CYList<CYElementValue> types;
-    CYList<CYElementValue> names;
-
-    CYForEach (field, fields_) {
-        CYTypedIdentifier *typed(field->typed_);
-        types->*$ CYElementValue(typed->Replace(context));
-
-        CYExpression *name;
-        if (typed->identifier_ == NULL)
-            name = NULL;
-        else
-            name = $S(typed->identifier_->Word());
-        names->*$ CYElementValue(name);
-    }
-
-    CYTarget *target($N2($V("Type"), $ CYArray(types), $ CYArray(names)));
+    CYTarget *target(tail_->Replace(context));
     if (name_ != NULL)
         target = $C1($M(target, $S("withName")), $S(name_->Word()));
     return target;
