@@ -19,23 +19,25 @@
 **/
 /* }}} */
 
-#ifndef CODE_HPP
-#define CODE_HPP
+#include <dlfcn.h>
 
-#include <iostream>
+#include <sys/stat.h>
 
-#include "String.hpp"
+#include <sqlite3.h>
 
-class CYStream :
-    public std::streambuf
-{
-  public:
-    CYStream(const char *start, const char *end) {
-        setg(const_cast<char *>(start), const_cast<char *>(start), const_cast<char *>(end));
-    }
-};
+#ifdef __OBJC__
+#include <objc/runtime.h>
+#endif
 
-CYUTF8String CYPoolCode(CYPool &pool, std::streambuf &stream);
-CYUTF8String CYPoolCode(CYPool &pool, CYUTF8String code);
+#ifdef __APPLE__
+#include <AddressBook/AddressBook.h>
+#include <CoreData/CoreData.h>
+#include <CoreLocation/CoreLocation.h>
+#include <Security/Security.h>
 
-#endif//CODE_HPP
+#if TARGET_OS_IPHONE
+#include <UIKit/UIKit.h>
+#else
+#include <AppKit/AppKit.h>
+#endif
+#endif

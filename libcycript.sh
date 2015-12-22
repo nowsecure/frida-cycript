@@ -19,43 +19,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # }}}
 
-cat << EOF
-%{
-#include <cstddef>
-#include <cstring>
-#include "Execute.hpp"
+set -e
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunknown-pragmas"
-#pragma clang diagnostic ignored "-Wdeprecated-register"
-#endif
-%}
+sys=$1
+sql=$2
 
-%language=ANSI-C
+rm -f "${sql}"
+echo "create table cache (name text not null, system int not null, value text not null, primary key (name, system));" | sqlite3 "${sql}"
 
-%define lookup-function-name CYBridgeHash_
-%define slot-name name_
-
-%struct-type
-
-%pic
-
-%delimiters="|"
-
-struct CYBridgeEntry {
-    int name_;
-    const char *value_;
-};
-
-%%
-EOF
-
-grep -v '^$'
-
-cat <<EOF
-%%
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
-EOF
+def=$3
+if [[ -n "${def}" ]]; then
+    { echo "begin;"; cat "$def"; echo "commit;"; } | sed -e 's/^\([^|]*\)|\"\(.*\)\"$/insert into cache (name, system, value) values (<<\1>>, '"$sys"', <<\2>>);/;s/'"'"'/'"'"''"'"'/g;s/\(<<\|>>\)/'"'"'/g' | sqlite3 "${sql}"
+fi

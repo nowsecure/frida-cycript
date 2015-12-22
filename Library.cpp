@@ -32,6 +32,7 @@
 
 #include <sys/mman.h>
 
+#include "Code.hpp"
 #include "ConvertUTF.h"
 #include "Driver.hpp"
 #include "Error.hpp"
@@ -243,6 +244,11 @@ CYUTF8String CYPoolCode(CYPool &pool, std::streambuf &stream) {
     CYOutput out(str, options);
     out << *driver.script_;
     return $pool.strdup(str.str().c_str());
+}
+
+CYUTF8String CYPoolCode(CYPool &pool, CYUTF8String code) {
+    CYStream stream(code.data, code.data + code.size);
+    return CYPoolCode(pool, stream);
 }
 
 CYPool &CYGetGlobalPool() {

@@ -143,6 +143,7 @@ struct CYRegisterHook {
 
 JSObjectRef CYMakePointer(JSContextRef context, void *pointer, size_t length, sig::Type *type, ffi_type *ffi, JSObjectRef owner);
 
+JSObjectRef CYMakeType(JSContextRef context, const char *encoding);
 JSObjectRef CYMakeType(JSContextRef context, sig::Type *type);
 JSObjectRef CYMakeType(JSContextRef context, sig::Signature *signature);
 

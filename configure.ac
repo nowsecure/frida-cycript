@@ -33,6 +33,8 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_OBJCXX
 
+AX_PROG_CXX_FOR_BUILD
+
 AM_PROG_AR
 AC_PROG_INSTALL
 
@@ -195,9 +197,16 @@ AC_DEFUN([CY_CHECK_PKG_CONFIG_LIBFFI], [
 
 AM_CONDITIONAL([CY_EXECUTE], [test "x$CY_EXECUTE" = x1])
 
+if test "x$CY_SYSTEM" = x; then CY_SYSTEM=1; fi
+AC_SUBST([CY_SYSTEM])
+
 AS_CASE([$CY_EXECUTE], [1], [
     CY_LT_LIB([LTLIBUV], [AC_CHECK_HEADERS([uv.h], [
         AC_SEARCH_LIBS([uv_loop_init], [uv])
+    ])])
+
+    CY_LT_LIB([LTLIBSQLITE3], [AC_CHECK_HEADERS([sqlite3.h], [
+        AC_SEARCH_LIBS([sqlite3_open_v2], [sqlite3])
     ])])
 
     AC_CHECK_HEADERS([ffi.h ffi/ffi.h], [break])
@@ -255,6 +264,12 @@ AS_CASE([$CY_EXECUTE], [1], [
 
 AM_CONDITIONAL([CY_JAVA], [test "x$CY_JAVA" = x1])
 AM_CONDITIONAL([CY_OBJECTIVEC], [test "x$CY_OBJECTIVEC" = x1])
+
+AC_ARG_WITH([libclang], AS_HELP_STRING([--with-libclang], [build bridge definitions using this libclang]), [], [with_libclang=no])
+
+AS_IF([test "x$with_libclang" != "xno"], [
+    AC_SUBST([CY_LIBCLANG], ["$with_libclang"])])
+AM_CONDITIONAL([CY_PRELINK], [test "x$with_libclang" != "xno"])
 
 CY_LT_LIB([LTLIBREADLINE], [AX_LIB_READLINE])
 AS_CASE([$ax_cv_lib_readline], [no], [AC_MSG_ERROR([missing "libreadline"])])

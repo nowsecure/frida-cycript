@@ -2977,6 +2977,12 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
 
     CYSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Message, prototype_s)), Function_prototype);
     CYSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Selector, prototype_s)), Function_prototype);
+
+    CYSetProperty(context, global, CYJSString("YES"), JSValueMakeBoolean(context, true), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, global, CYJSString("NO"), JSValueMakeBoolean(context, false), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, global, CYJSString("id"), CYMakeType(context, "@"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, global, CYJSString("Class"), CYMakeType(context, "#"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, global, CYJSString("SEL"), CYMakeType(context, ":"), kJSPropertyAttributeDontEnum);
 } CYPoolCatch() }
 
 static void *CYObjectiveC_CastSymbol(const char *name) {
@@ -3009,8 +3015,7 @@ _extern void CydgetMemoryParse(const uint16_t **data, size_t *size) { try {
     CYPool pool;
 
     CYUTF8String utf8(CYPoolUTF8String(pool, CYUTF16String(*data, *size)));
-    CYStream stream(utf8.data, utf8.data + utf8.size);
-    utf8 = CYPoolCode(pool, stream);
+    utf8 = CYPoolCode(pool, utf8);
 
     CYUTF16String utf16(CYPoolUTF16String(pool, CYUTF8String(utf8.data, utf8.size)));
     size_t bytes(utf16.size * sizeof(uint16_t));

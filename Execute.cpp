@@ -36,6 +36,8 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
+#include <sqlite3.h>
+
 #include "sig/parse.hpp"
 #include "sig/ffi_type.hpp"
 
@@ -47,6 +49,12 @@
 #include "JavaScript.hpp"
 #include "Pooling.hpp"
 #include "String.hpp"
+
+char *sqlite3_column_pooled(CYPool &pool, sqlite3_stmt *stmt, int n) {
+    if (const unsigned char *value = sqlite3_column_text(stmt, n))
+        return pool.strdup(reinterpret_cast<const char *>(value));
+    else return NULL;
+}
 
 static std::vector<CYHook *> &GetHooks() {
     static std::vector<CYHook *> hooks;
@@ -166,6 +174,8 @@ JSStringRef toPointer_s;
 JSStringRef toString_s;
 JSStringRef weak_s;
 
+static sqlite3 *database_;
+
 static JSStringRef Result_;
 
 void CYFinalize(JSObjectRef object) {
@@ -190,28 +200,7 @@ void Structor_(CYPool &pool, sig::Type *&type) {
     if (type->primitive != sig::struct_P || type->name == NULL)
         return;
 
-    size_t length(strlen(type->name));
-    char keyed[length + 2];
-    memcpy(keyed + 1, type->name, length + 1);
-
-    static const char *modes = "34";
-    for (size_t i(0); i != 2; ++i) {
-        char mode(modes[i]);
-        keyed[0] = mode;
-
-        if (CYBridgeEntry *entry = CYBridgeHash(keyed, length + 1))
-            switch (mode) {
-                case '3':
-                    sig::Parse(pool, &type->data.signature, entry->value_, &Structor_);
-                break;
-
-                case '4': {
-                    sig::Signature signature;
-                    sig::Parse(pool, &signature, entry->value_, &Structor_);
-                    type = signature.elements[0].type;
-                } break;
-            }
-    }
+    //_assert(false);
 }
 
 JSClassRef Type_privateData::Class_;
@@ -245,6 +234,13 @@ struct Pointer :
     Pointer(void *value, JSContextRef context, JSObjectRef owner, size_t length, sig::Type *type) :
         CYOwned(value, context, owner),
         type_(new(*pool_) Type_privateData(type)),
+        length_(length)
+    {
+    }
+
+    Pointer(void *value, JSContextRef context, JSObjectRef owner, size_t length, const char *encoding) :
+        CYOwned(value, context, owner),
+        type_(new(*pool_) Type_privateData(encoding)),
         length_(length)
     {
     }
@@ -576,6 +572,11 @@ JSObjectRef CYMakePointer(JSContextRef context, void *pointer, size_t length, si
     return JSObjectMake(context, Pointer_, internal);
 }
 
+JSObjectRef CYMakePointer(JSContextRef context, void *pointer, size_t length, const char *encoding, JSObjectRef owner) {
+    Pointer *internal(new Pointer(pointer, context, owner, length, encoding));
+    return JSObjectMake(context, Pointer_, internal);
+}
+
 JSObjectRef CYMakeCString(JSContextRef context, char *pointer, JSObjectRef owner) {
     CString *internal(new CString(pointer, context, owner));
     return JSObjectMake(context, CString_, internal);
@@ -585,19 +586,12 @@ static JSObjectRef CYMakeFunctor(JSContextRef context, void (*function)(), const
     return JSObjectMake(context, Functor_, new cy::Functor(signature, function));
 }
 
-static JSObjectRef CYMakeFunctor(JSContextRef context, const char *symbol, const char *encoding, void **cache) {
-    cy::Functor *internal;
-    if (*cache != NULL)
-        internal = reinterpret_cast<cy::Functor *>(*cache);
-    else {
-        void (*function)()(reinterpret_cast<void (*)()>(CYCastSymbol(symbol)));
-        if (function == NULL)
-            return NULL;
+static JSObjectRef CYMakeFunctor(JSContextRef context, const char *symbol, const char *encoding) {
+    void (*function)()(reinterpret_cast<void (*)()>(CYCastSymbol(symbol)));
+    if (function == NULL)
+        return NULL;
 
-        internal = new cy::Functor(encoding, function);
-        *cache = internal;
-    }
-
+    cy::Functor *internal(new cy::Functor(encoding, function));
     ++internal->count_;
     return JSObjectMake(context, Functor_, internal);
 }
@@ -1124,6 +1118,31 @@ JSObjectRef CYMakeType(JSContextRef context, sig::Signature *signature) {
     return CYMakeType(context, &type);
 }
 
+extern "C" const char *CYBridgeHash(CYPool &pool, CYUTF8String name) {
+    sqlite3_stmt *statement;
+
+    _sqlcall(sqlite3_prepare(database_,
+        "select "
+            "\"cache\".\"value\" "
+        "from \"cache\" "
+        "where"
+            " \"cache\".\"system\" & " CY_SYSTEM " == " CY_SYSTEM " and"
+            " \"cache\".\"name\" = ?"
+        " limit 1"
+    , -1, &statement, NULL));
+
+    _sqlcall(sqlite3_bind_text(statement, 1, name.data, name.size, SQLITE_STATIC));
+
+    const char *value;
+    if (_sqlcall(sqlite3_step(statement)) == SQLITE_DONE)
+        value = NULL;
+    else
+        value = sqlite3_column_pooled(pool, statement, 0);
+
+    _sqlcall(sqlite3_finalize(statement));
+    return value;
+}
+
 static bool All_hasProperty(JSContextRef context, JSObjectRef object, JSStringRef property) {
     JSObjectRef global(CYGetGlobalObject(context));
     JSObjectRef cycript(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Cycript"))));
@@ -1135,18 +1154,8 @@ static bool All_hasProperty(JSContextRef context, JSObjectRef object, JSStringRe
                 return true;
 
     CYPool pool;
-    CYUTF8String name(CYPoolUTF8String(pool, context, property));
-
-    size_t length(name.size);
-    char keyed[length + 2];
-    memcpy(keyed + 1, name.data, length + 1);
-
-    static const char *modes = "0124";
-    for (size_t i(0); i != 4; ++i) {
-        keyed[0] = modes[i];
-        if (CYBridgeHash(keyed, length + 1) != NULL)
-            return true;
-    }
+    if (CYBridgeHash(pool, CYPoolUTF8String(pool, context, property)) != NULL)
+        return true;
 
     return false;
 }
@@ -1163,39 +1172,10 @@ static JSValueRef All_getProperty(JSContextRef context, JSObjectRef object, JSSt
                     return value;
 
     CYPool pool;
-    CYUTF8String name(CYPoolUTF8String(pool, context, property));
-
-    size_t length(name.size);
-    char keyed[length + 2];
-    memcpy(keyed + 1, name.data, length + 1);
-
-    static const char *modes = "0124";
-    for (size_t i(0); i != 4; ++i) {
-        char mode(modes[i]);
-        keyed[0] = mode;
-
-        if (CYBridgeEntry *entry = CYBridgeHash(keyed, length + 1))
-            switch (mode) {
-                case '0':
-                    return JSEvaluateScript(CYGetJSContext(context), CYJSString(entry->value_), NULL, NULL, 0, NULL);
-
-                case '1':
-                    return CYMakeFunctor(context, name.data, entry->value_, &entry->cache_);
-
-                case '2':
-                    if (void *symbol = CYCastSymbol(name.data)) {
-                        // XXX: this is horrendously inefficient
-                        sig::Signature signature;
-                        sig::Parse(pool, &signature, entry->value_, &Structor_);
-                        ffi_cif cif;
-                        sig::sig_ffi_cif(pool, &sig::ObjectiveC, &signature, &cif);
-                        return CYFromFFI(context, signature.elements[0].type, cif.rtype, symbol);
-                    } else return NULL;
-
-                // XXX: implement case 3
-                case '4':
-                    return CYMakeType(context, entry->value_);
-            }
+    if (const char *code = CYBridgeHash(pool, CYPoolUTF8String(pool, context, property))) {
+        JSValueRef result(_jsccall(JSEvaluateScript, context, CYJSString(CYPoolCode(pool, code)), NULL, NULL, 0));
+        CYSetProperty(context, object, property, result, kJSPropertyAttributeDontEnum);
+        return result;
     }
 
     return NULL;
@@ -1849,12 +1829,18 @@ _visible void CYCancel() {
     cancel_ = true;
 }
 
+static const char *CYPoolLibraryPath(CYPool &pool);
+
 static bool initialized_ = false;
 
 void CYInitializeDynamic() {
     if (!initialized_)
         initialized_ = true;
     else return;
+
+    CYPool pool;
+    const char *db(pool.strcat(CYPoolLibraryPath(pool), "/libcycript.db", NULL));
+    _sqlcall(sqlite3_open_v2(db, &database_, SQLITE_OPEN_READONLY, NULL));
 
     JSObjectMakeArray$ = reinterpret_cast<JSObjectRef (*)(JSContextRef, size_t, const JSValueRef[], JSValueRef *)>(dlsym(RTLD_DEFAULT, "JSObjectMakeArray"));
     JSSynchronousGarbageCollectForDebugging$ = reinterpret_cast<void (*)(JSContextRef)>(dlsym(RTLD_DEFAULT, "JSSynchronousGarbageCollectForDebugging"));
@@ -2018,10 +2004,14 @@ static void *CYPoolFile(CYPool &pool, const char *path, size_t *psize) {
     *psize = size;
 
     void *base;
-    _syscall(base = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0));
+    if (size == 0)
+        base = pool.strndup("", 0);
+    else {
+        _syscall(base = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0));
 
-    CYFile *file(new (pool) CYFile(base, size));
-    pool.atexit(&CYFileExit, file);
+        CYFile *file(new (pool) CYFile(base, size));
+        pool.atexit(&CYFileExit, file);
+    }
 
     _syscall(close(fd));
     return base;
@@ -2109,8 +2099,7 @@ static bool CYRunScript(JSGlobalContextRef context, const char *path) {
     if (code.data == NULL)
         return false;
 
-    CYStream stream(code.data, code.data + code.size);
-    code = CYPoolCode(pool, stream);
+    code = CYPoolCode(pool, code);
     _jsccall(JSEvaluateScript, context, CYJSString(code), NULL, NULL, 0);
     return true;
 }
@@ -2234,8 +2223,19 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     }
 #endif
 
-    if (CYBridgeEntry *entry = CYBridgeHash("1dlerror", 8))
-        entry->cache_ = new cy::Functor(entry->value_, reinterpret_cast<void (*)()>(&dlerror));
+    CYSetProperty(context, global, CYJSString("dlerror"), CYMakeFunctor(context, "dlerror", "*"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, global, CYJSString("RTLD_DEFAULT"), CYCastJSValue(context, reinterpret_cast<intptr_t>(RTLD_DEFAULT)), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, global, CYJSString("dlsym"), CYMakeFunctor(context, "dlsym", "^v^v*"), kJSPropertyAttributeDontEnum);
+
+    CYSetProperty(context, global, CYJSString("NULL"), CYJSNull(context), kJSPropertyAttributeDontEnum);
+
+    CYSetProperty(context, global, CYJSString("bool"), CYMakeType(context, "B"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, global, CYJSString("char"), CYMakeType(context, "c"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, global, CYJSString("short"), CYMakeType(context, "s"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, global, CYJSString("int"), CYMakeType(context, "i"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, global, CYJSString("long"), CYMakeType(context, "l"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, global, CYJSString("float"), CYMakeType(context, "f"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, global, CYJSString("double"), CYMakeType(context, "d"), kJSPropertyAttributeDontEnum);
 
     CYRunScript(context, "libcycript.cy");
 

@@ -22,7 +22,3 @@
 #include <cstdlib>
 
 #include "Bridge.hpp"
-
-extern "C" struct CYBridgeEntry *CYBridgeHash(const char *data, size_t size) {
-    return CYBridgeHash_(data, size);
-}

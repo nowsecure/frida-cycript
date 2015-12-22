@@ -22,12 +22,4 @@
 #ifndef CYCRIPT_EXECUTE_HPP
 #define CYCRIPT_EXECUTE_HPP
 
-struct CYBridgeEntry {
-    int name_;
-    const char *value_;
-    void *cache_;
-};
-
-extern "C" struct CYBridgeEntry *CYBridgeHash(const char *data, size_t size);
-
 #endif/*CYCRIPT_EXECUTE_HPP*/

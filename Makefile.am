@@ -25,7 +25,7 @@ SUBDIRS =
 
 ACLOCAL_AMFLAGS = -I m4
 
-AM_CPPFLAGS = -DYYDEBUG=1
+AM_CPPFLAGS = -DYYDEBUG=1 -DCY_SYSTEM="\"$(CY_SYSTEM)\""
 AM_CPPFLAGS += -include config.h -include $(srcdir)/unconfig.h
 
 AM_CFLAGS = -fvisibility=hidden
@@ -41,7 +41,7 @@ lib_LTLIBRARIES =
 
 lib_LTLIBRARIES += libcycript.la
 libcycript_la_LDFLAGS = $(CY_LDFLAGS)
-libcycript_la_LIBADD = $(LTLIBUV) $(LTLIBFFI) $(LTLIBGCC) -ldl
+libcycript_la_LIBADD = $(LTLIBUV) $(LTLIBFFI) $(LTLIBSQLITE3) $(LTLIBGCC) -ldl
 
 libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp Highlight.cpp Library.cpp Network.cpp Output.cpp Replace.cpp Syntax.cpp
 libcycript_la_SOURCES += Parser.cpp Scanner.cpp
@@ -57,17 +57,36 @@ endif
 
 if CY_EXECUTE
 libcycript_la_SOURCES += sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp
-libcycript_la_SOURCES += Bridge.cpp Execute.cpp JavaScriptCore.cpp
+libcycript_la_SOURCES += Execute.cpp JavaScriptCore.cpp
 libcycript_la_LIBADD += $(LTJAVASCRIPTCORE)
 
 AM_CPPFLAGS += -DCY_EXECUTE
 filters += C
 
-Bridge.lo: Bridge.hpp
+datdir = $(libdir)
+dat_DATA = libcycript.db
+
+CLEANFILES += libcycript.db
+libcycript.db: Bridge.def libcycript.sh
+	$(srcdir)/libcycript.sh $(CY_SYSTEM) $@ $<
+
+if CY_PRELINK
+CLEANFILES += Analyze
+Analyze: Analyze.cpp
+	$(CXX_FOR_BUILD) $(CXXFLAGS_FOR_BUILD) $(LDFLAGS_FOR_BUILD) -DCY_OBJECTIVEC=$(CY_OBJECTIVEC) -I$(srcdir)/extra -o $@ $< $(CY_LIBCLANG)
+
+CLEANFILES += Bridge.def
+Bridge.def: Analysis.cpp Analyze
+	./Analyze $< $(OBJCXX) $(AM_OBJCXXFLAGS) $(OBJCXXFLAGS) >$@
+else
+CLEANFILES += Bridge.def
+Bridge.def: Bridge.def.in
+	cat $< >$@
+endif
 
 CLEANFILES += Bridge.gperf
 Bridge.gperf: Bridge.def Bridge.sh
-	$(srcdir)/Bridge.sh $< >$@
+	$(srcdir)/Bridge.sh <$< >$@
 
 CLEANFILES += Bridge.hpp
 Bridge.hpp: Bridge.gperf

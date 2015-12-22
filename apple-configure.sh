@@ -41,6 +41,9 @@ function path() {
 
 xcs=$(xcode-select --print-path)
 mac=$(path macosx)
+xct="${xcs}/Toolchains/XcodeDefault.xctoolchain/usr/lib"
+
+system=0
 
 function configure() {
     local dir=$1
@@ -74,9 +77,10 @@ function configure() {
     ldf+=" -L../libuv.${arch}/.libs"
 
     ../configure --enable-maintainer-mode "${flags[@]}" --prefix="/usr" "$@" \
+        --with-libclang="-rpath ${xct} ${xct}/libclang.dylib" \
         CC="${cc} ${flg}" CXX="${cxx} ${flg}" OBJCXX="${cxx} ${flg}" \
         CFLAGS="${ccf[*]}" CXXFLAGS="${ccf[*]}" OBJCXXFLAGS="${ccf[*]} ${obc}" \
-        CPPFLAGS="${cpf}" LDFLAGS="${ldf}"
+        CPPFLAGS="${cpf}" LDFLAGS="${ldf}" CY_SYSTEM="$((1<<system++))"
 
     cd ..
 }

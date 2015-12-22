@@ -107,8 +107,8 @@ static _finline bool CYContains(int value, size_t many, const int *okay) {
 
 #define _sqlcall(expr) ({ \
     __typeof__(expr) _value = (expr); \
-    _assert_("sqlcall", _value == 0 || _value >= 100 && _value < 200, #expr, " %u:%s", _value sqlite3_errmsg(database_)); \
-})
+    _assert_("sqlcall", _value == 0 || _value >= 100 && _value < 200, #expr, " %u:%s", _value, sqlite3_errmsg(database_)); \
+_value; })
 
 struct CYJSException {
     JSContextRef context_;

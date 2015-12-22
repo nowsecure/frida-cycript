@@ -38,6 +38,7 @@ cycript += Cycript.lib/libcycript.dylib
 cycript += Cycript.lib/libcycript-sys.dylib
 cycript += Cycript.lib/libcycript-sim.dylib
 cycript += Cycript.lib/libcycript.cy
+cycript += Cycript.lib/libcycript.db
 
 framework := 
 framework += Cycript
@@ -61,7 +62,7 @@ $(zip): $(all)
 zip: $(zip)
 	ln -sf $< cycript.zip
 
-$(deb): Cycript.lib/cycript Cycript.lib/libcycript.dylib
+$(deb): Cycript.lib/cycript Cycript.lib/libcycript.dylib Cycript.lib/libcycript.db
 	rm -rf package
 	mkdir -p package/DEBIAN
 	sed -e 's/#/$(version)/' control.in >package/DEBIAN/control
@@ -71,12 +72,16 @@ $(deb): Cycript.lib/cycript Cycript.lib/libcycript.dylib
 	$(lipo) -extract armv6 -extract arm64 -output package/usr/lib/libcycript.dylib Cycript.lib/libcycript.dylib
 	ln -s libcycript.dylib package/usr/lib/libcycript.0.dylib
 	cp -a libcycript.cy package/usr/lib/libcycript.cy
+	cp -a Cycript.lib/libcycript.db package/usr/lib/libcycript.db
+	sqlite3 package/usr/lib/libcycript.db "delete from cache where system & $$(($$(cat build.ios-arm{v6,64}/Makefile | sed -e '/^CY_SYSTEM = \([0-9]*\)$$/{s//\1/;p;};d;' | tr $$'\n' '|') 0)) == 0; vacuum full;"
 	./dpkg-deb.sh -Zlzma -b package $@
 
 deb: $(deb)
 	ln -sf $< cycript.deb
 
 clean := 
+
+db := 
 
 library := libffi libuv
 
@@ -96,6 +101,9 @@ build.$(1)-$(2)/.libs/libcycript.a: build-$(1)-$(2)
 clean-$(1)-$(2):
 	$$(MAKE) -C build.$(1)-$(2) clean
 clean += clean-$(1)-$(2)
+db += build.$(1)-$(2)/libcycript.db
+build.$(1)-$(2)/libcycript.db: build-$(1)-$(2)
+	@
 ifneq ($(1),sim)
 $(foreach lib,$(library),
 $(call build_lar,$(lib),$(2))
@@ -195,6 +203,11 @@ Cycript.%/Cycript.framework/Headers/Cycript.h: Cycript.h
 Cycript.lib/libcycript.cy:
 	@mkdir -p $(dir $@)
 	ln -sf ../libcycript.cy $@
+
+Cycript.lib/libcycript.db: $(db)
+	@mkdir -p $(dir $@)
+	./libcycript.sh 0 $@
+	./libcycript.py $@ $^
 
 Cycript.lib/cycript0.9:
 	@mkdir -p $(dir $@)
