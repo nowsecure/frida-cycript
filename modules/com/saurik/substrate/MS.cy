@@ -36,13 +36,10 @@ if (CYHandleServer == null) {
 var info = new Dl_info;
 if (dladdr(CYHandleServer, info) == 0) {
     exports.error = dlerror();
-    free(info);
     return;
 }
 
 var path = info->dli_fname;
-free(info);
-
 var slash = path.lastIndexOf('/');
 if (slash == -1)
     return;

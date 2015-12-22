@@ -1491,8 +1491,11 @@ static JSObjectRef Type_callAsConstructor(JSContextRef context, JSObjectRef obje
         type = type->data.data.type;
     }
 
-    void *value(calloc(1, internal->GetFFI()->size));
-    return CYMakePointer(context, value, length, type, NULL, NULL);
+    JSObjectRef pointer(CYMakePointer(context, NULL, length, type, NULL, NULL));
+    Pointer *value(reinterpret_cast<Pointer *>(JSObjectGetPrivate(pointer)));
+    value->value_ = value->pool_->malloc<void>(internal->GetFFI()->size);
+    memset(value->value_, 0, internal->GetFFI()->size);
+    return pointer;
 } CYCatch(NULL) }
 
 static JSObjectRef Functor_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
