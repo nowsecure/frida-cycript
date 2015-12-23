@@ -138,15 +138,10 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
                 goto skip;
 
             CYFieldBaton baton;
-
-            baton.types << "[";
-            baton.names << "[";
             clang_visitChildren(cursor, &CYFieldVisit, &baton);
-            baton.types << "]";
-            baton.names << "]";
 
             name += "$cy";
-            value << "new Type(" << baton.types.str() << "," << baton.names.str() << ")";
+            value << "new Type([" << baton.types.str() << "],[" << baton.names.str() << "])";
         } break;
 
         case CXCursor_TypedefDecl: {
