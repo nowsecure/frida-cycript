@@ -53,6 +53,7 @@ struct _visible CYPoolError :
 
     CYPoolError(const CYPoolError &rhs);
 
+    CYPoolError(const char *message);
     CYPoolError(const char *format, ...);
     CYPoolError(const char *format, va_list args);
 

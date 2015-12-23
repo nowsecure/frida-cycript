@@ -1206,7 +1206,15 @@ static JSValueRef All_getProperty(JSContextRef context, JSObjectRef object, JSSt
     const char *code;
     unsigned flags;
     if (CYBridgeHash(pool, CYPoolUTF8String(pool, context, property), code, flags)) {
-        JSValueRef result(_jsccall(JSEvaluateScript, context, CYJSString(CYPoolCode(pool, code)), NULL, NULL, 0));
+        CYUTF8String parsed;
+
+        try {
+            parsed = CYPoolCode(pool, code);
+        } catch (const CYException &error) {
+            CYThrow("%s", pool.strcat("error caching ", CYPoolCString(pool, context, property), ": ", error.PoolCString(pool), NULL));
+        }
+
+        JSValueRef result(_jsccall(JSEvaluateScript, context, CYJSString(parsed), NULL, NULL, 0));
 
         if (flags == 0) {
             JSObjectRef cache(CYGetCachedObject(context, CYJSString("cache")));

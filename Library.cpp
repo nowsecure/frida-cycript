@@ -128,8 +128,12 @@ _visible bool CYStartsWith(const CYUTF8String &haystack, const CYUTF8String &nee
 CYUTF8String CYPoolCode(CYPool &pool, std::streambuf &stream) {
     CYLocalPool local;
     CYDriver driver(local, stream);
-    _assert(!driver.Parse());
-    _assert(driver.errors_.empty());
+
+    if (driver.Parse()) {
+        if (!driver.errors_.empty())
+            CYThrow("%s", driver.errors_.front().message_.c_str());
+        CYThrow("syntax error");
+    }
 
     CYOptions options;
     CYContext context(options);

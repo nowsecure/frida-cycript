@@ -30,6 +30,10 @@ CYPoolError::CYPoolError(const CYPoolError &rhs) :
 {
 }
 
+CYPoolError::CYPoolError(const char *message) {
+    message_ = pool_.strdup(message);
+}
+
 CYPoolError::CYPoolError(const char *format, ...) {
     va_list args;
     va_start(args, format);
