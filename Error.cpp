@@ -19,26 +19,34 @@
 **/
 /* }}} */
 
-#include <cmath>
-#include <sstream>
+#include "Error.hpp"
 
-#include "Syntax.hpp"
-
-double CYCastDouble(const char *value, size_t size) {
-    char *end;
-    double number(strtod(value, &end));
-    if (end != value + size)
-        return NAN;
-    return number;
+const char *CYPoolError::PoolCString(CYPool &pool) const {
+    return pool.strdup(message_);
 }
 
-double CYCastDouble(const char *value) {
-    return CYCastDouble(value, strlen(value));
+CYPoolError::CYPoolError(const CYPoolError &rhs) :
+    message_(pool_.strdup(rhs.message_))
+{
 }
 
-template <>
-::pthread_key_t CYLocal<CYPool>::key_ = Key_();
+CYPoolError::CYPoolError(const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    // XXX: there might be a beter way to think about this
+    message_ = pool_.vsprintf(64, format, args);
+    va_end(args);
+}
 
-CYRange DigitRange_    (0x3ff000000000000LLU, 0x000000000000000LLU); // 0-9
-CYRange WordStartRange_(0x000001000000000LLU, 0x7fffffe87fffffeLLU); // A-Za-z_$
-CYRange WordEndRange_  (0x3ff001000000000LLU, 0x7fffffe87fffffeLLU); // A-Za-z_$0-9
+CYPoolError::CYPoolError(const char *format, va_list args) {
+    // XXX: there might be a beter way to think about this
+    message_ = pool_.vsprintf(64, format, args);
+}
+
+_visible void CYThrow(const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    throw CYPoolError(format, args);
+    // XXX: does this matter? :(
+    va_end(args);
+}

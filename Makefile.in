@@ -186,8 +186,8 @@ libcycript_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4)
 am__libcycript_la_SOURCES_DIST = ConvertUTF.c Decode.cpp Driver.cpp \
-	Highlight.cpp Library.cpp Network.cpp Output.cpp Replace.cpp \
-	Syntax.cpp Parser.cpp Scanner.cpp Complete.cpp \
+	Error.cpp Highlight.cpp Library.cpp Network.cpp Output.cpp \
+	Replace.cpp Syntax.cpp Parser.cpp Scanner.cpp Complete.cpp \
 	sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp Execute.cpp \
 	JavaScriptCore.cpp Java/Execute.cpp ObjectiveC/Output.cpp \
 	ObjectiveC/Replace.cpp ObjectiveC/Library.mm Handler.cpp
@@ -200,7 +200,7 @@ am__dirstamp = $(am__leading_dot)dirstamp
 @CY_OBJECTIVEC_TRUE@	ObjectiveC/Replace.lo \
 @CY_OBJECTIVEC_TRUE@	ObjectiveC/Library.lo
 @CY_ATTACH_TRUE@am__objects_5 = Handler.lo
-am_libcycript_la_OBJECTS = ConvertUTF.lo Decode.lo Driver.lo \
+am_libcycript_la_OBJECTS = ConvertUTF.lo Decode.lo Driver.lo Error.lo \
 	Highlight.lo Library.lo Network.lo Output.lo Replace.lo \
 	Syntax.lo Parser.lo Scanner.lo $(am__objects_1) \
 	$(am__objects_2) $(am__objects_3) $(am__objects_4) \
@@ -578,7 +578,7 @@ libcycript_la_LDFLAGS = $(CY_LDFLAGS)
 libcycript_la_LIBADD = $(LTLIBUV) $(LTLIBFFI) $(LTLIBSQLITE3) \
 	$(LTLIBGCC) -ldl $(am__append_3) $(am__append_12) \
 	$(am__append_15)
-libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp \
+libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp Error.cpp \
 	Highlight.cpp Library.cpp Network.cpp Output.cpp Replace.cpp \
 	Syntax.cpp Parser.cpp Scanner.cpp $(am__append_1) \
 	$(am__append_2) $(am__append_11) $(am__append_14) \
@@ -778,6 +778,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ConvertUTF.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Decode.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Driver.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Error.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Execute.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Handler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Highlight.Plo@am__quote@
@@ -1347,8 +1348,8 @@ uninstall-am: uninstall-binPROGRAMS uninstall-datDATA \
 .DELETE_ON_ERROR:
 @CY_EXECUTE_TRUE@libcycript.db: Bridge.def libcycript.sh
 @CY_EXECUTE_TRUE@	$(srcdir)/libcycript.sh $(CY_SYSTEM) $@ $<
-@CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@Analyze: Analyze.cpp
-@CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@	$(CXX_FOR_BUILD) $(CXXFLAGS_FOR_BUILD) $(LDFLAGS_FOR_BUILD) -DCY_OBJECTIVEC=$(CY_OBJECTIVEC) -I$(srcdir)/extra -o $@ $< $(CY_LIBCLANG)
+@CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@Analyze: Analyze.cpp Error.cpp Output.cpp Replace.cpp Syntax.cpp
+@CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@	$(CXX_FOR_BUILD) $(CXXFLAGS_FOR_BUILD) -std=c++11 $(LDFLAGS_FOR_BUILD) -DCY_OBJECTIVEC=$(CY_OBJECTIVEC) -I$(srcdir)/extra -o $@ $^ $(CY_LIBCLANG) -Wno-bitwise-op-parentheses -Wno-dangling-else -Wno-logical-op-parentheses
 @CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@Bridge.def: Analysis.cpp Analyze
 @CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@	./Analyze $< $(OBJCXX) $(AM_OBJCXXFLAGS) $(OBJCXXFLAGS) >$@
 @CY_EXECUTE_TRUE@@CY_PRELINK_FALSE@Bridge.def: Bridge.def.in

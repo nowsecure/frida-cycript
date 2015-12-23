@@ -19,11 +19,98 @@
 **/
 /* }}} */
 
-#include "cycript.hpp"
-
+#include <cmath>
+#include <iomanip>
 #include <sstream>
 
 #include "Syntax.hpp"
+
+void CYStringify(std::ostringstream &str, const char *data, size_t size, bool c) {
+    bool single;
+    if (c)
+        single = false;
+    else {
+        unsigned quot(0), apos(0);
+        for (const char *value(data), *end(data + size); value != end; ++value)
+            if (*value == '"')
+                ++quot;
+            else if (*value == '\'')
+                ++apos;
+
+        single = quot > apos;
+    }
+
+    str << (single ? '\'' : '"');
+
+    for (const char *value(data), *end(data + size); value != end; ++value)
+        switch (uint8_t next = *value) {
+            case '\\': str << "\\\\"; break;
+            case '\b': str << "\\b"; break;
+            case '\f': str << "\\f"; break;
+            case '\n': str << "\\n"; break;
+            case '\r': str << "\\r"; break;
+            case '\t': str << "\\t"; break;
+            case '\v': str << "\\v"; break;
+
+            case '"':
+                if (!single)
+                    str << "\\\"";
+                else goto simple;
+            break;
+
+            case '\'':
+                if (single)
+                    str << "\\'";
+                else goto simple;
+            break;
+
+            case '\0':
+                if (value[1] >= '0' && value[1] <= '9')
+                    str << "\\x00";
+                else
+                    str << "\\0";
+            break;
+
+            default:
+                if (next >= 0x20 && next < 0x7f) simple:
+                    str << *value;
+                else {
+                    unsigned levels(1);
+                    if ((next & 0x80) != 0)
+                        while ((next & 0x80 >> ++levels) != 0);
+
+                    unsigned point(next & 0xff >> levels);
+                    while (--levels != 0)
+                        point = point << 6 | uint8_t(*++value) & 0x3f;
+
+                    if (point < 0x100)
+                        str << "\\x" << std::setbase(16) << std::setw(2) << std::setfill('0') << point;
+                    else if (point < 0x10000)
+                        str << "\\u" << std::setbase(16) << std::setw(4) << std::setfill('0') << point;
+                    else {
+                        point -= 0x10000;
+                        str << "\\u" << std::setbase(16) << std::setw(4) << std::setfill('0') << (0xd800 | point >> 0x0a);
+                        str << "\\u" << std::setbase(16) << std::setw(4) << std::setfill('0') << (0xdc00 | point & 0x3ff);
+                    }
+                }
+        }
+
+    str << (single ? '\'' : '"');
+}
+
+void CYNumerify(std::ostringstream &str, double value) {
+    if (std::isinf(value)) {
+        if (value < 0)
+            str << '-';
+        str << "Infinity";
+        return;
+    }
+
+    char string[32];
+    // XXX: I want this to print 1e3 rather than 1000
+    sprintf(string, "%.17g", value);
+    str << string;
+}
 
 void CYOutput::Terminate() {
     operator ()(';');

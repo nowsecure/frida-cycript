@@ -19,26 +19,42 @@
 **/
 /* }}} */
 
-#include <cmath>
-#include <sstream>
+#ifndef FUNCTOR_HPP
+#define FUNCTOR_HPP
 
-#include "Syntax.hpp"
+template <typename Function_>
+class Functor;
 
-double CYCastDouble(const char *value, size_t size) {
-    char *end;
-    double number(strtod(value, &end));
-    if (end != value + size)
-        return NAN;
-    return number;
+template <typename Type_, typename... Args_>
+class Functor<Type_ (Args_...)> {
+  public:
+    virtual Type_ operator ()(Args_... args) const = 0;
+};
+
+template <typename Function_>
+class FunctorImpl;
+
+template <typename Value_, typename Type_, typename... Args_>
+class FunctorImpl<Type_ (Value_::*)(Args_...) const> :
+    public Functor<Type_ (Args_...)>
+{
+  private:
+    const Value_ *value_;
+
+  public:
+    FunctorImpl(const Value_ &value) :
+        value_(&value)
+    {
+    }
+
+    virtual Type_ operator ()(Args_... args) const {
+        return (*value_)(args...);
+    }
+};
+
+template <typename Function_>
+FunctorImpl<decltype(&Function_::operator())> fun(const Function_ &value) {
+    return value;
 }
 
-double CYCastDouble(const char *value) {
-    return CYCastDouble(value, strlen(value));
-}
-
-template <>
-::pthread_key_t CYLocal<CYPool>::key_ = Key_();
-
-CYRange DigitRange_    (0x3ff000000000000LLU, 0x000000000000000LLU); // 0-9
-CYRange WordStartRange_(0x000001000000000LLU, 0x7fffffe87fffffeLLU); // A-Za-z_$
-CYRange WordEndRange_  (0x3ff001000000000LLU, 0x7fffffe87fffffeLLU); // A-Za-z_$0-9
+#endif//FUNCTOR_HPP

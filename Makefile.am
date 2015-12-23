@@ -43,7 +43,7 @@ lib_LTLIBRARIES += libcycript.la
 libcycript_la_LDFLAGS = $(CY_LDFLAGS)
 libcycript_la_LIBADD = $(LTLIBUV) $(LTLIBFFI) $(LTLIBSQLITE3) $(LTLIBGCC) -ldl
 
-libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp Highlight.cpp Library.cpp Network.cpp Output.cpp Replace.cpp Syntax.cpp
+libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp Error.cpp Highlight.cpp Library.cpp Network.cpp Output.cpp Replace.cpp Syntax.cpp
 libcycript_la_SOURCES += Parser.cpp Scanner.cpp
 
 filters = 
@@ -72,8 +72,8 @@ libcycript.db: Bridge.def libcycript.sh
 
 if CY_PRELINK
 CLEANFILES += Analyze
-Analyze: Analyze.cpp
-	$(CXX_FOR_BUILD) $(CXXFLAGS_FOR_BUILD) $(LDFLAGS_FOR_BUILD) -DCY_OBJECTIVEC=$(CY_OBJECTIVEC) -I$(srcdir)/extra -o $@ $< $(CY_LIBCLANG)
+Analyze: Analyze.cpp Error.cpp Output.cpp Replace.cpp Syntax.cpp
+	$(CXX_FOR_BUILD) $(CXXFLAGS_FOR_BUILD) -std=c++11 $(LDFLAGS_FOR_BUILD) -DCY_OBJECTIVEC=$(CY_OBJECTIVEC) -I$(srcdir)/extra -o $@ $^ $(CY_LIBCLANG) -Wno-bitwise-op-parentheses -Wno-dangling-else -Wno-logical-op-parentheses
 
 CLEANFILES += Bridge.def
 Bridge.def: Analysis.cpp Analyze

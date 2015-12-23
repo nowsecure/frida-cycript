@@ -110,6 +110,7 @@ static _finline bool CYContains(int value, size_t many, const int *okay) {
     _assert_("sqlcall", _value == 0 || _value >= 100 && _value < 200, #expr, " %u:%s", _value, sqlite3_errmsg(database_)); \
 _value; })
 
+#ifdef CY_EXECUTE
 struct CYJSException {
     JSContextRef context_;
     JSValueRef value_;
@@ -133,5 +134,6 @@ struct CYJSException {
     CYJSException _error(context); \
     (code)(args, _error); \
 })
+#endif
 
 #endif/*CYCRIPT_ERROR_HPP*/

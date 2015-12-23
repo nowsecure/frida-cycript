@@ -32,9 +32,6 @@
 bool CYRecvAll_(int socket, uint8_t *data, size_t size);
 bool CYSendAll_(int socket, const uint8_t *data, size_t size);
 
-void CYNumerify(std::ostringstream &str, double value);
-void CYStringify(std::ostringstream &str, const char *data, size_t size, bool c = false);
-
 double CYCastDouble(const char *value, size_t size);
 double CYCastDouble(const char *value);
 
@@ -53,5 +50,7 @@ bool CYSendAll(int socket, const Type_ *data, size_t size) {
 CYPool &CYGetGlobalPool();
 
 char **CYComplete(const char *word, const std::string &line, CYUTF8String (*run)(CYPool &pool, const std::string &));
+
+void CYStringify(std::ostringstream &str, const char *data, size_t size, bool c);
 
 #endif/*CYCRIPT_HPP*/

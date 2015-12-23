@@ -33,6 +33,13 @@
 #include "Location.hpp"
 #include "Options.hpp"
 #include "Pooling.hpp"
+#include "String.hpp"
+
+double CYCastDouble(const char *value, size_t size);
+double CYCastDouble(const char *value);
+
+void CYNumerify(std::ostringstream &str, double value);
+void CYStringify(std::ostringstream &str, const char *data, size_t size, bool c = false);
 
 struct CYContext;
 

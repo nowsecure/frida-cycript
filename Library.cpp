@@ -24,9 +24,7 @@
 #include <iostream>
 #include <set>
 #include <map>
-#include <iomanip>
 #include <sstream>
-#include <cmath>
 
 #include <dlfcn.h>
 
@@ -40,9 +38,6 @@
 #include "Pooling.hpp"
 #include "String.hpp"
 #include "Syntax.hpp"
-
-template <>
-::pthread_key_t CYLocal<CYPool>::key_ = Key_();
 
 /* C Strings {{{ */
 CYUTF8String CYPoolUTF8String(CYPool &pool, CYUTF16String utf16) {
@@ -103,93 +98,6 @@ bool CYGetOffset(const char *value, ssize_t &index) {
     return false;
 }
 /* }}} */
-/* JavaScript *ify {{{ */
-void CYStringify(std::ostringstream &str, const char *data, size_t size, bool c) {
-    bool single;
-    if (c)
-        single = false;
-    else {
-        unsigned quot(0), apos(0);
-        for (const char *value(data), *end(data + size); value != end; ++value)
-            if (*value == '"')
-                ++quot;
-            else if (*value == '\'')
-                ++apos;
-
-        single = quot > apos;
-    }
-
-    str << (single ? '\'' : '"');
-
-    for (const char *value(data), *end(data + size); value != end; ++value)
-        switch (uint8_t next = *value) {
-            case '\\': str << "\\\\"; break;
-            case '\b': str << "\\b"; break;
-            case '\f': str << "\\f"; break;
-            case '\n': str << "\\n"; break;
-            case '\r': str << "\\r"; break;
-            case '\t': str << "\\t"; break;
-            case '\v': str << "\\v"; break;
-
-            case '"':
-                if (!single)
-                    str << "\\\"";
-                else goto simple;
-            break;
-
-            case '\'':
-                if (single)
-                    str << "\\'";
-                else goto simple;
-            break;
-
-            case '\0':
-                if (value[1] >= '0' && value[1] <= '9')
-                    str << "\\x00";
-                else
-                    str << "\\0";
-            break;
-
-            default:
-                if (next >= 0x20 && next < 0x7f) simple:
-                    str << *value;
-                else {
-                    unsigned levels(1);
-                    if ((next & 0x80) != 0)
-                        while ((next & 0x80 >> ++levels) != 0);
-
-                    unsigned point(next & 0xff >> levels);
-                    while (--levels != 0)
-                        point = point << 6 | uint8_t(*++value) & 0x3f;
-
-                    if (point < 0x100)
-                        str << "\\x" << std::setbase(16) << std::setw(2) << std::setfill('0') << point;
-                    else if (point < 0x10000)
-                        str << "\\u" << std::setbase(16) << std::setw(4) << std::setfill('0') << point;
-                    else {
-                        point -= 0x10000;
-                        str << "\\u" << std::setbase(16) << std::setw(4) << std::setfill('0') << (0xd800 | point >> 0x0a);
-                        str << "\\u" << std::setbase(16) << std::setw(4) << std::setfill('0') << (0xdc00 | point & 0x3ff);
-                    }
-                }
-        }
-
-    str << (single ? '\'' : '"');
-}
-
-void CYNumerify(std::ostringstream &str, double value) {
-    if (std::isinf(value)) {
-        if (value < 0)
-            str << '-';
-        str << "Infinity";
-        return;
-    }
-
-    char string[32];
-    // XXX: I want this to print 1e3 rather than 1000
-    sprintf(string, "%.17g", value);
-    str << string;
-}
 
 bool CYIsKey(CYUTF8String value) {
     const char *data(value.data);
@@ -211,19 +119,6 @@ bool CYIsKey(CYUTF8String value) {
     }
 
     return true;
-}
-/* }}} */
-
-double CYCastDouble(const char *value, size_t size) {
-    char *end;
-    double number(strtod(value, &end));
-    if (end != value + size)
-        return NAN;
-    return number;
-}
-
-double CYCastDouble(const char *value) {
-    return CYCastDouble(value, strlen(value));
 }
 
 _visible bool CYStartsWith(const CYUTF8String &haystack, const CYUTF8String &needle) {
@@ -254,34 +149,4 @@ CYUTF8String CYPoolCode(CYPool &pool, CYUTF8String code) {
 CYPool &CYGetGlobalPool() {
     static CYPool pool;
     return pool;
-}
-
-_visible void CYThrow(const char *format, ...) {
-    va_list args;
-    va_start(args, format);
-    throw CYPoolError(format, args);
-    // XXX: does this matter? :(
-    va_end(args);
-}
-
-const char *CYPoolError::PoolCString(CYPool &pool) const {
-    return pool.strdup(message_);
-}
-
-CYPoolError::CYPoolError(const CYPoolError &rhs) :
-    message_(pool_.strdup(rhs.message_))
-{
-}
-
-CYPoolError::CYPoolError(const char *format, ...) {
-    va_list args;
-    va_start(args, format);
-    // XXX: there might be a beter way to think about this
-    message_ = pool_.vsprintf(64, format, args);
-    va_end(args);
-}
-
-CYPoolError::CYPoolError(const char *format, va_list args) {
-    // XXX: there might be a beter way to think about this
-    message_ = pool_.vsprintf(64, format, args);
 }

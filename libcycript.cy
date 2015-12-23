@@ -35,16 +35,9 @@ let $cy_set = function(object, properties) {
         });
 };
 
-const F_OK = 0;
 const X_OK = (1<<0);
 const W_OK = (1<<1);
 const R_OK = (1<<2);
-
-typedef long size_t;
-
-extern "C" int access(const char *path, int amode);
-extern "C" char *getcwd(char *buf, size_t size);
-extern "C" int getpid();
 
 $cy_set(Date.prototype, {
     toCYON: function() {

@@ -1,3 +1,24 @@
+/* Cycript - Optimizing JavaScript Compiler/Runtime
+ * Copyright (C) 2009-2015  Jay Freeman (saurik)
+*/
+
+/* GNU Affero General Public License, Version 3 {{{ */
+/*
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+**/
+/* }}} */
+
 #include <cstring>
 #include <iostream>
 #include <map>
@@ -6,11 +27,49 @@
 
 #include <clang-c/Index.h>
 
+#include "Functor.hpp"
+#include "Replace.hpp"
+#include "Syntax.hpp"
+
+static CXChildVisitResult CYVisit(CXCursor cursor, CXCursor parent, CXClientData arg) {
+    (*reinterpret_cast<const Functor<void (CXCursor)> *>(arg))(cursor);
+    return CXChildVisit_Continue;
+}
+
+static unsigned CYForChild(CXCursor cursor, const Functor<void (CXCursor)> &visitor) {
+    return clang_visitChildren(cursor, &CYVisit, const_cast<void *>(static_cast<const void *>(&visitor)));
+}
+
+static bool CYOneChild(CXCursor cursor, const Functor<void (CXCursor)> &visitor) {
+    bool visited(false);
+    CYForChild(cursor, fun([&](CXCursor child) {
+        _assert(!visited);
+        visited = true;
+        visitor(child);
+    }));
+    return visited;
+}
+
 struct CYCXString {
     CXString value_;
 
     CYCXString(CXString value) :
         value_(value)
+    {
+    }
+
+    CYCXString(CXCursor cursor) :
+        value_(clang_getCursorSpelling(cursor))
+    {
+    }
+
+    CYCXString(CXCursorKind kind) :
+        value_(clang_getCursorKindSpelling(kind))
+    {
+    }
+
+    CYCXString(CXTranslationUnit unit, CXToken token) :
+        value_(clang_getTokenSpelling(unit, token))
     {
     }
 
@@ -21,37 +80,11 @@ struct CYCXString {
     operator const char *() const {
         return clang_getCString(value_);
     }
-};
 
-struct CYFieldBaton {
-    std::ostringstream types;
-    std::ostringstream names;
-};
-
-static CXChildVisitResult CYFieldVisit(CXCursor cursor, CXCursor parent, CXClientData arg) {
-    CYFieldBaton &baton(*static_cast<CYFieldBaton *>(arg));
-
-    if (clang_getCursorKind(cursor) == CXCursor_FieldDecl) {
-        CXType type(clang_getCursorType(cursor));
-        baton.types << "(typedef " << CYCXString(clang_getTypeSpelling(type)) << "),";
-        baton.names << "'" << CYCXString(clang_getCursorSpelling(cursor)) << "',";
+    const char *Pool(CYPool &pool) const {
+        return pool.strdup(*this);
     }
-
-    return CXChildVisit_Continue;
-}
-
-struct CYAttributeBaton {
-    std::string label;
 };
-
-static CXChildVisitResult CYAttributeVisit(CXCursor cursor, CXCursor parent, CXClientData arg) {
-    CYAttributeBaton &baton(*static_cast<CYAttributeBaton *>(arg));
-
-    if (clang_getCursorKind(cursor) == CXCursor_AsmLabelAttr)
-        baton.label = CYCXString(clang_getCursorSpelling(cursor));
-
-    return CXChildVisit_Continue;
-}
 
 typedef std::map<std::string, std::string> CYKeyMap;
 
@@ -87,11 +120,83 @@ struct CYTokens {
     }
 };
 
+static CYExpression *CYTranslateExpression(CXTranslationUnit unit, CXCursor cursor) {
+    switch (CXCursorKind kind = clang_getCursorKind(cursor)) {
+        case CXCursor_CallExpr: {
+            CYExpression *function(NULL);
+            CYList<CYArgument> arguments;
+            CYForChild(cursor, fun([&](CXCursor child) {
+                CYExpression *expression(CYTranslateExpression(unit, child));
+                if (function == NULL)
+                    function = expression;
+                else
+                    arguments->*$C_(expression);
+            }));
+            return $C(function, arguments);
+        } break;
+
+        case CXCursor_DeclRefExpr: {
+            return $V(CYCXString(cursor).Pool($pool));
+        } break;
+
+        case CXCursor_IntegerLiteral: {
+            CYTokens tokens(unit, cursor);
+            _assert(tokens.count != 0);
+            // XXX: I don't understand why this is often enormous :/
+            return $ CYNumber(CYCastDouble(CYCXString(unit, tokens[0])));
+        } break;
+
+        case CXCursor_CStyleCastExpr:
+            // XXX: most of the time, this is a "NoOp" integer cast; but we should check it
+
+        case CXCursor_UnexposedExpr:
+            // there is a very high probability that this is actually an "ImplicitCastExpr"
+            // "Douglas Gregor" <dgregor@apple.com> err'd on the incorrect side of this one
+            // http://lists.llvm.org/pipermail/cfe-commits/Week-of-Mon-20110926/046998.html
+
+        case CXCursor_ParenExpr: {
+            CYExpression *pass(NULL);
+            CYOneChild(cursor, fun([&](CXCursor child) {
+                pass = CYTranslateExpression(unit, child);
+            }));
+            return pass;
+        } break;
+
+        default:
+            //std::cerr << "E:" << CYCXString(kind) << std::endl;
+            _assert(false);
+    }
+}
+
+static CYStatement *CYTranslateStatement(CXTranslationUnit unit, CXCursor cursor) {
+    switch (CXCursorKind kind = clang_getCursorKind(cursor)) {
+        case CXCursor_ReturnStmt: {
+            CYExpression *value(NULL);
+            CYOneChild(cursor, fun([&](CXCursor child) {
+                value = CYTranslateExpression(unit, child);
+            }));
+            return $ CYReturn(value);
+        } break;
+
+        default:
+            //std::cerr << "S:" << CYCXString(kind) << std::endl;
+            _assert(false);
+    }
+}
+
+static CYStatement *CYTranslateBlock(CXTranslationUnit unit, CXCursor cursor) {
+    CYList<CYStatement> statements;
+    CYForChild(cursor, fun([&](CXCursor child) {
+        statements->*CYTranslateStatement(unit, child);
+    }));
+    return $ CYBlock(statements);
+}
+
 static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClientData arg) {
     CYChildBaton &baton(*static_cast<CYChildBaton *>(arg));
     CXTranslationUnit &unit(baton.unit);
 
-    CYCXString spelling(clang_getCursorSpelling(cursor));
+    CYCXString spelling(cursor);
     std::string name(spelling);
     std::ostringstream value;
 
@@ -108,7 +213,7 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
         std::cout << spelling << " " << path << ":" << line << std::endl;
     }*/
 
-    switch (clang_getCursorKind(cursor)) {
+    switch (CXCursorKind kind = clang_getCursorKind(cursor)) {
         case CXCursor_EnumConstantDecl: {
             value << clang_getEnumConstantDeclValue(cursor);
         } break;
@@ -122,7 +227,7 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
             clang_annotateTokens(unit, tokens, tokens.count, cursors);
 
             for (unsigned i(1); i != tokens.count - 1; ++i) {
-                CYCXString token(clang_getTokenSpelling(unit, tokens[i]));
+                CYCXString token(unit, tokens[i]);
                 if (i != 1)
                     value << " ";
                 else if (strcmp(token, "(") == 0)
@@ -137,11 +242,19 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
             if (spelling[0] == '\0')
                 goto skip;
 
-            CYFieldBaton baton;
-            clang_visitChildren(cursor, &CYFieldVisit, &baton);
+            std::ostringstream types;
+            std::ostringstream names;
+
+            CYForChild(cursor, fun([&](CXCursor child) {
+                if (clang_getCursorKind(child) == CXCursor_FieldDecl) {
+                    CXType type(clang_getCursorType(child));
+                    types << "(typedef " << CYCXString(clang_getTypeSpelling(type)) << "),";
+                    names << "'" << CYCXString(child) << "',";
+                }
+            }));
 
             name += "$cy";
-            value << "new Type([" << baton.types.str() << "],[" << baton.names.str() << "])";
+            value << "new Type([" << types.str() << "],[" << names.str() << "])";
         } break;
 
         case CXCursor_TypedefDecl: {
@@ -150,18 +263,60 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
         } break;
 
         case CXCursor_FunctionDecl:
-        case CXCursor_VarDecl: {
-            CYAttributeBaton baton;
-            clang_visitChildren(cursor, &CYAttributeVisit, &baton);
+        case CXCursor_VarDecl: try {
+            std::string label;
 
-            if (baton.label.empty()) {
-                baton.label = spelling;
-                baton.label = '_' + baton.label;
-            } else if (baton.label[0] != '_')
+            CYList<CYFunctionParameter> parameters;
+            CYStatement *code(NULL);
+
+            CYLocalPool local;
+
+            CYForChild(cursor, fun([&](CXCursor child) {
+                switch (CXCursorKind kind = clang_getCursorKind(child)) {
+                    case CXCursor_AsmLabelAttr:
+                        label = CYCXString(child);
+                        break;
+
+                    case CXCursor_CompoundStmt:
+                        code = CYTranslateBlock(unit, child);
+                        break;
+
+                    case CXCursor_ParmDecl:
+                        parameters->*$P($B($I(CYCXString(child).Pool($pool))));
+                        break;
+
+                    case CXCursor_IntegerLiteral:
+                    case CXCursor_ObjCClassRef:
+                    case CXCursor_TypeRef:
+                    case CXCursor_UnexposedAttr:
+                        break;
+
+                    default:
+                        std::cerr << "A:" << CYCXString(child) << std::endl;
+                        break;
+                }
+            }));
+
+            if (label.empty()) {
+                label = spelling;
+                label = '_' + label;
+            } else if (label[0] != '_')
                 goto skip;
 
-            CXType type(clang_getCursorType(cursor));
-            value << "*(typedef " << CYCXString(clang_getTypeSpelling(type)) << ").pointerTo()(dlsym(RTLD_DEFAULT,'" << baton.label.substr(1) << "'))";
+            if (code == NULL) {
+                CXType type(clang_getCursorType(cursor));
+                value << "*(typedef " << CYCXString(clang_getTypeSpelling(type)) << ").pointerTo()(dlsym(RTLD_DEFAULT,'" << label.substr(1) << "'))";
+            } else {
+                CYOptions options;
+                CYOutput out(*value.rdbuf(), options);
+                CYFunctionExpression *function($ CYFunctionExpression(NULL, parameters, code));
+                function->Output(out, CYNoBFC);
+                //std::cerr << value.str() << std::endl;
+            }
+        } catch (const CYException &error) {
+            CYPool pool;
+            //std::cerr << error.PoolCString(pool) << std::endl;
+            goto skip;
         } break;
 
         default: {
@@ -185,7 +340,7 @@ int main(int argc, const char *argv[]) {
     argv[--offset] = "-ObjC++";
 #endif
 
-    CXTranslationUnit unit(clang_parseTranslationUnit(index, file, argv + offset, argc - offset, NULL, 0, CXTranslationUnit_DetailedPreprocessingRecord | CXTranslationUnit_SkipFunctionBodies));
+    CXTranslationUnit unit(clang_parseTranslationUnit(index, file, argv + offset, argc - offset, NULL, 0, CXTranslationUnit_DetailedPreprocessingRecord));
 
     for (unsigned i(0), e(clang_getNumDiagnostics(unit)); i != e; ++i) {
         CXDiagnostic diagnostic(clang_getDiagnostic(unit, i));

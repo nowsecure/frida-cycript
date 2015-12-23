@@ -19,7 +19,10 @@
 **/
 /* }}} */
 
+#define __USE_EXTERN_INLINES
+
 #include <dlfcn.h>
+#include <unistd.h>
 
 #include <sys/stat.h>
 
