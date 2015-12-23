@@ -40,6 +40,19 @@ static CXChildVisitResult CYFieldVisit(CXCursor cursor, CXCursor parent, CXClien
     return CXChildVisit_Continue;
 }
 
+struct CYAttributeBaton {
+    std::string label;
+};
+
+static CXChildVisitResult CYAttributeVisit(CXCursor cursor, CXCursor parent, CXClientData arg) {
+    CYAttributeBaton &baton(*static_cast<CYAttributeBaton *>(arg));
+
+    if (clang_getCursorKind(cursor) == CXCursor_AsmLabelAttr)
+        baton.label = CYCXString(clang_getCursorSpelling(cursor));
+
+    return CXChildVisit_Continue;
+}
+
 typedef std::map<std::string, std::string> CYKeyMap;
 
 struct CYChildBaton {
@@ -143,8 +156,17 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
 
         case CXCursor_FunctionDecl:
         case CXCursor_VarDecl: {
+            CYAttributeBaton baton;
+            clang_visitChildren(cursor, &CYAttributeVisit, &baton);
+
+            if (baton.label.empty()) {
+                baton.label = spelling;
+                baton.label = '_' + baton.label;
+            } else if (baton.label[0] != '_')
+                goto skip;
+
             CXType type(clang_getCursorType(cursor));
-            value << "*(typedef " << CYCXString(clang_getTypeSpelling(type)) << ").pointerTo()(dlsym(RTLD_DEFAULT,'" << spelling << "'))";
+            value << "*(typedef " << CYCXString(clang_getTypeSpelling(type)) << ").pointerTo()(dlsym(RTLD_DEFAULT,'" << baton.label.substr(1) << "'))";
         } break;
 
         default: {
