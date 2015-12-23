@@ -185,6 +185,23 @@ struct CYTokens {
     }
 };
 
+static CYUTF8String CYCXPoolUTF8Range(CYPool &pool, CXSourceRange range) {
+    CYCXPosition<> start(clang_getRangeStart(range));
+    CYCXPosition<> end(clang_getRangeEnd(range));
+    CYCXString file(start.file_);
+    _assert(file == CYCXString(end.file_));
+
+    CYPool temp;
+    size_t size;
+    char *data(static_cast<char *>(CYPoolFile(temp, file, &size)));
+    _assert(start.offset_ <= size && end.offset_ <= size && start.offset_ <= end.offset_);
+
+    CYUTF8String code;
+    code.size = end.offset_ - start.offset_;
+    code.data = pool.strndup(data + start.offset_, code.size);
+    return code;
+}
+
 static CYExpression *CYTranslateExpression(CXTranslationUnit unit, CXCursor cursor) {
     switch (CXCursorKind kind = clang_getCursorKind(cursor)) {
         case CXCursor_CallExpr: {
@@ -211,23 +228,11 @@ static CYExpression *CYTranslateExpression(CXTranslationUnit unit, CXCursor curs
             // the tokenizer freaks out and either fails with 0 tokens
             // or returns some massive number of tokens ending here :/
 
-            CXSourceRange range(clang_getCursorExtent(cursor));
-            CYCXPosition<> start(clang_getRangeStart(range));
-            CYCXPosition<> end(clang_getRangeEnd(range));
-            CYCXString file(start.file_);
-            _assert(file == CYCXString(end.file_));
-
-            CYPool pool;
-            size_t size;
-            char *data(static_cast<char *>(CYPoolFile(pool, file, &size)));
-            _assert(start.offset_ <= size && end.offset_ <= size && start.offset_ <= end.offset_);
-
-            const char *token($pool.strndup(data + start.offset_, end.offset_ - start.offset_));
+            CYUTF8String token(CYCXPoolUTF8Range($pool, clang_getCursorExtent(cursor)));
             double value(CYCastDouble(token));
-            if (!std::isnan(value))
-                return $ CYNumber(value);
-
-            return $V(token);
+            if (std::isnan(value))
+                return $V(token.data);
+            return $ CYNumber(value);
         } break;
 
         case CXCursor_CStyleCastExpr:
