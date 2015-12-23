@@ -2047,6 +2047,10 @@ static const char *CYPoolLibraryPath(CYPool &pool) {
     _assert(slash != NULL);
     *slash = '\0';
 
+    slash = strrchr(lib, '/');
+    if (slash != NULL && strcmp(slash, "/.libs") == 0)
+        *slash = '\0';
+
     return lib;
 }
 
@@ -2110,7 +2114,7 @@ static JSValueRef require_callAsFunction(JSContextRef context, JSObjectRef objec
 
 static bool CYRunScript(JSGlobalContextRef context, const char *path) {
     CYPool pool;
-    CYUTF8String code(CYPoolFileUTF8String(pool, path));
+    CYUTF8String code(CYPoolFileUTF8String(pool, pool.strcat(CYPoolLibraryPath(pool), path, NULL)));
     if (code.data == NULL)
         return false;
 
@@ -2262,7 +2266,7 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
 
     CYArrayPush(context, alls, cycript);
 
-    CYRunScript(context, "libcycript.cy");
+    CYRunScript(context, "/libcycript.cy");
 }
 
 static JSGlobalContextRef context_;
