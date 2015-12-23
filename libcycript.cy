@@ -35,6 +35,12 @@ let $cy_set = function(object, properties) {
         });
 };
 
+$cy_set(Boolean.prototype, {
+    toCYON: function() {
+        return `new Boolean(${this.toString()})`;
+    },
+});
+
 $cy_set(Date.prototype, {
     toCYON: function() {
         return `new ${this.constructor.name}(${this.toUTCString().toCYON()})`;
@@ -49,6 +55,18 @@ $cy_set(Error.prototype, {
         for (let i = 0; i != stack.length; ++i)
             stack[i] = '\n    ' + stack[i];
         return `new ${this.constructor.name}(${this.message.toCYON()}) /*${stack.join('')} */`;
+    },
+});
+
+$cy_set(Number.prototype, {
+    toCYON: function() {
+        return `new Number(${this.toString()})`;
+    },
+});
+
+$cy_set(RegExp.prototype, {
+    toCYON: function() {
+        return this.toString();
     },
 });
 
