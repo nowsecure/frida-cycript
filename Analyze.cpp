@@ -90,6 +90,11 @@ struct CYCXString {
     const char *Pool(CYPool &pool) const {
         return pool.strdup(*this);
     }
+
+    bool operator ==(const char *rhs) const {
+        const char *lhs(*this);
+        return lhs == rhs || strcmp(lhs, rhs) == 0;
+    }
 };
 
 template <void (&clang_get_Location)(CXSourceLocation, CXFile *, unsigned *, unsigned *, unsigned *) = clang_getSpellingLocation>
@@ -103,6 +108,11 @@ struct CYCXPosition {
         clang_get_Location(location, &file_, &line_, &column_, &offset_);
     }
 
+    CYCXPosition(CXTranslationUnit unit, CXToken token) :
+        CYCXPosition(clang_getTokenLocation(unit, token))
+    {
+    }
+
     CXSourceLocation Get(CXTranslationUnit unit) const {
         return clang_getLocation(unit, file_, line_, column_);
     }
@@ -112,7 +122,8 @@ template <void (&clang_get_Location)(CXSourceLocation, CXFile *, unsigned *, uns
 std::ostream &operator <<(std::ostream &out, const CYCXPosition<clang_get_Location> &position) {
     if (position.file_ != NULL)
         out << "[" << CYCXString(position.file_) << "]:";
-    out << position.line_ << ":" << position.column_;
+    out << position.line_ << ":" << position.column_ << "@" << position.offset_;
+    return out;
 }
 
 typedef std::map<std::string, std::string> CYKeyMap;
@@ -129,14 +140,31 @@ struct CYChildBaton {
 };
 
 struct CYTokens {
+  private:
     CXTranslationUnit unit_;
     CXToken *tokens_;
     unsigned count_;
+    unsigned valid_;
 
+  public:
     CYTokens(CXTranslationUnit unit, CXSourceRange range) :
         unit_(unit)
     {
         clang_tokenize(unit_, range, &tokens_, &count_);
+
+
+        // libclang's tokenizer is horribly broken and returns "extra" tokens.
+        // this code goes back through the tokens and filters for good ones :/
+
+        CYCXPosition<> end(clang_getRangeEnd(range));
+        CYCXString file(end.file_);
+
+        for (valid_ = 0; valid_ != count_; ++valid_) {
+            CYCXPosition<> position(unit, tokens_[valid_]);
+            _assert(CYCXString(position.file_) == file);
+            if (position.offset_ >= end.offset_)
+                break;
+        }
     }
 
     CYTokens(CXTranslationUnit unit, CXCursor cursor) :
@@ -150,6 +178,10 @@ struct CYTokens {
 
     operator CXToken *() const {
         return tokens_;
+    }
+
+    size_t size() const {
+        return valid_;
     }
 };
 
@@ -261,22 +293,32 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
             value << clang_getEnumConstantDeclValue(cursor);
         } break;
 
-        case CXCursor_MacroDefinition: {
-            CYTokens tokens(unit, cursor);
-            if (tokens.count_ <= 2)
-                goto skip;
+        case CXCursor_MacroDefinition: try {
+            CXSourceRange range(clang_getCursorExtent(cursor));
+            CYTokens tokens(unit, range);
+            _assert(tokens.size() != 0);
 
-            CXCursor cursors[tokens.count_];
-            clang_annotateTokens(unit, tokens, tokens.count_, cursors);
+            CXCursor cursors[tokens.size()];
+            clang_annotateTokens(unit, tokens, tokens.size(), cursors);
 
-            for (unsigned i(1); i != tokens.count_ - 1; ++i) {
+            CYCXPosition<> start(clang_getRangeStart(range));
+            CYCXString first(unit, tokens[1]);
+            if (first == "(") {
+                CYCXPosition<> paren(unit, tokens[1]);
+                if (start.offset_ + strlen(spelling) == paren.offset_)
+                    _assert(false); // XXX: support parameterized macros
+            }
+
+            for (unsigned i(1); i != tokens.size(); ++i) {
                 CYCXString token(unit, tokens[i]);
                 if (i != 1)
                     value << " ";
-                else if (strcmp(token, "(") == 0)
-                    goto skip;
                 value << token;
             }
+        } catch (const CYException &error) {
+            CYPool pool;
+            //std::cerr << error.PoolCString(pool) << std::endl;
+            goto skip;
         } break;
 
         case CXCursor_StructDecl: {

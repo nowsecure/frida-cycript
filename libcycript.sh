@@ -29,5 +29,5 @@ echo "create table cache (name text not null, system int not null, value text no
 
 def=$3
 if [[ -n "${def}" ]]; then
-    { echo "begin;"; cat "$def"; echo "commit;"; } | sed -e 's/^\([^|]*\)|\"\(.*\)\"$/insert into cache (name, system, value) values (<<\1>>, '"$sys"', <<\2>>);/;s/'"'"'/'"'"''"'"'/g;s/\(<<\|>>\)/'"'"'/g' | sqlite3 "${sql}"
+    { echo "begin;"; cat "$def"; echo "commit;"; } | sed -e 's/^\([^|]*\)|\"\(.*\)\"$/insert into cache (name, system, value) values (<@<\1>@>, '"$sys"', <@<\2>@>);/;s/'"'"'/'"'"''"'"'/g;s/\(<@<\|>@>\)/'"'"'/g' | sqlite3 "${sql}"
 fi

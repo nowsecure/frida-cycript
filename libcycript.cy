@@ -35,10 +35,6 @@ let $cy_set = function(object, properties) {
         });
 };
 
-const X_OK = (1<<0);
-const W_OK = (1<<1);
-const R_OK = (1<<2);
-
 $cy_set(Date.prototype, {
     toCYON: function() {
         return `new ${this.constructor.name}(${this.toUTCString().toCYON()})`;
