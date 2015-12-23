@@ -19,6 +19,7 @@
 **/
 /* }}} */
 
+#include <cmath>
 #include <cstring>
 #include <iostream>
 #include <map>
@@ -68,6 +69,11 @@ struct CYCXString {
     {
     }
 
+    CYCXString(CXFile file) :
+        value_(clang_getFileName(file))
+    {
+    }
+
     CYCXString(CXTranslationUnit unit, CXToken token) :
         value_(clang_getTokenSpelling(unit, token))
     {
@@ -86,6 +92,29 @@ struct CYCXString {
     }
 };
 
+template <void (&clang_get_Location)(CXSourceLocation, CXFile *, unsigned *, unsigned *, unsigned *) = clang_getSpellingLocation>
+struct CYCXPosition {
+    CXFile file_;
+    unsigned line_;
+    unsigned column_;
+    unsigned offset_;
+
+    CYCXPosition(CXSourceLocation location) {
+        clang_get_Location(location, &file_, &line_, &column_, &offset_);
+    }
+
+    CXSourceLocation Get(CXTranslationUnit unit) const {
+        return clang_getLocation(unit, file_, line_, column_);
+    }
+};
+
+template <void (&clang_get_Location)(CXSourceLocation, CXFile *, unsigned *, unsigned *, unsigned *)>
+std::ostream &operator <<(std::ostream &out, const CYCXPosition<clang_get_Location> &position) {
+    if (position.file_ != NULL)
+        out << "[" << CYCXString(position.file_) << "]:";
+    out << position.line_ << ":" << position.column_;
+}
+
 typedef std::map<std::string, std::string> CYKeyMap;
 
 struct CYChildBaton {
@@ -100,23 +129,27 @@ struct CYChildBaton {
 };
 
 struct CYTokens {
-    CXTranslationUnit unit;
-    CXToken *tokens;
-    unsigned count;
+    CXTranslationUnit unit_;
+    CXToken *tokens_;
+    unsigned count_;
+
+    CYTokens(CXTranslationUnit unit, CXSourceRange range) :
+        unit_(unit)
+    {
+        clang_tokenize(unit_, range, &tokens_, &count_);
+    }
 
     CYTokens(CXTranslationUnit unit, CXCursor cursor) :
-        unit(unit)
+        CYTokens(unit, clang_getCursorExtent(cursor))
     {
-        CXSourceRange range(clang_getCursorExtent(cursor));
-        clang_tokenize(unit, range, &tokens, &count);
     }
 
     ~CYTokens() {
-        clang_disposeTokens(unit, tokens, count);
+        clang_disposeTokens(unit_, tokens_, count_);
     }
 
     operator CXToken *() const {
-        return tokens;
+        return tokens_;
     }
 };
 
@@ -140,10 +173,29 @@ static CYExpression *CYTranslateExpression(CXTranslationUnit unit, CXCursor curs
         } break;
 
         case CXCursor_IntegerLiteral: {
-            CYTokens tokens(unit, cursor);
-            _assert(tokens.count != 0);
-            // XXX: I don't understand why this is often enormous :/
-            return $ CYNumber(CYCastDouble(CYCXString(unit, tokens[0])));
+            // libclang doesn't provide any reasonable way to do this
+            // note: clang_tokenize doesn't work if this is a macro
+            // the token range starts inside the macro but ends after it
+            // the tokenizer freaks out and either fails with 0 tokens
+            // or returns some massive number of tokens ending here :/
+
+            CXSourceRange range(clang_getCursorExtent(cursor));
+            CYCXPosition<> start(clang_getRangeStart(range));
+            CYCXPosition<> end(clang_getRangeEnd(range));
+            CYCXString file(start.file_);
+            _assert(file == CYCXString(end.file_));
+
+            CYPool pool;
+            size_t size;
+            char *data(static_cast<char *>(CYPoolFile(pool, file, &size)));
+            _assert(start.offset_ <= size && end.offset_ <= size && start.offset_ <= end.offset_);
+
+            const char *token($pool.strndup(data + start.offset_, end.offset_ - start.offset_));
+            double value(CYCastDouble(token));
+            if (!std::isnan(value))
+                return $ CYNumber(value);
+
+            return $V(token);
         } break;
 
         case CXCursor_CStyleCastExpr:
@@ -201,17 +253,8 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
     std::ostringstream value;
 
     /*CXSourceLocation location(clang_getCursorLocation(cursor));
-
-    CXFile file;
-    unsigned line;
-    unsigned column;
-    unsigned offset;
-    clang_getSpellingLocation(location, &file, &line, &column, &offset);
-
-    if (file != NULL) {
-        CYCXString path(clang_getFileName(file));
-        std::cout << spelling << " " << path << ":" << line << std::endl;
-    }*/
+    CYCXPosition<> position(location);
+    std::cout << spelling << " " << position << std::endl;*/
 
     switch (CXCursorKind kind = clang_getCursorKind(cursor)) {
         case CXCursor_EnumConstantDecl: {
@@ -220,13 +263,13 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
 
         case CXCursor_MacroDefinition: {
             CYTokens tokens(unit, cursor);
-            if (tokens.count <= 2)
+            if (tokens.count_ <= 2)
                 goto skip;
 
-            CXCursor cursors[tokens.count];
-            clang_annotateTokens(unit, tokens, tokens.count, cursors);
+            CXCursor cursors[tokens.count_];
+            clang_annotateTokens(unit, tokens, tokens.count_, cursors);
 
-            for (unsigned i(1); i != tokens.count - 1; ++i) {
+            for (unsigned i(1); i != tokens.count_ - 1; ++i) {
                 CYCXString token(unit, tokens[i]);
                 if (i != 1)
                     value << " ";
@@ -292,7 +335,7 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
                         break;
 
                     default:
-                        std::cerr << "A:" << CYCXString(child) << std::endl;
+                        //std::cerr << "A:" << CYCXString(child) << std::endl;
                         break;
                 }
             }));

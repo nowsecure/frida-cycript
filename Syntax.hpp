@@ -37,9 +37,14 @@
 
 double CYCastDouble(const char *value, size_t size);
 double CYCastDouble(const char *value);
+double CYCastDouble(CYUTF8String value);
 
 void CYNumerify(std::ostringstream &str, double value);
 void CYStringify(std::ostringstream &str, const char *data, size_t size, bool c = false);
+
+// XXX: this really should not be here ... :/
+void *CYPoolFile(CYPool &pool, const char *path, size_t *psize);
+CYUTF8String CYPoolFileUTF8String(CYPool &pool, const char *path);
 
 struct CYContext;
 
