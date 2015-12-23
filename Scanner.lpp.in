@@ -494,6 +494,8 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "__proto__"       L /*III*/ F(tk::___proto___, hi::Special);
 "prototype"       L /*III*/ F(tk::_prototype_, hi::Special);
 "public"          L /*FSS*/ F(tk::_public_, hi::Meta);
+"__restrict"      L /*III*/ F(tk::___restrict_, hi::Meta);
+"restrict"        L /*III*/ F(tk::_restrict_, hi::Meta);
 "return"          L /*KKK*/ F(tk::_return_, hi::Control);
 "set"             L /*III*/ F(tk::_set_, hi::Meta);
 "short"           L /*FII*/ F(tk::_short_, hi::Type);
