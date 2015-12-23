@@ -1177,7 +1177,8 @@ static JSValueRef All_getProperty(JSContextRef context, JSObjectRef object, JSSt
     CYPool pool;
     if (const char *code = CYBridgeHash(pool, CYPoolUTF8String(pool, context, property))) {
         JSValueRef result(_jsccall(JSEvaluateScript, context, CYJSString(CYPoolCode(pool, code)), NULL, NULL, 0));
-        CYSetProperty(context, object, property, result, kJSPropertyAttributeDontEnum);
+        JSObjectRef cache(CYGetCachedObject(context, CYJSString("cache")));
+        CYSetProperty(context, cache, property, result);
         return result;
     }
 
@@ -2143,6 +2144,10 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     JSObjectRef all(JSObjectMake(context, All_, NULL));
     CYSetProperty(context, cycript, CYJSString("all"), all);
 
+    JSObjectRef cache(JSObjectMake(context, NULL, NULL));
+    CYSetProperty(context, cy, CYJSString("cache"), cache);
+    CYSetPrototype(context, cache, all);
+
     JSObjectRef alls(_jsccall(JSObjectCallAsConstructor, context, Array, 0, NULL));
     CYSetProperty(context, cycript, CYJSString("alls"), alls);
 
@@ -2158,7 +2163,7 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
             next = JSObjectGetPrototype(context, curr);
         }
 
-        CYSetPrototype(context, last, all);
+        CYSetPrototype(context, last, cache);
     }
 
     JSObjectRef System(JSObjectMake(context, NULL, NULL));
