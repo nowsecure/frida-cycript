@@ -43,7 +43,7 @@
 CYUTF8String CYPoolUTF8String(CYPool &pool, CYUTF16String utf16) {
     // XXX: this is wrong
     size_t size(utf16.size * 5);
-    char *temp(new(pool) char[size]);
+    char *temp(new(pool) char[size + 1]);
 
     const uint16_t *lhs(utf16.data);
     uint8_t *rhs(reinterpret_cast<uint8_t *>(temp));
@@ -56,7 +56,7 @@ CYUTF8String CYPoolUTF8String(CYPool &pool, CYUTF16String utf16) {
 CYUTF16String CYPoolUTF16String(CYPool &pool, CYUTF8String utf8) {
     // XXX: this is wrong
     size_t size(utf8.size * 5);
-    uint16_t *temp(new (pool) uint16_t[size]);
+    uint16_t *temp(new (pool) uint16_t[size + 1]);
 
     const uint8_t *lhs(reinterpret_cast<const uint8_t *>(utf8.data));
     uint16_t *rhs(temp);
