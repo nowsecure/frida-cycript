@@ -1137,12 +1137,13 @@ JSObjectRef CYMakeType(JSContextRef context, sig::Signature *signature) {
     return CYMakeType(context, &type);
 }
 
-extern "C" const char *CYBridgeHash(CYPool &pool, CYUTF8String name) {
+extern "C" bool CYBridgeHash(CYPool &pool, CYUTF8String name, const char *&code, unsigned &flags) {
     sqlite3_stmt *statement;
 
     _sqlcall(sqlite3_prepare(database_,
         "select "
-            "\"cache\".\"value\" "
+            "\"cache\".\"code\", "
+            "\"cache\".\"flags\" "
         "from \"cache\" "
         "where"
             " \"cache\".\"system\" & " CY_SYSTEM " == " CY_SYSTEM " and"
@@ -1152,14 +1153,17 @@ extern "C" const char *CYBridgeHash(CYPool &pool, CYUTF8String name) {
 
     _sqlcall(sqlite3_bind_text(statement, 1, name.data, name.size, SQLITE_STATIC));
 
-    const char *value;
+    bool success;
     if (_sqlcall(sqlite3_step(statement)) == SQLITE_DONE)
-        value = NULL;
-    else
-        value = sqlite3_column_pooled(pool, statement, 0);
+        success = false;
+    else {
+        success = true;
+        code = sqlite3_column_pooled(pool, statement, 0);
+        flags = sqlite3_column_int(statement, 1);
+    }
 
     _sqlcall(sqlite3_finalize(statement));
-    return value;
+    return success;
 }
 
 static bool All_hasProperty(JSContextRef context, JSObjectRef object, JSStringRef property) {
@@ -1176,7 +1180,9 @@ static bool All_hasProperty(JSContextRef context, JSObjectRef object, JSStringRe
                 return true;
 
     CYPool pool;
-    if (CYBridgeHash(pool, CYPoolUTF8String(pool, context, property)) != NULL)
+    const char *code;
+    unsigned flags;
+    if (CYBridgeHash(pool, CYPoolUTF8String(pool, context, property), code, flags))
         return true;
 
     return false;
@@ -1197,10 +1203,16 @@ static JSValueRef All_getProperty(JSContextRef context, JSObjectRef object, JSSt
                     return value;
 
     CYPool pool;
-    if (const char *code = CYBridgeHash(pool, CYPoolUTF8String(pool, context, property))) {
+    const char *code;
+    unsigned flags;
+    if (CYBridgeHash(pool, CYPoolUTF8String(pool, context, property), code, flags)) {
         JSValueRef result(_jsccall(JSEvaluateScript, context, CYJSString(CYPoolCode(pool, code)), NULL, NULL, 0));
-        JSObjectRef cache(CYGetCachedObject(context, CYJSString("cache")));
-        CYSetProperty(context, cache, property, result);
+
+        if (flags == 0) {
+            JSObjectRef cache(CYGetCachedObject(context, CYJSString("cache")));
+            CYSetProperty(context, cache, property, result);
+        }
+
         return result;
     }
 

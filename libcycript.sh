@@ -25,9 +25,9 @@ sys=$1
 sql=$2
 
 rm -f "${sql}"
-echo "create table cache (name text not null, system int not null, value text not null, primary key (name, system));" | sqlite3 "${sql}"
+echo "create table cache (name text not null, system int not null, flags int not null, code text not null, primary key (name, system));" | sqlite3 "${sql}"
 
 def=$3
 if [[ -n "${def}" ]]; then
-    { echo "begin;"; cat "$def"; echo "commit;"; } | sed -e 's/^\([^|]*\)|\"\(.*\)\"$/insert into cache (name, system, value) values (<@<\1>@>, '"$sys"', <@<\2>@>);/;s/'"'"'/'"'"''"'"'/g;s/\(<@<\|>@>\)/'"'"'/g' | sqlite3 "${sql}"
+    { echo "begin;"; cat "$def"; echo "commit;"; } | sed -e 's/^\([^|]*\)|\([0-9]*\)\"\(.*\)\"$/insert into cache (name, system, flags, code) values (<@<\1>@>, '"$sys"', \2, <@<\3>@>);/;s/'"'"'/'"'"''"'"'/g;s/\(<@<\|>@>\)/'"'"'/g' | sqlite3 "${sql}"
 fi

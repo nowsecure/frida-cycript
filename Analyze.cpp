@@ -126,7 +126,12 @@ std::ostream &operator <<(std::ostream &out, const CYCXPosition<clang_get_Locati
     return out;
 }
 
-typedef std::map<std::string, std::string> CYKeyMap;
+struct CYKey {
+    std::string code_;
+    unsigned flags_;
+};
+
+typedef std::map<std::string, CYKey> CYKeyMap;
 
 struct CYChildBaton {
     CXTranslationUnit unit;
@@ -288,6 +293,7 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
     CYCXString spelling(cursor);
     std::string name(spelling);
     std::ostringstream value;
+    unsigned flags(0);
 
     /*CXSourceLocation location(clang_getCursorLocation(cursor));
     CYCXPosition<> position(location);
@@ -445,7 +451,11 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
         } break;
     }
 
-    baton.keys[name] = value.str();
+    {
+        CYKey &key(baton.keys[name]);
+        key.code_ = value.str();
+        key.flags_ = flags;
+    }
 
   skip:
     return CXChildVisit_Continue;
@@ -474,11 +484,11 @@ int main(int argc, const char *argv[]) {
     clang_visitChildren(clang_getTranslationUnitCursor(unit), &CYChildVisit, &baton);
 
     for (CYKeyMap::const_iterator key(keys.begin()); key != keys.end(); ++key) {
-        std::string value(key->second);
-        for (size_t i(0), e(value.size()); i != e; ++i)
-            if (value[i] <= 0 || value[i] >= 0x7f || value[i] == '\n')
+        std::string code(key->second.code_);
+        for (size_t i(0), e(code.size()); i != e; ++i)
+            if (code[i] <= 0 || code[i] >= 0x7f || code[i] == '\n')
                 goto skip;
-        std::cout << key->first << "|\"" << value << "\"" << std::endl;
+        std::cout << key->first << "|" << key->second.flags_ << "\"" << code << "\"" << std::endl;
     skip:; }
 
     clang_disposeTranslationUnit(unit);
