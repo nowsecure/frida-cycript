@@ -49,12 +49,19 @@ $cy_set(Date.prototype, {
 
 $cy_set(Error.prototype, {
     toCYON: function() {
-        let stack = this.stack.split('\n');
-        if (stack.slice(-1)[0] == "global code")
-            stack = stack.slice(0, -1);
-        for (let i = 0; i != stack.length; ++i)
-            stack[i] = '\n    ' + stack[i];
-        return `new ${this.constructor.name}(${this.message.toCYON()}) /*${stack.join('')} */`;
+        let stack = this.stack;
+        if (typeof stack == 'undefined')
+            stack = '';
+        else {
+            stack = stack.split('\n');
+            if (stack.slice(-1)[0] == "global code")
+                stack = stack.slice(0, -1);
+            for (let i = 0; i != stack.length; ++i)
+                stack[i] = '\n    ' + stack[i];
+            stack = stack.join('');
+            stack = ` /*${stack} */`;
+        }
+        return `new ${this.constructor.name}(${this.message.toCYON()})${stack}`;
     },
 });
 
