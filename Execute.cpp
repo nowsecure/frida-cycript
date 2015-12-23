@@ -2169,7 +2169,7 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     JSObjectRef System(JSObjectMake(context, NULL, NULL));
     CYSetProperty(context, cy, CYJSString("System"), System);
 
-    CYSetProperty(context, all, CYJSString("require"), &require_callAsFunction, kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, global, CYJSString("require"), &require_callAsFunction, kJSPropertyAttributeDontEnum);
 
     CYSetProperty(context, global, CYJSString("system"), System);
     CYSetProperty(context, System, CYJSString("args"), CYJSNull(context));

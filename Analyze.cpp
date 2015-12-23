@@ -306,19 +306,50 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
             CXCursor cursors[tokens.size()];
             clang_annotateTokens(unit, tokens, tokens.size(), cursors);
 
-            CYCXPosition<> start(clang_getRangeStart(range));
-            CYCXString first(unit, tokens[1]);
-            if (first == "(") {
-                CYCXPosition<> paren(unit, tokens[1]);
-                if (start.offset_ + strlen(spelling) == paren.offset_)
-                    _assert(false); // XXX: support parameterized macros
+            CYLocalPool local;
+            CYList<CYFunctionParameter> parameters;
+            unsigned offset(1);
+
+            if (tokens.size() != 1) {
+                CYCXPosition<> start(clang_getRangeStart(range));
+                CYCXString first(unit, tokens[offset]);
+                if (first == "(") {
+                    CYCXPosition<> paren(unit, tokens[offset]);
+                    if (start.offset_ + strlen(spelling) == paren.offset_) {
+                        for (;;) {
+                            _assert(++offset != tokens.size());
+                            CYCXString token(unit, tokens[offset]);
+                            parameters->*$P($B($I(token.Pool($pool))));
+                            _assert(++offset != tokens.size());
+                            CYCXString comma(unit, tokens[offset]);
+                            if (comma == ")")
+                                break;
+                            _assert(comma == ",");
+                        }
+                        ++offset;
+                    }
+                }
             }
 
-            for (unsigned i(1); i != tokens.size(); ++i) {
+            std::ostringstream body;
+            for (unsigned i(offset); i != tokens.size(); ++i) {
                 CYCXString token(unit, tokens[i]);
-                if (i != 1)
-                    value << " ";
-                value << token;
+                if (i != offset)
+                    body << " ";
+                body << token;
+            }
+
+            if (!parameters)
+                value << body.str();
+            else {
+                CYOptions options;
+                CYOutput out(*value.rdbuf(), options);
+                out << '(' << "function" << '(';
+                out << parameters;
+                out << ')' << '{';
+                out << "return" << ' ';
+                value << body.str();
+                out << ';' << '}' << ')';
             }
         } catch (const CYException &error) {
             CYPool pool;
