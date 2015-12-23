@@ -35,6 +35,14 @@
 #include "Local.hpp"
 #include "Standard.hpp"
 
+// XXX: std::aligned_storage and alignof
+static const size_t CYAlignment(sizeof(void *));
+
+template <typename Type_>
+static void CYAlign(Type_ &data, size_t size) {
+    data = reinterpret_cast<Type_>((reinterpret_cast<uintptr_t>(data) + (size - 1)) & ~static_cast<uintptr_t>(size - 1));
+}
+
 class CYPool;
 _finline void *operator new(size_t size, CYPool &pool);
 _finline void *operator new [](size_t size, CYPool &pool);
@@ -57,11 +65,6 @@ class CYPool {
         {
         }
     } *cleaner_;
-
-    static _finline size_t align(size_t size) {
-        // XXX: alignment is more complex than this
-        return (size + 7) & ~0x3;
-    }
 
     template <typename Type_>
     static void delete_(void *data) {
@@ -88,20 +91,27 @@ class CYPool {
     }
 
     template <typename Type_>
-    Type_ *malloc(size_t size) {
-        size = align(size);
+    Type_ *malloc(size_t size, size_t alignment = CYAlignment) {
+        uint8_t *end(data_);
+        CYAlign(end, alignment);
+        end += size;
 
-        if (size > size_) {
-            size_ = std::max<size_t>(next_, size + align(sizeof(Cleaner)));
+        if (size_t(end - data_) > size_) {
+            size_t need(sizeof(Cleaner));
+            CYAlign(need, alignment);
+            need += size;
+            size_ = std::max<size_t>(next_, need);
             next_ *= 2;
             data_ = reinterpret_cast<uint8_t *>(::malloc(size_));
             atexit(free, data_);
             _assert(size <= size_);
         }
 
-        void *data(data_);
-        data_ += size;
-        size_ -= size;
+        uint8_t *data(data_);
+        CYAlign(data, alignment);
+        end = data + size;
+        size_ -= end - data_;
+        data_ = end;
         return reinterpret_cast<Type_ *>(data);
     }
 
@@ -112,8 +122,8 @@ class CYPool {
     }
 
     template <typename Type_>
-    Type_ *memdup(const Type_ *data, size_t size) {
-        Type_ *copy(malloc<Type_>(size));
+    Type_ *memdup(const Type_ *data, size_t size, size_t alignment = CYAlignment) {
+        Type_ *copy(malloc<Type_>(size, alignment));
         memcpy(copy, data, size);
         return copy;
     }
@@ -123,7 +133,7 @@ class CYPool {
     }
 
     char *strmemdup(const char *data, size_t size) {
-        char *copy(malloc<char>(size + 1));
+        char *copy(malloc<char>(size + 1, 1));
         memcpy(copy, data, size);
         copy[size] = '\0';
         return copy;
@@ -142,7 +152,7 @@ class CYPool {
             va_end(args);
         }
 
-        char *copy(malloc<char>(size + 1)); {
+        char *copy(malloc<char>(size + 1, 1)); {
             va_list args;
             va_start(args, data);
 

@@ -890,11 +890,6 @@ static bool CString_setProperty(JSContextRef context, JSObjectRef object, JSStri
     return true;
 } CYCatch(false) }
 
-template <typename Type_>
-static void Align(Type_ &data, size_t size) {
-    data = reinterpret_cast<Type_>((reinterpret_cast<uintptr_t>(data) + (size - 1)) & ~(size - 1));
-}
-
 static bool Index_(CYPool &pool, JSContextRef context, Struct_privateData *internal, JSStringRef property, ssize_t &index, uint8_t *&base) {
     Type_privateData *typical(internal->type_);
     sig::Type *type(typical->type_);
@@ -931,13 +926,13 @@ static bool Index_(CYPool &pool, JSContextRef context, Struct_privateData *inter
   base:
     ffi_type **elements(typical->GetFFI()->elements);
 
-    base = reinterpret_cast<uint8_t *>(internal->value_);
+    size_t offset(0);
     for (ssize_t local(0); local != index; ++local) {
-        Align(base, elements[local]->alignment);
-        base += elements[local]->size;
+        offset += elements[local]->size;
+        CYAlign(offset, elements[local + 1]->alignment);
     }
 
-    Align(base, elements[index]->alignment);
+    base = reinterpret_cast<uint8_t *>(internal->value_) + offset;
     return true;
 }
 
