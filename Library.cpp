@@ -138,7 +138,7 @@ CYUTF8String CYPoolCode(CYPool &pool, std::streambuf &stream) {
     std::stringbuf str;
     CYOutput out(str, options);
     out << *driver.script_;
-    return $pool.strdup(str.str().c_str());
+    return pool.strdup(str.str().c_str());
 }
 
 CYUTF8String CYPoolCode(CYPool &pool, CYUTF8String code) {
