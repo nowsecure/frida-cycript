@@ -2978,11 +2978,12 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     CYSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Message, prototype_s)), Function_prototype);
     CYSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Selector, prototype_s)), Function_prototype);
 
-    CYSetProperty(context, global, CYJSString("YES"), JSValueMakeBoolean(context, true), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, global, CYJSString("NO"), JSValueMakeBoolean(context, false), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, global, CYJSString("id"), CYMakeType(context, "@"), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, global, CYJSString("Class"), CYMakeType(context, "#"), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, global, CYJSString("SEL"), CYMakeType(context, ":"), kJSPropertyAttributeDontEnum);
+    JSObjectRef cache(CYGetCachedObject(context, CYJSString("cache")));
+    CYSetProperty(context, cache, CYJSString("YES"), JSValueMakeBoolean(context, true), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("NO"), JSValueMakeBoolean(context, false), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("id"), CYMakeType(context, "@"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("Class"), CYMakeType(context, "#"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("SEL"), CYMakeType(context, ":"), kJSPropertyAttributeDontEnum);
 } CYPoolCatch() }
 
 static void *CYObjectiveC_CastSymbol(const char *name) {

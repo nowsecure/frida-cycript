@@ -2184,19 +2184,19 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     }
 #endif
 
-    CYSetProperty(context, global, CYJSString("dlerror"), CYMakeFunctor(context, "dlerror", "*"), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, global, CYJSString("RTLD_DEFAULT"), CYCastJSValue(context, reinterpret_cast<intptr_t>(RTLD_DEFAULT)), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, global, CYJSString("dlsym"), CYMakeFunctor(context, "dlsym", "^v^v*"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("dlerror"), CYMakeFunctor(context, "dlerror", "*"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("RTLD_DEFAULT"), CYCastJSValue(context, reinterpret_cast<intptr_t>(RTLD_DEFAULT)), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("dlsym"), CYMakeFunctor(context, "dlsym", "^v^v*"), kJSPropertyAttributeDontEnum);
 
-    CYSetProperty(context, global, CYJSString("NULL"), CYJSNull(context), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("NULL"), CYJSNull(context), kJSPropertyAttributeDontEnum);
 
-    CYSetProperty(context, global, CYJSString("bool"), CYMakeType(context, "B"), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, global, CYJSString("char"), CYMakeType(context, "c"), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, global, CYJSString("short"), CYMakeType(context, "s"), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, global, CYJSString("int"), CYMakeType(context, "i"), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, global, CYJSString("long"), CYMakeType(context, "l"), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, global, CYJSString("float"), CYMakeType(context, "f"), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, global, CYJSString("double"), CYMakeType(context, "d"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("bool"), CYMakeType(context, "B"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("char"), CYMakeType(context, "c"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("short"), CYMakeType(context, "s"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("int"), CYMakeType(context, "i"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("long"), CYMakeType(context, "l"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("float"), CYMakeType(context, "f"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("double"), CYMakeType(context, "d"), kJSPropertyAttributeDontEnum);
 
     CYRunScript(context, "libcycript.cy");
 
