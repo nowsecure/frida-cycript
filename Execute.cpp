@@ -50,9 +50,13 @@
 #include "Pooling.hpp"
 #include "String.hpp"
 
+const char *sqlite3_column_string(sqlite3_stmt *stmt, int n) {
+    return reinterpret_cast<const char *>(sqlite3_column_text(stmt, n));
+}
+
 char *sqlite3_column_pooled(CYPool &pool, sqlite3_stmt *stmt, int n) {
-    if (const unsigned char *value = sqlite3_column_text(stmt, n))
-        return pool.strdup(reinterpret_cast<const char *>(value));
+    if (const char *value = sqlite3_column_string(stmt, n))
+        return pool.strdup(value);
     else return NULL;
 }
 
@@ -149,6 +153,18 @@ size_t CYGetIndex(CYPool &pool, JSContextRef context, JSStringRef value) {
     return CYGetIndex(CYPoolUTF8String(pool, context, value));
 }
 /* }}} */
+
+static JSObjectRef (*JSObjectMakeArray$)(JSContextRef, size_t, const JSValueRef[], JSValueRef *);
+
+static JSObjectRef CYObjectMakeArray(JSContextRef context, size_t length, const JSValueRef values[]) {
+    if (JSObjectMakeArray$ != NULL)
+        return _jsccall(*JSObjectMakeArray$, context, length, values);
+    else {
+        JSObjectRef Array(CYGetCachedObject(context, CYJSString("Array")));
+        JSValueRef value(CYCallAsFunction(context, Array, NULL, length, values));
+        return CYCastJSObject(context, value);
+    }
+}
 
 static JSClassRef All_;
 static JSClassRef Context_;
@@ -1191,6 +1207,34 @@ static JSValueRef All_getProperty(JSContextRef context, JSObjectRef object, JSSt
     return NULL;
 } CYCatch(NULL) }
 
+static JSValueRef All_complete_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    _assert(count == 1);
+    CYPool pool;
+    CYUTF8String prefix(CYPoolUTF8String(pool, context, CYJSString(context, arguments[0])));
+
+    std::vector<JSValueRef> values;
+
+    sqlite3_stmt *statement;
+
+    _sqlcall(sqlite3_prepare(database_,
+        "select "
+            "\"cache\".\"name\" "
+        "from \"cache\" "
+        "where"
+            " \"cache\".\"system\" & " CY_SYSTEM " == " CY_SYSTEM " and"
+            " \"cache\".\"name\" like ? || '%'"
+    , -1, &statement, NULL));
+
+    _sqlcall(sqlite3_bind_text(statement, 1, prefix.data, prefix.size, SQLITE_STATIC));
+
+    while (_sqlcall(sqlite3_step(statement)) != SQLITE_DONE)
+        values.push_back(CYCastJSValue(context, CYJSString(sqlite3_column_string(statement, 0))));
+
+    _sqlcall(sqlite3_finalize(statement));
+
+    return CYObjectMakeArray(context, values.size(), values.data());
+} CYCatch(NULL) }
+
 static void All_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
     JSObjectRef global(CYGetGlobalObject(context));
     JSObjectRef cycript(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Cycript"))));
@@ -1675,6 +1719,11 @@ static JSValueRef Type_callAsFunction_toJSON(JSContextRef context, JSObjectRef o
     return Type_callAsFunction_toString(context, object, _this, count, arguments, exception);
 }
 
+static JSStaticFunction All_staticFunctions[2] = {
+    {"cy$complete", &All_complete_callAsFunction, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {NULL, NULL, 0}
+};
+
 static JSStaticFunction CString_staticFunctions[6] = {
     {"toCYON", &CString_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toJSON", &CYValue_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
@@ -1753,23 +1802,13 @@ static JSStaticFunction Type_staticFunctions[14] = {
     {NULL, NULL, 0}
 };
 
-static JSObjectRef (*JSObjectMakeArray$)(JSContextRef, size_t, const JSValueRef[], JSValueRef *);
-
 _visible void CYSetArgs(int argc, const char *argv[]) {
     JSContextRef context(CYGetJSContext());
     JSValueRef args[argc];
     for (int i(0); i != argc; ++i)
         args[i] = CYCastJSValue(context, argv[i]);
 
-    JSObjectRef array;
-    if (JSObjectMakeArray$ != NULL)
-        array = _jsccall(*JSObjectMakeArray$, context, argc, args);
-    else {
-        JSObjectRef Array(CYGetCachedObject(context, CYJSString("Array")));
-        JSValueRef value(CYCallAsFunction(context, Array, NULL, argc, args));
-        array = CYCastJSObject(context, value);
-    }
-
+    JSObjectRef array(CYObjectMakeArray(context, argc, args));
     JSObjectRef System(CYGetCachedObject(context, CYJSString("System")));
     CYSetProperty(context, System, CYJSString("args"), array);
 }
@@ -1859,6 +1898,7 @@ void CYInitializeDynamic() {
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "All";
+    definition.staticFunctions = All_staticFunctions;
     definition.hasProperty = &All_hasProperty;
     definition.getProperty = &All_getProperty;
     definition.getPropertyNames = &All_getPropertyNames;
