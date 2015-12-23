@@ -157,6 +157,31 @@ require.resolve = function(name) {
     throw new Error("Cannot find module '" + name + "'");
 };
 
+var _syscall = function(value) {
+    if (value == -1)
+        throw new Error("system call failed");
+};
+
+var info = *new (struct stat);
+if (false) {
+} else if ("st_atim" in info) {
+    var st_atime = "st_atim";
+    var st_mtime = "st_mtim";
+    var st_ctime = "st_ctim";
+} else if ("st_atimespec" in info) {
+    var st_atime = "st_atimespec";
+    var st_mtime = "st_mtimespec";
+    var st_ctime = "st_ctimespec";
+} else {
+    var st_atime = "st_atime";
+    var st_mtime = "st_mtime";
+    var st_ctime = "st_ctime";
+}
+
+var toDate = function(timespec) {
+    return new Date(timespec.tv_sec * 1000 + timespec.tv_nsec / 1000);
+};
+
 var bindings = {};
 
 process.binding = function(name) {
@@ -180,8 +205,30 @@ process.binding = function(name) {
             FSInitialize() {
             },
 
-            lstat() {
-                throw new Error("stat(" + arguments[0] + ")");
+            lstat(path) {
+                var info = new (struct stat);
+                _syscall(lstat(path, info));
+
+                return {
+                    dev: info->st_dev,
+                    mode: info->st_mode,
+                    nlink: info->st_nlink,
+                    uid: info->st_uid,
+                    gid: info->st_gid,
+                    rdev: info->st_rdev,
+                    blksize: info->st_blksize,
+                    ino: info->st_ino,
+                    size: info->st_size,
+                    blocks: info->st_blocks,
+
+                    atime: toDate(info->[st_atime]),
+                    mtime: toDate(info->[st_mtime]),
+                    ctime: toDate(info->[st_ctime]),
+
+                    isSymbolicLink() {
+                        return S_ISLNK(this.mode);
+                    },
+                };
             },
         }; break;
 

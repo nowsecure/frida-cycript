@@ -2198,13 +2198,13 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     CYSetProperty(context, cache, CYJSString("float"), CYMakeType(context, "f"), kJSPropertyAttributeDontEnum);
     CYSetProperty(context, cache, CYJSString("double"), CYMakeType(context, "d"), kJSPropertyAttributeDontEnum);
 
-    CYRunScript(context, "libcycript.cy");
-
     for (CYHook *hook : GetHooks())
         if (hook->SetupContext != NULL)
             (*hook->SetupContext)(context);
 
     CYArrayPush(context, alls, cycript);
+
+    CYRunScript(context, "libcycript.cy");
 }
 
 static JSGlobalContextRef context_;
