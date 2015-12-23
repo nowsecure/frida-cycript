@@ -1228,16 +1228,30 @@ static JSValueRef All_complete_callAsFunction(JSContextRef context, JSObjectRef 
 
     sqlite3_stmt *statement;
 
-    _sqlcall(sqlite3_prepare(database_,
-        "select "
-            "\"cache\".\"name\" "
-        "from \"cache\" "
-        "where"
-            " \"cache\".\"system\" & " CY_SYSTEM " == " CY_SYSTEM " and"
-            " \"cache\".\"name\" like ? || '%'"
-    , -1, &statement, NULL));
+    if (prefix.size == 0)
+        _sqlcall(sqlite3_prepare(database_,
+            "select "
+                "\"cache\".\"name\" "
+            "from \"cache\" "
+            "where"
+                " \"cache\".\"system\" & " CY_SYSTEM " == " CY_SYSTEM
+        , -1, &statement, NULL));
+    else {
+        _sqlcall(sqlite3_prepare(database_,
+            "select "
+                "\"cache\".\"name\" "
+            "from \"cache\" "
+            "where"
+                " \"cache\".\"name\" >= ? and \"cache\".\"name\" < ? and "
+                " \"cache\".\"system\" & " CY_SYSTEM " == " CY_SYSTEM
+        , -1, &statement, NULL));
 
-    _sqlcall(sqlite3_bind_text(statement, 1, prefix.data, prefix.size, SQLITE_STATIC));
+        _sqlcall(sqlite3_bind_text(statement, 1, prefix.data, prefix.size, SQLITE_STATIC));
+
+        char *after(pool.strndup(prefix.data, prefix.size));
+        ++after[prefix.size - 1];
+        _sqlcall(sqlite3_bind_text(statement, 2, after, prefix.size, SQLITE_STATIC));
+    }
 
     while (_sqlcall(sqlite3_step(statement)) != SQLITE_DONE)
         values.push_back(CYCastJSValue(context, CYJSString(sqlite3_column_string(statement, 0))));
