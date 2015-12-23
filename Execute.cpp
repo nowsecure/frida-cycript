@@ -1147,6 +1147,9 @@ extern "C" const char *CYBridgeHash(CYPool &pool, CYUTF8String name) {
 }
 
 static bool All_hasProperty(JSContextRef context, JSObjectRef object, JSStringRef property) {
+    if (JSStringIsEqualToUTF8CString(property, "errno"))
+        return true;
+
     JSObjectRef global(CYGetGlobalObject(context));
     JSObjectRef cycript(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Cycript"))));
     JSObjectRef alls(CYCastJSObject(context, CYGetProperty(context, cycript, CYJSString("alls"))));
@@ -1164,6 +1167,9 @@ static bool All_hasProperty(JSContextRef context, JSObjectRef object, JSStringRe
 }
 
 static JSValueRef All_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
+    if (JSStringIsEqualToUTF8CString(property, "errno"))
+        return CYCastJSValue(context, errno);
+
     JSObjectRef global(CYGetGlobalObject(context));
     JSObjectRef cycript(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Cycript"))));
     JSObjectRef alls(CYCastJSObject(context, CYGetProperty(context, cycript, CYJSString("alls"))));
