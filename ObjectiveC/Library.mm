@@ -44,12 +44,14 @@
 #include <Foundation/Foundation.h>
 
 #include "Code.hpp"
+#include "Decode.hpp"
 #include "Error.hpp"
 #include "JavaScript.hpp"
 #include "String.hpp"
 #include "Execute.hpp"
 
 #include "ObjectiveC/Internal.hpp"
+#include "ObjectiveC/Syntax.hpp"
 
 #define CYObjectiveTry_ { \
     try
@@ -841,8 +843,51 @@ NSObject *CYCopyNSObject(CYPool &pool, JSContextRef context, JSValueRef value) {
 /* }}} */
 /* Bridge: NSBlock {{{ */
 #ifdef __APPLE__
-@interface NSBlock
+@interface NSBlock : NSObject
 - (void) invoke;
+@end
+
+static const char *CYBlockEncoding(NSBlock *self);
+static sig::Signature *CYBlockSignature(CYPool &pool, NSBlock *self);
+
+@implementation NSBlock (Cycript)
+
+- (NSString *) cy$toCYON:(bool)objective inSet:(std::set<void *> &)objects {
+    CYLocalPool pool;
+
+    sig::Signature *signature(CYBlockSignature(pool, self));
+    // XXX: I am checking signature->count due to Decode doing it for block_P
+    if (signature == NULL || signature->count == 0)
+        return [super cy$toCYON:objective inSet:objects];
+    _oassert(objects.insert(self).second);
+
+    // XXX: maybe move this id check into Decode's implementation for block_P
+    _assert(signature->count >= 2);
+    _assert(signature->elements[1].type->primitive == sig::object_P);
+
+    sig::Type type;
+    type.name = NULL;
+    type.flags = 0;
+
+    type.primitive = sig::function_P; // XXX: sig::block_P
+    sig::Copy(pool, type.data.signature, *signature);
+
+    CYTypedIdentifier *typed((new(pool) CYTypeExpression(Decode(pool, &type)))->typed_);
+    CYTypeFunctionWith *function(typed->Function());
+    _assert(function != NULL);
+
+    _assert(function->parameters_ != NULL);
+    CYObjCBlock *block(new(pool) CYObjCBlock(typed, function->parameters_->next_, NULL));
+
+    std::ostringstream str;
+    CYOptions options;
+    CYOutput out(*str.rdbuf(), options);
+    block->Output(out, CYNoFlags);
+
+    std::string value(str.str());
+    return CYCastNSString(NULL, CYUTF8String(value.c_str(), value.size()));
+}
+
 @end
 #endif
 /* }}} */
@@ -1901,6 +1946,16 @@ static const char *CYBlockEncoding(NSBlock *self) {
     return descriptor3->signature;
 }
 
+static sig::Signature *CYBlockSignature(CYPool &pool, NSBlock *self) {
+    const char *encoding(CYBlockEncoding(self));
+    if (encoding == NULL)
+        return NULL;
+    // XXX: this should be stored on a FunctionInstance private value subclass
+    sig::Signature *signature(new(pool) sig::Signature());
+    sig::Parse(pool, signature, encoding, &Structor_);
+    return signature;
+}
+
 static JSValueRef FunctionInstance_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
     id self(internal->GetValue());
@@ -2517,14 +2572,11 @@ static JSValueRef CYValue_callAsFunction_$cya(JSContextRef context, JSObjectRef 
 
 static JSValueRef FunctionInstance_getProperty_type(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
-    const char *encoding(CYBlockEncoding(internal->GetValue()));
-    if (encoding == NULL)
-        return CYJSNull(context);
-    // XXX: this should be stored on a FunctionInstance private value subclass
     CYPool pool;
-    sig::Signature signature;
-    sig::Parse(pool, &signature, encoding, &Structor_);
-    return CYMakeType(context, &signature);
+    sig::Signature *signature(CYBlockSignature(pool, internal->GetValue()));
+    if (signature == NULL)
+        return CYJSNull(context);
+    return CYMakeType(context, signature);
 } CYCatch(NULL) }
 
 static JSValueRef Instance_getProperty_constructor(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {

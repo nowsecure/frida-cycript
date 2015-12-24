@@ -78,11 +78,22 @@ void CYBox::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYObjCBlock::Output(CYOutput &out, CYFlags flags) const {
-    // XXX: this is seriously wrong
-    out << "^(";
-    out << ")";
-    out << "{";
-    out << "}";
+    out << '^' << ' ' << *typed_ << ' ' << '(';
+
+    bool comma(false);
+    CYForEach (parameter, parameters_) {
+        if (comma)
+            out << ',' << ' ';
+        else
+            comma = true;
+        out << *parameter->typed_;
+    }
+
+    out << ')' << ' ' << '{' << '\n';
+    ++out.indent_;
+    out << code_;
+    --out.indent_;
+    out << '\n' << '}';
 }
 
 void CYProtocol::Output(CYOutput &out) const {
