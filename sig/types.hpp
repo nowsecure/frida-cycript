@@ -32,6 +32,7 @@ namespace sig {
 enum Primitive {
     function_P = '\0',
     block_P = '\a',
+    char_P = '\b',
 
     unknown_P = '?',
     typename_P = '#',
@@ -48,7 +49,7 @@ enum Primitive {
     array_P = '[',
     pointer_P = '^',
     bit_P = 'b',
-    char_P = 'c',
+    schar_P = 'c',
     double_P = 'd',
     float_P = 'f',
     int_P = 'i',

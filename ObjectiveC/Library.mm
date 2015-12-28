@@ -3033,9 +3033,9 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     JSObjectRef cache(CYGetCachedObject(context, CYJSString("cache")));
     CYSetProperty(context, cache, CYJSString("YES"), JSValueMakeBoolean(context, true), kJSPropertyAttributeDontEnum);
     CYSetProperty(context, cache, CYJSString("NO"), JSValueMakeBoolean(context, false), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, cache, CYJSString("id"), CYMakeType(context, "@"), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, cache, CYJSString("Class"), CYMakeType(context, "#"), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, cache, CYJSString("SEL"), CYMakeType(context, ":"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("id"), CYMakeType(context, sig::object_P), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("Class"), CYMakeType(context, sig::typename_P), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("SEL"), CYMakeType(context, sig::selector_P), kJSPropertyAttributeDontEnum);
 } CYPoolCatch() }
 
 static void *CYObjectiveC_CastSymbol(const char *name) {

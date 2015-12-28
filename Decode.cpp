@@ -77,7 +77,7 @@ CYTypedIdentifier *Decode_(CYPool &pool, struct sig::Type *type) {
         } break;
 
         case sig::bit_P: _assert(false); break;
-        case sig::char_P: return $ CYTypedIdentifier($ CYTypeVariable("char"));
+        case sig::schar_P: return $ CYTypedIdentifier($ CYTypeSigned($ CYTypeVariable("char")));
         case sig::double_P: return $ CYTypedIdentifier($ CYTypeVariable("double"));
         case sig::float_P: return $ CYTypedIdentifier($ CYTypeVariable("float"));
         case sig::int_P: return $ CYTypedIdentifier($ CYTypeVariable("int"));
@@ -86,6 +86,7 @@ CYTypedIdentifier *Decode_(CYPool &pool, struct sig::Type *type) {
         case sig::short_P: return $ CYTypedIdentifier($ CYTypeShort($ CYTypeVariable("int")));
 
         case sig::void_P: return $ CYTypedIdentifier($ CYTypeVoid());
+        case sig::char_P: return $ CYTypedIdentifier($ CYTypeVariable("char"));
 
         case sig::struct_P: {
             CYTypeStructField *fields(NULL);

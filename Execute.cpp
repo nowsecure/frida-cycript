@@ -662,7 +662,7 @@ void CYPoolFFI(CYPool *pool, JSContextRef context, sig::Type *type, ffi_type *ff
         break;
 
         CYPoolFFI_(uchar, unsigned char)
-        CYPoolFFI_(char, char)
+        CYPoolFFI_(schar, signed char)
         CYPoolFFI_(ushort, unsigned short)
         CYPoolFFI_(short, short)
         CYPoolFFI_(ulong, unsigned long)
@@ -737,6 +737,9 @@ void CYPoolFFI(CYPool *pool, JSContextRef context, sig::Type *type, ffi_type *ff
         case sig::void_P:
         break;
 
+        // XXX: implement a conversion from a single character string?
+        CYPoolFFI_(char, char)
+
         default:
             for (CYHook *hook : GetHooks())
                 if (hook->PoolFFI != NULL)
@@ -757,7 +760,7 @@ JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void 
             return CYCastJSValue(context, *reinterpret_cast<native *>(data)); \
 
         CYFromFFI_(uchar, unsigned char)
-        CYFromFFI_(char, char)
+        CYFromFFI_(schar, signed char)
         CYFromFFI_(ushort, unsigned short)
         CYFromFFI_(short, short)
         CYFromFFI_(ulong, unsigned long)
@@ -788,6 +791,8 @@ JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void 
             return CYMakeStruct(context, data, type, ffi, owner);
         case sig::void_P:
             return CYJSUndefined(context);
+
+        CYFromFFI_(char, char)
 
         null:
             return CYJSNull(context);
@@ -1114,8 +1119,8 @@ static JSValueRef Pointer_callAsFunction(JSContextRef context, JSObjectRef objec
     return CYCallAsFunction(context, functor, _this, count, arguments);
 } CYCatch(NULL) }
 
-JSObjectRef CYMakeType(JSContextRef context, const char *encoding) {
-    Type_privateData *internal(new Type_privateData(encoding));
+JSObjectRef CYMakeType(JSContextRef context, sig::Primitive primitive) {
+    Type_privateData *internal(new Type_privateData(primitive));
     return JSObjectMake(context, Type_privateData::Class_, internal);
 }
 
@@ -1310,8 +1315,10 @@ static JSObjectRef Type_new(JSContextRef context, JSObjectRef object, size_t cou
 
     if (false) {
     } else if (count == 1) {
-        const char *type(CYPoolCString(pool, context, arguments[0]));
-        return CYMakeType(context, type);
+        const char *encoding(CYPoolCString(pool, context, arguments[0]));
+        sig::Signature signature;
+        sig::Parse(pool, &signature, encoding, &Structor_);
+        return CYMakeType(context, signature.elements[0].type);
     } else if (count == 2) {
         JSObjectRef types(CYCastJSObject(context, arguments[0]));
         size_t count(CYArrayLength(context, types));
@@ -1457,7 +1464,7 @@ static JSValueRef Type_callAsFunction_signed(JSContextRef context, JSObjectRef o
     sig::Type type(*internal->type_);
 
     switch (type.primitive) {
-        case sig::char_P: case sig::uchar_P: type.primitive = sig::char_P; break;
+        case sig::char_P: case sig::schar_P: case sig::uchar_P: type.primitive = sig::schar_P; break;
         case sig::short_P: case sig::ushort_P: type.primitive = sig::short_P; break;
         case sig::int_P: case sig::uint_P: type.primitive = sig::int_P; break;
         case sig::long_P: case sig::ulong_P: type.primitive = sig::long_P; break;
@@ -1476,7 +1483,7 @@ static JSValueRef Type_callAsFunction_unsigned(JSContextRef context, JSObjectRef
     sig::Type type(*internal->type_);
 
     switch (type.primitive) {
-        case sig::char_P: case sig::uchar_P: type.primitive = sig::uchar_P; break;
+        case sig::char_P: case sig::schar_P: case sig::uchar_P: type.primitive = sig::uchar_P; break;
         case sig::short_P: case sig::ushort_P: type.primitive = sig::ushort_P; break;
         case sig::int_P: case sig::uint_P: type.primitive = sig::uint_P; break;
         case sig::long_P: case sig::ulong_P: type.primitive = sig::ulong_P; break;
@@ -2274,13 +2281,13 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
 
     CYSetProperty(context, cache, CYJSString("NULL"), CYJSNull(context), kJSPropertyAttributeDontEnum);
 
-    CYSetProperty(context, cache, CYJSString("bool"), CYMakeType(context, "B"), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, cache, CYJSString("char"), CYMakeType(context, "c"), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, cache, CYJSString("short"), CYMakeType(context, "s"), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, cache, CYJSString("int"), CYMakeType(context, "i"), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, cache, CYJSString("long"), CYMakeType(context, "l"), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, cache, CYJSString("float"), CYMakeType(context, "f"), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, cache, CYJSString("double"), CYMakeType(context, "d"), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("bool"), CYMakeType(context, sig::boolean_P), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("char"), CYMakeType(context, sig::char_P), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("short"), CYMakeType(context, sig::short_P), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("int"), CYMakeType(context, sig::int_P), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("long"), CYMakeType(context, sig::long_P), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("float"), CYMakeType(context, sig::float_P), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("double"), CYMakeType(context, sig::double_P), kJSPropertyAttributeDontEnum);
 
     for (CYHook *hook : GetHooks())
         if (hook->SetupContext != NULL)

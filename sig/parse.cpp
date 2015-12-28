@@ -160,7 +160,7 @@ Type *Parse_(CYPool &pool, const char **name, char eos, bool named, Callback cal
             type->data.data.size = strtoul(*name, (char **) name, 10);
         break;
 
-        case 'c': type->primitive = char_P; break;
+        case 'c': type->primitive = schar_P; break;
         case 'd': type->primitive = double_P; break;
         case 'f': type->primitive = float_P; break;
         case 'i': type->primitive = int_P; break;
@@ -286,7 +286,7 @@ const char *Unparse_(CYPool &pool, struct Type *type) {
         } break;
 
         case bit_P: return pool.strcat("b", pool.itoa(type->data.data.size), NULL);
-        case char_P: return "c";
+        case schar_P: return "c";
         case double_P: return "d";
         case float_P: return "f";
         case int_P: return "i";
@@ -294,6 +294,7 @@ const char *Unparse_(CYPool &pool, struct Type *type) {
         case longlong_P: return "q";
         case short_P: return "s";
         case void_P: return "v";
+        case char_P: return "c";
         case struct_P: return pool.strcat("{", type->name == NULL ? "?" : type->name, "=", Unparse(pool, &type->data.signature), "}", NULL);
     }
 

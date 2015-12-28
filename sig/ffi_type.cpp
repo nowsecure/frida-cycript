@@ -87,7 +87,7 @@ ffi_type *ObjectiveC(CYPool &pool, struct Type *type) {
             _assert(false);
         break;
 
-        case char_P: return &ffi_type_schar;
+        case schar_P: return &ffi_type_schar;
         case double_P: return &ffi_type_double;
         case float_P: return &ffi_type_float;
         case int_P: return &ffi_type_sint;
@@ -96,6 +96,7 @@ ffi_type *ObjectiveC(CYPool &pool, struct Type *type) {
         case short_P: return &ffi_type_sshort;
 
         case void_P: return &ffi_type_void;
+        case char_P: return &ffi_type_schar;
 
         case struct_P: {
             ffi_type *aggregate(new(pool) ffi_type());
@@ -133,7 +134,7 @@ ffi_type *Java(CYPool &pool, struct Type *type) {
         case array_P: return &ffi_type_pointer;
         case pointer_P: return &ffi_type_pointer;
         case bit_P: _assert(false); break;
-        case char_P: return &ffi_type_schar;
+        case schar_P: return &ffi_type_schar;
         case double_P: return &ffi_type_double;
         case float_P: return &ffi_type_double;
         case int_P: return &ffi_type_sint;
@@ -141,6 +142,7 @@ ffi_type *Java(CYPool &pool, struct Type *type) {
         case longlong_P: return &ffi_type_slonglong;
         case short_P: return &ffi_type_sshort;
         case void_P: return &ffi_type_void;
+        case char_P: return &ffi_type_schar;
         case struct_P: return &ffi_type_pointer;
 
         default:
