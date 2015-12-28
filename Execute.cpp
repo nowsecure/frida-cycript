@@ -1055,6 +1055,11 @@ static JSValueRef Struct_callAsFunction_$cya(JSContextRef context, JSObjectRef o
     return CYMakePointer(context, internal->value_, _not(size_t), typical->type_, typical->ffi_, _this);
 } CYCatch(NULL) }
 
+static JSValueRef Struct_getProperty_type(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
+    Struct_privateData *internal(reinterpret_cast<Struct_privateData *>(JSObjectGetPrivate(object)));
+    return CYMakeType(context, internal->type_->type_);
+} CYCatch(NULL) }
+
 static JSValueRef Struct_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     CYPool pool;
     Struct_privateData *internal(reinterpret_cast<Struct_privateData *>(JSObjectGetPrivate(object)));
@@ -1743,7 +1748,16 @@ static JSValueRef CString_getProperty_type(JSContextRef context, JSObjectRef obj
 
 static JSValueRef Pointer_getProperty_type(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(object)));
-    return CYMakeType(context, internal->type_->type_);
+
+    sig::Type type;
+    type.name = NULL;
+    type.flags = 0;
+
+    type.primitive = sig::pointer_P;
+    type.data.data.type = internal->type_->type_;
+    type.data.data.size = 0;
+
+    return CYMakeType(context, &type);
 } CYCatch(NULL) }
 
 static JSValueRef CString_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -1839,6 +1853,11 @@ static JSStaticValue Pointer_staticValues[2] = {
 static JSStaticFunction Struct_staticFunctions[2] = {
     {"$cya", &Struct_callAsFunction_$cya, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
+};
+
+static JSStaticValue Struct_staticValues[2] = {
+    {"type", &Struct_getProperty_type, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {NULL, NULL, NULL, 0}
 };
 
 static JSStaticFunction Functor_staticFunctions[5] = {
@@ -2023,6 +2042,7 @@ void CYInitializeDynamic() {
     definition = kJSClassDefinitionEmpty;
     definition.className = "Struct";
     definition.staticFunctions = Struct_staticFunctions;
+    definition.staticValues = Struct_staticValues;
     definition.getProperty = &Struct_getProperty;
     definition.setProperty = &Struct_setProperty;
     definition.getPropertyNames = &Struct_getPropertyNames;
