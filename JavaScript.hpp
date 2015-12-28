@@ -151,6 +151,8 @@ void CYFinalize(JSObjectRef object);
 
 size_t CYArrayLength(JSContextRef context, JSObjectRef array);
 JSValueRef CYArrayGet(JSContextRef context, JSObjectRef array, size_t index);
+
+void CYArrayPush(JSContextRef context, JSObjectRef array, size_t length, const JSValueRef arguments[]);
 void CYArrayPush(JSContextRef context, JSObjectRef array, JSValueRef value);
 
 const char *CYPoolCString(CYPool &pool, JSContextRef context, JSValueRef value);

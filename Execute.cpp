@@ -372,12 +372,51 @@ JSValueRef CYArrayGet(JSContextRef context, JSObjectRef array, size_t index) {
     return _jsccall(JSObjectGetPropertyAtIndex, context, array, index);
 }
 
-void CYArrayPush(JSContextRef context, JSObjectRef array, JSValueRef value) {
-    JSValueRef arguments[1];
-    arguments[0] = value;
+void CYArrayPush(JSContextRef context, JSObjectRef array, size_t length, const JSValueRef arguments[]) {
     JSObjectRef Array(CYGetCachedObject(context, CYJSString("Array_prototype")));
-    _jsccall(JSObjectCallAsFunction, context, CYCastJSObject(context, CYGetProperty(context, Array, push_s)), array, 1, arguments);
+    _jsccall(JSObjectCallAsFunction, context, CYCastJSObject(context, CYGetProperty(context, Array, push_s)), array, length, arguments);
 }
+
+void CYArrayPush(JSContextRef context, JSObjectRef array, JSValueRef value) {
+    return CYArrayPush(context, array, 1, &value);
+}
+
+template <size_t Size_>
+class CYArrayBuilder {
+  private:
+    JSContextRef context_;
+    JSObjectRef &array_;
+    size_t size_;
+    JSValueRef values_[Size_];
+
+    void flush() {
+        if (array_ == NULL)
+            array_ = CYObjectMakeArray(context_, size_, values_);
+        else
+            CYArrayPush(context_, array_, size_, values_);
+    }
+
+  public:
+    CYArrayBuilder(JSContextRef context, JSObjectRef &array) :
+        context_(context),
+        array_(array),
+        size_(0)
+    {
+    }
+
+    ~CYArrayBuilder() {
+        flush();
+    }
+
+    void operator ()(JSValueRef value) {
+        if (size_ == Size_) {
+            flush();
+            size_ = 0;
+        }
+
+        values_[size_++] = value;
+    }
+};
 
 static JSValueRef System_print(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     FILE *file(stdout);
@@ -1237,7 +1276,10 @@ static JSValueRef All_complete_callAsFunction(JSContextRef context, JSObjectRef 
     CYPool pool;
     CYUTF8String prefix(CYPoolUTF8String(pool, context, CYJSString(context, arguments[0])));
 
-    std::vector<JSValueRef> values;
+    JSObjectRef array(NULL);
+
+    {
+    CYArrayBuilder<1024> values(context, array);
 
     sqlite3_stmt *statement;
 
@@ -1267,11 +1309,12 @@ static JSValueRef All_complete_callAsFunction(JSContextRef context, JSObjectRef 
     }
 
     while (_sqlcall(sqlite3_step(statement)) != SQLITE_DONE)
-        values.push_back(CYCastJSValue(context, CYJSString(sqlite3_column_string(statement, 0))));
+        values(CYCastJSValue(context, CYJSString(sqlite3_column_string(statement, 0))));
 
     _sqlcall(sqlite3_finalize(statement));
+    }
 
-    return CYObjectMakeArray(context, values.size(), values.data());
+    return array;
 } CYCatch(NULL) }
 
 static void All_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
