@@ -111,10 +111,10 @@ JSStringRef CYCopyJSString(JSStringRef value) {
 JSStringRef CYCopyJSString(CYUTF8String value) {
     if (memchr(value.data, '\0', value.size) != NULL) {
         CYPool pool;
-        return CYCopyJSString(pool.memdup(value.data, value.size));
+        return CYCopyJSString(CYPoolUTF16String(pool, value));
     } else if (value.data[value.size] != '\0') {
         CYPool pool;
-        return CYCopyJSString(CYPoolUTF16String(pool, value));
+        return CYCopyJSString(pool.strmemdup(value.data, value.size));
     } else {
         return CYCopyJSString(value.data);
     }
