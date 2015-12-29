@@ -901,9 +901,18 @@ static JSValueRef FunctionAdapter_(JSContextRef context, size_t count, JSValueRe
     return CYCallAsFunction(context, function, NULL, count, values);
 }
 
+#if defined(__APPLE__) && (defined(__arm__) || defined(__arm64__))
+static void CYFreeFunctor(void *data) {
+    ffi_closure_free(data);
+}
+#else
+static void CYFreeFunctor(void *data) {
+    _syscall(munmap(data, sizeof(ffi_closure)));
+}
+#endif
+
 Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, const sig::Signature &signature, JSValueRef (*adapter)(JSContextRef, size_t, JSValueRef[], JSObjectRef)) {
     // XXX: in case of exceptions this will leak
-    // XXX: in point of fact, this may /need/ to leak :(
     Closure_privateData *internal(new Closure_privateData(context, function, adapter, signature));
 
 #if defined(__APPLE__) && (defined(__arm__) || defined(__arm64__))
@@ -913,6 +922,7 @@ Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, 
     ffi_status status(ffi_prep_closure_loc(writable, &internal->cif_, &CYExecuteClosure, internal, executable));
     _assert(status == FFI_OK);
 
+    internal->pool_->atexit(&CYFreeFunctor, writable);
     internal->value_ = executable;
 #else
     ffi_closure *closure((ffi_closure *) _syscall(mmap(
@@ -926,6 +936,7 @@ Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, 
 
     _syscall(mprotect(closure, sizeof(*closure), PROT_READ | PROT_EXEC));
 
+    internal->pool_->atexit(&CYFreeFunctor, closure);
     internal->value_ = closure;
 #endif
 
