@@ -2541,10 +2541,9 @@ static JSObjectRef Selector_new(JSContextRef context, JSObjectRef object, size_t
 } CYCatch(NULL) }
 
 static JSObjectRef Instance_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    if (count > 1)
+    if (count != 1)
         throw CYJSError(context, "incorrect number of arguments to Instance constructor");
-    id self(count == 0 ? nil : CYCastPointer<id>(context, arguments[0]));
-    return CYMakeInstance(context, self);
+    return CYMakeInstance(context, CYCastPointer<id>(context, arguments[0]));
 } CYCatch(NULL) }
 
 static JSValueRef CYValue_getProperty_value(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
