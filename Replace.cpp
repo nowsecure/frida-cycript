@@ -1191,6 +1191,15 @@ CYTarget *CYTypeBlockWith::Replace_(CYContext &context, CYTarget *type) {
     return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("blockWith")), parameters_->Argument(context)));
 }
 
+CYTarget *CYTypeCharacter::Replace(CYContext &context) {
+    switch (signing_) {
+        case CYTypeNeutral: return $V("char");
+        case CYTypeSigned: return $V("schar");
+        case CYTypeUnsigned: return $V("uchar");
+        default: _assert(false);
+    }
+}
+
 CYTarget *CYTypeConstant::Replace_(CYContext &context, CYTarget *type) {
     return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("constant"))));
 }
@@ -1210,16 +1219,23 @@ CYTarget *CYTypeExpression::Replace(CYContext &context) {
     return typed_->Replace(context);
 }
 
+CYTarget *CYTypeIntegral::Replace(CYContext &context) {
+    bool u(signing_ == CYTypeUnsigned);
+    switch (length_) {
+        case 0: return $V(u ? "ushort" : "short");
+        case 1: return $V(u ? "uint" : "int");
+        case 2: return $V(u ? "ulong" : "long");
+        case 3: return $V(u ? "ulonglong" : "longlong");
+        default: _assert(false);
+    }
+}
+
 CYTarget *CYTypeModifier::Replace(CYContext &context, CYTarget *type) { $T(type)
     return Replace_(context, type);
 }
 
 CYTarget *CYTypeFunctionWith::Replace_(CYContext &context, CYTarget *type) {
     return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("functionWith")), parameters_->Argument(context)));
-}
-
-CYTarget *CYTypeLong::Replace(CYContext &context) {
-    return $ CYCall($ CYDirectMember(specifier_->Replace(context), $ CYString("long")));
 }
 
 CYTarget *CYTypePointerTo::Replace_(CYContext &context, CYTarget *type) {
@@ -1230,23 +1246,11 @@ CYTarget *CYTypeReference::Replace(CYContext &context) {
     return $V($pool.strcat(name_->Word(), "$cy", NULL));
 }
 
-CYTarget *CYTypeShort::Replace(CYContext &context) {
-    return $ CYCall($ CYDirectMember(specifier_->Replace(context), $ CYString("short")));
-}
-
-CYTarget *CYTypeSigned::Replace(CYContext &context) {
-    return $ CYCall($ CYDirectMember(specifier_->Replace(context), $ CYString("signed")));
-}
-
 CYTarget *CYTypeStruct::Replace(CYContext &context) {
     CYTarget *target(tail_->Replace(context));
     if (name_ != NULL)
         target = $C1($M(target, $S("withName")), $S(name_->Word()));
     return target;
-}
-
-CYTarget *CYTypeUnsigned::Replace(CYContext &context) {
-    return $ CYCall($ CYDirectMember(specifier_->Replace(context), $ CYString("unsigned")));
 }
 
 CYTarget *CYTypeVariable::Replace(CYContext &context) {

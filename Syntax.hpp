@@ -1963,6 +1963,70 @@ struct CYTypeError :
     virtual void Output(CYOutput &out) const;
 };
 
+enum CYTypeSigning {
+    CYTypeNeutral,
+    CYTypeSigned,
+    CYTypeUnsigned,
+};
+
+struct CYTypeCharacter :
+    CYTypeSpecifier
+{
+    CYTypeSigning signing_;
+
+    CYTypeCharacter(CYTypeSigning signing) :
+        signing_(signing)
+    {
+    }
+
+    virtual CYTarget *Replace(CYContext &context);
+    virtual void Output(CYOutput &out) const;
+};
+
+struct CYTypeIntegral :
+    CYTypeSpecifier
+{
+    CYTypeSigning signing_;
+    int length_;
+
+    CYTypeIntegral(CYTypeSigning signing, int length = 1) :
+        signing_(signing),
+        length_(length)
+    {
+    }
+
+    CYTypeIntegral *Long() {
+        if (length_ != 1 && length_ != 2)
+            return NULL;
+        ++length_;
+        return this;
+    }
+
+    CYTypeIntegral *Short() {
+        if (length_ != 1)
+            return NULL;
+        --length_;
+        return this;
+    }
+
+    CYTypeIntegral *Signed() {
+        if (signing_ != CYTypeNeutral)
+            return NULL;
+        signing_ = CYTypeSigned;
+        return this;
+    }
+
+    CYTypeIntegral *Unsigned() {
+        if (signing_ != CYTypeNeutral)
+            return NULL;
+        signing_ = CYTypeUnsigned;
+        return this;
+    }
+
+    virtual CYTarget *Replace(CYContext &context);
+    virtual void Output(CYOutput &out) const;
+};
+
 struct CYTypeVoid :
     CYTypeSpecifier
 {
@@ -1999,62 +2063,6 @@ struct CYTypeVariable :
 
     CYTypeVariable(const char *name) :
         name_(new($pool) CYIdentifier(name))
-    {
-    }
-
-    virtual CYTarget *Replace(CYContext &context);
-    virtual void Output(CYOutput &out) const;
-};
-
-struct CYTypeUnsigned :
-    CYTypeSpecifier
-{
-    CYTypeSpecifier *specifier_;
-
-    CYTypeUnsigned(CYTypeSpecifier *specifier) :
-        specifier_(specifier)
-    {
-    }
-
-    virtual CYTarget *Replace(CYContext &context);
-    virtual void Output(CYOutput &out) const;
-};
-
-struct CYTypeSigned :
-    CYTypeSpecifier
-{
-    CYTypeSpecifier *specifier_;
-
-    CYTypeSigned(CYTypeSpecifier *specifier) :
-        specifier_(specifier)
-    {
-    }
-
-    virtual CYTarget *Replace(CYContext &context);
-    virtual void Output(CYOutput &out) const;
-};
-
-struct CYTypeLong :
-    CYTypeSpecifier
-{
-    CYTypeSpecifier *specifier_;
-
-    CYTypeLong(CYTypeSpecifier *specifier) :
-        specifier_(specifier)
-    {
-    }
-
-    virtual CYTarget *Replace(CYContext &context);
-    virtual void Output(CYOutput &out) const;
-};
-
-struct CYTypeShort :
-    CYTypeSpecifier
-{
-    CYTypeSpecifier *specifier_;
-
-    CYTypeShort(CYTypeSpecifier *specifier) :
-        specifier_(specifier)
     {
     }
 

@@ -201,22 +201,9 @@ void CYFinalize(JSObjectRef object) {
         delete internal;
 }
 
-void Structor_(CYPool &pool, sig::Type *&type) {
-    if (
-        type->primitive == sig::pointer_P &&
-        type->data.data.type->primitive == sig::struct_P &&
-        type->data.data.type->name != NULL &&
-        strcmp(type->data.data.type->name, "_objc_class") == 0
-    ) {
-        type->primitive = sig::typename_P;
-        type->data.data.type = NULL;
-        return;
-    }
-
-    if (type->primitive != sig::struct_P || type->name == NULL)
-        return;
-
+sig::Type *Structor_(CYPool &pool, sig::Aggregate *aggregate) {
     //_assert(false);
+    return aggregate;
 }
 
 JSClassRef Type_privateData::Class_;
@@ -247,7 +234,7 @@ struct Pointer :
     Type_privateData *type_;
     size_t length_;
 
-    Pointer(void *value, JSContextRef context, JSObjectRef owner, size_t length, sig::Type *type) :
+    Pointer(void *value, JSContextRef context, JSObjectRef owner, size_t length, const sig::Type &type) :
         CYOwned(value, context, owner),
         type_(new(*pool_) Type_privateData(type)),
         length_(length)
@@ -273,7 +260,7 @@ struct Struct_privateData :
     }
 };
 
-JSObjectRef CYMakeStruct(JSContextRef context, void *data, sig::Type *type, ffi_type *ffi, JSObjectRef owner) {
+JSObjectRef CYMakeStruct(JSContextRef context, void *data, const sig::Type &type, ffi_type *ffi, JSObjectRef owner) {
     Struct_privateData *internal(new Struct_privateData(context, owner));
     CYPool &pool(*internal->pool_);
     Type_privateData *typical(new(pool) Type_privateData(type, ffi));
@@ -622,7 +609,7 @@ static JSValueRef String_callAsFunction_toCYON(JSContextRef context, JSObjectRef
     return CYCastJSValue(context, CYJSString(CYUTF8String(value.c_str(), value.size())));
 } CYCatch(NULL) }
 
-JSObjectRef CYMakePointer(JSContextRef context, void *pointer, size_t length, sig::Type *type, ffi_type *ffi, JSObjectRef owner) {
+JSObjectRef CYMakePointer(JSContextRef context, void *pointer, size_t length, const sig::Type &type, ffi_type *ffi, JSObjectRef owner) {
     Pointer *internal(new Pointer(pointer, context, owner, length, type));
     return JSObjectMake(context, Pointer_, internal);
 }
@@ -689,160 +676,171 @@ void *CYCastPointer_(JSContextRef context, JSValueRef value, bool *guess) {
     }
 }
 
-void CYPoolFFI(CYPool *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value) {
-    switch (type->primitive) {
-        case sig::boolean_P:
-            *reinterpret_cast<bool *>(data) = JSValueToBoolean(context, value);
-        break;
+namespace sig {
 
-#define CYPoolFFI_(primitive, native) \
-        case sig::primitive ## _P: \
-            *reinterpret_cast<native *>(data) = CYCastDouble(context, value); \
-        break;
+// XXX: this is somehow not quite a template :/
 
-        CYPoolFFI_(uchar, unsigned char)
-        CYPoolFFI_(schar, signed char)
-        CYPoolFFI_(ushort, unsigned short)
-        CYPoolFFI_(short, short)
-        CYPoolFFI_(ulong, unsigned long)
-        CYPoolFFI_(long, long)
-        CYPoolFFI_(uint, unsigned int)
-        CYPoolFFI_(int, int)
-        CYPoolFFI_(ulonglong, unsigned long long)
-        CYPoolFFI_(longlong, long long)
-        CYPoolFFI_(float, float)
-        CYPoolFFI_(double, double)
+template <>
+void Primitive<bool>::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
+    *reinterpret_cast<bool *>(data) = JSValueToBoolean(context, value);
+}
 
-        case sig::array_P: {
-            uint8_t *base(reinterpret_cast<uint8_t *>(data));
-            JSObjectRef aggregate(JSValueIsObject(context, value) ? (JSObjectRef) value : NULL);
-            for (size_t index(0); index != type->data.data.size; ++index) {
-                ffi_type *field(ffi->elements[index]);
+#define CYPoolFFI_(Type_) \
+template <> \
+void Primitive<Type_>::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const { \
+    *reinterpret_cast<Type_ *>(data) = CYCastDouble(context, value); \
+}
 
-                JSValueRef rhs;
-                if (aggregate == NULL)
-                    rhs = value;
-                else {
-                    rhs = CYGetProperty(context, aggregate, index);
-                    if (JSValueIsUndefined(context, rhs))
-                        throw CYJSError(context, "unable to extract array value");
-                }
+CYPoolFFI_(char)
+CYPoolFFI_(double)
+CYPoolFFI_(float)
+CYPoolFFI_(signed char)
+CYPoolFFI_(signed int)
+CYPoolFFI_(signed long int)
+CYPoolFFI_(signed long long int)
+CYPoolFFI_(signed short int)
+CYPoolFFI_(unsigned char)
+CYPoolFFI_(unsigned int)
+CYPoolFFI_(unsigned long int)
+CYPoolFFI_(unsigned long long int)
+CYPoolFFI_(unsigned short int)
 
-                CYPoolFFI(pool, context, type->data.data.type, field, base, rhs);
-                // XXX: alignment?
-                base += field->size;
-            }
-        } break;
+void Void::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
+    _assert(false);
+}
 
-        case sig::pointer_P:
-            *reinterpret_cast<void **>(data) = CYCastPointer<void *>(context, value);
-        break;
+void Unknown::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
+    _assert(false);
+}
 
-        case sig::string_P: {
-            bool guess(false);
-            *reinterpret_cast<const char **>(data) = CYCastPointer<const char *>(context, value, &guess);
-            if (guess && pool != NULL)
-                *reinterpret_cast<const char **>(data) = CYPoolCString(*pool, context, value);
-        } break;
+void String::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
+    bool guess(false);
+    *reinterpret_cast<const char **>(data) = CYCastPointer<const char *>(context, value, &guess);
+    if (guess && pool != NULL)
+        *reinterpret_cast<const char **>(data) = CYPoolCString(*pool, context, value);
+}
 
-        case sig::struct_P: {
-            uint8_t *base(reinterpret_cast<uint8_t *>(data));
-            JSObjectRef aggregate(JSValueIsObject(context, value) ? (JSObjectRef) value : NULL);
-            for (size_t index(0); index != type->data.signature.count; ++index) {
-                sig::Element *element(&type->data.signature.elements[index]);
-                ffi_type *field(ffi->elements[index]);
+void Bits::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
+    _assert(false);
+}
 
-                JSValueRef rhs;
-                if (aggregate == NULL)
-                    rhs = value;
-                else {
-                    rhs = CYGetProperty(context, aggregate, index);
-                    if (JSValueIsUndefined(context, rhs)) {
-                        if (element->name != NULL)
-                            rhs = CYGetProperty(context, aggregate, CYJSString(element->name));
-                        else
-                            goto undefined;
-                        if (JSValueIsUndefined(context, rhs)) undefined:
-                            throw CYJSError(context, "unable to extract structure value");
-                    }
-                }
+void Pointer::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
+    *reinterpret_cast<void **>(data) = CYCastPointer<void *>(context, value);
+}
 
-                CYPoolFFI(pool, context, element->type, field, base, rhs);
-                // XXX: alignment?
-                base += field->size;
-            }
-        } break;
+void Array::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
+    uint8_t *base(reinterpret_cast<uint8_t *>(data));
+    JSObjectRef aggregate(JSValueIsObject(context, value) ? (JSObjectRef) value : NULL);
+    for (size_t index(0); index != size; ++index) {
+        ffi_type *field(ffi->elements[index]);
 
-        case sig::void_P:
-        break;
+        JSValueRef rhs;
+        if (aggregate == NULL)
+            rhs = value;
+        else {
+            rhs = CYGetProperty(context, aggregate, index);
+            if (JSValueIsUndefined(context, rhs))
+                throw CYJSError(context, "unable to extract array value");
+        }
 
-        // XXX: implement a conversion from a single character string?
-        CYPoolFFI_(char, char)
-
-        default:
-            for (CYHook *hook : GetHooks())
-                if (hook->PoolFFI != NULL)
-                    if ((*hook->PoolFFI)(pool, context, type, ffi, data, value))
-                        return;
-
-            CYThrow("unimplemented signature code: '%c''\n", type->primitive);
+        type.PoolFFI(pool, context, field, base, rhs);
+        // XXX: alignment?
+        base += field->size;
     }
 }
 
-JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) {
-    switch (type->primitive) {
-        case sig::boolean_P:
-            return CYCastJSValue(context, *reinterpret_cast<bool *>(data));
+void Aggregate::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
+    _assert(!overlap);
 
-#define CYFromFFI_(primitive, native) \
-        case sig::primitive ## _P: \
-            return CYCastJSValue(context, *reinterpret_cast<native *>(data)); \
+    uint8_t *base(reinterpret_cast<uint8_t *>(data));
+    JSObjectRef aggregate(JSValueIsObject(context, value) ? (JSObjectRef) value : NULL);
+    for (size_t index(0); index != signature.count; ++index) {
+        sig::Element *element(&signature.elements[index]);
+        ffi_type *field(ffi->elements[index]);
 
-        CYFromFFI_(uchar, unsigned char)
-        CYFromFFI_(schar, signed char)
-        CYFromFFI_(ushort, unsigned short)
-        CYFromFFI_(short, short)
-        CYFromFFI_(ulong, unsigned long)
-        CYFromFFI_(long, long)
-        CYFromFFI_(uint, unsigned int)
-        CYFromFFI_(int, int)
-        CYFromFFI_(ulonglong, unsigned long long)
-        CYFromFFI_(longlong, long long)
-        CYFromFFI_(float, float)
-        CYFromFFI_(double, double)
+        JSValueRef rhs;
+        if (aggregate == NULL)
+            rhs = value;
+        else {
+            rhs = CYGetProperty(context, aggregate, index);
+            if (JSValueIsUndefined(context, rhs)) {
+                if (element->name != NULL)
+                    rhs = CYGetProperty(context, aggregate, CYJSString(element->name));
+                else
+                    goto undefined;
+                if (JSValueIsUndefined(context, rhs)) undefined:
+                    throw CYJSError(context, "unable to extract structure value");
+            }
+        }
 
-        case sig::array_P:
-            if (void *pointer = data)
-                return CYMakePointer(context, pointer, type->data.data.size, type->data.data.type, NULL, owner);
-            else goto null;
-
-        case sig::pointer_P:
-            if (void *pointer = *reinterpret_cast<void **>(data))
-                return CYMakePointer(context, pointer, _not(size_t), type->data.data.type, NULL, owner);
-            else goto null;
-
-        case sig::string_P:
-            if (char *pointer = *reinterpret_cast<char **>(data))
-                return CYMakeCString(context, pointer, owner);
-            else goto null;
-
-        case sig::struct_P:
-            return CYMakeStruct(context, data, type, ffi, owner);
-        case sig::void_P:
-            return CYJSUndefined(context);
-
-        CYFromFFI_(char, char)
-
-        null:
-            return CYJSNull(context);
-        default:
-            for (CYHook *hook : GetHooks())
-                if (hook->FromFFI != NULL)
-                    if (JSValueRef value = (*hook->FromFFI)(context, type, ffi, data, initialize, owner))
-                        return value;
-
-            CYThrow("unimplemented signature code: '%c''\n", type->primitive);
+        element->type->PoolFFI(pool, context, field, base, rhs);
+        // XXX: alignment?
+        base += field->size;
     }
+}
+
+void Function::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
+    _assert(false);
+}
+
+#define CYFromFFI_(Type_) \
+template <> \
+JSValueRef Primitive<Type_>::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const { \
+    return CYCastJSValue(context, *reinterpret_cast<Type_ *>(data)); \
+}
+
+CYFromFFI_(bool)
+CYFromFFI_(char)
+CYFromFFI_(double)
+CYFromFFI_(float)
+CYFromFFI_(signed char)
+CYFromFFI_(signed int)
+CYFromFFI_(signed long int)
+CYFromFFI_(signed long long int)
+CYFromFFI_(signed short int)
+CYFromFFI_(unsigned char)
+CYFromFFI_(unsigned int)
+CYFromFFI_(unsigned long int)
+CYFromFFI_(unsigned long long int)
+CYFromFFI_(unsigned short int)
+
+JSValueRef Void::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
+    return CYJSUndefined(context);
+}
+
+JSValueRef Unknown::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
+    _assert(false);
+}
+
+JSValueRef String::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
+    if (char *value = *reinterpret_cast<char **>(data))
+        return CYMakeCString(context, value, owner);
+    return CYJSNull(context);
+}
+
+JSValueRef Bits::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
+    _assert(false);
+}
+
+JSValueRef Pointer::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
+    if (void *value = *reinterpret_cast<void **>(data))
+        return CYMakePointer(context, value, _not(size_t), type, NULL, owner);
+    return CYJSNull(context);
+}
+
+JSValueRef Array::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
+    _assert(data != NULL);
+    return CYMakePointer(context, data, size, type, NULL, owner);
+}
+
+JSValueRef Aggregate::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
+    return CYMakeStruct(context, data, *this, ffi, owner);
+}
+
+JSValueRef Function::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
+    return CYMakeFunctor(context, reinterpret_cast<void (*)()>(data), signature);
+}
+
 }
 
 void CYExecuteClosure(ffi_cif *cif, void *result, void **arguments, void *arg) {
@@ -854,10 +852,11 @@ void CYExecuteClosure(ffi_cif *cif, void *result, void **arguments, void *arg) {
     JSValueRef values[count];
 
     for (size_t index(0); index != count; ++index)
-        values[index] = CYFromFFI(context, internal->signature_.elements[1 + index].type, internal->cif_.arg_types[index], arguments[index]);
+        values[index] = internal->signature_.elements[1 + index].type->FromFFI(context, internal->cif_.arg_types[index], arguments[index]);
 
     JSValueRef value(internal->adapter_(context, count, values, internal->function_));
-    CYPoolFFI(NULL, context, internal->signature_.elements[0].type, internal->cif_.rtype, result, value);
+    if (internal->cif_.rtype != &ffi_type_void)
+        internal->signature_.elements[0].type->PoolFFI(NULL, context, internal->cif_.rtype, result, value);
 }
 
 static JSValueRef FunctionAdapter_(JSContextRef context, size_t count, JSValueRef values[], JSObjectRef function) {
@@ -952,7 +951,7 @@ static bool CString_setProperty(JSContextRef context, JSObjectRef object, JSStri
 
 static bool Index_(CYPool &pool, JSContextRef context, Struct_privateData *internal, JSStringRef property, ssize_t &index, uint8_t *&base) {
     Type_privateData *typical(internal->type_);
-    sig::Type *type(typical->type_);
+    sig::Aggregate *type(static_cast<sig::Aggregate *>(typical->type_));
     if (type == NULL)
         return false;
 
@@ -960,13 +959,13 @@ static bool Index_(CYPool &pool, JSContextRef context, Struct_privateData *inter
     size_t length(strlen(name));
     double number(CYCastDouble(name, length));
 
-    size_t count(type->data.signature.count);
+    size_t count(type->signature.count);
 
     if (std::isnan(number)) {
         if (property == NULL)
             return false;
 
-        sig::Element *elements(type->data.signature.elements);
+        sig::Element *elements(type->signature.elements);
 
         for (size_t local(0); local != count; ++local) {
             sig::Element *element(&elements[local]);
@@ -1006,7 +1005,12 @@ static JSValueRef Pointer_getProperty(JSContextRef context, JSObjectRef object, 
     Type_privateData *typical(internal->type_);
     if (typical->type_ == NULL)
         return NULL;
-    sig::Type &type(*typical->type_);
+
+    if (sig::Function *function = dynamic_cast<sig::Function *>(typical->type_)) {
+        if (!JSStringIsEqualToUTF8CString(property, "$cyi"))
+            return NULL;
+        return CYMakeFunctor(context, reinterpret_cast<void (*)()>(internal->value_), function->signature);
+    }
 
     ssize_t offset;
     if (JSStringIsEqualToUTF8CString(property, "$cyi"))
@@ -1014,16 +1018,13 @@ static JSValueRef Pointer_getProperty(JSContextRef context, JSObjectRef object, 
     else if (!CYGetOffset(pool, context, property, offset))
         return NULL;
 
-    if (type.primitive == sig::function_P)
-        return CYMakeFunctor(context, reinterpret_cast<void (*)()>(internal->value_), type.data.signature);
-
     ffi_type *ffi(typical->GetFFI());
 
     uint8_t *base(reinterpret_cast<uint8_t *>(internal->value_));
     base += ffi->size * offset;
 
     JSObjectRef owner(internal->GetOwner() ?: object);
-    return CYFromFFI(context, &type, ffi, base, false, owner);
+    return typical->type_->FromFFI(context, ffi, base, false, owner);
 } CYCatch(NULL) }
 
 static bool Pointer_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) { CYTry {
@@ -1045,25 +1046,26 @@ static bool Pointer_setProperty(JSContextRef context, JSObjectRef object, JSStri
     uint8_t *base(reinterpret_cast<uint8_t *>(internal->value_));
     base += ffi->size * offset;
 
-    CYPoolFFI(NULL, context, typical->type_, ffi, base, value);
+    typical->type_->PoolFFI(NULL, context, ffi, base, value);
     return true;
 } CYCatch(false) }
 
 static JSValueRef Struct_callAsFunction_$cya(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     Struct_privateData *internal(reinterpret_cast<Struct_privateData *>(JSObjectGetPrivate(_this)));
     Type_privateData *typical(internal->type_);
-    return CYMakePointer(context, internal->value_, _not(size_t), typical->type_, typical->ffi_, _this);
+    return CYMakePointer(context, internal->value_, _not(size_t), *typical->type_, typical->ffi_, _this);
 } CYCatch(NULL) }
 
 static JSValueRef Struct_getProperty_type(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     Struct_privateData *internal(reinterpret_cast<Struct_privateData *>(JSObjectGetPrivate(object)));
-    return CYMakeType(context, internal->type_->type_);
+    return CYMakeType(context, *internal->type_->type_);
 } CYCatch(NULL) }
 
 static JSValueRef Struct_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     CYPool pool;
     Struct_privateData *internal(reinterpret_cast<Struct_privateData *>(JSObjectGetPrivate(object)));
     Type_privateData *typical(internal->type_);
+    sig::Aggregate *type(static_cast<sig::Aggregate *>(typical->type_));
 
     ssize_t index;
     uint8_t *base;
@@ -1073,13 +1075,14 @@ static JSValueRef Struct_getProperty(JSContextRef context, JSObjectRef object, J
 
     JSObjectRef owner(internal->GetOwner() ?: object);
 
-    return CYFromFFI(context, typical->type_->data.signature.elements[index].type, typical->GetFFI()->elements[index], base, false, owner);
+    return type->signature.elements[index].type->FromFFI(context, typical->GetFFI()->elements[index], base, false, owner);
 } CYCatch(NULL) }
 
 static bool Struct_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) { CYTry {
     CYPool pool;
     Struct_privateData *internal(reinterpret_cast<Struct_privateData *>(JSObjectGetPrivate(object)));
     Type_privateData *typical(internal->type_);
+    sig::Aggregate *type(static_cast<sig::Aggregate *>(typical->type_));
 
     ssize_t index;
     uint8_t *base;
@@ -1087,20 +1090,20 @@ static bool Struct_setProperty(JSContextRef context, JSObjectRef object, JSStrin
     if (!Index_(pool, context, internal, property, index, base))
         return false;
 
-    CYPoolFFI(NULL, context, typical->type_->data.signature.elements[index].type, typical->GetFFI()->elements[index], base, value);
+    type->signature.elements[index].type->PoolFFI(NULL, context, typical->GetFFI()->elements[index], base, value);
     return true;
 } CYCatch(false) }
 
 static void Struct_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
     Struct_privateData *internal(reinterpret_cast<Struct_privateData *>(JSObjectGetPrivate(object)));
     Type_privateData *typical(internal->type_);
-    sig::Type *type(typical->type_);
+    sig::Aggregate *type(static_cast<sig::Aggregate *>(typical->type_));
 
     if (type == NULL)
         return;
 
-    size_t count(type->data.signature.count);
-    sig::Element *elements(type->data.signature.elements);
+    size_t count(type->signature.count);
+    sig::Element *elements(type->signature.elements);
 
     char number[32];
 
@@ -1134,7 +1137,7 @@ JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, voi
         ffi_type *ffi(cif->arg_types[index]);
         // XXX: alignment?
         values[index] = new(pool) uint8_t[ffi->size];
-        CYPoolFFI(&pool, context, element->type, ffi, values[index], arguments[index - setups]);
+        element->type->PoolFFI(&pool, context, ffi, values[index], arguments[index - setups]);
     }
 
     uint8_t value[cif->rtype->size];
@@ -1146,7 +1149,7 @@ JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, voi
             call = hook->CallFunction;
 
     call(pool, context, cif, function, value, values);
-    return CYFromFFI(context, signature->elements[0].type, cif->rtype, value, initialize);
+    return signature->elements[0].type->FromFFI(context, cif->rtype, value, initialize);
 }
 
 static JSValueRef Functor_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -1157,33 +1160,22 @@ static JSValueRef Functor_callAsFunction(JSContextRef context, JSObjectRef objec
 
 static JSValueRef Pointer_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(object)));
-    if (internal->type_->type_->primitive != sig::function_P)
+    if (dynamic_cast<sig::Function *>(internal->type_->type_) == NULL)
         throw CYJSError(context, "cannot call a pointer to non-function");
     JSObjectRef functor(CYCastJSObject(context, CYGetProperty(context, object, cyi_s)));
     return CYCallAsFunction(context, functor, _this, count, arguments);
 } CYCatch(NULL) }
 
-JSObjectRef CYMakeType(JSContextRef context, sig::Primitive primitive) {
-    Type_privateData *internal(new Type_privateData(primitive));
-    return JSObjectMake(context, Type_privateData::Class_, internal);
-}
-
-JSObjectRef CYMakeType(JSContextRef context, sig::Type *type) {
+JSObjectRef CYMakeType(JSContextRef context, const sig::Type &type) {
     Type_privateData *internal(new Type_privateData(type));
     return JSObjectMake(context, Type_privateData::Class_, internal);
 }
 
 JSObjectRef CYMakeType(JSContextRef context, sig::Signature *signature) {
     CYPool pool;
-
-    sig::Type type;
-    type.name = NULL;
-    type.flags = 0;
-
-    type.primitive = sig::function_P;
-    sig::Copy(pool, type.data.signature, *signature);
-
-    return CYMakeType(context, &type);
+    sig::Function type;
+    sig::Copy(pool, type.signature, *signature);
+    return CYMakeType(context, type);
 }
 
 extern "C" bool CYBridgeHash(CYPool &pool, CYUTF8String name, const char *&code, unsigned &flags) {
@@ -1355,7 +1347,7 @@ static JSObjectRef Pointer_new(JSContextRef context, JSObjectRef object, size_t 
     sig::Signature signature;
     sig::Parse(pool, &signature, type, &Structor_);
 
-    return CYMakePointer(context, value, _not(size_t), signature.elements[0].type, NULL, NULL);
+    return CYMakePointer(context, value, _not(size_t), *signature.elements[0].type, NULL, NULL);
 } CYCatch(NULL) }
 
 static JSObjectRef Type_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -1366,23 +1358,19 @@ static JSObjectRef Type_new(JSContextRef context, JSObjectRef object, size_t cou
         const char *encoding(CYPoolCString(pool, context, arguments[0]));
         sig::Signature signature;
         sig::Parse(pool, &signature, encoding, &Structor_);
-        return CYMakeType(context, signature.elements[0].type);
+        return CYMakeType(context, *signature.elements[0].type);
     } else if (count == 2) {
         JSObjectRef types(CYCastJSObject(context, arguments[0]));
         size_t count(CYArrayLength(context, types));
 
         JSObjectRef names(CYCastJSObject(context, arguments[1]));
 
-        sig::Type type;
-        type.name = NULL;
-        type.flags = 0;
-
-        type.primitive = sig::struct_P;
-        type.data.signature.elements = new(pool) sig::Element[count];
-        type.data.signature.count = count;
+        sig::Aggregate type(false);
+        type.signature.elements = new(pool) sig::Element[count];
+        type.signature.count = count;
 
         for (size_t i(0); i != count; ++i) {
-            sig::Element &element(type.data.signature.elements[i]);
+            sig::Element &element(type.signature.elements[i]);
             element.offset = _not(size_t);
 
             JSValueRef name(CYArrayGet(context, names, i));
@@ -1397,31 +1385,26 @@ static JSObjectRef Type_new(JSContextRef context, JSObjectRef object, size_t cou
             element.type = internal->type_;
         }
 
-        return CYMakeType(context, &type);
+        return CYMakeType(context, type);
     } else {
         throw CYJSError(context, "incorrect number of arguments to Type constructor");
     }
 } CYCatch(NULL) }
 
-static JSValueRef Type_callAsFunction_$With(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], sig::Primitive primitive, JSValueRef *exception) { CYTry {
+static JSValueRef Type_callAsFunction_$With(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], sig::Callable &type, JSValueRef *exception) { CYTry {
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
 
     CYPool pool;
 
-    sig::Type type;
-    type.name = NULL;
-    type.flags = 0;
+    type.signature.elements = new(pool) sig::Element[1 + count];
+    type.signature.count = 1 + count;
 
-    type.primitive = primitive;
-    type.data.signature.elements = new(pool) sig::Element[1 + count];
-    type.data.signature.count = 1 + count;
-
-    type.data.signature.elements[0].name = NULL;
-    type.data.signature.elements[0].type = internal->type_;
-    type.data.signature.elements[0].offset = _not(size_t);
+    type.signature.elements[0].name = NULL;
+    type.signature.elements[0].type = internal->type_;
+    type.signature.elements[0].offset = _not(size_t);
 
     for (size_t i(0); i != count; ++i) {
-        sig::Element &element(type.data.signature.elements[i + 1]);
+        sig::Element &element(type.signature.elements[i + 1]);
         element.name = NULL;
         element.offset = _not(size_t);
 
@@ -1432,7 +1415,7 @@ static JSValueRef Type_callAsFunction_$With(JSContextRef context, JSObjectRef ob
         element.type = internal->type_;
     }
 
-    return CYMakeType(context, &type);
+    return CYMakeType(context, type);
 } CYCatch(NULL) }
 
 static JSValueRef Type_callAsFunction_arrayOf(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -1445,19 +1428,13 @@ static JSValueRef Type_callAsFunction_arrayOf(JSContextRef context, JSObjectRef 
     if (index == _not(size_t))
         throw CYJSError(context, "invalid array size used with Type.arrayOf");
 
-    sig::Type type;
-    type.name = NULL;
-    type.flags = 0;
-
-    type.primitive = sig::array_P;
-    type.data.data.type = internal->type_;
-    type.data.data.size = index;
-
-    return CYMakeType(context, &type);
+    sig::Array type(*internal->type_, index);
+    return CYMakeType(context, type);
 } CYCatch(NULL) }
 
 static JSValueRef Type_callAsFunction_blockWith(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
-    return Type_callAsFunction_$With(context, object, _this, count, arguments, sig::block_P, exception);
+    sig::Block type;
+    return Type_callAsFunction_$With(context, object, _this, count, arguments, type, exception);
 }
 
 static JSValueRef Type_callAsFunction_constant(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -1465,85 +1442,15 @@ static JSValueRef Type_callAsFunction_constant(JSContextRef context, JSObjectRef
         throw CYJSError(context, "incorrect number of arguments to Type.constant");
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
 
-    sig::Type type(*internal->type_);
-    type.flags |= JOC_TYPE_CONST;
-    return CYMakeType(context, &type);
-} CYCatch(NULL) }
-
-static JSValueRef Type_callAsFunction_long(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    if (count != 0)
-        throw CYJSError(context, "incorrect number of arguments to Type.long");
-    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
-
-    sig::Type type(*internal->type_);
-
-    switch (type.primitive) {
-        case sig::short_P: type.primitive = sig::int_P; break;
-        case sig::int_P: type.primitive = sig::long_P; break;
-        case sig::long_P: type.primitive = sig::longlong_P; break;
-        default: throw CYJSError(context, "invalid type argument to Type.long");
-    }
-
-    return CYMakeType(context, &type);
-} CYCatch(NULL) }
-
-static JSValueRef Type_callAsFunction_short(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    if (count != 0)
-        throw CYJSError(context, "incorrect number of arguments to Type.short");
-    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
-
-    sig::Type type(*internal->type_);
-
-    switch (type.primitive) {
-        case sig::int_P: type.primitive = sig::short_P; break;
-        case sig::long_P: type.primitive = sig::int_P; break;
-        case sig::longlong_P: type.primitive = sig::long_P; break;
-        default: throw CYJSError(context, "invalid type argument to Type.short");
-    }
-
-    return CYMakeType(context, &type);
-} CYCatch(NULL) }
-
-static JSValueRef Type_callAsFunction_signed(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    if (count != 0)
-        throw CYJSError(context, "incorrect number of arguments to Type.signed");
-    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
-
-    sig::Type type(*internal->type_);
-
-    switch (type.primitive) {
-        case sig::char_P: case sig::schar_P: case sig::uchar_P: type.primitive = sig::schar_P; break;
-        case sig::short_P: case sig::ushort_P: type.primitive = sig::short_P; break;
-        case sig::int_P: case sig::uint_P: type.primitive = sig::int_P; break;
-        case sig::long_P: case sig::ulong_P: type.primitive = sig::long_P; break;
-        case sig::longlong_P: case sig::ulonglong_P: type.primitive = sig::longlong_P; break;
-        default: throw CYJSError(context, "invalid type argument to Type.signed");
-    }
-
-    return CYMakeType(context, &type);
-} CYCatch(NULL) }
-
-static JSValueRef Type_callAsFunction_unsigned(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    if (count != 0)
-        throw CYJSError(context, "incorrect number of arguments to Type.unsigned");
-    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
-
-    sig::Type type(*internal->type_);
-
-    switch (type.primitive) {
-        case sig::char_P: case sig::schar_P: case sig::uchar_P: type.primitive = sig::uchar_P; break;
-        case sig::short_P: case sig::ushort_P: type.primitive = sig::ushort_P; break;
-        case sig::int_P: case sig::uint_P: type.primitive = sig::uint_P; break;
-        case sig::long_P: case sig::ulong_P: type.primitive = sig::ulong_P; break;
-        case sig::longlong_P: case sig::ulonglong_P: type.primitive = sig::ulonglong_P; break;
-        default: throw CYJSError(context, "invalid type argument to Type.unsigned");
-    }
-
-    return CYMakeType(context, &type);
+    CYPool pool;
+    sig::Type *type(internal->type_->Copy(pool));
+    type->flags |= JOC_TYPE_CONST;
+    return CYMakeType(context, *type);
 } CYCatch(NULL) }
 
 static JSValueRef Type_callAsFunction_functionWith(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
-    return Type_callAsFunction_$With(context, object, _this, count, arguments, sig::function_P, exception);
+    sig::Function type;
+    return Type_callAsFunction_$With(context, object, _this, count, arguments, type, exception);
 }
 
 static JSValueRef Type_callAsFunction_pointerTo(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -1551,22 +1458,10 @@ static JSValueRef Type_callAsFunction_pointerTo(JSContextRef context, JSObjectRe
         throw CYJSError(context, "incorrect number of arguments to Type.pointerTo");
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
 
-    sig::Type type;
-    type.name = NULL;
-
-    if (internal->type_->primitive == sig::char_P) {
-        type.flags = internal->type_->flags;
-        type.primitive = sig::string_P;
-        type.data.data.type = NULL;
-        type.data.data.size = 0;
-    } else {
-        type.flags = 0;
-        type.primitive = sig::pointer_P;
-        type.data.data.type = internal->type_;
-        type.data.data.size = 0;
-    }
-
-    return CYMakeType(context, &type);
+    if (dynamic_cast<sig::Primitive<char> *>(internal->type_) != NULL)
+        return CYMakeType(context, sig::String());
+    else
+        return CYMakeType(context, sig::Pointer(*internal->type_));
 } CYCatch(NULL) }
 
 static JSValueRef Type_callAsFunction_withName(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -1575,11 +1470,7 @@ static JSValueRef Type_callAsFunction_withName(JSContextRef context, JSObjectRef
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
 
     CYPool pool;
-    const char *name(CYPoolCString(pool, context, arguments[0]));
-
-    sig::Type type(*internal->type_);
-    type.name = name;
-    return CYMakeType(context, &type);
+    return CYMakeType(context, *internal->type_->Copy(pool, CYPoolCString(pool, context, arguments[0])));
 } CYCatch(NULL) }
 
 static JSValueRef Type_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -1587,16 +1478,16 @@ static JSValueRef Type_callAsFunction(JSContextRef context, JSObjectRef object, 
         throw CYJSError(context, "incorrect number of arguments to type cast function");
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
 
-    if (internal->type_->primitive == sig::function_P)
-        return CYMakeFunctor(context, arguments[0], internal->type_->data.signature);
+    if (sig::Function *function = dynamic_cast<sig::Function *>(internal->type_))
+        return CYMakeFunctor(context, arguments[0], function->signature);
 
     sig::Type *type(internal->type_);
     ffi_type *ffi(internal->GetFFI());
     // XXX: alignment?
     uint8_t value[ffi->size];
     CYPool pool;
-    CYPoolFFI(&pool, context, type, ffi, value, arguments[0]);
-    return CYFromFFI(context, type, ffi, value);
+    type->PoolFFI(&pool, context, ffi, value, arguments[0]);
+    return type->FromFFI(context, ffi, value);
 } CYCatch(NULL) }
 
 static JSObjectRef Type_callAsConstructor(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -1605,16 +1496,9 @@ static JSObjectRef Type_callAsConstructor(JSContextRef context, JSObjectRef obje
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
 
     sig::Type *type(internal->type_);
-    size_t length;
+    size_t length(type->Translate(type));
 
-    if (type->primitive != sig::array_P)
-        length = _not(size_t);
-    else {
-        length = type->data.data.size;
-        type = type->data.data.type;
-    }
-
-    JSObjectRef pointer(CYMakePointer(context, NULL, length, type, NULL, NULL));
+    JSObjectRef pointer(CYMakePointer(context, NULL, length, *type, NULL, NULL));
     Pointer *value(reinterpret_cast<Pointer *>(JSObjectGetPrivate(pointer)));
     value->value_ = value->pool_->malloc<void>(internal->GetFFI()->size);
     memset(value->value_, 0, internal->GetFFI()->size);
@@ -1633,30 +1517,17 @@ static JSObjectRef Functor_new(JSContextRef context, JSObjectRef object, size_t 
 
 static JSValueRef CString_callAsFunction_toPointer(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CString *internal(reinterpret_cast<CString *>(JSObjectGetPrivate(_this)));
-
-    sig::Type type;
-    type.name = NULL;
-    type.flags = 0;
-
-    type.primitive = sig::char_P;
-    type.data.data.type = NULL;
-    type.data.data.size = 0;
-
-    return CYMakePointer(context, internal->value_, _not(size_t), &type, NULL, NULL);
+    return CYMakePointer(context, internal->value_, _not(size_t), sig::Primitive<char>(), NULL, NULL);
 } CYCatch(NULL) }
 
 static JSValueRef Functor_callAsFunction_$cya(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CYPool pool;
     cy::Functor *internal(reinterpret_cast<cy::Functor *>(JSObjectGetPrivate(_this)));
 
-    sig::Type type;
-    type.name = NULL;
-    type.flags = 0;
+    sig::Function type;
+    sig::Copy(pool, type.signature, internal->signature_);
 
-    type.primitive = sig::function_P;
-    sig::Copy(pool, type.data.signature, internal->signature_);
-
-    return CYMakePointer(context, internal->value_, _not(size_t), &type, NULL, NULL);
+    return CYMakePointer(context, internal->value_, _not(size_t), type, NULL, NULL);
 } CYCatch(NULL) }
 
 static JSValueRef Pointer_callAsFunction_toPointer(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -1698,34 +1569,30 @@ static JSValueRef Pointer_callAsFunction_toCYON(JSContextRef context, JSObjectRe
         JSObjectRef Array(CYGetCachedObject(context, CYJSString("Array_prototype")));
         JSObjectRef toCYON(CYCastJSObject(context, CYGetProperty(context, Array, toCYON_s)));
         return CYCallAsFunction(context, toCYON, _this, count, arguments);
-    } else if (internal->type_->type_ == NULL) pointer: {
-        CYLocalPool pool;
-        std::ostringstream str;
-
-        sig::Type type;
-        type.name = NULL;
-        type.flags = 0;
-
-        type.primitive = sig::pointer_P;
-        type.data.data.type = internal->type_->type_;
-        type.data.data.size = 0;
-
-        CYOptions options;
-        CYOutput output(*str.rdbuf(), options);
-        (new(pool) CYTypeExpression(Decode(pool, &type)))->Output(output, CYNoFlags);
-
-        str << "(" << internal->value_ << ")";
-        std::string value(str.str());
-        return CYCastJSValue(context, CYJSString(CYUTF8String(value.c_str(), value.size())));
-    } else try {
-        JSValueRef value(CYGetProperty(context, _this, cyi_s));
-        if (JSValueIsUndefined(context, value))
-            goto pointer;
-        CYPool pool;
-        return CYCastJSValue(context, pool.strcat("&", CYPoolCCYON(pool, context, value, objects), NULL));
-    } catch (const CYException &e) {
-        goto pointer;
     }
+
+    try {
+        JSValueRef value(CYGetProperty(context, _this, cyi_s));
+        if (!JSValueIsUndefined(context, value)) {
+            CYPool pool;
+            return CYCastJSValue(context, pool.strcat("&", CYPoolCCYON(pool, context, value, objects), NULL));
+        }
+    } catch (const CYException &e) {
+        // XXX: it might be interesting to include this error
+    }
+
+    CYLocalPool pool;
+    std::ostringstream str;
+
+    sig::Pointer type(*internal->type_->type_);
+
+    CYOptions options;
+    CYOutput output(*str.rdbuf(), options);
+    (new(pool) CYTypeExpression(CYDecodeType(pool, &type)))->Output(output, CYNoFlags);
+
+    str << "(" << internal->value_ << ")";
+    std::string value(str.str());
+    return CYCastJSValue(context, CYJSString(CYUTF8String(value.c_str(), value.size())));
 } CYCatch(NULL) }
 
 static JSValueRef CString_getProperty_length(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
@@ -1735,29 +1602,13 @@ static JSValueRef CString_getProperty_length(JSContextRef context, JSObjectRef o
 } CYCatch(NULL) }
 
 static JSValueRef CString_getProperty_type(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
-    sig::Type type;
-    type.name = NULL;
-    type.flags = 0;
-
-    type.primitive = sig::char_P;
-    type.data.data.type = NULL;
-    type.data.data.size = 0;
-
-    return CYMakeType(context, &type);
+    return CYMakeType(context, sig::String());
 } CYCatch(NULL) }
 
 static JSValueRef Pointer_getProperty_type(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(object)));
-
-    sig::Type type;
-    type.name = NULL;
-    type.flags = 0;
-
-    type.primitive = sig::pointer_P;
-    type.data.data.type = internal->type_->type_;
-    type.data.data.size = 0;
-
-    return CYMakeType(context, &type);
+    sig::Pointer type(*internal->type_->type_);
+    return CYMakeType(context, type);
 } CYCatch(NULL) }
 
 static JSValueRef CString_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -1792,7 +1643,7 @@ static JSValueRef Type_getProperty_alignment(JSContextRef context, JSObjectRef o
 
 static JSValueRef Type_getProperty_name(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
-    return CYCastJSValue(context, internal->type_->name);
+    return CYCastJSValue(context, internal->type_->GetName());
 } CYCatch(NULL) }
 
 static JSValueRef Type_getProperty_size(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
@@ -1813,7 +1664,7 @@ static JSValueRef Type_callAsFunction_toCYON(JSContextRef context, JSObjectRef o
     std::stringbuf out;
     CYOptions options;
     CYOutput output(out, options);
-    (new(pool) CYTypeExpression(Decode(pool, internal->type_)))->Output(output, CYNoFlags);
+    (new(pool) CYTypeExpression(CYDecodeType(pool, internal->type_)))->Output(output, CYNoFlags);
     return CYCastJSValue(context, CYJSString(out.str().c_str()));
 } CYCatch(NULL) }
 
@@ -1892,20 +1743,16 @@ static JSStaticValue Type_staticValues[4] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction Type_staticFunctions[14] = {
+static JSStaticFunction Type_staticFunctions[10] = {
     {"arrayOf", &Type_callAsFunction_arrayOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"blockWith", &Type_callAsFunction_blockWith, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"constant", &Type_callAsFunction_constant, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"functionWith", &Type_callAsFunction_functionWith, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
-    {"long", &Type_callAsFunction_long, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"pointerTo", &Type_callAsFunction_pointerTo, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
-    {"short", &Type_callAsFunction_short, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
-    {"signed", &Type_callAsFunction_signed, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"withName", &Type_callAsFunction_withName, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toCYON", &Type_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toJSON", &Type_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toString", &Type_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
-    {"unsigned", &Type_callAsFunction_unsigned, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
 
@@ -2348,13 +2195,23 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
 
     CYSetProperty(context, cache, CYJSString("NULL"), CYJSNull(context), kJSPropertyAttributeDontEnum);
 
-    CYSetProperty(context, cache, CYJSString("bool"), CYMakeType(context, sig::boolean_P), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, cache, CYJSString("char"), CYMakeType(context, sig::char_P), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, cache, CYJSString("short"), CYMakeType(context, sig::short_P), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, cache, CYJSString("int"), CYMakeType(context, sig::int_P), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, cache, CYJSString("long"), CYMakeType(context, sig::long_P), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, cache, CYJSString("float"), CYMakeType(context, sig::float_P), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, cache, CYJSString("double"), CYMakeType(context, sig::double_P), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("bool"), CYMakeType(context, sig::Primitive<bool>()), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("char"), CYMakeType(context, sig::Primitive<char>()), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("schar"), CYMakeType(context, sig::Primitive<signed char>()), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("uchar"), CYMakeType(context, sig::Primitive<unsigned char>()), kJSPropertyAttributeDontEnum);
+
+    CYSetProperty(context, cache, CYJSString("short"), CYMakeType(context, sig::Primitive<short>()), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("int"), CYMakeType(context, sig::Primitive<int>()), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("long"), CYMakeType(context, sig::Primitive<long>()), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("longlong"), CYMakeType(context, sig::Primitive<long long>()), kJSPropertyAttributeDontEnum);
+
+    CYSetProperty(context, cache, CYJSString("ushort"), CYMakeType(context, sig::Primitive<unsigned short>()), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("uint"), CYMakeType(context, sig::Primitive<unsigned int>()), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("ulong"), CYMakeType(context, sig::Primitive<unsigned long>()), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("ulonglong"), CYMakeType(context, sig::Primitive<unsigned long long>()), kJSPropertyAttributeDontEnum);
+
+    CYSetProperty(context, cache, CYJSString("float"), CYMakeType(context, sig::Primitive<float>()), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("double"), CYMakeType(context, sig::Primitive<double>()), kJSPropertyAttributeDontEnum);
 
     for (CYHook *hook : GetHooks())
         if (hook->SetupContext != NULL)

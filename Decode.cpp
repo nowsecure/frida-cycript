@@ -24,92 +24,160 @@
 #include "Decode.hpp"
 #include "Replace.hpp"
 
-CYTypedIdentifier *Decode_(CYPool &pool, struct sig::Type *type) {
-    switch (type->primitive) {
-        case sig::unknown_P: return $ CYTypedIdentifier($ CYTypeError());
+namespace sig {
 
-        case sig::function_P: {
-            _assert(type->data.signature.count != 0);
-            CYTypedParameter *parameter(NULL);
-            for (size_t i(type->data.signature.count - 1); i != 0; --i)
-                parameter = $ CYTypedParameter(Decode(pool, type->data.signature.elements[i].type), parameter);
-            return Decode(pool, type->data.signature.elements[0].type)->Modify($ CYTypeFunctionWith(parameter));
-        } break;
-
-        case sig::typename_P: return $ CYTypedIdentifier($ CYTypeVariable("Class"));
-        case sig::union_P: _assert(false); break;
-        case sig::string_P: return $ CYTypedIdentifier($ CYTypeVariable("char"), $ CYTypePointerTo());
-        case sig::selector_P: return $ CYTypedIdentifier($ CYTypeVariable("SEL"));
-
-        case sig::block_P: {
-            if (type->data.signature.count == 0)
-                return $ CYTypedIdentifier($ CYTypeVariable("NSBlock"), $ CYTypePointerTo());
-            else {
-                CYTypedParameter *parameter(NULL);
-                for (size_t i(type->data.signature.count - 1); i != 0; --i)
-                    parameter = $ CYTypedParameter(Decode(pool, type->data.signature.elements[i].type), parameter);
-                return Decode(pool, type->data.signature.elements[0].type)->Modify($ CYTypeBlockWith(parameter));
-            }
-        } break;
-
-        case sig::object_P: {
-            if (type->name == NULL)
-                return $ CYTypedIdentifier($ CYTypeVariable("id"));
-            else
-                return $ CYTypedIdentifier($ CYTypeVariable(type->name), $ CYTypePointerTo());
-        } break;
-
-        case sig::boolean_P: return $ CYTypedIdentifier($ CYTypeVariable("bool"));
-        case sig::uchar_P: return $ CYTypedIdentifier($ CYTypeUnsigned($ CYTypeVariable("char")));
-        case sig::uint_P: return $ CYTypedIdentifier($ CYTypeUnsigned($ CYTypeVariable("int")));
-        case sig::ulong_P: return $ CYTypedIdentifier($ CYTypeUnsigned($ CYTypeLong($ CYTypeVariable("int"))));
-        case sig::ulonglong_P: return $ CYTypedIdentifier($ CYTypeUnsigned($ CYTypeLong($ CYTypeLong($ CYTypeVariable("int")))));
-        case sig::ushort_P: return $ CYTypedIdentifier($ CYTypeUnsigned($ CYTypeShort($ CYTypeVariable("int"))));
-        case sig::array_P: return Decode(pool, type->data.data.type)->Modify($ CYTypeArrayOf($D(type->data.data.size)));
-
-        case sig::pointer_P: {
-            CYTypedIdentifier *typed;
-            if (type->data.data.type == NULL)
-                typed = $ CYTypedIdentifier($ CYTypeVoid());
-            else
-                typed = Decode(pool, type->data.data.type);
-            return typed->Modify($ CYTypePointerTo());
-        } break;
-
-        case sig::bit_P: _assert(false); break;
-        case sig::schar_P: return $ CYTypedIdentifier($ CYTypeSigned($ CYTypeVariable("char")));
-        case sig::double_P: return $ CYTypedIdentifier($ CYTypeVariable("double"));
-        case sig::float_P: return $ CYTypedIdentifier($ CYTypeVariable("float"));
-        case sig::int_P: return $ CYTypedIdentifier($ CYTypeVariable("int"));
-        case sig::long_P: return $ CYTypedIdentifier($ CYTypeLong($ CYTypeVariable("int")));
-        case sig::longlong_P: return $ CYTypedIdentifier($ CYTypeLong($ CYTypeLong($ CYTypeVariable("int"))));
-        case sig::short_P: return $ CYTypedIdentifier($ CYTypeShort($ CYTypeVariable("int")));
-
-        case sig::void_P: return $ CYTypedIdentifier($ CYTypeVoid());
-        case sig::char_P: return $ CYTypedIdentifier($ CYTypeVariable("char"));
-
-        case sig::struct_P: {
-            CYTypeStructField *fields(NULL);
-            for (size_t i(type->data.signature.count); i != 0; --i) {
-                sig::Element &element(type->data.signature.elements[i - 1]);
-                CYTypedIdentifier *typed(Decode(pool, element.type));
-                if (element.name != NULL)
-                    typed->identifier_ = $I(element.name);
-                fields = $ CYTypeStructField(typed, fields);
-            }
-            CYIdentifier *name(type->name == NULL ? NULL : $I(type->name));
-            return $ CYTypedIdentifier($ CYTypeStruct(name, $ CYStructTail(fields)));
-        } break;
-    }
-
-    _assert(false);
-    return NULL;
+template <>
+CYTypedIdentifier *Primitive<bool>::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeVariable("bool"));
 }
 
-CYTypedIdentifier *Decode(CYPool &pool, struct sig::Type *type) {
-    CYTypedIdentifier *typed(Decode_(pool, type));
+template <>
+CYTypedIdentifier *Primitive<char>::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeCharacter(CYTypeNeutral));
+}
+
+template <>
+CYTypedIdentifier *Primitive<double>::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeVariable("double"));
+}
+
+template <>
+CYTypedIdentifier *Primitive<float>::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeVariable("float"));
+}
+
+template <>
+CYTypedIdentifier *Primitive<signed char>::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeCharacter(CYTypeSigned));
+}
+
+template <>
+CYTypedIdentifier *Primitive<signed int>::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeIntegral(CYTypeSigned, 1));
+}
+
+template <>
+CYTypedIdentifier *Primitive<signed long int>::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeIntegral(CYTypeSigned, 2));
+}
+
+template <>
+CYTypedIdentifier *Primitive<signed long long int>::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeIntegral(CYTypeSigned, 3));
+}
+
+template <>
+CYTypedIdentifier *Primitive<signed short int>::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeIntegral(CYTypeSigned, 0));
+}
+
+template <>
+CYTypedIdentifier *Primitive<unsigned char>::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeCharacter(CYTypeUnsigned));
+}
+
+template <>
+CYTypedIdentifier *Primitive<unsigned int>::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeIntegral(CYTypeUnsigned, 1));
+}
+
+template <>
+CYTypedIdentifier *Primitive<unsigned long int>::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeIntegral(CYTypeUnsigned, 2));
+}
+
+template <>
+CYTypedIdentifier *Primitive<unsigned long long int>::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeIntegral(CYTypeUnsigned, 3));
+}
+
+template <>
+CYTypedIdentifier *Primitive<unsigned short int>::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeIntegral(CYTypeUnsigned, 0));
+}
+
+CYTypedIdentifier *Void::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeVoid());
+}
+
+CYTypedIdentifier *Unknown::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeError());
+}
+
+CYTypedIdentifier *String::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeCharacter(CYTypeNeutral), $ CYTypePointerTo());
+}
+
+CYTypedIdentifier *Meta::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeVariable("Class"));
+}
+
+CYTypedIdentifier *Selector::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeVariable("SEL"));
+}
+
+CYTypedIdentifier *Bits::Decode(CYPool &pool) const {
+    _assert(false);
+}
+
+CYTypedIdentifier *Pointer::Decode(CYPool &pool) const {
+    return CYDecodeType(pool, &type)->Modify($ CYTypePointerTo());
+}
+
+CYTypedIdentifier *Array::Decode(CYPool &pool) const {
+    return CYDecodeType(pool, &type)->Modify($ CYTypeArrayOf($D(size)));
+}
+
+CYTypedIdentifier *Object::Decode(CYPool &pool) const {
+    if (name == NULL)
+        return $ CYTypedIdentifier($ CYTypeVariable("id"));
+    else
+        return $ CYTypedIdentifier($ CYTypeVariable(name), $ CYTypePointerTo());
+}
+
+CYTypedIdentifier *Aggregate::Decode(CYPool &pool) const {
+    _assert(!overlap);
+
+    CYTypeStructField *fields(NULL);
+    for (size_t i(signature.count); i != 0; --i) {
+        sig::Element &element(signature.elements[i - 1]);
+        CYTypedIdentifier *typed(CYDecodeType(pool, element.type));
+        if (element.name != NULL)
+            typed->identifier_ = $I(element.name);
+        fields = $ CYTypeStructField(typed, fields);
+    }
+    CYIdentifier *identifier(name == NULL ? NULL : $I(name));
+    return $ CYTypedIdentifier($ CYTypeStruct(identifier, $ CYStructTail(fields)));
+}
+
+CYTypedIdentifier *Function::Decode(CYPool &pool) const {
+    _assert(signature.count != 0);
+    CYTypedParameter *parameter(NULL);
+    for (size_t i(signature.count - 1); i != 0; --i)
+        parameter = $ CYTypedParameter(CYDecodeType(pool, signature.elements[i].type), parameter);
+    return CYDecodeType(pool, signature.elements[0].type)->Modify($ CYTypeFunctionWith(parameter));
+}
+
+CYTypedIdentifier *Block::Decode(CYPool &pool) const {
+    if (signature.count == 0)
+        return $ CYTypedIdentifier($ CYTypeVariable("NSBlock"), $ CYTypePointerTo());
+    else {
+        _assert(signature.count != 1);
+        _assert(dynamic_cast<Object *>(signature.elements[1].type) != NULL);
+
+        CYTypedParameter *parameter(NULL);
+        for (size_t i(signature.count - 1); i != 0; --i)
+            parameter = $ CYTypedParameter(CYDecodeType(pool, signature.elements[i].type), parameter);
+        return CYDecodeType(pool, signature.elements[0].type)->Modify($ CYTypeBlockWith(parameter));
+    }
+}
+
+}
+
+CYTypedIdentifier *CYDecodeType(CYPool &pool, struct sig::Type *type) {
+    CYTypedIdentifier *typed(type->Decode(pool));
     if ((type->flags & JOC_TYPE_CONST) != 0) {
-        if (type->primitive == sig::string_P)
+        if (dynamic_cast<sig::String *>(type) != NULL)
             typed->modifier_ = $ CYTypeConstant(typed->modifier_);
         else
             typed = typed->Modify($ CYTypeConstant());

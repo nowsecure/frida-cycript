@@ -27,15 +27,13 @@
 
 namespace sig {
 
-typedef void (*Callback)(CYPool &pool, Type *&type);
+typedef Type *(*Callback)(CYPool &pool, Aggregate *aggregate);
 void Parse(CYPool &pool, struct Signature *signature, const char *name, Callback callback);
 
-const char *Unparse(CYPool &pool, struct Signature *signature);
-const char *Unparse(CYPool &pool, struct Type *type);
+const char *Unparse(CYPool &pool, const struct Signature *signature);
+const char *Unparse(CYPool &pool, const struct Type *type);
 
-void Copy(CYPool &pool, Type &lhs, const Type &rhs);
 void Copy(CYPool &pool, Signature &lhs, const Signature &rhs);
-void Copy(CYPool &pool, Type &lhs, const Type &rhs);
 
 }
 

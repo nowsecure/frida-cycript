@@ -26,6 +26,6 @@
 
 #include "Syntax.hpp"
 
-CYTypedIdentifier *Decode(CYPool &pool, struct sig::Type *type);
+CYTypedIdentifier *CYDecodeType(CYPool &pool, struct sig::Type *type);
 
 #endif//DECODE_HPP

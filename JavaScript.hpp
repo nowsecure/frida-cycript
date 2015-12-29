@@ -110,9 +110,6 @@ _finline Type_ CYCastPointer(JSContextRef context, JSValueRef value, bool *guess
     return reinterpret_cast<Type_>(CYCastPointer_(context, value, guess));
 }
 
-void CYPoolFFI(CYPool *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value);
-JSValueRef CYFromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, bool initialize = false, JSObjectRef owner = NULL);
-
 void CYCallFunction(CYPool &pool, JSContextRef context, ffi_cif *cif, void (*function)(), void *value, void **values);
 JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, void *setup[], size_t count, const JSValueRef arguments[], bool initialize, sig::Signature *signature, ffi_cif *cif, void (*function)());
 
@@ -131,9 +128,6 @@ struct CYHook {
     void (*Initialize)();
     void (*SetupContext)(JSContextRef);
 
-    bool (*PoolFFI)(CYPool *, JSContextRef, sig::Type *, ffi_type *, void *, JSValueRef);
-    JSValueRef (*FromFFI)(JSContextRef, sig::Type *, ffi_type *, void *, bool, JSObjectRef);
-
     void *(*CastSymbol)(const char *);
 };
 
@@ -141,10 +135,9 @@ struct CYRegisterHook {
     CYRegisterHook(CYHook *hook);
 };
 
-JSObjectRef CYMakePointer(JSContextRef context, void *pointer, size_t length, sig::Type *type, ffi_type *ffi, JSObjectRef owner);
+JSObjectRef CYMakePointer(JSContextRef context, void *pointer, size_t length, const sig::Type &type, ffi_type *ffi, JSObjectRef owner);
 
-JSObjectRef CYMakeType(JSContextRef context, sig::Primitive primitive);
-JSObjectRef CYMakeType(JSContextRef context, sig::Type *type);
+JSObjectRef CYMakeType(JSContextRef context, const sig::Type &type);
 JSObjectRef CYMakeType(JSContextRef context, sig::Signature *signature);
 
 void CYFinalize(JSObjectRef object);

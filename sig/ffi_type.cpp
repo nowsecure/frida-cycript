@@ -31,129 +31,162 @@ namespace sig {
 
 void sig_ffi_types(
     CYPool &pool,
-    ffi_type *(*sig_ffi_type)(CYPool &, struct Type *),
-    struct Signature *signature,
+    const struct Signature *signature,
     ffi_type **types,
     size_t skip = 0,
     size_t offset = 0
 ) {
     _assert(signature->count >= skip);
     for (size_t index = skip; index != signature->count; ++index)
-        types[index - skip + offset] = (*sig_ffi_type)(pool, signature->elements[index].type);
+        types[index - skip + offset] = signature->elements[index].type->GetFFI(pool);
 }
 
-ffi_type *ObjectiveC(CYPool &pool, struct Type *type) {
-    switch (type->primitive) {
-        case typename_P: return &ffi_type_pointer;
-
-        case union_P:
-            /* XXX: we can totally make this work */
-            _assert(false);
-        break;
-
-        case string_P: return &ffi_type_pointer;
-        case selector_P: return &ffi_type_pointer;
-        case block_P: return &ffi_type_pointer;
-        case object_P: return &ffi_type_pointer;
-        case boolean_P: return &ffi_type_uchar;
-        case uchar_P: return &ffi_type_uchar;
-        case uint_P: return &ffi_type_uint;
-        case ulong_P: return &ffi_type_ulong;
-        case ulonglong_P: return &ffi_type_ulonglong;
-        case ushort_P: return &ffi_type_ushort;
-
-        case array_P: {
-            // XXX: this is really lame
-            ffi_type *aggregate(new(pool) ffi_type());
-            aggregate->size = 0;
-            aggregate->alignment = 0;
-            aggregate->type = FFI_TYPE_STRUCT;
-
-            ffi_type *element(ObjectiveC(pool, type->data.data.type));
-            size_t size(type->data.data.size);
-
-            aggregate->elements = new(pool) ffi_type *[size + 1];
-            for (size_t i(0); i != size; ++i)
-                aggregate->elements[i] = element;
-            aggregate->elements[size] = NULL;
-
-            return aggregate;
-        } break;
-
-        case pointer_P: return &ffi_type_pointer;
-
-        case bit_P:
-            /* XXX: we can totally make this work */
-            _assert(false);
-        break;
-
-        case schar_P: return &ffi_type_schar;
-        case double_P: return &ffi_type_double;
-        case float_P: return &ffi_type_float;
-        case int_P: return &ffi_type_sint;
-        case long_P: return &ffi_type_slong;
-        case longlong_P: return &ffi_type_slonglong;
-        case short_P: return &ffi_type_sshort;
-
-        case void_P: return &ffi_type_void;
-        case char_P: return &ffi_type_schar;
-
-        case struct_P: {
-            ffi_type *aggregate(new(pool) ffi_type());
-            aggregate->size = 0;
-            aggregate->alignment = 0;
-            aggregate->type = FFI_TYPE_STRUCT;
-
-            aggregate->elements = new(pool) ffi_type *[type->data.signature.count + 1];
-            sig_ffi_types(pool, &ObjectiveC, &type->data.signature, aggregate->elements);
-            aggregate->elements[type->data.signature.count] = NULL;
-
-            return aggregate;
-        } break;
-
-        default:
-            _assert(false);
-        break;
-    }
+template <>
+ffi_type *Primitive<bool>::GetFFI(CYPool &pool) const {
+    return &ffi_type_uchar;
 }
 
-ffi_type *Java(CYPool &pool, struct Type *type) {
-    switch (type->primitive) {
-        case typename_P: return &ffi_type_pointer;
-        case union_P: _assert(false); break;
-        case string_P: return &ffi_type_pointer;
-        case selector_P: return &ffi_type_pointer;
-        case block_P: return &ffi_type_pointer;
-        case object_P: return &ffi_type_pointer;
-        case boolean_P: return &ffi_type_uchar;
-        case uchar_P: return &ffi_type_uchar;
-        case uint_P: return &ffi_type_uint;
-        case ulong_P: return &ffi_type_ulong;
-        case ulonglong_P: return &ffi_type_ulonglong;
-        case ushort_P: return &ffi_type_ushort;
-        case array_P: return &ffi_type_pointer;
-        case pointer_P: return &ffi_type_pointer;
-        case bit_P: _assert(false); break;
-        case schar_P: return &ffi_type_schar;
-        case double_P: return &ffi_type_double;
-        case float_P: return &ffi_type_double;
-        case int_P: return &ffi_type_sint;
-        case long_P: return &ffi_type_slong;
-        case longlong_P: return &ffi_type_slonglong;
-        case short_P: return &ffi_type_sshort;
-        case void_P: return &ffi_type_void;
-        case char_P: return &ffi_type_schar;
-        case struct_P: return &ffi_type_pointer;
+template <>
+ffi_type *Primitive<char>::GetFFI(CYPool &pool) const {
+    return &ffi_type_schar;
+}
 
-        default:
-            _assert(false);
-        break;
-    }
+template <>
+ffi_type *Primitive<float>::GetFFI(CYPool &pool) const {
+    return &ffi_type_float;
+}
+
+template <>
+ffi_type *Primitive<double>::GetFFI(CYPool &pool) const {
+    return &ffi_type_double;
+}
+
+template <>
+ffi_type *Primitive<signed char>::GetFFI(CYPool &pool) const {
+    return &ffi_type_schar;
+}
+
+template <>
+ffi_type *Primitive<signed int>::GetFFI(CYPool &pool) const {
+    return &ffi_type_sint;
+}
+
+template <>
+ffi_type *Primitive<signed long int>::GetFFI(CYPool &pool) const {
+    return &ffi_type_slong;
+}
+
+template <>
+ffi_type *Primitive<signed long long int>::GetFFI(CYPool &pool) const {
+    return &ffi_type_slonglong;
+}
+
+template <>
+ffi_type *Primitive<signed short int>::GetFFI(CYPool &pool) const {
+    return &ffi_type_sshort;
+}
+
+template <>
+ffi_type *Primitive<unsigned char>::GetFFI(CYPool &pool) const {
+    return &ffi_type_uchar;
+}
+
+template <>
+ffi_type *Primitive<unsigned int>::GetFFI(CYPool &pool) const {
+    return &ffi_type_uint;
+}
+
+template <>
+ffi_type *Primitive<unsigned long int>::GetFFI(CYPool &pool) const {
+    return &ffi_type_ulong;
+}
+
+template <>
+ffi_type *Primitive<unsigned long long int>::GetFFI(CYPool &pool) const {
+    return &ffi_type_ulonglong;
+}
+
+template <>
+ffi_type *Primitive<unsigned short int>::GetFFI(CYPool &pool) const {
+    return &ffi_type_ushort;
+}
+
+ffi_type *Void::GetFFI(CYPool &pool) const {
+    return &ffi_type_void;
+}
+
+ffi_type *Unknown::GetFFI(CYPool &pool) const {
+    _assert(false);
+}
+
+ffi_type *String::GetFFI(CYPool &pool) const {
+    return &ffi_type_pointer;
+}
+
+ffi_type *Meta::GetFFI(CYPool &pool) const {
+    return &ffi_type_pointer;
+}
+
+ffi_type *Selector::GetFFI(CYPool &pool) const {
+    return &ffi_type_pointer;
+}
+
+ffi_type *Bits::GetFFI(CYPool &pool) const {
+    /* XXX: we can totally make this work */
+    _assert(false);
+}
+
+ffi_type *Pointer::GetFFI(CYPool &pool) const {
+    return &ffi_type_pointer;
+}
+
+ffi_type *Array::GetFFI(CYPool &pool) const {
+    // XXX: this is really lame
+    ffi_type *ffi(new(pool) ffi_type());
+    ffi->size = 0;
+    ffi->alignment = 0;
+    ffi->type = FFI_TYPE_STRUCT;
+
+    ffi_type *element(type.GetFFI(pool));
+
+    ffi->elements = new(pool) ffi_type *[size + 1];
+    for (size_t i(0); i != size; ++i)
+        ffi->elements[i] = element;
+    ffi->elements[size] = NULL;
+
+    return ffi;
+}
+
+ffi_type *Object::GetFFI(CYPool &pool) const {
+    return &ffi_type_pointer;
+}
+
+ffi_type *Aggregate::GetFFI(CYPool &pool) const {
+    // XXX: we can totally make overlap work
+    _assert(!overlap);
+
+    ffi_type *ffi(new(pool) ffi_type());
+    ffi->size = 0;
+    ffi->alignment = 0;
+    ffi->type = FFI_TYPE_STRUCT;
+
+    ffi->elements = new(pool) ffi_type *[signature.count + 1];
+    sig_ffi_types(pool, &signature, ffi->elements);
+    ffi->elements[signature.count] = NULL;
+
+    return ffi;
+}
+
+ffi_type *Function::GetFFI(CYPool &pool) const {
+    _assert(false);
+}
+
+ffi_type *Block::GetFFI(CYPool &pool) const {
+    return &ffi_type_pointer;
 }
 
 void sig_ffi_cif(
     CYPool &pool,
-    ffi_type *(*sig_ffi_type)(CYPool &, struct Type *),
     struct Signature *signature,
     ffi_cif *cif,
     size_t skip,
@@ -162,8 +195,8 @@ void sig_ffi_cif(
 ) {
     if (types == NULL)
         types = new(pool) ffi_type *[signature->count - 1];
-    ffi_type *type = (*sig_ffi_type)(pool, signature->elements[0].type);
-    sig_ffi_types(pool, sig_ffi_type, signature, types, 1 + skip, offset);
+    ffi_type *type = signature->elements[0].type->GetFFI(pool);
+    sig_ffi_types(pool, signature, types, 1 + skip, offset);
     ffi_status status = ffi_prep_cif(cif, FFI_DEFAULT_ABI, signature->count - 1 - skip + offset, type, types);
     _assert(status == FFI_OK);
 }

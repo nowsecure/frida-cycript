@@ -82,144 +82,145 @@ void Parse_(CYPool &pool, struct Signature *signature, const char **name, char e
     }
 }
 
-Type *Parse_(CYPool &pool, const char **name, char eos, bool named, Callback callback) {
-    char next = *(*name)++;
+Type *Parse_(CYPool &pool, const char **encoding, char eos, bool named, Callback callback) {
+    char next = *(*encoding)++;
 
-    Type *type(new(pool) Type());
-    _assert(type != NULL);
-    memset(type, 0, sizeof(Type));
+    Type *type;
+    uint8_t flags(0);
 
   parse:
     switch (next) {
-        case '?': type->primitive = unknown_P; break;
-        case '#': type->primitive = typename_P; break;
+        case '?': type = new(pool) Unknown(); break;
+        case '#': type = new(pool) Meta(); break;
 
         case '(':
-            if (type->data.signature.count < 2)
-                type->primitive = struct_P;
-            else
-                type->primitive = union_P;
+            type = new(pool) Aggregate(true);
             next = ')';
         goto aggregate;
 
-        case '*': type->primitive = string_P; break;
-        case ':': type->primitive = selector_P; break;
+        case '*': type = new(pool) String(); break;
+        case ':': type = new(pool) Selector(); break;
 
         case '@': {
-            char next(**name);
+            char next(**encoding);
 
             if (next == '?') {
-                type->primitive = block_P;
-                ++*name;
+                type = new(pool) Block();
+                ++*encoding;
             } else {
-                type->primitive = object_P;
-
-                if (next == '"') {
-                    const char *quote = strchr(*name + 1, '"');
+                const char *name;
+                if (next != '"')
+                    name = NULL;
+                else {
+                    const char *quote = strchr(*encoding + 1, '"');
                     if (quote == NULL) {
-                        printf("unterminated specific id type {%s}\n", *name - 10);
+                        printf("unterminated specific id type {%s}\n", *encoding - 10);
                         _assert(false);
                     } else if (!named || quote[1] == eos || quote[1] == '"') {
-                        type->name = pool.strmemdup(*name + 1, quote - *name - 1);
-                        *name = quote + 1;
+                        name = pool.strmemdup(*encoding + 1, quote - *encoding - 1);
+                        *encoding = quote + 1;
+                    } else {
+                        name = NULL;
                     }
                 }
+
+                type = new(pool) Object(name);
             }
 
         } break;
 
-        case 'B': type->primitive = boolean_P; break;
-        case 'C': type->primitive = uchar_P; break;
-        case 'I': type->primitive = uint_P; break;
-        case 'L': type->primitive = ulong_P; break;
-        case 'Q': type->primitive = ulonglong_P; break;
-        case 'S': type->primitive = ushort_P; break;
+        case 'B': type = new(pool) Primitive<bool>(); break;
+        case 'C': type = new(pool) Primitive<unsigned char>(); break;
+        case 'I': type = new(pool) Primitive<unsigned int>(); break;
+        case 'L': type = new(pool) Primitive<unsigned long>(); break;
+        case 'Q': type = new(pool) Primitive<unsigned long long>(); break;
+        case 'S': type = new(pool) Primitive<unsigned short>(); break;
 
-        case '[':
-            type->primitive = array_P;
-            type->data.data.size = strtoul(*name, (char **) name, 10);
-            type->data.data.type = Parse_(pool, name, eos, false, callback);
-            if (**name != ']') {
-                printf("']' != \"%s\"\n", *name);
+        case '[': {
+            size_t size(strtoul(*encoding, (char **) encoding, 10));
+            type = new(pool) Array(*Parse_(pool, encoding, eos, false, callback), size);
+            if (**encoding != ']') {
+                printf("']' != \"%s\"\n", *encoding);
                 _assert(false);
             }
-            ++*name;
-        break;
+            ++*encoding;
+        } break;
 
         case '^':
-            type->primitive = pointer_P;
-            if (**name == '"')
-                // XXX: why is this here?
-                type->data.data.type = NULL;
-            else
-                type->data.data.type = Parse_(pool, name, eos, named, callback);
+            if (**encoding == '"')
+                _assert(false); // XXX: why is this here?!?
+            else {
+                type = Parse_(pool, encoding, eos, named, callback);
+                Aggregate *aggregate(dynamic_cast<Aggregate *>(type));
+                if (aggregate != NULL && strcmp(aggregate->name, "_objc_class") == 0)
+                    type = new(pool) Meta();
+                else
+                    type = new(pool) Pointer(*type);
+            }
         break;
 
         case 'b':
-            type->primitive = bit_P;
-            type->data.data.size = strtoul(*name, (char **) name, 10);
+            type = new(pool) Bits(strtoul(*encoding, (char **) encoding, 10));
         break;
 
-        case 'c': type->primitive = schar_P; break;
-        case 'd': type->primitive = double_P; break;
-        case 'f': type->primitive = float_P; break;
-        case 'i': type->primitive = int_P; break;
-        case 'l': type->primitive = long_P; break;
-        case 'q': type->primitive = longlong_P; break;
-        case 's': type->primitive = short_P; break;
-        case 'v': type->primitive = void_P; break;
-
-#ifdef __LP64__
-        case 'F': type->primitive = double_P; break;
-#else
-        case 'F': type->primitive = float_P; break;
-#endif
+        case 'c': type = new(pool) Primitive<signed char>(); break;
+        case 'd': type = new(pool) Primitive<double>(); break;
+        case 'f': type = new(pool) Primitive<float>(); break;
+        case 'i': type = new(pool) Primitive<signed int>(); break;
+        case 'l': type = new(pool) Primitive<signed long>(); break;
+        case 'q': type = new(pool) Primitive<signed long long>(); break;
+        case 's': type = new(pool) Primitive<short>(); break;
+        case 'v': type = new(pool) Void(); break;
 
         case '{':
-            type->primitive = struct_P;
+            type = new(pool) Aggregate(false);
             next = '}';
         goto aggregate;
 
         aggregate: {
+            Aggregate *aggregate(static_cast<Aggregate *>(type));
+
             char end = next;
-            const char *begin = *name;
-            do next = *(*name)++;
+            const char *begin = *encoding;
+            do next = *(*encoding)++;
             while (
                 next != '=' &&
                 next != '}'
             );
-            size_t length = *name - begin - 1;
+            size_t length = *encoding - begin - 1;
             if (strncmp(begin, "?", length) != 0)
-                type->name = (char *) pool.strmemdup(begin, length);
-            else
-                type->name = NULL;
-
-            // XXX: this types thing is a throwback to JocStrap
+                aggregate->name = (char *) pool.strmemdup(begin, length);
 
             if (next == '=')
-                Parse_(pool, &type->data.signature, name, end, callback);
+                Parse_(pool, &aggregate->signature, encoding, end, callback);
+
+            // XXX: this is a hack to support trivial unions
+            if (aggregate->signature.count <= 1)
+                aggregate->overlap = false;
+
+            if (callback != NULL)
+                type = (*callback)(pool, aggregate);
         } break;
 
-        case 'N': type->flags |= JOC_TYPE_INOUT; goto next;
-        case 'n': type->flags |= JOC_TYPE_IN; goto next;
-        case 'O': type->flags |= JOC_TYPE_BYCOPY; goto next;
-        case 'o': type->flags |= JOC_TYPE_OUT; goto next;
-        case 'R': type->flags |= JOC_TYPE_BYREF; goto next;
-        case 'r': type->flags |= JOC_TYPE_CONST; goto next;
-        case 'V': type->flags |= JOC_TYPE_ONEWAY; goto next;
+        case 'N': flags |= JOC_TYPE_INOUT; goto next;
+        case 'n': flags |= JOC_TYPE_IN; goto next;
+        case 'O': flags |= JOC_TYPE_BYCOPY; goto next;
+        case 'o': flags |= JOC_TYPE_OUT; goto next;
+        case 'R': flags |= JOC_TYPE_BYREF; goto next;
+        case 'r': flags |= JOC_TYPE_CONST; goto next;
+        case 'V': flags |= JOC_TYPE_ONEWAY; goto next;
 
         next:
-            next = *(*name)++;
+            next = *(*encoding)++;
             goto parse;
         break;
 
         default:
-            printf("invalid type character: '%c' {%s}\n", next, *name - 10);
+            printf("invalid type character: '%c' {%s}\n", next, *encoding - 10);
             _assert(false);
     }
 
-    if (callback != NULL)
-        (*callback)(pool, type);
+    type->flags = flags;
 
     return type;
 }
@@ -230,7 +231,7 @@ void Parse(CYPool &pool, struct Signature *signature, const char *name, Callback
     _assert(temp[-1] == '\0');
 }
 
-const char *Unparse(CYPool &pool, struct Signature *signature) {
+const char *Unparse(CYPool &pool, const struct Signature *signature) {
     const char *value = "";
     size_t offset;
 
@@ -242,71 +243,126 @@ const char *Unparse(CYPool &pool, struct Signature *signature) {
     return value;
 }
 
-const char *Unparse_(CYPool &pool, struct Type *type) {
-    switch (type->primitive) {
-        case function_P: {
-            if (type->data.signature.count == 0)
-                return "?";
-            std::ostringstream out;
-            for (size_t i(0); i != type->data.signature.count; ++i) {
-                Element &element(type->data.signature.elements[i]);
-                out << Unparse(pool, element.type);
-                if (element.offset != _not(size_t))
-                    out << pool.itoa(element.offset);
-            }
-            return pool.strdup(out.str().c_str());
-        } break;
-
-        case unknown_P: return "?";
-        case typename_P: return "#";
-        case union_P: return pool.strcat("(", Unparse(pool, &type->data.signature), ")", NULL);
-        case string_P: return "*";
-        case selector_P: return ":";
-        case block_P: return "@?";
-        case object_P: return type->name == NULL ? "@" : pool.strcat("@\"", type->name, "\"", NULL);
-        case boolean_P: return "B";
-        case uchar_P: return "C";
-        case uint_P: return "I";
-        case ulong_P: return "L";
-        case ulonglong_P: return "Q";
-        case ushort_P: return "S";
-
-        case array_P: {
-            const char *value = Unparse(pool, type->data.data.type);
-            return pool.strcat("[", pool.itoa(type->data.data.size), value, "]", NULL);
-        } break;
-
-        case pointer_P: {
-            // XXX: protect against the weird '"' check in Parse_
-            _assert(type->data.data.type != NULL);
-            if (type->data.data.type->primitive == function_P)
-                return "^?";
-            else
-                return pool.strcat("^", Unparse(pool, type->data.data.type), NULL);
-        } break;
-
-        case bit_P: return pool.strcat("b", pool.itoa(type->data.data.size), NULL);
-        case schar_P: return "c";
-        case double_P: return "d";
-        case float_P: return "f";
-        case int_P: return "i";
-        case long_P: return "l";
-        case longlong_P: return "q";
-        case short_P: return "s";
-        case void_P: return "v";
-        case char_P: return "c";
-        case struct_P: return pool.strcat("{", type->name == NULL ? "?" : type->name, "=", Unparse(pool, &type->data.signature), "}", NULL);
-    }
-
-    _assert(false);
-    return NULL;
+template <>
+const char *Primitive<bool>::Encode(CYPool &pool) const {
+    return "B";
 }
 
-const char *Unparse(CYPool &pool, struct Type *type) {
-    if (type == NULL)
-        return "?";
+template <>
+const char *Primitive<char>::Encode(CYPool &pool) const {
+    return "c";
+}
 
-    const char *base(Unparse_(pool, type));
+template <>
+const char *Primitive<double>::Encode(CYPool &pool) const {
+    return "d";
+}
+
+template <>
+const char *Primitive<float>::Encode(CYPool &pool) const {
+    return "f";
+}
+
+template <>
+const char *Primitive<signed char>::Encode(CYPool &pool) const {
+    return "c";
+}
+
+template <>
+const char *Primitive<signed int>::Encode(CYPool &pool) const {
+    return "i";
+}
+
+template <>
+const char *Primitive<signed long int>::Encode(CYPool &pool) const {
+    return "l";
+}
+
+template <>
+const char *Primitive<signed long long int>::Encode(CYPool &pool) const {
+    return "q";
+}
+
+template <>
+const char *Primitive<signed short int>::Encode(CYPool &pool) const {
+    return "s";
+}
+
+template <>
+const char *Primitive<unsigned char>::Encode(CYPool &pool) const {
+    return "C";
+}
+
+template <>
+const char *Primitive<unsigned int>::Encode(CYPool &pool) const {
+    return "I";
+}
+
+template <>
+const char *Primitive<unsigned long int>::Encode(CYPool &pool) const {
+    return "L";
+}
+
+template <>
+const char *Primitive<unsigned long long int>::Encode(CYPool &pool) const {
+    return "Q";
+}
+
+template <>
+const char *Primitive<unsigned short int>::Encode(CYPool &pool) const {
+    return "S";
+}
+
+const char *Void::Encode(CYPool &pool) const {
+    return "v";
+}
+
+const char *Unknown::Encode(CYPool &pool) const {
+    return "?";
+}
+
+const char *String::Encode(CYPool &pool) const {
+    return "*";
+}
+
+const char *Meta::Encode(CYPool &pool) const {
+    return "#";
+}
+
+const char *Selector::Encode(CYPool &pool) const {
+    return ":";
+}
+
+const char *Bits::Encode(CYPool &pool) const {
+    return pool.strcat("b", pool.itoa(size), NULL);
+}
+
+const char *Pointer::Encode(CYPool &pool) const {
+    return pool.strcat("^", type.Encode(pool), NULL);
+}
+
+const char *Array::Encode(CYPool &pool) const {
+    return pool.strcat("[", pool.itoa(size), type.Encode(pool), "]", NULL);
+}
+
+const char *Object::Encode(CYPool &pool) const {
+    return name == NULL ? "@" : pool.strcat("@\"", name, "\"", NULL);
+}
+
+const char *Aggregate::Encode(CYPool &pool) const {
+    return pool.strcat(overlap ? "(" : "{", name == NULL ? "?" : name, "=", Unparse(pool, &signature), overlap ? ")" : "}", NULL);
+}
+
+const char *Function::Encode(CYPool &pool) const {
+    return "?";
+}
+
+const char *Block::Encode(CYPool &pool) const {
+    return "@?";
+}
+
+const char *Unparse(CYPool &pool, const struct Type *type) {
+    const char *base(type->Encode(pool));
     if (type->flags == 0)
         return base;
 

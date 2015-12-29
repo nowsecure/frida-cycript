@@ -1013,20 +1013,30 @@ void Try::Output(CYOutput &out, CYFlags flags) const {
 
 } }
 
+void CYTypeCharacter::Output(CYOutput &out) const {
+    switch (signing_) {
+        case CYTypeNeutral: break;
+        case CYTypeSigned: out << "signed" << ' '; break;
+        case CYTypeUnsigned: out << "unsigned" << ' '; break;
+    }
+
+    out << "char";
+}
+
 void CYTypeError::Output(CYOutput &out) const {
     out << "@error";
 }
 
-void CYTypeLong::Output(CYOutput &out) const {
-    out << "long" << specifier_;
-}
-
-void CYTypeShort::Output(CYOutput &out) const {
-    out << "short" << specifier_;
-}
-
-void CYTypeSigned::Output(CYOutput &out) const {
-    out << "signed" << specifier_;
+void CYTypeIntegral::Output(CYOutput &out) const {
+    if (signing_ == CYTypeUnsigned)
+        out << "unsigned" << ' ';
+    switch (length_) {
+        case 0: out << "short"; break;
+        case 1: out << "int"; break;
+        case 2: out << "long"; break;
+        case 3: out << "long" << ' ' << "long"; break;
+        default: _assert(false);
+    }
 }
 
 void CYTypeStruct::Output(CYOutput &out) const {
@@ -1035,10 +1045,6 @@ void CYTypeStruct::Output(CYOutput &out) const {
         out << ' ' << *name_;
     else
         out << *tail_;
-}
-
-void CYTypeUnsigned::Output(CYOutput &out) const {
-    out << "unsigned" << specifier_;
 }
 
 void CYTypeReference::Output(CYOutput &out) const {

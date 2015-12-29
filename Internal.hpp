@@ -33,9 +33,7 @@
 #include "Pooling.hpp"
 
 JSGlobalContextRef CYGetJSContext(JSContextRef context);
-void Structor_(CYPool &pool, sig::Type *&type);
-
-JSObjectRef CYMakeType(JSContextRef context, sig::Type *type);
+sig::Type *Structor_(CYPool &pool, sig::Aggregate *aggregate);
 
 extern JSClassRef Functor_;
 
@@ -47,11 +45,6 @@ struct Type_privateData :
     ffi_type *ffi_;
     sig::Type *type_;
 
-    void Set(sig::Type *type) {
-        type_ = new(*pool_) sig::Type;
-        sig::Copy(*pool_, *type_, *type);
-    }
-
     Type_privateData(const char *type) :
         ffi_(NULL)
     {
@@ -60,27 +53,16 @@ struct Type_privateData :
         type_ = signature.elements[0].type;
     }
 
-    Type_privateData(sig::Primitive primitive) :
-        ffi_(NULL)
+    Type_privateData(const sig::Type &type, ffi_type *ffi = NULL) :
+        type_(type.Copy(*pool_))
     {
-        sig::Type type;
-        memset(&type, 0, sizeof(type));
-        type.primitive = primitive;
-        Set(&type);
-    }
 
-    Type_privateData(sig::Type *type) :
-        ffi_(NULL)
-    {
-        // XXX: just in case I messed up migrating
-        _assert(type != NULL);
-        Set(type);
-    }
-
-    Type_privateData(sig::Type *type, ffi_type *ffi) {
-        ffi_ = new(*pool_) ffi_type;
-        sig::Copy(*pool_, *ffi_, *ffi);
-        Set(type);
+        if (ffi == NULL)
+            ffi_ = NULL;
+        else {
+            ffi_ = new(*pool_) ffi_type;
+            sig::Copy(*pool_, *ffi_, *ffi);
+        }
     }
 
     ffi_type *GetFFI() {
@@ -95,7 +77,7 @@ struct Type_privateData :
             signature.count = 1;
 
             ffi_cif cif;
-            sig::sig_ffi_cif(*pool_, &sig::ObjectiveC, &signature, &cif);
+            sig::sig_ffi_cif(*pool_, &signature, &cif);
 
             ffi_ = new(*pool_) ffi_type;
             *ffi_ = *cif.rtype;
@@ -163,7 +145,7 @@ struct Functor :
 {
   private:
     void set() {
-        sig::sig_ffi_cif(*pool_, &sig::ObjectiveC, &signature_, &cif_);
+        sig::sig_ffi_cif(*pool_, &signature_, &cif_);
     }
 
   public:

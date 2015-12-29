@@ -861,23 +861,15 @@ static sig::Signature *CYBlockSignature(CYPool &pool, NSBlock *self);
         return [super cy$toCYON:objective inSet:objects];
     _oassert(objects.insert(self).second);
 
-    // XXX: maybe move this id check into Decode's implementation for block_P
-    _assert(signature->count >= 2);
-    _assert(signature->elements[1].type->primitive == sig::object_P);
+    sig::Block type;
+    sig::Copy(pool, type.signature, *signature);
 
-    sig::Type type;
-    type.name = NULL;
-    type.flags = 0;
-
-    type.primitive = sig::function_P; // XXX: sig::block_P
-    sig::Copy(pool, type.data.signature, *signature);
-
-    CYTypedIdentifier *typed((new(pool) CYTypeExpression(Decode(pool, &type)))->typed_);
+    CYTypedIdentifier *typed((new(pool) CYTypeExpression(CYDecodeType(pool, &type)))->typed_);
     CYTypeFunctionWith *function(typed->Function());
     _assert(function != NULL);
 
     _assert(function->parameters_ != NULL);
-    CYObjCBlock *block(new(pool) CYObjCBlock(typed, function->parameters_->next_, NULL));
+    CYObjCBlock *block(new(pool) CYObjCBlock(typed, function->parameters_, NULL));
 
     std::ostringstream str;
     CYOptions options;
@@ -1272,12 +1264,11 @@ NSArray *CYCastNSArray(JSContextRef context, JSPropertyNameArrayRef names) {
     return array;
 }
 
-JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) { CYPoolTry {
+JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) {
     if (value == nil)
         return CYJSNull(context);
-    else
-        return CYMakeInstance(context, value);
-} CYPoolCatch(NULL) return /*XXX*/ NULL; }
+    return CYMakeInstance(context, value);
+}
 
 @implementation CYJSObject
 
@@ -1501,6 +1492,12 @@ static JSObjectRef CYMakeSelector(JSContextRef context, SEL sel) {
     return JSObjectMake(context, Selector_, internal);
 }
 
+static JSValueRef CYCastJSValue(JSContextRef context, SEL sel) {
+    if (sel == NULL)
+        return CYJSNull(context);
+    return CYMakeSelector(context, sel);
+}
+
 static SEL CYCastSEL(JSContextRef context, JSValueRef value) {
     if (JSValueIsObjectOfClass(context, value, Selector_)) {
         Selector_privateData *internal(reinterpret_cast<Selector_privateData *>(JSObjectGetPrivate((JSObjectRef) value)));
@@ -1523,8 +1520,8 @@ static void CYObjectiveC_CallFunction(CYPool &pool, JSContextRef context, ffi_ci
     CYCallFunction(pool, context, cif, function, value, values);
 } CYSadCatch() }
 
+static NSBlock *CYCastNSBlock(CYPool &pool, JSContextRef context, JSValueRef value, const sig::Signature *signature) {
 #ifdef __APPLE__
-static NSBlock *CYCastNSBlock(CYPool &pool, JSContextRef context, JSValueRef value, sig::Signature *signature) {
     if (JSValueIsNull(context, value))
         return nil;
     JSObjectRef object(CYCastJSObject(context, value));
@@ -1550,82 +1547,71 @@ static NSBlock *CYCastNSBlock(CYPool &pool, JSContextRef context, JSValueRef val
     memcpy(modified.elements + 2, signature->elements + 1, sizeof(sig::Element) * (signature->count - 1));
 
     modified.elements[1].name = NULL;
-    modified.elements[1].type = new(pool) sig::Type();
+    modified.elements[1].type = new(pool) sig::Object();
     modified.elements[1].offset = _not(size_t);
 
-    memset(modified.elements[1].type, 0, sizeof(sig::Type));
-    modified.elements[1].type->primitive = sig::object_P;
-
     return CYMakeBlock(context, object, modified);
+#else
+    _assert(false);
+#endif
 }
-#endif
 
-static bool CYObjectiveC_PoolFFI(CYPool *pool, JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, JSValueRef value) { CYSadTry {
-    // XXX: assigning to an indirect id * works for return values, but not for properties and fields
+namespace sig {
 
-    switch (type->primitive) {
-#ifdef __APPLE__
-        case sig::block_P:
-            // XXX: this function might not handle the idea of a null pool
-            *reinterpret_cast<id *>(data) = CYCastNSBlock(*pool, context, value, &type->data.signature);
-        break;
-#endif
+void Block::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
+    // XXX: this function might not handle the idea of a null pool
+    *reinterpret_cast<id *>(data) = CYCastNSBlock(*pool, context, value, &signature);
+}
 
-        case sig::object_P:
-        case sig::typename_P:
-            *reinterpret_cast<id *>(data) = CYCastNSObject(pool, context, value);
-        break;
+// XXX: assigning to an indirect id * works for return values, but not for properties and fields
+void Object::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
+    *reinterpret_cast<id *>(data) = CYCastNSObject(pool, context, value);
+}
 
-        case sig::selector_P:
-            *reinterpret_cast<SEL *>(data) = CYCastSEL(context, value);
-        break;
+void Meta::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
+    *reinterpret_cast<id *>(data) = CYCastNSObject(pool, context, value);
+}
 
-        default:
-            return false;
+void Selector::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
+    *reinterpret_cast<SEL *>(data) = CYCastSEL(context, value);
+}
+
+JSValueRef Object::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
+    NSObject *value(*reinterpret_cast<NSObject **>(data));
+    if (value == NULL)
+        return CYJSNull(context);
+    JSObjectRef object(CYMakeInstance(context, value));
+
+    if (initialize) {
+        Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
+
+        if ((internal->flags_ & Instance::Uninitialized) != 0) {
+            internal->flags_ = static_cast<Instance::Flags>(internal->flags_ & ~Instance::Uninitialized);
+            _assert(internal->value_ == nil);
+            internal->value_ = value;
+        }
+
+        [value release];
     }
 
-    return true;
-} CYSadCatch(false) }
+    return object;
+}
 
-static JSValueRef CYObjectiveC_FromFFI(JSContextRef context, sig::Type *type, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) { CYPoolTry {
-    switch (type->primitive) {
-        // XXX: do something epic about blocks
-        case sig::block_P:
-        case sig::object_P:
-            if (NSObject *value = *reinterpret_cast<NSObject **>(data)) {
-                JSObjectRef object(CYMakeInstance(context, value));
+JSValueRef Meta::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
+    if (Class value = *reinterpret_cast<Class *>(data))
+        return CYMakeInstance(context, value, Instance::Permanent);
+    return CYJSNull(context);
+}
 
-                if (initialize) {
-                    Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
+JSValueRef Selector::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
+    return CYCastJSValue(context, *reinterpret_cast<SEL *>(data));
+}
 
-                    if ((internal->flags_ & Instance::Uninitialized) != 0) {
-                        internal->flags_ = static_cast<Instance::Flags>(internal->flags_ & ~Instance::Uninitialized);
-                        _assert(internal->value_ == nil);
-                        internal->value_ = value;
-                    }
+JSValueRef Block::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
+    return CYCastJSValue(context, *reinterpret_cast<NSObject **>(data));
+}
 
-                    [value release];
-                }
-
-                return object;
-            } else goto null;
-
-        case sig::typename_P:
-            if (Class value = *reinterpret_cast<Class *>(data))
-                return CYMakeInstance(context, value, Instance::Permanent);
-            else goto null;
-
-        case sig::selector_P:
-            if (SEL value = *reinterpret_cast<SEL *>(data))
-                return CYMakeSelector(context, value);
-            else goto null;
-
-        null:
-            return CYJSNull(context);
-        default:
-            return NULL;
-    }
-} CYPoolCatch(NULL) return /*XXX*/ NULL; }
+}
 
 static bool CYImplements(id object, Class _class, SEL selector, bool devoid = false) {
     if (objc_method *method = class_getInstanceMethod(_class, selector)) {
@@ -1970,7 +1956,7 @@ static JSValueRef FunctionInstance_callAsFunction(JSContextRef context, JSObject
         sig::Parse(pool, &signature, encoding, &Structor_);
 
         ffi_cif cif;
-        sig::sig_ffi_cif(pool, &sig::ObjectiveC, &signature, &cif);
+        sig::sig_ffi_cif(pool, &signature, &cif);
 
         BlockLiteral *literal(reinterpret_cast<BlockLiteral *>(self));
         void (*function)() = reinterpret_cast<void (*)()>(literal->invoke);
@@ -2072,7 +2058,7 @@ static JSValueRef Internal_getProperty(JSContextRef context, JSObjectRef object,
 #endif
 
             auto type(new(pool) Type_privateData(encoding));
-            return CYFromFFI(context, type->type_, type->GetFFI(), data);
+            return type->type_->FromFFI(context, type->GetFFI(), data);
         }
     }
 
@@ -2101,7 +2087,7 @@ static bool Internal_setProperty(JSContextRef context, JSObjectRef object, JSStr
             field = field & ~(mask << shift) | (uintptr_t(CYCastDouble(context, value)) & mask) << shift;
         } else {
             auto type(new(pool) Type_privateData(ivar_getTypeEncoding(ivar)));
-            CYPoolFFI(&pool, context, type->type_, type->GetFFI(), reinterpret_cast<uint8_t *>(self) + ivar_getOffset(ivar), value);
+            type->type_->PoolFFI(&pool, context, type->GetFFI(), reinterpret_cast<uint8_t *>(self) + ivar_getOffset(ivar), value);
             return true;
         }
     }
@@ -2432,11 +2418,7 @@ JSValueRef CYSendMessage(CYPool &pool, JSContextRef context, id self, Class _cla
             sig::Element *element(&elements[index]);
             element->name = NULL;
             element->offset = _not(size_t);
-
-            sig::Type *type(new (pool) sig::Type);
-            memset(type, 0, sizeof(*type));
-            type->primitive = sig::object_P;
-            element->type = type;
+            element->type = new(pool) sig::Object();
         }
 
         signature.elements = elements;
@@ -2444,7 +2426,7 @@ JSValueRef CYSendMessage(CYPool &pool, JSContextRef context, id self, Class _cla
     }
 
     ffi_cif cif;
-    sig::sig_ffi_cif(pool, &sig::ObjectiveC, &signature, &cif);
+    sig::sig_ffi_cif(pool, &signature, &cif);
 
     if (imp == NULL) {
 #ifndef CY_NO_STRET
@@ -2555,18 +2537,20 @@ static JSValueRef CYValue_callAsFunction_$cya(JSContextRef context, JSObjectRef 
     CYValue *internal(reinterpret_cast<CYValue *>(JSObjectGetPrivate(_this)));
     Type_privateData *typical(internal->GetType());
 
+    sig::Void XXX;
+
     sig::Type *type;
     ffi_type *ffi;
 
     if (typical == NULL) {
-        type = NULL;
+        type = &XXX;
         ffi = NULL;
     } else {
         type = typical->type_;
         ffi = typical->ffi_;
     }
 
-    return CYMakePointer(context, &internal->value_, _not(size_t), type, ffi, object);
+    return CYMakePointer(context, &internal->value_, _not(size_t), *type, ffi, object);
 } CYCatch(NULL) }
 
 static JSValueRef FunctionInstance_getProperty_type(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
@@ -2681,11 +2665,8 @@ static JSValueRef Class_callAsFunction_pointerTo(JSContextRef context, JSObjectR
     if (!CYIsClass(value))
         CYThrow("non-Class object cannot be used as Type");
 
-    sig::Type type;
-    memset(&type, 0, sizeof(type));
-    type.primitive = sig::object_P;
-    type.name = class_getName(value);
-    return CYMakeType(context, &type);
+    sig::Object type(class_getName(value));
+    return CYMakeType(context, type);
 } CYCatch(NULL) return /*XXX*/ NULL; }
 
 static JSValueRef Selector_callAsFunction_toString(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -2785,8 +2766,8 @@ JSValueRef NSCFType$cy$toJSON$inContext$(id self, SEL sel, JSValueRef key, JSCon
 void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     CYPool &pool(CYGetGlobalPool());
 
-    Object_type = new(pool) Type_privateData(sig::object_P);
-    Selector_type = new(pool) Type_privateData(sig::selector_P);
+    Object_type = new(pool) Type_privateData(sig::Object());
+    Selector_type = new(pool) Type_privateData(sig::Selector());
 
     NSArray_ = objc_getClass("NSArray");
     NSBlock_ = objc_getClass("NSBlock");
@@ -3032,9 +3013,9 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     JSObjectRef cache(CYGetCachedObject(context, CYJSString("cache")));
     CYSetProperty(context, cache, CYJSString("YES"), JSValueMakeBoolean(context, true), kJSPropertyAttributeDontEnum);
     CYSetProperty(context, cache, CYJSString("NO"), JSValueMakeBoolean(context, false), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, cache, CYJSString("id"), CYMakeType(context, sig::object_P), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, cache, CYJSString("Class"), CYMakeType(context, sig::typename_P), kJSPropertyAttributeDontEnum);
-    CYSetProperty(context, cache, CYJSString("SEL"), CYMakeType(context, sig::selector_P), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("id"), CYMakeType(context, sig::Object()), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("Class"), CYMakeType(context, sig::Meta()), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("SEL"), CYMakeType(context, sig::Selector()), kJSPropertyAttributeDontEnum);
 } CYPoolCatch() }
 
 static void *CYObjectiveC_CastSymbol(const char *name) {
@@ -3052,8 +3033,6 @@ static CYHook CYObjectiveCHook = {
     &CYObjectiveC_CallFunction,
     &CYObjectiveC_Initialize,
     &CYObjectiveC_SetupContext,
-    &CYObjectiveC_PoolFFI,
-    &CYObjectiveC_FromFFI,
     &CYObjectiveC_CastSymbol,
 };
 

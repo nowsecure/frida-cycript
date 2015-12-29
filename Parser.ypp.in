@@ -81,6 +81,7 @@
 %union { CYWord *word_; }
 
 @begin C
+%union { CYTypeIntegral *integral_; }
 %union { CYTypeStructField *structField_; }
 %union { CYTypeModifier *modifier_; }
 %union { CYTypeSpecifier *specifier_; }
@@ -653,8 +654,8 @@ type; })
 %type <expression_> YieldExpression
 
 @begin C
-%type <specifier_> IntegerType
-%type <specifier_> IntegerTypeOpt
+%type <integral_> IntegerType
+%type <integral_> IntegerTypeOpt
 %type <typedIdentifier_> PrefixedType
 %type <specifier_> PrimitiveType
 %type <structField_> StructFieldListOpt
@@ -2059,16 +2060,16 @@ TypeQualifierRightOpt
     ;
 
 IntegerType
-    : "int" { $$ = CYNew CYTypeVariable("int"); }
-    | "unsigned" IntegerTypeOpt[specifier] { $$ = CYNew CYTypeUnsigned($specifier); }
-    | "signed" IntegerTypeOpt[specifier] { $$ = CYNew CYTypeSigned($specifier); }
-    | "long" IntegerTypeOpt[specifier] { $$ = CYNew CYTypeLong($specifier); }
-    | "short" IntegerTypeOpt[specifier] { $$ = CYNew CYTypeShort($specifier); }
+    : "int" { $$ = CYNew CYTypeIntegral(CYTypeNeutral); }
+    | "unsigned" IntegerTypeOpt[integral] { $$ = $integral->Unsigned(); if ($$ == NULL) CYERR(@1, "incompatible unsigned"); }
+    | "signed" IntegerTypeOpt[integral] { $$ = $integral->Signed(); if ($$ == NULL) CYERR(@1, "incompatible signed"); }
+    | "long" IntegerTypeOpt[integral] { $$ = $integral->Long(); if ($$ == NULL) CYERR(@1, "incompatible long"); }
+    | "short" IntegerTypeOpt[integral] { $$ = $integral->Short(); if ($$ == NULL) CYERR(@1, "incompatible short"); }
     ;
 
 IntegerTypeOpt
     : IntegerType[pass] { $$ = $pass; }
-    | { $$ = CYNew CYTypeVariable("int"); }
+    | { $$ = CYNew CYTypeIntegral(CYTypeNeutral); }
     ;
 
 StructFieldListOpt
@@ -2079,9 +2080,9 @@ StructFieldListOpt
 PrimitiveType
     : IdentifierType[name] { $$ = CYNew CYTypeVariable($name); }
     | IntegerType[pass] { $$ = $pass; }
-    | "char" { $$ = CYNew CYTypeVariable("char"); }
-    | "signed" "char" { $$ = CYNew CYTypeSigned(CYNew CYTypeVariable("char")); }
-    | "unsigned" "char" { $$ = CYNew CYTypeUnsigned(CYNew CYTypeVariable("char")); }
+    | "char" { $$ = CYNew CYTypeCharacter(CYTypeNeutral); }
+    | "signed" "char" { $$ = CYNew CYTypeCharacter(CYTypeSigned); }
+    | "unsigned" "char" { $$ = CYNew CYTypeCharacter(CYTypeUnsigned); }
     | "struct" IdentifierType[name] { $$ = CYNew CYTypeReference($name); }
     ;
 

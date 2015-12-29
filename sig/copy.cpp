@@ -26,22 +26,14 @@
 #include "Pooling.hpp"
 #include "sig/parse.hpp"
 
-#ifdef HAVE_FFI_FFI_H
-#include <ffi/ffi.h>
-#else
-#include <ffi.h>
-#endif
-
 namespace sig {
 
 void Copy(CYPool &pool, Element &lhs, const Element &rhs) {
     lhs.name = pool.strdup(rhs.name);
     if (rhs.type == NULL)
         lhs.type = NULL;
-    else {
-        lhs.type = new(pool) Type;
-        Copy(pool, *lhs.type, *rhs.type);
-    }
+    else
+        lhs.type = rhs.type->Copy(pool);
     lhs.offset = rhs.offset;
 }
 
@@ -53,26 +45,61 @@ void Copy(CYPool &pool, Signature &lhs, const Signature &rhs) {
         Copy(pool, lhs.elements[index], rhs.elements[index]);
 }
 
-void Copy(CYPool &pool, Type &lhs, const Type &rhs) {
-    lhs.primitive = rhs.primitive;
-    lhs.name = pool.strdup(rhs.name);
-    lhs.flags = rhs.flags;
+Void *Void::Copy(CYPool &pool, const char *name) const {
+    return new(pool) Void();
+}
 
-    if (sig::IsFunctional(rhs.primitive) || sig::IsAggregate(rhs.primitive))
-        Copy(pool, lhs.data.signature, rhs.data.signature);
-    else {
-        sig::Type *&lht(lhs.data.data.type);
-        sig::Type *const &rht(rhs.data.data.type);
+Unknown *Unknown::Copy(CYPool &pool, const char *name) const {
+    return new(pool) Unknown();
+}
 
-        if (rht == NULL)
-            lht = NULL;
-        else {
-            lht = new(pool) Type;
-            Copy(pool, *lht, *rht);
-        }
+String *String::Copy(CYPool &pool, const char *name) const {
+    return new(pool) String();
+}
 
-        lhs.data.data.size = rhs.data.data.size;
-    }
+Meta *Meta::Copy(CYPool &pool, const char *name) const {
+    return new(pool) Meta();
+}
+
+Selector *Selector::Copy(CYPool &pool, const char *name) const {
+    return new(pool) Selector();
+}
+
+Bits *Bits::Copy(CYPool &pool, const char *name) const {
+    return new(pool) Bits(size);
+}
+
+Pointer *Pointer::Copy(CYPool &pool, const char *name) const {
+    return new(pool) Pointer(*type.Copy(pool));
+}
+
+Array *Array::Copy(CYPool &pool, const char *name) const {
+    return new(pool) Array(*type.Copy(pool), size);
+}
+
+Object *Object::Copy(CYPool &pool, const char *name) const {
+    Object *copy(new(pool) Object(pool.strdup(name)));
+    copy->name = name;
+    return copy;
+}
+
+Aggregate *Aggregate::Copy(CYPool &pool, const char *name) const {
+    Aggregate *copy(new(pool) Aggregate(overlap, name));
+    sig::Copy(pool, copy->signature, signature);
+    copy->name = name;
+    return copy;
+}
+
+Function *Function::Copy(CYPool &pool, const char *name) const {
+    Function *copy(new(pool) Function());
+    sig::Copy(pool, copy->signature, signature);
+    return copy;
+}
+
+Block *Block::Copy(CYPool &pool, const char *name) const {
+    Block *copy(new(pool) Block());
+    sig::Copy(pool, copy->signature, signature);
+    return copy;
 }
 
 void Copy(CYPool &pool, ffi_type &lhs, ffi_type &rhs) {
@@ -96,6 +123,18 @@ void Copy(CYPool &pool, ffi_type &lhs, ffi_type &rhs) {
             sig::Copy(pool, *ffi, *rhs.elements[index]);
         }
     }
+}
+
+const char *Type::GetName() const {
+    return NULL;
+}
+
+const char *Object::GetName() const {
+    return name;
+}
+
+const char *Aggregate::GetName() const {
+    return name;
 }
 
 }

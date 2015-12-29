@@ -25,51 +25,20 @@
 #include <cstdlib>
 #include <stdint.h>
 
+#include <JavaScriptCore/JSBase.h>
+
+#ifdef HAVE_FFI_FFI_H
+#include <ffi/ffi.h>
+#else
+#include <ffi.h>
+#endif
+
 #include "Standard.hpp"
 
+class CYPool;
+struct CYTypedIdentifier;
+
 namespace sig {
-
-enum Primitive {
-    function_P = '\0',
-    block_P = '\a',
-    char_P = '\b',
-
-    unknown_P = '?',
-    typename_P = '#',
-    union_P = '(',
-    string_P = '*',
-    selector_P = ':',
-    object_P = 'W',
-    boolean_P = 'B',
-    uchar_P = 'C',
-    uint_P = 'I',
-    ulong_P = 'L',
-    ulonglong_P = 'Q',
-    ushort_P = 'S',
-    array_P = '[',
-    pointer_P = '^',
-    bit_P = 'b',
-    schar_P = 'c',
-    double_P = 'd',
-    float_P = 'f',
-    int_P = 'i',
-    long_P = 'l',
-    longlong_P = 'q',
-    short_P = 's',
-    void_P = 'v',
-    struct_P = '{'
-};
-
-struct Element {
-    const char *name;
-    struct Type *type;
-    size_t offset;
-};
-
-struct Signature {
-    struct Element *elements;
-    size_t count;
-};
 
 #define JOC_TYPE_INOUT  (1 << 0)
 #define JOC_TYPE_IN     (1 << 1)
@@ -80,30 +49,266 @@ struct Signature {
 #define JOC_TYPE_ONEWAY (1 << 6)
 
 struct Type {
-    enum Primitive primitive;
-    const char *name;
     uint8_t flags;
 
-    union {
-        struct {
-            struct Type *type;
-            size_t size;
-        } data;
+    Type() :
+        flags(0)
+    {
+    }
 
-        struct Signature signature;
-    } data;
+    virtual Type *Copy(CYPool &pool, const char *name = NULL) const = 0;
+    virtual const char *GetName() const;
+
+    virtual const char *Encode(CYPool &pool) const = 0;
+    virtual CYTypedIdentifier *Decode(CYPool &pool) const = 0;
+
+    virtual ffi_type *GetFFI(CYPool &pool) const = 0;
+    virtual void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const = 0;
+    virtual JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize = false, JSObjectRef owner = NULL) const = 0;
+
+    virtual size_t Translate(Type *&type) const {
+        return _not(size_t);
+    }
 };
 
-struct Type *joc_parse_type(char **name, char eos, bool variable, bool signature);
-void joc_parse_signature(struct Signature *signature, char **name, char eos, bool variable);
+template <typename Type_>
+struct Primitive :
+    Type
+{
+    Primitive *Copy(CYPool &pool, const char *name) const {
+        return new(pool) Primitive();
+    }
 
-_finline bool IsFunctional(Primitive primitive) {
-    return primitive == block_P || primitive == function_P;
-}
+    const char *Encode(CYPool &pool) const override;
+    CYTypedIdentifier *Decode(CYPool &pool) const override;
 
-_finline bool IsAggregate(Primitive primitive) {
-    return primitive == struct_P || primitive == union_P;
-}
+    ffi_type *GetFFI(CYPool &pool) const override;
+    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
+    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
+};
+
+struct Element {
+    const char *name;
+    Type *type;
+    size_t offset;
+};
+
+struct Signature {
+    Element *elements;
+    size_t count;
+};
+
+struct Void :
+    Type
+{
+    Void *Copy(CYPool &pool, const char *name = NULL) const override;
+
+    const char *Encode(CYPool &pool) const override;
+    CYTypedIdentifier *Decode(CYPool &pool) const override;
+
+    ffi_type *GetFFI(CYPool &pool) const override;
+    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
+    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
+};
+
+struct Unknown :
+    Type
+{
+    Unknown *Copy(CYPool &pool, const char *name = NULL) const override;
+
+    const char *Encode(CYPool &pool) const override;
+    CYTypedIdentifier *Decode(CYPool &pool) const override;
+
+    ffi_type *GetFFI(CYPool &pool) const override;
+    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
+    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
+};
+
+struct String :
+    Type
+{
+    String *Copy(CYPool &pool, const char *name = NULL) const override;
+
+    const char *Encode(CYPool &pool) const override;
+    CYTypedIdentifier *Decode(CYPool &pool) const override;
+
+    ffi_type *GetFFI(CYPool &pool) const override;
+    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
+    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
+};
+
+struct Meta :
+    Type
+{
+    Meta *Copy(CYPool &pool, const char *name = NULL) const override;
+
+    const char *Encode(CYPool &pool) const override;
+    CYTypedIdentifier *Decode(CYPool &pool) const override;
+
+    ffi_type *GetFFI(CYPool &pool) const override;
+    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
+    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
+};
+
+struct Selector :
+    Type
+{
+    Selector *Copy(CYPool &pool, const char *name = NULL) const override;
+
+    const char *Encode(CYPool &pool) const override;
+    CYTypedIdentifier *Decode(CYPool &pool) const override;
+
+    ffi_type *GetFFI(CYPool &pool) const override;
+    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
+    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
+};
+
+struct Bits :
+    Type
+{
+    size_t size;
+
+    Bits(size_t size) :
+        size(size)
+    {
+    }
+
+    Bits *Copy(CYPool &pool, const char *name = NULL) const override;
+
+    const char *Encode(CYPool &pool) const override;
+    CYTypedIdentifier *Decode(CYPool &pool) const override;
+
+    ffi_type *GetFFI(CYPool &pool) const override;
+    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
+    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
+};
+
+struct Pointer :
+    Type
+{
+    Type &type;
+
+    Pointer(Type &type) :
+        type(type)
+    {
+    }
+
+    Pointer *Copy(CYPool &pool, const char *name = NULL) const override;
+
+    const char *Encode(CYPool &pool) const override;
+    CYTypedIdentifier *Decode(CYPool &pool) const override;
+
+    ffi_type *GetFFI(CYPool &pool) const override;
+    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
+    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
+};
+
+struct Array :
+    Type
+{
+    Type &type;
+    size_t size;
+
+    Array(Type &type, size_t size = _not(size_t)) :
+        type(type),
+        size(size)
+    {
+    }
+
+    Array *Copy(CYPool &pool, const char *name = NULL) const override;
+
+    const char *Encode(CYPool &pool) const override;
+    CYTypedIdentifier *Decode(CYPool &pool) const override;
+
+    ffi_type *GetFFI(CYPool &pool) const override;
+    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
+    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
+
+    size_t Translate(Type *&type) const override {
+        type = &this->type;
+        return size;
+    }
+};
+
+struct Object :
+    Type
+{
+    const char *name;
+
+    Object(const char *name = NULL) :
+        name(name)
+    {
+    }
+
+    Object *Copy(CYPool &pool, const char *name = NULL) const override;
+    const char *GetName() const override;
+
+    const char *Encode(CYPool &pool) const override;
+    CYTypedIdentifier *Decode(CYPool &pool) const override;
+
+    ffi_type *GetFFI(CYPool &pool) const override;
+    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
+    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
+};
+
+struct Aggregate :
+    Type
+{
+    bool overlap;
+    const char *name;
+    Signature signature;
+
+    Aggregate(bool overlap, const char *name = NULL) :
+        overlap(overlap),
+        name(name)
+    {
+    }
+
+    Aggregate *Copy(CYPool &pool, const char *name = NULL) const override;
+    const char *GetName() const override;
+
+    const char *Encode(CYPool &pool) const override;
+    CYTypedIdentifier *Decode(CYPool &pool) const override;
+
+    ffi_type *GetFFI(CYPool &pool) const override;
+    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
+    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
+};
+
+struct Callable :
+    Type
+{
+    Signature signature;
+};
+
+struct Function :
+    Callable
+{
+    Function *Copy(CYPool &pool, const char *name = NULL) const override;
+
+    const char *Encode(CYPool &pool) const override;
+    CYTypedIdentifier *Decode(CYPool &pool) const override;
+
+    ffi_type *GetFFI(CYPool &pool) const override;
+    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
+    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
+};
+
+struct Block :
+    Callable
+{
+    Block *Copy(CYPool &pool, const char *name = NULL) const override;
+
+    const char *Encode(CYPool &pool) const override;
+    CYTypedIdentifier *Decode(CYPool &pool) const override;
+
+    ffi_type *GetFFI(CYPool &pool) const override;
+    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
+    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
+};
+
+Type *joc_parse_type(char **name, char eos, bool variable, bool signature);
+void joc_parse_signature(Signature *signature, char **name, char eos, bool variable);
 
 }
 
