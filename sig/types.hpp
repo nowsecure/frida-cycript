@@ -65,10 +65,6 @@ struct Type {
     virtual ffi_type *GetFFI(CYPool &pool) const = 0;
     virtual void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const = 0;
     virtual JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize = false, JSObjectRef owner = NULL) const = 0;
-
-    virtual size_t Translate(Type *&type) const {
-        return _not(size_t);
-    }
 };
 
 template <typename Type_>
@@ -223,11 +219,6 @@ struct Array :
     ffi_type *GetFFI(CYPool &pool) const override;
     void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
     JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
-
-    size_t Translate(Type *&type) const override {
-        type = &this->type;
-        return size;
-    }
 };
 
 struct Object :

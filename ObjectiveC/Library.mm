@@ -2550,7 +2550,7 @@ static JSValueRef CYValue_callAsFunction_$cya(JSContextRef context, JSObjectRef 
         ffi = typical->ffi_;
     }
 
-    return CYMakePointer(context, &internal->value_, _not(size_t), *type, ffi, object);
+    return CYMakePointer(context, &internal->value_, *type, ffi, object);
 } CYCatch(NULL) }
 
 static JSValueRef FunctionInstance_getProperty_type(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
