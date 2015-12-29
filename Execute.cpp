@@ -328,12 +328,14 @@ JSValueRef CYCastJSValue(JSContextRef context, double value) {
         return JSValueMakeNumber(context, static_cast<double>(value)); \
     }
 
-CYCastJSValue_(int)
+CYCastJSValue_(signed short int)
+CYCastJSValue_(unsigned short int)
+CYCastJSValue_(signed int)
 CYCastJSValue_(unsigned int)
-CYCastJSValue_(long int)
-CYCastJSValue_(long unsigned int)
-CYCastJSValue_(long long int)
-CYCastJSValue_(long long unsigned int)
+CYCastJSValue_(signed long int)
+CYCastJSValue_(unsigned long int)
+CYCastJSValue_(signed long long int)
+CYCastJSValue_(unsigned long long int)
 
 JSValueRef CYJSUndefined(JSContextRef context) {
     return JSValueMakeUndefined(context);
