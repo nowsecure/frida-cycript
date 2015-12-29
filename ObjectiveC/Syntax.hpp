@@ -76,6 +76,52 @@ struct CYBox :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
+struct CYObjCArray :
+    CYTarget
+{
+    CYElement *elements_;
+
+    CYObjCArray(CYElement *elements = NULL) :
+        elements_(elements)
+    {
+    }
+
+    CYPrecedence(0)
+
+    virtual CYTarget *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYObjCKeyValue :
+    CYNext<CYObjCKeyValue>
+{
+    CYExpression *key_;
+    CYExpression *value_;
+
+    CYObjCKeyValue(CYExpression *key, CYExpression *value, CYObjCKeyValue *next) :
+        CYNext<CYObjCKeyValue>(next),
+        key_(key),
+        value_(value)
+    {
+    }
+};
+
+struct CYObjCDictionary :
+    CYTarget
+{
+    CYObjCKeyValue *pairs_;
+
+    CYObjCDictionary(CYObjCKeyValue *pairs) :
+        pairs_(pairs)
+    {
+    }
+
+    CYPrecedence(0)
+
+    virtual CYTarget *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
 struct CYSelectorPart :
     CYNext<CYSelectorPart>,
     CYThing

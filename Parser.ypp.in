@@ -90,6 +90,7 @@
 @end
 
 @begin ObjectiveC
+%union { CYObjCKeyValue *keyValue_; }
 %union { CYImplementationField *implementationField_; }
 %union { CYMessage *message_; }
 %union { CYMessageParameter *messageParameter_; }
@@ -477,11 +478,11 @@ type; })
 %type <argument_> ArgumentListOpt
 %type <argument_> Arguments
 %type <target_> ArrayComprehension
+%type <element_> ArrayElement
 %type <literal_> ArrayLiteral
 %type <expression_> ArrowFunction
 %type <functionParameter_> ArrowParameters
 %type <expression_> AssignmentExpression
-%type <expression_> AssignmentExpressionOpt
 %type <identifier_> BindingIdentifier
 %type <identifier_> BindingIdentifierOpt
 %type <bindings_> BindingList_
@@ -520,6 +521,7 @@ type; })
 %type <statement_> Declaration_
 %type <statement_> Declaration
 %type <clause_> DefaultClause
+%type <element_> ElementList_
 %type <element_> ElementList
 %type <element_> ElementListOpt
 %type <statement_> ElseStatementOpt
@@ -693,6 +695,9 @@ type; })
 %type <protocol_> ClassProtocolsOpt
 %type <implementationField_> ImplementationFieldListOpt
 %type <statement_> ImplementationStatement
+%type <keyValue_> KeyValuePairList_
+%type <keyValue_> KeyValuePairList
+%type <keyValue_> KeyValuePairListOpt
 %type <target_> MessageExpression
 %type <messageParameter_> MessageParameter
 %type <messageParameter_> MessageParameters
@@ -1050,10 +1055,19 @@ ArrayLiteral
     : "[" ElementListOpt[elements] "]" { $$ = CYNew CYArray($elements); }
     ;
 
-ElementList
-    : AssignmentExpressionOpt[value] "," ElementListOpt[next] { $$ = CYNew CYElementValue($value, $next); }
+ArrayElement
+    : AssignmentExpression[value] { $$ = CYNew CYElementValue($value); }
     | LexOf "..." AssignmentExpression[values] { $$ = CYNew CYElementSpread($values); }
-    | AssignmentExpression[value] { $$ = CYNew CYElementValue($value, NULL); }
+    ;
+
+ElementList_
+    : "," ElementListOpt[elements] { $$ = $elements; } 
+    | { $$ = NULL; }
+    ;
+
+ElementList
+    : ArrayElement[element] ElementList_[next] { $$ = $element; $$->SetNext($next); }
+    | LexOf "," ElementListOpt[next] { $$ = CYNew CYElementValue(NULL, $next); }
     ;
 
 ElementListOpt
@@ -1341,11 +1355,6 @@ AssignmentExpression
     | LexOf YieldExpression[pass] { $$ = $pass; }
     | ArrowFunction[pass] { $$ = $pass; }
     | LexOf LeftHandSideAssignment[assignment] AssignmentExpression[rhs] { $assignment->SetRight($rhs); $$ = $assignment; }
-    ;
-
-AssignmentExpressionOpt
-    : AssignmentExpression[pass] { $$ = $pass; }
-    | LexOf { $$ = NULL; }
     ;
 /* }}} */
 /* 12.15 Comma Operator ( , ) {{{ */
@@ -2272,15 +2281,29 @@ BoxableExpression
     | BooleanLiteral[pass] { $$ = $pass; }
     | NumericLiteral[pass] { $$ = $pass; }
     | StringLiteral[pass] { $$ = $pass; }
-    | ArrayLiteral[pass] { $$ = $pass; }
-    | ObjectLiteral[pass] { $$ = $pass; }
     | CoverParenthesizedExpressionAndArrowParameterList[pass] { $$ = $pass; }
     | "YES" { $$ = CYNew CYTrue(); }
     | "NO" { $$ = CYNew CYFalse(); }
     ;
 
+KeyValuePairList_
+    : "," KeyValuePairListOpt[next] { $$ = $next; }
+    | { $$ = NULL; }
+
+KeyValuePairList
+    : AssignmentExpression[key] ":" AssignmentExpression[value] KeyValuePairList_[next] { $$ = CYNew CYObjCKeyValue($key, $value, $next); }
+    ;
+
+KeyValuePairListOpt
+    : KeyValuePairList[pass] { $$ = $pass; }
+    | LexOf { $$ = NULL; }
+    ;
+
 PrimaryExpression
     : "@" BoxableExpression[expression] { $$ = CYNew CYBox($expression); }
+    | "@" "[" ElementListOpt[elements] "]" { $$ = CYNew CYObjCArray($elements); }
+    | "@" "{" KeyValuePairListOpt[pairs] "}" { $$ = CYNew CYObjCDictionary($pairs); }
+
     | "@YES" { $$ = CYNew CYBox(CYNew CYTrue()); }
     | "@NO" { $$ = CYNew CYBox(CYNew CYFalse()); }
     | "@true" { $$ = CYNew CYBox(CYNew CYTrue()); }

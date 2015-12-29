@@ -77,6 +77,14 @@ void CYBox::Output(CYOutput &out, CYFlags flags) const {
     value_->Output(out, Precedence(), CYRight(flags));
 }
 
+void CYObjCArray::Output(CYOutput &out, CYFlags flags) const {
+    out << '@' << '[' << elements_ << ']';
+}
+
+void CYObjCDictionary::Output(CYOutput &out, CYFlags flags) const {
+    out << '@' << '{' << '}';
+}
+
 void CYObjCBlock::Output(CYOutput &out, CYFlags flags) const {
     out << '^' << ' ' << *typed_ << ' ' << '(';
 

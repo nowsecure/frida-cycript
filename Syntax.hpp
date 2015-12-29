@@ -1089,21 +1089,26 @@ struct CYClause :
 };
 
 struct CYElement :
+    CYNext<CYElement>,
     CYThing
 {
+    CYElement(CYElement *next) :
+        CYNext<CYElement>(next)
+    {
+    }
+
     virtual bool Elision() const = 0;
 
     virtual void Replace(CYContext &context) = 0;
 };
 
 struct CYElementValue :
-    CYNext<CYElement>,
     CYElement
 {
     CYExpression *value_;
 
     CYElementValue(CYExpression *value, CYElement *next = NULL) :
-        CYNext<CYElement>(next),
+        CYElement(next),
         value_(value)
     {
     }
@@ -1121,7 +1126,8 @@ struct CYElementSpread :
 {
     CYExpression *value_;
 
-    CYElementSpread(CYExpression *value) :
+    CYElementSpread(CYExpression *value, CYElement *next = NULL) :
+        CYElement(next),
         value_(value)
     {
     }

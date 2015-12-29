@@ -749,28 +749,44 @@ void Bits::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data
     _assert(false);
 }
 
-void Pointer::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
-    *reinterpret_cast<void **>(data) = CYCastPointer<void *>(context, value);
-}
-
-void Array::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
-    uint8_t *base(reinterpret_cast<uint8_t *>(data));
-    JSObjectRef aggregate(JSValueIsObject(context, value) ? (JSObjectRef) value : NULL);
-    for (size_t index(0); index != size; ++index) {
-        ffi_type *field(ffi->elements[index]);
-
+static void CYArrayCopy(CYPool *pool, JSContextRef context, uint8_t *base, size_t length, const sig::Type &type, ffi_type *ffi, JSValueRef value, JSObjectRef object) {
+    for (size_t index(0); index != length; ++index) {
         JSValueRef rhs;
-        if (aggregate == NULL)
+        if (object == NULL)
             rhs = value;
         else {
-            rhs = CYGetProperty(context, aggregate, index);
+            rhs = CYGetProperty(context, object, index);
             if (JSValueIsUndefined(context, rhs))
                 throw CYJSError(context, "unable to extract array value");
         }
 
-        type.PoolFFI(pool, context, field, base, rhs);
-        base += field->size;
+        type.PoolFFI(pool, context, ffi, base, rhs);
+        base += ffi->size;
     }
+}
+
+void Pointer::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
+    bool guess(false);
+    *reinterpret_cast<void **>(data) = CYCastPointer<void *>(context, value, &guess);
+    if (!guess || pool == NULL || !JSValueIsObject(context, value))
+        return;
+    JSObjectRef object(CYCastJSObject(context, value));
+    if (CYHasProperty(context, object, length_s)) {
+        size_t length(CYArrayLength(context, object));
+        ffi_type *element(type.GetFFI(*pool));
+        size_t size(element->size * length);
+        uint8_t *base(pool->malloc<uint8_t>(size, element->alignment));
+        CYArrayCopy(pool, context, base, length, type, element, value, object);
+        *reinterpret_cast<void **>(data) = base;
+    }
+}
+
+void Array::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
+    if (size == 0)
+        return;
+    uint8_t *base(reinterpret_cast<uint8_t *>(data));
+    JSObjectRef object(JSValueIsObject(context, value) ? (JSObjectRef) value : NULL);
+    CYArrayCopy(pool, context, base, size, type, ffi->elements[0], value, object);
 }
 
 void Aggregate::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {

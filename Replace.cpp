@@ -101,8 +101,8 @@ CYArgument *CYArgument::Replace(CYContext &context) { $T(NULL)
 }
 
 CYTarget *CYArray::Replace(CYContext &context) {
-    if (elements_ != NULL)
-        elements_->Replace(context);
+    CYForEach (element, elements_)
+        element->Replace(context);
     return this;
 }
 
@@ -347,8 +347,6 @@ void CYElementSpread::Replace(CYContext &context) {
 
 void CYElementValue::Replace(CYContext &context) {
     context.Replace(value_);
-    if (next_ != NULL)
-        next_->Replace(context);
 }
 
 CYForInitializer *CYEmpty::Replace(CYContext &context) {

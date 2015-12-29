@@ -132,6 +132,27 @@ CYTarget *CYBox::Replace(CYContext &context) {
     return $C1($M($V("Instance"), $S("box")), value_);
 }
 
+CYTarget *CYObjCArray::Replace(CYContext &context) {
+    size_t count(0);
+    CYForEach (element, elements_)
+        ++count;
+    return $ CYSendDirect($V("NSArray"), $C_($ CYWord("arrayWithObjects"), $ CYArray(elements_), $C_($ CYWord("count"), $D(count))));
+}
+
+CYTarget *CYObjCDictionary::Replace(CYContext &context) {
+    CYList<CYElement> keys;
+    CYList<CYElement> values;
+    size_t count(0);
+
+    CYForEach (pair, pairs_) {
+        keys->*$ CYElementValue(pair->key_);
+        values->*$ CYElementValue(pair->value_);
+        ++count;
+    }
+
+    return $ CYSendDirect($V("NSDictionary"), $C_($ CYWord("dictionaryWithObjects"), $ CYArray(values), $C_($ CYWord("forKeys"), $ CYArray(keys), $C_($ CYWord("count"), $D(count)))));
+}
+
 CYTarget *CYObjCBlock::Replace(CYContext &context) {
     return $C1($ CYTypeExpression(($ CYTypedIdentifier(*typed_))->Modify($ CYTypeBlockWith(parameters_))), $ CYFunctionExpression(NULL, parameters_->Parameters(context), code_));
 }
