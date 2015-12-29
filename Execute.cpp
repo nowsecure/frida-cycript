@@ -1764,8 +1764,12 @@ static JSValueRef CString_callAsFunction_toCYON(JSContextRef context, JSObjectRe
     Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(_this)));
     const char *string(static_cast<const char *>(internal->value_));
     std::ostringstream str;
-    str << "&";
-    CYStringify(str, string, strlen(string), true);
+    if (string == NULL)
+        str << "NULL";
+    else {
+        str << "&";
+        CYStringify(str, string, strlen(string), true);
+    }
     std::string value(str.str());
     return CYCastJSValue(context, CYJSString(CYUTF8String(value.c_str(), value.size())));
 } CYCatch(NULL) }
