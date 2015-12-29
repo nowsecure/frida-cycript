@@ -118,7 +118,7 @@ class CYPool {
     char *strdup(const char *data) {
         if (data == NULL)
             return NULL;
-        return reinterpret_cast<char *>(memdup(data, strlen(data) + 1));
+        return reinterpret_cast<char *>(memdup(data, strlen(data) + 1, 1));
     }
 
     template <typename Type_>

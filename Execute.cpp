@@ -269,9 +269,9 @@ JSObjectRef CYMakeStruct(JSContextRef context, void *data, const sig::Type &type
     if (owner != NULL)
         internal->value_ = data;
     else {
-        size_t size(typical->GetFFI()->size);
-        void *copy(internal->pool_->malloc<void>(size));
-        memcpy(copy, data, size);
+        ffi_type *ffi(typical->GetFFI());
+        void *copy(internal->pool_->malloc<void>(ffi->size, ffi->alignment));
+        memcpy(copy, data, ffi->size);
         internal->value_ = copy;
     }
 
@@ -744,7 +744,6 @@ void Array::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *dat
         }
 
         type.PoolFFI(pool, context, field, base, rhs);
-        // XXX: alignment?
         base += field->size;
     }
 }
@@ -774,7 +773,6 @@ void Aggregate::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void 
         }
 
         element->type->PoolFFI(pool, context, field, base, rhs);
-        // XXX: alignment?
         base += field->size;
     }
 }
@@ -1135,8 +1133,7 @@ JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, voi
     for (size_t index(setups); index != size; ++index) {
         sig::Element *element(&signature->elements[index + 1]);
         ffi_type *ffi(cif->arg_types[index]);
-        // XXX: alignment?
-        values[index] = new(pool) uint8_t[ffi->size];
+        values[index] = pool.malloc<uint8_t>(ffi->size, ffi->alignment);
         element->type->PoolFFI(&pool, context, ffi, values[index], arguments[index - setups]);
     }
 
@@ -1481,11 +1478,10 @@ static JSValueRef Type_callAsFunction(JSContextRef context, JSObjectRef object, 
     if (sig::Function *function = dynamic_cast<sig::Function *>(internal->type_))
         return CYMakeFunctor(context, arguments[0], function->signature);
 
+    CYPool pool;
     sig::Type *type(internal->type_);
     ffi_type *ffi(internal->GetFFI());
-    // XXX: alignment?
-    uint8_t value[ffi->size];
-    CYPool pool;
+    void *value(pool.malloc<void>(ffi->size, ffi->alignment));
     type->PoolFFI(&pool, context, ffi, value, arguments[0]);
     return type->FromFFI(context, ffi, value);
 } CYCatch(NULL) }
@@ -1500,8 +1496,9 @@ static JSObjectRef Type_callAsConstructor(JSContextRef context, JSObjectRef obje
 
     JSObjectRef pointer(CYMakePointer(context, NULL, length, *type, NULL, NULL));
     Pointer *value(reinterpret_cast<Pointer *>(JSObjectGetPrivate(pointer)));
-    value->value_ = value->pool_->malloc<void>(internal->GetFFI()->size);
-    memset(value->value_, 0, internal->GetFFI()->size);
+    ffi_type *ffi(internal->GetFFI());
+    value->value_ = value->pool_->malloc<void>(ffi->size, ffi->alignment);
+    memset(value->value_, 0, ffi->size);
     return pointer;
 } CYCatch(NULL) }
 
