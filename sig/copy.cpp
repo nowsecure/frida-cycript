@@ -45,58 +45,55 @@ void Copy(CYPool &pool, Signature &lhs, const Signature &rhs) {
         Copy(pool, lhs.elements[index], rhs.elements[index]);
 }
 
-Void *Void::Copy(CYPool &pool, const char *name) const {
+Void *Void::Copy(CYPool &pool, const char *rename) const {
     return new(pool) Void();
 }
 
-Unknown *Unknown::Copy(CYPool &pool, const char *name) const {
+Unknown *Unknown::Copy(CYPool &pool, const char *rename) const {
     return new(pool) Unknown();
 }
 
-String *String::Copy(CYPool &pool, const char *name) const {
+String *String::Copy(CYPool &pool, const char *rename) const {
     return new(pool) String();
 }
 
-Meta *Meta::Copy(CYPool &pool, const char *name) const {
+Meta *Meta::Copy(CYPool &pool, const char *rename) const {
     return new(pool) Meta();
 }
 
-Selector *Selector::Copy(CYPool &pool, const char *name) const {
+Selector *Selector::Copy(CYPool &pool, const char *rename) const {
     return new(pool) Selector();
 }
 
-Bits *Bits::Copy(CYPool &pool, const char *name) const {
+Bits *Bits::Copy(CYPool &pool, const char *rename) const {
     return new(pool) Bits(size);
 }
 
-Pointer *Pointer::Copy(CYPool &pool, const char *name) const {
+Pointer *Pointer::Copy(CYPool &pool, const char *rename) const {
     return new(pool) Pointer(*type.Copy(pool));
 }
 
-Array *Array::Copy(CYPool &pool, const char *name) const {
+Array *Array::Copy(CYPool &pool, const char *rename) const {
     return new(pool) Array(*type.Copy(pool), size);
 }
 
-Object *Object::Copy(CYPool &pool, const char *name) const {
-    Object *copy(new(pool) Object(pool.strdup(name)));
-    copy->name = name;
-    return copy;
+Object *Object::Copy(CYPool &pool, const char *rename) const {
+    return new(pool) Object(pool.strdup(name));
 }
 
-Aggregate *Aggregate::Copy(CYPool &pool, const char *name) const {
-    Aggregate *copy(new(pool) Aggregate(overlap, name));
+Aggregate *Aggregate::Copy(CYPool &pool, const char *rename) const {
+    Aggregate *copy(new(pool) Aggregate(overlap, rename ?: pool.strdup(name)));
     sig::Copy(pool, copy->signature, signature);
-    copy->name = name;
     return copy;
 }
 
-Function *Function::Copy(CYPool &pool, const char *name) const {
+Function *Function::Copy(CYPool &pool, const char *rename) const {
     Function *copy(new(pool) Function(variadic));
     sig::Copy(pool, copy->signature, signature);
     return copy;
 }
 
-Block *Block::Copy(CYPool &pool, const char *name) const {
+Block *Block::Copy(CYPool &pool, const char *rename) const {
     Block *copy(new(pool) Block());
     sig::Copy(pool, copy->signature, signature);
     return copy;
@@ -127,10 +124,6 @@ void Copy(CYPool &pool, ffi_type &lhs, ffi_type &rhs) {
 
 const char *Type::GetName() const {
     return NULL;
-}
-
-const char *Object::GetName() const {
-    return name;
 }
 
 const char *Aggregate::GetName() const {

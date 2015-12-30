@@ -57,7 +57,7 @@ struct Type {
     {
     }
 
-    virtual Type *Copy(CYPool &pool, const char *name = NULL) const = 0;
+    virtual Type *Copy(CYPool &pool, const char *rename = NULL) const = 0;
     virtual const char *GetName() const;
 
     virtual const char *Encode(CYPool &pool) const = 0;
@@ -98,7 +98,7 @@ struct Signature {
 struct Void :
     Type
 {
-    Void *Copy(CYPool &pool, const char *name = NULL) const override;
+    Void *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
     CYTypedIdentifier *Decode(CYPool &pool) const override;
@@ -111,7 +111,7 @@ struct Void :
 struct Unknown :
     Type
 {
-    Unknown *Copy(CYPool &pool, const char *name = NULL) const override;
+    Unknown *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
     CYTypedIdentifier *Decode(CYPool &pool) const override;
@@ -124,7 +124,7 @@ struct Unknown :
 struct String :
     Type
 {
-    String *Copy(CYPool &pool, const char *name = NULL) const override;
+    String *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
     CYTypedIdentifier *Decode(CYPool &pool) const override;
@@ -137,7 +137,7 @@ struct String :
 struct Meta :
     Type
 {
-    Meta *Copy(CYPool &pool, const char *name = NULL) const override;
+    Meta *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
     CYTypedIdentifier *Decode(CYPool &pool) const override;
@@ -150,7 +150,7 @@ struct Meta :
 struct Selector :
     Type
 {
-    Selector *Copy(CYPool &pool, const char *name = NULL) const override;
+    Selector *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
     CYTypedIdentifier *Decode(CYPool &pool) const override;
@@ -170,7 +170,7 @@ struct Bits :
     {
     }
 
-    Bits *Copy(CYPool &pool, const char *name = NULL) const override;
+    Bits *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
     CYTypedIdentifier *Decode(CYPool &pool) const override;
@@ -190,7 +190,7 @@ struct Pointer :
     {
     }
 
-    Pointer *Copy(CYPool &pool, const char *name = NULL) const override;
+    Pointer *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
     CYTypedIdentifier *Decode(CYPool &pool) const override;
@@ -212,7 +212,7 @@ struct Array :
     {
     }
 
-    Array *Copy(CYPool &pool, const char *name = NULL) const override;
+    Array *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
     CYTypedIdentifier *Decode(CYPool &pool) const override;
@@ -232,8 +232,7 @@ struct Object :
     {
     }
 
-    Object *Copy(CYPool &pool, const char *name = NULL) const override;
-    const char *GetName() const override;
+    Object *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
     CYTypedIdentifier *Decode(CYPool &pool) const override;
@@ -256,7 +255,7 @@ struct Aggregate :
     {
     }
 
-    Aggregate *Copy(CYPool &pool, const char *name = NULL) const override;
+    Aggregate *Copy(CYPool &pool, const char *rename = NULL) const override;
     const char *GetName() const override;
 
     const char *Encode(CYPool &pool) const override;
@@ -286,7 +285,7 @@ struct Function :
     {
     }
 
-    Function *Copy(CYPool &pool, const char *name = NULL) const override;
+    Function *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
     CYTypedIdentifier *Modify(CYPool &pool, CYTypedIdentifier *result, CYTypedParameter *parameters) const override;
@@ -299,7 +298,7 @@ struct Function :
 struct Block :
     Callable
 {
-    Block *Copy(CYPool &pool, const char *name = NULL) const override;
+    Block *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
     CYTypedIdentifier *Decode(CYPool &pool) const override;

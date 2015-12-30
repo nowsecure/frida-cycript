@@ -2545,7 +2545,11 @@ static JSValueRef Selector_getProperty_$cyt(JSContextRef context, JSObjectRef ob
 } CYCatch(NULL) }
 
 static JSValueRef Instance_getProperty_$cyt(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
-    return CYMakeType(context, sig::Object());
+    Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
+    id self(internal->GetValue());
+    if (CYIsClass(self))
+        return CYMakeType(context, sig::Meta());
+    return CYMakeType(context, sig::Object(class_getName(object_getClass(self))));
 } CYCatch(NULL) }
 
 static JSValueRef FunctionInstance_getProperty_$cyt(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
@@ -2555,10 +2559,6 @@ static JSValueRef FunctionInstance_getProperty_$cyt(JSContextRef context, JSObje
     if (!CYBlockSignature(pool, internal->GetValue(), type.signature))
         return CYJSNull(context);
     return CYMakeType(context, type);
-} CYCatch(NULL) }
-
-static JSValueRef Class_getProperty_$cyt(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
-    return CYMakeType(context, sig::Meta());
 } CYCatch(NULL) }
 
 static JSValueRef Instance_getProperty_constructor(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
@@ -2745,11 +2745,6 @@ static JSStaticFunction Class_staticFunctions[2] = {
     {NULL, NULL, 0}
 };
 
-static JSStaticValue Class_staticValues[2] = {
-    {"$cyt", &Class_getProperty_$cyt, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
-    {NULL, NULL, NULL, 0}
-};
-
 static JSStaticFunction Internal_staticFunctions[2] = {
     {"$cya", &Internal_callAsFunction_$cya, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
@@ -2837,7 +2832,6 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     definition = kJSClassDefinitionEmpty;
     definition.className = "Class";
     definition.staticFunctions = Class_staticFunctions;
-    definition.staticValues = Class_staticValues;
     Class_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
