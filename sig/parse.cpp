@@ -202,12 +202,13 @@ Type *Parse_(CYPool &pool, const char **encoding, char eos, bool named, Callback
                 type = (*callback)(pool, aggregate);
         } break;
 
-        case 'N': flags |= JOC_TYPE_INOUT; goto next;
-        case 'n': flags |= JOC_TYPE_IN; goto next;
-        case 'O': flags |= JOC_TYPE_BYCOPY; goto next;
-        case 'o': flags |= JOC_TYPE_OUT; goto next;
-        case 'R': flags |= JOC_TYPE_BYREF; goto next;
         case 'r': flags |= JOC_TYPE_CONST; goto next;
+
+        case 'n': flags |= JOC_TYPE_IN; goto next;
+        case 'N': flags |= JOC_TYPE_INOUT; goto next;
+        case 'o': flags |= JOC_TYPE_OUT; goto next;
+        case 'O': flags |= JOC_TYPE_BYCOPY; goto next;
+        case 'R': flags |= JOC_TYPE_BYREF; goto next;
         case 'V': flags |= JOC_TYPE_ONEWAY; goto next;
 
         next:
