@@ -389,10 +389,23 @@ static Type_ *CYmemrchr(Type_ *data, Type_ value, size_t size) {
     return NULL;
 }
 
+static void _lblcall(int (*command)(int, int), int count, int key) {
+    int last(_rl_last_c_pos);
+    // rl_rubout crashes in _rl_erase_at_end_of_line if _rl_last_c_pos != 0
+    if (command == &rl_rubout)
+        _rl_last_c_pos = 0;
+    for (int i(0); i != count; ++i)
+        if (command(1, key) != 0)
+            _assert(false);
+    _rl_last_c_pos = last;
+}
+
 static int CYConsoleKeyReturn(int count, int key) {
     if (rl_point != rl_end) {
-        if (memchr(rl_line_buffer, '\n', rl_end) == NULL)
-            return rl_newline(count, key);
+        if (memchr(rl_line_buffer, '\n', rl_end) == NULL) {
+            _lblcall(&rl_newline, count, key);
+            return 0;
+        }
 
       insert:
         char *before(CYmemrchr(rl_line_buffer, '\n', rl_point));
@@ -405,11 +418,11 @@ static int CYConsoleKeyReturn(int count, int key) {
 
         int adjust(rl_line_buffer + space - 1 - before);
         if (space == rl_point && adjust != 0)
-            rl_rubout(adjust, '\b');
+            _lblcall(&rl_rubout, adjust, '\b');
 
-        rl_insert(count, '\n');
+        _lblcall(&rl_insert, count, '\n');
         if (adjust != 0)
-            rl_insert(adjust, ' ');
+            _lblcall(&rl_insert, adjust, ' ');
 
         return 0;
     }
@@ -438,15 +451,17 @@ static int CYConsoleKeyReturn(int count, int key) {
             done = true;
     }
 
-    if (done)
-        return rl_newline(count, key);
+    if (done) {
+        _lblcall(&rl_newline, count, key);
+        return 0;
+    }
 
     // XXX: this was the most obvious fix, but is seriously dumb
     goto insert;
 }
 
 static int CYConsoleKeyUp(int count, int key) {
-    while (count-- != 0) {
+    for (; count != 0; --count) {
         char *after(CYmemrchr(rl_line_buffer, '\n', rl_point));
         if (after == NULL) {
             if (int value = rl_get_previous_history(1, key))
@@ -469,7 +484,7 @@ static int CYConsoleKeyUp(int count, int key) {
 }
 
 static int CYConsoleKeyDown(int count, int key) {
-    while (count-- != 0) {
+    for (; count != 0; --count) {
         char *after(static_cast<char *>(memchr(rl_line_buffer + rl_point, '\n', rl_end - rl_point)));
         if (after == NULL) {
             int where(where_history());
@@ -516,21 +531,28 @@ static int CYConsoleLineEnd(int count, int key) {
 }
 
 static int CYConsoleKeyBack(int count, int key) {
-    while (count-- != 0) {
+    for (; count != 0; --count) {
+        if (rl_point == 0)
+            return 1;
+
         char *before(CYmemrchr(rl_line_buffer, '\n', rl_point));
-        if (before == NULL)
-            return rl_rubout(count, key);
+        if (before == NULL) {
+            int adjust(std::min(count, rl_point));
+            _lblcall(&rl_rubout, adjust, key);
+            count -= adjust - 1;
+            continue;
+        }
 
         int start(before + 1 - rl_line_buffer);
         if (start == rl_point) rubout: {
-            rl_rubout(1, key);
+            _lblcall(&rl_rubout, 1, key);
             continue;
         }
 
         for (int i(start); i != rl_point; ++i)
             if (rl_line_buffer[i] != ' ')
                 goto rubout;
-        rl_rubout((rl_point - start) % 4 ?: 4, key);
+        _lblcall(&rl_rubout, (rl_point - start) % 4 ?: 4, key);
     }
 
     return 0;
@@ -544,7 +566,8 @@ static int CYConsoleKeyTab(int count, int key) {
     for (int i(start); i != rl_point; ++i)
         if (rl_line_buffer[i] != ' ')
             goto complete;
-    return rl_insert(4 - (rl_point - start) % 4, ' ');
+    _lblcall(&rl_insert, 4 - (rl_point - start) % 4, ' ');
+    return 0;
 }
 
 static void CYConsoleRemapBind(Keymap map, rl_command_func_t *from, rl_command_func_t *to) {
