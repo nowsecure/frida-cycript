@@ -158,10 +158,17 @@ ffi_type *Aggregate::GetFFI(CYPool &pool) const {
     ffi->alignment = 0;
     ffi->type = FFI_TYPE_STRUCT;
 
-    ffi->elements = new(pool) ffi_type *[signature.count + 1];
-    for (size_t index(0); index != signature.count; ++index)
-        ffi->elements[index] = signature.elements[index].type->GetFFI(pool);
-    ffi->elements[signature.count] = NULL;
+    if (signature.count == 0) {
+        // https://gcc.gnu.org/ml/gcc-patches/2015-01/msg01286.html
+        ffi->elements = new(pool) ffi_type *[2];
+        ffi->elements[0] = &ffi_type_void;
+        ffi->elements[1] = NULL;
+    } else {
+        ffi->elements = new(pool) ffi_type *[signature.count + 1];
+        for (size_t index(0); index != signature.count; ++index)
+            ffi->elements[index] = signature.elements[index].type->GetFFI(pool);
+        ffi->elements[signature.count] = NULL;
+    }
 
     return ffi;
 }

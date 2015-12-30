@@ -127,6 +127,8 @@ std::ostream &operator <<(std::ostream &out, const CYCXPosition<clang_get_Locati
 }
 
 struct CYKey {
+    unsigned priority_ = 0;
+
     std::string code_;
     unsigned flags_;
 };
@@ -293,6 +295,7 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
     CYCXString spelling(cursor);
     std::string name(spelling);
     std::ostringstream value;
+    unsigned priority(2);
     unsigned flags(0);
 
     /*CXSourceLocation location(clang_getCursorLocation(cursor));
@@ -364,10 +367,10 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
         } break;
 
         case CXCursor_StructDecl: {
-            if (!clang_isCursorDefinition(cursor))
-                goto skip;
             if (spelling[0] == '\0')
                 goto skip;
+            if (!clang_isCursorDefinition(cursor))
+                priority = 1;
 
             std::ostringstream types;
             std::ostringstream names;
@@ -453,8 +456,11 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
 
     {
         CYKey &key(baton.keys[name]);
-        key.code_ = value.str();
-        key.flags_ = flags;
+        if (key.priority_ < priority) {
+            key.priority_ = priority;
+            key.code_ = value.str();
+            key.flags_ = flags;
+        }
     }
 
   skip:
