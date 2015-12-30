@@ -123,12 +123,15 @@ host_triplet = @host@
 @CY_JAVA_TRUE@am__append_10 = Java
 @CY_JAVA_TRUE@am__append_11 = Java/Execute.cpp
 @CY_JAVA_TRUE@am__append_12 = $(LTJAVA)
-@CY_OBJECTIVEC_TRUE@am__append_13 = ObjectiveC
-@CY_OBJECTIVEC_TRUE@am__append_14 = ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm
-@CY_OBJECTIVEC_TRUE@am__append_15 = $(LTOBJECTIVEC)
-@CY_ATTACH_TRUE@am__append_16 = Handler.cpp
-@CY_ATTACH_TRUE@@CY_CONSOLE_TRUE@am__append_17 = Inject.cpp
-@CY_ATTACH_TRUE@@CY_CONSOLE_TRUE@am__append_18 = -DCY_ATTACH
+@CY_RUBY_TRUE@am__append_13 = Ruby
+@CY_RUBY_TRUE@am__append_14 = Ruby/Execute.cpp
+@CY_RUBY_TRUE@am__append_15 = $(LTRUBY)
+@CY_OBJECTIVEC_TRUE@am__append_16 = ObjectiveC
+@CY_OBJECTIVEC_TRUE@am__append_17 = ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm
+@CY_OBJECTIVEC_TRUE@am__append_18 = $(LTOBJECTIVEC)
+@CY_ATTACH_TRUE@am__append_19 = Handler.cpp
+@CY_ATTACH_TRUE@@CY_CONSOLE_TRUE@am__append_20 = Inject.cpp
+@CY_ATTACH_TRUE@@CY_CONSOLE_TRUE@am__append_21 = -DCY_ATTACH
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_cxx_compile_stdcxx_11.m4 \
@@ -180,31 +183,35 @@ LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 @CY_EXECUTE_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
 @CY_JAVA_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
-@CY_OBJECTIVEC_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
+@CY_RUBY_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
+@CY_OBJECTIVEC_TRUE@am__DEPENDENCIES_5 = $(am__DEPENDENCIES_1)
 libcycript_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4)
+	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4) \
+	$(am__DEPENDENCIES_5)
 am__libcycript_la_SOURCES_DIST = ConvertUTF.c Decode.cpp Driver.cpp \
 	Error.cpp Highlight.cpp Library.cpp Network.cpp Output.cpp \
 	Replace.cpp Syntax.cpp Parser.cpp Scanner.cpp Complete.cpp \
 	sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp Execute.cpp \
-	JavaScriptCore.cpp Java/Execute.cpp ObjectiveC/Output.cpp \
-	ObjectiveC/Replace.cpp ObjectiveC/Library.mm Handler.cpp
+	JavaScriptCore.cpp Java/Execute.cpp Ruby/Execute.cpp \
+	ObjectiveC/Output.cpp ObjectiveC/Replace.cpp \
+	ObjectiveC/Library.mm Handler.cpp
 @CY_CONSOLE_TRUE@am__objects_1 = Complete.lo
 am__dirstamp = $(am__leading_dot)dirstamp
 @CY_EXECUTE_TRUE@am__objects_2 = sig/ffi_type.lo sig/parse.lo \
 @CY_EXECUTE_TRUE@	sig/copy.lo Execute.lo JavaScriptCore.lo
 @CY_JAVA_TRUE@am__objects_3 = Java/Execute.lo
-@CY_OBJECTIVEC_TRUE@am__objects_4 = ObjectiveC/Output.lo \
+@CY_RUBY_TRUE@am__objects_4 = Ruby/Execute.lo
+@CY_OBJECTIVEC_TRUE@am__objects_5 = ObjectiveC/Output.lo \
 @CY_OBJECTIVEC_TRUE@	ObjectiveC/Replace.lo \
 @CY_OBJECTIVEC_TRUE@	ObjectiveC/Library.lo
-@CY_ATTACH_TRUE@am__objects_5 = Handler.lo
+@CY_ATTACH_TRUE@am__objects_6 = Handler.lo
 am_libcycript_la_OBJECTS = ConvertUTF.lo Decode.lo Driver.lo Error.lo \
 	Highlight.lo Library.lo Network.lo Output.lo Replace.lo \
 	Syntax.lo Parser.lo Scanner.lo $(am__objects_1) \
 	$(am__objects_2) $(am__objects_3) $(am__objects_4) \
-	$(am__objects_5)
+	$(am__objects_5) $(am__objects_6)
 libcycript_la_OBJECTS = $(am_libcycript_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -215,9 +222,9 @@ libcycript_la_LINK = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
 	$(OBJCXXFLAGS) $(libcycript_la_LDFLAGS) $(LDFLAGS) -o $@
 PROGRAMS = $(bin_PROGRAMS)
 am__cycript_SOURCES_DIST = Console.cpp Inject.cpp
-@CY_ATTACH_TRUE@@CY_CONSOLE_TRUE@am__objects_6 = Inject.$(OBJEXT)
+@CY_ATTACH_TRUE@@CY_CONSOLE_TRUE@am__objects_7 = Inject.$(OBJEXT)
 @CY_CONSOLE_TRUE@am_cycript_OBJECTS = Console.$(OBJEXT) \
-@CY_CONSOLE_TRUE@	$(am__objects_6)
+@CY_CONSOLE_TRUE@	$(am__objects_7)
 cycript_OBJECTS = $(am_cycript_OBJECTS)
 @CY_CONSOLE_TRUE@cycript_DEPENDENCIES = libcycript.la \
 @CY_CONSOLE_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
@@ -417,6 +424,7 @@ CY_EXECUTE = @CY_EXECUTE@
 CY_JAVA = @CY_JAVA@
 CY_LIBCLANG = @CY_LIBCLANG@
 CY_OBJECTIVEC = @CY_OBJECTIVEC@
+CY_RUBY = @CY_RUBY@
 CY_SYSTEM = @CY_SYSTEM@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -463,6 +471,7 @@ LTLIBSQLITE3 = @LTLIBSQLITE3@
 LTLIBTERMCAP = @LTLIBTERMCAP@
 LTLIBUV = @LTLIBUV@
 LTOBJECTIVEC = @LTOBJECTIVEC@
+LTRUBY = @LTRUBY@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -567,7 +576,7 @@ SUBDIRS =
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -DYYDEBUG=1 -DCY_SYSTEM="\"$(CY_SYSTEM)\"" -include \
 	config.h -include $(srcdir)/unconfig.h $(am__append_4) \
-	$(am__append_18)
+	$(am__append_21)
 AM_CFLAGS = -fvisibility=hidden
 AM_CXXFLAGS = -fvisibility=hidden
 AM_OBJCXXFLAGS = -fvisibility=hidden -fobjc-exceptions
@@ -577,14 +586,15 @@ lib_LTLIBRARIES = libcycript.la
 libcycript_la_LDFLAGS = $(CY_LDFLAGS)
 libcycript_la_LIBADD = $(LTLIBUV) $(LTLIBFFI) $(LTLIBSQLITE3) \
 	$(LTLIBGCC) -ldl $(am__append_3) $(am__append_12) \
-	$(am__append_15)
+	$(am__append_15) $(am__append_18)
 libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp Error.cpp \
 	Highlight.cpp Library.cpp Network.cpp Output.cpp Replace.cpp \
 	Syntax.cpp Parser.cpp Scanner.cpp $(am__append_1) \
 	$(am__append_2) $(am__append_11) $(am__append_14) \
+	$(am__append_17) $(am__append_19)
+filters = $(am__append_5) $(am__append_10) $(am__append_13) \
 	$(am__append_16)
-filters = $(am__append_5) $(am__append_10) $(am__append_13)
-@CY_CONSOLE_TRUE@cycript_SOURCES = Console.cpp $(am__append_17)
+@CY_CONSOLE_TRUE@cycript_SOURCES = Console.cpp $(am__append_20)
 @CY_CONSOLE_TRUE@cycript_LDADD = libcycript.la $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) $(PTHREAD_CFLAGS) -ldl
 @CY_EXECUTE_TRUE@datdir = $(libdir)
 @CY_EXECUTE_TRUE@dat_DATA = libcycript.db
@@ -692,6 +702,13 @@ Java/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) Java/$(DEPDIR)
 	@: > Java/$(DEPDIR)/$(am__dirstamp)
 Java/Execute.lo: Java/$(am__dirstamp) Java/$(DEPDIR)/$(am__dirstamp)
+Ruby/$(am__dirstamp):
+	@$(MKDIR_P) Ruby
+	@: > Ruby/$(am__dirstamp)
+Ruby/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) Ruby/$(DEPDIR)
+	@: > Ruby/$(DEPDIR)/$(am__dirstamp)
+Ruby/Execute.lo: Ruby/$(am__dirstamp) Ruby/$(DEPDIR)/$(am__dirstamp)
 ObjectiveC/$(am__dirstamp):
 	@$(MKDIR_P) ObjectiveC
 	@: > ObjectiveC/$(am__dirstamp)
@@ -767,6 +784,8 @@ mostlyclean-compile:
 	-rm -f Java/*.lo
 	-rm -f ObjectiveC/*.$(OBJEXT)
 	-rm -f ObjectiveC/*.lo
+	-rm -f Ruby/*.$(OBJEXT)
+	-rm -f Ruby/*.lo
 	-rm -f sig/*.$(OBJEXT)
 	-rm -f sig/*.lo
 
@@ -795,6 +814,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/Library.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/Output.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/Replace.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@Ruby/$(DEPDIR)/Execute.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sig/$(DEPDIR)/copy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sig/$(DEPDIR)/ffi_type.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sig/$(DEPDIR)/parse.Plo@am__quote@
@@ -878,6 +898,7 @@ clean-libtool:
 	-rm -rf .libs _libs
 	-rm -rf Java/.libs Java/_libs
 	-rm -rf ObjectiveC/.libs ObjectiveC/_libs
+	-rm -rf Ruby/.libs Ruby/_libs
 	-rm -rf sig/.libs sig/_libs
 
 distclean-libtool:
@@ -1239,6 +1260,8 @@ distclean-generic:
 	-rm -f Java/$(am__dirstamp)
 	-rm -f ObjectiveC/$(DEPDIR)/$(am__dirstamp)
 	-rm -f ObjectiveC/$(am__dirstamp)
+	-rm -f Ruby/$(DEPDIR)/$(am__dirstamp)
+	-rm -f Ruby/$(am__dirstamp)
 	-rm -f sig/$(DEPDIR)/$(am__dirstamp)
 	-rm -f sig/$(am__dirstamp)
 
@@ -1252,7 +1275,7 @@ clean-am: clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
 
 distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
-	-rm -rf ./$(DEPDIR) Java/$(DEPDIR) ObjectiveC/$(DEPDIR) sig/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) Java/$(DEPDIR) ObjectiveC/$(DEPDIR) Ruby/$(DEPDIR) sig/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-libtool distclean-tags
@@ -1300,7 +1323,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
-	-rm -rf ./$(DEPDIR) Java/$(DEPDIR) ObjectiveC/$(DEPDIR) sig/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) Java/$(DEPDIR) ObjectiveC/$(DEPDIR) Ruby/$(DEPDIR) sig/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

@@ -99,6 +99,12 @@ libcycript_la_SOURCES += Java/Execute.cpp
 libcycript_la_LIBADD += $(LTJAVA)
 endif
 
+if CY_RUBY
+filters += Ruby
+libcycript_la_SOURCES += Ruby/Execute.cpp
+libcycript_la_LIBADD += $(LTRUBY)
+endif
+
 if CY_OBJECTIVEC
 filters += ObjectiveC
 libcycript_la_SOURCES += ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm

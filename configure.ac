@@ -231,6 +231,18 @@ AS_CASE([$CY_EXECUTE], [1], [
         AC_SUBST([CY_JAVA], [0])
     ])])
 
+    AC_CHECK_FRAMEWORK([Ruby], [
+        #include <Ruby/ruby.h>
+    ], [ruby_init();], [
+        AC_SUBST([CY_RUBY], [1])
+    ], [AC_CHECK_HEADERS([ruby.h], [
+        AC_SUBST([CY_RUBY], [1])
+        CY_LT_LIB([LTRUBY], [AC_SEARCH_LIBS([ruby_init], [ruby], [
+        ])])
+    ], [
+        AC_SUBST([CY_RUBY], [0])
+    ])])
+
     AC_LANG_PUSH([Objective C++])
 
     AC_MSG_CHECKING([if we really have Objective C++])
@@ -264,6 +276,7 @@ AS_CASE([$CY_EXECUTE], [1], [
 ])
 
 AM_CONDITIONAL([CY_JAVA], [test "x$CY_JAVA" = x1])
+AM_CONDITIONAL([CY_RUBY], [test "x$CY_RUBY" = x1])
 AM_CONDITIONAL([CY_OBJECTIVEC], [test "x$CY_OBJECTIVEC" = x1])
 
 AC_ARG_WITH([libclang], AS_HELP_STRING([--with-libclang], [build bridge definitions using this libclang]), [], [with_libclang=no])

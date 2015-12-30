@@ -648,11 +648,15 @@ CY_PRELINK_TRUE
 CY_LIBCLANG
 CY_OBJECTIVEC_FALSE
 CY_OBJECTIVEC_TRUE
+CY_RUBY_FALSE
+CY_RUBY_TRUE
 CY_JAVA_FALSE
 CY_JAVA_TRUE
 LTOBJECTIVEC
 GNUSTEP_CONFIG
 CY_OBJECTIVEC
+LTRUBY
+CY_RUBY
 LTJAVA
 CY_JAVA
 LTLIBFFI
@@ -23180,6 +23184,158 @@ fi
 
 fi
 
+
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework Ruby" >&5
+$as_echo_n "checking for framework Ruby... " >&6; }
+if ${ac_cv_framework_Ruby+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+		ac_check_framework_save_LIBS=$LIBS
+		LIBS="-framework Ruby  $LIBS"
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+        #include <Ruby/ruby.h>
+
+int
+main ()
+{
+ruby_init();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+
+			ac_cv_framework_Ruby=yes
+
+else
+  ac_cv_framework_Ruby=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+		LIBS=$ac_check_framework_save_LIBS
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_framework_Ruby" >&5
+$as_echo "$ac_cv_framework_Ruby" >&6; }
+	if test $ac_cv_framework_Ruby = yes; then :
+
+
+  for element in "-framework Ruby"; do
+    haveit=
+    for x in $LIBS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LIBS="${LIBS}${LIBS:+ }$element"
+    fi
+  done
+
+
+        CY_RUBY=1
+
+
+
+else
+  for ac_header in ruby.h
+do :
+  ac_fn_cxx_check_header_mongrel "$LINENO" "ruby.h" "ac_cv_header_ruby_h" "$ac_includes_default"
+if test "x$ac_cv_header_ruby_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_RUBY_H 1
+_ACEOF
+
+        CY_RUBY=1
+
+
+    cy_save=$LIBS
+    LIBS=
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing ruby_init" >&5
+$as_echo_n "checking for library containing ruby_init... " >&6; }
+if ${ac_cv_search_ruby_init+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char ruby_init ();
+int
+main ()
+{
+return ruby_init ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ruby; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_ruby_init=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_ruby_init+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_ruby_init+:} false; then :
+
+else
+  ac_cv_search_ruby_init=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_ruby_init" >&5
+$as_echo "$ac_cv_search_ruby_init" >&6; }
+ac_res=$ac_cv_search_ruby_init
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+    LTRUBY=$LIBS
+    LIBS=$cy_save
+
+
+
+else
+
+        CY_RUBY=0
+
+
+fi
+
+done
+
+fi
+
     ac_ext=mm
 ac_cpp='$OBJCXXCPP $CPPFLAGS'
 ac_compile='$OBJCXX -c $OBJCXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -23470,6 +23626,14 @@ esac
 else
   CY_JAVA_TRUE='#'
   CY_JAVA_FALSE=
+fi
+
+ if test "x$CY_RUBY" = x1; then
+  CY_RUBY_TRUE=
+  CY_RUBY_FALSE='#'
+else
+  CY_RUBY_TRUE='#'
+  CY_RUBY_FALSE=
 fi
 
  if test "x$CY_OBJECTIVEC" = x1; then
@@ -23885,6 +24049,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${CY_JAVA_TRUE}" && test -z "${CY_JAVA_FALSE}"; then
   as_fn_error $? "conditional \"CY_JAVA\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${CY_RUBY_TRUE}" && test -z "${CY_RUBY_FALSE}"; then
+  as_fn_error $? "conditional \"CY_RUBY\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${CY_OBJECTIVEC_TRUE}" && test -z "${CY_OBJECTIVEC_FALSE}"; then
