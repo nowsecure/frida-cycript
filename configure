@@ -23038,6 +23038,9 @@ fi
 
 
 
+    cy_save=$LIBS
+    LIBS=
+
 			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework JavaVM" >&5
 $as_echo_n "checking for framework JavaVM... " >&6; }
 if ${ac_cv_framework_JavaVM+:} false; then :
@@ -23109,10 +23112,7 @@ if test "x$ac_cv_header_jni_h" = xyes; then :
 
         CY_JAVA=1
 
-
-    cy_save=$LIBS
-    LIBS=
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing JNI_GetCreatedJavaVMs" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing JNI_GetCreatedJavaVMs" >&5
 $as_echo_n "checking for library containing JNI_GetCreatedJavaVMs... " >&6; }
 if ${ac_cv_search_JNI_GetCreatedJavaVMs+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -23169,10 +23169,6 @@ if test "$ac_res" != no; then :
 
 fi
 
-    LTJAVA=$LIBS
-    LIBS=$cy_save
-
-
 
 else
 
@@ -23183,7 +23179,14 @@ fi
 
 
 fi
+    LTJAVA=$LIBS
+    LIBS=$cy_save
 
+
+
+
+    cy_save=$LIBS
+    LIBS=
 
 			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework Ruby" >&5
 $as_echo_n "checking for framework Ruby... " >&6; }
@@ -23261,10 +23264,7 @@ _ACEOF
 
         CY_RUBY=1
 
-
-    cy_save=$LIBS
-    LIBS=
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing ruby_init" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing ruby_init" >&5
 $as_echo_n "checking for library containing ruby_init... " >&6; }
 if ${ac_cv_search_ruby_init+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -23318,11 +23318,8 @@ ac_res=$ac_cv_search_ruby_init
 if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
 
+
 fi
-
-    LTRUBY=$LIBS
-    LIBS=$cy_save
-
 
 
 else
@@ -23335,6 +23332,10 @@ fi
 done
 
 fi
+    LTRUBY=$LIBS
+    LIBS=$cy_save
+
+
 
     ac_ext=mm
 ac_cpp='$OBJCXXCPP $CPPFLAGS'
