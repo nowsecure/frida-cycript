@@ -89,6 +89,10 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
                 prefix << (*part)->word_ << ':';
         } break;
 
+        case CYDriver::AutoResolve:
+            expression = $M(driver.context_, $S("$cyr"));
+        break;
+
         default:
             _assert(false);
     }

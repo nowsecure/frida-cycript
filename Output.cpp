@@ -326,7 +326,7 @@ void CYCondition::Output(CYOutput &out, CYFlags flags) const {
     test_->Output(out, Precedence() - 1, CYLeft(flags));
     out << ' ' << '?' << ' ';
     if (true_ != NULL)
-        true_->Output(out, CYAssign::Precedence_, CYNoFlags);
+        true_->Output(out, CYAssign::Precedence_, CYNoColon);
     out << ' ' << ':' << ' ';
     false_->Output(out, CYAssign::Precedence_, CYRight(flags));
 }
@@ -340,10 +340,12 @@ void CYContinue::Output(CYOutput &out, CYFlags flags) const {
 
 void CYClause::Output(CYOutput &out) const {
     out << '\t';
-    if (value_ != NULL)
-        out << "case" << ' ' << *value_;
-    else
+    if (value_ == NULL)
         out << "default";
+    else {
+        out << "case" << ' ';
+        value_->Output(out, CYNoColon);
+    }
     out << ':' << '\n';
     ++out.indent_;
     out << code_;
@@ -854,6 +856,14 @@ void CYRegEx::Output(CYOutput &out, CYFlags flags) const {
     out << Value();
 }
 
+void CYResolveMember::Output(CYOutput &out, CYFlags flags) const {
+    object_->Output(out, Precedence(), CYLeft(flags));
+    if (const char *word = property_->Word())
+        out << "::" << word;
+    else
+        out << "::" << '[' << *property_ << ']';
+}
+
 void CYReturn::Output(CYOutput &out, CYFlags flags) const {
     out << "return";
     if (value_ != NULL)
@@ -991,6 +1001,15 @@ void CYSwitch::Output(CYOutput &out, CYFlags flags) const {
     out << clauses_;
     --out.indent_;
     out << '\t' << '}';
+}
+
+void CYSymbol::Output(CYOutput &out, CYFlags flags) const {
+    bool protect((flags & CYNoColon) != 0);
+    if (protect)
+        out << '(';
+    out << ':' << name_;
+    if (protect)
+        out << ')';
 }
 
 void CYThis::Output(CYOutput &out, CYFlags flags) const {

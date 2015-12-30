@@ -878,6 +878,10 @@ void CYScript::Replace(CYContext &context) {
     }
 }
 
+CYTarget *CYResolveMember::Replace(CYContext &context) {
+    return $M($M(object_, $S("$cyr")), property_);
+}
+
 CYStatement *CYReturn::Replace(CYContext &context) {
     if (context.nonlocal_ != NULL) {
         CYProperty *value(value_ == NULL ? NULL : $ CYPropertyValue($S("$cyv"), value_));
@@ -1120,6 +1124,10 @@ CYTarget *CYSuperAccess::Replace(CYContext &context) {
 
 CYTarget *CYSuperCall::Replace(CYContext &context) {
     return $C($C1($M($V(context.super_), $S("bind")), $ CYThis()), arguments_);
+}
+
+CYTarget *CYSymbol::Replace(CYContext &context) {
+    return $C1($M($V("Symbol"), $S("for")), $S(name_));
 }
 
 CYStatement *CYSwitch::Replace(CYContext &context) {

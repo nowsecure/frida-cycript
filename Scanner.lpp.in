@@ -340,7 +340,6 @@ XMLName {XMLNameStart}{XMLNamePart}*
 ".."   L E("invalid operator")
 
 @begin E4X
-"::"   L F(tk::ColonColon, hi::Operator);
 ".."   L F(tk::PeriodPeriod, hi::Operator);
 @end
 
@@ -392,6 +391,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "/=" L F(tk::SlashEqual, hi::Operator);
 
 ":"    L F(tk::Colon, hi::Structure);
+"::"   L F(tk::ColonColon, hi::Structure);
 ","    L F(tk::Comma, hi::Structure);
 "?"    L F(tk::Question, hi::Structure);
 ";"    L F(tk::SemiColon, hi::Structure);

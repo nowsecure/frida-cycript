@@ -253,7 +253,6 @@ type; })
 %token SlashRight "/>"
 %token LeftSlash "</"
 
-%token ColonColon "::"
 %token PeriodPeriod ".."
 @end
 
@@ -305,6 +304,7 @@ type; })
 %token Tilde "~"
 
 %token Colon ":"
+%token ColonColon "::"
 %token Comma ","
 %token Question "?"
 %token SemiColon ";"
@@ -652,6 +652,7 @@ type; })
 %type <statement_> VariableStatement
 %type <statement_> WithStatement
 %type <word_> Word
+%type <word_> WordNoUnary
 @begin ObjectiveC
 %type <word_> WordOpt
 @end
@@ -742,6 +743,9 @@ type; })
 /* Token Priorities {{{ */
 %nonassoc "if"
 %nonassoc "else"
+
+%nonassoc ":"
+%nonassoc "!yield"
 /* }}} */
 
 %start Program
@@ -815,7 +819,7 @@ IdentifierName
     | "instanceof" { $$ = CYNew CYWord("instanceof"); }
     ;
 
-Word
+WordNoUnary
     : IdentifierNoOf[pass] { $$ = $pass; }
     | "break" { $$ = CYNew CYWord("break"); }
     | "case" { $$ = CYNew CYWord("case"); }
@@ -826,7 +830,6 @@ Word
     | "continue" { $$ = CYNew CYWord("continue"); }
     | "debugger" { $$ = CYNew CYWord("debugger"); }
     | "default" { $$ = CYNew CYWord("default"); }
-    | "delete" { $$ = CYNew CYWord("delete"); }
     | "do" { $$ = CYNew CYWord("do"); }
     | "else" { $$ = CYNew CYWord("else"); }
     | "enum" { $$ = CYNew CYWord("enum"); }
@@ -839,7 +842,6 @@ Word
     | "import" { $$ = CYNew CYWord("import"); }
     | "!in" { $$ = CYNew CYWord("in"); }
     | "!of" { $$ = CYNew CYWord("of"); }
-    | "new" { $$ = CYNew CYWord("new"); }
     | "null" { $$ = CYNew CYWord("null"); }
     | "return" { $$ = CYNew CYWord("return"); }
     | "super" { $$ = CYNew CYWord("super"); }
@@ -848,11 +850,16 @@ Word
     | "throw" { $$ = CYNew CYWord("throw"); }
     | "true" { $$ = CYNew CYWord("true"); }
     | "try" { $$ = CYNew CYWord("try"); }
-    | "typeof" { $$ = CYNew CYWord("typeof"); }
     | "var" { $$ = CYNew CYWord("var"); }
-    | "void" { $$ = CYNew CYWord("void"); }
     | "while" { $$ = CYNew CYWord("while"); }
     | "with" { $$ = CYNew CYWord("with"); }
+    ;
+
+Word
+    : WordNoUnary[pass] { $$ = $pass; }
+    | "delete" { $$ = CYNew CYWord("delete"); }
+    | "typeof" { $$ = CYNew CYWord("typeof"); }
+    | "void" { $$ = CYNew CYWord("void"); }
     | "yield" { $$ = CYNew CYIdentifier("yield"); }
     ;
 
@@ -1802,7 +1809,7 @@ GeneratorBody
 
 YieldExpression
     : "!yield" LexNewLineOrNot "\n" LexOf { CYNOT(@$); /* $$ = CYNew CYYieldValue(NULL); */ }
-    | "!yield" LexNewLineOrNot "" LexNoStar LexOf { CYNOT(@$); /* $$ = CYNew CYYieldValue(NULL); */ }
+    | "!yield" LexNewLineOrNot "" LexNoStar LexOf { CYNOT(@$); /* $$ = CYNew CYYieldValue(NULL); */ } %prec "!yield"
     | "!yield" LexNewLineOrNot "" LexNoStar AssignmentExpression[value] { CYNOT(@$); /* $$ = CYNew CYYieldValue($value); */ }
     | "!yield" LexNewLineOrNot "" LexNoStar LexOf "yield *" AssignmentExpression[generator] { CYNOT(@$); /* $$ = CYNew CYYieldGenerator($generator); */ }
     ;
@@ -2645,16 +2652,12 @@ ComprehensionIf
     : "if" "(" AssignmentExpression[test] ")" { $$ = CYNew CYIfComprehension($test); }
     ;
 /* }}} */
-/* JavaScript FTW: Coalesce Operator {{{ */
-ConditionalExpression
-    : LogicalORExpression[test] "?" LexPushInOff LexOf ":" LexPopIn AssignmentExpression[false] { $$ = CYNew CYCondition($test, $test, $false); }
-    ;
-/* }}} */
 /* JavaScript FTW: Named Arguments {{{ */
 ArgumentList
-    : LexOf Word[tag] ":" AssignmentExpression[value] ArgumentList_[next] { $$ = CYNew CYArgument($tag, $value, $next); }
+    : LexOf WordNoUnary[tag] ":" AssignmentExpression[value] ArgumentList_[next] { $$ = CYNew CYArgument($tag, $value, $next); }
     ;
 /* }}} */
+
 /* JavaScript FTW: Ruby Blocks {{{ */
 RubyProcParameterList_
     : "," RubyProcParameterList[parameters] { $$ = $parameters; }
@@ -2692,6 +2695,18 @@ RubyBlockExpression_
 RubyBlockExpression
     : RubyBlockExpression_[pass] "\n" { $$ = $pass; }
     | RubyBlockExpression_[pass] { $$ = $pass; }
+    ;
+/* }}} */
+/* JavaScript FTW: Ruby Scopes {{{ */
+MemberAccess
+    : "::" "[" Expression[property] "]" { $$ = CYNew CYResolveMember(NULL, $property); }
+    | "::" IdentifierName[property] { $$ = CYNew CYResolveMember(NULL, CYNew CYString($property)); }
+    | "::" AutoComplete { driver.mode_ = CYDriver::AutoResolve; YYACCEPT; }
+    ;
+/* }}} */
+/* JavaScript FTW: Ruby Symbols {{{ */
+PrimaryExpression
+    : ":" Word[name] { $$ = CYNew CYSymbol($name->Word()); }
     ;
 /* }}} */
 

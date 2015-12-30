@@ -150,6 +150,7 @@ enum CYFlags {
     CYNoRightHand =  (1 << 5),
     CYNoDangle =     (1 << 6),
     CYNoInteger =    (1 << 7),
+    CYNoColon =      (1 << 8),
     CYNoBFC =        (CYNoBrace | CYNoFunction | CYNoClass),
 };
 
@@ -962,6 +963,22 @@ struct CYVariable :
     virtual CYFunctionParameter *Parameter() const;
 };
 
+struct CYSymbol :
+    CYTarget
+{
+    const char *name_;
+
+    CYSymbol(const char *name) :
+        name_(name)
+    {
+    }
+
+    CYPrecedence(0)
+
+    virtual CYTarget *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
 struct CYPrefix :
     CYExpression
 {
@@ -1438,6 +1455,20 @@ struct CYIndirectMember :
     CYMember
 {
     CYIndirectMember(CYExpression *object, CYExpression *property) :
+        CYMember(object, property)
+    {
+    }
+
+    CYPrecedence(1)
+
+    virtual CYTarget *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYResolveMember :
+    CYMember
+{
+    CYResolveMember(CYExpression *object, CYExpression *property) :
         CYMember(object, property)
     {
     }
