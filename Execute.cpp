@@ -793,6 +793,7 @@ void Array::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *dat
 void Aggregate::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
     _assert(!overlap);
 
+    size_t offset(0);
     uint8_t *base(reinterpret_cast<uint8_t *>(data));
     JSObjectRef aggregate(JSValueIsObject(context, value) ? (JSObjectRef) value : NULL);
     for (size_t index(0); index != signature.count; ++index) {
@@ -814,8 +815,9 @@ void Aggregate::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void 
             }
         }
 
-        element->type->PoolFFI(pool, context, field, base, rhs);
-        base += field->size;
+        element->type->PoolFFI(pool, context, field, base + offset, rhs);
+        offset += field->size;
+        CYAlign(offset, field->alignment);
     }
 }
 
