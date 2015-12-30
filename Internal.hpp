@@ -77,7 +77,7 @@ struct Type_privateData :
             signature.count = 1;
 
             ffi_cif cif;
-            sig::sig_ffi_cif(*pool_, &signature, &cif);
+            sig::sig_ffi_cif(*pool_, false, signature, &cif);
 
             ffi_ = new(*pool_) ffi_type;
             *ffi_ = *cif.rtype;
@@ -145,22 +145,25 @@ struct Functor :
 {
   private:
     void set() {
-        sig::sig_ffi_cif(*pool_, &signature_, &cif_);
+        sig::sig_ffi_cif(*pool_, variadic_ ? signature_.count : 0, signature_, &cif_);
     }
 
   public:
+    bool variadic_;
     sig::Signature signature_;
     ffi_cif cif_;
 
-    Functor(const sig::Signature &signature, void (*value)()) :
-        CYValue(reinterpret_cast<void *>(value))
+    Functor(void (*value)(), bool variadic, const sig::Signature &signature) :
+        CYValue(reinterpret_cast<void *>(value)),
+        variadic_(variadic)
     {
         sig::Copy(*pool_, signature_, signature);
         set();
     }
 
-    Functor(const char *encoding, void (*value)()) :
-        CYValue(reinterpret_cast<void *>(value))
+    Functor(void (*value)(), const char *encoding) :
+        CYValue(reinterpret_cast<void *>(value)),
+        variadic_(false)
     {
         sig::Parse(*pool_, &signature_, encoding, &Structor_);
         set();
@@ -182,7 +185,7 @@ struct Closure_privateData :
     JSValueRef (*adapter_)(JSContextRef, size_t, JSValueRef[], JSObjectRef);
 
     Closure_privateData(JSContextRef context, JSObjectRef function, JSValueRef (*adapter)(JSContextRef, size_t, JSValueRef[], JSObjectRef), const sig::Signature &signature) :
-        cy::Functor(signature, NULL),
+        cy::Functor(NULL, false, signature),
         context_(CYGetJSContext(context)),
         function_(function),
         adapter_(adapter)

@@ -510,6 +510,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "transient"       L /*FII*/ F(tk::_transient_, hi::Meta);
 "true"            L /*LLL*/ F(tk::_true_, hi::Constant);
 "try"             L /*KKK*/ F(tk::_try_, hi::Control);
+"typeid"          L /*III*/ F(tk::_typeid_, hi::Operator);
 "typeof"          L /*KKK*/ F(tk::_typeof_, hi::Operator);
 "var"             L /*KKK*/ F(tk::_var_, hi::Meta);
 "void"            L /*KKK*/ F(tk::_void_, hi::Operator);

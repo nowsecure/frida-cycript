@@ -677,7 +677,13 @@ void CYTypeConstant::Output(CYOutput &out, CYIdentifier *identifier) const {
 
 void CYTypeFunctionWith::Output(CYOutput &out, CYIdentifier *identifier) const {
     next_->Output(out, Precedence(), identifier);
-    out << '(' << parameters_ << ')';
+    out << '(' << parameters_;
+    if (variadic_) {
+        if (parameters_ != NULL)
+            out << ',' << ' ';
+        out << "...";
+    }
+    out << ')';
 }
 
 void CYTypePointerTo::Output(CYOutput &out, CYIdentifier *identifier) const {

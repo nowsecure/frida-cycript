@@ -389,7 +389,7 @@ struct Message_privateData :
     SEL sel_;
 
     Message_privateData(SEL sel, const char *type, IMP value = NULL) :
-        cy::Functor(type, reinterpret_cast<void (*)()>(value)),
+        cy::Functor(reinterpret_cast<void (*)()>(value), type),
         sel_(sel)
     {
     }
@@ -848,28 +848,24 @@ NSObject *CYCopyNSObject(CYPool &pool, JSContextRef context, JSValueRef value) {
 @end
 
 static const char *CYBlockEncoding(NSBlock *self);
-static sig::Signature *CYBlockSignature(CYPool &pool, NSBlock *self);
+static bool CYBlockSignature(CYPool &pool, NSBlock *self, sig::Signature &signature);
 
 @implementation NSBlock (Cycript)
 
 - (NSString *) cy$toCYON:(bool)objective inSet:(std::set<void *> &)objects {
     CYLocalPool pool;
 
-    sig::Signature *signature(CYBlockSignature(pool, self));
-    // XXX: I am checking signature->count due to Decode doing it for block_P
-    if (signature == NULL || signature->count == 0)
+    sig::Block type;
+    if (!CYBlockSignature(pool, self, type.signature))
         return [super cy$toCYON:objective inSet:objects];
     _oassert(objects.insert(self).second);
 
-    sig::Block type;
-    sig::Copy(pool, type.signature, *signature);
-
     CYTypedIdentifier *typed((new(pool) CYTypeExpression(CYDecodeType(pool, &type)))->typed_);
-    CYTypeFunctionWith *function(typed->Function());
-    _assert(function != NULL);
-
-    _assert(function->parameters_ != NULL);
-    CYObjCBlock *block(new(pool) CYObjCBlock(typed, function->parameters_, NULL));
+    CYTypeModifier *&modifier(CYGetLast(typed->modifier_));
+    CYTypeBlockWith *with(dynamic_cast<CYTypeBlockWith *>(modifier));
+    _assert(with != NULL);
+    CYObjCBlock *block(new(pool) CYObjCBlock(typed, with->parameters_, NULL));
+    modifier = NULL;
 
     std::ostringstream str;
     CYOptions options;
@@ -1932,14 +1928,21 @@ static const char *CYBlockEncoding(NSBlock *self) {
     return descriptor3->signature;
 }
 
-static sig::Signature *CYBlockSignature(CYPool &pool, NSBlock *self) {
+static bool CYBlockSignature(CYPool &pool, NSBlock *self, sig::Signature &signature) {
     const char *encoding(CYBlockEncoding(self));
     if (encoding == NULL)
-        return NULL;
-    // XXX: this should be stored on a FunctionInstance private value subclass
-    sig::Signature *signature(new(pool) sig::Signature());
-    sig::Parse(pool, signature, encoding, &Structor_);
-    return signature;
+        return false;
+
+    sig::Parse(pool, &signature, encoding, &Structor_);
+    _assert(signature.count >= 2);
+
+    _assert(dynamic_cast<sig::Object *>(signature.elements[1].type) != NULL);
+    signature.elements[1] = signature.elements[0];
+
+    ++signature.elements;
+    --signature.count;
+
+    return true;
 }
 
 static JSValueRef FunctionInstance_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -1956,11 +1959,11 @@ static JSValueRef FunctionInstance_callAsFunction(JSContextRef context, JSObject
         sig::Parse(pool, &signature, encoding, &Structor_);
 
         ffi_cif cif;
-        sig::sig_ffi_cif(pool, &signature, &cif);
+        sig::sig_ffi_cif(pool, 0, signature, &cif);
 
         BlockLiteral *literal(reinterpret_cast<BlockLiteral *>(self));
         void (*function)() = reinterpret_cast<void (*)()>(literal->invoke);
-        return CYCallFunction(pool, context, 1, setup, count, arguments, false, &signature, &cif, function);
+        return CYCallFunction(pool, context, 1, setup, count, arguments, false, false, signature, &cif, function);
     }
 
     if (count != 0)
@@ -2409,24 +2412,8 @@ JSValueRef CYSendMessage(CYPool &pool, JSContextRef context, id self, Class _cla
     sig::Signature signature;
     sig::Parse(pool, &signature, type, &Structor_);
 
-    size_t used(count + 3);
-    if (used > signature.count) {
-        sig::Element *elements(new (pool) sig::Element[used]);
-        memcpy(elements, signature.elements, used * sizeof(sig::Element));
-
-        for (size_t index(signature.count); index != used; ++index) {
-            sig::Element *element(&elements[index]);
-            element->name = NULL;
-            element->offset = _not(size_t);
-            element->type = new(pool) sig::Object();
-        }
-
-        signature.elements = elements;
-        signature.count = used;
-    }
-
     ffi_cif cif;
-    sig::sig_ffi_cif(pool, &signature, &cif);
+    sig::sig_ffi_cif(pool, 0, signature, &cif);
 
     if (imp == NULL) {
 #ifndef CY_NO_STRET
@@ -2438,7 +2425,7 @@ JSValueRef CYSendMessage(CYPool &pool, JSContextRef context, id self, Class _cla
     }
 
     void (*function)() = reinterpret_cast<void (*)()>(imp);
-    return CYCallFunction(pool, context, 2, setup, count, arguments, initialize, &signature, &cif, function);
+    return CYCallFunction(pool, context, 2, setup, count, arguments, initialize, true, signature, &cif, function);
 }
 
 static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[]) {
@@ -2502,7 +2489,7 @@ static JSValueRef Message_callAsFunction(JSContextRef context, JSObjectRef objec
     setup[0] = &self;
     setup[1] = &internal->sel_;
 
-    return CYCallFunction(pool, context, 2, setup, count, arguments, false, &internal->signature_, &internal->cif_, internal->GetValue());
+    return CYCallFunction(pool, context, 2, setup, count, arguments, false, true, internal->signature_, &internal->cif_, internal->GetValue());
 } CYCatch(NULL) }
 
 static JSObjectRef Super_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -2553,13 +2540,25 @@ static JSValueRef CYValue_callAsFunction_$cya(JSContextRef context, JSObjectRef 
     return CYMakePointer(context, &internal->value_, *type, ffi, object);
 } CYCatch(NULL) }
 
-static JSValueRef FunctionInstance_getProperty_type(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
+static JSValueRef Selector_getProperty_$cyt(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
+    return CYMakeType(context, sig::Selector());
+} CYCatch(NULL) }
+
+static JSValueRef Instance_getProperty_$cyt(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
+    return CYMakeType(context, sig::Object());
+} CYCatch(NULL) }
+
+static JSValueRef FunctionInstance_getProperty_$cyt(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
     CYPool pool;
-    sig::Signature *signature(CYBlockSignature(pool, internal->GetValue()));
-    if (signature == NULL)
+    sig::Block type;
+    if (!CYBlockSignature(pool, internal->GetValue(), type.signature))
         return CYJSNull(context);
-    return CYMakeType(context, signature);
+    return CYMakeType(context, type);
+} CYCatch(NULL) }
+
+static JSValueRef Class_getProperty_$cyt(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
+    return CYMakeType(context, sig::Meta());
 } CYCatch(NULL) }
 
 static JSValueRef Instance_getProperty_constructor(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
@@ -2700,18 +2699,20 @@ static JSValueRef Selector_callAsFunction_type(JSContextRef context, JSObjectRef
     objc_method *method(_require(class_getInstanceMethod(_class, sel)));
     const char *encoding(method_getTypeEncoding(method));
 
-    sig::Signature signature;
-    sig::Parse(pool, &signature, encoding, &Structor_);
-    return CYMakeType(context, &signature);
+    sig::Function type(false);
+    sig::Parse(pool, &type.signature, encoding, &Structor_);
+    return CYMakeType(context, type);
 } CYCatch(NULL) }
 
-static JSStaticValue Selector_staticValues[2] = {
+static JSStaticValue Selector_staticValues[3] = {
+    {"$cyt", &Selector_getProperty_$cyt, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"value", &CYValue_getProperty_value, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete},
     {NULL, NULL, NULL, 0}
 };
 
-// XXX: this is sadly duplicated in FunctionInstance_staticValues
-static JSStaticValue Instance_staticValues[5] = {
+static JSStaticValue Instance_staticValues[6] = {
+    {"$cyt", &Instance_getProperty_$cyt, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    // XXX: this is sadly duplicated in FunctionInstance_staticValues
     {"constructor", &Instance_getProperty_constructor, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"messages", &Instance_getProperty_messages, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"prototype", &Instance_getProperty_prototype, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
@@ -2720,7 +2721,7 @@ static JSStaticValue Instance_staticValues[5] = {
 };
 
 static JSStaticValue FunctionInstance_staticValues[6] = {
-    {"type", &FunctionInstance_getProperty_type, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"$cyt", &FunctionInstance_getProperty_$cyt, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     // XXX: this is sadly a duplicate of Instance_staticValues
     {"constructor", &Instance_getProperty_constructor, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"messages", &Instance_getProperty_messages, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
@@ -2742,6 +2743,11 @@ static JSStaticFunction Instance_staticFunctions[7] = {
 static JSStaticFunction Class_staticFunctions[2] = {
     {"pointerTo", &Class_callAsFunction_pointerTo, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
+};
+
+static JSStaticValue Class_staticValues[2] = {
+    {"$cyt", &Class_getProperty_$cyt, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {NULL, NULL, NULL, 0}
 };
 
 static JSStaticFunction Internal_staticFunctions[2] = {
@@ -2831,6 +2837,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     definition = kJSClassDefinitionEmpty;
     definition.className = "Class";
     definition.staticFunctions = Class_staticFunctions;
+    definition.staticValues = Class_staticValues;
     Class_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;

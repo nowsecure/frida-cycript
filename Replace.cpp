@@ -1233,7 +1233,10 @@ CYTarget *CYTypeModifier::Replace(CYContext &context, CYTarget *type) { $T(type)
 }
 
 CYTarget *CYTypeFunctionWith::Replace_(CYContext &context, CYTarget *type) {
-    return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("functionWith")), parameters_->Argument(context)));
+    CYList<CYArgument> arguments(parameters_->Argument(context));
+    if (variadic_)
+        arguments->*$C_($ CYNull());
+    return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("functionWith")), arguments));
 }
 
 CYTarget *CYTypePointerTo::Replace_(CYContext &context, CYTarget *type) {
@@ -1268,15 +1271,15 @@ CYTarget *CYTypedIdentifier::Replace(CYContext &context) {
 }
 
 CYTypeFunctionWith *CYTypedIdentifier::Function() {
-    CYTypeModifier **modifier(&modifier_);
-    if (*modifier == NULL)
+    CYTypeModifier *&modifier(CYGetLast(modifier_));
+    if (modifier == NULL)
         return NULL;
-    while ((*modifier)->next_ != NULL)
-        modifier = &(*modifier)->next_;
-    CYTypeFunctionWith *function((*modifier)->Function());
+
+    CYTypeFunctionWith *function(modifier->Function());
     if (function == NULL)
         return NULL;
-    *modifier = NULL;
+
+    modifier = NULL;
     return function;
 }
 

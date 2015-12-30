@@ -29,18 +29,6 @@
 
 namespace sig {
 
-void sig_ffi_types(
-    CYPool &pool,
-    const struct Signature *signature,
-    ffi_type **types,
-    size_t skip = 0,
-    size_t offset = 0
-) {
-    _assert(signature->count >= skip);
-    for (size_t index = skip; index != signature->count; ++index)
-        types[index - skip + offset] = signature->elements[index].type->GetFFI(pool);
-}
-
 template <>
 ffi_type *Primitive<bool>::GetFFI(CYPool &pool) const {
     return &ffi_type_uchar;
@@ -171,7 +159,8 @@ ffi_type *Aggregate::GetFFI(CYPool &pool) const {
     ffi->type = FFI_TYPE_STRUCT;
 
     ffi->elements = new(pool) ffi_type *[signature.count + 1];
-    sig_ffi_types(pool, &signature, ffi->elements);
+    for (size_t index(0); index != signature.count; ++index)
+        ffi->elements[index] = signature.elements[index].type->GetFFI(pool);
     ffi->elements[signature.count] = NULL;
 
     return ffi;
@@ -185,19 +174,24 @@ ffi_type *Block::GetFFI(CYPool &pool) const {
     return &ffi_type_pointer;
 }
 
-void sig_ffi_cif(
-    CYPool &pool,
-    struct Signature *signature,
-    ffi_cif *cif,
-    size_t skip,
-    ffi_type **types,
-    size_t offset
-) {
-    if (types == NULL)
-        types = new(pool) ffi_type *[signature->count - 1];
-    ffi_type *type = signature->elements[0].type->GetFFI(pool);
-    sig_ffi_types(pool, signature, types, 1 + skip, offset);
-    ffi_status status = ffi_prep_cif(cif, FFI_DEFAULT_ABI, signature->count - 1 - skip + offset, type, types);
+void sig_ffi_cif(CYPool &pool, size_t variadic, const Signature &signature, ffi_cif *cif) {
+    _assert(signature.count != 0);
+    size_t count(signature.count - 1);
+    ffi_type *type(signature.elements[0].type->GetFFI(pool));
+
+    ffi_type **types(new(pool) ffi_type *[count]);
+    for (size_t index(0); index != count; ++index)
+        types[index] = signature.elements[index + 1].type->GetFFI(pool);
+
+    ffi_status status;
+#ifdef HAVE_FFI_PREP_CIF_VAR
+    if (variadic == 0)
+#endif
+        status = ffi_prep_cif(cif, FFI_DEFAULT_ABI, count, type, types);
+#ifdef HAVE_FFI_PREP_CIF_VAR
+    else
+        status = ffi_prep_cif_var(cif, FFI_DEFAULT_ABI, variadic - 1, count, type, types);
+#endif
     _assert(status == FFI_OK);
 }
 

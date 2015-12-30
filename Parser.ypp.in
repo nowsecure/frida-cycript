@@ -85,6 +85,7 @@
 %union { CYTypeStructField *structField_; }
 %union { CYTypeModifier *modifier_; }
 %union { CYTypeSpecifier *specifier_; }
+%union { CYTypedFormal *typedFormal_; }
 %union { CYTypedIdentifier *typedIdentifier_; }
 %union { CYTypedParameter *typedParameter_; }
 @end
@@ -434,6 +435,7 @@ type; })
 %token _synchronized_ "synchronized"
 %token _throws_ "throws"
 %token _transient_ "transient"
+%token _typeid_ "typeid"
 %token _volatile_ "volatile"
 %token _yield_ "yield"
 %token _yield__ "!yield"
@@ -677,9 +679,10 @@ type; })
 %type <typedIdentifier_> TypedIdentifierMaybe
 %type <typedIdentifier_> TypedIdentifierNo
 %type <typedIdentifier_> TypedIdentifierYes
-%type <typedParameter_> TypedParameterList_
-%type <typedParameter_> TypedParameterList
-%type <typedParameter_> TypedParameterListOpt
+%type <typedFormal_> TypedParameterList_
+%type <typedFormal_> TypedParameterList
+%type <typedFormal_> TypedParameterListOpt
+%type <typedParameter_> TypedParameters
 @end
 
 @begin ObjectiveC
@@ -972,6 +975,7 @@ IdentifierTypeNoOf
     | "target" { $$ = CYNew CYIdentifier("target"); }
     | "throws" { $$ = CYNew CYIdentifier("throws"); }
     | "transient" { $$ = CYNew CYIdentifier("transient"); }
+    | "typeid" { $$ = CYNew CYIdentifier("typeid"); }
     | "undefined" { $$ = CYNew CYIdentifier("undefined"); }
 @begin ObjectiveC
     | "bool" { $$ = CYNew CYIdentifier("bool"); }
@@ -2026,12 +2030,12 @@ ParameterModifierOpt
     ;
 
 ParameterTail
-    : TypedParameterListOpt[parameters] ")" ParameterModifierOpt { $$ = CYNew CYTypeFunctionWith($parameters); }
+    : TypedParameterListOpt[formal] ")" ParameterModifierOpt { $$ = CYNew CYTypeFunctionWith($formal->variadic_, $formal->parameters_); }
     ;
 
 SuffixedType
     : SuffixedTypeOpt[typed] "[" RestrictOpt NumericLiteral[size] "]" { $$ = $typed; $$->modifier_ = CYNew CYTypeArrayOf($size, $$->modifier_); }
-    | "(" "^" TypeQualifierRightOpt[typed] ")" "(" TypedParameterListOpt[parameters] ")" { $$ = $typed; $$->modifier_ = CYNew CYTypeBlockWith($parameters, $$->modifier_); }
+    | "(" "^" TypeQualifierRightOpt[typed] ")" "(" TypedParameters[parameters] ")" { $$ = $typed; $$->modifier_ = CYNew CYTypeBlockWith($parameters, $$->modifier_); }
     | TypeSignifier[typed] "(" ParameterTail[modifier] { $$ = $typed; CYSetLast($modifier) = $$->modifier_; $$->modifier_ = $modifier; }
     | "("[parenthesis] ParameterTail[modifier] { $$ = CYNew CYTypedIdentifier(@parenthesis); CYSetLast($modifier) = $$->modifier_; $$->modifier_ = $modifier; }
     ;
@@ -2163,7 +2167,7 @@ MessageParameterList
 
 MessageParameterListOpt
     : MessageParameterList[pass] { $$ = $pass; }
-    | { $$ = NULL; }
+    | TypedParameterList_[formal] { if ($formal->variadic_) CYERR(@$, "unsupported variadic"); /*XXX*/ if ($formal->parameters_ != NULL) CYERR(@$, "temporarily unsupported"); $$ = NULL; }
     ;
 
 MessageParameters
@@ -2346,21 +2350,26 @@ MemberAccess
 /* Cycript (C): Lambda Expressions {{{ */
 TypedParameterList_
     : "," TypedParameterList[parameters] { $$ = $parameters; }
-    | { $$ = NULL; }
+    | { $$ = CYNew CYTypedFormal(false); }
     ;
 
 TypedParameterList
-    : TypedIdentifierMaybe[typed] TypedParameterList_[next] { $$ = CYNew CYTypedParameter($typed, $next); }
+    : TypedIdentifierMaybe[typed] TypedParameterList_[formal] { $$ = $formal; $$->parameters_ = CYNew CYTypedParameter($typed, $$->parameters_); }
+    | "..." { $$ = CYNew CYTypedFormal(true); }
     ;
 
 TypedParameterListOpt
     : TypedParameterList[pass] { $$ = $pass; }
-    | "void" { $$ = NULL; }
-    | { $$ = NULL; }
+    | "void" { $$ = CYNew CYTypedFormal(false); }
+    | { $$ = CYNew CYTypedFormal(false); }
+    ;
+
+TypedParameters
+    : TypedParameterListOpt[formal] { if ($formal->variadic_) CYERR(@$, "unsupported variadic"); $$ = $formal->parameters_; }
     ;
 
 PrimaryExpression
-    : "[" LexOf "&" "]" "(" TypedParameterListOpt[parameters] ")" "->" TypedIdentifierNo[type] "{" FunctionBody[code] "}" { $$ = CYNew CYLambda($type, $parameters, $code); }
+    : "[" LexOf "&" "]" "(" TypedParameters[parameters] ")" "->" TypedIdentifierNo[type] "{" FunctionBody[code] "}" { $$ = CYNew CYLambda($type, $parameters, $code); }
     ;
 /* }}} */
 /* Cycript (C): Structure Definitions {{{ */

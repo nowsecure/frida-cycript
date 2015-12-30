@@ -211,12 +211,13 @@ AS_CASE([$CY_EXECUTE], [1], [
 
     AC_CHECK_HEADERS([ffi.h ffi/ffi.h], [break])
 
-    CY_LT_LIB([LTLIBFFI], AS_IF([test "x$ac_cv_header_ffi_h" = xno && test "x$ac_cv_header_ffi_ffi_h" = xno], [
+    CY_LT_LIB([LTLIBFFI], [AS_IF([test "x$ac_cv_header_ffi_h" = xno && test "x$ac_cv_header_ffi_ffi_h" = xno], [
         CY_CHECK_PKG_CONFIG_LIBFFI
     ], [
         AC_SEARCH_LIBS([ffi_call], [ffi])
         AS_CASE([$ac_cv_search_ffi_call], [no], [CY_CHECK_PKG_CONFIG_LIBFFI])
-    ]))
+        AC_CHECK_FUNCS([ffi_prep_cif_var])
+    ])])
 
     AC_CHECK_FRAMEWORK([JavaVM], [
         #include <JavaVM/jni.h>

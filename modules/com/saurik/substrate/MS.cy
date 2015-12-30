@@ -61,7 +61,7 @@ exports.getImageByName = MSGetImageByName;
 exports.findSymbol = MSFindSymbol;
 
 exports.hookFunction = function(func, hook, old) {
-    var type = func.type;
+    var type = typeid(func);
 
     var pointer;
     if (old == null || typeof old === "undefined")

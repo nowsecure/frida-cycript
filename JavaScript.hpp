@@ -42,6 +42,7 @@
 extern JSStringRef Array_s;
 extern JSStringRef cy_s;
 extern JSStringRef cyi_s;
+extern JSStringRef cyt_s;
 extern JSStringRef length_s;
 extern JSStringRef message_s;
 extern JSStringRef name_s;
@@ -111,7 +112,7 @@ _finline Type_ CYCastPointer(JSContextRef context, JSValueRef value, bool *guess
 }
 
 void CYCallFunction(CYPool &pool, JSContextRef context, ffi_cif *cif, void (*function)(), void *value, void **values);
-JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, void *setup[], size_t count, const JSValueRef arguments[], bool initialize, sig::Signature *signature, ffi_cif *cif, void (*function)());
+JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, void *setup[], size_t count, const JSValueRef arguments[], bool initialize, bool variadic, const sig::Signature &signature, ffi_cif *cif, void (*function)());
 
 bool CYIsCallable(JSContextRef context, JSValueRef value);
 JSValueRef CYCallAsFunction(JSContextRef context, JSObjectRef function, JSObjectRef _this, size_t count, const JSValueRef arguments[]);
@@ -138,7 +139,6 @@ struct CYRegisterHook {
 JSObjectRef CYMakePointer(JSContextRef context, void *pointer, const sig::Type &type, ffi_type *ffi, JSObjectRef owner);
 
 JSObjectRef CYMakeType(JSContextRef context, const sig::Type &type);
-JSObjectRef CYMakeType(JSContextRef context, sig::Signature *signature);
 
 void CYFinalize(JSObjectRef object);
 

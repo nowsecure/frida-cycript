@@ -177,7 +177,8 @@ struct CYMessageParameter :
     CYWord *name_;
     CYTypedIdentifier *type_;
 
-    CYMessageParameter(CYWord *name, CYTypedIdentifier *type) :
+    CYMessageParameter(CYWord *name, CYTypedIdentifier *type, CYMessageParameter *next = NULL) :
+        CYNext<CYMessageParameter>(next),
         name_(name),
         type_(type)
     {

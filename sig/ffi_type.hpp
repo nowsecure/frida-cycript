@@ -27,14 +27,7 @@
 
 namespace sig {
 
-void sig_ffi_cif(
-    CYPool &pool,
-    struct Signature *signature,
-    ffi_cif *cif,
-    size_t skip = 0,
-    ffi_type **types = NULL,
-    size_t offset = 0
-);
+void sig_ffi_cif(CYPool &pool, size_t variadic, const Signature &signature, ffi_cif *cif);
 
 void Copy(CYPool &pool, ffi_type &lhs, ffi_type &rhs);
 

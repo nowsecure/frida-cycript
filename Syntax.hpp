@@ -2226,6 +2226,17 @@ struct CYTypedParameter :
     virtual void Output(CYOutput &out) const;
 };
 
+struct CYTypedFormal {
+    bool variadic_;
+    CYTypedParameter *parameters_;
+
+    CYTypedFormal(bool variadic) :
+        variadic_(variadic),
+        parameters_(NULL)
+    {
+    }
+};
+
 struct CYLambda :
     CYTarget
 {
@@ -2381,10 +2392,12 @@ struct CYTypeBlockWith :
 struct CYTypeFunctionWith :
     CYTypeModifier
 {
+    bool variadic_;
     CYTypedParameter *parameters_;
 
-    CYTypeFunctionWith(CYTypedParameter *parameters, CYTypeModifier *next = NULL) :
+    CYTypeFunctionWith(bool variadic, CYTypedParameter *parameters, CYTypeModifier *next = NULL) :
         CYTypeModifier(next),
+        variadic_(variadic),
         parameters_(parameters)
     {
     }

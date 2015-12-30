@@ -25,6 +25,10 @@ var process = {
 
 (function() {
 
+this.typeid = function(object) {
+    return object.$cyt;
+};
+
 let $cy_set = function(object, properties) {
     for (const name in properties)
         Object.defineProperty(object, name, {
@@ -67,6 +71,8 @@ $cy_set(Error.prototype, {
 
 $cy_set(Number.prototype, {
     toCYON: function() {
+        if ("$cyt" in this)
+            return `${this.$cyt.toCYON()}(${this.toString()})`;
         return `new Number(${this.toString()})`;
     },
 });

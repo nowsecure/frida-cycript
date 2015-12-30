@@ -91,7 +91,7 @@ Aggregate *Aggregate::Copy(CYPool &pool, const char *name) const {
 }
 
 Function *Function::Copy(CYPool &pool, const char *name) const {
-    Function *copy(new(pool) Function());
+    Function *copy(new(pool) Function(variadic));
     sig::Copy(pool, copy->signature, signature);
     return copy;
 }

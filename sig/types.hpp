@@ -37,6 +37,7 @@
 
 class CYPool;
 struct CYTypedIdentifier;
+struct CYTypedParameter;
 
 namespace sig {
 
@@ -270,15 +271,25 @@ struct Callable :
     Type
 {
     Signature signature;
+
+    CYTypedIdentifier *Decode(CYPool &pool) const override;
+    virtual CYTypedIdentifier *Modify(CYPool &pool, CYTypedIdentifier *result, CYTypedParameter *parameters) const = 0;
 };
 
 struct Function :
     Callable
 {
+    bool variadic;
+
+    Function(bool variadic) :
+        variadic(variadic)
+    {
+    }
+
     Function *Copy(CYPool &pool, const char *name = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
-    CYTypedIdentifier *Decode(CYPool &pool) const override;
+    CYTypedIdentifier *Modify(CYPool &pool, CYTypedIdentifier *result, CYTypedParameter *parameters) const override;
 
     ffi_type *GetFFI(CYPool &pool) const override;
     void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
@@ -292,6 +303,7 @@ struct Block :
 
     const char *Encode(CYPool &pool) const override;
     CYTypedIdentifier *Decode(CYPool &pool) const override;
+    CYTypedIdentifier *Modify(CYPool &pool, CYTypedIdentifier *result, CYTypedParameter *parameters) const override;
 
     ffi_type *GetFFI(CYPool &pool) const override;
     void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;

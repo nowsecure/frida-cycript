@@ -150,26 +150,26 @@ CYTypedIdentifier *Aggregate::Decode(CYPool &pool) const {
     return $ CYTypedIdentifier($ CYTypeStruct(identifier, $ CYStructTail(fields)));
 }
 
-CYTypedIdentifier *Function::Decode(CYPool &pool) const {
+CYTypedIdentifier *Callable::Decode(CYPool &pool) const {
     _assert(signature.count != 0);
-    CYTypedParameter *parameter(NULL);
+    CYTypedParameter *parameters(NULL);
     for (size_t i(signature.count - 1); i != 0; --i)
-        parameter = $ CYTypedParameter(CYDecodeType(pool, signature.elements[i].type), parameter);
-    return CYDecodeType(pool, signature.elements[0].type)->Modify($ CYTypeFunctionWith(parameter));
+        parameters = $ CYTypedParameter(CYDecodeType(pool, signature.elements[i].type), parameters);
+    return Modify(pool, CYDecodeType(pool, signature.elements[0].type), parameters);
+}
+
+CYTypedIdentifier *Function::Modify(CYPool &pool, CYTypedIdentifier *result, CYTypedParameter *parameters) const {
+    return result->Modify($ CYTypeFunctionWith(variadic, parameters));
+}
+
+CYTypedIdentifier *Block::Modify(CYPool &pool, CYTypedIdentifier *result, CYTypedParameter *parameters) const {
+    return result->Modify($ CYTypeBlockWith(parameters));
 }
 
 CYTypedIdentifier *Block::Decode(CYPool &pool) const {
     if (signature.count == 0)
         return $ CYTypedIdentifier($ CYTypeVariable("NSBlock"), $ CYTypePointerTo());
-    else {
-        _assert(signature.count != 1);
-        _assert(dynamic_cast<Object *>(signature.elements[1].type) != NULL);
-
-        CYTypedParameter *parameter(NULL);
-        for (size_t i(signature.count - 1); i != 0; --i)
-            parameter = $ CYTypedParameter(CYDecodeType(pool, signature.elements[i].type), parameter);
-        return CYDecodeType(pool, signature.elements[0].type)->Modify($ CYTypeBlockWith(parameter));
-    }
+    return Callable::Decode(pool);
 }
 
 }
