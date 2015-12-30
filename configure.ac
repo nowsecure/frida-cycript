@@ -231,7 +231,11 @@ AS_CASE([$CY_EXECUTE], [1], [
         AC_SUBST([CY_JAVA], [0])
     ])])])
 
-    CY_LT_LIB([LTRUBY], [AC_CHECK_FRAMEWORK([Ruby], [
+    CY_LT_LIB([LTRUBY], [PKG_CHECK_MODULES([LIBRUBY21], [ruby-2.1], [
+        AC_SUBST([CY_RUBY], [1])
+        AC_LIB_APPENDTOVAR([CPPFLAGS], [`$PKG_CONFIG --cflags ruby-2.1`])
+        AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs ruby-2.1`])
+    ], [AC_CHECK_FRAMEWORK([Ruby], [
         #include <Ruby/ruby.h>
     ], [ruby_init();], [
         AC_SUBST([CY_RUBY], [1])
@@ -241,7 +245,7 @@ AS_CASE([$CY_EXECUTE], [1], [
         ])
     ], [
         AC_SUBST([CY_RUBY], [0])
-    ])])])
+    ])])])])
 
     AC_LANG_PUSH([Objective C++])
 

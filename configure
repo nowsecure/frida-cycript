@@ -657,6 +657,8 @@ GNUSTEP_CONFIG
 CY_OBJECTIVEC
 LTRUBY
 CY_RUBY
+LIBRUBY21_LIBS
+LIBRUBY21_CFLAGS
 LTJAVA
 CY_JAVA
 LTLIBFFI
@@ -879,6 +881,8 @@ WEBKIT_CFLAGS
 WEBKIT_LIBS
 LIBFFI_CFLAGS
 LIBFFI_LIBS
+LIBRUBY21_CFLAGS
+LIBRUBY21_LIBS
 GNUSTEP_CONFIG'
 
 
@@ -1564,6 +1568,10 @@ Some influential environment variables:
   LIBFFI_CFLAGS
               C compiler flags for LIBFFI, overriding pkg-config
   LIBFFI_LIBS linker flags for LIBFFI, overriding pkg-config
+  LIBRUBY21_CFLAGS
+              C compiler flags for LIBRUBY21, overriding pkg-config
+  LIBRUBY21_LIBS
+              linker flags for LIBRUBY21, overriding pkg-config
   GNUSTEP_CONFIG
               prints information about the current gnustep installation
 
@@ -23188,6 +23196,65 @@ fi
     cy_save=$LIBS
     LIBS=
 
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for LIBRUBY21" >&5
+$as_echo_n "checking for LIBRUBY21... " >&6; }
+
+if test -n "$LIBRUBY21_CFLAGS"; then
+    pkg_cv_LIBRUBY21_CFLAGS="$LIBRUBY21_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"ruby-2.1\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "ruby-2.1") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBRUBY21_CFLAGS=`$PKG_CONFIG --cflags "ruby-2.1" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$LIBRUBY21_LIBS"; then
+    pkg_cv_LIBRUBY21_LIBS="$LIBRUBY21_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"ruby-2.1\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "ruby-2.1") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBRUBY21_LIBS=`$PKG_CONFIG --libs "ruby-2.1" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        LIBRUBY21_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "ruby-2.1" 2>&1`
+        else
+	        LIBRUBY21_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "ruby-2.1" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$LIBRUBY21_PKG_ERRORS" >&5
+
+
 			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework Ruby" >&5
 $as_echo_n "checking for framework Ruby... " >&6; }
 if ${ac_cv_framework_Ruby+:} false; then :
@@ -23330,6 +23397,210 @@ else
 fi
 
 done
+
+fi
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for framework Ruby" >&5
+$as_echo_n "checking for framework Ruby... " >&6; }
+if ${ac_cv_framework_Ruby+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+		ac_check_framework_save_LIBS=$LIBS
+		LIBS="-framework Ruby  $LIBS"
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+        #include <Ruby/ruby.h>
+
+int
+main ()
+{
+ruby_init();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+
+			ac_cv_framework_Ruby=yes
+
+else
+  ac_cv_framework_Ruby=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+		LIBS=$ac_check_framework_save_LIBS
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_framework_Ruby" >&5
+$as_echo "$ac_cv_framework_Ruby" >&6; }
+	if test $ac_cv_framework_Ruby = yes; then :
+
+
+  for element in "-framework Ruby"; do
+    haveit=
+    for x in $LIBS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LIBS="${LIBS}${LIBS:+ }$element"
+    fi
+  done
+
+
+        CY_RUBY=1
+
+
+
+else
+  for ac_header in ruby.h
+do :
+  ac_fn_cxx_check_header_mongrel "$LINENO" "ruby.h" "ac_cv_header_ruby_h" "$ac_includes_default"
+if test "x$ac_cv_header_ruby_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_RUBY_H 1
+_ACEOF
+
+        CY_RUBY=1
+
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing ruby_init" >&5
+$as_echo_n "checking for library containing ruby_init... " >&6; }
+if ${ac_cv_search_ruby_init+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char ruby_init ();
+int
+main ()
+{
+return ruby_init ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ruby; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_ruby_init=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_ruby_init+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_ruby_init+:} false; then :
+
+else
+  ac_cv_search_ruby_init=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_ruby_init" >&5
+$as_echo "$ac_cv_search_ruby_init" >&6; }
+ac_res=$ac_cv_search_ruby_init
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+
+fi
+
+
+else
+
+        CY_RUBY=0
+
+
+fi
+
+done
+
+fi
+else
+	LIBRUBY21_CFLAGS=$pkg_cv_LIBRUBY21_CFLAGS
+	LIBRUBY21_LIBS=$pkg_cv_LIBRUBY21_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+        CY_RUBY=1
+
+
+  for element in `$PKG_CONFIG --cflags ruby-2.1`; do
+    haveit=
+    for x in $CPPFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CPPFLAGS="${CPPFLAGS}${CPPFLAGS:+ }$element"
+    fi
+  done
+
+
+  for element in `$PKG_CONFIG --libs ruby-2.1`; do
+    haveit=
+    for x in $LIBS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LIBS="${LIBS}${LIBS:+ }$element"
+    fi
+  done
+
 
 fi
     LTRUBY=$LIBS
