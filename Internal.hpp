@@ -30,7 +30,9 @@
 #include <JavaScriptCore/JSObjectRef.h>
 #include <JavaScriptCore/JSValueRef.h>
 
+#include "JavaScript.hpp"
 #include "Pooling.hpp"
+#include "Utility.hpp"
 
 JSGlobalContextRef CYGetJSContext(JSContextRef context);
 sig::Type *Structor_(CYPool &pool, sig::Aggregate *aggregate);
@@ -110,32 +112,71 @@ struct CYValue :
     }
 };
 
-struct CYOwned :
+template <typename Internal_, typename Value_>
+struct CYValue_ :
     CYValue
 {
-  private:
-    JSGlobalContextRef context_;
-    JSObjectRef owner_;
+    static JSClassRef Class_;
+    static Type_privateData *Type_;
 
-  public:
-    CYOwned(void *value, JSContextRef context, JSObjectRef owner) :
-        CYValue(value),
-        context_(CYGetJSContext(context)),
-        owner_(owner)
-    {
-        //XXX:JSGlobalContextRetain(context_);
-        if (owner_ != NULL)
-            JSValueProtect(context_, owner_);
+    using CYValue::CYValue;
+
+    _finline Value_ GetValue() const {
+        return reinterpret_cast<Value_>(value_);
     }
 
-    virtual ~CYOwned() {
-        if (owner_ != NULL)
-            JSValueUnprotect(context_, owner_);
+    virtual Type_privateData *GetType() const {
+        return Type_;
+    }
+
+    _finline JSValueRef GetPrototype(JSContextRef context) const {
+        return NULL;
+    }
+
+    template <typename... Args_>
+    _finline static JSClassRef GetClass(Args_ &&... args) {
+        return Class_;
+    }
+
+    template <typename... Args_>
+    static JSObjectRef Make(JSContextRef context, Args_ &&... args) {
+        Internal_ *internal(new Internal_(cy::Forward<Args_>(args)...));
+        JSObjectRef object(JSObjectMake(context, Internal_::GetClass(cy::Forward<Args_>(args)...), internal));
+        if (JSValueRef prototype = internal->GetPrototype(context))
+            CYSetPrototype(context, object, prototype);
+        return object;
+    }
+};
+
+template <typename Internal_, typename Value_>
+JSClassRef CYValue_<Internal_, Value_>::Class_;
+
+template <typename Internal_, typename Value_>
+Type_privateData *CYValue_<Internal_, Value_>::Type_;
+
+struct CYProtect {
+  private:
+    JSGlobalContextRef context_;
+    JSObjectRef object_;
+
+  public:
+    CYProtect(JSContextRef context, JSObjectRef object) :
+        context_(CYGetJSContext(context)),
+        object_(object)
+    {
+        //XXX:JSGlobalContextRetain(context_);
+        if (object_ != NULL)
+            JSValueProtect(context_, object_);
+    }
+
+    ~CYProtect() {
+        if (object_ != NULL)
+            JSValueUnprotect(context_, object_);
         //XXX:JSGlobalContextRelease(context_);
     }
 
-    JSObjectRef GetOwner() const {
-        return owner_;
+    operator JSObjectRef() const {
+        return object_;
     }
 };
 

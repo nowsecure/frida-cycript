@@ -27,22 +27,16 @@
 #include "../Internal.hpp"
 
 struct Selector_privateData :
-    CYValue
+    CYValue_<Selector_privateData, SEL>
 {
     _finline Selector_privateData(SEL value) :
-        CYValue(value)
+        CYValue_(value)
     {
     }
-
-    _finline SEL GetValue() const {
-        return reinterpret_cast<SEL>(value_);
-    }
-
-    virtual Type_privateData *GetType() const;
 };
 
 struct Instance :
-    CYValue
+    CYValue_<Instance, id>
 {
     enum Flags {
         None          = 0,
@@ -52,69 +46,51 @@ struct Instance :
 
     Flags flags_;
 
-    _finline Instance(id value, Flags flags) :
-        CYValue(value),
-        flags_(flags)
-    {
-    }
-
+    Instance(id value, Flags flags);
     virtual ~Instance();
 
-    static JSObjectRef Make(JSContextRef context, id object, Flags flags = None);
+    JSValueRef GetPrototype(JSContextRef context) const;
 
-    _finline id GetValue() const {
-        return reinterpret_cast<id>(value_);
-    }
+    static JSClassRef GetClass(id value, Flags flags);
 
     _finline bool IsUninitialized() const {
         return (flags_ & Uninitialized) != 0;
     }
-
-    virtual Type_privateData *GetType() const;
 };
 
 namespace cy {
 struct Super :
-    Instance
+    CYValue_<Super, id>
 {
     Class class_;
 
     _finline Super(id value, Class _class) :
-        Instance(value, Instance::Permanent),
+        CYValue_(value),
         class_(_class)
     {
     }
-
-    static JSObjectRef Make(JSContextRef context, id object, Class _class);
 }; }
 
 struct Messages :
-    CYValue
+    CYValue_<Messages, Class>
 {
     _finline Messages(Class value) :
-        CYValue(value)
+        CYValue_(value)
     {
     }
 
-    static JSObjectRef Make(JSContextRef context, Class _class);
-
-    _finline Class GetValue() const {
-        return reinterpret_cast<Class>(value_);
-    }
+    JSValueRef GetPrototype(JSContextRef context) const;
 };
 
 struct Internal :
-    CYOwned
+    CYValue_<Internal, id>
 {
+    CYProtect owner_;
+
     _finline Internal(id value, JSContextRef context, JSObjectRef owner) :
-        CYOwned(value, context, owner)
+        CYValue_(value),
+        owner_(context, owner)
     {
-    }
-
-    static JSObjectRef Make(JSContextRef context, id object, JSObjectRef owner);
-
-    _finline id GetValue() const {
-        return reinterpret_cast<id>(value_);
     }
 };
 
