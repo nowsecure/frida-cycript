@@ -2498,26 +2498,6 @@ static JSValueRef CYValue_getProperty_value(JSContextRef context, JSObjectRef ob
     return CYCastJSValue(context, reinterpret_cast<uintptr_t>(internal->value_));
 } CYCatch(NULL) }
 
-static JSValueRef CYValue_callAsFunction_$cya(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    CYValue *internal(reinterpret_cast<CYValue *>(JSObjectGetPrivate(_this)));
-    Type_privateData *typical(internal->GetType());
-
-    sig::Void XXX;
-
-    sig::Type *type;
-    ffi_type *ffi;
-
-    if (typical == NULL) {
-        type = &XXX;
-        ffi = NULL;
-    } else {
-        type = typical->type_;
-        ffi = typical->ffi_;
-    }
-
-    return CYMakePointer(context, &internal->value_, *type, ffi, object);
-} CYCatch(NULL) }
-
 static JSValueRef Selector_getProperty_$cyt(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     return CYMakeType(context, sig::Selector());
 } CYCatch(NULL) }
@@ -2708,8 +2688,7 @@ static JSStaticValue FunctionInstance_staticValues[6] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction Instance_staticFunctions[7] = {
-    {"$cya", &CYValue_callAsFunction_$cya, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+static JSStaticFunction Instance_staticFunctions[6] = {
     {"toCYON", &Instance_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toJSON", &Instance_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"valueOf", &Instance_callAsFunction_valueOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
@@ -2743,11 +2722,6 @@ JSValueRef NSCFType$cy$toJSON$inContext$(id self, SEL sel, JSValueRef key, JSCon
 #endif
 
 void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
-    CYPool &pool(CYGetGlobalPool());
-
-    Instance::Type_ = new(pool) Type_privateData(sig::Object());
-    Selector_privateData::Type_ = new(pool) Type_privateData(sig::Selector());
-
     NSArray_ = objc_getClass("NSArray");
     NSBlock_ = objc_getClass("NSBlock");
     NSDictionary_ = objc_getClass("NSDictionary");

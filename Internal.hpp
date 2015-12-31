@@ -106,10 +106,6 @@ struct CYValue :
         value_(rhs.value_)
     {
     }
-
-    virtual Type_privateData *GetType() const {
-        return NULL;
-    }
 };
 
 template <typename Internal_, typename Value_>
@@ -117,16 +113,11 @@ struct CYValue_ :
     CYValue
 {
     static JSClassRef Class_;
-    static Type_privateData *Type_;
 
     using CYValue::CYValue;
 
     _finline Value_ GetValue() const {
         return reinterpret_cast<Value_>(value_);
-    }
-
-    virtual Type_privateData *GetType() const {
-        return Type_;
     }
 
     _finline JSValueRef GetPrototype(JSContextRef context) const {
@@ -151,9 +142,6 @@ struct CYValue_ :
 template <typename Internal_, typename Value_>
 JSClassRef CYValue_<Internal_, Value_>::Class_;
 
-template <typename Internal_, typename Value_>
-Type_privateData *CYValue_<Internal_, Value_>::Type_;
-
 struct CYProtect {
   private:
     JSGlobalContextRef context_;
@@ -173,6 +161,14 @@ struct CYProtect {
         if (object_ != NULL)
             JSValueUnprotect(context_, object_);
         //XXX:JSGlobalContextRelease(context_);
+    }
+
+    operator bool() const {
+        return object_ != NULL;
+    }
+
+    operator JSContextRef() const {
+        return context_;
     }
 
     operator JSObjectRef() const {
@@ -221,23 +217,14 @@ struct Functor :
 struct Closure_privateData :
     cy::Functor
 {
-    JSGlobalContextRef context_;
-    JSObjectRef function_;
+    CYProtect function_;
     JSValueRef (*adapter_)(JSContextRef, size_t, JSValueRef[], JSObjectRef);
 
     Closure_privateData(JSContextRef context, JSObjectRef function, JSValueRef (*adapter)(JSContextRef, size_t, JSValueRef[], JSObjectRef), const sig::Signature &signature) :
         cy::Functor(NULL, false, signature),
-        context_(CYGetJSContext(context)),
-        function_(function),
+        function_(context, function),
         adapter_(adapter)
     {
-        //XXX:JSGlobalContextRetain(context_);
-        JSValueProtect(context_, function_);
-    }
-
-    virtual ~Closure_privateData() {
-        JSValueUnprotect(context_, function_);
-        //XXX:JSGlobalContextRelease(context_);
     }
 };
 

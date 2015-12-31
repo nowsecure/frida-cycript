@@ -868,7 +868,7 @@ JSValueRef Function::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bo
 void CYExecuteClosure(ffi_cif *cif, void *result, void **arguments, void *arg) {
     Closure_privateData *internal(reinterpret_cast<Closure_privateData *>(arg));
 
-    JSContextRef context(internal->context_);
+    JSContextRef context(internal->function_);
 
     size_t count(internal->cif_.nargs);
     JSValueRef values[count];
@@ -1617,10 +1617,6 @@ static JSValueRef CYValue_callAsFunction_valueOf(JSContextRef context, JSObjectR
     return CYCastJSValue(context, reinterpret_cast<uintptr_t>(internal->value_));
 } CYCatch(NULL) }
 
-static JSValueRef CYValue_callAsFunction_toJSON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
-    return CYValue_callAsFunction_valueOf(context, object, _this, count, arguments, exception);
-}
-
 static JSValueRef CYValue_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CYValue *internal(reinterpret_cast<CYValue *>(JSObjectGetPrivate(_this)));
     std::ostringstream str;
@@ -1748,17 +1744,12 @@ static JSValueRef Type_callAsFunction_toCYON(JSContextRef context, JSObjectRef o
     return CYCastJSValue(context, CYJSString(out.str().c_str()));
 } CYCatch(NULL) }
 
-static JSValueRef Type_callAsFunction_toJSON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
-    return Type_callAsFunction_toString(context, object, _this, count, arguments, exception);
-}
-
 static JSStaticFunction All_staticFunctions[2] = {
     {"cy$complete", &All_complete_callAsFunction, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
 
-static JSStaticFunction CArray_staticFunctions[4] = {
-    {"toJSON", &CYValue_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+static JSStaticFunction CArray_staticFunctions[3] = {
     {"toPointer", &CArray_callAsFunction_toPointer, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"valueOf", &CYValue_callAsFunction_valueOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
@@ -1769,9 +1760,8 @@ static JSStaticValue CArray_staticValues[2] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction CString_staticFunctions[6] = {
+static JSStaticFunction CString_staticFunctions[5] = {
     {"toCYON", &CString_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
-    {"toJSON", &CYValue_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toPointer", &CString_callAsFunction_toPointer, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toString", &CString_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"valueOf", &CString_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
@@ -1784,9 +1774,8 @@ static JSStaticValue CString_staticValues[3] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction Pointer_staticFunctions[5] = {
+static JSStaticFunction Pointer_staticFunctions[4] = {
     {"toCYON", &Pointer_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
-    {"toJSON", &CYValue_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toPointer", &Pointer_callAsFunction_toPointer, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"valueOf", &CYValue_callAsFunction_valueOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
@@ -1807,10 +1796,9 @@ static JSStaticValue Struct_staticValues[2] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction Functor_staticFunctions[5] = {
+static JSStaticFunction Functor_staticFunctions[4] = {
     {"$cya", &Functor_callAsFunction_$cya, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toCYON", &CYValue_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
-    {"toJSON", &CYValue_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"valueOf", &CYValue_callAsFunction_valueOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
@@ -1835,7 +1823,7 @@ static JSStaticValue Type_staticValues[4] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction Type_staticFunctions[10] = {
+static JSStaticFunction Type_staticFunctions[9] = {
     {"arrayOf", &Type_callAsFunction_arrayOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"blockWith", &Type_callAsFunction_blockWith, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"constant", &Type_callAsFunction_constant, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
@@ -1843,7 +1831,6 @@ static JSStaticFunction Type_staticFunctions[10] = {
     {"pointerTo", &Type_callAsFunction_pointerTo, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"withName", &Type_callAsFunction_withName, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toCYON", &Type_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
-    {"toJSON", &Type_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toString", &Type_callAsFunction_toString, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
