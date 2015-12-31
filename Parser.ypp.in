@@ -48,6 +48,7 @@
 %union { CYBinding *binding_; }
 %union { CYBindings *bindings_; }
 %union { CYBoolean *boolean_; }
+%union { CYBraced *braced_; }
 %union { CYClause *clause_; }
 %union { cy::Syntax::Catch *catch_; }
 %union { CYClassTail *classTail_; }
@@ -71,7 +72,6 @@
 %union { CYParenthetical *parenthetical_; }
 %union { CYProperty *property_; }
 %union { CYPropertyName *propertyName_; }
-%union { CYRubyProc *rubyProc_; }
 %union { CYSpan *span_; }
 %union { CYStatement *statement_; }
 %union { CYString *string_; }
@@ -503,6 +503,8 @@ type; })
 %type <binding_> BindingElement
 %type <expression_> BitwiseORExpression
 %type <expression_> BitwiseXORExpression
+%type <target_> BracedExpression_
+%type <target_> BracedExpression
 %type <statement_> BreakStatement
 %type <statement_> BreakableStatement
 %type <expression_> CallExpression_
@@ -623,9 +625,7 @@ type; })
 %type <bool_> RegularExpressionSlash
 %type <expression_> RelationalExpression
 %type <statement_> ReturnStatement
-%type <target_> RubyBlockExpression_
-%type <target_> RubyBlockExpression
-%type <rubyProc_> RubyProcExpression
+%type <braced_> BracedParameter
 %type <functionParameter_> RubyProcParameterList_
 %type <functionParameter_> RubyProcParameterList
 %type <functionParameter_> RubyProcParameters
@@ -1233,13 +1233,13 @@ AccessExpression
     ;
 
 LeftHandSideExpression
-    : RubyBlockExpression[pass] { $$ = $pass; }
+    : BracedExpression[pass] { $$ = $pass; }
     | IndirectExpression[pass] { $$ = $pass; }
     ;
 /* }}} */
 /* 12.4 Postfix Expressions {{{ */
 PostfixExpression
-    : RubyBlockExpression[pass] { $$ = $pass; }
+    : BracedExpression[pass] { $$ = $pass; }
     | AccessExpression[lhs] LexNewLineOrOpt "++" { $$ = CYNew CYPostIncrement($lhs); }
     | AccessExpression[lhs] LexNewLineOrOpt "--" { $$ = CYNew CYPostDecrement($lhs); }
     ;
@@ -1622,7 +1622,7 @@ ForStatementInitializer
     ;
 
 ForInStatementInitializer
-    : LexLet LexOf RubyBlockExpression[pass] { $$ = $pass; }
+    : LexLet LexOf BracedExpression[pass] { $$ = $pass; }
     | LexLet LexOf IndirectExpression[pass] { $$ = $pass; }
     | LexLet LexOf Var_ LexBind ForBinding[binding] { $$ = CYNew CYForVariable($binding); }
     | ForDeclaration[pass] { $$ = $pass; }
@@ -2665,6 +2665,12 @@ ArgumentList
     ;
 /* }}} */
 
+/* JavaScript FTW: Java "Anonymous Inner Classes" {{{ */
+BracedParameter
+    : "{" PropertyDefinitionListOpt[properties] "}" { $$ = CYNew CYExtend(NULL, $properties); }
+    ;
+/* }}} */
+
 /* JavaScript FTW: Ruby Blocks {{{ */
 RubyProcParameterList_
     : "," RubyProcParameterList[parameters] { $$ = $parameters; }
@@ -2686,22 +2692,22 @@ RubyProcParametersOpt
     | { $$ = NULL; }
     ;
 
-RubyProcExpression
-    : "{" RubyProcParametersOpt[parameters] StatementListOpt[code] "}" { $$ = CYNew CYRubyProc($parameters, $code); }
+BracedParameter
+    : ";{" RubyProcParametersOpt[parameters] StatementListOpt[code] "}" { $$ = CYNew CYRubyBlock(NULL, CYNew CYRubyProc($parameters, $code)); }
     ;
 
 PrimaryExpression
     : "{" RubyProcParameters[parameters] StatementListOpt[code] "}" { $$ = CYNew CYRubyProc($parameters, $code); }
     ;
 
-RubyBlockExpression_
+BracedExpression_
     : AccessExpression[pass] LexNewLineOrOpt { $$ = $pass; }
-    | RubyBlockExpression_[lhs] RubyProcExpression[rhs] LexNewLineOrOpt { $$ = CYNew CYRubyBlock($lhs, $rhs); }
+    | BracedExpression_[lhs] { if (!$lhs->IsNew()) CYMAP(OpenBrace_, OpenBrace); } BracedParameter[rhs] LexNewLineOrOpt { $rhs->SetLeft($lhs); $$ = $rhs; }
     ;
 
-RubyBlockExpression
-    : RubyBlockExpression_[pass] "\n" { $$ = $pass; }
-    | RubyBlockExpression_[pass] { $$ = $pass; }
+BracedExpression
+    : BracedExpression_[pass] "\n" { $$ = $pass; }
+    | BracedExpression_[pass] { $$ = $pass; }
     ;
 /* }}} */
 /* JavaScript FTW: Ruby Scopes {{{ */

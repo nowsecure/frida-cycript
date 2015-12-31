@@ -535,6 +535,10 @@ struct CYTarget :
         return false;
     }
 
+    virtual bool IsNew() const {
+        return false;
+    }
+
     virtual CYStatement *Initialize(CYContext &context, CYExpression *value);
 
     virtual CYTarget *Replace(CYContext &context) = 0;
@@ -1416,6 +1420,8 @@ struct CYObject :
     {
     }
 
+    CYTarget *Replace(CYContext &context, CYTarget *seed);
+
     virtual CYTarget *Replace(CYContext &context);
     void Output(CYOutput &out, CYFlags flags) const;
 };
@@ -1498,6 +1504,9 @@ struct New :
         return arguments_ == NULL ? 2 : 1;
     }
 
+    virtual bool IsNew() const {
+        return true;
+    }
 
     virtual CYTarget *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
@@ -1551,24 +1560,53 @@ struct CYEval :
 
 struct CYRubyProc;
 
-struct CYRubyBlock :
+struct CYBraced :
     CYTarget
 {
-    CYExpression *call_;
-    CYRubyProc *proc_;
+    CYTarget *lhs_;
 
-    CYRubyBlock(CYExpression *call, CYRubyProc *proc) :
-        call_(call),
-        proc_(proc)
+    CYBraced(CYTarget *lhs = NULL) :
+        lhs_(lhs)
     {
     }
 
     CYPrecedence(1)
 
+    void SetLeft(CYTarget *lhs) {
+        lhs_ = lhs;
+    }
+};
+
+struct CYRubyBlock :
+    CYBraced
+{
+    CYRubyProc *proc_;
+
+    CYRubyBlock(CYTarget *lhs, CYRubyProc *proc) :
+        CYBraced(lhs),
+        proc_(proc)
+    {
+    }
+
     virtual CYTarget *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
 
     virtual CYTarget *AddArgument(CYContext &context, CYExpression *value);
+};
+
+struct CYExtend :
+    CYBraced
+{
+    CYObject object_;
+
+    CYExtend(CYTarget *lhs, CYProperty *properties = NULL) :
+        CYBraced(lhs),
+        object_(properties)
+    {
+    }
+
+    virtual CYTarget *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
 struct CYIf :

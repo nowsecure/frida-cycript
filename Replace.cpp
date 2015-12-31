@@ -381,6 +381,10 @@ CYFunctionParameter *CYExpression::Parameter() const {
     return NULL;
 }
 
+CYTarget *CYExtend::Replace(CYContext &context) {
+    return object_.Replace(context, lhs_);
+}
+
 CYStatement *CYExternal::Replace(CYContext &context) {
     return $E($ CYAssign($V(typed_->identifier_), $C1(typed_->Replace(context), $C2($V("dlsym"), $V("RTLD_DEFAULT"), $S(typed_->identifier_->Word())))));
 }
@@ -732,21 +736,25 @@ CYExpression *CYNumber::PropertyName(CYContext &context) {
     return String(context);
 }
 
-CYTarget *CYObject::Replace(CYContext &context) {
+CYTarget *CYObject::Replace(CYContext &context, CYTarget *seed) {
     CYBuilder builder;
     if (properties_ != NULL)
-        properties_ = properties_->ReplaceAll(context, builder, $ CYThis(), false);
+        properties_ = properties_->ReplaceAll(context, builder, $ CYThis(), seed != this);
 
     if (builder) {
         return $C1($M($ CYFunctionExpression(NULL, builder.bindings_->Parameter(context),
             builder.statements_
                 ->* $ CYReturn($ CYThis())
-        ), $S("call")), this, builder.bindings_->Argument(context));
+        ), $S("call")), seed, builder.bindings_->Argument(context));
     }
 
     CYForEach (property, properties_)
         property->Replace(context);
-    return this;
+    return seed;
+}
+
+CYTarget *CYObject::Replace(CYContext &context) {
+    return Replace(context, this);
 }
 
 CYTarget *CYParenthetical::Replace(CYContext &context) {
@@ -895,7 +903,7 @@ CYStatement *CYReturn::Replace(CYContext &context) {
 }
 
 CYTarget *CYRubyBlock::Replace(CYContext &context) {
-    return call_->AddArgument(context, proc_->Replace(context));
+    return lhs_->AddArgument(context, proc_->Replace(context));
 }
 
 CYTarget *CYRubyBlock::AddArgument(CYContext &context, CYExpression *value) {

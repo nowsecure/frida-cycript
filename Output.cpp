@@ -452,6 +452,11 @@ void CYExpression::Output(CYOutput &out, int precedence, CYFlags flags) const {
         Output(out, flags);
 }
 
+void CYExtend::Output(CYOutput &out, CYFlags flags) const {
+    lhs_->Output(out, CYLeft(flags));
+    out << ' ' << object_;
+}
+
 void CYExternal::Output(CYOutput &out, CYFlags flags) const {
     out << "extern" << abi_ << typed_;
     out.Terminate();
@@ -872,7 +877,7 @@ void CYReturn::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYRubyBlock::Output(CYOutput &out, CYFlags flags) const {
-    call_->Output(out, CYLeft(flags));
+    lhs_->Output(out, CYLeft(flags));
     out << ' ';
     proc_->Output(out, CYRight(flags));
 }
