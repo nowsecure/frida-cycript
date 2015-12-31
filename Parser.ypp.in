@@ -184,6 +184,13 @@ type; })
         yyla.type = yytranslate_(token::to); \
 } while (false)
 
+#define CYHLD(location, token) do { \
+    if (driver.hold_ != empty_symbol) \
+        CYERR(location, "unexpected hold"); \
+    driver.hold_ = yyla.type; \
+    yyla.type = yytranslate_(token); \
+} while (false)
+
 #define CYERR(location, message) do { \
     error(location, message); \
     YYABORT; \
@@ -778,11 +785,11 @@ LexPushYieldOff: { driver.yield_.push(false); };
 LexPopYield: { driver.yield_.pop(); };
 
 LexNewLineOrOpt
-    : { CYLEX(); if (driver.hold_ != empty_symbol) CYERR(@$, "unexpected hold"); if (driver.newline_) { driver.hold_ = yyla.type; yyla.type = yytranslate_(cy::parser::token::NewLine); } }
+    : { CYLEX(); if (driver.newline_) { CYHLD(@$, tk::NewLine); } }
     ;
 
 LexNewLineOrNot
-    : { CYLEX(); if (driver.hold_ != empty_symbol) CYERR(@$, "unexpected hold"); driver.hold_ = yyla.type; yyla.type = yytranslate_(driver.newline_ ? cy::parser::token::NewLine : cy::parser::token::__); }
+    : { CYLEX(); CYHLD(@$, driver.newline_ ? tk::NewLine : tk::__); }
     ;
 
 LexNoStar
