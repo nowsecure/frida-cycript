@@ -105,6 +105,12 @@ libcycript_la_SOURCES += Ruby/Execute.cpp
 libcycript_la_LIBADD += $(LTRUBY)
 endif
 
+if CY_PYTHON
+filters += Python
+libcycript_la_SOURCES += Python/Execute.cpp
+libcycript_la_LIBADD += $(LTPYTHON)
+endif
+
 if CY_OBJECTIVEC
 filters += ObjectiveC
 libcycript_la_SOURCES += ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm

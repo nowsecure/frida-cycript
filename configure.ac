@@ -247,6 +247,20 @@ AS_CASE([$CY_EXECUTE], [1], [
         AC_SUBST([CY_RUBY], [0])
     ])])])])
 
+    AC_ARG_WITH([python], AS_HELP_STRING([--with-python], [support python (pass the path to python-config)]), [], [with_python=no])
+
+    AS_IF([test "x$with_python" != "xno"], [
+        AC_SUBST([CY_PYTHON], [1])
+        CY_LT_LIB([LTPYTHON], [
+            AC_LIB_APPENDTOVAR([CPPFLAGS], [`$with_python --includes`])
+            AC_LIB_APPENDTOVAR([LIBS], [`$with_python --ldflags`])
+        ])
+    ], [
+        AC_SUBST([CY_PYTHON], [0])
+    ])
+
+    AM_CONDITIONAL([CY_PRELINK], [test "x$with_python" != "xno"])
+
     AC_LANG_PUSH([Objective C++])
 
     AC_MSG_CHECKING([if we really have Objective C++])
@@ -281,6 +295,7 @@ AS_CASE([$CY_EXECUTE], [1], [
 
 AM_CONDITIONAL([CY_JAVA], [test "x$CY_JAVA" = x1])
 AM_CONDITIONAL([CY_RUBY], [test "x$CY_RUBY" = x1])
+AM_CONDITIONAL([CY_PYTHON], [test "x$CY_PYTHON" = x1])
 AM_CONDITIONAL([CY_OBJECTIVEC], [test "x$CY_OBJECTIVEC" = x1])
 
 AC_ARG_WITH([libclang], AS_HELP_STRING([--with-libclang], [build bridge definitions using this libclang]), [], [with_libclang=no])

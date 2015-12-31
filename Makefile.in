@@ -123,9 +123,9 @@ host_triplet = @host@
 @CY_JAVA_TRUE@am__append_10 = Java
 @CY_JAVA_TRUE@am__append_11 = Java/Execute.cpp
 @CY_JAVA_TRUE@am__append_12 = $(LTJAVA)
-@CY_RUBY_TRUE@am__append_13 = Ruby
-@CY_RUBY_TRUE@am__append_14 = Ruby/Execute.cpp
-@CY_RUBY_TRUE@am__append_15 = $(LTRUBY)
+@CY_RUBY_TRUE@am__append_13 = Ruby Python
+@CY_RUBY_TRUE@am__append_14 = Ruby/Execute.cpp Python/Execute.cpp
+@CY_RUBY_TRUE@am__append_15 = $(LTRUBY) $(LTPYTHON)
 @CY_OBJECTIVEC_TRUE@am__append_16 = ObjectiveC
 @CY_OBJECTIVEC_TRUE@am__append_17 = ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm
 @CY_OBJECTIVEC_TRUE@am__append_18 = $(LTOBJECTIVEC)
@@ -183,7 +183,8 @@ LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 @CY_EXECUTE_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
 @CY_JAVA_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
-@CY_RUBY_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
+@CY_RUBY_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1) \
+@CY_RUBY_TRUE@	$(am__DEPENDENCIES_1)
 @CY_OBJECTIVEC_TRUE@am__DEPENDENCIES_5 = $(am__DEPENDENCIES_1)
 libcycript_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
@@ -195,14 +196,14 @@ am__libcycript_la_SOURCES_DIST = ConvertUTF.c Decode.cpp Driver.cpp \
 	Replace.cpp Syntax.cpp Parser.cpp Scanner.cpp Complete.cpp \
 	sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp Execute.cpp \
 	JavaScriptCore.cpp Java/Execute.cpp Ruby/Execute.cpp \
-	ObjectiveC/Output.cpp ObjectiveC/Replace.cpp \
-	ObjectiveC/Library.mm Handler.cpp
+	Python/Execute.cpp ObjectiveC/Output.cpp \
+	ObjectiveC/Replace.cpp ObjectiveC/Library.mm Handler.cpp
 @CY_CONSOLE_TRUE@am__objects_1 = Complete.lo
 am__dirstamp = $(am__leading_dot)dirstamp
 @CY_EXECUTE_TRUE@am__objects_2 = sig/ffi_type.lo sig/parse.lo \
 @CY_EXECUTE_TRUE@	sig/copy.lo Execute.lo JavaScriptCore.lo
 @CY_JAVA_TRUE@am__objects_3 = Java/Execute.lo
-@CY_RUBY_TRUE@am__objects_4 = Ruby/Execute.lo
+@CY_RUBY_TRUE@am__objects_4 = Ruby/Execute.lo Python/Execute.lo
 @CY_OBJECTIVEC_TRUE@am__objects_5 = ObjectiveC/Output.lo \
 @CY_OBJECTIVEC_TRUE@	ObjectiveC/Replace.lo \
 @CY_OBJECTIVEC_TRUE@	ObjectiveC/Library.lo
@@ -424,6 +425,7 @@ CY_EXECUTE = @CY_EXECUTE@
 CY_JAVA = @CY_JAVA@
 CY_LIBCLANG = @CY_LIBCLANG@
 CY_OBJECTIVEC = @CY_OBJECTIVEC@
+CY_PYTHON = @CY_PYTHON@
 CY_RUBY = @CY_RUBY@
 CY_SYSTEM = @CY_SYSTEM@
 DEFS = @DEFS@
@@ -473,6 +475,7 @@ LTLIBSQLITE3 = @LTLIBSQLITE3@
 LTLIBTERMCAP = @LTLIBTERMCAP@
 LTLIBUV = @LTLIBUV@
 LTOBJECTIVEC = @LTOBJECTIVEC@
+LTPYTHON = @LTPYTHON@
 LTRUBY = @LTRUBY@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 MAINT = @MAINT@
@@ -711,6 +714,14 @@ Ruby/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) Ruby/$(DEPDIR)
 	@: > Ruby/$(DEPDIR)/$(am__dirstamp)
 Ruby/Execute.lo: Ruby/$(am__dirstamp) Ruby/$(DEPDIR)/$(am__dirstamp)
+Python/$(am__dirstamp):
+	@$(MKDIR_P) Python
+	@: > Python/$(am__dirstamp)
+Python/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) Python/$(DEPDIR)
+	@: > Python/$(DEPDIR)/$(am__dirstamp)
+Python/Execute.lo: Python/$(am__dirstamp) \
+	Python/$(DEPDIR)/$(am__dirstamp)
 ObjectiveC/$(am__dirstamp):
 	@$(MKDIR_P) ObjectiveC
 	@: > ObjectiveC/$(am__dirstamp)
@@ -786,6 +797,8 @@ mostlyclean-compile:
 	-rm -f Java/*.lo
 	-rm -f ObjectiveC/*.$(OBJEXT)
 	-rm -f ObjectiveC/*.lo
+	-rm -f Python/*.$(OBJEXT)
+	-rm -f Python/*.lo
 	-rm -f Ruby/*.$(OBJEXT)
 	-rm -f Ruby/*.lo
 	-rm -f sig/*.$(OBJEXT)
@@ -816,6 +829,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/Library.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/Output.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/Replace.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@Python/$(DEPDIR)/Execute.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@Ruby/$(DEPDIR)/Execute.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sig/$(DEPDIR)/copy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sig/$(DEPDIR)/ffi_type.Plo@am__quote@
@@ -900,6 +914,7 @@ clean-libtool:
 	-rm -rf .libs _libs
 	-rm -rf Java/.libs Java/_libs
 	-rm -rf ObjectiveC/.libs ObjectiveC/_libs
+	-rm -rf Python/.libs Python/_libs
 	-rm -rf Ruby/.libs Ruby/_libs
 	-rm -rf sig/.libs sig/_libs
 
@@ -1262,6 +1277,8 @@ distclean-generic:
 	-rm -f Java/$(am__dirstamp)
 	-rm -f ObjectiveC/$(DEPDIR)/$(am__dirstamp)
 	-rm -f ObjectiveC/$(am__dirstamp)
+	-rm -f Python/$(DEPDIR)/$(am__dirstamp)
+	-rm -f Python/$(am__dirstamp)
 	-rm -f Ruby/$(DEPDIR)/$(am__dirstamp)
 	-rm -f Ruby/$(am__dirstamp)
 	-rm -f sig/$(DEPDIR)/$(am__dirstamp)
@@ -1277,7 +1294,7 @@ clean-am: clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
 
 distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
-	-rm -rf ./$(DEPDIR) Java/$(DEPDIR) ObjectiveC/$(DEPDIR) Ruby/$(DEPDIR) sig/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) Java/$(DEPDIR) ObjectiveC/$(DEPDIR) Python/$(DEPDIR) Ruby/$(DEPDIR) sig/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-libtool distclean-tags
@@ -1325,7 +1342,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
-	-rm -rf ./$(DEPDIR) Java/$(DEPDIR) ObjectiveC/$(DEPDIR) Ruby/$(DEPDIR) sig/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) Java/$(DEPDIR) ObjectiveC/$(DEPDIR) Python/$(DEPDIR) Ruby/$(DEPDIR) sig/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

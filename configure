@@ -643,11 +643,11 @@ LTFLAGS
 LTLIBGCC
 LTLIBTERMCAP
 LTLIBREADLINE
-CY_PRELINK_FALSE
-CY_PRELINK_TRUE
 CY_LIBCLANG
 CY_OBJECTIVEC_FALSE
 CY_OBJECTIVEC_TRUE
+CY_PYTHON_FALSE
+CY_PYTHON_TRUE
 CY_RUBY_FALSE
 CY_RUBY_TRUE
 CY_JAVA_FALSE
@@ -655,6 +655,10 @@ CY_JAVA_TRUE
 LTOBJECTIVEC
 GNUSTEP_CONFIG
 CY_OBJECTIVEC
+CY_PRELINK_FALSE
+CY_PRELINK_TRUE
+LTPYTHON
+CY_PYTHON
 LTRUBY
 CY_RUBY
 LIBRUBY21_LIBS
@@ -851,6 +855,7 @@ enable_libtool_lock
 enable_javascript
 enable_console
 enable_attach
+with_python
 with_libclang
 '
       ac_precious_vars='build_alias
@@ -1534,6 +1539,7 @@ Optional Packages:
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
   --with-sysroot[=DIR]    Search for dependent libraries within DIR (or the
                           compiler's sysroot if not specified).
+  --with-python           support python (pass the path to python-config)
   --with-libclang         build bridge definitions using this libclang
 
 Some influential environment variables:
@@ -23608,6 +23614,91 @@ fi
 
 
 
+
+# Check whether --with-python was given.
+if test "${with_python+set}" = set; then :
+  withval=$with_python;
+else
+  with_python=no
+fi
+
+
+    if test "x$with_python" != "xno"; then :
+
+        CY_PYTHON=1
+
+
+    cy_save=$LIBS
+    LIBS=
+
+
+  for element in `$with_python --includes`; do
+    haveit=
+    for x in $CPPFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CPPFLAGS="${CPPFLAGS}${CPPFLAGS:+ }$element"
+    fi
+  done
+
+
+  for element in `$with_python --ldflags`; do
+    haveit=
+    for x in $LIBS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      LIBS="${LIBS}${LIBS:+ }$element"
+    fi
+  done
+
+
+    LTPYTHON=$LIBS
+    LIBS=$cy_save
+
+
+
+else
+
+        CY_PYTHON=0
+
+
+fi
+
+     if test "x$with_python" != "xno"; then
+  CY_PRELINK_TRUE=
+  CY_PRELINK_FALSE='#'
+else
+  CY_PRELINK_TRUE='#'
+  CY_PRELINK_FALSE=
+fi
+
+
     ac_ext=mm
 ac_cpp='$OBJCXXCPP $CPPFLAGS'
 ac_compile='$OBJCXX -c $OBJCXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -23906,6 +23997,14 @@ fi
 else
   CY_RUBY_TRUE='#'
   CY_RUBY_FALSE=
+fi
+
+ if test "x$CY_PYTHON" = x1; then
+  CY_PYTHON_TRUE=
+  CY_PYTHON_FALSE='#'
+else
+  CY_PYTHON_TRUE='#'
+  CY_PYTHON_FALSE=
 fi
 
  if test "x$CY_OBJECTIVEC" = x1; then
@@ -24319,12 +24418,20 @@ if test -z "${CY_EXECUTE_TRUE}" && test -z "${CY_EXECUTE_FALSE}"; then
   as_fn_error $? "conditional \"CY_EXECUTE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${CY_PRELINK_TRUE}" && test -z "${CY_PRELINK_FALSE}"; then
+  as_fn_error $? "conditional \"CY_PRELINK\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${CY_JAVA_TRUE}" && test -z "${CY_JAVA_FALSE}"; then
   as_fn_error $? "conditional \"CY_JAVA\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${CY_RUBY_TRUE}" && test -z "${CY_RUBY_FALSE}"; then
   as_fn_error $? "conditional \"CY_RUBY\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${CY_PYTHON_TRUE}" && test -z "${CY_PYTHON_FALSE}"; then
+  as_fn_error $? "conditional \"CY_PYTHON\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${CY_OBJECTIVEC_TRUE}" && test -z "${CY_OBJECTIVEC_FALSE}"; then

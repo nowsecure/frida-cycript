@@ -87,7 +87,8 @@ function configure() {
 
 for arch in i386 x86_64; do
     configure "osx-${arch}" "${mac}" "${arch}" "-mmacosx-version-min=10.6" \
-        false "-I../readline.osx" "-L../readline.osx" ""
+        false "-I../readline.osx" "-L../readline.osx" "" \
+        --with-python=/usr/bin/python-config
 done
 
 for arch in i386 x86_64; do
