@@ -190,19 +190,19 @@ struct CYJavaValue :
 };
 
 #define CYJavaForEachPrimitive \
-    CYJavaForEachPrimitive_(Z, Boolean, Boolean) \
-    CYJavaForEachPrimitive_(B, Byte, Byte) \
-    CYJavaForEachPrimitive_(C, Char, Character) \
-    CYJavaForEachPrimitive_(S, Short, Short) \
-    CYJavaForEachPrimitive_(I, Int, Integer) \
-    CYJavaForEachPrimitive_(J, Long, Long) \
-    CYJavaForEachPrimitive_(F, Float, Float) \
-    CYJavaForEachPrimitive_(D, Double, Double)
+    CYJavaForEachPrimitive_(Z, Boolean, Boolean, boolean) \
+    CYJavaForEachPrimitive_(B, Byte, Byte, byte) \
+    CYJavaForEachPrimitive_(C, Char, Character, char) \
+    CYJavaForEachPrimitive_(S, Short, Short, short) \
+    CYJavaForEachPrimitive_(I, Int, Integer, int) \
+    CYJavaForEachPrimitive_(J, Long, Long, long) \
+    CYJavaForEachPrimitive_(F, Float, Float, float) \
+    CYJavaForEachPrimitive_(D, Double, Double, double)
 
 enum CYJavaPrimitive : char {
     CYJavaPrimitiveObject,
     CYJavaPrimitiveVoid,
-#define CYJavaForEachPrimitive_(T, Typ, Type) \
+#define CYJavaForEachPrimitive_(T, Typ, Type, type) \
     CYJavaPrimitive ## Type,
 CYJavaForEachPrimitive
 #undef CYJavaForEachPrimitive_
@@ -510,7 +510,7 @@ static jobjectArray CYCastJavaArguments(JNIEnv *jni, const CYJavaShorty &shorty,
             case CYJavaPrimitiveObject:
                 argument = CYCastJavaObject(jni, context, arguments[index]);
                 break;
-#define CYJavaForEachPrimitive_(T, Typ, Type) \
+#define CYJavaForEachPrimitive_(T, Typ, Type, type) \
             case CYJavaPrimitive ## Type: \
                 argument = CYCastJava ## Type(jni, context, arguments[index]); \
                 break;
@@ -587,7 +587,7 @@ static JSValueRef JavaClass_getProperty(JSContextRef context, JSObjectRef object
     switch (field->second.primitive_) {
         case CYJavaPrimitiveObject:
             return CYCastJSValue(context, jni, _envcall(jni, GetStaticObjectField(table->value_, field->second.field_)));
-#define CYJavaForEachPrimitive_(T, Typ, Type) \
+#define CYJavaForEachPrimitive_(T, Typ, Type, type) \
         case CYJavaPrimitive ## Type: \
             return CYJavaCastJSValue(context, _envcall(jni, GetStatic ## Typ ## Field(table->value_, field->second.field_)));
 CYJavaForEachPrimitive
@@ -608,7 +608,7 @@ static bool JavaClass_setProperty(JSContextRef context, JSObjectRef object, JSSt
     switch (field->second.primitive_) {
         case CYJavaPrimitiveObject:
             _envcallv(jni, SetStaticObjectField(table->value_, field->second.field_, CYCastJavaObject(jni, context, value)));
-#define CYJavaForEachPrimitive_(T, Typ, Type) \
+#define CYJavaForEachPrimitive_(T, Typ, Type, type) \
         case CYJavaPrimitive ## Type: \
             _envcallv(jni, SetStatic ## Typ ## Field(table->value_, field->second.field_, CYCastDouble(context, value))); \
             break;
@@ -655,7 +655,7 @@ static JSValueRef JavaInterior_getProperty(JSContextRef context, JSObjectRef obj
     switch (field->second.primitive_) {
         case CYJavaPrimitiveObject:
             return CYCastJSValue(context, jni, _envcall(jni, GetObjectField(internal->value_, field->second.field_)));
-#define CYJavaForEachPrimitive_(T, Typ, Type) \
+#define CYJavaForEachPrimitive_(T, Typ, Type, type) \
         case CYJavaPrimitive ## Type: \
             return CYJavaCastJSValue(context, _envcall(jni, Get ## Typ ## Field(internal->value_, field->second.field_)));
 CYJavaForEachPrimitive
@@ -677,7 +677,7 @@ static bool JavaInterior_setProperty(JSContextRef context, JSObjectRef object, J
     switch (field->second.primitive_) {
         case CYJavaPrimitiveObject:
             _envcallv(jni, SetObjectField(table->value_, field->second.field_, CYCastJavaObject(jni, context, value)));
-#define CYJavaForEachPrimitive_(T, Typ, Type) \
+#define CYJavaForEachPrimitive_(T, Typ, Type, type) \
         case CYJavaPrimitive ## Type: \
             _envcallv(jni, Set ## Typ ## Field(table->value_, field->second.field_, CYCastDouble(context, value))); \
             break;
@@ -750,14 +750,10 @@ static JSStaticFunction JavaPackage_staticFunctions[1] = {
 
 void CYJava_Initialize() {
     Primitives_.insert(std::make_pair("void", CYJavaPrimitiveVoid));
-    Primitives_.insert(std::make_pair("boolean", CYJavaPrimitiveBoolean));
-    Primitives_.insert(std::make_pair("byte", CYJavaPrimitiveByte));
-    Primitives_.insert(std::make_pair("char", CYJavaPrimitiveCharacter));
-    Primitives_.insert(std::make_pair("short", CYJavaPrimitiveShort));
-    Primitives_.insert(std::make_pair("int", CYJavaPrimitiveInteger));
-    Primitives_.insert(std::make_pair("long", CYJavaPrimitiveLong));
-    Primitives_.insert(std::make_pair("float", CYJavaPrimitiveFloat));
-    Primitives_.insert(std::make_pair("double", CYJavaPrimitiveDouble));
+#define CYJavaForEachPrimitive_(T, Typ, Type, type) \
+    Primitives_.insert(std::make_pair(#type, CYJavaPrimitive ## Type));
+CYJavaForEachPrimitive
+#undef CYJavaForEachPrimitive_
 
     JSClassDefinition definition;
 
