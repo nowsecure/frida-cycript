@@ -1745,7 +1745,7 @@ static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object,
     id self(internal->value_);
 
     if (JSStringIsEqualToUTF8CString(property, "$cyi"))
-        return Internal::Make(context, self, context, object);
+        return Interior::Make(context, self, context, object);
 
     CYPool pool;
     NSString *name(CYCastNSString(&pool, context, property));
@@ -1978,8 +1978,8 @@ static JSValueRef Instance_box_callAsFunction(JSContextRef context, JSObjectRef 
     return CYCastJSValue(context, [value cy$box]);
 } CYCatch(NULL) }
 
-static bool Internal_hasProperty(JSContextRef context, JSObjectRef object, JSStringRef property) {
-    Internal *internal(reinterpret_cast<Internal *>(JSObjectGetPrivate(object)));
+static bool Interior_hasProperty(JSContextRef context, JSObjectRef object, JSStringRef property) {
+    Interior *internal(reinterpret_cast<Interior *>(JSObjectGetPrivate(object)));
     CYPool pool;
 
     id self(internal->value_);
@@ -2009,8 +2009,8 @@ static void CYBitField(unsigned &length, unsigned &shift, id self, Ivar ivar, co
     free(ivars);
 }
 
-static JSValueRef Internal_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
-    Internal *internal(reinterpret_cast<Internal *>(JSObjectGetPrivate(object)));
+static JSValueRef Interior_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
+    Interior *internal(reinterpret_cast<Interior *>(JSObjectGetPrivate(object)));
     CYPool pool;
 
     id self(internal->value_);
@@ -2045,8 +2045,8 @@ static JSValueRef Internal_getProperty(JSContextRef context, JSObjectRef object,
     return NULL;
 } CYCatch(NULL) }
 
-static bool Internal_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) { CYTry {
-    Internal *internal(reinterpret_cast<Internal *>(JSObjectGetPrivate(object)));
+static bool Interior_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) { CYTry {
+    Interior *internal(reinterpret_cast<Interior *>(JSObjectGetPrivate(object)));
     CYPool pool;
 
     id self(internal->value_);
@@ -2075,9 +2075,9 @@ static bool Internal_setProperty(JSContextRef context, JSObjectRef object, JSStr
     return false;
 } CYCatch(false) }
 
-static void Internal_getPropertyNames_(Class _class, JSPropertyNameAccumulatorRef names) {
+static void Interior_getPropertyNames_(Class _class, JSPropertyNameAccumulatorRef names) {
     if (Class super = class_getSuperclass(_class))
-        Internal_getPropertyNames_(super, names);
+        Interior_getPropertyNames_(super, names);
 
     unsigned int size;
     objc_ivar **data(class_copyIvarList(_class, &size));
@@ -2086,18 +2086,18 @@ static void Internal_getPropertyNames_(Class _class, JSPropertyNameAccumulatorRe
     free(data);
 }
 
-static void Internal_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
-    Internal *internal(reinterpret_cast<Internal *>(JSObjectGetPrivate(object)));
+static void Interior_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
+    Interior *internal(reinterpret_cast<Interior *>(JSObjectGetPrivate(object)));
     CYPool pool;
 
     id self(internal->value_);
     Class _class(object_getClass(self));
 
-    Internal_getPropertyNames_(_class, names);
+    Interior_getPropertyNames_(_class, names);
 }
 
-static JSValueRef Internal_callAsFunction_$cya(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    Internal *internal(reinterpret_cast<Internal *>(JSObjectGetPrivate(object)));
+static JSValueRef Interior_callAsFunction_$cya(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    Interior *internal(reinterpret_cast<Interior *>(JSObjectGetPrivate(object)));
     return internal->owner_;
 } CYCatch(NULL) }
 
@@ -2693,8 +2693,8 @@ static JSStaticFunction Class_staticFunctions[2] = {
     {NULL, NULL, 0}
 };
 
-static JSStaticFunction Internal_staticFunctions[2] = {
-    {"$cya", &Internal_callAsFunction_$cya, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+static JSStaticFunction Interior_staticFunctions[2] = {
+    {"$cya", &Interior_callAsFunction_$cya, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
 
@@ -2778,14 +2778,14 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     ClassInstance_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
-    definition.className = "Internal";
-    definition.staticFunctions = Internal_staticFunctions;
-    definition.hasProperty = &Internal_hasProperty;
-    definition.getProperty = &Internal_getProperty;
-    definition.setProperty = &Internal_setProperty;
-    definition.getPropertyNames = &Internal_getPropertyNames;
+    definition.className = "Interior";
+    definition.staticFunctions = Interior_staticFunctions;
+    definition.hasProperty = &Interior_hasProperty;
+    definition.getProperty = &Interior_getProperty;
+    definition.setProperty = &Interior_setProperty;
+    definition.getPropertyNames = &Interior_getPropertyNames;
     definition.finalize = &CYFinalize;
-    Internal::Class_ = JSClassCreate(&definition);
+    Interior::Class_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "Message";

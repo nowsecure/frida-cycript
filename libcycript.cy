@@ -86,49 +86,49 @@ $cy_set(RegExp.prototype, {
 if ("Java" in Cycript) {
     $cy_set(java.lang.Boolean.prototype, {
         toCYON: function() {
-            return `new java.lang.Boolean(${this.value})`;
+            return `new java.lang.Boolean(${this->value})`;
         },
     });
 
     $cy_set(java.lang.Byte.prototype, {
         toCYON: function() {
-            return `new java.lang.Byte(${this.value})`;
+            return `new java.lang.Byte(${this->value})`;
         },
     });
 
     $cy_set(java.lang.Character.prototype, {
         toCYON: function() {
-            return `new java.lang.Character(${this.value})`;
+            return `new java.lang.Character(${this->value})`;
         },
     });
 
     $cy_set(java.lang.Short.prototype, {
         toCYON: function() {
-            return `new java.lang.Short(${this.value})`;
+            return `new java.lang.Short(${this->value})`;
         },
     });
 
     $cy_set(java.lang.Integer.prototype, {
         toCYON: function() {
-            return `new java.lang.Integer(${this.value})`;
+            return `new java.lang.Integer(${this->value})`;
         },
     });
 
     $cy_set(java.lang.Long.prototype, {
         toCYON: function() {
-            return `new java.lang.Long(${this.value})`;
+            return `new java.lang.Long(${this->value})`;
         },
     });
 
     $cy_set(java.lang.Float.prototype, {
         toCYON: function() {
-            return `new java.lang.Float(${this.value})`;
+            return `new java.lang.Float(${this->value})`;
         },
     });
 
     $cy_set(java.lang.Double.prototype, {
         toCYON: function() {
-            return `new java.lang.Double(${this.value})`;
+            return `new java.lang.Double(${this->value})`;
         },
     });
 

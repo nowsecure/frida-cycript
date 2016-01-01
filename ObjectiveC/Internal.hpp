@@ -82,12 +82,12 @@ struct Messages :
     JSValueRef GetPrototype(JSContextRef context) const;
 };
 
-struct Internal :
-    CYValue<Internal, id>
+struct Interior :
+    CYValue<Interior, id>
 {
     CYProtect owner_;
 
-    _finline Internal(id value, JSContextRef context, JSObjectRef owner) :
+    _finline Interior(id value, JSContextRef context, JSObjectRef owner) :
         CYValue(value),
         owner_(context, owner)
     {
