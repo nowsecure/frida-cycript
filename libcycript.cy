@@ -131,6 +131,43 @@ if ("Java" in Cycript) {
             return `new java.lang.Double(${this.value})`;
         },
     });
+
+    $cy_set(java.lang.Object.prototype, {
+        // XXX: due to lack of interface prototypes :(
+        $cyg: function(key) {
+            return this.get(key);
+        },
+
+        // XXX: due to lack of interface prototypes :(
+        $cys: function(key, value) {
+            if ("set" in this)
+                this.set(key, value);
+            else
+                this.put(key, value);
+        },
+    });
+}
+
+if ("ObjectiveC" in Cycript) {
+    $cy_set(NSArray.prototype, {
+        $cyg: function(key) {
+            return objc_msgSend(this, "objectAtIndex:", key);
+        },
+
+        $cys: function(key, value) {
+            return objc_msgSend(this, "setObject:atIndex:", value, key);
+        },
+    });
+
+    $cy_set(NSDictionary.prototype, {
+        $cyg: function(key) {
+            return objc_msgSend(this, "objectForKey:", key);
+        },
+
+        $cys: function(key, value) {
+            return objc_msgSend(this, "setObject:forKey:", value, key);
+        },
+    });
 }
 
 let IsFile = function(path) {

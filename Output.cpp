@@ -890,6 +890,11 @@ void CYRubyProc::Output(CYOutput &out, CYFlags flags) const {
     out << '\t' << '}';
 }
 
+void CYSubscriptMember::Output(CYOutput &out, CYFlags flags) const {
+    object_->Output(out, Precedence(), CYLeft(flags));
+    out << "." << '[' << *property_ << ']';
+}
+
 void CYStatement::Multiple(CYOutput &out, CYFlags flags) const {
     bool first(true);
     CYForEach (next, this) {

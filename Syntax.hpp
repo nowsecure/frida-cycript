@@ -1485,6 +1485,20 @@ struct CYResolveMember :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
+struct CYSubscriptMember :
+    CYMember
+{
+    CYSubscriptMember(CYExpression *object, CYExpression *property) :
+        CYMember(object, property)
+    {
+    }
+
+    CYPrecedence(1)
+
+    virtual CYTarget *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
 namespace cy {
 namespace Syntax {
 

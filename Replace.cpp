@@ -117,6 +117,9 @@ CYTarget *CYArrayComprehension::Replace(CYContext &context) {
 }
 
 CYExpression *CYAssignment::Replace(CYContext &context) {
+    // XXX: this is a horrible hack but I'm a month over schedule :(
+    if (CYSubscriptMember *subscript = dynamic_cast<CYSubscriptMember *>(lhs_))
+        return $C2($M(subscript->object_, $S("$cys")), subscript->property_, rhs_);
     context.Replace(lhs_);
     context.Replace(rhs_);
     return this;
@@ -1068,6 +1071,10 @@ void CYScope::Close(CYContext &context) {
             parent_->Merge(context, i);
         } break;
     default:; } }
+}
+
+CYTarget *CYSubscriptMember::Replace(CYContext &context) {
+    return $C1($M(object_, $S("$cyg")), property_);
 }
 
 CYElementValue *CYSpan::Replace(CYContext &context) { $T(NULL)

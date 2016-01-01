@@ -2664,6 +2664,11 @@ ArgumentList
     : LexOf WordNoUnary[tag] ":" AssignmentExpression[value] ArgumentList_[next] { $$ = CYNew CYArgument($tag, $value, $next); }
     ;
 /* }}} */
+/* JavaScript FTW: Subscript Access {{{ */
+MemberAccess
+    : "." "[" AssignmentExpression[property] "]" { $$ = CYNew CYSubscriptMember(NULL, $property); }
+    ;
+/* }}} */
 
 /* JavaScript FTW: Java "Anonymous Inner Classes" {{{ */
 BracedParameter
