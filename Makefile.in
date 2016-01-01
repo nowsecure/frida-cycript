@@ -114,24 +114,27 @@ host_triplet = @host@
 @CY_EXECUTE_TRUE@am__append_2 = sig/ffi_type.cpp sig/parse.cpp \
 @CY_EXECUTE_TRUE@	sig/copy.cpp Execute.cpp JavaScriptCore.cpp
 @CY_EXECUTE_TRUE@am__append_3 = $(LTJAVASCRIPTCORE)
-@CY_EXECUTE_TRUE@am__append_4 = -DCY_EXECUTE
-@CY_EXECUTE_TRUE@am__append_5 = C
-@CY_EXECUTE_TRUE@am__append_6 = libcycript.db
-@CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@am__append_7 = Analyze Bridge.def
-@CY_EXECUTE_TRUE@@CY_PRELINK_FALSE@am__append_8 = Bridge.def
-@CY_EXECUTE_TRUE@am__append_9 = Bridge.gperf Bridge.hpp
-@CY_JAVA_TRUE@am__append_10 = Java
-@CY_JAVA_TRUE@am__append_11 = Java/Execute.cpp
-@CY_JAVA_TRUE@am__append_12 = $(LTJAVA)
-@CY_RUBY_TRUE@am__append_13 = Ruby Python
-@CY_RUBY_TRUE@am__append_14 = Ruby/Execute.cpp Python/Execute.cpp
-@CY_RUBY_TRUE@am__append_15 = $(LTRUBY) $(LTPYTHON)
-@CY_OBJECTIVEC_TRUE@am__append_16 = ObjectiveC
-@CY_OBJECTIVEC_TRUE@am__append_17 = ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm
-@CY_OBJECTIVEC_TRUE@am__append_18 = $(LTOBJECTIVEC)
-@CY_ATTACH_TRUE@am__append_19 = Handler.cpp
-@CY_ATTACH_TRUE@@CY_CONSOLE_TRUE@am__append_20 = Inject.cpp
-@CY_ATTACH_TRUE@@CY_CONSOLE_TRUE@am__append_21 = -DCY_ATTACH
+@CY_EXECUTE_TRUE@am__append_4 = libcycript.db
+@CY_EXECUTE_TRUE@am__append_5 = -DCY_EXECUTE
+@CY_EXECUTE_TRUE@am__append_6 = C
+@CY_EXECUTE_TRUE@am__append_7 = libcycript.db
+@CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@am__append_8 = Analyze Bridge.def
+@CY_EXECUTE_TRUE@@CY_PRELINK_FALSE@am__append_9 = Bridge.def
+@CY_EXECUTE_TRUE@am__append_10 = Bridge.gperf Bridge.hpp
+@CY_JAVA_TRUE@am__append_11 = Java
+@CY_JAVA_TRUE@am__append_12 = Java/Execute.cpp
+@CY_JAVA_TRUE@am__append_13 = $(LTJAVA)
+@CY_JAVA_TRUE@am__append_14 = libcycript.jar
+@CY_JAVA_TRUE@am__append_15 = Class libcycript.jar
+@CY_RUBY_TRUE@am__append_16 = Ruby Python
+@CY_RUBY_TRUE@am__append_17 = Ruby/Execute.cpp Python/Execute.cpp
+@CY_RUBY_TRUE@am__append_18 = $(LTRUBY) $(LTPYTHON)
+@CY_OBJECTIVEC_TRUE@am__append_19 = ObjectiveC
+@CY_OBJECTIVEC_TRUE@am__append_20 = ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm
+@CY_OBJECTIVEC_TRUE@am__append_21 = $(LTOBJECTIVEC)
+@CY_ATTACH_TRUE@am__append_22 = Handler.cpp
+@CY_ATTACH_TRUE@@CY_CONSOLE_TRUE@am__append_23 = Inject.cpp
+@CY_ATTACH_TRUE@@CY_CONSOLE_TRUE@am__append_24 = -DCY_ATTACH
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_cxx_compile_stdcxx_11.m4 \
@@ -573,36 +576,36 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = subdir-objects
-CLEANFILES = $(am__append_6) $(am__append_7) $(am__append_8) \
-	$(am__append_9) Parser.ypp Scanner.lpp Scanner.cpp \
-	Scanner.output lex.backup Parser.cpp Parser.hpp stack.hh \
-	Parser.output
+CLEANFILES = $(am__append_7) $(am__append_8) $(am__append_9) \
+	$(am__append_10) $(am__append_15) Parser.ypp Scanner.lpp \
+	Scanner.cpp Scanner.output lex.backup Parser.cpp Parser.hpp \
+	stack.hh Parser.output
 SUBDIRS = 
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -DYYDEBUG=1 -DCY_SYSTEM="\"$(CY_SYSTEM)\"" -include \
-	config.h -include $(srcdir)/unconfig.h $(am__append_4) \
-	$(am__append_21)
+	config.h -include $(srcdir)/unconfig.h $(am__append_5) \
+	$(am__append_24)
 AM_CFLAGS = -fvisibility=hidden
 AM_CXXFLAGS = -fvisibility=hidden
 AM_OBJCXXFLAGS = -fvisibility=hidden -fobjc-exceptions
 AM_LDFLAGS = -fvisibility=hidden
 CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
+datdir = $(libdir)
+dat_DATA = $(am__append_4) $(am__append_14)
 lib_LTLIBRARIES = libcycript.la
 libcycript_la_LDFLAGS = $(CY_LDFLAGS)
 libcycript_la_LIBADD = $(LTLIBUV) $(LTLIBFFI) $(LTLIBSQLITE3) \
-	$(LTLIBGCC) -ldl $(am__append_3) $(am__append_12) \
-	$(am__append_15) $(am__append_18)
+	$(LTLIBGCC) -ldl $(am__append_3) $(am__append_13) \
+	$(am__append_18) $(am__append_21)
 libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp Error.cpp \
 	Highlight.cpp Library.cpp Network.cpp Output.cpp Replace.cpp \
 	Syntax.cpp Parser.cpp Scanner.cpp $(am__append_1) \
-	$(am__append_2) $(am__append_11) $(am__append_14) \
-	$(am__append_17) $(am__append_19)
-filters = $(am__append_5) $(am__append_10) $(am__append_13) \
-	$(am__append_16)
-@CY_CONSOLE_TRUE@cycript_SOURCES = Console.cpp $(am__append_20)
+	$(am__append_2) $(am__append_12) $(am__append_17) \
+	$(am__append_20) $(am__append_22)
+filters = $(am__append_6) $(am__append_11) $(am__append_16) \
+	$(am__append_19)
+@CY_CONSOLE_TRUE@cycript_SOURCES = Console.cpp $(am__append_23)
 @CY_CONSOLE_TRUE@cycript_LDADD = libcycript.la $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) $(PTHREAD_CFLAGS) -ldl
-@CY_EXECUTE_TRUE@datdir = $(libdir)
-@CY_EXECUTE_TRUE@dat_DATA = libcycript.db
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
@@ -1400,6 +1403,12 @@ uninstall-am: uninstall-binPROGRAMS uninstall-datDATA \
 @CY_EXECUTE_TRUE@	$(srcdir)/Bridge.sh <$< >$@
 @CY_EXECUTE_TRUE@Bridge.hpp: Bridge.gperf
 @CY_EXECUTE_TRUE@	$(GPERF) $< >$@
+@CY_JAVA_TRUE@Class/Cycript.class: Java/Cycript.java
+@CY_JAVA_TRUE@	rm -rf Class; mkdir Class; javac -g -Xlint:unchecked -source 1.5 -target 1.5 -d Class -sourcepath $(srcdir)/Java $<
+@CY_JAVA_TRUE@Class/classes.dex: Class/Cycript.class
+@CY_JAVA_TRUE@	cd Class; dx --dex --output=../$@ *.class
+@CY_JAVA_TRUE@libcycript.jar: Class/classes.dex Class/Cycript.class
+@CY_JAVA_TRUE@	cd Class; jar cf ../$@ *
 Parser.ypp: Parser.ypp.in
 	$(srcdir)/Filter.sh $< >$@ $(filters)
 Scanner.lpp: Scanner.lpp.in UnicodeIDStart.l UnicodeIDContinue.l

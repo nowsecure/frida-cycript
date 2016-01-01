@@ -44,6 +44,11 @@ inline T &&Forward(typename cy::remove_reference<T>::type &&t) noexcept {
     return static_cast<T &&>(t);
 }
 
+template<class T>
+inline typename cy::remove_reference<T>::type &&Move(T &&t) {
+    return static_cast<typename cy::remove_reference<T>::type &&>(t);
+}
+
 }
 
 #endif/*CYCRIPT_UTILITY_HPP*/

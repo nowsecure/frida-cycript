@@ -23,6 +23,7 @@
 #define CYCRIPT_STRING_HPP
 
 #include <iostream>
+#include <string>
 
 #include "Pooling.hpp"
 
@@ -51,6 +52,10 @@ struct CYUTF8String {
     bool operator ==(const char *value) const {
         size_t length(strlen(data));
         return length == size && memcmp(value, data, length) == 0;
+    }
+
+    operator std::string() const {
+        return std::string(data, size);
     }
 };
 

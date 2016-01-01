@@ -83,6 +83,56 @@ $cy_set(RegExp.prototype, {
     },
 });
 
+if ("Java" in Cycript) {
+    $cy_set(java.lang.Boolean.prototype, {
+        toCYON: function() {
+            return `new java.lang.Boolean(${this.value})`;
+        },
+    });
+
+    $cy_set(java.lang.Byte.prototype, {
+        toCYON: function() {
+            return `new java.lang.Byte(${this.value})`;
+        },
+    });
+
+    $cy_set(java.lang.Character.prototype, {
+        toCYON: function() {
+            return `new java.lang.Character(${this.value})`;
+        },
+    });
+
+    $cy_set(java.lang.Short.prototype, {
+        toCYON: function() {
+            return `new java.lang.Short(${this.value})`;
+        },
+    });
+
+    $cy_set(java.lang.Integer.prototype, {
+        toCYON: function() {
+            return `new java.lang.Integer(${this.value})`;
+        },
+    });
+
+    $cy_set(java.lang.Long.prototype, {
+        toCYON: function() {
+            return `new java.lang.Long(${this.value})`;
+        },
+    });
+
+    $cy_set(java.lang.Float.prototype, {
+        toCYON: function() {
+            return `new java.lang.Float(${this.value})`;
+        },
+    });
+
+    $cy_set(java.lang.Double.prototype, {
+        toCYON: function() {
+            return `new java.lang.Double(${this.value})`;
+        },
+    });
+}
+
 let IsFile = function(path) {
     // XXX: this doesn't work on symlinks, but I don't want to fix stat :/
     return access(path, F_OK) == 0 && access(path + '/', F_OK) == -1;

@@ -39,11 +39,34 @@ sig::Type *Structor_(CYPool &pool, sig::Aggregate *aggregate);
 
 extern JSClassRef Functor_;
 
-struct Type_privateData :
+template <typename Internal_>
+struct CYPrivate :
     CYData
 {
     static JSClassRef Class_;
 
+    _finline JSValueRef GetPrototype(JSContextRef context) const {
+        return NULL;
+    }
+
+    template <typename... Args_>
+    _finline static JSClassRef GetClass(Args_ &&... args) {
+        return Class_;
+    }
+
+    template <typename... Args_>
+    static JSObjectRef Make(JSContextRef context, Args_ &&... args) {
+        Internal_ *internal(new Internal_(cy::Forward<Args_>(args)...));
+        JSObjectRef object(JSObjectMake(context, Internal_::GetClass(cy::Forward<Args_>(args)...), internal));
+        if (JSValueRef prototype = internal->GetPrototype(context))
+            CYSetPrototype(context, object, prototype);
+        return object;
+    }
+};
+
+struct Type_privateData :
+    CYPrivate<Type_privateData>
+{
     ffi_type *ffi_;
     sig::Type *type_;
 
@@ -89,16 +112,17 @@ struct Type_privateData :
     }
 };
 
+template <typename Internal_, typename Value_>
 struct CYValue :
-    CYData
+    CYPrivate<Internal_>
 {
-    void *value_;
+    Value_ value_;
 
     CYValue() {
     }
 
-    CYValue(const void *value) :
-        value_(const_cast<void *>(value))
+    CYValue(const Value_ &value) :
+        value_(value)
     {
     }
 
@@ -108,39 +132,8 @@ struct CYValue :
     }
 };
 
-template <typename Internal_, typename Value_>
-struct CYValue_ :
-    CYValue
-{
-    static JSClassRef Class_;
-
-    using CYValue::CYValue;
-
-    _finline Value_ GetValue() const {
-        return reinterpret_cast<Value_>(value_);
-    }
-
-    _finline JSValueRef GetPrototype(JSContextRef context) const {
-        return NULL;
-    }
-
-    template <typename... Args_>
-    _finline static JSClassRef GetClass(Args_ &&... args) {
-        return Class_;
-    }
-
-    template <typename... Args_>
-    static JSObjectRef Make(JSContextRef context, Args_ &&... args) {
-        Internal_ *internal(new Internal_(cy::Forward<Args_>(args)...));
-        JSObjectRef object(JSObjectMake(context, Internal_::GetClass(cy::Forward<Args_>(args)...), internal));
-        if (JSValueRef prototype = internal->GetPrototype(context))
-            CYSetPrototype(context, object, prototype);
-        return object;
-    }
-};
-
-template <typename Internal_, typename Value_>
-JSClassRef CYValue_<Internal_, Value_>::Class_;
+template <typename Internal_>
+JSClassRef CYPrivate<Internal_>::Class_;
 
 struct CYProtect {
   private:
@@ -178,7 +171,7 @@ struct CYProtect {
 
 namespace cy {
 struct Functor :
-    CYValue
+    CYValue<Functor, void (*)()>
 {
   private:
     void set() {
@@ -191,7 +184,7 @@ struct Functor :
     ffi_cif cif_;
 
     Functor(void (*value)(), bool variadic, const sig::Signature &signature) :
-        CYValue(reinterpret_cast<void *>(value)),
+        CYValue(value),
         variadic_(variadic)
     {
         sig::Copy(*pool_, signature_, signature);
@@ -199,15 +192,11 @@ struct Functor :
     }
 
     Functor(void (*value)(), const char *encoding) :
-        CYValue(reinterpret_cast<void *>(value)),
+        CYValue(value),
         variadic_(false)
     {
         sig::Parse(*pool_, &signature_, encoding, &Structor_);
         set();
-    }
-
-    void (*GetValue() const)() {
-        return reinterpret_cast<void (*)()>(value_);
     }
 
     static JSStaticFunction const * const StaticFunctions;

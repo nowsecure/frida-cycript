@@ -27,16 +27,16 @@
 #include "../Internal.hpp"
 
 struct Selector_privateData :
-    CYValue_<Selector_privateData, SEL>
+    CYValue<Selector_privateData, SEL>
 {
     _finline Selector_privateData(SEL value) :
-        CYValue_(value)
+        CYValue(value)
     {
     }
 };
 
 struct Instance :
-    CYValue_<Instance, id>
+    CYValue<Instance, id>
 {
     enum Flags {
         None          = 0,
@@ -60,22 +60,22 @@ struct Instance :
 
 namespace cy {
 struct Super :
-    CYValue_<Super, id>
+    CYValue<Super, id>
 {
     Class class_;
 
     _finline Super(id value, Class _class) :
-        CYValue_(value),
+        CYValue(value),
         class_(_class)
     {
     }
 }; }
 
 struct Messages :
-    CYValue_<Messages, Class>
+    CYValue<Messages, Class>
 {
     _finline Messages(Class value) :
-        CYValue_(value)
+        CYValue(value)
     {
     }
 
@@ -83,12 +83,12 @@ struct Messages :
 };
 
 struct Internal :
-    CYValue_<Internal, id>
+    CYValue<Internal, id>
 {
     CYProtect owner_;
 
     _finline Internal(id value, JSContextRef context, JSObjectRef owner) :
-        CYValue_(value),
+        CYValue(value),
         owner_(context, owner)
     {
     }

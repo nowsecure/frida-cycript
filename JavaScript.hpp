@@ -23,6 +23,7 @@
 #define CYCRIPT_JAVASCRIPT_HPP
 
 #include <set>
+#include <string>
 
 #include <JavaScriptCore/JSBase.h>
 #include <JavaScriptCore/JSContextRef.h>
@@ -72,6 +73,7 @@ double CYCastDouble(JSContextRef context, JSValueRef value);
 bool CYIsEqual(JSContextRef context, JSValueRef lhs, JSValueRef rhs);
 bool CYIsStrictEqual(JSContextRef context, JSValueRef lhs, JSValueRef rhs);
 
+CYUTF16String CYCastUTF16String(JSStringRef value);
 CYUTF8String CYPoolUTF8String(CYPool &pool, JSContextRef context, JSStringRef value);
 const char *CYPoolCString(CYPool &pool, JSContextRef context, JSStringRef value);
 
@@ -83,6 +85,7 @@ void CYSetProperty(JSContextRef context, JSObjectRef object, size_t index, JSVal
 void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef value, JSPropertyAttributes attributes = kJSPropertyAttributeNone);
 void CYSetProperty(JSContextRef context, JSObjectRef object, JSStringRef name, JSValueRef (*callback)(JSContextRef, JSObjectRef, JSObjectRef, size_t, const JSValueRef[], JSValueRef *), JSPropertyAttributes attributes = kJSPropertyAttributeNone);
 
+JSObjectRef CYGetPrototype(JSContextRef context, JSObjectRef object);
 void CYSetPrototype(JSContextRef context, JSObjectRef object, JSValueRef prototype);
 
 JSValueRef CYGetCachedValue(JSContextRef context, JSStringRef name);
@@ -90,12 +93,15 @@ JSObjectRef CYGetCachedObject(JSContextRef context, JSStringRef name);
 
 JSValueRef CYCastJSValue(JSContextRef context, bool value);
 JSValueRef CYCastJSValue(JSContextRef context, double value);
-JSValueRef CYCastJSValue(JSContextRef context, int value);
+
+JSValueRef CYCastJSValue(JSContextRef context, signed short int value);
+JSValueRef CYCastJSValue(JSContextRef context, unsigned short int value);
+JSValueRef CYCastJSValue(JSContextRef context, signed int value);
 JSValueRef CYCastJSValue(JSContextRef context, unsigned int value);
-JSValueRef CYCastJSValue(JSContextRef context, long int value);
-JSValueRef CYCastJSValue(JSContextRef context, long unsigned int value);
-JSValueRef CYCastJSValue(JSContextRef context, long long int value);
-JSValueRef CYCastJSValue(JSContextRef context, long long unsigned int value);
+JSValueRef CYCastJSValue(JSContextRef context, signed long int value);
+JSValueRef CYCastJSValue(JSContextRef context, unsigned long int value);
+JSValueRef CYCastJSValue(JSContextRef context, signed long long int value);
+JSValueRef CYCastJSValue(JSContextRef context, unsigned long long int value);
 
 JSValueRef CYCastJSValue(JSContextRef context, JSStringRef value);
 JSValueRef CYCastJSValue(JSContextRef context, const char *value);
@@ -142,6 +148,8 @@ JSObjectRef CYMakeType(JSContextRef context, const sig::Type &type);
 
 void CYFinalize(JSObjectRef object);
 
+JSObjectRef CYObjectMakeArray(JSContextRef context, size_t length, const JSValueRef values[]);
+
 size_t CYArrayLength(JSContextRef context, JSObjectRef array);
 JSValueRef CYArrayGet(JSContextRef context, JSObjectRef array, size_t index);
 
@@ -153,6 +161,7 @@ const char *CYPoolCString(CYPool &pool, JSContextRef context, JSValueRef value);
 JSStringRef CYCopyJSString(const char *value);
 JSStringRef CYCopyJSString(JSStringRef value);
 JSStringRef CYCopyJSString(CYUTF8String value);
+JSStringRef CYCopyJSString(const std::string &value);
 JSStringRef CYCopyJSString(CYUTF16String value);
 JSStringRef CYCopyJSString(JSContextRef context, JSValueRef value);
 
@@ -203,6 +212,43 @@ class CYJSString {
 
     operator JSStringRef() const {
         return string_;
+    }
+};
+
+template <size_t Size_>
+class CYArrayBuilder {
+  private:
+    JSContextRef context_;
+    JSObjectRef &array_;
+    size_t size_;
+    JSValueRef values_[Size_];
+
+    void flush() {
+        if (array_ == NULL)
+            array_ = CYObjectMakeArray(context_, size_, values_);
+        else
+            CYArrayPush(context_, array_, size_, values_);
+    }
+
+  public:
+    CYArrayBuilder(JSContextRef context, JSObjectRef &array) :
+        context_(context),
+        array_(array),
+        size_(0)
+    {
+    }
+
+    ~CYArrayBuilder() {
+        flush();
+    }
+
+    void operator ()(JSValueRef value) {
+        if (size_ == Size_) {
+            flush();
+            size_ = 0;
+        }
+
+        values_[size_++] = value;
     }
 };
 

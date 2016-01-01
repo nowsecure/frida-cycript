@@ -39,6 +39,7 @@ cycript += Cycript.lib/libcycript-sys.dylib
 cycript += Cycript.lib/libcycript-sim.dylib
 cycript += Cycript.lib/libcycript.cy
 cycript += Cycript.lib/libcycript.db
+cycript += Cycript.lib/libcycript.jar
 
 framework := 
 framework += Cycript
@@ -208,6 +209,10 @@ Cycript.lib/libcycript.db: $(db)
 	@mkdir -p $(dir $@)
 	./libcycript.sh 0 $@
 	./libcycript.py $@ $^
+
+Cycript.lib/libcycript.jar: build.osx-x86_64/libcycript.jar
+	@mkdir -p $(dir $@)
+	cp -af $< $@
 
 Cycript.lib/cycript0.9:
 	@mkdir -p $(dir $@)

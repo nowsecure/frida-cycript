@@ -37,6 +37,9 @@ AM_OBJCXXFLAGS += -fobjc-exceptions
 
 CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
 
+datdir = $(libdir)
+dat_DATA = 
+
 lib_LTLIBRARIES = 
 
 lib_LTLIBRARIES += libcycript.la
@@ -59,12 +62,10 @@ if CY_EXECUTE
 libcycript_la_SOURCES += sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp
 libcycript_la_SOURCES += Execute.cpp JavaScriptCore.cpp
 libcycript_la_LIBADD += $(LTJAVASCRIPTCORE)
+dat_DATA += libcycript.db
 
 AM_CPPFLAGS += -DCY_EXECUTE
 filters += C
-
-datdir = $(libdir)
-dat_DATA = libcycript.db
 
 CLEANFILES += libcycript.db
 libcycript.db: Bridge.def libcycript.sh
@@ -97,6 +98,17 @@ if CY_JAVA
 filters += Java
 libcycript_la_SOURCES += Java/Execute.cpp
 libcycript_la_LIBADD += $(LTJAVA)
+dat_DATA += libcycript.jar
+
+CLEANFILES += Class
+Class/Cycript.class: Java/Cycript.java
+	rm -rf Class; mkdir Class; javac -g -Xlint:unchecked -source 1.5 -target 1.5 -d Class -sourcepath $(srcdir)/Java $<
+Class/classes.dex: Class/Cycript.class
+	cd Class; dx --dex --output=../$@ *.class
+
+CLEANFILES += libcycript.jar
+libcycript.jar: Class/classes.dex Class/Cycript.class
+	cd Class; jar cf ../$@ *
 endif
 
 if CY_RUBY
