@@ -156,6 +156,8 @@ JSValueRef CYArrayGet(JSContextRef context, JSObjectRef array, size_t index);
 void CYArrayPush(JSContextRef context, JSObjectRef array, size_t length, const JSValueRef arguments[]);
 void CYArrayPush(JSContextRef context, JSObjectRef array, JSValueRef value);
 
+bool CYGetOffset(CYPool &pool, JSContextRef context, JSStringRef value, ssize_t &index);
+
 const char *CYPoolCString(CYPool &pool, JSContextRef context, JSValueRef value);
 
 JSStringRef CYCopyJSString(const char *value);

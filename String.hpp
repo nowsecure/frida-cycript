@@ -77,6 +77,7 @@ struct CYUTF16String {
 
 size_t CYGetIndex(const CYUTF8String &value);
 bool CYIsKey(CYUTF8String value);
+
 bool CYGetOffset(const char *value, ssize_t &index);
 
 bool CYStartsWith(const CYUTF8String &haystack, const CYUTF8String &needle);

@@ -133,6 +133,10 @@ if ("Java" in Cycript) {
     });
 
     $cy_set(java.lang.Object.prototype, {
+        toCYON: function(key) {
+            return "#" + this.toString().toCYON();
+        },
+
         // XXX: due to lack of interface prototypes :(
         $cyg: function(key) {
             return this.get(key);

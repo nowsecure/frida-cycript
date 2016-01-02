@@ -614,7 +614,7 @@ static JSObjectRef CYMakeFunctor(JSContextRef context, const char *symbol, const
     return JSObjectMake(context, Functor_, internal);
 }
 
-static bool CYGetOffset(CYPool &pool, JSContextRef context, JSStringRef value, ssize_t &index) {
+bool CYGetOffset(CYPool &pool, JSContextRef context, JSStringRef value, ssize_t &index) {
     return CYGetOffset(CYPoolCString(pool, context, value), index);
 }
 
