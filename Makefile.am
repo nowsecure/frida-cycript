@@ -72,13 +72,15 @@ libcycript.db: Bridge.def libcycript.sh
 	$(srcdir)/libcycript.sh $(CY_SYSTEM) $@ $<
 
 if CY_PRELINK
+CY_LANGFLAGS = -DCY_JAVA=$(CY_JAVA) -DCY_PYTHON=$(CY_PYTHON) -DCY_OBJECTIVEC=$(CY_OBJECTIVEC)
+
 CLEANFILES += Analyze
 Analyze: Analyze.cpp Error.cpp Output.cpp Replace.cpp Syntax.cpp
-	$(CXX_FOR_BUILD) $(CXXFLAGS_FOR_BUILD) -std=c++11 $(LDFLAGS_FOR_BUILD) -DCY_OBJECTIVEC=$(CY_OBJECTIVEC) -I$(srcdir)/extra -o $@ $^ $(CY_LIBCLANG) -Wno-bitwise-op-parentheses -Wno-dangling-else -Wno-logical-op-parentheses
+	$(CXX_FOR_BUILD) $(CXXFLAGS_FOR_BUILD) -std=c++11 $(LDFLAGS_FOR_BUILD) $(CY_LANGFLAGS) -I$(srcdir)/extra -o $@ $^ $(CY_LIBCLANG) -Wno-bitwise-op-parentheses -Wno-dangling-else -Wno-logical-op-parentheses
 
 CLEANFILES += Bridge.def
 Bridge.def: Analysis.cpp Analyze
-	./Analyze $< $(OBJCXX) $(AM_OBJCXXFLAGS) $(OBJCXXFLAGS) >$@
+	./Analyze $< $(OBJCXX) $(CPPFLAGS) $(AM_OBJCXXFLAGS) $(OBJCXXFLAGS) $(CY_LANGFLAGS) >$@
 else
 CLEANFILES += Bridge.def
 Bridge.def: Bridge.def.in

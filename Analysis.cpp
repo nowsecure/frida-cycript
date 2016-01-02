@@ -28,7 +28,27 @@
 
 #include <sqlite3.h>
 
-#ifdef __OBJC__
+#if CY_JAVA
+#ifdef __APPLE__
+#include <JavaVM/jni.h>
+#else
+#include <jni.h>
+#endif
+#endif
+
+#if CY_RUBY
+#ifdef __APPLE__
+#include <Ruby/ruby.h>
+#else
+#include <ruby.h>
+#endif
+#endif
+
+#if CY_PYTHON
+#include <Python.h>
+#endif
+
+#if CY_OBJECTIVEC
 #include <objc/runtime.h>
 #endif
 
