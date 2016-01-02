@@ -53,4 +53,6 @@ char **CYComplete(const char *word, const std::string &line, CYUTF8String (*run)
 
 void CYStringify(std::ostringstream &str, const char *data, size_t size, bool c);
 
+const char *CYPoolLibraryPath(CYPool &pool);
+
 #endif/*CYCRIPT_HPP*/

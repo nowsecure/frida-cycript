@@ -30,6 +30,7 @@
 #endif
 
 #include "cycript.hpp"
+#include "Error.hpp"
 #include "Execute.hpp"
 #include "Internal.hpp"
 #include "JavaScript.hpp"
@@ -45,7 +46,7 @@
     __typeof__(jni->expr) _value(jni->expr); \
     if (jthrowable _error = jni->ExceptionOccurred()) { \
         jni->ExceptionClear(); \
-        CYThrow("_envcall(%s): %p", #expr, _error); \
+        throw CYJSError(context, CYCastJSValue(context, jni, _error)); \
     } \
 _value; })
 
@@ -53,9 +54,18 @@ _value; })
     jni->expr; \
     if (jthrowable _error = jni->ExceptionOccurred()) { \
         jni->ExceptionClear(); \
-        CYThrow("_envcall(%s): %p", #expr, _error); \
+        throw CYJSError(context, CYCastJSValue(context, jni, _error)); \
     } \
 } while (false)
+
+#define CYJavaTry \
+    try
+#define CYJavaCatch(value) \
+    catch (const CYException &error) { \
+        CYPool pool; \
+        jni->ThrowNew(jni->FindClass("java/lang/RuntimeException"), error.PoolCString(pool)); \
+        return value; \
+    }
 
 extern "C" {
     // Android's jni.h seriously doesn't declare these :/
@@ -63,7 +73,11 @@ extern "C" {
     jint JNI_GetCreatedJavaVMs(JavaVM **, jsize, jsize *);
 }
 
-JNIEnv *GetJNI() {
+static JSValueRef CYCastJSValue(JSContextRef context, JNIEnv *jni, jobject value);
+
+static void CYRegisterNatives(JSContextRef context, JNIEnv *jni);
+
+JNIEnv *GetJNI(JSContextRef context) {
     static JavaVM *jvm(NULL);
     static JNIEnv *jni(NULL);
 
@@ -80,11 +94,27 @@ JNIEnv *GetJNI() {
         jvm = jvms[0];
         _jnicall(jvm->GetEnv(reinterpret_cast<void **>(&jni), version));
     } else {
+        CYPool pool;
+        std::vector<JavaVMOption> options;
+
+        {
+            std::ostringstream option;
+            option << "-Djava.class.path=";
+            option << CYPoolLibraryPath(pool) << "/libcycript.jar";
+            if (const char *classpath = getenv("CLASSPATH"))
+                option << ':' << classpath;
+            options.push_back(JavaVMOption{pool.strdup(option.str().c_str()), NULL});
+        }
+
         JavaVMInitArgs args;
         memset(&args, 0, sizeof(args));
         args.version = version;
+        args.nOptions = options.size();
+        args.options = options.data();
         _jnicall(JNI_CreateJavaVM(&jvm, reinterpret_cast<void **>(&jni), &args));
     }
+
+    CYRegisterNatives(context, jni);
 
     return jni;
 }
@@ -142,7 +172,7 @@ struct CYJavaGlobal {
 
     CYJavaGlobal(JNIEnv *jni, Value_ value) :
         jni_(jni),
-        value_(static_cast<Value_>(_envcall(jni_, NewGlobalRef(value))))
+        value_(static_cast<Value_>(jni_->NewGlobalRef(value)))
     {
     }
 
@@ -160,7 +190,7 @@ struct CYJavaGlobal {
 
     ~CYJavaGlobal() {
         if (value_ != NULL)
-            _envcallv(jni_, DeleteGlobalRef(value_));
+            jni_->DeleteGlobalRef(value_);
     }
 
     operator bool() const {
@@ -220,7 +250,7 @@ static _finline JSValueRef CYJavaCastJSValue(JSContextRef context, jboolean valu
 
 static std::map<std::string, CYJavaPrimitive> Primitives_;
 
-static CYJavaPrimitive CYJavaGetPrimitive(JNIEnv *jni, jobject type, jmethodID Class$get$$Name) {
+static CYJavaPrimitive CYJavaGetPrimitive(JSContextRef context, JNIEnv *jni, jobject type, jmethodID Class$get$$Name) {
     jstring string(static_cast<jstring>(_envcall(jni, CallObjectMethod(type, Class$get$$Name))));
     _assert(string != NULL);
     CYJavaUTF8String name(jni, string);
@@ -230,11 +260,11 @@ static CYJavaPrimitive CYJavaGetPrimitive(JNIEnv *jni, jobject type, jmethodID C
 
 typedef std::vector<CYJavaPrimitive> CYJavaShorty;
 
-static CYJavaShorty CYJavaGetShorty(JNIEnv *jni, jobjectArray types, jmethodID Class$get$$Name) {
+static CYJavaShorty CYJavaGetShorty(JSContextRef context, JNIEnv *jni, jobjectArray types, jmethodID Class$get$$Name) {
     size_t count(_envcall(jni, GetArrayLength(types)));
     CYJavaShorty shorty(count);
     for (size_t index(0); index != count; ++index)
-        shorty[index] = CYJavaGetPrimitive(jni, _envcall(jni, GetObjectArrayElement(types, index)), Class$get$$Name);
+        shorty[index] = CYJavaGetPrimitive(context, jni, _envcall(jni, GetObjectArrayElement(types, index)), Class$get$$Name);
     return shorty;
 }
 
@@ -274,12 +304,20 @@ typedef std::multiset<CYJavaSignature> CYJavaOverload;
 struct CYJavaMethod :
     CYPrivate<CYJavaMethod>
 {
-    JNIEnv *jni_;
     CYJavaOverload overload_;
 
-    // XXX: figure out move constructors on Apple's crappy toolchain
-    CYJavaMethod(JNIEnv *jni, const CYJavaOverload &overload) :
-        jni_(jni),
+    CYJavaMethod(const CYJavaOverload &overload) :
+        overload_(overload)
+    {
+    }
+};
+
+struct CYJavaStaticMethod :
+    CYPrivate<CYJavaStaticMethod>
+{
+    CYJavaOverload overload_;
+
+    CYJavaStaticMethod(const CYJavaOverload &overload) :
         overload_(overload)
     {
     }
@@ -288,12 +326,15 @@ struct CYJavaMethod :
 struct CYJavaClass :
     CYJavaValue<CYJavaClass, jclass>
 {
+    bool interface_;
+
     CYJavaFieldMap static_;
     CYJavaFieldMap instance_;
     CYJavaOverload overload_;
 
-    CYJavaClass(JNIEnv *jni, jclass value) :
-        CYJavaValue(jni, value)
+    CYJavaClass(JNIEnv *jni, jclass value, bool interface) :
+        CYJavaValue(jni, value),
+        interface_(interface)
     {
     }
 };
@@ -326,12 +367,12 @@ struct CYJavaInterior :
     }
 };
 
-struct CYJavaStatic :
-    CYJavaValue<CYJavaStatic, jobject>
+struct CYJavaStaticInterior :
+    CYJavaValue<CYJavaStaticInterior, jobject>
 {
     CYJavaClass *table_;
 
-    CYJavaStatic(JNIEnv *jni, jobject value, CYJavaClass *table) :
+    CYJavaStaticInterior(JNIEnv *jni, jobject value, CYJavaClass *table) :
         CYJavaValue(jni, value),
         table_(table)
     {
@@ -379,7 +420,7 @@ static JSValueRef CYCastJSValue(JSContextRef context, JNIEnv *jni, jobject value
 
     jclass _class(_envcall(jni, GetObjectClass(value)));
     if (_envcall(jni, IsSameObject(_class, _envcall(jni, FindClass("java/lang/String")))))
-        return CYCastJSValue(context, CYJSString(CYJavaUTF8String(jni, static_cast<jstring>(value))));
+        return CYCastJSValue(context, CYJSString(jni, static_cast<jstring>(value)));
 
     jclass Class$(_envcall(jni, FindClass("java/lang/Class")));
     jmethodID Class$isArray(_envcall(jni, GetMethodID(Class$, "isArray", "()Z")));
@@ -387,19 +428,30 @@ static JSValueRef CYCastJSValue(JSContextRef context, JNIEnv *jni, jobject value
         jmethodID Class$getComponentType(_envcall(jni, GetMethodID(Class$, "getComponentType", "()Ljava/lang/Class;")));
         jclass component(static_cast<jclass>(_envcall(jni, CallObjectMethod(_class, Class$getComponentType))));
         jmethodID Class$getName(_envcall(jni, GetMethodID(Class$, "getName", "()Ljava/lang/String;")));
-        return CYJavaArray::Make(context, jni, static_cast<jarray>(value), CYJavaGetPrimitive(jni, component, Class$getName));
+        return CYJavaArray::Make(context, jni, static_cast<jarray>(value), CYJavaGetPrimitive(context, jni, component, Class$getName));
+    }
+
+    jclass Wrapper$(_envcall(jni, FindClass("Cycript$Wrapper")));
+    if (_envcall(jni, IsSameObject(_class, Wrapper$))) {
+        jmethodID Wrapper$getProtect(_envcall(jni, GetMethodID(Wrapper$, "getProtect", "()J")));
+        auto &protect(*reinterpret_cast<CYProtect *>(_envcall(jni, CallLongMethod(value, Wrapper$getProtect))));
+        return protect;
     }
 
     CYJavaClass *table(reinterpret_cast<CYJavaClass *>(JSObjectGetPrivate(CYGetJavaClass(context, jni, _class))));
     return CYJavaObject::Make(context, jni, value, table);
 }
 
-static jstring CYCastJavaString(JNIEnv *jni, CYUTF16String value) {
+static _finline JSObjectRef CYCastJSObject(JSContextRef context, JNIEnv *jni, jobject value) {
+    return CYCastJSObject(context, CYCastJSValue(context, jni, value));
+}
+
+static jstring CYCastJavaString(JNIEnv *jni, JSContextRef context, CYUTF16String value) {
     return _envcall(jni, NewString(value.data, value.size));
 }
 
-static jstring CYCastJavaString(JNIEnv *jni, JSStringRef value) {
-    return CYCastJavaString(jni, CYCastUTF16String(value));
+static jstring CYCastJavaString(JNIEnv *jni, JSContextRef context, JSStringRef value) {
+    return CYCastJavaString(jni, context, CYCastUTF16String(value));
 }
 
 #define CYCastJava$(T, Type, jtype, Cast) \
@@ -418,14 +470,26 @@ CYCastJava$(J, Long, jlong, CYCastDouble)
 CYCastJava$(F, Float, jfloat, CYCastDouble)
 CYCastJava$(D, Double, jdouble, CYCastDouble)
 
-static jobject CYCastJavaObject(JNIEnv *jni, JSContextRef context, JSObjectRef value) {
-    JSObjectRef object(CYCastJSObject(context, value));
-    if (JSValueIsObjectOfClass(context, value, CYJavaObject::Class_)) {
-        CYJavaObject *internal(reinterpret_cast<CYJavaObject *>(JSObjectGetPrivate(object)));
-        return internal->value_;
-    }
+static CYJavaClass *CYGetJavaTable(JSContextRef context, JSObjectRef object) {
+    if (!JSValueIsObjectOfClass(context, object, CYJavaClass::Class_))
+        return NULL;
+    return reinterpret_cast<CYJavaClass *>(JSObjectGetPrivate(object));
+}
 
-    _assert(false);
+static CYJavaObject *CYGetJavaObject(JSContextRef context, JSObjectRef object) {
+    if (!JSValueIsObjectOfClass(context, object, CYJavaObject::Class_))
+        return NULL;
+    return reinterpret_cast<CYJavaObject *>(JSObjectGetPrivate(object));
+}
+
+static jobject CYCastJavaObject(JNIEnv *jni, JSContextRef context, JSObjectRef value) {
+    if (CYJavaObject *internal = CYGetJavaObject(context, value))
+        return internal->value_;
+
+    jclass Wrapper$(_envcall(jni, FindClass("Cycript$Wrapper")));
+    jmethodID Wrapper$$init$(_envcall(jni, GetMethodID(Wrapper$, "<init>", "(J)V")));
+    CYProtect *protect(new CYProtect(context, value));
+    return _envcall(jni, NewObject(Wrapper$, Wrapper$$init$, reinterpret_cast<jlong>(protect)));
 }
 
 static jobject CYCastJavaObject(JNIEnv *jni, JSContextRef context, JSValueRef value) {
@@ -437,11 +501,13 @@ static jobject CYCastJavaObject(JNIEnv *jni, JSContextRef context, JSValueRef va
         case kJSTypeNumber:
             return CYCastJavaDouble(jni, context, value);
         case kJSTypeString:
-            return CYCastJavaString(jni, CYJSString(context, value));
+            return CYCastJavaString(jni, context, CYJSString(context, value));
         case kJSTypeObject:
             return CYCastJavaObject(jni, context, CYCastJSObject(context, value));
 
         case kJSTypeUndefined:
+            // XXX: I am currently relying on this for dynamic proxy of void method
+            return NULL;
         default:
             _assert(false);
     }
@@ -458,6 +524,8 @@ static JSObjectRef CYGetJavaClass(JSContextRef context, JNIEnv *jni, jclass valu
     JSValueRef cached(CYGetProperty(context, cy, name));
     if (!JSValueIsUndefined(context, cached))
         return CYCastJSObject(context, cached);
+
+    jmethodID Class$isInterface(_envcall(jni, GetMethodID(Class$, "isInterface", "()Z")));
 
     jmethodID Class$getDeclaredConstructors(_envcall(jni, GetMethodID(Class$, "getDeclaredConstructors", "()[Ljava/lang/reflect/Constructor;")));
     jmethodID Class$getDeclaredFields(_envcall(jni, GetMethodID(Class$, "getDeclaredFields", "()[Ljava/lang/reflect/Field;")));
@@ -481,7 +549,8 @@ static JSObjectRef CYGetJavaClass(JSContextRef context, JNIEnv *jni, jclass valu
     jclass Modifier$(_envcall(jni, FindClass("java/lang/reflect/Modifier")));
     jmethodID Modifier$isStatic(_envcall(jni, GetStaticMethodID(Modifier$, "isStatic", "(I)Z")));
 
-    CYJavaClass *table(new CYJavaClass(jni, value));
+    bool interface(_envcall(jni, CallBooleanMethod(value, Class$isInterface)));
+    CYJavaClass *table(new CYJavaClass(jni, value, interface));
 
     for (jclass prototype(value); prototype != NULL; prototype = _envcall(jni, GetSuperclass(prototype))) {
         jobjectArray fields(static_cast<jobjectArray>(_envcall(jni, CallObjectMethod(prototype, Class$getDeclaredFields))));
@@ -494,7 +563,7 @@ static JSObjectRef CYGetJavaClass(JSContextRef context, JNIEnv *jni, jclass valu
             CYJavaUTF8String name(jni, static_cast<jstring>(_envcall(jni, CallObjectMethod(field, Field$getName))));
             jfieldID id(_envcall(jni, FromReflectedField(field)));
             jobject type(_envcall(jni, CallObjectMethod(field, Field$getType)));
-            map.insert(std::make_pair(std::string(name), CYJavaField{id, CYJavaGetPrimitive(jni, type, Class$getName)}));
+            map.insert(std::make_pair(std::string(name), CYJavaField{id, CYJavaGetPrimitive(context, jni, type, Class$getName)}));
         }
     }
 
@@ -508,7 +577,7 @@ static JSObjectRef CYGetJavaClass(JSContextRef context, JNIEnv *jni, jclass valu
     for (jsize i(0), e(_envcall(jni, GetArrayLength(constructors))); i != e; ++i) {
         jobject constructor(_envcall(jni, GetObjectArrayElement(constructors, i)));
         jobjectArray parameters(static_cast<jobjectArray>(_envcall(jni, CallObjectMethod(constructor, Constructor$getParameterTypes))));
-        CYJavaShorty shorty(CYJavaGetShorty(jni, parameters, Class$getName));
+        CYJavaShorty shorty(CYJavaGetShorty(context, jni, parameters, Class$getName));
         jmethodID id(_envcall(jni, FromReflectedMethod(constructor)));
         table->overload_.insert(CYJavaSignature(jni, id, constructor, CYJavaPrimitiveObject, shorty));
     }
@@ -523,9 +592,9 @@ static JSObjectRef CYGetJavaClass(JSContextRef context, JNIEnv *jni, jclass valu
         bool instance(!_envcall(jni, CallStaticBooleanMethod(Modifier$, Modifier$isStatic, modifiers)));
         CYJavaUTF8String name(jni, static_cast<jstring>(_envcall(jni, CallObjectMethod(method, Method$getName))));
         jobjectArray parameters(static_cast<jobjectArray>(_envcall(jni, CallObjectMethod(method, Method$getParameterTypes))));
-        CYJavaShorty shorty(CYJavaGetShorty(jni, parameters, Class$getName));
+        CYJavaShorty shorty(CYJavaGetShorty(context, jni, parameters, Class$getName));
         jobject type(_envcall(jni, CallObjectMethod(method, Method$getReturnType)));
-        auto primitive(CYJavaGetPrimitive(jni, type, Class$getName));
+        auto primitive(CYJavaGetPrimitive(context, jni, type, Class$getName));
         jmethodID id(_envcall(jni, FromReflectedMethod(method)));
         entries[std::make_pair(instance, std::string(name))].insert(CYJavaSignature(jni, id, method, primitive, shorty));
     }
@@ -534,9 +603,10 @@ static JSObjectRef CYGetJavaClass(JSContextRef context, JNIEnv *jni, jclass valu
         bool instance(entry.first.first);
         CYJSString name(entry.first.second);
         auto &overload(entry.second);
-        auto target(instance ? prototype : constructor);
-        JSValueRef wrapper(CYJavaMethod::Make(context, jni, overload));
-        CYSetProperty(context, target, name, wrapper, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete);
+        if (instance)
+            CYSetProperty(context, prototype, name, CYJavaMethod::Make(context, overload), kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete);
+        else
+            CYSetProperty(context, constructor, name, CYJavaStaticMethod::Make(context, overload), kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete);
     }
 
     // XXX: for some reason kJSPropertyAttributeDontEnum doesn't work if there's already a property with the same name
@@ -617,8 +687,8 @@ static bool CYCastJavaArguments(JNIEnv *jni, const CYJavaShorty &shorty, JSConte
 
 static JSValueRef JavaMethod_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CYJavaMethod *internal(reinterpret_cast<CYJavaMethod *>(JSObjectGetPrivate(object)));
-    JNIEnv *jni(internal->jni_);
-    jobject self(CYCastJavaObject(jni, context, _this));
+    CYJavaObject *self(CYGetJavaObject(context, _this));
+    JNIEnv *jni(self->value_);
 
     CYJavaSignature bound(count);
     for (auto overload(internal->overload_.lower_bound(bound)), e(internal->overload_.upper_bound(bound)); overload != e; ++overload) {
@@ -627,10 +697,41 @@ static JSValueRef JavaMethod_callAsFunction(JSContextRef context, JSObjectRef ob
             continue;
         switch (overload->primitive_) {
             case CYJavaPrimitiveObject:
-                return CYCastJSValue(context, jni, _envcall(jni, CallObjectMethodA(self, overload->method_, array)));
+                return CYCastJSValue(context, jni, _envcall(jni, CallObjectMethodA(self->value_, overload->method_, array)));
+            case CYJavaPrimitiveVoid:
+                _envcallv(jni, CallVoidMethodA(self->value_, overload->method_, array));
+                return CYJSUndefined(context);
 #define CYJavaForEachPrimitive_(T, t, Typ, Type, type) \
             case CYJavaPrimitive ## Type: \
-                return CYJavaCastJSValue(context, _envcall(jni, Call ## Typ ## MethodA(self, overload->method_, array)));
+                return CYJavaCastJSValue(context, _envcall(jni, Call ## Typ ## MethodA(self->value_, overload->method_, array)));
+CYJavaForEachPrimitive
+#undef CYJavaForEachPrimitive_
+            default: _assert(false);
+        }
+    }
+
+    CYThrow("invalid method call");
+} CYCatch(NULL) }
+
+static JSValueRef JavaStaticMethod_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    CYJavaMethod *internal(reinterpret_cast<CYJavaMethod *>(JSObjectGetPrivate(object)));
+    CYJavaClass *table(CYGetJavaTable(context, _this));
+    JNIEnv *jni(table->value_);
+
+    CYJavaSignature bound(count);
+    for (auto overload(internal->overload_.lower_bound(bound)), e(internal->overload_.upper_bound(bound)); overload != e; ++overload) {
+        jvalue array[count];
+        if (!CYCastJavaArguments(jni, overload->shorty_, context, arguments, array))
+            continue;
+        switch (overload->primitive_) {
+            case CYJavaPrimitiveObject:
+                return CYCastJSValue(context, jni, _envcall(jni, CallStaticObjectMethodA(table->value_, overload->method_, array)));
+            case CYJavaPrimitiveVoid:
+                _envcallv(jni, CallStaticVoidMethodA(table->value_, overload->method_, array));
+                return CYJSUndefined(context);
+#define CYJavaForEachPrimitive_(T, t, Typ, Type, type) \
+            case CYJavaPrimitive ## Type: \
+                return CYJavaCastJSValue(context, _envcall(jni, CallStatic ## Typ ## MethodA(table->value_, overload->method_, array)));
 CYJavaForEachPrimitive
 #undef CYJavaForEachPrimitive_
             default: _assert(false);
@@ -643,22 +744,30 @@ CYJavaForEachPrimitive
 static JSObjectRef JavaClass_callAsConstructor(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CYJavaClass *table(reinterpret_cast<CYJavaClass *>(JSObjectGetPrivate(object)));
     JNIEnv *jni(table->value_);
+    jclass _class(table->value_);
+
+    if (table->interface_ && count == 1) {
+        JSObjectRef target(CYCastJSObject(context, arguments[0]));
+        jclass Cycript$(_envcall(jni, FindClass("Cycript")));
+        jmethodID Cycript$Make(_envcall(jni, GetStaticMethodID(Cycript$, "proxy", "(Ljava/lang/Class;J)Ljava/lang/Object;")));
+        CYProtect *protect(new CYProtect(context, target));
+        return CYCastJSObject(context, jni, _envcall(jni, CallObjectMethod(Cycript$, Cycript$Make, _class, reinterpret_cast<jlong>(protect))));
+    }
 
     CYJavaSignature bound(count);
     for (auto overload(table->overload_.lower_bound(bound)), e(table->overload_.upper_bound(bound)); overload != e; ++overload) {
         jvalue array[count];
         if (!CYCastJavaArguments(jni, overload->shorty_, context, arguments, array))
             continue;
-        jobject object(_envcall(jni, NewObjectA(table->value_, overload->method_, array)));
-        // XXX: going through JSValueRef is kind of dumb, no?
-        return CYCastJSObject(context, CYCastJSValue(context, jni, object));
+        jobject object(_envcall(jni, NewObjectA(_class, overload->method_, array)));
+        return CYCastJSObject(context, jni, object);
     }
 
     CYThrow("invalid constructor call");
 } CYCatch(NULL) }
 
-static bool JavaStatic_hasProperty(JSContextRef context, JSObjectRef object, JSStringRef property) {
-    CYJavaStatic *internal(reinterpret_cast<CYJavaStatic *>(JSObjectGetPrivate(object)));
+static bool JavaStaticInterior_hasProperty(JSContextRef context, JSObjectRef object, JSStringRef property) {
+    CYJavaStaticInterior *internal(reinterpret_cast<CYJavaStaticInterior *>(JSObjectGetPrivate(object)));
     CYJavaClass *table(internal->table_);
     CYPool pool;
     auto name(CYPoolUTF8String(pool, context, property));
@@ -668,8 +777,8 @@ static bool JavaStatic_hasProperty(JSContextRef context, JSObjectRef object, JSS
     return true;
 }
 
-static JSValueRef JavaStatic_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
-    CYJavaStatic *internal(reinterpret_cast<CYJavaStatic *>(JSObjectGetPrivate(object)));
+static JSValueRef JavaStaticInterior_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
+    CYJavaStaticInterior *internal(reinterpret_cast<CYJavaStaticInterior *>(JSObjectGetPrivate(object)));
     CYJavaClass *table(internal->table_);
     JNIEnv *jni(table->value_);
     CYPool pool;
@@ -690,8 +799,8 @@ CYJavaForEachPrimitive
     }
 } CYCatch(NULL) }
 
-static bool JavaStatic_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) { CYTry {
-    CYJavaStatic *internal(reinterpret_cast<CYJavaStatic *>(JSObjectGetPrivate(object)));
+static bool JavaStaticInterior_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) { CYTry {
+    CYJavaStaticInterior *internal(reinterpret_cast<CYJavaStaticInterior *>(JSObjectGetPrivate(object)));
     CYJavaClass *table(internal->table_);
     JNIEnv *jni(table->value_);
     CYPool pool;
@@ -715,8 +824,8 @@ CYJavaForEachPrimitive
     return true;
 } CYCatch(false) }
 
-static void JavaStatic_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
-    CYJavaStatic *internal(reinterpret_cast<CYJavaStatic *>(JSObjectGetPrivate(object)));
+static void JavaStaticInterior_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
+    CYJavaStaticInterior *internal(reinterpret_cast<CYJavaStaticInterior *>(JSObjectGetPrivate(object)));
     CYJavaClass *table(internal->table_);
     for (const auto &field : table->static_)
         JSPropertyNameAccumulatorAddName(names, CYJSString(field.first));
@@ -801,7 +910,7 @@ static JSValueRef JavaObject_getProperty_constructor(JSContextRef context, JSObj
 static JSValueRef JavaClass_getProperty_$cyi(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     CYJavaClass *internal(reinterpret_cast<CYJavaClass *>(JSObjectGetPrivate(object)));
     JNIEnv *jni(internal->value_);
-    return CYJavaStatic::Make(context, jni, internal->value_, internal);
+    return CYJavaStaticInterior::Make(context, jni, internal->value_, internal);
 } CYCatch(NULL) }
 
 static JSValueRef JavaObject_getProperty_$cyi(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
@@ -819,6 +928,11 @@ static JSValueRef JavaClass_callAsFunction_toCYON(JSContextRef context, JSObject
 } CYCatch(NULL) }
 
 static JSValueRef JavaMethod_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    std::ostringstream cyon;
+    return CYCastJSValue(context, CYJSString(cyon.str()));
+} CYCatch(NULL) }
+
+static JSValueRef JavaStaticMethod_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     std::ostringstream cyon;
     return CYCastJSValue(context, CYJSString(cyon.str()));
 } CYCatch(NULL) }
@@ -900,7 +1014,7 @@ static JSValueRef CYJavaPackage_getProperty(JSContextRef context, JSObjectRef ob
         name << package << '/';
     name << next;
 
-    JNIEnv *jni(GetJNI());
+    JNIEnv *jni(GetJNI(context));
     if (jclass _class = jni->FindClass(name.str().c_str()))
         return CYGetJavaClass(context, jni, _class);
     jni->ExceptionClear();
@@ -908,6 +1022,35 @@ static JSValueRef CYJavaPackage_getProperty(JSContextRef context, JSObjectRef ob
     package.push_back(next);
     return CYJavaPackage::Make(context, package);
 } CYCatch(NULL) }
+
+static void Cycript_delete(JNIEnv *jni, jclass api, jlong jprotect) { CYJavaTry {
+    delete reinterpret_cast<CYProtect *>(jprotect);
+} CYJavaCatch() }
+
+static jobject Cycript_handle(JNIEnv *jni, jclass api, jlong jprotect, jstring property, jobjectArray jarguments) { CYJavaTry {
+    auto &protect(*reinterpret_cast<CYProtect *>(jprotect));
+    JSContextRef context(protect);
+    JSValueRef function(CYGetProperty(context, protect, CYJSString(jni, property)));
+    if (JSValueIsUndefined(context, function))
+        return NULL;
+
+    size_t count(jarguments == NULL ? 0 : _envcall(jni, GetArrayLength(jarguments)));
+    JSValueRef arguments[count];
+    for (size_t index(0); index != count; ++index)
+        arguments[index] = CYCastJSValue(context, jni, _envcall(jni, GetObjectArrayElement(jarguments, index)));
+
+    return CYCastJavaObject(jni, context, CYCallAsFunction(context, CYCastJSObject(context, function), protect, count, arguments));
+} CYJavaCatch(NULL) }
+
+static JNINativeMethod Cycript_[] = {
+    {(char *) "delete", (char *) "(J)V", (void *) &Cycript_delete},
+    {(char *) "handle", (char *) "(JLjava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;", (void *) &Cycript_handle},
+};
+
+static void CYRegisterNatives(JSContextRef context, JNIEnv *jni) {
+    jclass Cycript$(_envcall(jni, FindClass("Cycript")));
+    _envcall(jni, RegisterNatives(Cycript$, Cycript_, sizeof(Cycript_) / sizeof(Cycript_[0])));
+}
 
 static JSStaticValue JavaClass_staticValues[3] = {
     {"class", &JavaClass_getProperty_class, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
@@ -928,6 +1071,11 @@ static JSStaticValue JavaObject_staticValues[3] = {
 
 static JSStaticFunction JavaMethod_staticFunctions[2] = {
     {"toCYON", &JavaMethod_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {NULL, NULL, 0}
+};
+
+static JSStaticFunction JavaStaticMethod_staticFunctions[2] = {
+    {"toCYON", &JavaStaticMethod_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
 
@@ -971,6 +1119,13 @@ CYJavaForEachPrimitive
     CYJavaMethod::Class_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
+    definition.className = "JavaStaticMethod";
+    definition.staticFunctions = JavaStaticMethod_staticFunctions;
+    definition.callAsFunction = &JavaStaticMethod_callAsFunction;
+    definition.finalize = &CYFinalize;
+    CYJavaStaticMethod::Class_ = JSClassCreate(&definition);
+
+    definition = kJSClassDefinitionEmpty;
     definition.attributes = kJSClassAttributeNoAutomaticPrototype;
     definition.className = "JavaObject";
     definition.staticValues = JavaObject_staticValues;
@@ -994,13 +1149,13 @@ CYJavaForEachPrimitive
 
     definition = kJSClassDefinitionEmpty;
     definition.attributes = kJSClassAttributeNoAutomaticPrototype;
-    definition.className = "JavaStatic";
-    definition.hasProperty = &JavaStatic_hasProperty;
-    definition.getProperty = &JavaStatic_getProperty;
-    definition.setProperty = &JavaStatic_setProperty;
-    definition.getPropertyNames = &JavaStatic_getPropertyNames;
+    definition.className = "JavaStaticInterior";
+    definition.hasProperty = &JavaStaticInterior_hasProperty;
+    definition.getProperty = &JavaStaticInterior_getProperty;
+    definition.setProperty = &JavaStaticInterior_setProperty;
+    definition.getPropertyNames = &JavaStaticInterior_getPropertyNames;
     definition.finalize = &CYFinalize;
-    CYJavaStatic::Class_ = JSClassCreate(&definition);
+    CYJavaStaticInterior::Class_ = JSClassCreate(&definition);
 }
 
 void CYJava_SetupContext(JSContextRef context) {

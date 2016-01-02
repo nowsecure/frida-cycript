@@ -1889,7 +1889,7 @@ _visible void CYCancel() {
     cancel_ = true;
 }
 
-static const char *CYPoolLibraryPath(CYPool &pool);
+const char *CYPoolLibraryPath(CYPool &pool);
 
 static bool initialized_ = false;
 
@@ -2048,7 +2048,7 @@ JSGlobalContextRef CYGetJSContext(JSContextRef context) {
     return reinterpret_cast<Context *>(JSObjectGetPrivate(CYCastJSObject(context, CYGetProperty(context, CYGetGlobalObject(context), cy_s))))->context_;
 }
 
-static const char *CYPoolLibraryPath(CYPool &pool) {
+const char *CYPoolLibraryPath(CYPool &pool) {
     Dl_info addr;
     _assert(dladdr(reinterpret_cast<void *>(&CYPoolLibraryPath), &addr) != 0);
     char *lib(pool.strdup(addr.dli_fname));

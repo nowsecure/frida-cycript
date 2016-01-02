@@ -122,6 +122,8 @@ $(call build_any,osx,$(1))
 $(call build_lib,osx,$(1))
 build.osx-$(1)/.libs/cycript: build-osx-$(1)
 	@
+build.osx-$(1)/libcycript.jar: build-osx-$(1)
+	@
 endef
 
 $(foreach arch,i386 x86_64,$(eval $(call build_osx,$(arch))))

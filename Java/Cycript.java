@@ -22,11 +22,61 @@
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 
 public class Cycript {
 
-public class OnInvoke implements InvocationHandler {
-    native public Object invoke(Object proxy, Method method, Object[] args) throws Throwable;
+public static Method GetMethod(Class<?> type, String name, Class... types) {
+    try {
+        return type.getMethod(name, types);
+    } catch (NoSuchMethodException e) {
+        throw new RuntimeException();
+    }
+}
+
+public static final Method Object$equals = GetMethod(Object.class, "equals", Object.class);
+public static final Method Object$hashCode = GetMethod(Object.class, "hashCode");
+
+public static native void delete(long protect);
+
+public static native Object handle(long protect, String property, Object[] arguments)
+    throws Throwable;
+
+public static class Wrapper
+    implements InvocationHandler
+{
+    private long protect_;
+
+    public Wrapper(long protect) {
+        protect_ = protect;
+    }
+
+    protected void finalize()
+        throws Throwable
+    {
+        delete(protect_);
+    }
+
+    public long getProtect() {
+        return protect_;
+    }
+
+    public Object invoke(Object proxy, Method method, Object[] args)
+        throws Throwable
+    {
+        if (false)
+            return null;
+        else if (method.equals(Object$equals))
+            return proxy == args[0];
+        else if (method == Object$hashCode)
+            return System.identityHashCode(proxy);
+        else
+            return handle(protect_, method.getName(), args);
+    }
+}
+
+public static Object proxy(Class proxy, long protect) {
+    return Proxy.newProxyInstance(proxy.getClassLoader(), new Class[] {proxy}, new Wrapper(protect));
 }
 
 }
