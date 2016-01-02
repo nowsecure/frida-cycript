@@ -59,11 +59,13 @@ _value; })
 } while (false)
 
 #define CYJavaTry \
+    auto &protect(*reinterpret_cast<CYProtect *>(jprotect)); \
+    _disused JSContextRef context(protect); \
+    _disused JSObjectRef object(protect); \
     try
 #define CYJavaCatch(value) \
     catch (const CYException &error) { \
-        CYPool pool; \
-        jni->ThrowNew(jni->FindClass("java/lang/RuntimeException"), error.PoolCString(pool)); \
+        jni->Throw(static_cast<jthrowable>(CYCastJavaObject(jni, context, error.CastJSValue(context, "Error")))); \
         return value; \
     }
 
@@ -1024,13 +1026,11 @@ static JSValueRef CYJavaPackage_getProperty(JSContextRef context, JSObjectRef ob
 } CYCatch(NULL) }
 
 static void Cycript_delete(JNIEnv *jni, jclass api, jlong jprotect) { CYJavaTry {
-    delete reinterpret_cast<CYProtect *>(jprotect);
+    delete &protect;
 } CYJavaCatch() }
 
 static jobject Cycript_handle(JNIEnv *jni, jclass api, jlong jprotect, jstring property, jobjectArray jarguments) { CYJavaTry {
-    auto &protect(*reinterpret_cast<CYProtect *>(jprotect));
-    JSContextRef context(protect);
-    JSValueRef function(CYGetProperty(context, protect, CYJSString(jni, property)));
+    JSValueRef function(CYGetProperty(context, object, CYJSString(jni, property)));
     if (JSValueIsUndefined(context, function))
         return NULL;
 
@@ -1039,7 +1039,7 @@ static jobject Cycript_handle(JNIEnv *jni, jclass api, jlong jprotect, jstring p
     for (size_t index(0); index != count; ++index)
         arguments[index] = CYCastJSValue(context, jni, _envcall(jni, GetObjectArrayElement(jarguments, index)));
 
-    return CYCastJavaObject(jni, context, CYCallAsFunction(context, CYCastJSObject(context, function), protect, count, arguments));
+    return CYCastJavaObject(jni, context, CYCallAsFunction(context, CYCastJSObject(context, function), object, count, arguments));
 } CYJavaCatch(NULL) }
 
 static JNINativeMethod Cycript_[] = {

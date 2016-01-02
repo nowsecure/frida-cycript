@@ -43,6 +43,7 @@ public static native Object handle(long protect, String property, Object[] argum
     throws Throwable;
 
 public static class Wrapper
+    extends RuntimeException
     implements InvocationHandler
 {
     private long protect_;
