@@ -126,6 +126,7 @@ libcycript_la_LIBADD += $(LTPYTHON)
 endif
 
 if CY_OBJECTIVEC
+AM_CPPFLAGS += -DCY_OBJECTIVEC
 filters += ObjectiveC
 libcycript_la_SOURCES += ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm
 libcycript_la_LIBADD += $(LTOBJECTIVEC)

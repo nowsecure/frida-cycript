@@ -206,7 +206,7 @@ AS_CASE([$CY_EXECUTE], [1], [
     ])])
 
     CY_LT_LIB([LTLIBSQLITE3], [AC_CHECK_HEADERS([sqlite3.h], [
-        AC_SEARCH_LIBS([sqlite3_open_v2], [sqlite3])
+        AC_SEARCH_LIBS([sqlite3_open_v2], [sqlite3 sqlite])
     ])])
 
     AC_CHECK_HEADERS([ffi.h ffi/ffi.h], [break])
@@ -225,7 +225,7 @@ AS_CASE([$CY_EXECUTE], [1], [
         AC_SUBST([CY_JAVA], [1])
     ], [AC_CHECK_HEADER([jni.h], [
         AC_SUBST([CY_JAVA], [1])
-        AC_SEARCH_LIBS([JNI_GetCreatedJavaVMs], [dvm], [
+        AC_SEARCH_LIBS([JNI_GetCreatedJavaVMs], [art dvm], [
         ])
     ], [
         AC_SUBST([CY_JAVA], [0])
@@ -273,7 +273,7 @@ AS_CASE([$CY_EXECUTE], [1], [
         CY_LT_LIB([LTOBJECTIVEC], [AC_CHECK_FRAMEWORK([CoreFoundation], [
             #include <CoreFoundation/CFBase.h>
         ], [CFAllocatorGetDefault();], [
-            AC_SUBST([CY_OBJECTIVEC])
+            AC_SUBST([CY_OBJECTIVEC], [1])
 
             AC_CHECK_FRAMEWORK([Foundation], [
                 #include <Foundation/NSObject.h>
@@ -283,11 +283,13 @@ AS_CASE([$CY_EXECUTE], [1], [
             AC_CHECK_PROGS([GNUSTEP_CONFIG], [gnustep-config])
 
             AS_IF([test "x$GNUSTEP_CONFIG" != x], [
-                AC_SUBST([CY_OBJECTIVEC])
+                AC_SUBST([CY_OBJECTIVEC], [1])
                 AC_LIB_APPENDTOVAR([OBJCXXFLAGS], [`$GNUSTEP_CONFIG --objc-flags`])
                 AC_LIB_APPENDTOVAR([LIBS], [`$GNUSTEP_CONFIG --base-libs`])
             ], [AC_SUBST([CY_OBJECTIVEC], [0])])
         ])])
+    ], [
+        AC_SUBST([CY_OBJECTIVEC], [0])
     ])
 
     AC_LANG_POP([Objective C++])

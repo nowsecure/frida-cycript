@@ -1465,8 +1465,12 @@ static JSValueRef Type_callAsFunction_arrayOf(JSContextRef context, JSObjectRef 
 } CYCatch(NULL) }
 
 static JSValueRef Type_callAsFunction_blockWith(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+#ifdef CY_OBJECTIVEC
     sig::Block type;
     return Type_callAsFunction_$With(context, object, _this, count, arguments, type, exception);
+#else
+    _assert(false);
+#endif
 }
 
 static JSValueRef Type_callAsFunction_constant(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -1857,18 +1861,22 @@ class ExecutionHandle {
     }
 };
 
+#ifndef __ANDROID__
 static volatile bool cancel_;
 
 static bool CYShouldTerminate(JSContextRef context, void *arg) {
     return cancel_;
 }
+#endif
 
 _visible const char *CYExecute(JSContextRef context, CYPool &pool, CYUTF8String code) {
     ExecutionHandle handle(context);
 
+#ifndef __ANDROID__
     cancel_ = false;
     if (&JSContextGroupSetExecutionTimeLimit != NULL)
         JSContextGroupSetExecutionTimeLimit(JSContextGetGroup(context), 0.5, &CYShouldTerminate, NULL);
+#endif
 
     try {
         JSValueRef result(_jsccall(JSEvaluateScript, context, CYJSString(code), NULL, NULL, 0));
@@ -1885,9 +1893,11 @@ _visible const char *CYExecute(JSContextRef context, CYPool &pool, CYUTF8String 
     }
 }
 
+#ifndef __ANDROID__
 _visible void CYCancel() {
     cancel_ = true;
 }
+#endif
 
 const char *CYPoolLibraryPath(CYPool &pool);
 

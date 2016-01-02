@@ -166,7 +166,7 @@ static void CYHandleSocket(const char *path) {
     address.sun_family = AF_UNIX;
     strcpy(address.sun_path, path);
 
-    _syscall(connect(socket, reinterpret_cast<sockaddr *>(&address), SUN_LEN(&address)));
+    _syscall(connect(socket, reinterpret_cast<sockaddr *>(&address), sizeof(address)));
 
     CYInitializeDynamic();
     CYHandleClient(socket);
@@ -189,7 +189,11 @@ _extern char *MSmain0(int argc, char *argv[]) { try {
     if (handle == NULL) {
         Dl_info info;
         _assert(dladdr(reinterpret_cast<void *>(&MSmain0), &info) != 0);
+#ifdef __ANDROID__
+        handle = dlopen(info.dli_fname, 0);
+#else
         handle = dlopen(info.dli_fname, RTLD_NOLOAD);
+#endif
     }
 
     return NULL;

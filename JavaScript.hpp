@@ -63,7 +63,10 @@ JSObjectRef CYGetGlobalObject(JSContextRef context);
 
 extern "C" void CYSetupContext(JSGlobalContextRef context);
 const char *CYExecute(JSContextRef context, CYPool &pool, CYUTF8String code);
+
+#ifndef __ANDROID__
 void CYCancel();
+#endif
 
 void CYSetArgs(int argc, const char *argv[]);
 

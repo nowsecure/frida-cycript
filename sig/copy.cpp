@@ -57,6 +57,7 @@ String *String::Copy(CYPool &pool, const char *rename) const {
     return new(pool) String();
 }
 
+#ifdef CY_OBJECTIVEC
 Meta *Meta::Copy(CYPool &pool, const char *rename) const {
     return new(pool) Meta();
 }
@@ -64,6 +65,7 @@ Meta *Meta::Copy(CYPool &pool, const char *rename) const {
 Selector *Selector::Copy(CYPool &pool, const char *rename) const {
     return new(pool) Selector();
 }
+#endif
 
 Bits *Bits::Copy(CYPool &pool, const char *rename) const {
     return new(pool) Bits(size);
@@ -77,9 +79,11 @@ Array *Array::Copy(CYPool &pool, const char *rename) const {
     return new(pool) Array(*type.Copy(pool), size);
 }
 
+#ifdef CY_OBJECTIVEC
 Object *Object::Copy(CYPool &pool, const char *rename) const {
     return new(pool) Object(pool.strdup(name));
 }
+#endif
 
 Aggregate *Aggregate::Copy(CYPool &pool, const char *rename) const {
     Aggregate *copy(new(pool) Aggregate(overlap, rename ?: pool.strdup(name)));
@@ -93,11 +97,13 @@ Function *Function::Copy(CYPool &pool, const char *rename) const {
     return copy;
 }
 
+#ifdef CY_OBJECTIVEC
 Block *Block::Copy(CYPool &pool, const char *rename) const {
     Block *copy(new(pool) Block());
     sig::Copy(pool, copy->signature, signature);
     return copy;
 }
+#endif
 
 void Copy(CYPool &pool, ffi_type &lhs, ffi_type &rhs) {
     lhs.size = rhs.size;

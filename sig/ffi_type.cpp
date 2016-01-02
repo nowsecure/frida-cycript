@@ -111,6 +111,7 @@ ffi_type *String::GetFFI(CYPool &pool) const {
     return &ffi_type_pointer;
 }
 
+#ifdef CY_OBJECTIVEC
 ffi_type *Meta::GetFFI(CYPool &pool) const {
     return &ffi_type_pointer;
 }
@@ -118,6 +119,7 @@ ffi_type *Meta::GetFFI(CYPool &pool) const {
 ffi_type *Selector::GetFFI(CYPool &pool) const {
     return &ffi_type_pointer;
 }
+#endif
 
 ffi_type *Bits::GetFFI(CYPool &pool) const {
     /* XXX: we can totally make this work */
@@ -145,9 +147,11 @@ ffi_type *Array::GetFFI(CYPool &pool) const {
     return ffi;
 }
 
+#ifdef CY_OBJECTIVEC
 ffi_type *Object::GetFFI(CYPool &pool) const {
     return &ffi_type_pointer;
 }
+#endif
 
 ffi_type *Aggregate::GetFFI(CYPool &pool) const {
     // XXX: we can totally make overlap work
@@ -177,9 +181,11 @@ ffi_type *Function::GetFFI(CYPool &pool) const {
     _assert(false);
 }
 
+#ifdef CY_OBJECTIVEC
 ffi_type *Block::GetFFI(CYPool &pool) const {
     return &ffi_type_pointer;
 }
+#endif
 
 void sig_ffi_cif(CYPool &pool, size_t variadic, const Signature &signature, ffi_cif *cif) {
     _assert(signature.count != 0);

@@ -219,7 +219,9 @@ static void sigint(int) {
         case Parsing:
             longjmp(ctrlc_, 1);
         case Running:
+#ifndef __ANDROID__
             CYCancel();
+#endif
             return;
         case Sending:
             return;
@@ -1024,7 +1026,7 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
             }
         } file(address.sun_path);
 
-        _syscall(bind(server, reinterpret_cast<sockaddr *>(&address), SUN_LEN(&address)));
+        _syscall(bind(server, reinterpret_cast<sockaddr *>(&address), sizeof(address)));
         _syscall(chmod(address.sun_path, 0777));
 
         _syscall(listen(server, 1));

@@ -134,6 +134,7 @@ struct String :
     JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
 };
 
+#ifdef CY_OBJECTIVEC
 struct Meta :
     Type
 {
@@ -159,6 +160,7 @@ struct Selector :
     void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
     JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
 };
+#endif
 
 struct Bits :
     Type
@@ -222,6 +224,7 @@ struct Array :
     JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
 };
 
+#ifdef CY_OBJECTIVEC
 struct Object :
     Type
 {
@@ -241,6 +244,7 @@ struct Object :
     void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
     JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
 };
+#endif
 
 struct Aggregate :
     Type
@@ -295,6 +299,7 @@ struct Function :
     JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
 };
 
+#ifdef CY_OBJECTIVEC
 struct Block :
     Callable
 {
@@ -308,6 +313,7 @@ struct Block :
     void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
     JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
 };
+#endif
 
 Type *joc_parse_type(char **name, char eos, bool variable, bool signature);
 void joc_parse_signature(Signature *signature, char **name, char eos, bool variable);

@@ -108,6 +108,7 @@ CYTypedIdentifier *String::Decode(CYPool &pool) const {
     return $ CYTypedIdentifier($ CYTypeCharacter(CYTypeNeutral), $ CYTypePointerTo());
 }
 
+#ifdef CY_OBJECTIVEC
 CYTypedIdentifier *Meta::Decode(CYPool &pool) const {
     return $ CYTypedIdentifier($ CYTypeVariable("Class"));
 }
@@ -115,6 +116,7 @@ CYTypedIdentifier *Meta::Decode(CYPool &pool) const {
 CYTypedIdentifier *Selector::Decode(CYPool &pool) const {
     return $ CYTypedIdentifier($ CYTypeVariable("SEL"));
 }
+#endif
 
 CYTypedIdentifier *Bits::Decode(CYPool &pool) const {
     _assert(false);
@@ -128,12 +130,14 @@ CYTypedIdentifier *Array::Decode(CYPool &pool) const {
     return CYDecodeType(pool, &type)->Modify($ CYTypeArrayOf($D(size)));
 }
 
+#ifdef CY_OBJECTIVEC
 CYTypedIdentifier *Object::Decode(CYPool &pool) const {
     if (name == NULL)
         return $ CYTypedIdentifier($ CYTypeVariable("id"));
     else
         return $ CYTypedIdentifier($ CYTypeVariable(name), $ CYTypePointerTo());
 }
+#endif
 
 CYTypedIdentifier *Aggregate::Decode(CYPool &pool) const {
     _assert(!overlap);
@@ -162,6 +166,7 @@ CYTypedIdentifier *Function::Modify(CYPool &pool, CYTypedIdentifier *result, CYT
     return result->Modify($ CYTypeFunctionWith(variadic, parameters));
 }
 
+#ifdef CY_OBJECTIVEC
 CYTypedIdentifier *Block::Modify(CYPool &pool, CYTypedIdentifier *result, CYTypedParameter *parameters) const {
     return result->Modify($ CYTypeBlockWith(parameters));
 }
@@ -171,6 +176,7 @@ CYTypedIdentifier *Block::Decode(CYPool &pool) const {
         return $ CYTypedIdentifier($ CYTypeVariable("NSBlock"), $ CYTypePointerTo());
     return Callable::Decode(pool);
 }
+#endif
 
 }
 

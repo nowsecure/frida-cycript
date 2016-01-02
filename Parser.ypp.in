@@ -27,6 +27,7 @@
 #include "Driver.hpp"
 #include "Parser.hpp"
 #include "Stack.hpp"
+#include "Syntax.hpp"
 #define CYNew new(driver.pool_)
 
 @begin ObjectiveC

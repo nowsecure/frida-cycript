@@ -22670,7 +22670,7 @@ return sqlite3_open_v2 ();
   return 0;
 }
 _ACEOF
-for ac_lib in '' sqlite3; do
+for ac_lib in '' sqlite3 sqlite; do
   if test -z "$ac_lib"; then
     ac_res="none required"
   else
@@ -23150,7 +23150,7 @@ return JNI_GetCreatedJavaVMs ();
   return 0;
 }
 _ACEOF
-for ac_lib in '' dvm; do
+for ac_lib in '' art dvm; do
   if test -z "$ac_lib"; then
     ac_res="none required"
   else
@@ -23791,6 +23791,7 @@ $as_echo "$ac_cv_framework_CoreFoundation" >&6; }
   done
 
 
+            CY_OBJECTIVEC=1
 
 
 
@@ -23911,6 +23912,7 @@ done
 
             if test "x$GNUSTEP_CONFIG" != x; then :
 
+                CY_OBJECTIVEC=1
 
 
   for element in `$GNUSTEP_CONFIG --objc-flags`; do
@@ -23968,6 +23970,11 @@ fi
     LTOBJECTIVEC=$LIBS
     LIBS=$cy_save
 
+
+
+else
+
+        CY_OBJECTIVEC=0
 
 
 fi
