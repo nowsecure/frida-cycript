@@ -1,5 +1,5 @@
-dnl Cycript - Optimizing JavaScript Compiler/Runtime
-dnl Copyright (C) 2009-2015  Jay Freeman (saurik)
+dnl Cycript - The Truly Universal Scripting Language
+dnl Copyright (C) 2009-2016  Jay Freeman (saurik)
 
 dnl GNU Affero General Public License, Version 3 {{{
 dnl
@@ -19,7 +19,7 @@ dnl }}}
 
 AC_PREREQ([2.65])
 AC_INIT([Cycript], [0.9], [saurik@saurik.com], [cycript], [http://www.cycript.org/])
-AC_COPYRIGHT([Copyright (C) 2009-2015  Jay Freeman (saurik)])
+AC_COPYRIGHT([Copyright (C) 2009-2016  Jay Freeman (saurik)])
 
 AC_CONFIG_SRCDIR([Console.cpp])
 AC_CONFIG_AUX_DIR([.])

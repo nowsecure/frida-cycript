@@ -1,5 +1,5 @@
-# Cycript - Optimizing JavaScript Compiler/Runtime
-# Copyright (C) 2009-2015  Jay Freeman (saurik)
+# Cycript - The Truly Universal Scripting Language
+# Copyright (C) 2009-2016  Jay Freeman (saurik)
 
 # GNU Affero General Public License, Version 3 {{{
 #
