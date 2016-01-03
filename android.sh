@@ -19,8 +19,13 @@ cxx=${bin}/${tgt}-g++
 cpp=()
 cpp+=(-fPIE)
 ldf+=(-rdynamic -fPIE -pie)
+ccf=()
+ccf+=(-g0 -O3)
 function cfg() {
     cfg=$1
     shift
-    CC="${cc} ${flg[*]}" CXX="${cxx} ${flg[*]}" OBJCXX="${cxx} ${flg[*]}" "${cfg}" --host="${tgt}" CPPFLAGS="${cpp[*]}" LDFLAGS="${ldf[*]}" "$@"
+    "${cfg}" \
+        CC="${cc} ${flg[*]}" CXX="${cxx} ${flg[*]}" OBJCXX="${cxx} ${flg[*]}" \
+        CFLAGS="${ccf[*]}" CXXFLAGS="${ccf[*]}" OBJCXXFLAGS="${ccf[*]}" \
+        --host="${tgt}" CPPFLAGS="${cpp[*]}" LDFLAGS="${ldf[*]}" "$@"
 }
