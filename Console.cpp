@@ -1163,7 +1163,7 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
     return 0;
 }
 
-int main(int argc, char * const argv[], char const * const envp[]) {
+_visible int main(int argc, char * const argv[], char const * const envp[]) {
     try {
         return Main(argc, argv, envp);
     } catch (const CYException &error) {
