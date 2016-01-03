@@ -363,7 +363,7 @@ class History {
                 if (*character == '\x01') *character = '\n';
     }
 
-    ~History() {
+    ~History() { try {
         for (HIST_ENTRY *history((history_set_pos(0), current_history())); history; history = next_history())
             for (char *character(history->line); *character; ++character)
                 if (*character == '\n') *character = '\x01';
@@ -375,7 +375,10 @@ class History {
         } else {
             _assert(write_history(histfile_.c_str()) == 0);
         }
-    }
+    } catch (const CYException &error) {
+        CYPool pool;
+        std::cout << error.PoolCString(pool) << std::endl;
+    } }
 
     void operator +=(std::string command) {
         add_history(command.c_str());
@@ -606,6 +609,9 @@ static void CYConsolePrepTerm(int meta) {
 
 static void Console(CYOptions &options) {
     std::string basedir;
+#ifdef __ANDROID__
+    basedir = "/data/local/tmp";
+#else
     if (const char *home = getenv("HOME"))
         basedir = home;
     else {
@@ -616,6 +622,7 @@ static void Console(CYOptions &options) {
             passwd = getpwuid(getuid());
         basedir = passwd->pw_dir;
     }
+#endif
 
     basedir += "/.cycript";
     mkdir(basedir.c_str(), 0700);
