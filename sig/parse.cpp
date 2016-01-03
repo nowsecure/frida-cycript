@@ -180,6 +180,11 @@ Type *Parse_(CYPool &pool, const char **encoding, char eos, bool named, Callback
         case 's': type = new(pool) Primitive<short>(); break;
         case 'v': type = new(pool) Void(); break;
 
+#ifdef __SIZEOF_INT128__
+        case 't': type = new(pool) Primitive<signed __int128>(); break;
+        case 'T': type = new(pool) Primitive<unsigned __int128>(); break;
+#endif
+
         case '{':
             type = new(pool) Aggregate(false);
             next = '}';
@@ -282,6 +287,13 @@ const char *Primitive<signed int>::Encode(CYPool &pool) const {
     return "i";
 }
 
+#ifdef __SIZEOF_INT128__
+template <>
+const char *Primitive<signed __int128>::Encode(CYPool &pool) const {
+    return "t";
+}
+#endif
+
 template <>
 const char *Primitive<signed long int>::Encode(CYPool &pool) const {
     return "l";
@@ -306,6 +318,13 @@ template <>
 const char *Primitive<unsigned int>::Encode(CYPool &pool) const {
     return "I";
 }
+
+#ifdef __SIZEOF_INT128__
+template <>
+const char *Primitive<unsigned __int128>::Encode(CYPool &pool) const {
+    return "T";
+}
+#endif
 
 template <>
 const char *Primitive<unsigned long int>::Encode(CYPool &pool) const {

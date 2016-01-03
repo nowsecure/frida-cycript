@@ -56,6 +56,13 @@ CYTypedIdentifier *Primitive<signed int>::Decode(CYPool &pool) const {
     return $ CYTypedIdentifier($ CYTypeIntegral(CYTypeSigned, 1));
 }
 
+#ifdef __SIZEOF_INT128__
+template <>
+CYTypedIdentifier *Primitive<signed __int128>::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeInt128(CYTypeSigned));
+}
+#endif
+
 template <>
 CYTypedIdentifier *Primitive<signed long int>::Decode(CYPool &pool) const {
     return $ CYTypedIdentifier($ CYTypeIntegral(CYTypeSigned, 2));
@@ -80,6 +87,13 @@ template <>
 CYTypedIdentifier *Primitive<unsigned int>::Decode(CYPool &pool) const {
     return $ CYTypedIdentifier($ CYTypeIntegral(CYTypeUnsigned, 1));
 }
+
+#ifdef __SIZEOF_INT128__
+template <>
+CYTypedIdentifier *Primitive<unsigned __int128>::Decode(CYPool &pool) const {
+    return $ CYTypedIdentifier($ CYTypeInt128(CYTypeUnsigned));
+}
+#endif
 
 template <>
 CYTypedIdentifier *Primitive<unsigned long int>::Decode(CYPool &pool) const {

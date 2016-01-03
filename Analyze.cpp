@@ -381,6 +381,9 @@ static void CYParseType(CXType type, CYTypedIdentifier *typed) {
         case CXType_LongLong: typed->specifier_ = $ CYTypeIntegral(CYTypeSigned, 3); break;
         case CXType_ULongLong: typed->specifier_ = $ CYTypeIntegral(CYTypeUnsigned, 3); break;
 
+        case CXType_Int128: typed->specifier_ = $ CYTypeInt128(CYTypeSigned); break;
+        case CXType_UInt128: typed->specifier_ = $ CYTypeInt128(CYTypeUnsigned); break;
+
         case CXType_BlockPointer: {
             CXType pointee(clang_getPointeeType(type));
             _assert(!clang_isFunctionTypeVariadic(pointee));

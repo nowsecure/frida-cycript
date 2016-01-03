@@ -2072,6 +2072,20 @@ struct CYTypeCharacter :
     virtual void Output(CYOutput &out) const;
 };
 
+struct CYTypeInt128 :
+    CYTypeSpecifier
+{
+    CYTypeSigning signing_;
+
+    CYTypeInt128(CYTypeSigning signing) :
+        signing_(signing)
+    {
+    }
+
+    virtual CYTarget *Replace(CYContext &context);
+    virtual void Output(CYOutput &out) const;
+};
+
 struct CYTypeIntegral :
     CYTypeSpecifier
 {

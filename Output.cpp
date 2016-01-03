@@ -1071,6 +1071,16 @@ void CYTypeError::Output(CYOutput &out) const {
     out << "@error";
 }
 
+void CYTypeInt128::Output(CYOutput &out) const {
+    switch (signing_) {
+        case CYTypeNeutral: break;
+        case CYTypeSigned: out << "signed" << ' '; break;
+        case CYTypeUnsigned: out << "unsigned" << ' '; break;
+    }
+
+    out << "__int128";
+}
+
 void CYTypeIntegral::Output(CYOutput &out) const {
     if (signing_ == CYTypeUnsigned)
         out << "unsigned" << ' ';

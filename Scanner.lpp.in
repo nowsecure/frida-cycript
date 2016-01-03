@@ -482,6 +482,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "Infinity"        L /*III*/ F(tk::_Infinity_, hi::Constant);
 "instanceof"      L /*KKK*/ F(tk::_instanceof_, hi::Operator);
 "int"             L /*FII*/ F(tk::_int_, hi::Type);
+"__int128"        L /*III*/ F(tk::___int128_, hi::Type);
 "interface"       L /*FSS*/ F(tk::_interface_, hi::Meta);
 "let"             L /*IS?*/ F(tk::_let_, hi::Meta);
 "long"            L /*FII*/ F(tk::_long_, hi::Type);

@@ -1245,6 +1245,10 @@ CYTarget *CYTypeExpression::Replace(CYContext &context) {
     return typed_->Replace(context);
 }
 
+CYTarget *CYTypeInt128::Replace(CYContext &context) {
+    return $V(signing_ == CYTypeUnsigned ? "uint128" : "int128");
+}
+
 CYTarget *CYTypeIntegral::Replace(CYContext &context) {
     bool u(signing_ == CYTypeUnsigned);
     switch (length_) {

@@ -73,6 +73,7 @@
 %union { CYParenthetical *parenthetical_; }
 %union { CYProperty *property_; }
 %union { CYPropertyName *propertyName_; }
+%union { CYTypeSigning signing_; }
 %union { CYSpan *span_; }
 %union { CYStatement *statement_; }
 %union { CYString *string_; }
@@ -424,6 +425,7 @@ type; })
 %token _goto_ "goto"
 %token _implements_ "implements"
 %token _int_ "int"
+%token ___int128_ "__int128"
 %token _interface_ "interface"
 %token _let_ "let"
 %token _let__ "!let"
@@ -677,6 +679,7 @@ type; })
 %type <typedIdentifier_> TypeSignifier
 %type <typedIdentifier_> TypeSignifierNone
 %type <typedIdentifier_> TypeSignifierOpt
+%type <signing_> TypeSigning
 %type <modifier_> ParameterTail
 %type <modifier_> TypeQualifierLeft
 %type <modifier_> TypeQualifierLeftOpt
@@ -1014,6 +1017,7 @@ IdentifierNoOf
     : IdentifierTypeNoOf
     | "char" { $$ = CYNew CYIdentifier("char"); }
     | "int" { $$ = CYNew CYIdentifier("int"); }
+    | "__int128" { $$ = CYNew CYIdentifier("__int128"); }
     | "long" { $$ = CYNew CYIdentifier("long"); }
     | "__restrict" { $$ = CYNew CYIdentifier("__restrict"); }
     | "restrict" { $$ = CYNew CYIdentifier("restrict"); }
@@ -2105,12 +2109,17 @@ StructFieldListOpt
     | { $$ = NULL; }
     ;
 
+TypeSigning
+    : { $$ = CYTypeNeutral; }
+    | "signed" { $$ = CYTypeSigned; }
+    | "unsigned" { $$ = CYTypeUnsigned; }
+    ;
+
 PrimitiveType
     : IdentifierType[name] { $$ = CYNew CYTypeVariable($name); }
     | IntegerType[pass] { $$ = $pass; }
-    | "char" { $$ = CYNew CYTypeCharacter(CYTypeNeutral); }
-    | "signed" "char" { $$ = CYNew CYTypeCharacter(CYTypeSigned); }
-    | "unsigned" "char" { $$ = CYNew CYTypeCharacter(CYTypeUnsigned); }
+    | TypeSigning[signing] "char" { $$ = CYNew CYTypeCharacter($signing); }
+    | TypeSigning[signing] "__int128" { $$ = CYNew CYTypeInt128($signing); }
     | "struct" IdentifierType[name] { $$ = CYNew CYTypeReference($name); }
     ;
 

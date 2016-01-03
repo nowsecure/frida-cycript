@@ -24,8 +24,12 @@
 #include "sig/ffi_type.hpp"
 #include "sig/types.hpp"
 
+#if FFI_LONG_LONG_MAX == 9223372036854775807LL
 #define ffi_type_slonglong ffi_type_sint64
 #define ffi_type_ulonglong ffi_type_uint64
+#else
+#error need to configure for long long
+#endif
 
 namespace sig {
 
@@ -59,6 +63,13 @@ ffi_type *Primitive<signed int>::GetFFI(CYPool &pool) const {
     return &ffi_type_sint;
 }
 
+#ifdef __SIZEOF_INT128__
+template <>
+ffi_type *Primitive<signed __int128>::GetFFI(CYPool &pool) const {
+    _assert(false);
+}
+#endif
+
 template <>
 ffi_type *Primitive<signed long int>::GetFFI(CYPool &pool) const {
     return &ffi_type_slong;
@@ -83,6 +94,13 @@ template <>
 ffi_type *Primitive<unsigned int>::GetFFI(CYPool &pool) const {
     return &ffi_type_uint;
 }
+
+#ifdef __SIZEOF_INT128__
+template <>
+ffi_type *Primitive<unsigned __int128>::GetFFI(CYPool &pool) const {
+    _assert(false);
+}
+#endif
 
 template <>
 ffi_type *Primitive<unsigned long int>::GetFFI(CYPool &pool) const {

@@ -336,6 +336,11 @@ CYCastJSValue_(unsigned long int)
 CYCastJSValue_(signed long long int)
 CYCastJSValue_(unsigned long long int)
 
+#ifdef __SIZEOF_INT128__
+CYCastJSValue_(signed __int128)
+CYCastJSValue_(unsigned __int128)
+#endif
+
 JSValueRef CYJSUndefined(JSContextRef context) {
     return JSValueMakeUndefined(context);
 }
@@ -698,6 +703,11 @@ CYPoolFFI_(unsigned long int)
 CYPoolFFI_(unsigned long long int)
 CYPoolFFI_(unsigned short int)
 
+#ifdef __SIZEOF_INT128__
+CYPoolFFI_(signed __int128)
+CYPoolFFI_(unsigned __int128)
+#endif
+
 void Void::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
     _assert(false);
 }
@@ -812,6 +822,11 @@ CYFromFFI_(unsigned int)
 CYFromFFI_(unsigned long int)
 CYFromFFI_(unsigned long long int)
 CYFromFFI_(unsigned short int)
+
+#ifdef __SIZEOF_INT128__
+CYFromFFI_(signed __int128)
+CYFromFFI_(unsigned __int128)
+#endif
 
 JSValueRef Void::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
     return CYJSUndefined(context);
@@ -2336,6 +2351,11 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     CYSetProperty(context, cache, CYJSString("uint"), CYMakeType(context, sig::Primitive<unsigned int>()), kJSPropertyAttributeDontEnum);
     CYSetProperty(context, cache, CYJSString("ulong"), CYMakeType(context, sig::Primitive<unsigned long>()), kJSPropertyAttributeDontEnum);
     CYSetProperty(context, cache, CYJSString("ulonglong"), CYMakeType(context, sig::Primitive<unsigned long long>()), kJSPropertyAttributeDontEnum);
+
+#ifdef __SIZEOF_INT128__
+    CYSetProperty(context, cache, CYJSString("int128"), CYMakeType(context, sig::Primitive<__int128>()), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("uint128"), CYMakeType(context, sig::Primitive<unsigned __int128>()), kJSPropertyAttributeDontEnum);
+#endif
 
     CYSetProperty(context, cache, CYJSString("float"), CYMakeType(context, sig::Primitive<float>()), kJSPropertyAttributeDontEnum);
     CYSetProperty(context, cache, CYJSString("double"), CYMakeType(context, sig::Primitive<double>()), kJSPropertyAttributeDontEnum);
