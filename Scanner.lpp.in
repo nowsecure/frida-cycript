@@ -345,7 +345,6 @@ XMLName {XMLNameStart}{XMLNamePart}*
 
 @begin E4X ObjectiveC
 "@"    L F(tk::At, hi::Operator);
-"#"    L F(tk::Pound, hi::Operator);
 @end
 
 "&"    L F(tk::Ampersand, hi::Operator);
@@ -395,6 +394,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 ","    L F(tk::Comma, hi::Structure);
 "?"    L F(tk::Question, hi::Structure);
 ";"    L F(tk::SemiColon, hi::Structure);
+"#"    L F(tk::Pound, hi::Operator);
 
 "("    L F(tk::OpenParen, hi::Structure);
 ")"    L F(tk::CloseParen, hi::Structure);

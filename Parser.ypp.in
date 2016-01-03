@@ -266,7 +266,6 @@ type; })
 
 @begin E4X ObjectiveC
 %token At "@"
-%token Pound "#"
 @end
 
 %token Ampersand "&"
@@ -316,6 +315,7 @@ type; })
 %token Comma ","
 %token Question "?"
 %token SemiColon ";"
+%token Pound "#"
 %token NewLine "\n"
 %token __ ""
 
