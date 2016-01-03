@@ -607,6 +607,11 @@ static void CYConsolePrepTerm(int meta) {
     CYConsoleRemapKeys(vi_movement_keymap);
 }
 
+static void CYOutputRun(const std::string &code, bool expand = false) {
+    CYPool pool;
+    Output(Run(pool, client_, code), &std::cout, expand);
+}
+
 static void Console(CYOptions &options) {
     std::string basedir;
 #ifdef __ANDROID__
@@ -646,6 +651,8 @@ static void Console(CYOptions &options) {
         rl_redisplay_function = CYDisplayUpdate;
         rl_prep_term_function = CYConsolePrepTerm;
     }
+
+    CYOutputRun("");
 
     struct sigaction action;
     sigemptyset(&action.sa_mask);
@@ -768,8 +775,7 @@ static void Console(CYOptions &options) {
             std::cout << std::endl;
         }
 
-        CYPool pool;
-        Output(Run(pool, client_, code), &std::cout, expand);
+        CYOutputRun(code, expand);
     }
 }
 
