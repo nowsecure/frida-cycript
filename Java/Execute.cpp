@@ -109,16 +109,12 @@ struct CYJavaRef {
     {
     }
 
-    _finline operator bool() const {
-        return value_ != NULL;
-    }
-
-    _finline operator JNIEnv *() const {
-        return jni_;
-    }
-
     _finline operator Value_() const {
         return value_;
+    }
+
+    _finline JNIEnv *jni() const {
+        return jni_;
     }
 
     _finline Value_ get() const {
@@ -230,7 +226,7 @@ class CYJavaUTF8String :
         value_(&value)
     {
         _assert(value);
-        JNIEnv *jni(value);
+        JNIEnv *jni(value.jni());
         size = jni->GetStringUTFLength(value);
         data = jni->GetStringUTFChars(value, NULL);
     }
@@ -242,7 +238,7 @@ class CYJavaUTF8String :
 
     ~CYJavaUTF8String() {
         if (value_ != NULL) {
-            JNIEnv *jni(*value_);
+            JNIEnv *jni(value_->jni());
             jni->ReleaseStringUTFChars(*value_, data);
         }
     }
@@ -279,9 +275,7 @@ struct CYJavaError :
         return CYPoolCString(pool, CYJavaUTF8String(value_.cast<jobject>()));
     }
 
-    virtual JSValueRef CastJSValue(JSContextRef context, const char *name) const {
-        return CYCastJSValue(context, value_);
-    }
+    virtual JSValueRef CastJSValue(JSContextRef context, const char *name) const;
 };
 // }}}
 
@@ -312,6 +306,12 @@ struct CYJavaEnv {
   public:
     CYJavaEnv(JNIEnv *jni) :
         jni(jni)
+    {
+    }
+
+    template <typename Other_>
+    CYJavaEnv(const CYJavaRef<Other_> &value) :
+        jni(value.jni())
     {
     }
 
@@ -434,6 +434,13 @@ struct CYJavaValue :
     CYJavaValue(const CYJavaValue &) = delete;
 };
 
+static JSValueRef CYCastJSValue(JSContextRef context, const CYJavaRef<jobject> &value);
+
+template <typename Other_>
+static _finline JSValueRef CYCastJSValue(JSContextRef context, const CYJavaRef<Other_> &value) {
+    return CYCastJSValue(context, value.template cast<jobject>());
+}
+
 template <typename Type_>
 static _finline JSValueRef CYJavaCastJSValue(JSContextRef context, Type_ value) {
     return CYCastJSValue(context, value);
@@ -441,6 +448,10 @@ static _finline JSValueRef CYJavaCastJSValue(JSContextRef context, Type_ value) 
 
 static _finline JSValueRef CYJavaCastJSValue(JSContextRef context, jboolean value) {
     return CYCastJSValue(context, static_cast<bool>(value));
+}
+
+JSValueRef CYJavaError::CastJSValue(JSContextRef context, const char *name) const {
+    return CYCastJSValue(context, value_);
 }
 
 static std::map<std::string, CYJavaPrimitive> Primitives_;
