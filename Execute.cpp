@@ -1536,10 +1536,11 @@ static JSValueRef Type_callAsFunction(JSContextRef context, JSObjectRef object, 
         return CYMakeFunctor(context, arguments[0], function->variadic, function->signature);
 
     CYPool pool;
+
     sig::Type *type(internal->type_);
     ffi_type *ffi(internal->GetFFI());
-
     void *data(pool.malloc<void>(ffi->size, ffi->alignment));
+
     type->PoolFFI(&pool, context, ffi, data, arguments[0]);
     JSValueRef value(type->FromFFI(context, ffi, data));
 
@@ -1553,15 +1554,22 @@ static JSValueRef Type_callAsFunction(JSContextRef context, JSObjectRef object, 
 } CYCatch(NULL) }
 
 static JSObjectRef Type_callAsConstructor(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    if (count != 0)
+    if (count > 1)
         throw CYJSError(context, "incorrect number of arguments to Type allocator");
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
 
     JSObjectRef pointer(CYMakePointer(context, NULL, *internal->type_, NULL, NULL));
     Pointer *value(reinterpret_cast<Pointer *>(JSObjectGetPrivate(pointer)));
+
+    sig::Type *type(internal->type_);
     ffi_type *ffi(internal->GetFFI());
     value->value_ = value->pool_->malloc<void>(ffi->size, ffi->alignment);
-    memset(value->value_, 0, ffi->size);
+
+    if (count == 0)
+        memset(value->value_, 0, ffi->size);
+    else
+        type->PoolFFI(value->pool_, context, ffi, value->value_, arguments[0]);
+
     return pointer;
 } CYCatch(NULL) }
 
