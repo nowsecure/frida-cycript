@@ -28,6 +28,7 @@
 
 #include <clang-c/Index.h>
 
+#include "Bridge.hpp"
 #include "Functor.hpp"
 #include "Replace.hpp"
 #include "Syntax.hpp"
@@ -476,7 +477,7 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
     std::string name(spelling);
     std::ostringstream value;
     unsigned priority(2);
-    unsigned flags(0);
+    unsigned flags(CYBridgeHold);
 
     /*CXSourceLocation location(clang_getCursorLocation(cursor));
     CYCXPosition<> position(location);
@@ -565,6 +566,7 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
 
             value << "new Type([" << types.str() << "],[" << names.str() << "]).withName(\"" << name << "\")";
             name += "$cy";
+            flags = CYBridgeType;
         } break;
 
         case CXCursor_TypedefDecl: try {

@@ -87,13 +87,13 @@ Bridge.def: Bridge.def.in
 	cat $< >$@
 endif
 
-CLEANFILES += Bridge.gperf
-Bridge.gperf: Bridge.def Bridge.sh
-	$(srcdir)/Bridge.sh <$< >$@
+#CLEANFILES += Hasher.gperf
+#Hasher.gperf: Hasher.def Hasher.sh
+#	$(srcdir)/Hasher.sh <$< >$@
 
-CLEANFILES += Bridge.hpp
-Bridge.hpp: Bridge.gperf
-	$(GPERF) $< >$@
+#CLEANFILES += Hasher.hpp
+#Hasher.hpp: Hasher.gperf
+#	$(GPERF) $< >$@
 endif
 
 if CY_JAVA

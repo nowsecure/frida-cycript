@@ -24,13 +24,13 @@ Scanner.lpp
 Scanner.cpp
 Scanner.output
 Bridge.def
-Bridge.gperf
+Hasher.gperf
 stack.hh
 sysroot.ios
 sysroot.sim
 lex.backup
 /cycript
-Bridge.hpp
+Hasher.hpp
 package
 aclocal.m4
 stamp-h1

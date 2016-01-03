@@ -41,6 +41,7 @@
 #include "sig/parse.hpp"
 #include "sig/ffi_type.hpp"
 
+#include "Bridge.hpp"
 #include "Code.hpp"
 #include "Decode.hpp"
 #include "Error.hpp"
@@ -1332,14 +1333,37 @@ static JSValueRef All_getProperty(JSContextRef context, JSObjectRef object, JSSt
             CYThrow("%s", pool.strcat("error caching ", CYPoolCString(pool, context, property), ": ", error.PoolCString(pool), NULL));
         }
 
-        JSValueRef result(_jsccall(JSEvaluateScript, context, CYJSString(parsed), NULL, NULL, 0));
+        JSObjectRef cache(CYGetCachedObject(context, CYJSString("cache")));
 
-        if (flags == 0) {
-            JSObjectRef cache(CYGetCachedObject(context, CYJSString("cache")));
-            CYSetProperty(context, cache, property, result);
+        JSObjectRef stub;
+        if (flags == CYBridgeType) {
+            stub = CYMakeType(context, sig::Void());
+            CYSetProperty(context, cache, property, stub);
+        } else
+            stub = NULL;
+
+        JSValueRef value(_jsccall(JSEvaluateScript, context, CYJSString(parsed), NULL, NULL, 0));
+
+        switch (flags) {
+            case CYBridgeVoid: {
+            } break;
+
+            case CYBridgeHold: {
+                CYSetProperty(context, cache, property, value);
+            } break;
+
+            case CYBridgeType: {
+                JSObjectRef swap(CYCastJSObject(context, value));
+                void *source(JSObjectGetPrivate(swap));
+                _assert(source != NULL);
+                void *target(JSObjectGetPrivate(stub));
+                _assert(JSObjectSetPrivate(swap, target));
+                _assert(JSObjectSetPrivate(stub, source));
+                value = stub;
+            } break;
         }
 
-        return result;
+        return value;
     }
 
     return NULL;
