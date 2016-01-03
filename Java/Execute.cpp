@@ -97,6 +97,15 @@ CYJavaForEachPrimitive
 #undef CYJavaForEachPrimitive_
 };
 
+template <typename Type_>
+struct IsJavaPrimitive { static const bool value = false; };
+
+#define CYJavaForEachPrimitive_(T, t, Typ, Type, type) \
+    template <> \
+    struct IsJavaPrimitive<j ## type> { static const bool value = true; };
+CYJavaForEachPrimitive
+#undef CYJavaForEachPrimitive_
+
 // Java References {{{
 template <typename Value_>
 struct CYJavaRef {
@@ -117,6 +126,7 @@ struct CYJavaRef {
         return jni_;
     }
 
+    // XXX: this is only needed to support CYJavaEnv relying on C variadics
     _finline Value_ get() const {
         return value_;
     }
@@ -394,7 +404,7 @@ CYJavaForEachPrimitive
 
 #define CYJavaEnv_(Code) \
     template <typename... Args_> \
-    auto Code(Args_ &&... args) const -> decltype(jni->Code(args...)) { \
+    auto Code(Args_ &&... args) const -> decltype(jni->Code(cy::Forward<Args_>(args)...)) { \
         return _envcall(jni, Code(cy::Forward<Args_>(args)...)); \
     }
 
@@ -993,11 +1003,9 @@ static JSObjectRef JavaClass_callAsConstructor(JSContextRef context, JSObjectRef
     jclass _class(table->value_);
 
     if (table->interface_ && count == 1) {
-        JSObjectRef target(CYCastJSObject(context, arguments[0]));
         auto Cycript$(jni.FindClass("Cycript"));
-        auto Cycript$Make(jni.GetStaticMethodID(Cycript$, "proxy", "(Ljava/lang/Class;J)Ljava/lang/Object;"));
-        auto protect(new CYProtect(context, target));
-        return CYCastJSObject(context, jni.CallObjectMethod<jobject>(Cycript$, Cycript$Make, _class, reinterpret_cast<jlong>(protect)));
+        auto Cycript$Make(jni.GetStaticMethodID(Cycript$, "proxy", "(Ljava/lang/Class;LCycript$Wrapper;)Ljava/lang/Object;"));
+        return CYCastJSObject(context, jni.CallObjectMethod<jobject>(Cycript$, Cycript$Make, _class, CYCastJavaObject(jni, context, CYCastJSObject(context, arguments[0])).get()));
     }
 
     CYJavaSignature bound(count);

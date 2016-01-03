@@ -80,16 +80,18 @@ public static class Wrapper
         if (false)
             return null;
         else if (method.equals(Object$equals))
+            // XXX: this assumes there is only one proxy
             return proxy == args[0];
         else if (method == Object$hashCode)
-            return System.identityHashCode(proxy);
+            // XXX: this assumes there is only one wrapper
+            return hashCode();
         else
             return handle(protect_, method.getName(), args);
     }
 }
 
-public static Object proxy(Class proxy, long protect) {
-    return Proxy.newProxyInstance(proxy.getClassLoader(), new Class[] {proxy}, new Wrapper(protect));
+public static Object proxy(Class proxy, Wrapper wrapper) {
+    return Proxy.newProxyInstance(proxy.getClassLoader(), new Class[] {proxy}, wrapper);
 }
 
 }

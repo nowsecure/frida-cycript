@@ -49,6 +49,9 @@ inline typename cy::remove_reference<T>::type &&Move(T &&t) {
     return static_cast<typename cy::remove_reference<T>::type &&>(t);
 }
 
+template<bool B, typename T = void> struct EnableIf {};
+template<typename T>                struct EnableIf<true, T> { typedef T type; };
+
 }
 
 #endif/*CYCRIPT_UTILITY_HPP*/
