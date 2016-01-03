@@ -2067,7 +2067,8 @@ const char *CYPoolLibraryPath(CYPool &pool) {
     char *lib(pool.strdup(addr.dli_fname));
 
     char *slash(strrchr(lib, '/'));
-    _assert(slash != NULL);
+    if (slash == NULL)
+        return ".";
     *slash = '\0';
 
     slash = strrchr(lib, '/');
