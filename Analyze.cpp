@@ -298,6 +298,18 @@ static CYTypedIdentifier *CYDecodeType(CXType type, const CYCXString &identifier
     return typed;
 }
 
+static void CYParseStructure(CXCursor cursor, CYTypedIdentifier *typed) {
+    CYList<CYTypeStructField> fields;
+    CYForChild(cursor, fun([&](CXCursor child) {
+        if (clang_getCursorKind(child) == CXCursor_FieldDecl) {
+            CYTypedIdentifier *field(CYDecodeType(clang_getCursorType(child), child));
+            fields->*$ CYTypeStructField(field);
+        }
+    }));
+
+    typed->specifier_ = $ CYTypeStruct(NULL, $ CYStructTail(fields));
+}
+
 static void CYParseCursor(CXType type, CXCursor cursor, CYTypedIdentifier *typed) {
     CYCXString spelling(cursor);
 
@@ -314,17 +326,8 @@ static void CYParseCursor(CXType type, CXCursor cursor, CYTypedIdentifier *typed
         case CXCursor_StructDecl: {
             if (spelling[0] != '\0')
                 typed->specifier_ = $ CYTypeReference($I(spelling.Pool($pool)));
-            else {
-                CYList<CYTypeStructField> fields;
-                CYForChild(cursor, fun([&](CXCursor child) {
-                    if (clang_getCursorKind(child) == CXCursor_FieldDecl) {
-                        CYTypedIdentifier *field(CYDecodeType(clang_getCursorType(child), child));
-                        fields->*$ CYTypeStructField(field);
-                    }
-                }));
-
-                typed->specifier_ = $ CYTypeStruct(NULL, $ CYStructTail(fields));
-            }
+            else
+                CYParseStructure(cursor, typed);
         } break;
 
         case CXCursor_UnionDecl: {
@@ -409,6 +412,10 @@ static void CYParseType(CXType type, CYTypedIdentifier *typed) {
             _assert(false);
         break;
 
+        case CXType_ObjCClass:
+            typed->specifier_ = $ CYTypeVariable("Class");
+        break;
+
         case CXType_ObjCId:
             typed->specifier_ = $ CYTypeVariable("id");
         break;
@@ -483,12 +490,12 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
     CYCXPosition<> position(location);
     std::cerr << spelling << " " << position << std::endl;*/
 
-    switch (CXCursorKind kind = clang_getCursorKind(cursor)) {
+    try { switch (CXCursorKind kind = clang_getCursorKind(cursor)) {
         case CXCursor_EnumConstantDecl: {
             value << clang_getEnumConstantDeclValue(cursor);
         } break;
 
-        case CXCursor_MacroDefinition: try {
+        case CXCursor_MacroDefinition: {
             CXSourceRange range(clang_getCursorExtent(cursor));
             CYTokens tokens(unit, range);
             _assert(tokens.size() != 0);
@@ -541,10 +548,6 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
                 value << body.str();
                 out << ';' << '}' << ')';
             }
-        } catch (const CYException &error) {
-            CYPool pool;
-            //std::cerr << error.PoolCString(pool) << std::endl;
-            goto skip;
         } break;
 
         case CXCursor_StructDecl: {
@@ -553,23 +556,21 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
             if (!clang_isCursorDefinition(cursor))
                 priority = 1;
 
-            std::ostringstream types;
-            std::ostringstream names;
+            CYLocalPool pool;
 
-            CYForChild(cursor, fun([&](CXCursor child) {
-                if (clang_getCursorKind(child) == CXCursor_FieldDecl) {
-                    CXType type(clang_getCursorType(child));
-                    types << "(typedef " << CYCXString(clang_getTypeSpelling(type)) << "),";
-                    names << "'" << CYCXString(child) << "',";
-                }
-            }));
+            CYTypedIdentifier typed(NULL);
+            CYParseStructure(cursor, &typed);
 
-            value << "new Type([" << types.str() << "],[" << names.str() << "]).withName(\"" << name << "\")";
+            CYOptions options;
+            CYOutput out(*value.rdbuf(), options);
+            CYTypeExpression(&typed).Output(out, CYNoBFC);
+
+            value << ".withName(\"" << name << "\")";
             name += "$cy";
             flags = CYBridgeType;
         } break;
 
-        case CXCursor_TypedefDecl: try {
+        case CXCursor_TypedefDecl: {
             CYLocalPool local;
 
             CYTypedIdentifier *typed(CYDecodeType(clang_getTypedefDeclUnderlyingType(cursor)));
@@ -580,14 +581,10 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
                 CYOutput out(*value.rdbuf(), options);
                 CYTypeExpression(typed).Output(out, CYNoBFC);
             }
-        } catch (const CYException &error) {
-            CYPool pool;
-            //std::cerr << error.PoolCString(pool) << std::endl;
-            goto skip;
         } break;
 
         case CXCursor_FunctionDecl:
-        case CXCursor_VarDecl: try {
+        case CXCursor_VarDecl: {
             std::string label;
 
             CYList<CYFunctionParameter> parameters;
@@ -637,24 +634,21 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
                 function->Output(out, CYNoBFC);
                 //std::cerr << value.str() << std::endl;
             }
-        } catch (const CYException &error) {
-            CYPool pool;
-            //std::cerr << error.PoolCString(pool) << std::endl;
-            goto skip;
         } break;
 
         default: {
             return CXChildVisit_Recurse;
         } break;
-    }
-
-    {
+    } {
         CYKey &key(baton.keys[name]);
         if (key.priority_ <= priority) {
             key.priority_ = priority;
             key.code_ = value.str();
             key.flags_ = flags;
         }
+    } } catch (const CYException &error) {
+        CYPool pool;
+        //std::cerr << error.PoolCString(pool) << std::endl;
     }
 
   skip:
