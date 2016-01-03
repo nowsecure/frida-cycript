@@ -457,9 +457,13 @@ void CYExtend::Output(CYOutput &out, CYFlags flags) const {
     out << ' ' << object_;
 }
 
-void CYExternal::Output(CYOutput &out, CYFlags flags) const {
+void CYExternalDefinition::Output(CYOutput &out, CYFlags flags) const {
     out << "extern" << ' ' << abi_ << ' ' << typed_;
     out.Terminate();
+}
+
+void CYExternalExpression::Output(CYOutput &out, CYFlags flags) const {
+    out << '(' << "extern" << ' ' << abi_ << ' ' << typed_ << ')';
 }
 
 void CYFatArrow::Output(CYOutput &out, CYFlags flags) const {

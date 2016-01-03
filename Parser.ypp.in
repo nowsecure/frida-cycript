@@ -2423,7 +2423,7 @@ IdentifierNoOf
     ;
 
 ExternCStatement
-    : TypedIdentifierField[typed] TerminatorHard { $$ = CYNew CYExternal(CYNew CYString("C"), $typed); }
+    : TypedIdentifierField[typed] TerminatorHard { $$ = CYNew CYExternalDefinition(CYNew CYString("C"), $typed); }
     | TypeDefinition[pass] { $$ = $pass; }
     ;
 
@@ -2437,8 +2437,16 @@ ExternC
     | ExternCStatement[pass] { $$ = $pass; }
     ;
 
+ABI
+    : StringLiteral[abi] { if (strcmp($abi->Value(), "C") != 0) CYERR(@abi, "unknown extern binding"); }
+    ;
+
 Statement__
-    : "extern" NewLineNot StringLiteral[abi] { if (strcmp($abi->Value(), "C") != 0) CYERR(@abi, "unknown extern binding"); } ExternC[pass] { $$ = $pass; }
+    : "extern" NewLineNot ABI[abi] ExternC[pass] { $$ = $pass; }
+    ;
+
+PrimaryExpression
+    : "(" LexOf "extern" NewLineOpt ABI[abi] TypedIdentifierField[typed] ")" { $$ = CYNew CYExternalExpression(CYNew CYString("C"), $typed); }
     ;
 /* }}} */
 @end

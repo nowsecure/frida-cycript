@@ -1632,7 +1632,7 @@ static JSValueRef Functor_callAsFunction_toCYON(JSContextRef context, JSObjectRe
     CYOptions options;
     CYOutput output(*str.rdbuf(), options);
     output.pretty_ = true;
-    (new(pool) CYExternal(new(pool) CYString("C"), typed))->Output(output, CYNoFlags);
+    (new(pool) CYExternalExpression(new(pool) CYString("C"), typed))->Output(output, CYNoFlags);
     return CYCastJSValue(context, CYJSString(str.str()));
 } CYCatch(NULL) }
 
@@ -1741,6 +1741,7 @@ static JSValueRef Type_callAsFunction_toCYON(JSContextRef context, JSObjectRef o
     std::stringbuf out;
     CYOptions options;
     CYOutput output(out, options);
+    output.pretty_ = true;
     (new(pool) CYTypeExpression(CYDecodeType(pool, internal->type_->Copy(pool, ""))))->Output(output, CYNoFlags);
     return CYCastJSValue(context, CYJSString(out.str().c_str()));
 } CYCatch(NULL) }

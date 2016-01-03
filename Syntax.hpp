@@ -2405,13 +2405,31 @@ struct CYImportDeclaration :
     virtual void Output(CYOutput &out, CYFlags flags) const;
 };
 
-struct CYExternal :
+struct CYExternalExpression :
+    CYTarget
+{
+    CYString *abi_;
+    CYTypedIdentifier *typed_;
+
+    CYExternalExpression(CYString *abi, CYTypedIdentifier *typed) :
+        abi_(abi),
+        typed_(typed)
+    {
+    }
+
+    CYPrecedence(0)
+
+    virtual CYTarget *Replace(CYContext &context);
+    virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYExternalDefinition :
     CYStatement
 {
     CYString *abi_;
     CYTypedIdentifier *typed_;
 
-    CYExternal(CYString *abi, CYTypedIdentifier *typed) :
+    CYExternalDefinition(CYString *abi, CYTypedIdentifier *typed) :
         abi_(abi),
         typed_(typed)
     {
