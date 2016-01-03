@@ -2127,8 +2127,11 @@ const char *CYPoolLibraryPath(CYPool &pool) {
     *slash = '\0';
 
     slash = strrchr(lib, '/');
-    if (slash != NULL && strcmp(slash, "/.libs") == 0)
-        *slash = '\0';
+    if (slash != NULL) {
+        if (strcmp(slash, "/.libs") == 0)
+            *slash = '\0';
+    } else if (strcmp(lib, ".libs") == 0)
+        return ".";
 
     return lib;
 }
