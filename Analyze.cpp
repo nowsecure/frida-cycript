@@ -648,7 +648,7 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
 
     {
         CYKey &key(baton.keys[name]);
-        if (key.priority_ < priority) {
+        if (key.priority_ <= priority) {
             key.priority_ = priority;
             key.code_ = value.str();
             key.flags_ = flags;
