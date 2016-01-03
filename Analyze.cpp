@@ -288,6 +288,183 @@ static CYStatement *CYTranslateBlock(CXTranslationUnit unit, CXCursor cursor) {
     return $ CYBlock(statements);
 }
 
+static CYTypedIdentifier *CYDecodeType(CXType type);
+static void CYParseType(CXType type, CYTypedIdentifier *typed);
+
+static CYTypedIdentifier *CYDecodeType(CXType type, const CYCXString &identifier) {
+    CYTypedIdentifier *typed(CYDecodeType(type));
+    typed->identifier_ = $ CYIdentifier(identifier.Pool($pool));
+    return typed;
+}
+
+static void CYParseCursor(CXType type, CXCursor cursor, CYTypedIdentifier *typed) {
+    CYCXString spelling(cursor);
+
+    switch (CXCursorKind kind = clang_getCursorKind(cursor)) {
+        case CXCursor_EnumDecl:
+            if (spelling[0] != '\0')
+                // XXX: should we have a special enum keyword?
+                typed->specifier_ = $ CYTypeVariable($I(spelling.Pool($pool)));
+            else
+                // XXX: maybe replace with "enum : int" instead of "int"
+                CYParseType(clang_getEnumDeclIntegerType(cursor), typed);
+        break;
+
+        case CXCursor_StructDecl: {
+            if (spelling[0] != '\0')
+                typed->specifier_ = $ CYTypeReference($I(spelling.Pool($pool)));
+            else {
+                CYList<CYTypeStructField> fields;
+                CYForChild(cursor, fun([&](CXCursor child) {
+                    if (clang_getCursorKind(child) == CXCursor_FieldDecl) {
+                        CYTypedIdentifier *field(CYDecodeType(clang_getCursorType(child), child));
+                        fields->*$ CYTypeStructField(field);
+                    }
+                }));
+
+                typed->specifier_ = $ CYTypeStruct(NULL, $ CYStructTail(fields));
+            }
+        } break;
+
+        case CXCursor_UnionDecl: {
+            _assert(false);
+        } break;
+
+        default:
+            std::cerr << "C:" << CYCXString(kind) << std::endl;
+            _assert(false);
+            break;
+    }
+}
+
+static CYTypedParameter *CYParseSignature(CXType type, CYTypedIdentifier *typed) {
+    CYParseType(clang_getResultType(type), typed);
+    CYList<CYTypedParameter> parameters;
+    for (int i(0), e(clang_getNumArgTypes(type)); i != e; ++i)
+        parameters->*$ CYTypedParameter(CYDecodeType(clang_getArgType(type, i)));
+    return parameters;
+}
+
+static void CYParseFunction(CXType type, CYTypedIdentifier *typed) {
+    typed = typed->Modify($ CYTypeFunctionWith(clang_isFunctionTypeVariadic(type), CYParseSignature(type, typed)));
+}
+
+static void CYParseType(CXType type, CYTypedIdentifier *typed) {
+    switch (CXTypeKind kind = type.kind) {
+        case CXType_Unexposed: {
+            CXType result(clang_getResultType(type));
+            if (result.kind == CXType_Invalid)
+                CYParseCursor(type, clang_getTypeDeclaration(type), typed);
+            else
+                // clang marks function pointers as Unexposed but still supports them
+                CYParseFunction(type, typed);
+        } break;
+
+        case CXType_Bool: typed->specifier_ = $ CYTypeVariable("bool"); break;
+        case CXType_Float: typed->specifier_ = $ CYTypeVariable("float"); break;
+        case CXType_Double: typed->specifier_ = $ CYTypeVariable("double"); break;
+
+        case CXType_Char_U: typed->specifier_ = $ CYTypeCharacter(CYTypeNeutral); break;
+        case CXType_Char_S: typed->specifier_ = $ CYTypeCharacter(CYTypeNeutral); break;
+        case CXType_SChar: typed->specifier_ = $ CYTypeCharacter(CYTypeSigned); break;
+        case CXType_UChar: typed->specifier_ = $ CYTypeCharacter(CYTypeUnsigned); break;
+
+        case CXType_Short: typed->specifier_ = $ CYTypeIntegral(CYTypeSigned, 0); break;
+        case CXType_UShort: typed->specifier_ = $ CYTypeIntegral(CYTypeUnsigned, 0); break;
+
+        case CXType_Int: typed->specifier_ = $ CYTypeIntegral(CYTypeSigned, 1); break;
+        case CXType_UInt: typed->specifier_ = $ CYTypeIntegral(CYTypeUnsigned, 1); break;
+
+        case CXType_Long: typed->specifier_ = $ CYTypeIntegral(CYTypeSigned, 2); break;
+        case CXType_ULong: typed->specifier_ = $ CYTypeIntegral(CYTypeUnsigned, 2); break;
+
+        case CXType_LongLong: typed->specifier_ = $ CYTypeIntegral(CYTypeSigned, 3); break;
+        case CXType_ULongLong: typed->specifier_ = $ CYTypeIntegral(CYTypeUnsigned, 3); break;
+
+        case CXType_BlockPointer: {
+            CXType pointee(clang_getPointeeType(type));
+            _assert(!clang_isFunctionTypeVariadic(pointee));
+            typed = typed->Modify($ CYTypeBlockWith(CYParseSignature(pointee, typed)));
+        } break;
+
+        case CXType_ConstantArray:
+            CYParseType(clang_getArrayElementType(type), typed);
+            typed = typed->Modify($ CYTypeArrayOf($D(clang_getArraySize(type))));
+        break;
+
+        case CXType_Enum:
+            typed->specifier_ = $ CYTypeVariable($pool.strdup(CYCXString(clang_getTypeSpelling(type))));
+        break;
+
+        case CXType_FunctionProto:
+            CYParseFunction(type, typed);
+        break;
+
+        case CXType_IncompleteArray:
+            // XXX: I should support these :/
+            _assert(false);
+        break;
+
+        case CXType_ObjCId:
+            typed->specifier_ = $ CYTypeVariable("id");
+        break;
+
+        case CXType_ObjCInterface:
+            typed->specifier_ = $ CYTypeVariable($pool.strdup(CYCXString(clang_getTypeSpelling(type))));
+        break;
+
+        case CXType_ObjCObjectPointer: {
+            CXType pointee(clang_getPointeeType(type));
+            if (pointee.kind != CXType_Unexposed) {
+                CYParseType(pointee, typed);
+                typed = typed->Modify($ CYTypePointerTo());
+            } else
+                // Clang seems to have internal typedefs for id and Class that are awkward
+                _assert(false);
+        } break;
+
+        case CXType_ObjCSel:
+            typed->specifier_ = $ CYTypeVariable("SEL");
+        break;
+
+        case CXType_Pointer:
+            CYParseType(clang_getPointeeType(type), typed);
+            typed = typed->Modify($ CYTypePointerTo());
+        break;
+
+        case CXType_Record:
+            typed->specifier_ = $ CYTypeReference($I($pool.strdup(CYCXString(clang_getTypeSpelling(type)))));
+        break;
+
+        case CXType_Typedef:
+            // use the declaration in order to isolate the name of the typedef itself
+            typed->specifier_ = $ CYTypeVariable($pool.strdup(CYCXString(clang_getTypeDeclaration(type))));
+        break;
+
+        case CXType_Vector:
+            _assert(false);
+        break;
+
+        case CXType_Void:
+            typed->specifier_ = $ CYTypeVoid();
+        break;
+
+        default:
+            std::cerr << "T:" << CYCXString(clang_getTypeKindSpelling(kind)) << std::endl;
+            std::cerr << "_: " << CYCXString(clang_getTypeSpelling(type)) << std::endl;
+            _assert(false);
+    }
+
+    if (clang_isConstQualifiedType(type))
+        typed = typed->Modify($ CYTypeConstant());
+}
+
+static CYTypedIdentifier *CYDecodeType(CXType type) {
+    CYTypedIdentifier *typed($ CYTypedIdentifier(NULL));
+    CYParseType(type, typed);
+    return typed;
+}
+
 static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClientData arg) {
     CYChildBaton &baton(*static_cast<CYChildBaton *>(arg));
     CXTranslationUnit &unit(baton.unit);
@@ -300,7 +477,7 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
 
     /*CXSourceLocation location(clang_getCursorLocation(cursor));
     CYCXPosition<> position(location);
-    std::cout << spelling << " " << position << std::endl;*/
+    std::cerr << spelling << " " << position << std::endl;*/
 
     switch (CXCursorKind kind = clang_getCursorKind(cursor)) {
         case CXCursor_EnumConstantDecl: {
@@ -387,9 +564,21 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
             name += "$cy";
         } break;
 
-        case CXCursor_TypedefDecl: {
-            CXType type(clang_getTypedefDeclUnderlyingType(cursor));
-            value << "(typedef " << CYCXString(clang_getTypeSpelling(type)) << ")";
+        case CXCursor_TypedefDecl: try {
+            CYLocalPool local;
+
+            CYTypedIdentifier *typed(CYDecodeType(clang_getTypedefDeclUnderlyingType(cursor)));
+            if (typed->specifier_ == NULL)
+                value << "(typedef " << CYCXString(clang_getTypeSpelling(clang_getTypedefDeclUnderlyingType(cursor))) << ")";
+            else {
+                CYOptions options;
+                CYOutput out(*value.rdbuf(), options);
+                CYTypeExpression(typed).Output(out, CYNoBFC);
+            }
+        } catch (const CYException &error) {
+            CYPool pool;
+            //std::cerr << error.PoolCString(pool) << std::endl;
+            goto skip;
         } break;
 
         case CXCursor_FunctionDecl:

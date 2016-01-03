@@ -2296,7 +2296,7 @@ struct CYTypedParameter :
 {
     CYTypedIdentifier *typed_;
 
-    CYTypedParameter(CYTypedIdentifier *typed, CYTypedParameter *next) :
+    CYTypedParameter(CYTypedIdentifier *typed, CYTypedParameter *next = NULL) :
         CYNext<CYTypedParameter>(next),
         typed_(typed)
     {
