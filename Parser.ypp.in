@@ -2145,11 +2145,13 @@ TypedIdentifierField
 TypedIdentifierEncoding
     : TypedIdentifierNo[pass] { $$ = $pass; }
     | TypeQualifierLeftOpt[modifier] "struct" "{" StructFieldListOpt[fields] "}" TypeQualifierRightOpt[typed] { if ($typed->identifier_ != NULL) CYERR($typed->location_, "unexpected identifier"); $$ = $typed; $$->specifier_ = CYNew CYTypeStruct(NULL, CYNew CYStructTail($fields)); CYSetLast($modifier) = $$->modifier_; $$->modifier_ = $modifier; }
+    | "void" TypeSignifierNone[typed] { $$ = $typed; $$->specifier_ = CYNew CYTypeVoid(); }
     ;
 
 TypedIdentifierDefinition
     : TypedIdentifierYes[pass] { $$ = $pass; }
     | TypeQualifierLeftOpt[modifier] "struct" IdentifierTypeOpt[name] "{" StructFieldListOpt[fields] "}" TypeQualifierRightOpt[typed] { if ($typed->identifier_ == NULL) CYERR($typed->location_, "expected identifier"); $$ = $typed; $$->specifier_ = CYNew CYTypeStruct($name, CYNew CYStructTail($fields)); CYSetLast($modifier) = $$->modifier_; $$->modifier_ = $modifier; }
+    | "void" TypeSignifier[typed] { $$ = $typed; $$->specifier_ = CYNew CYTypeVoid(); }
     ;
 
 PrimaryExpression
