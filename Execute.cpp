@@ -517,8 +517,11 @@ const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSObjectRef object, 
 
         if (CYIsStrictEqual(context, theory, practice)) {
             JSValueRef name(CYGetProperty(context, constructor, name_s));
-            if (!JSValueIsUndefined(context, name))
-                str << "new" << ' ' << CYPoolUTF8String(pool, context, CYJSString(context, name));
+            if (!JSValueIsUndefined(context, name)) {
+                auto utf8(CYPoolUTF8String(pool, context, CYJSString(context, name)));
+                if (utf8 != "Object")
+                    str << "new" << ' ' << utf8;
+            }
         }
     }
 

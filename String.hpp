@@ -54,6 +54,11 @@ struct CYUTF8String {
         return length == size && memcmp(value, data, length) == 0;
     }
 
+    bool operator !=(const char *value) const {
+        size_t length(strlen(data));
+        return length != size || memcmp(value, data, length) != 0;
+    }
+
     operator std::string() const {
         return std::string(data, size);
     }
