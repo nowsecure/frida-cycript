@@ -635,8 +635,10 @@ static void Console(CYOptions &options) {
     rl_completer_word_break_characters = break_;
     rl_attempted_completion_function = &Complete;
 
-    rl_redisplay_function = CYDisplayUpdate;
-    rl_prep_term_function = CYConsolePrepTerm;
+    if (cur_term != NULL) {
+        rl_redisplay_function = CYDisplayUpdate;
+        rl_prep_term_function = CYConsolePrepTerm;
+    }
 
     struct sigaction action;
     sigemptyset(&action.sa_mask);
