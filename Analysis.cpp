@@ -21,11 +21,17 @@
 
 #define __USE_EXTERN_INLINES
 
+#include <dirent.h>
 #include <dlfcn.h>
 #include <fcntl.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include <sys/mman.h>
+#include <sys/mount.h>
 #include <sys/stat.h>
 
 #include <sqlite3.h>
