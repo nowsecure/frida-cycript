@@ -62,6 +62,18 @@ public static class Wrapper
         return protect_;
     }
 
+    public Object call(String property, Object[] arguments) {
+        try {
+            return handle(protect_, property, arguments);
+        } catch (Throwable throwable) {
+            return new RuntimeException(throwable);
+        }
+    }
+
+    public String toString() {
+        return call("toString", null).toString();
+    }
+
     public Object invoke(Object proxy, Method method, Object[] args)
         throws Throwable
     {

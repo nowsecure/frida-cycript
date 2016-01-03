@@ -126,6 +126,7 @@ struct CYJavaRef {
         return {jni_, static_cast<Other_>(value_)};
     }
 
+    // XXX: this should be tied into CYJavaFrame
     Value_ leak() {
         Value_ value(value_);
         value_ = NULL;
@@ -142,9 +143,14 @@ struct CYJavaDelete :
     {
     }
 
-    ~CYJavaDelete() {
+    void clear() {
         if (this->value_ != NULL)
             (this->jni_->*Delete_)(this->value_);
+        this->value_ = NULL;
+    }
+
+    ~CYJavaDelete() {
+        clear();
     }
 };
 
@@ -199,15 +205,24 @@ struct CYJavaLocal :
     {
     }
 
-    CYJavaLocal(CYJavaLocal &&value) :
-        CYJavaLocal(value.jni_, value.value_)
+    template <typename Other_>
+    CYJavaLocal(CYJavaRef<Other_> &&other) :
+        CYJavaLocal(other.jni_, other.value_)
     {
-        value.value_ = NULL;
+        other.value_ = NULL;
     }
 
-    CYJavaLocal &operator =(CYJavaLocal<Value_> &&other) {
-        std::swap(this->jni_, other.jni_);
-        std::swap(this->value_, other.value_);
+    CYJavaLocal(CYJavaLocal &&other) :
+        CYJavaLocal(static_cast<CYJavaRef<Value_> &&>(other))
+    {
+    }
+
+    template <typename Other_>
+    CYJavaLocal &operator =(CYJavaLocal<Other_> &&other) {
+        this->clear();
+        this->jni_ = other.jni_;
+        this->value_ = other.value_;
+        other.value_ = NULL;
         return *this;
     }
 };
@@ -290,6 +305,10 @@ struct CYJavaFrame {
 
     ~CYJavaFrame() {
         operator ()(NULL);
+    }
+
+    operator JNIEnv *() const {
+        return jni_;
     }
 
     jobject operator ()(jobject object) {
@@ -855,7 +874,9 @@ CYJavaForEachPrimitive
     }
 }
 
-static bool CYCastJavaArguments(const CYJavaEnv &jni, const CYJavaShorty &shorty, JSContextRef context, const JSValueRef arguments[], jvalue *array) {
+static bool CYCastJavaArguments(const CYJavaFrame &frame, const CYJavaShorty &shorty, JSContextRef context, const JSValueRef arguments[], jvalue *array) {
+    CYJavaEnv jni(frame);
+
     for (size_t index(0); index != shorty.size(); ++index) {
         JSValueRef argument(arguments[index]);
         JSType type(JSValueGetType(context, argument));
@@ -863,6 +884,7 @@ static bool CYCastJavaArguments(const CYJavaEnv &jni, const CYJavaShorty &shorty
 
         switch (CYJavaPrimitive primitive = shorty[index]) {
             case CYJavaPrimitiveObject:
+                // XXX: figure out a way to tie this in to the CYJavaFrame
                 value.l = CYCastJavaObject(jni, context, argument).leak();
             break;
 
@@ -912,9 +934,9 @@ static JSValueRef JavaMethod_callAsFunction(JSContextRef context, JSObjectRef ob
 
     CYJavaSignature bound(count);
     for (auto overload(internal->overload_.lower_bound(bound)), e(internal->overload_.upper_bound(bound)); overload != e; ++overload) {
-        CYJavaFrame(jni, count + 16);
+        CYJavaFrame frame(jni, count + 16);
         jvalue array[count];
-        if (!CYCastJavaArguments(jni, overload->shorty_, context, arguments, array))
+        if (!CYCastJavaArguments(frame, overload->shorty_, context, arguments, array))
             continue;
         jvalue *values(array);
         switch (overload->primitive_) {
@@ -942,9 +964,9 @@ static JSValueRef JavaStaticMethod_callAsFunction(JSContextRef context, JSObject
 
     CYJavaSignature bound(count);
     for (auto overload(internal->overload_.lower_bound(bound)), e(internal->overload_.upper_bound(bound)); overload != e; ++overload) {
-        CYJavaFrame(jni, count + 16);
+        CYJavaFrame frame(jni, count + 16);
         jvalue array[count];
-        if (!CYCastJavaArguments(jni, overload->shorty_, context, arguments, array))
+        if (!CYCastJavaArguments(frame, overload->shorty_, context, arguments, array))
             continue;
         jvalue *values(array);
         switch (overload->primitive_) {
@@ -980,9 +1002,9 @@ static JSObjectRef JavaClass_callAsConstructor(JSContextRef context, JSObjectRef
 
     CYJavaSignature bound(count);
     for (auto overload(table->overload_.lower_bound(bound)), e(table->overload_.upper_bound(bound)); overload != e; ++overload) {
-        CYJavaFrame(jni, count + 16);
+        CYJavaFrame frame(jni, count + 16);
         jvalue array[count];
-        if (!CYCastJavaArguments(jni, overload->shorty_, context, arguments, array))
+        if (!CYCastJavaArguments(frame, overload->shorty_, context, arguments, array))
             continue;
         jvalue *values(array);
         auto object(jni.NewObjectA(_class, overload->method_, values));
@@ -1258,11 +1280,10 @@ static jobject Cycript_handle(JNIEnv *env, jclass api, jlong jprotect, jstring p
 
     size_t count(jarguments == NULL ? 0 : jni.GetArrayLength(jarguments));
     JSValueRef arguments[count];
-    for (size_t index(0); index != count; ++index) {
+    for (size_t index(0); index != count; ++index)
         arguments[index] = CYCastJSValue(context, jni.GetObjectArrayElement<jobject>(jarguments, index));
-    }
 
-    return CYCastJavaObject(jni, context, CYCallAsFunction(context, CYCastJSObject(context, function), object, count, arguments));
+    return CYCastJavaObject(jni, context, CYCallAsFunction(context, CYCastJSObject(context, function), object, count, arguments)).leak();
 } CYJavaCatch(NULL) }
 
 static JNINativeMethod Cycript_[] = {
