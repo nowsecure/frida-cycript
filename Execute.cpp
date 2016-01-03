@@ -143,6 +143,10 @@ CYUTF16String CYCastUTF16String(JSStringRef value) {
     return CYUTF16String(JSStringGetCharactersPtr(value), JSStringGetLength(value));
 }
 
+const char *CYPoolCString(CYPool &pool, CYUTF8String utf8) {
+    return pool.strndup(utf8.data, utf8.size);
+}
+
 CYUTF8String CYPoolUTF8String(CYPool &pool, JSContextRef context, JSStringRef value) {
     return CYPoolUTF8String(pool, CYCastUTF16String(value));
 }
@@ -416,8 +420,7 @@ _visible void CYGarbageCollect(JSContextRef context) {
 static JSValueRef Cycript_compile_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CYPool pool;
     CYUTF8String before(CYPoolUTF8String(pool, context, CYJSString(context, arguments[0])));
-    std::stringbuf value(std::string(before.data, before.size));
-    CYUTF8String after(CYPoolCode(pool, value));
+    CYUTF8String after(CYPoolCode(pool, before));
     return CYCastJSValue(context, CYJSString(after));
 } CYCatch_(NULL, "SyntaxError") }
 
