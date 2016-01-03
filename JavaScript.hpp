@@ -41,6 +41,7 @@
 #include "String.hpp"
 
 extern JSStringRef Array_s;
+extern JSStringRef constructor_s;
 extern JSStringRef cy_s;
 extern JSStringRef cyi_s;
 extern JSStringRef cyt_s;

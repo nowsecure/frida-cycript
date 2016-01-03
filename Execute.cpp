@@ -184,6 +184,7 @@ JSClassRef Functor_;
 static JSClassRef Global_;
 
 JSStringRef Array_s;
+JSStringRef constructor_s;
 JSStringRef cy_s;
 JSStringRef cyi_s;
 JSStringRef cyt_s;
@@ -502,6 +503,19 @@ const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSObjectRef object, 
     _assert(objects.insert(object).second);
 
     std::ostringstream str;
+
+    JSValueRef value(CYGetProperty(context, object, constructor_s));
+    if (JSValueIsObject(context, value)) {
+        JSObjectRef constructor(CYCastJSObject(context, value));
+        JSValueRef theory(CYGetProperty(context, constructor, prototype_s));
+        JSValueRef practice(JSObjectGetPrototype(context, object));
+
+        if (CYIsStrictEqual(context, theory, practice)) {
+            JSValueRef name(CYGetProperty(context, constructor, name_s));
+            if (!JSValueIsUndefined(context, name))
+                str << "new" << ' ' << CYPoolUTF8String(pool, context, CYJSString(context, name));
+        }
+    }
 
     str << '{';
 
@@ -2011,6 +2025,7 @@ void CYInitializeDynamic() {
     Global_ = JSClassCreate(&definition);
 
     Array_s = JSStringCreateWithUTF8CString("Array");
+    constructor_s = JSStringCreateWithUTF8CString("constructor");
     cy_s = JSStringCreateWithUTF8CString("$cy");
     cyi_s = JSStringCreateWithUTF8CString("$cyi");
     cyt_s = JSStringCreateWithUTF8CString("$cyt");

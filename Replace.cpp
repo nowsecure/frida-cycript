@@ -182,6 +182,7 @@ CYTarget *CYClassExpression::Replace(CYContext &context) {
 
     if (tail_->constructor_ == NULL)
         tail_->constructor_ = $ CYFunctionExpression(NULL, NULL, NULL);
+    tail_->constructor_->name_ = name_;
     tail_->constructor_ = CYSuperize(context, tail_->constructor_);
 
     context.super_ = old;
