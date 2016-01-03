@@ -1605,18 +1605,34 @@ static JSValueRef Functor_callAsFunction_valueOf(JSContextRef context, JSObjectR
 static JSValueRef Functor_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     cy::Functor *internal(reinterpret_cast<cy::Functor *>(JSObjectGetPrivate(_this)));
     uint8_t *value(reinterpret_cast<uint8_t *>(internal->value_));
-    std::ostringstream str;
-    Dl_info info;
-    if (internal->value_ == NULL)
-        str << "NULL";
-    else if (dladdr(value, &info) == 0)
-        str << internal->value_;
-    else {
-        str << info.dli_sname;
-        off_t offset(value - reinterpret_cast<uint8_t *>(info.dli_saddr));
-        if (offset != 0)
-            str << "+0x" << std::hex << offset;
+
+    CYLocalPool pool;
+
+    sig::Function function(internal->variadic_);
+    sig::Copy(pool, function.signature, internal->signature_);
+
+    auto typed(CYDecodeType(pool, &function)); {
+        std::ostringstream str;
+        Dl_info info;
+        if (internal->value_ == NULL)
+            str << "NULL";
+        else if (dladdr(value, &info) == 0)
+            str << internal->value_;
+        else {
+            str << info.dli_sname;
+            off_t offset(value - reinterpret_cast<uint8_t *>(info.dli_saddr));
+            if (offset != 0)
+                str << "+0x" << std::hex << offset;
+        }
+
+        typed->identifier_ = new(pool) CYIdentifier(pool.strdup(str.str().c_str()));
     }
+
+    std::ostringstream str;
+    CYOptions options;
+    CYOutput output(*str.rdbuf(), options);
+    output.pretty_ = true;
+    (new(pool) CYExternal(new(pool) CYString("C"), typed))->Output(output, CYNoFlags);
     return CYCastJSValue(context, CYJSString(str.str()));
 } CYCatch(NULL) }
 
@@ -1725,7 +1741,7 @@ static JSValueRef Type_callAsFunction_toCYON(JSContextRef context, JSObjectRef o
     std::stringbuf out;
     CYOptions options;
     CYOutput output(out, options);
-    (new(pool) CYTypeExpression(CYDecodeType(pool, internal->type_)))->Output(output, CYNoFlags);
+    (new(pool) CYTypeExpression(CYDecodeType(pool, internal->type_->Copy(pool, ""))))->Output(output, CYNoFlags);
     return CYCastJSValue(context, CYJSString(out.str().c_str()));
 } CYCatch(NULL) }
 

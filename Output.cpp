@@ -458,7 +458,7 @@ void CYExtend::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYExternal::Output(CYOutput &out, CYFlags flags) const {
-    out << "extern" << abi_ << typed_;
+    out << "extern" << ' ' << abi_ << ' ' << typed_;
     out.Terminate();
 }
 
@@ -665,7 +665,7 @@ void CYTemplate::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYTypeArrayOf::Output(CYOutput &out, CYIdentifier *identifier) const {
-    next_->Output(out, Precedence(), identifier);
+    next_->Output(out, Precedence(), identifier, false);
     out << '[';
     out << size_;
     out << ']';
@@ -673,17 +673,17 @@ void CYTypeArrayOf::Output(CYOutput &out, CYIdentifier *identifier) const {
 
 void CYTypeBlockWith::Output(CYOutput &out, CYIdentifier *identifier) const {
     out << '(' << '^';
-    next_->Output(out, Precedence(), identifier);
+    next_->Output(out, Precedence(), identifier, false);
     out << ')' << '(' << parameters_ << ')';
 }
 
 void CYTypeConstant::Output(CYOutput &out, CYIdentifier *identifier) const {
-    out << "const" << ' ';
-    next_->Output(out, Precedence(), identifier);
+    out << "const";
+    next_->Output(out, Precedence(), identifier, false);
 }
 
 void CYTypeFunctionWith::Output(CYOutput &out, CYIdentifier *identifier) const {
-    next_->Output(out, Precedence(), identifier);
+    next_->Output(out, Precedence(), identifier, false);
     out << '(' << parameters_;
     if (variadic_) {
         if (parameters_ != NULL)
@@ -695,15 +695,20 @@ void CYTypeFunctionWith::Output(CYOutput &out, CYIdentifier *identifier) const {
 
 void CYTypePointerTo::Output(CYOutput &out, CYIdentifier *identifier) const {
     out << '*';
-    next_->Output(out, Precedence(), identifier);
+    next_->Output(out, Precedence(), identifier, false);
 }
 
 void CYTypeVolatile::Output(CYOutput &out, CYIdentifier *identifier) const {
     out << "volatile";
-    next_->Output(out, Precedence(), identifier);
+    next_->Output(out, Precedence(), identifier, true);
 }
 
-void CYTypeModifier::Output(CYOutput &out, int precedence, CYIdentifier *identifier) const {
+void CYTypeModifier::Output(CYOutput &out, int precedence, CYIdentifier *identifier, bool space) const {
+    if (this == NULL && identifier == NULL)
+        return;
+    else if (space)
+        out << ' ';
+
     if (this == NULL) {
         out << identifier;
         return;
@@ -720,7 +725,7 @@ void CYTypeModifier::Output(CYOutput &out, int precedence, CYIdentifier *identif
 
 void CYTypedIdentifier::Output(CYOutput &out) const {
     specifier_->Output(out);
-    modifier_->Output(out, 0, identifier_);
+    modifier_->Output(out, 0, identifier_, true);
 }
 
 void CYEncodedType::Output(CYOutput &out, CYFlags flags) const {
@@ -990,7 +995,7 @@ void CYStructTail::Output(CYOutput &out) const {
         out << '\n';
     }
     --out.indent_;
-    out << '}';
+    out << '\t' << '}';
 }
 
 void CYSuperAccess::Output(CYOutput &out, CYFlags flags) const {

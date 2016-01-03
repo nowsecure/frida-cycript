@@ -383,8 +383,8 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
                 }
             }));
 
+            value << "new Type([" << types.str() << "],[" << names.str() << "]).withName(\"" << name << "\")";
             name += "$cy";
-            value << "new Type([" << types.str() << "],[" << names.str() << "])";
         } break;
 
         case CXCursor_TypedefDecl: {

@@ -2175,7 +2175,7 @@ struct CYTypeModifier :
     CYTarget *Replace(CYContext &context, CYTarget *type);
 
     virtual void Output(CYOutput &out, CYIdentifier *identifier) const = 0;
-    void Output(CYOutput &out, int precedence, CYIdentifier *identifier) const;
+    void Output(CYOutput &out, int precedence, CYIdentifier *identifier, bool space) const;
 
     virtual CYTypeFunctionWith *Function() { return NULL; }
 };

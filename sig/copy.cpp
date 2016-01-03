@@ -86,7 +86,11 @@ Object *Object::Copy(CYPool &pool, const char *rename) const {
 #endif
 
 Aggregate *Aggregate::Copy(CYPool &pool, const char *rename) const {
-    Aggregate *copy(new(pool) Aggregate(overlap, rename ?: pool.strdup(name)));
+    if (rename == NULL)
+        rename = pool.strdup(name);
+    else if (rename[0] == '\0')
+        rename = NULL;
+    Aggregate *copy(new(pool) Aggregate(overlap, rename));
     sig::Copy(pool, copy->signature, signature);
     return copy;
 }
