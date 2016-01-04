@@ -146,7 +146,7 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
         return NULL;
 
     // XXX: use an std::set?
-    typedef std::vector<std::string> Completions;
+    typedef std::vector<CYUTF8String> Completions;
     Completions completions;
 
     std::string common;
@@ -160,12 +160,15 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
         CYString *string(dynamic_cast<CYString *>(value->value_));
         _assert(string != NULL);
 
-        std::string completion;
+        CYUTF8String completion;
         if (string->size_ != 0)
-            completion.assign(string->value_, string->size_);
+            completion = {string->value_, string->size_};
         else if (driver.mode_ == CYDriver::AutoMessage)
             completion = "]";
         else
+            continue;
+
+        if (CYStartsWith(completion, "$cy"))
             continue;
 
         completions.push_back(completion);
@@ -174,13 +177,13 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
             common = completion;
             rest = true;
         } else {
-            size_t limit(completion.size()), size(common.size());
+            size_t limit(completion.size), size(common.size());
             if (size > limit)
                 common = common.substr(0, limit);
             else
                 limit = size;
             for (limit = 0; limit != size; ++limit)
-                if (common[limit] != completion[limit])
+                if (common[limit] != completion.data[limit])
                     break;
             if (limit != size)
                 common = common.substr(0, limit);
@@ -202,7 +205,7 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
     results[0] = strdup(common.c_str());
     size_t index(0);
     for (Completions::const_iterator i(completions.begin()); i != completions.end(); ++i)
-        results[++index] = strdup(i->c_str());
+        results[++index] = strdup(i->data);
     results[count + 1] = NULL;
 
     return results;
