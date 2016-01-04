@@ -220,7 +220,7 @@ Cycript.lib/cycript0.9:
 	@mkdir -p $(dir $@)
 	ln -s ../modules $@
 
-cycript: cycript.in
+cycript: cycript.ios.in
 	cp -af $< $@
 	chmod 755 $@
 

@@ -2143,10 +2143,35 @@ JSGlobalContextRef CYGetJSContext(JSContextRef context) {
     return reinterpret_cast<Context *>(JSObjectGetPrivate(CYCastJSObject(context, CYGetProperty(context, CYGetGlobalObject(context), cy_s))))->context_;
 }
 
-const char *CYPoolLibraryPath(CYPool &pool) {
+#ifdef __ANDROID__
+char *CYPoolLibraryPath_(CYPool &pool) {
+    FILE *maps(fopen("/proc/self/maps", "r"));
+    struct F { FILE *f; F(FILE *f) : f(f) {}
+        ~F() { fclose(f); } } f(maps);
+
+    size_t function(reinterpret_cast<size_t>(&CYPoolLibraryPath));
+
+    for (;;) {
+        size_t start; size_t end; char flags[8]; unsigned long long offset;
+        int major; int minor; unsigned long long inode; char file[1024];
+        int count(fscanf(maps, "%zx-%zx %7s %llx %x:%x %llu%[ ]%1024[^\n]\n",
+            &start, &end, flags, &offset, &major, &minor, &inode, file, file));
+        if (count < 8) break; else if (start <= function && function < end)
+            return pool.strdup(file);
+    }
+
+    _assert(false);
+}
+#else
+char *CYPoolLibraryPath_(CYPool &pool) {
     Dl_info addr;
     _assert(dladdr(reinterpret_cast<void *>(&CYPoolLibraryPath), &addr) != 0);
-    char *lib(pool.strdup(addr.dli_fname));
+    return pool.strdup(addr.dli_fname);
+}
+#endif
+
+const char *CYPoolLibraryPath(CYPool &pool) {
+    char *lib(CYPoolLibraryPath_(pool));
 
     char *slash(strrchr(lib, '/'));
     if (slash == NULL)
