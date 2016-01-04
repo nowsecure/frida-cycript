@@ -524,7 +524,7 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
             CYTypeExpression(&typed).Output(out, CYNoBFC);
 
             value << ".withName(\"" << name << "\")";
-            name += "$cye";
+            name = "$cye" + name;
             flags = CYBridgeType;
 
             // the enum constants are implemented separately *also*
@@ -603,7 +603,7 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
             CYTypeExpression(&typed).Output(out, CYNoBFC);
 
             value << ".withName(\"" << name << "\")";
-            name += "$cys";
+            name = "$cys" + name;
             flags = CYBridgeType;
         } break;
 

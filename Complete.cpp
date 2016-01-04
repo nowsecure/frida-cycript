@@ -93,6 +93,16 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
             expression = $M(driver.context_, $S("$cyr"));
         break;
 
+        case CYDriver::AutoStruct:
+            expression = $ CYThis();
+            prefix << "$cys";
+        break;
+
+        case CYDriver::AutoEnum:
+            expression = $ CYThis();
+            prefix << "$cye";
+        break;
+
         default:
             _assert(false);
     }
@@ -108,7 +118,7 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
     "       if (false) {\n"
     "           for (var name in object)\n"
     "               if (name.substring(0, entire) == prefix)\n"
-    "                   names.push(name.substr(before));\n"
+    "                   names.push(name);\n"
     "       } else do {\n"
     "           if (object.hasOwnProperty(\"cy$complete\")) {\n"
     "               names = names.concat(object.cy$complete(prefix));\n"
@@ -121,7 +131,7 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
     "           }\n"
     "           for (var name of local)\n"
     "               if (name.substring(0, entire) == prefix)\n"
-    "                   names.push(name.substr(before));\n"
+    "                   names.push(name);\n"
     "       } while (object = typeof object === 'object' ? Object.getPrototypeOf(object) : object.__proto__);\n"
     "       return names;\n"
     "   }\n"
@@ -168,9 +178,11 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
         else
             continue;
 
+        completion.data += begin.size();
+        completion.size -= begin.size();
+
         if (CYStartsWith(completion, "$cy"))
             continue;
-
         completions.push_back(completion);
 
         if (!rest) {

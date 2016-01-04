@@ -1288,14 +1288,14 @@ CYTarget *CYTypePointerTo::Replace_(CYContext &context, CYTarget *type) {
 }
 
 CYTarget *CYTypeReference::Replace(CYContext &context) {
-    const char *suffix;
+    const char *prefix;
     switch (kind_) {
-        case CYTypeReferenceStruct: suffix = "$cys"; break;
-        case CYTypeReferenceEnum: suffix = "$cye"; break;
+        case CYTypeReferenceStruct: prefix = "$cys"; break;
+        case CYTypeReferenceEnum: prefix = "$cye"; break;
         default: _assert(false);
     }
 
-    return $V($pool.strcat(name_->Word(), suffix, NULL));
+    return $V($pool.strcat(prefix, name_->Word(), NULL));
 }
 
 CYTarget *CYTypeStruct::Replace(CYContext &context) {

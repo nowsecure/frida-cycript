@@ -114,6 +114,8 @@ class _visible CYDriver {
         AutoIndirect,
         AutoMessage,
         AutoResolve,
+        AutoStruct,
+        AutoEnum,
     } mode_;
 
   private:

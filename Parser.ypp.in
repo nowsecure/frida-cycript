@@ -2147,6 +2147,8 @@ PrimitiveReference
     : PrimitiveType[pass] { $$ = $pass; }
     | "struct" IdentifierType[name] { $$ = CYNew CYTypeReference(CYTypeReferenceStruct, $name); }
     | "enum" IdentifierType[name] { $$ = CYNew CYTypeReference(CYTypeReferenceEnum, $name); }
+    | "struct" AutoComplete { driver.mode_ = CYDriver::AutoStruct; YYACCEPT; }
+    | "enum" AutoComplete { driver.mode_ = CYDriver::AutoEnum; YYACCEPT; }
     ;
 
 TypedIdentifierMaybe
@@ -2440,6 +2442,7 @@ Statement__
 
 PrimaryExpression
     : "(" LexOf "struct" NewLineOpt IdentifierType[name] TypeQualifierRightOpt[typed] ")" { $typed->specifier_ = CYNew CYTypeReference(CYTypeReferenceStruct, $name); $$ = CYNew CYTypeExpression($typed); }
+    | "(" LexOf "struct" NewLineOpt AutoComplete { driver.mode_ = CYDriver::AutoStruct; YYACCEPT; }
     ;
 /* }}} */
 /* Cycript (C): Type Definitions {{{ */
