@@ -33,12 +33,12 @@ if (libsubstrate == null) {
     return;
 }
 
-MSGetImageByName = @encode(void *(const char *))(dlsym(libsubstrate, "MSGetImageByName"));
-MSFindSymbol = @encode(void *(void *, const char *))(dlsym(libsubstrate, "MSFindSymbol"));
-MSHookFunction = @encode(void(void *, void *, void **))(dlsym(libsubstrate, "MSHookFunction"));
-MSHookMessageEx = @encode(void(Class, SEL, void *, void **))(dlsym(libsubstrate, "MSHookMessageEx"));
+extern "C" void *MSGetImageByName(const char *);
+extern "C" void *MSFindSymbol(void *, const char *);
+extern "C" void MSHookFunction(void *, void *, void **);
+extern "C" void MSHookMessageEx(Class, SEL, void *, void **);
 
-var slice = [].slice;
+var slice = Array.prototype.slice;
 
 exports.getImageByName = MSGetImageByName;
 exports.findSymbol = MSFindSymbol;
@@ -50,7 +50,7 @@ exports.hookFunction = function(func, hook, old) {
     if (old == null || typeof old === "undefined")
         pointer = null;
     else {
-        pointer = new @encode(void **);
+        pointer = new (typedef void **);
         *old = function() { return type(*pointer).apply(null, arguments); };
     }
 
@@ -64,7 +64,7 @@ exports.hookMessage = function(isa, sel, imp, old) {
     if (old == null || typeof old === "undefined")
         pointer = null;
     else {
-        pointer = new @encode(void **);
+        pointer = new (typedef void **);
         *old = function() { return type(*pointer).apply(null, [this, sel].concat(slice.call(arguments))); };
     }
 
