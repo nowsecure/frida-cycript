@@ -70,6 +70,7 @@ local += Cycript.lib/libcycript-sim.dylib
 
 android := $(data)
 android += Cycript.lib/cycript-a32
+android += Cycript.lib/cycript-pie
 android += Cycript.lib/libcycript.so
 android += Cycript.lib/libJavaScriptCore.so
 android += Cycript.lib/l/linux
@@ -187,6 +188,8 @@ clean += clean-and-$(1)
 db += build.and-$(1)/libcycript.db
 build.and-$(1)/.libs/cycript: build-and-$(1)
 	@
+build.and-$(1)/cycript-pie: build-and-$(1)
+	@
 build.and-$(1)/.libs/libcycript.so: build-and-$(1)
 	@
 build.and-$(1)/libcycript.db: build-and-$(1)
@@ -217,6 +220,10 @@ Cycript.lib/libJavaScriptCore.so: android/armeabi/libJavaScriptCore.so
 	cp -af $< $@
 
 Cycript.lib/%: terminfo/%
+	@mkdir -p $(dir $@)
+	cp -af $< $@
+
+Cycript.lib/cycript-pie: build.and-armeabi/cycript-pie
 	@mkdir -p $(dir $@)
 	cp -af $< $@
 

@@ -17,8 +17,6 @@ tgt=arm-linux-androideabi
 cc=${bin}/${tgt}-gcc
 cxx=${bin}/${tgt}-g++
 cpp=()
-cpp+=(-fPIE)
-ldf+=(-rdynamic -fPIE -pie)
 ccf=()
 ccf+=(-g0 -O3)
 function cfg() {

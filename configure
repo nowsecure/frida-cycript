@@ -644,6 +644,9 @@ LTLIBGCC
 LTLIBTERMCAP
 LTLIBREADLINE
 CY_LIBCLANG
+CY_ANDROID_FALSE
+CY_ANDROID_TRUE
+CY_ANDROID
 CY_OBJECTIVEC_FALSE
 CY_OBJECTIVEC_TRUE
 CY_PYTHON_FALSE
@@ -23966,6 +23969,36 @@ else
 fi
 
 
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#ifndef __ANDROID__
+#error
+#endif
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+
+    CY_ANDROID=1
+
+
+else
+
+    CY_ANDROID=0
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+ if test "x$CY_ANDROID" = x1; then
+  CY_ANDROID_TRUE=
+  CY_ANDROID_FALSE='#'
+else
+  CY_ANDROID_TRUE='#'
+  CY_ANDROID_FALSE=
+fi
+
+
 
 # Check whether --with-libclang was given.
 if test "${with_libclang+set}" = set; then :
@@ -24386,6 +24419,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${CY_OBJECTIVEC_TRUE}" && test -z "${CY_OBJECTIVEC_FALSE}"; then
   as_fn_error $? "conditional \"CY_OBJECTIVEC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${CY_ANDROID_TRUE}" && test -z "${CY_ANDROID_FALSE}"; then
+  as_fn_error $? "conditional \"CY_ANDROID\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${CY_PRELINK_TRUE}" && test -z "${CY_PRELINK_FALSE}"; then

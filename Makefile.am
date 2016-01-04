@@ -28,10 +28,21 @@ ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -DYYDEBUG=1 -DCY_SYSTEM="\"$(CY_SYSTEM)\""
 AM_CPPFLAGS += -include config.h -include $(srcdir)/unconfig.h
 
-AM_CFLAGS = -fvisibility=hidden
-AM_CXXFLAGS = -fvisibility=hidden
-AM_OBJCXXFLAGS = -fvisibility=hidden
-AM_LDFLAGS = -fvisibility=hidden
+CY_FLAGS = 
+CY_FLAGS += -fvisibility=hidden
+
+if CY_ANDROID
+CY_FLAGS += -fPIE
+endif
+
+AM_CFLAGS = $(CY_FLAGS)
+AM_CXXFLAGS = $(CY_FLAGS)
+AM_OBJCXXFLAGS = $(CY_FLAGS)
+AM_LDFLAGS = $(CY_FLAGS)
+
+if CY_ANDROID
+AM_LDFLAGS += -rdynamic -fPIE -pie
+endif
 
 AM_OBJCXXFLAGS += -fobjc-exceptions
 
@@ -56,6 +67,12 @@ bin_PROGRAMS = cycript
 cycript_SOURCES = Console.cpp
 cycript_LDADD = libcycript.la $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) $(PTHREAD_CFLAGS) -ldl
 libcycript_la_SOURCES += Complete.cpp
+
+if CY_ANDROID
+bin_PROGRAMS += cycript-pie
+cycript_pie_SOURCES = pie.c
+cycript_pie_LDFLAGS = -fno-PIE
+endif
 endif
 
 if CY_EXECUTE

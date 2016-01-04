@@ -298,6 +298,18 @@ AM_CONDITIONAL([CY_RUBY], [test "x$CY_RUBY" = x1])
 AM_CONDITIONAL([CY_PYTHON], [test "x$CY_PYTHON" = x1])
 AM_CONDITIONAL([CY_OBJECTIVEC], [test "x$CY_OBJECTIVEC" = x1])
 
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([
+#ifndef __ANDROID__
+#error
+#endif
+])], [
+    AC_SUBST([CY_ANDROID], [1])
+], [
+    AC_SUBST([CY_ANDROID], [0])
+])
+
+AM_CONDITIONAL([CY_ANDROID], [test "x$CY_ANDROID" = x1])
+
 AC_ARG_WITH([libclang], AS_HELP_STRING([--with-libclang], [build bridge definitions using this libclang]), [], [with_libclang=no])
 
 AS_IF([test "x$with_libclang" != "xno"], [
