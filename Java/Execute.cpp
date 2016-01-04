@@ -23,10 +23,17 @@
 #include <sstream>
 #include <vector>
 
+#include <dlfcn.h>
+
 #ifdef __APPLE__
 #include <JavaVM/jni.h>
 #else
 #include <jni.h>
+#endif
+
+#ifdef __ANDROID__
+// XXX: this is deprecated?!?!?!?!?!?!
+#include <sys/system_properties.h>
 #endif
 
 #include "cycript.hpp"
@@ -70,13 +77,7 @@ _value; })
         return value; \
     }
 
-extern "C" {
-    // Android's jni.h seriously doesn't declare these :/
-    jint JNI_CreateJavaVM(JavaVM **, void **, void *);
-    jint JNI_GetCreatedJavaVMs(JavaVM **, jsize, jsize *);
-}
-
-JNIEnv *GetJNI(JSContextRef context);
+static JNIEnv *GetJNI(JSContextRef context);
 
 #define CYJavaForEachPrimitive \
     CYJavaForEachPrimitive_(Z, z, Boolean, Boolean, boolean) \
@@ -424,6 +425,7 @@ CYJavaForEachPrimitive
     CYJavaEnv_(GetMethodID)
     CYJavaEnv_(GetStaticMethodID)
     CYJavaEnv_(IsSameObject)
+    CYJavaEnv_(RegisterNatives)
 #undef CYJavaEnv_
 
 #define CYJavaEnv_(Code) \
@@ -1299,46 +1301,174 @@ static JNINativeMethod Cycript_[] = {
     {(char *) "handle", (char *) "(JLjava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;", (void *) &Cycript_handle},
 };
 
-JNIEnv *GetJNI(JSContextRef context) {
+template <typename Type_>
+static _finline void dlset(Type_ &function, const char *name, void *handle) {
+    function = reinterpret_cast<Type_>(dlsym(handle, name));
+}
+
+jint CYJavaVersion(JNI_VERSION_1_4);
+
+static JNIEnv *CYGetCreatedJava(jint (*$JNI_GetCreatedJavaVMs)(JavaVM **, jsize, jsize *)) {
+    jsize capacity(16);
+    JavaVM *jvms[capacity];
+    jsize size;
+    _jnicall($JNI_GetCreatedJavaVMs(jvms, capacity, &size));
+    if (size == 0)
+        return NULL;
+    JavaVM *jvm(jvms[0]);
+    JNIEnv *jni;
+    _jnicall(jvm->GetEnv(reinterpret_cast<void **>(&jni), CYJavaVersion));
+    return jni;
+}
+
+static JNIEnv *GetJNI_(JSContextRef context) {
     static JavaVM *jvm(NULL);
     static JNIEnv *jni(NULL);
 
     if (jni != NULL)
         return jni;
-    jint version(JNI_VERSION_1_4);
 
-    jsize capacity(16);
-    JavaVM *jvms[capacity];
-    jsize size;
-    _jnicall(JNI_GetCreatedJavaVMs(jvms, capacity, &size));
+    CYPool pool;
+    void *handle(RTLD_DEFAULT);
+    std::string library;
 
-    if (size != 0) {
-        jvm = jvms[0];
-        _jnicall(jvm->GetEnv(reinterpret_cast<void **>(&jni), version));
+    jint (*$JNI_GetCreatedJavaVMs)(JavaVM **jvms, jsize capacity, jsize *size);
+    dlset($JNI_GetCreatedJavaVMs, "JNI_GetCreatedJavaVMs", handle);
+
+    if ($JNI_GetCreatedJavaVMs != NULL) {
+        if (JNIEnv *jni = CYGetCreatedJava($JNI_GetCreatedJavaVMs))
+            return jni;
     } else {
-        CYPool pool;
-        std::vector<JavaVMOption> options;
+        std::vector<const char *> guesses;
 
-        {
-            std::ostringstream option;
-            option << "-Djava.class.path=";
-            option << CYPoolLibraryPath(pool) << "/libcycript.jar";
-            if (const char *classpath = getenv("CLASSPATH"))
-                option << ':' << classpath;
-            options.push_back(JavaVMOption{pool.strdup(option.str().c_str()), NULL});
+#ifdef __ANDROID__
+        char android[PROP_VALUE_MAX];
+        if (__system_property_get("persist.sys.dalvik.vm.lib", android) != 0)
+            guesses.push_back(android);
+#endif
+
+        guesses.push_back("libart.so");
+        guesses.push_back("libdvm.so");
+        guesses.push_back("libjvm.so");
+
+        for (const char *guess : guesses) {
+            handle = dlopen(guess, RTLD_LAZY | RTLD_GLOBAL);
+            if (handle != NULL) {
+                library = guess;
+                break;
+            }
         }
 
-        JavaVMInitArgs args;
-        memset(&args, 0, sizeof(args));
-        args.version = version;
-        args.nOptions = options.size();
-        args.options = options.data();
-        _jnicall(JNI_CreateJavaVM(&jvm, reinterpret_cast<void **>(&jni), &args));
+        _assert(library.size() != 0);
+
+        dlset($JNI_GetCreatedJavaVMs, "JNI_GetCreatedJavaVMs", handle);
+        if (JNIEnv *jni = CYGetCreatedJava($JNI_GetCreatedJavaVMs))
+            return jni;
     }
 
-    auto Cycript$(CYJavaEnv(jni).FindClass("Cycript"));
-    _envcall(jni, RegisterNatives(Cycript$, Cycript_, sizeof(Cycript_) / sizeof(Cycript_[0])));
+    std::vector<JavaVMOption> options;
 
+    {
+        std::ostringstream option;
+        option << "-Djava.class.path=";
+        option << CYPoolLibraryPath(pool) << "/libcycript.jar";
+        if (const char *classpath = getenv("CLASSPATH"))
+            option << ':' << classpath;
+        options.push_back(JavaVMOption{pool.strdup(option.str().c_str()), NULL});
+    }
+
+    // To use libnativehelper to access JNI_GetCreatedJavaVMs, you need JniInvocation.
+    // ...but there can only be one JniInvocation, and assuradely the other VM has it.
+    // Essentially, this API makes no sense. We need it for AndroidRuntime, though :/.
+
+    if (void *libnativehelper = dlopen("libnativehelper.so", RTLD_LAZY | RTLD_GLOBAL)) {
+        class JniInvocation$;
+        JniInvocation$ *(*JniInvocation$$init$)(JniInvocation$ *self)(NULL);
+        bool (*JniInvocation$Init)(JniInvocation$ *self, const char *library)(NULL);
+        JniInvocation$ *(*JniInvocation$finalize)(JniInvocation$ *self)(NULL);
+
+        dlset(JniInvocation$$init$, "_ZN13JniInvocationC1Ev", libnativehelper);
+        dlset(JniInvocation$Init, "_ZN13JniInvocation4InitEPKc", libnativehelper);
+        dlset(JniInvocation$finalize, "_ZN13JniInvocationD1Ev", libnativehelper);
+
+        // XXX: we should attach a pool to the VM itself and deallocate this there
+        //auto invocation(pool.calloc<JniInvocation$>(1, 1024));
+        //_assert(JniInvocation$finalize != NULL);
+        //pool.atexit(reinterpret_cast<void (*)(void *)>(JniInvocation$finalize), invocation);
+
+        auto invocation(static_cast<JniInvocation$ *>(calloc(1, 1024)));
+
+        _assert(JniInvocation$$init$ != NULL);
+        JniInvocation$$init$(invocation);
+
+        _assert(JniInvocation$Init != NULL);
+        JniInvocation$Init(invocation, NULL);
+
+        dlset($JNI_GetCreatedJavaVMs, "JNI_GetCreatedJavaVMs", libnativehelper);
+        if (JNIEnv *jni = CYGetCreatedJava($JNI_GetCreatedJavaVMs))
+            return jni;
+    }
+
+    if (void *libandroid_runtime = dlopen("libandroid_runtime.so", RTLD_LAZY | RTLD_GLOBAL)) {
+        class AndroidRuntime$;
+        AndroidRuntime$ *(*AndroidRuntime$$init$)(AndroidRuntime$ *self, char *args, unsigned int size)(NULL);
+        int (*AndroidRuntime$startVm)(AndroidRuntime$ *self, JavaVM **jvm, JNIEnv **jni)(NULL);
+        int (*AndroidRuntime$startReg)(JNIEnv *jni)(NULL);
+        int (*AndroidRuntime$addOption)(AndroidRuntime$ *self, const char *option, void *extra)(NULL);
+        int (*AndroidRuntime$addVmArguments)(AndroidRuntime$ *self, int, const char *const argv[])(NULL);
+        AndroidRuntime$ *(*AndroidRuntime$finalize)(AndroidRuntime$ *self)(NULL);
+
+        dlset(AndroidRuntime$$init$, "_ZN7android14AndroidRuntimeC1EPcj", libandroid_runtime);
+        dlset(AndroidRuntime$startVm, "_ZN7android14AndroidRuntime7startVmEPP7_JavaVMPP7_JNIEnv", libandroid_runtime);
+        dlset(AndroidRuntime$startReg, "_ZN7android14AndroidRuntime8startRegEP7_JNIEnv", libandroid_runtime);
+        dlset(AndroidRuntime$addOption, "_ZN7android14AndroidRuntime9addOptionEPKcPv", libandroid_runtime);
+        dlset(AndroidRuntime$addVmArguments, "_ZN7android14AndroidRuntime14addVmArgumentsEiPKPKc", libandroid_runtime);
+        dlset(AndroidRuntime$finalize, "_ZN7android14AndroidRuntimeD1Ev", libandroid_runtime);
+
+        // XXX: it would also be interesting to attach this to a global pool
+        AndroidRuntime$ *runtime(pool.calloc<AndroidRuntime$>(1, 1024));
+
+        _assert(AndroidRuntime$$init$ != NULL);
+        AndroidRuntime$$init$(runtime, NULL, 0);
+
+        if (AndroidRuntime$addOption == NULL) {
+            _assert(AndroidRuntime$addVmArguments != NULL);
+            std::vector<const char *> arguments;
+            for (const auto &option : options)
+                arguments.push_back(option.optionString);
+            AndroidRuntime$addVmArguments(runtime, arguments.size(), arguments.data());
+        } else for (const auto &option : options)
+            AndroidRuntime$addOption(runtime, option.optionString, option.extraInfo);
+
+        int failure;
+
+        _assert(AndroidRuntime$startVm != NULL);
+        failure = AndroidRuntime$startVm(runtime, &jvm, &jni);
+        _assert(failure == 0);
+
+        _assert(AndroidRuntime$startReg != NULL);
+        failure = AndroidRuntime$startReg(jni);
+        _assert(failure == 0);
+
+        return jni;
+    }
+
+    jint (*$JNI_CreateJavaVM)(JavaVM **jvm, void **, void *);
+    dlset($JNI_CreateJavaVM, "JNI_CreateJavaVM", handle);
+
+    JavaVMInitArgs args;
+    memset(&args, 0, sizeof(args));
+    args.version = CYJavaVersion;
+    args.nOptions = options.size();
+    args.options = options.data();
+    _jnicall($JNI_CreateJavaVM(&jvm, reinterpret_cast<void **>(&jni), &args));
+    return jni;
+}
+
+static JNIEnv *GetJNI(JSContextRef context) {
+    CYJavaEnv jni(GetJNI_(context));
+    auto Cycript$(jni.FindClass("Cycript"));
+    jni.RegisterNatives(Cycript$, Cycript_, sizeof(Cycript_) / sizeof(Cycript_[0]));
     return jni;
 }
 

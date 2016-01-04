@@ -115,6 +115,13 @@ class CYPool {
         return reinterpret_cast<Type_ *>(data);
     }
 
+    template <typename Type_>
+    Type_ *calloc(size_t count, size_t size, size_t alignment = CYAlignment) {
+        Type_ *data(malloc<Type_>(count * size, alignment));
+        memset(data, 0, count * size);
+        return data;
+    }
+
     char *strdup(const char *data) {
         if (data == NULL)
             return NULL;

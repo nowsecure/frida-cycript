@@ -225,8 +225,6 @@ AS_CASE([$CY_EXECUTE], [1], [
         AC_SUBST([CY_JAVA], [1])
     ], [AC_CHECK_HEADER([jni.h], [
         AC_SUBST([CY_JAVA], [1])
-        AC_SEARCH_LIBS([JNI_GetCreatedJavaVMs], [art dvm], [
-        ])
     ], [
         AC_SUBST([CY_JAVA], [0])
     ])])])
