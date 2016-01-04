@@ -85,8 +85,8 @@ AM_CPPFLAGS += -DCY_EXECUTE
 filters += C
 
 CLEANFILES += libcycript.db
-libcycript.db: Bridge.def libcycript.sh
-	$(srcdir)/libcycript.sh $(CY_SYSTEM) $@ $<
+libcycript.db: Bridge.def libcycript.py
+	$(srcdir)/libcycript.py $(CY_SYSTEM) $@ $(srcdir) <$<
 
 if CY_PRELINK
 CY_LANGFLAGS = -DCY_JAVA=$(CY_JAVA) -DCY_PYTHON=$(CY_PYTHON) -DCY_OBJECTIVEC=$(CY_OBJECTIVEC)

@@ -1426,8 +1426,8 @@ uninstall-am: uninstall-binPROGRAMS uninstall-datDATA \
 
 
 .DELETE_ON_ERROR:
-@CY_EXECUTE_TRUE@libcycript.db: Bridge.def libcycript.sh
-@CY_EXECUTE_TRUE@	$(srcdir)/libcycript.sh $(CY_SYSTEM) $@ $<
+@CY_EXECUTE_TRUE@libcycript.db: Bridge.def libcycript.py
+@CY_EXECUTE_TRUE@	$(srcdir)/libcycript.py $(CY_SYSTEM) $@ $(srcdir) <$<
 @CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@Analyze: Analyze.cpp Error.cpp Output.cpp Replace.cpp Syntax.cpp
 @CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@	$(CXX_FOR_BUILD) $(CXXFLAGS_FOR_BUILD) -std=c++11 $(LDFLAGS_FOR_BUILD) $(CY_LANGFLAGS) -I$(srcdir)/extra -o $@ $^ $(CY_LIBCLANG) -Wno-bitwise-op-parentheses -Wno-dangling-else -Wno-logical-op-parentheses
 @CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@Bridge.def: Analysis.cpp Analyze

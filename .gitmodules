@@ -8,3 +8,6 @@
 [submodule "libuv"]
 	path = libuv
 	url = https://github.com/joyent/libuv.git
+[submodule "node"]
+	path = node
+	url = https://github.com/joyent/node.git

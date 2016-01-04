@@ -2252,17 +2252,43 @@ static JSValueRef require_callAsFunction(JSContextRef context, JSObjectRef objec
     _assert(count == 1);
     CYPool pool;
 
-    const char *name(CYPoolCString(pool, context, arguments[0]));
-    if (strchr(name, '/') == NULL && (
+    CYUTF8String name(CYPoolUTF8String(pool, context, CYJSString(context, arguments[0])));
+    if (memchr(name.data, '/', name.size) == NULL && (
 #ifdef __APPLE__
-        dlopen(pool.strcat("/System/Library/Frameworks/", name, ".framework/", name, NULL), RTLD_LAZY | RTLD_GLOBAL) != NULL ||
-        dlopen(pool.strcat("/System/Library/PrivateFrameworks/", name, ".framework/", name, NULL), RTLD_LAZY | RTLD_GLOBAL) != NULL ||
+        dlopen(pool.strcat("/System/Library/Frameworks/", name.data, ".framework/", name.data, NULL), RTLD_LAZY | RTLD_GLOBAL) != NULL ||
+        dlopen(pool.strcat("/System/Library/PrivateFrameworks/", name.data, ".framework/", name.data, NULL), RTLD_LAZY | RTLD_GLOBAL) != NULL ||
 #endif
     false))
         return CYJSUndefined(context);
 
-    JSObjectRef resolve(CYCastJSObject(context, CYGetProperty(context, object, CYJSString("resolve"))));
-    CYJSString path(context, CYCallAsFunction(context, resolve, NULL, 1, arguments));
+    CYJSString path;
+    CYUTF8String code;
+
+    sqlite3_stmt *statement;
+
+    _sqlcall(sqlite3_prepare(database_,
+        "select "
+            "\"module\".\"code\", "
+            "\"module\".\"flags\" "
+        "from \"module\" "
+        "where"
+            " \"module\".\"name\" = ?"
+        " limit 1"
+    , -1, &statement, NULL));
+
+    _sqlcall(sqlite3_bind_text(statement, 1, name.data, name.size, SQLITE_STATIC));
+
+    if (_sqlcall(sqlite3_step(statement)) != SQLITE_DONE) {
+        code.data = static_cast<const char *>(sqlite3_column_blob(statement, 0));
+        code.size = sqlite3_column_bytes(statement, 0);
+        path = CYJSString(name);
+        code = CYPoolUTF8String(pool, code);
+    } else {
+        JSObjectRef resolve(CYCastJSObject(context, CYGetProperty(context, object, CYJSString("resolve"))));
+        path = CYJSString(context, CYCallAsFunction(context, resolve, NULL, 1, arguments));
+    }
+
+    _sqlcall(sqlite3_finalize(statement));
 
     CYJSString property("exports");
 
@@ -2274,11 +2300,13 @@ static JSValueRef require_callAsFunction(JSContextRef context, JSObjectRef objec
         JSObjectRef module(CYCastJSObject(context, cache));
         result = CYGetProperty(context, module, property);
     } else {
-        CYUTF8String code(CYPoolFileUTF8String(pool, CYPoolCString(pool, context, path)));
-        _assert(code.data != NULL);
+        if (code.data == NULL) {
+            code = CYPoolFileUTF8String(pool, CYPoolCString(pool, context, path));
+            _assert(code.data != NULL);
+        }
 
-        size_t length(strlen(name));
-        if (length >= 5 && strcmp(name + length - 5, ".json") == 0) {
+        size_t length(name.size);
+        if (length >= 5 && strncmp(name.data + length - 5, ".json", 5) == 0) {
             JSObjectRef JSON(CYGetCachedObject(context, CYJSString("JSON")));
             JSObjectRef parse(CYCastJSObject(context, CYGetProperty(context, JSON, CYJSString("parse"))));
             JSValueRef arguments[1] = { CYCastJSValue(context, CYJSString(code)) };

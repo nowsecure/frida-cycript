@@ -184,6 +184,11 @@ class CYJSString {
     }
 
   public:
+    CYJSString() :
+        string_(NULL)
+    {
+    }
+
     CYJSString(const CYJSString &rhs) :
         string_(CYCopyJSString(rhs.string_))
     {
@@ -204,6 +209,11 @@ class CYJSString {
     CYJSString &operator =(const CYJSString &rhs) {
         Clear_();
         string_ = CYCopyJSString(rhs.string_);
+        return *this;
+    }
+
+    CYJSString &operator =(CYJSString &&rhs) {
+        std::swap(string_, rhs.string_);
         return *this;
     }
 

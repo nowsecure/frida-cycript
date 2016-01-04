@@ -92,7 +92,7 @@ $(deb): Cycript.lib/cycript-apl Cycript.lib/libcycript.dylib Cycript.lib/libcycr
 	mkdir -p package/DEBIAN
 	sed -e 's/#/$(version)/' control.in >package/DEBIAN/control
 	mkdir -p package/usr/{bin,lib}
-	cp -a modules package/usr/lib/cycript0.9
+	cp -a cycript0.9 package/usr/lib/cycript0.9
 	$(lipo) -extract armv6 -output package/usr/bin/cycript Cycript.lib/cycript-apl
 	$(lipo) -extract armv6 -extract arm64 -output package/usr/lib/libcycript.dylib Cycript.lib/libcycript.dylib
 	ln -s libcycript.dylib package/usr/lib/libcycript.0.dylib
@@ -277,8 +277,7 @@ Cycript.lib/libcycript.cy:
 
 Cycript.lib/libcycript.db: $(db)
 	@mkdir -p $(dir $@)
-	./libcycript.sh 0 $@
-	./libcycript.py $@ $^
+	./libcycript.py 0 $@ $(dir $(abspath $(lastword $(MAKEFILE_LIST)))) $^ </dev/null
 
 Cycript.lib/libcycript.jar: build.osx-x86_64/libcycript.jar
 	@mkdir -p $(dir $@)
@@ -286,7 +285,7 @@ Cycript.lib/libcycript.jar: build.osx-x86_64/libcycript.jar
 
 Cycript.lib/cycript0.9:
 	@mkdir -p $(dir $@)
-	ln -s ../modules $@
+	ln -sf ../cycript0.9 $@
 
 cycript: cycript.in
 	cp -af $< $@
