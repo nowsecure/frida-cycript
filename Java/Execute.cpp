@@ -1391,22 +1391,24 @@ static JNIEnv *GetJNI_(JSContextRef context) {
         dlset(JniInvocation$Init, "_ZN13JniInvocation4InitEPKc", libnativehelper);
         dlset(JniInvocation$finalize, "_ZN13JniInvocationD1Ev", libnativehelper);
 
-        // XXX: we should attach a pool to the VM itself and deallocate this there
-        //auto invocation(pool.calloc<JniInvocation$>(1, 1024));
-        //_assert(JniInvocation$finalize != NULL);
-        //pool.atexit(reinterpret_cast<void (*)(void *)>(JniInvocation$finalize), invocation);
+        if (JniInvocation$$init$ == NULL)
+            dlclose(libnativehelper);
+        else {
+            // XXX: we should attach a pool to the VM itself and deallocate this there
+            //auto invocation(pool.calloc<JniInvocation$>(1, 1024));
+            //_assert(JniInvocation$finalize != NULL);
+            //pool.atexit(reinterpret_cast<void (*)(void *)>(JniInvocation$finalize), invocation);
 
-        auto invocation(static_cast<JniInvocation$ *>(calloc(1, 1024)));
+            auto invocation(static_cast<JniInvocation$ *>(calloc(1, 1024)));
+            JniInvocation$$init$(invocation);
 
-        _assert(JniInvocation$$init$ != NULL);
-        JniInvocation$$init$(invocation);
+            _assert(JniInvocation$Init != NULL);
+            JniInvocation$Init(invocation, NULL);
 
-        _assert(JniInvocation$Init != NULL);
-        JniInvocation$Init(invocation, NULL);
-
-        dlset($JNI_GetCreatedJavaVMs, "JNI_GetCreatedJavaVMs", libnativehelper);
-        if (JNIEnv *jni = CYGetCreatedJava($JNI_GetCreatedJavaVMs))
-            return jni;
+            dlset($JNI_GetCreatedJavaVMs, "JNI_GetCreatedJavaVMs", libnativehelper);
+            if (JNIEnv *jni = CYGetCreatedJava($JNI_GetCreatedJavaVMs))
+                return jni;
+        }
     }
 
     if (void *libandroid_runtime = dlopen("libandroid_runtime.so", RTLD_LAZY | RTLD_GLOBAL)) {
