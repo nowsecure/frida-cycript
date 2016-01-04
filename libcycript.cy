@@ -397,6 +397,11 @@ for (let i = 0; environ[i] != null; ++i) {
     process.env[name.toString()] = value;
 }
 
+process.cwd = function() {
+    let cwd = new (typedef char[1024]);
+    return getcwd(cwd, cwd.length).toString();
+};
+
 process.pid = getpid();
 
 })();
