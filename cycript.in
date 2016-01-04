@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 # Cycript - The Truly Universal Scripting Language
 # Copyright (C) 2009-2016  Jay Freeman (saurik)
 
@@ -19,5 +17,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # }}}
 
-dir=$(dirname "${BASH_SOURCE[0]}")
-DYLD_LIBRARY_PATH="${dir}"/Cycript.lib exec "${dir}"/Cycript.lib/cycript "$@"
+dir=${0%/*}/Cycript.lib
+if [[ ${dir} != /* ]]; then
+    dir=$(pwd)/${dir}
+fi
+
+if [[ -n $ANDROID_ROOT ]]; then
+    export LD_LIBRARY_PATH="${dir}"
+    export TERMINFO="${dir}"
+    export TERM=linux
+    suffix=-a32
+else
+    export DYLD_LIBRARY_PATH=${dir}
+    suffix=-apl
+fi
+
+exec "${dir}"/cycript"${suffix}" "$@"

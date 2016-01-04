@@ -32,7 +32,9 @@ deb := cycript_$(version)_iphoneos-arm.deb
 zip := cycript_$(version).zip
 
 cycript := 
-cycript += Cycript.lib/cycript
+cycript += Cycript.lib/cycript-apl
+cycript += Cycript.lib/cycript-a32
+cycript += Cycript.lib/libcycript.so
 cycript += Cycript.lib/cycript0.9
 cycript += Cycript.lib/libcycript.dylib
 cycript += Cycript.lib/libcycript-sys.dylib
@@ -40,6 +42,9 @@ cycript += Cycript.lib/libcycript-sim.dylib
 cycript += Cycript.lib/libcycript.cy
 cycript += Cycript.lib/libcycript.db
 cycript += Cycript.lib/libcycript.jar
+cycript += Cycript.lib/libJavaScriptCore.so
+cycript += Cycript.lib/l/linux
+cycript += Cycript.lib/u/unknown
 
 framework := 
 framework += Cycript
@@ -52,6 +57,24 @@ links += Cycript.lib/cynject
 links += Cycript.lib/libsubstrate.dylib
 links += Cycript.lib/cycript0.9
 
+data := 
+data += Cycript.lib/libcycript.jar
+data += Cycript.lib/libcycript.db
+data += Cycript.lib/libcycript.cy
+
+local := $(data)
+local += Cycript.lib/cycript-apl
+local += Cycript.lib/libcycript.dylib
+local += Cycript.lib/libcycript-sys.dylib
+local += Cycript.lib/libcycript-sim.dylib
+
+android := $(data)
+android += Cycript.lib/cycript-a32
+android += Cycript.lib/libcycript.so
+android += Cycript.lib/libJavaScriptCore.so
+android += Cycript.lib/l/linux
+android += Cycript.lib/u/unknown
+
 all := cycript $(cycript) $(framework)
 all: $(all)
 
@@ -63,13 +86,13 @@ $(zip): $(all)
 zip: $(zip)
 	ln -sf $< cycript.zip
 
-$(deb): Cycript.lib/cycript Cycript.lib/libcycript.dylib Cycript.lib/libcycript.db
+$(deb): Cycript.lib/cycript-apl Cycript.lib/libcycript.dylib Cycript.lib/libcycript.db
 	rm -rf package
 	mkdir -p package/DEBIAN
 	sed -e 's/#/$(version)/' control.in >package/DEBIAN/control
 	mkdir -p package/usr/{bin,lib}
 	cp -a modules package/usr/lib/cycript0.9
-	$(lipo) -extract armv6 -output package/usr/bin/cycript Cycript.lib/cycript
+	$(lipo) -extract armv6 -output package/usr/bin/cycript Cycript.lib/cycript-apl
 	$(lipo) -extract armv6 -extract arm64 -output package/usr/lib/libcycript.dylib Cycript.lib/libcycript.dylib
 	ln -s libcycript.dylib package/usr/lib/libcycript.0.dylib
 	cp -a libcycript.cy package/usr/lib/libcycript.cy
@@ -154,6 +177,24 @@ endef
 
 $(foreach arch,armv6 arm64,$(eval $(call build_arm,$(arch))))
 
+define build_and
+.PHONY: build-and-$(1)
+build-and-$(1):
+	$$(MAKE) -C build.and-$(1)
+clean-and-$(1):
+	$$(MAKE) -C build.and-$(1) clean
+clean += clean-and-$(1)
+db += build.and-$(1)/libcycript.db
+build.and-$(1)/.libs/cycript: build-and-$(1)
+	@
+build.and-$(1)/.libs/libcycript.so: build-and-$(1)
+	@
+build.and-$(1)/libcycript.db: build-and-$(1)
+	@
+endef
+
+$(foreach arch,armeabi,$(eval $(call build_and,$(arch))))
+
 clean: $(clean)
 	rm -rf cycript Cycript.lib libcycript*.o
 
@@ -167,14 +208,34 @@ Cycript.lib/libcycript.dylib: build.osx-i386/.libs/libcycript.dylib build.osx-x8
 	install_name_tool -change /System/Library/{,Private}Frameworks/JavaScriptCore.framework/JavaScriptCore $@
 	codesign -s $(codesign) $@
 
+Cycript.lib/libcycript.so: build.and-armeabi/.libs/libcycript.so
+	@mkdir -p $(dir $@)
+	cp -af $< $@
+
+Cycript.lib/libJavaScriptCore.so: android/armeabi/libJavaScriptCore.so
+	@mkdir -p $(dir $@)
+	cp -af $< $@
+
+Cycript.lib/%: terminfo/%
+	@mkdir -p $(dir $@)
+	cp -af $< $@
+
 %_: %
 	@cp -af $< $@
 	install_name_tool -change /System/Library/{,Private}Frameworks/JavaScriptCore.framework/JavaScriptCore $@
 	codesign -s $(codesign) --entitlement cycript-$(word 2,$(subst ., ,$(subst -, ,$*))).xml $@
 
-Cycript.lib/%: build.osx-i386/.libs/%_ build.osx-x86_64/.libs/%_ build.ios-armv6/.libs/%_
+Cycript.lib/cycript-apl: build.osx-i386/.libs/cycript_ build.osx-x86_64/.libs/cycript_ build.ios-armv6/.libs/cycript_
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
+
+Cycript.lib/cycript-a32: build.and-armeabi/.libs/cycript
+	@mkdir -p $(dir $@)
+	cp -af $< $@
+
+Cycrit.lib/libcycript.so: build.and-armeabi/.libs/libcycript.so
+	@mkdir -p $(dir $@)
+	cp -af $< $@
 
 Cycript.lib/libcycript-sys.dylib:
 	@mkdir -p $(dir $@)
@@ -220,19 +281,21 @@ Cycript.lib/cycript0.9:
 	@mkdir -p $(dir $@)
 	ln -s ../modules $@
 
-cycript: cycript.ios.in
+cycript: cycript.in
 	cp -af $< $@
 	chmod 755 $@
 
-local := Cycript.lib/cycript Cycript.lib/libcycript.dylib Cycript.lib/libcycript-sys.dylib Cycript.lib/libcycript-sim.dylib
-
 debug: $(local)
-	DYLD_LIBRARY_PATH=Cycript.lib lldb Cycript.lib/cycript
+	DYLD_LIBRARY_PATH=Cycript.lib lldb Cycript.lib/cycript-apl
 
 install: $(local)
 	sudo cp -af $(filter-out %.dylib,$^) /usr/bin
 	sudo cp -af $(filter %.dylib,$^) /usr/lib
 
+push: cycript $(android)
+	adb push cycript /data/local/tmp/cycript
+	adb shell mkdir -p /data/local/tmp/cycript/Cycript.lib/{l,u}
+	for x in $(android); do adb push $$x /data/local/tmp/$$x; done
 
 cast: $(zip)
 	appcast.sh cycript/mac $(monotonic) $(version) $< "$(CYCRIPT_CHANGES)"

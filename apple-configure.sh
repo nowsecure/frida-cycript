@@ -23,15 +23,6 @@ set -e
 
 cd "${0%%/*}"
 
-if ! which aclocal; then
-    touch aclocal.m4; fi
-if ! which autoconf; then
-    touch configure.ac; fi
-if ! which automake; then
-    touch Makefile.in; fi
-if ! which autoheader; then
-    touch config.h.in; fi
-
 flags=("$@")
 ccf=(-g0 -O3)
 
@@ -43,7 +34,7 @@ xcs=$(xcode-select --print-path)
 mac=$(path macosx)
 xct="${xcs}/Toolchains/XcodeDefault.xctoolchain/usr/lib"
 
-system=0
+system=1
 
 function configure() {
     local dir=$1
