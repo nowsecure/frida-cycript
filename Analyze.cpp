@@ -298,6 +298,18 @@ static CYTypedIdentifier *CYDecodeType(CXType type, const CYCXString &identifier
     return typed;
 }
 
+static void CYParseEnumeration(CXCursor cursor, CYTypedIdentifier *typed) {
+    CYList<CYEnumConstant> constants;
+
+    CYForChild(cursor, fun([&](CXCursor child) {
+        if (clang_getCursorKind(child) == CXCursor_EnumConstantDecl)
+            constants->*$ CYEnumConstant($I($pool.strdup(CYCXString(child))), $D(clang_getEnumConstantDeclValue(child)));
+    }));
+
+    CYTypedIdentifier *integer(CYDecodeType(clang_getEnumDeclIntegerType(cursor)));
+    typed->specifier_ = $ CYTypeEnum(NULL, integer->specifier_, constants);
+}
+
 static void CYParseStructure(CXCursor cursor, CYTypedIdentifier *typed) {
     CYList<CYTypeStructField> fields;
     CYForChild(cursor, fun([&](CXCursor child) {
@@ -316,16 +328,14 @@ static void CYParseCursor(CXType type, CXCursor cursor, CYTypedIdentifier *typed
     switch (CXCursorKind kind = clang_getCursorKind(cursor)) {
         case CXCursor_EnumDecl:
             if (spelling[0] != '\0')
-                // XXX: should we have a special enum keyword?
-                typed->specifier_ = $ CYTypeVariable($I(spelling.Pool($pool)));
+                typed->specifier_ = $ CYTypeReference(CYTypeReferenceEnum, $I(spelling.Pool($pool)));
             else
-                // XXX: maybe replace with "enum : int" instead of "int"
-                CYParseType(clang_getEnumDeclIntegerType(cursor), typed);
+                CYParseEnumeration(cursor, typed);
         break;
 
         case CXCursor_StructDecl: {
             if (spelling[0] != '\0')
-                typed->specifier_ = $ CYTypeReference($I(spelling.Pool($pool)));
+                typed->specifier_ = $ CYTypeReference(CYTypeReferenceStruct, $I(spelling.Pool($pool)));
             else
                 CYParseStructure(cursor, typed);
         } break;
@@ -408,8 +418,9 @@ static void CYParseType(CXType type, CYTypedIdentifier *typed) {
         break;
 
         case CXType_IncompleteArray:
-            // XXX: I should support these :/
-            _assert(false);
+            // XXX: I probably should not decay to Pointer
+            CYParseType(clang_getArrayElementType(type), typed);
+            typed = typed->Modify($ CYTypePointerTo());
         break;
 
         case CXType_ObjCClass:
@@ -444,7 +455,7 @@ static void CYParseType(CXType type, CYTypedIdentifier *typed) {
         break;
 
         case CXType_Record:
-            typed->specifier_ = $ CYTypeReference($I($pool.strdup(CYCXString(clang_getTypeSpelling(type)))));
+            typed->specifier_ = $ CYTypeReference(CYTypeReferenceStruct, $I($pool.strdup(CYCXString(clang_getTypeSpelling(type)))));
         break;
 
         case CXType_Typedef:
@@ -480,6 +491,7 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
     CYChildBaton &baton(*static_cast<CYChildBaton *>(arg));
     CXTranslationUnit &unit(baton.unit);
 
+    CXChildVisitResult result(CXChildVisit_Continue);
     CYCXString spelling(cursor);
     std::string name(spelling);
     std::ostringstream value;
@@ -493,6 +505,31 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
     try { switch (CXCursorKind kind = clang_getCursorKind(cursor)) {
         case CXCursor_EnumConstantDecl: {
             value << clang_getEnumConstantDeclValue(cursor);
+        } break;
+
+        case CXCursor_EnumDecl: {
+            if (spelling[0] == '\0')
+                goto skip;
+            // XXX: this was blindly copied from StructDecl
+            if (!clang_isCursorDefinition(cursor))
+                priority = 1;
+
+            CYLocalPool pool;
+
+            CYTypedIdentifier typed(NULL);
+            CYParseEnumeration(cursor, &typed);
+
+            CYOptions options;
+            CYOutput out(*value.rdbuf(), options);
+            CYTypeExpression(&typed).Output(out, CYNoBFC);
+
+            value << ".withName(\"" << name << "\")";
+            name += "$cye";
+            flags = CYBridgeType;
+
+            // the enum constants are implemented separately *also*
+            // XXX: maybe move output logic to function we can call
+            result = CXChildVisit_Recurse;
         } break;
 
         case CXCursor_MacroDefinition: {
@@ -566,7 +603,7 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
             CYTypeExpression(&typed).Output(out, CYNoBFC);
 
             value << ".withName(\"" << name << "\")";
-            name += "$cy";
+            name += "$cys";
             flags = CYBridgeType;
         } break;
 
@@ -636,9 +673,10 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
             }
         } break;
 
-        default: {
-            return CXChildVisit_Recurse;
-        } break;
+        default:
+            result = CXChildVisit_Recurse;
+            goto skip;
+        break;
     } {
         CYKey &key(baton.keys[name]);
         if (key.priority_ <= priority) {
@@ -652,7 +690,7 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
     }
 
   skip:
-    return CXChildVisit_Continue;
+    return result;
 }
 
 int main(int argc, const char *argv[]) {

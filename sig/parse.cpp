@@ -381,6 +381,10 @@ const char *Object::Encode(CYPool &pool) const {
 }
 #endif
 
+const char *Enum::Encode(CYPool &pool) const {
+    return type.Encode(pool);
+}
+
 const char *Aggregate::Encode(CYPool &pool) const {
     return pool.strcat(overlap ? "(" : "{", name == NULL ? "?" : name, "=", Unparse(pool, &signature), overlap ? ")" : "}", NULL);
 }

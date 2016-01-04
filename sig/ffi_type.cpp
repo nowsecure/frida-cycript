@@ -171,6 +171,10 @@ ffi_type *Object::GetFFI(CYPool &pool) const {
 }
 #endif
 
+ffi_type *Enum::GetFFI(CYPool &pool) const {
+    return type.GetFFI(pool);
+}
+
 ffi_type *Aggregate::GetFFI(CYPool &pool) const {
     // XXX: we can totally make overlap work
     _assert(!overlap);

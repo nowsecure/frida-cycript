@@ -1236,6 +1236,18 @@ CYStatement *CYTypeDefinition::Replace(CYContext &context) {
     return $ CYLexical(false, $B1($B(identifier, $ CYTypeExpression(typed_))));
 }
 
+CYTarget *CYTypeEnum::Replace(CYContext &context) {
+    CYList<CYProperty> properties;
+    CYForEach (constant, constants_)
+        properties->*$ CYPropertyValue($S(constant->name_->Word()), constant->value_);
+    CYObject *constants($ CYObject(properties));
+
+    if (specifier_ == NULL)
+        return $N1($V("Type"), constants);
+    else
+        return $C1($M(specifier_->Replace(context), $S("enumFor")), constants);
+}
+
 CYTarget *CYTypeError::Replace(CYContext &context) {
     _assert(false);
     return NULL;
@@ -1276,7 +1288,14 @@ CYTarget *CYTypePointerTo::Replace_(CYContext &context, CYTarget *type) {
 }
 
 CYTarget *CYTypeReference::Replace(CYContext &context) {
-    return $V($pool.strcat(name_->Word(), "$cy", NULL));
+    const char *suffix;
+    switch (kind_) {
+        case CYTypeReferenceStruct: suffix = "$cys"; break;
+        case CYTypeReferenceEnum: suffix = "$cye"; break;
+        default: _assert(false);
+    }
+
+    return $V($pool.strcat(name_->Word(), suffix, NULL));
 }
 
 CYTarget *CYTypeStruct::Replace(CYContext &context) {

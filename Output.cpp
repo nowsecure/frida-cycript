@@ -728,7 +728,7 @@ void CYTypeModifier::Output(CYOutput &out, int precedence, CYIdentifier *identif
 }
 
 void CYTypedIdentifier::Output(CYOutput &out) const {
-    specifier_->Output(out);
+    out << *specifier_;
     modifier_->Output(out, 0, identifier_, true);
 }
 
@@ -1067,6 +1067,35 @@ void CYTypeCharacter::Output(CYOutput &out) const {
     out << "char";
 }
 
+void CYTypeEnum::Output(CYOutput &out) const {
+    out << "enum" << ' ';
+    if (name_ != NULL)
+        out << *name_;
+    else {
+        if (specifier_ != NULL)
+            out << ':' << ' ' << *specifier_ << ' ';
+
+        out << '{' << '\n';
+        ++out.indent_;
+        bool comma(false);
+
+        CYForEach (constant, constants_) {
+            if (comma)
+                out << ',' << '\n';
+            else
+                comma = true;
+            out << '\t' << constant->name_;
+            out << ' ' << '=' << ' ' << constant->value_;
+        }
+
+        if (out.pretty_)
+            out << ',';
+        out << '\n';
+        --out.indent_;
+        out << '\t' << '}';
+    }
+}
+
 void CYTypeError::Output(CYOutput &out) const {
     out << "@error";
 }
@@ -1102,7 +1131,13 @@ void CYTypeStruct::Output(CYOutput &out) const {
 }
 
 void CYTypeReference::Output(CYOutput &out) const {
-    out << "struct" << ' ' << *name_;
+    switch (kind_) {
+        case CYTypeReferenceStruct: out << "struct"; break;
+        case CYTypeReferenceEnum: out << "enum"; break;
+        default: _assert(false);
+    }
+
+    out << ' ' << *name_;
 }
 
 void CYTypeVariable::Output(CYOutput &out) const {

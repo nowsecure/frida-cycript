@@ -246,6 +246,39 @@ struct Object :
 };
 #endif
 
+struct Constant {
+    const char *name;
+    double value;
+};
+
+struct Enum :
+    Type
+{
+    Type &type;
+    unsigned count;
+    const char *name;
+
+    Constant *constants;
+
+    Enum(Type &type, unsigned count, const char *name = NULL) :
+        type(type),
+        count(count),
+        name(name),
+        constants(NULL)
+    {
+    }
+
+    Enum *Copy(CYPool &pool, const char *rename = NULL) const override;
+    const char *GetName() const override;
+
+    const char *Encode(CYPool &pool) const override;
+    CYTypedIdentifier *Decode(CYPool &pool) const override;
+
+    ffi_type *GetFFI(CYPool &pool) const override;
+    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
+    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
+};
+
 struct Aggregate :
     Type
 {

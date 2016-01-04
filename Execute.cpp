@@ -771,6 +771,10 @@ void Array::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *dat
     CYArrayCopy(pool, context, base, size, type, ffi->elements[0], value, object);
 }
 
+void Enum::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
+    return type.PoolFFI(pool, context, ffi, data, value);
+}
+
 void Aggregate::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
     _assert(!overlap);
 
@@ -858,6 +862,10 @@ JSValueRef Pointer::FromFFI(JSContextRef context, ffi_type *ffi, void *data, boo
 
 JSValueRef Array::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
     return CArray::Make(context, data, size, type, ffi->elements[0], context, owner);
+}
+
+JSValueRef Enum::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
+    return type.FromFFI(context, ffi, data, initialize, owner);
 }
 
 JSValueRef Aggregate::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
@@ -1446,10 +1454,22 @@ static JSObjectRef Type_new(JSContextRef context, JSObjectRef object, size_t cou
 
     if (false) {
     } else if (count == 1) {
-        const char *encoding(CYPoolCString(pool, context, arguments[0]));
-        sig::Signature signature;
-        sig::Parse(pool, &signature, encoding, &Structor_);
-        return CYMakeType(context, *signature.elements[0].type);
+        switch (JSValueGetType(context, arguments[0])) {
+            case kJSTypeString: {
+                const char *encoding(CYPoolCString(pool, context, arguments[0]));
+                sig::Signature signature;
+                sig::Parse(pool, &signature, encoding, &Structor_);
+                return CYMakeType(context, *signature.elements[0].type);
+            } break;
+
+            case kJSTypeObject: {
+                // XXX: accept a set of enum constants and /guess/ at their size
+                _assert(false);
+            } break;
+
+            default:
+                throw CYJSError(context, "incorrect kind of argument to new Type");
+        }
     } else if (count == 2) {
         JSObjectRef types(CYCastJSObject(context, arguments[0]));
         size_t count(CYArrayLength(context, types));
@@ -1541,6 +1561,37 @@ static JSValueRef Type_callAsFunction_constant(JSContextRef context, JSObjectRef
     sig::Type *type(internal->type_->Copy(pool));
     type->flags |= JOC_TYPE_CONST;
     return CYMakeType(context, *type);
+} CYCatch(NULL) }
+
+static JSValueRef Type_callAsFunction_enumFor(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    if (count != 1)
+        throw CYJSError(context, "incorrect number of arguments to Type.enumFor");
+    Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
+
+    CYPool pool;
+
+    JSObjectRef constants(CYCastJSObject(context, arguments[0]));
+
+    // XXX: this is, sadly, going to leak
+    JSPropertyNameArrayRef names(JSObjectCopyPropertyNames(context, constants));
+
+    size_t count(JSPropertyNameArrayGetCount(names));
+
+    sig::Enum type(*internal->type_, count);
+    type.constants = new(pool) sig::Constant[count];
+
+    for (size_t index(0); index != count; ++index) {
+        JSStringRef name(JSPropertyNameArrayGetNameAtIndex(names, index));
+        JSValueRef value(CYGetProperty(context, constants, name));
+        _assert(JSValueGetType(context, value) == kJSTypeNumber);
+        CYUTF8String string(CYPoolUTF8String(pool, context, name));
+        type.constants[index].name = string.data;
+        type.constants[index].value = CYCastDouble(context, value);
+    }
+
+    JSPropertyNameArrayRelease(names);
+
+    return CYMakeType(context, type);
 } CYCatch(NULL) }
 
 static JSValueRef Type_callAsFunction_functionWith(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) {
@@ -1889,10 +1940,11 @@ static JSStaticValue Type_staticValues[4] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction Type_staticFunctions[9] = {
+static JSStaticFunction Type_staticFunctions[10] = {
     {"arrayOf", &Type_callAsFunction_arrayOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"blockWith", &Type_callAsFunction_blockWith, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"constant", &Type_callAsFunction_constant, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"enumFor", &Type_callAsFunction_enumFor, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"functionWith", &Type_callAsFunction_functionWith, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"pointerTo", &Type_callAsFunction_pointerTo, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"withName", &Type_callAsFunction_withName, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},

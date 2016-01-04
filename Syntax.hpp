@@ -2140,12 +2140,19 @@ struct CYTypeVoid :
     virtual void Output(CYOutput &out) const;
 };
 
+enum CYTypeReferenceKind {
+    CYTypeReferenceStruct,
+    CYTypeReferenceEnum,
+};
+
 struct CYTypeReference :
     CYTypeSpecifier
 {
+    CYTypeReferenceKind kind_;
     CYIdentifier *name_;
 
-    CYTypeReference(CYIdentifier *name) :
+    CYTypeReference(CYTypeReferenceKind kind, CYIdentifier *name) :
+        kind_(kind),
         name_(name)
     {
     }
@@ -2583,6 +2590,38 @@ struct CYStructDefinition :
 
     virtual CYStatement *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
+};
+
+struct CYEnumConstant :
+    CYNext<CYEnumConstant>
+{
+    CYIdentifier *name_;
+    CYNumber *value_;
+
+    CYEnumConstant(CYIdentifier *name, CYNumber *value, CYEnumConstant *next = NULL) :
+        CYNext<CYEnumConstant>(next),
+        name_(name),
+        value_(value)
+    {
+    }
+};
+
+struct CYTypeEnum :
+    CYTypeSpecifier
+{
+    CYIdentifier *name_;
+    CYTypeSpecifier *specifier_;
+    CYEnumConstant *constants_;
+
+    CYTypeEnum(CYIdentifier *name, CYTypeSpecifier *specifier, CYEnumConstant *constants) :
+        name_(name),
+        specifier_(specifier),
+        constants_(constants)
+    {
+    }
+
+    virtual CYTarget *Replace(CYContext &context);
+    virtual void Output(CYOutput &out) const;
 };
 
 namespace cy {

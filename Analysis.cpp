@@ -66,8 +66,16 @@
 #include <CoreLocation/CoreLocation.h>
 #include <Security/Security.h>
 
+#include <mach/mach.h>
+#include <mach/mach_vm.h>
+#include <mach/vm_map.h>
+
+#include <mach-o/dyld.h>
+#include <mach-o/dyld_images.h>
+
 #if TARGET_OS_IPHONE
 #include <UIKit/UIKit.h>
+extern "C" UIApplication *UIApp;
 #else
 #include <AppKit/AppKit.h>
 #endif

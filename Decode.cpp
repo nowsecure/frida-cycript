@@ -153,6 +153,16 @@ CYTypedIdentifier *Object::Decode(CYPool &pool) const {
 }
 #endif
 
+CYTypedIdentifier *Enum::Decode(CYPool &pool) const {
+    CYEnumConstant *values(NULL);
+    for (size_t i(count); i != 0; --i)
+        values = $ CYEnumConstant($I(pool.strdup(constants[i - 1].name)), $D(constants[i - 1].value), values);
+    CYIdentifier *identifier(name == NULL ? NULL : $I(name));
+    CYTypedIdentifier *typed(type.Decode(pool));
+    _assert(typed->modifier_ == NULL);
+    return $ CYTypedIdentifier($ CYTypeEnum(identifier, typed->specifier_, values));
+}
+
 CYTypedIdentifier *Aggregate::Decode(CYPool &pool) const {
     _assert(!overlap);
 

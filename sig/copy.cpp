@@ -85,6 +85,20 @@ Object *Object::Copy(CYPool &pool, const char *rename) const {
 }
 #endif
 
+Enum *Enum::Copy(CYPool &pool, const char *rename) const {
+    if (rename == NULL)
+        rename = pool.strdup(name);
+    else if (rename[0] == '\0')
+        rename = NULL;
+    Enum *copy(new(pool) Enum(*type.Copy(pool), count, rename));
+    copy->constants = new(pool) Constant[count];
+    for (size_t i(0); i != count; ++i) {
+        copy->constants[i].name = pool.strdup(constants[i].name);
+        copy->constants[i].value = constants[i].value;
+    }
+    return copy;
+}
+
 Aggregate *Aggregate::Copy(CYPool &pool, const char *rename) const {
     if (rename == NULL)
         rename = pool.strdup(name);
@@ -134,6 +148,10 @@ void Copy(CYPool &pool, ffi_type &lhs, ffi_type &rhs) {
 
 const char *Type::GetName() const {
     return NULL;
+}
+
+const char *Enum::GetName() const {
+    return name;
 }
 
 const char *Aggregate::GetName() const {
