@@ -41,6 +41,7 @@ struct CYWord;
 enum CYMark {
     CYMarkScript,
     CYMarkModule,
+    CYMarkExpression,
 };
 
 class _visible CYDriver {

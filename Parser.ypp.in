@@ -228,6 +228,9 @@ type; })
         case CYMarkModule:
             driver.hold_ = yytranslate_(token::MarkModule);
             break;
+        case CYMarkExpression:
+            driver.hold_ = yytranslate_(token::MarkExpression);
+            break;
     }
 };
 
@@ -768,12 +771,14 @@ type; })
 %start Program
 %token MarkModule
 %token MarkScript
+%token MarkExpression
 
 %%
 
 Program
     : MarkScript Script
     | MarkModule Module
+    | MarkExpression Expression[expression] { driver.context_ = $expression; }
     ;
 
 /* Lexer State {{{ */

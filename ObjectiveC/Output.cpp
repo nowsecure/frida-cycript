@@ -82,7 +82,46 @@ void CYObjCArray::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYObjCDictionary::Output(CYOutput &out, CYFlags flags) const {
-    out << '@' << '{' << '}';
+    unsigned count(0);
+    CYForEach (pair, pairs_)
+        ++count;
+    bool large(count > 8);
+
+    out << '@' << '{';
+    if (large) {
+        out << '\n';
+        ++out.indent_;
+    }
+
+    bool comma(false);
+    CYForEach (pair, pairs_) {
+        if (!comma)
+            comma = true;
+        else {
+            out << ',';
+            if (large)
+                out << '\n';
+            else
+                out << ' ';
+        }
+
+        if (large)
+            out << '\t';
+
+        pair->key_->Output(out, CYAssign::Precedence_, CYNoFlags);
+        out << ':' << ' ';
+        pair->value_->Output(out, CYAssign::Precedence_, CYNoFlags);
+    }
+
+    if (large && out.pretty_)
+        out << ',';
+
+    if (large) {
+        out << '\n';
+        --out.indent_;
+    }
+
+    out << '\t' << '}';
 }
 
 void CYObjCBlock::Output(CYOutput &out, CYFlags flags) const {
@@ -101,7 +140,7 @@ void CYObjCBlock::Output(CYOutput &out, CYFlags flags) const {
     ++out.indent_;
     out << code_;
     --out.indent_;
-    out << '\n' << '}';
+    out << '\t' << '}';
 }
 
 void CYProtocol::Output(CYOutput &out) const {

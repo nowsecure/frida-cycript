@@ -88,6 +88,9 @@ bool CYGetOffset(const char *value, ssize_t &index);
 bool CYStartsWith(const CYUTF8String &haystack, const CYUTF8String &needle);
 
 const char *CYPoolCString(CYPool &pool, CYUTF8String utf8);
+CYUTF8String CYPoolUTF8String(CYPool &pool, CYUTF8String utf8);
+CYUTF8String CYPoolUTF8String(CYPool &pool, const std::string &value);
+
 CYUTF8String CYPoolUTF8String(CYPool &pool, CYUTF16String utf16);
 CYUTF16String CYPoolUTF16String(CYPool &pool, CYUTF8String utf8);
 

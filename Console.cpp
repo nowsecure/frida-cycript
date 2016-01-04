@@ -68,6 +68,7 @@
 #include <mach/mach_time.h>
 #endif
 
+#include "Code.hpp"
 #include "Driver.hpp"
 #include "Error.hpp"
 #include "Highlight.hpp"
@@ -291,7 +292,25 @@ static CYUTF8String Run(CYPool &pool, int client, const std::string &code) {
 
 static std::ostream *out_;
 
-static void Output(CYUTF8String json, std::ostream *out, bool expand = false) {
+static void Output(CYUTF8String json, std::ostream *out, bool expand = false, bool reparse = false) {
+    CYPool pool;
+
+    if (reparse) do {
+        CYStream stream(json.data, json.data + json.size);
+        CYDriver driver(pool, stream);
+        if (driver.Parse(CYMarkExpression))
+            break;
+        std::stringbuf str;
+        CYOptions options;
+        CYOutput out(str, options);
+        out.pretty_ = true;
+        out << *driver.context_;
+        std::string data(str.str());
+        json = CYPoolUTF8String(pool, data);
+        if (json.size == 0)
+            json.data = NULL;
+    } while (false);
+
     const char *data(json.data);
     size_t size(json.size);
 
@@ -607,9 +626,9 @@ static void CYConsolePrepTerm(int meta) {
     CYConsoleRemapKeys(vi_movement_keymap);
 }
 
-static void CYOutputRun(const std::string &code, bool expand = false) {
+static void CYOutputRun(const std::string &code, bool expand = false, bool reparse = false) {
     CYPool pool;
-    Output(Run(pool, client_, code), &std::cout, expand);
+    Output(Run(pool, client_, code), &std::cout, expand, reparse);
 }
 
 static void Console(CYOptions &options) {
@@ -641,6 +660,7 @@ static void Console(CYOptions &options) {
     bool debug(false);
     bool expand(false);
     bool lower(true);
+    bool reparse(false);
 
     out_ = &std::cout;
 
@@ -712,6 +732,9 @@ static void Console(CYOptions &options) {
             } else if (data == "lower") {
                 lower = !lower;
                 *out_ << "lower == " << (lower ? "true" : "false") << std::endl;
+            } else if (data == "reparse") {
+                reparse = !reparse;
+                *out_ << "reparse == " << (reparse ? "true" : "false") << std::endl;
             }
 
             continue;
@@ -775,7 +798,7 @@ static void Console(CYOptions &options) {
             std::cout << std::endl;
         }
 
-        CYOutputRun(code, expand);
+        CYOutputRun(code, expand, reparse);
     }
 }
 
