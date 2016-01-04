@@ -1242,7 +1242,7 @@ JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, voi
         element.type->PoolFFI(&pool, context, ffi, values[index], arguments[index - setups]);
     }
 
-    uint8_t value[cif->rtype->size];
+    uint8_t *value(pool.malloc<uint8_t>(std::max<size_t>(cif->rtype->size, sizeof(ffi_arg)), std::max<size_t>(cif->rtype->alignment, alignof(ffi_arg))));
 
     void (*call)(CYPool &, JSContextRef, ffi_cif *, void (*)(), void *, void **) = &CYCallFunction;
     // XXX: this only supports one hook, but it is a bad idea anyway
