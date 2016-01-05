@@ -942,6 +942,7 @@ static bool CYCastJavaArguments(const CYJavaFrame &frame, const CYJavaShorty &sh
 static JSValueRef JavaMethod_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     auto internal(CYJavaMethod::Get(context, object));
     CYJavaObject *self(CYGetJavaObject(context, _this));
+    _assert(self != NULL);
     CYJavaEnv jni(self->value_);
 
     CYJavaSignature bound(count);
