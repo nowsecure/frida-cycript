@@ -967,7 +967,10 @@ CYIdentifierFlags *CYScope::Declare(CYContext &context, CYIdentifier *identifier
     else if (existing->kind_ == CYIdentifierGlobal || existing->kind_ == CYIdentifierMagic)
         existing->kind_ = kind;
     else if (existing->kind_ == CYIdentifierLexical || kind == CYIdentifierLexical)
-        _assert(false); // XXX: throw new SyntaxError()
+        _assert(false);
+    else if (transparent_ && existing->kind_ == CYIdentifierArgument && kind == CYIdentifierVariable)
+        _assert(false);
+    // XXX: throw new SyntaxError() instead of these asserts
 
     return existing;
 }
@@ -1005,10 +1008,6 @@ void CYScope::Close(CYContext &context) {
     CYForEach (i, internal_) {
         _assert(i->identifier_->next_ == i->identifier_);
     switch (i->kind_) {
-        case CYIdentifierArgument: {
-            _assert(!transparent_);
-        } break;
-
         case CYIdentifierLexical: {
             if (!damaged_) {
                 CYIdentifier *replace(context.Unique());
