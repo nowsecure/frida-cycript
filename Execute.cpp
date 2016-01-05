@@ -634,10 +634,13 @@ JSObjectRef CYMakePointer(JSContextRef context, void *pointer, const sig::Type &
     return Pointer::Make(context, pointer, type, context, owner);
 }
 
-static JSObjectRef CYMakeFunctor(JSContextRef context, void (*function)(), bool variadic, const sig::Signature &signature) {
+static JSValueRef CYMakeFunctor(JSContextRef context, void (*function)(), bool variadic, const sig::Signature &signature) {
+    if (function == NULL)
+        return CYJSNull(context);
     return JSObjectMake(context, Functor_, new cy::Functor(function, variadic, signature));
 }
 
+// XXX: remove this, as it is really stupid
 static JSObjectRef CYMakeFunctor(JSContextRef context, const char *symbol, const char *encoding) {
     void (*function)()(reinterpret_cast<void (*)()>(CYCastSymbol(symbol)));
     if (function == NULL)
@@ -967,7 +970,7 @@ JSObjectRef CYGetCachedObject(JSContextRef context, JSStringRef name) {
     return CYCastJSObject(context, CYGetCachedValue(context, name));
 }
 
-static JSObjectRef CYMakeFunctor(JSContextRef context, JSValueRef value, bool variadic, const sig::Signature &signature) {
+static JSValueRef CYMakeFunctor(JSContextRef context, JSValueRef value, bool variadic, const sig::Signature &signature) {
     JSObjectRef Function(CYGetCachedObject(context, CYJSString("Function")));
 
     bool function(_jsccall(JSValueIsInstanceOfConstructor, context, value, Function));
@@ -1682,6 +1685,7 @@ static JSObjectRef Type_callAsConstructor(JSContextRef context, JSObjectRef obje
     return pointer;
 } CYCatch(NULL) }
 
+// XXX: I don't even think the user should be allowed to do this
 static JSObjectRef Functor_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 2)
         throw CYJSError(context, "incorrect number of arguments to Functor constructor");
@@ -1689,7 +1693,8 @@ static JSObjectRef Functor_new(JSContextRef context, JSObjectRef object, size_t 
     const char *encoding(CYPoolCString(pool, context, arguments[1]));
     sig::Signature signature;
     sig::Parse(pool, &signature, encoding, &Structor_);
-    return CYMakeFunctor(context, arguments[0], false, signature);
+    // XXX: this can try to return null, and I guess then it just fails
+    return CYCastJSObject(context, CYMakeFunctor(context, arguments[0], false, signature));
 } CYCatch(NULL) }
 
 static JSValueRef CArray_callAsFunction_toPointer(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {

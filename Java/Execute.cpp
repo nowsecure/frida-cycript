@@ -940,7 +940,7 @@ static bool CYCastJavaArguments(const CYJavaFrame &frame, const CYJavaShorty &sh
 }
 
 static JSValueRef JavaMethod_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    CYJavaMethod *internal(reinterpret_cast<CYJavaMethod *>(JSObjectGetPrivate(object)));
+    auto internal(CYJavaMethod::Get(context, object));
     CYJavaObject *self(CYGetJavaObject(context, _this));
     CYJavaEnv jni(self->value_);
 
@@ -970,7 +970,7 @@ CYJavaForEachPrimitive
 } CYCatch(NULL) }
 
 static JSValueRef JavaStaticMethod_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    CYJavaMethod *internal(reinterpret_cast<CYJavaMethod *>(JSObjectGetPrivate(object)));
+    auto internal(CYJavaStaticMethod::Get(context, object));
     CYJavaClass *table(CYGetJavaTable(context, _this));
     CYJavaEnv jni(table->value_);
 
@@ -1000,7 +1000,7 @@ CYJavaForEachPrimitive
 } CYCatch(NULL) }
 
 static JSObjectRef JavaClass_callAsConstructor(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    CYJavaClass *table(reinterpret_cast<CYJavaClass *>(JSObjectGetPrivate(object)));
+    auto table(CYJavaClass::Get(context, object));
     CYJavaEnv jni(table->value_);
     jclass _class(table->value_);
 
@@ -1025,7 +1025,7 @@ static JSObjectRef JavaClass_callAsConstructor(JSContextRef context, JSObjectRef
 } CYCatch(NULL) }
 
 static bool JavaStaticInterior_hasProperty(JSContextRef context, JSObjectRef object, JSStringRef property) {
-    CYJavaStaticInterior *internal(reinterpret_cast<CYJavaStaticInterior *>(JSObjectGetPrivate(object)));
+    auto internal(CYJavaStaticInterior::Get(context, object));
     CYJavaClass *table(internal->table_);
     CYPool pool;
     auto name(CYPoolUTF8String(pool, context, property));
@@ -1036,7 +1036,7 @@ static bool JavaStaticInterior_hasProperty(JSContextRef context, JSObjectRef obj
 }
 
 static JSValueRef JavaStaticInterior_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
-    CYJavaStaticInterior *internal(reinterpret_cast<CYJavaStaticInterior *>(JSObjectGetPrivate(object)));
+    auto internal(CYJavaStaticInterior::Get(context, object));
     CYJavaClass *table(internal->table_);
     CYJavaEnv jni(table->value_);
     CYPool pool;
@@ -1058,7 +1058,7 @@ CYJavaForEachPrimitive
 } CYCatch(NULL) }
 
 static bool JavaStaticInterior_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) { CYTry {
-    CYJavaStaticInterior *internal(reinterpret_cast<CYJavaStaticInterior *>(JSObjectGetPrivate(object)));
+    auto internal(CYJavaStaticInterior::Get(context, object));
     CYJavaClass *table(internal->table_);
     CYJavaEnv jni(table->value_);
     CYPool pool;
@@ -1083,19 +1083,19 @@ CYJavaForEachPrimitive
 } CYCatch(false) }
 
 static void JavaStaticInterior_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
-    CYJavaStaticInterior *internal(reinterpret_cast<CYJavaStaticInterior *>(JSObjectGetPrivate(object)));
+    auto internal(CYJavaStaticInterior::Get(context, object));
     CYJavaClass *table(internal->table_);
     for (const auto &field : table->static_)
         JSPropertyNameAccumulatorAddName(names, CYJSString(field.first));
 }
 
 static JSValueRef JavaClass_getProperty_class(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
-    CYJavaClass *table(reinterpret_cast<CYJavaClass *>(JSObjectGetPrivate(object)));
+    auto table(CYJavaClass::Get(context, object));
     return CYCastJSValue(context, table->value_);
 } CYCatch(NULL) }
 
 static bool JavaInterior_hasProperty(JSContextRef context, JSObjectRef object, JSStringRef property) {
-    CYJavaInterior *internal(reinterpret_cast<CYJavaInterior *>(JSObjectGetPrivate(object)));
+    auto internal(CYJavaInterior::Get(context, object));
     CYJavaClass *table(internal->table_);
     CYPool pool;
     auto name(CYPoolUTF8String(pool, context, property));
@@ -1106,7 +1106,7 @@ static bool JavaInterior_hasProperty(JSContextRef context, JSObjectRef object, J
 }
 
 static JSValueRef JavaInterior_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
-    CYJavaInterior *internal(reinterpret_cast<CYJavaInterior *>(JSObjectGetPrivate(object)));
+    auto internal(CYJavaInterior::Get(context, object));
     CYJavaEnv jni(internal->value_);
     CYJavaClass *table(internal->table_);
     CYPool pool;
@@ -1128,7 +1128,7 @@ CYJavaForEachPrimitive
 } CYCatch(NULL) }
 
 static bool JavaInterior_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) { CYTry {
-    CYJavaInterior *internal(reinterpret_cast<CYJavaInterior *>(JSObjectGetPrivate(object)));
+    auto internal(CYJavaInterior::Get(context, object));
     CYJavaEnv jni(internal->value_);
     CYJavaClass *table(internal->table_);
     CYPool pool;
@@ -1153,30 +1153,30 @@ CYJavaForEachPrimitive
 } CYCatch(false) }
 
 static void JavaInterior_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
-    CYJavaInterior *internal(reinterpret_cast<CYJavaInterior *>(JSObjectGetPrivate(object)));
+    auto internal(CYJavaInterior::Get(context, object));
     CYJavaClass *table(internal->table_);
     for (const auto &field : table->instance_)
         JSPropertyNameAccumulatorAddName(names, CYJSString(field.first));
 }
 
 static JSValueRef JavaObject_getProperty_constructor(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
-    CYJavaObject *internal(reinterpret_cast<CYJavaObject *>(JSObjectGetPrivate(object)));
+    auto internal(CYJavaObject::Get(context, object));
     CYJavaEnv jni(internal->value_);
     return CYGetJavaClass(context, jni.GetObjectClass(internal->value_));
 } CYCatch(NULL) }
 
 static JSValueRef JavaClass_getProperty_$cyi(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
-    CYJavaClass *internal(reinterpret_cast<CYJavaClass *>(JSObjectGetPrivate(object)));
+    auto internal(CYJavaClass::Get(context, object));
     return CYJavaStaticInterior::Make(context, internal->value_, internal);
 } CYCatch(NULL) }
 
 static JSValueRef JavaObject_getProperty_$cyi(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
-    CYJavaObject *internal(reinterpret_cast<CYJavaObject *>(JSObjectGetPrivate(object)));
+    auto internal(CYJavaObject::Get(context, object));
     return CYJavaInterior::Make(context, internal->value_, internal->table_);
 } CYCatch(NULL) }
 
 static JSValueRef JavaClass_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    CYJavaClass *internal(reinterpret_cast<CYJavaClass *>(JSObjectGetPrivate(_this)));
+    auto internal(CYJavaClass::Get(context, _this));
     CYJavaEnv jni(internal->value_);
     auto Class$(jni.FindClass("java/lang/Class"));
     auto Class$getCanonicalName(jni.GetMethodID(Class$, "getCanonicalName", "()Ljava/lang/String;"));
@@ -1194,7 +1194,7 @@ static JSValueRef JavaStaticMethod_callAsFunction_toCYON(JSContextRef context, J
 } CYCatch(NULL) }
 
 static JSValueRef JavaArray_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
-    CYJavaArray *internal(reinterpret_cast<CYJavaArray *>(JSObjectGetPrivate(object)));
+    auto internal(CYJavaArray::Get(context, object));
     CYJavaEnv jni(internal->value_);
     if (JSStringIsEqual(property, length_s))
         return CYCastJSValue(context, jni.GetArrayLength(internal->value_));
@@ -1220,7 +1220,7 @@ CYJavaForEachPrimitive
 } CYCatch(NULL) }
 
 static bool JavaArray_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) { CYTry {
-    CYJavaArray *internal(reinterpret_cast<CYJavaArray *>(JSObjectGetPrivate(object)));
+    auto internal(CYJavaArray::Get(context, object));
     CYJavaEnv jni(internal->value_);
 
     CYPool pool;
@@ -1246,7 +1246,7 @@ CYJavaForEachPrimitive
 } CYCatch(false) }
 
 static JSValueRef JavaPackage_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    CYJavaPackage *internal(reinterpret_cast<CYJavaPackage *>(JSObjectGetPrivate(_this)));
+    auto internal(CYJavaPackage::Get(context, _this));
     std::ostringstream name;
     for (auto &package : internal->package_)
         name << package << '.';
@@ -1259,7 +1259,7 @@ static bool CYJavaPackage_hasProperty(JSContextRef context, JSObjectRef object, 
 }
 
 static JSValueRef CYJavaPackage_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
-    CYJavaPackage *internal(reinterpret_cast<CYJavaPackage *>(JSObjectGetPrivate(object)));
+    auto internal(CYJavaPackage::Get(context, object));
     CYJavaPackage::Path package(internal->package_);
 
     CYPool pool;

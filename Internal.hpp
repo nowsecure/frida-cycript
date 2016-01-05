@@ -62,6 +62,11 @@ struct CYPrivate :
             CYSetPrototype(context, object, prototype);
         return object;
     }
+
+    static Internal_ *Get(JSContextRef context, JSObjectRef object) {
+        _assert(JSValueIsObjectOfClass(context, object, Class_));
+        return static_cast<Internal_ *>(JSObjectGetPrivate(object));
+    }
 };
 
 struct Type_privateData :
