@@ -785,6 +785,7 @@ void Enum::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data
 
 void Aggregate::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
     _assert(!overlap);
+    _assert(signature.count != _not(size_t));
 
     size_t offset(0);
     uint8_t *base(reinterpret_cast<uint8_t *>(data));
@@ -877,6 +878,8 @@ JSValueRef Enum::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool i
 }
 
 JSValueRef Aggregate::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
+    _assert(!overlap);
+    _assert(signature.count != _not(size_t));
     return Struct_privateData::Make(context, data, *this, ffi, context, owner);
 }
 
@@ -1502,6 +1505,7 @@ static JSObjectRef Type_new(JSContextRef context, JSObjectRef object, size_t cou
             _assert(JSValueIsObjectOfClass(context, object, Type_privateData::Class_));
             Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(object)));
             element.type = internal->type_;
+            _assert(element.type != NULL);
         }
 
         return CYMakeType(context, type);

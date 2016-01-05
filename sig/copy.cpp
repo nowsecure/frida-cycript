@@ -30,19 +30,21 @@ namespace sig {
 
 void Copy(CYPool &pool, Element &lhs, const Element &rhs) {
     lhs.name = pool.strdup(rhs.name);
-    if (rhs.type == NULL)
-        lhs.type = NULL;
-    else
-        lhs.type = rhs.type->Copy(pool);
+    _assert(rhs.type != NULL);
+    lhs.type = rhs.type->Copy(pool);
     lhs.offset = rhs.offset;
 }
 
 void Copy(CYPool &pool, Signature &lhs, const Signature &rhs) {
     size_t count(rhs.count);
     lhs.count = count;
-    lhs.elements = new(pool) Element[count];
-    for (size_t index(0); index != count; ++index)
-        Copy(pool, lhs.elements[index], rhs.elements[index]);
+    if (count == _not(size_t))
+        lhs.elements = NULL;
+    else {
+        lhs.elements = new(pool) Element[count];
+        for (size_t index(0); index != count; ++index)
+            Copy(pool, lhs.elements[index], rhs.elements[index]);
+    }
 }
 
 Void *Void::Copy(CYPool &pool, const char *rename) const {

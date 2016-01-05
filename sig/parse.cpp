@@ -195,16 +195,22 @@ Type *Parse_(CYPool &pool, const char **encoding, char eos, bool named, Callback
 
             char end = next;
             const char *begin = *encoding;
-            do next = *(*encoding)++;
-            while (
-                next != '=' &&
-                next != '}'
-            );
+            do switch (next = *(*encoding)++) {
+                case '\0':
+                    _assert(false);
+                case '}':
+                    // XXX: this is actually a type reference
+                    aggregate->signature.count = _not(size_t);
+                    next = '='; // this is a "break". I'm sorry
+            } while (next != '=');
+
             size_t length = *encoding - begin - 1;
             if (strncmp(begin, "?", length) != 0)
                 aggregate->name = (char *) pool.strmemdup(begin, length);
 
-            if (next == '=')
+            if (aggregate->signature.count == _not(size_t))
+                aggregate->signature.elements = NULL;
+            else
                 Parse_(pool, &aggregate->signature, encoding, end, callback);
 
             // XXX: this is a hack to support trivial unions
@@ -386,7 +392,12 @@ const char *Enum::Encode(CYPool &pool) const {
 }
 
 const char *Aggregate::Encode(CYPool &pool) const {
-    return pool.strcat(overlap ? "(" : "{", name == NULL ? "?" : name, "=", Unparse(pool, &signature), overlap ? ")" : "}", NULL);
+    bool reference(signature.count == _not(size_t));
+    return pool.strcat(overlap ? "(" : "{",
+        name == NULL ? "?" : name,
+        reference ? "" : "=",
+        reference ? "" : Unparse(pool, &signature),
+    overlap ? ")" : "}", NULL);
 }
 
 const char *Function::Encode(CYPool &pool) const {

@@ -166,6 +166,11 @@ CYTypedIdentifier *Enum::Decode(CYPool &pool) const {
 CYTypedIdentifier *Aggregate::Decode(CYPool &pool) const {
     _assert(!overlap);
 
+    if (signature.count == _not(size_t)) {
+        _assert(name != NULL);
+        return $ CYTypedIdentifier($ CYTypeReference(CYTypeReferenceStruct, $I($pool.strdup(name))));
+    }
+
     CYTypeStructField *fields(NULL);
     for (size_t i(signature.count); i != 0; --i) {
         sig::Element &element(signature.elements[i - 1]);

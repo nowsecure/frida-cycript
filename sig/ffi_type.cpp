@@ -176,8 +176,8 @@ ffi_type *Enum::GetFFI(CYPool &pool) const {
 }
 
 ffi_type *Aggregate::GetFFI(CYPool &pool) const {
-    // XXX: we can totally make overlap work
     _assert(!overlap);
+    _assert(signature.count != _not(size_t));
 
     ffi_type *ffi(new(pool) ffi_type());
     ffi->size = 0;
