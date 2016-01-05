@@ -25,7 +25,7 @@
 
 #include "ObjectiveC/Syntax.hpp"
 
-static CYExpression *MessageType(CYContext &context, CYTypedIdentifier *type, CYMessageParameter *next, CYExpression *extra = NULL) {
+static CYExpression *MessageType(CYContext &context, CYType *type, CYMessageParameter *next, CYExpression *extra = NULL) {
     CYExpression *left($C0($M(type->Replace(context), $S("toString"))));
     if (extra != NULL)
         left = $ CYAdd(left, extra);
@@ -70,12 +70,12 @@ CYStatement *CYImplementationField::Replace(CYContext &context) const { $T(NULL)
     CYVariable *cyn($V("$cyn"));
     CYVariable *cyt($V("$cyt"));
 
-    CYExpression *type($C0($M(typed_->Replace(context), $S("toString"))));
+    CYExpression *type($C0($M(type_->Replace(context), $S("toString"))));
 
     return $ CYBlock($$->*
         $E($ CYAssign(cyt, type))->*
         $E($ CYAssign(cyn, $N1($V("Type"), cyt)))->*
-        $E($C5($V("class_addIvar"), $V("$cyc"), $S(typed_->identifier_->Word()), $M(cyn, $S("size")), $M(cyn, $S("alignment")), cyt))->*
+        $E($C5($V("class_addIvar"), $V("$cyc"), name_->PropertyName(context), $M(cyn, $S("size")), $M(cyn, $S("alignment")), cyt))->*
         next_->Replace(context)
     );
 }
@@ -112,7 +112,7 @@ CYExpression *CYMessage::TypeSignature(CYContext &context) const {
 
 CYFunctionParameter *CYMessageParameter::Parameters(CYContext &context) const { $T(NULL)
     CYFunctionParameter *next(next_->Parameters(context));
-    return type_ == NULL ? next : $ CYFunctionParameter($B(type_->identifier_), next);
+    return type_ == NULL ? next : $ CYFunctionParameter($B(identifier_), next);
 }
 
 CYSelector *CYMessageParameter::Selector(CYContext &context) const {
@@ -154,7 +154,8 @@ CYTarget *CYObjCDictionary::Replace(CYContext &context) {
 }
 
 CYTarget *CYObjCBlock::Replace(CYContext &context) {
-    return $C1($ CYTypeExpression(($ CYTypedIdentifier(*typed_))->Modify($ CYTypeBlockWith(parameters_))), $ CYFunctionExpression(NULL, parameters_->Parameters(context), code_));
+    // XXX: wtf is happening here?
+    return $C1($ CYTypeExpression(($ CYType(*typed_))->Modify($ CYTypeBlockWith(parameters_))), $ CYFunctionExpression(NULL, parameters_->Parameters(context), code_));
 }
 
 CYStatement *CYProtocol::Replace(CYContext &context) const { $T(NULL)

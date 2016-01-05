@@ -1738,6 +1738,8 @@ static JSValueRef Functor_callAsFunction_toCYON(JSContextRef context, JSObjectRe
     sig::Function function(internal->variadic_);
     sig::Copy(pool, function.signature, internal->signature_);
 
+    CYString *name;
+
     auto typed(CYDecodeType(pool, &function)); {
         std::ostringstream str;
         Dl_info info;
@@ -1752,14 +1754,14 @@ static JSValueRef Functor_callAsFunction_toCYON(JSContextRef context, JSObjectRe
                 str << "+0x" << std::hex << offset;
         }
 
-        typed->identifier_ = new(pool) CYIdentifier(pool.strdup(str.str().c_str()));
+        name = new(pool) CYString(pool.strdup(str.str().c_str()));
     }
 
     std::ostringstream str;
     CYOptions options;
     CYOutput output(*str.rdbuf(), options);
     output.pretty_ = true;
-    (new(pool) CYExternalExpression(new(pool) CYString("C"), typed))->Output(output, CYNoFlags);
+    (new(pool) CYExternalExpression(new(pool) CYString("C"), typed, name))->Output(output, CYNoFlags);
     return CYCastJSValue(context, CYJSString(str.str()));
 } CYCatch(NULL) }
 

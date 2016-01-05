@@ -458,12 +458,15 @@ void CYExtend::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYExternalDefinition::Output(CYOutput &out, CYFlags flags) const {
-    out << "extern" << ' ' << abi_ << ' ' << typed_;
+    out << "extern" << ' ' << abi_ << ' ';
+    type_->Output(out, name_);
     out.Terminate();
 }
 
 void CYExternalExpression::Output(CYOutput &out, CYFlags flags) const {
-    out << '(' << "extern" << ' ' << abi_ << ' ' << typed_ << ')';
+    out << '(' << "extern" << ' ' << abi_ << ' ';
+    type_->Output(out, name_);
+    out << ')';
 }
 
 void CYFatArrow::Output(CYOutput &out, CYFlags flags) const {
@@ -668,26 +671,26 @@ void CYTemplate::Output(CYOutput &out, CYFlags flags) const {
     _assert(false);
 }
 
-void CYTypeArrayOf::Output(CYOutput &out, CYIdentifier *identifier) const {
-    next_->Output(out, Precedence(), identifier, false);
+void CYTypeArrayOf::Output(CYOutput &out, CYPropertyName *name) const {
+    next_->Output(out, Precedence(), name, false);
     out << '[';
     out << size_;
     out << ']';
 }
 
-void CYTypeBlockWith::Output(CYOutput &out, CYIdentifier *identifier) const {
+void CYTypeBlockWith::Output(CYOutput &out, CYPropertyName *name) const {
     out << '(' << '^';
-    next_->Output(out, Precedence(), identifier, false);
+    next_->Output(out, Precedence(), name, false);
     out << ')' << '(' << parameters_ << ')';
 }
 
-void CYTypeConstant::Output(CYOutput &out, CYIdentifier *identifier) const {
+void CYTypeConstant::Output(CYOutput &out, CYPropertyName *name) const {
     out << "const";
-    next_->Output(out, Precedence(), identifier, false);
+    next_->Output(out, Precedence(), name, false);
 }
 
-void CYTypeFunctionWith::Output(CYOutput &out, CYIdentifier *identifier) const {
-    next_->Output(out, Precedence(), identifier, false);
+void CYTypeFunctionWith::Output(CYOutput &out, CYPropertyName *name) const {
+    next_->Output(out, Precedence(), name, false);
     out << '(' << parameters_;
     if (variadic_) {
         if (parameters_ != NULL)
@@ -697,24 +700,24 @@ void CYTypeFunctionWith::Output(CYOutput &out, CYIdentifier *identifier) const {
     out << ')';
 }
 
-void CYTypePointerTo::Output(CYOutput &out, CYIdentifier *identifier) const {
+void CYTypePointerTo::Output(CYOutput &out, CYPropertyName *name) const {
     out << '*';
-    next_->Output(out, Precedence(), identifier, false);
+    next_->Output(out, Precedence(), name, false);
 }
 
-void CYTypeVolatile::Output(CYOutput &out, CYIdentifier *identifier) const {
+void CYTypeVolatile::Output(CYOutput &out, CYPropertyName *name) const {
     out << "volatile";
-    next_->Output(out, Precedence(), identifier, true);
+    next_->Output(out, Precedence(), name, true);
 }
 
-void CYTypeModifier::Output(CYOutput &out, int precedence, CYIdentifier *identifier, bool space) const {
-    if (this == NULL && identifier == NULL)
+void CYTypeModifier::Output(CYOutput &out, int precedence, CYPropertyName *name, bool space) const {
+    if (this == NULL && name == NULL)
         return;
     else if (space)
         out << ' ';
 
     if (this == NULL) {
-        out << identifier;
+        name->PropertyName(out);
         return;
     }
 
@@ -722,14 +725,18 @@ void CYTypeModifier::Output(CYOutput &out, int precedence, CYIdentifier *identif
 
     if (protect)
         out << '(';
-    Output(out, identifier);
+    Output(out, name);
     if (protect)
         out << ')';
 }
 
-void CYTypedIdentifier::Output(CYOutput &out) const {
+void CYType::Output(CYOutput &out, CYPropertyName *name) const {
     out << *specifier_;
-    modifier_->Output(out, 0, identifier_, true);
+    modifier_->Output(out, 0, name, true);
+}
+
+void CYType::Output(CYOutput &out) const {
+    Output(out, NULL);
 }
 
 void CYEncodedType::Output(CYOutput &out, CYFlags flags) const {
@@ -737,7 +744,7 @@ void CYEncodedType::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYTypedParameter::Output(CYOutput &out) const {
-    out << typed_;
+    type_->Output(out, name_);
     if (next_ != NULL)
         out << ',' << ' ' << next_;
 }
@@ -751,7 +758,8 @@ void CYLambda::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYTypeDefinition::Output(CYOutput &out, CYFlags flags) const {
-    out << "typedef" << ' ' << *typed_;
+    out << "typedef" << ' ';
+    type_->Output(out, name_);
     out.Terminate();
 }
 
@@ -994,7 +1002,8 @@ void CYStructTail::Output(CYOutput &out) const {
     out << ' ' << '{' << '\n';
     ++out.indent_;
     CYForEach (field, fields_) {
-        out << '\t' << *field->typed_;
+        out << '\t';
+        field->type_->Output(out, field->name_);
         out.Terminate();
         out << '\n';
     }

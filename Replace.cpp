@@ -390,11 +390,11 @@ CYTarget *CYExtend::Replace(CYContext &context) {
 }
 
 CYStatement *CYExternalDefinition::Replace(CYContext &context) {
-    return $E($ CYAssign($V(typed_->identifier_), $ CYExternalExpression(abi_, typed_)));
+    return $E($ CYAssign($V(name_), $ CYExternalExpression(abi_, type_, name_)));
 }
 
 CYTarget *CYExternalExpression::Replace(CYContext &context) {
-    return $C1(typed_->Replace(context), $C2($V("dlsym"), $V("RTLD_DEFAULT"), $S(typed_->identifier_->Word())));
+    return $C1(type_->Replace(context), $C2($V("dlsym"), $V("RTLD_DEFAULT"), name_->PropertyName(context)));
 }
 
 CYNumber *CYFalse::Number(CYContext &context) {
@@ -1099,6 +1099,12 @@ CYString *CYString::Concat(CYContext &context, CYString *rhs) const {
     return $S(value, size);
 }
 
+CYIdentifier *CYString::Identifier() const {
+    if (const char *word = Word())
+        return $ CYIdentifier(word);
+    return NULL;
+}
+
 CYNumber *CYString::Number(CYContext &context) {
     // XXX: there is a precise algorithm for this
     return NULL;
@@ -1124,14 +1130,13 @@ CYTarget *CYStructTail::Replace(CYContext &context) {
     CYList<CYElementValue> names;
 
     CYForEach (field, fields_) {
-        CYTypedIdentifier *typed(field->typed_);
-        types->*$ CYElementValue(typed->Replace(context));
+        types->*$ CYElementValue(field->type_->Replace(context));
 
         CYExpression *name;
-        if (typed->identifier_ == NULL)
+        if (field->name_ == NULL)
             name = NULL;
         else
-            name = $S(typed->identifier_->Word());
+            name = field->name_->PropertyName(context);
         names->*$ CYElementValue(name);
     }
 
@@ -1231,9 +1236,7 @@ CYTarget *CYTypeConstant::Replace_(CYContext &context, CYTarget *type) {
 }
 
 CYStatement *CYTypeDefinition::Replace(CYContext &context) {
-    CYIdentifier *identifier(typed_->identifier_);
-    typed_->identifier_ = NULL;
-    return $ CYLexical(false, $B1($B(identifier, $ CYTypeExpression(typed_))));
+    return $ CYLexical(false, $B1($B(name_, $ CYTypeExpression(type_))));
 }
 
 CYTarget *CYTypeEnum::Replace(CYContext &context) {
@@ -1317,11 +1320,11 @@ CYTarget *CYTypeVolatile::Replace_(CYContext &context, CYTarget *type) {
     return next_->Replace(context, $ CYCall($ CYDirectMember(type, $ CYString("volatile"))));
 }
 
-CYTarget *CYTypedIdentifier::Replace(CYContext &context) {
+CYTarget *CYType::Replace(CYContext &context) {
     return modifier_->Replace(context, specifier_->Replace(context));
 }
 
-CYTypeFunctionWith *CYTypedIdentifier::Function() {
+CYTypeFunctionWith *CYType::Function() {
     CYTypeModifier *&modifier(CYGetLast(modifier_));
     if (modifier == NULL)
         return NULL;
@@ -1335,15 +1338,15 @@ CYTypeFunctionWith *CYTypedIdentifier::Function() {
 }
 
 CYArgument *CYTypedParameter::Argument(CYContext &context) { $T(NULL)
-    return $ CYArgument(typed_->Replace(context), next_->Argument(context));
+    return $ CYArgument(type_->Replace(context), next_->Argument(context));
 }
 
 CYFunctionParameter *CYTypedParameter::Parameters(CYContext &context) { $T(NULL)
-    return $ CYFunctionParameter($ CYBinding(typed_->identifier_ ?: context.Unique()), next_->Parameters(context));
+    return $ CYFunctionParameter($ CYBinding(name_ ?: context.Unique()), next_->Parameters(context));
 }
 
 CYExpression *CYTypedParameter::TypeSignature(CYContext &context, CYExpression *prefix) { $T(prefix)
-    return next_->TypeSignature(context, $ CYAdd(prefix, typed_->Replace(context)));
+    return next_->TypeSignature(context, $ CYAdd(prefix, type_->Replace(context)));
 }
 
 CYForInitializer *CYVar::Replace(CYContext &context) {

@@ -289,16 +289,10 @@ static CYStatement *CYTranslateBlock(CXTranslationUnit unit, CXCursor cursor) {
     return $ CYBlock(statements);
 }
 
-static CYTypedIdentifier *CYDecodeType(CXType type);
-static void CYParseType(CXType type, CYTypedIdentifier *typed);
+static CYType *CYDecodeType(CXType type);
+static void CYParseType(CXType type, CYType *typed);
 
-static CYTypedIdentifier *CYDecodeType(CXType type, const CYCXString &identifier) {
-    CYTypedIdentifier *typed(CYDecodeType(type));
-    typed->identifier_ = $ CYIdentifier(identifier.Pool($pool));
-    return typed;
-}
-
-static void CYParseEnumeration(CXCursor cursor, CYTypedIdentifier *typed) {
+static void CYParseEnumeration(CXCursor cursor, CYType *typed) {
     CYList<CYEnumConstant> constants;
 
     CYForChild(cursor, fun([&](CXCursor child) {
@@ -306,23 +300,21 @@ static void CYParseEnumeration(CXCursor cursor, CYTypedIdentifier *typed) {
             constants->*$ CYEnumConstant($I($pool.strdup(CYCXString(child))), $D(clang_getEnumConstantDeclValue(child)));
     }));
 
-    CYTypedIdentifier *integer(CYDecodeType(clang_getEnumDeclIntegerType(cursor)));
+    CYType *integer(CYDecodeType(clang_getEnumDeclIntegerType(cursor)));
     typed->specifier_ = $ CYTypeEnum(NULL, integer->specifier_, constants);
 }
 
-static void CYParseStructure(CXCursor cursor, CYTypedIdentifier *typed) {
+static void CYParseStructure(CXCursor cursor, CYType *typed) {
     CYList<CYTypeStructField> fields;
     CYForChild(cursor, fun([&](CXCursor child) {
-        if (clang_getCursorKind(child) == CXCursor_FieldDecl) {
-            CYTypedIdentifier *field(CYDecodeType(clang_getCursorType(child), child));
-            fields->*$ CYTypeStructField(field);
-        }
+        if (clang_getCursorKind(child) == CXCursor_FieldDecl)
+            fields->*$ CYTypeStructField(CYDecodeType(clang_getCursorType(child)), $I(CYCXString(child).Pool($pool)));
     }));
 
     typed->specifier_ = $ CYTypeStruct(NULL, $ CYStructTail(fields));
 }
 
-static void CYParseCursor(CXType type, CXCursor cursor, CYTypedIdentifier *typed) {
+static void CYParseCursor(CXType type, CXCursor cursor, CYType *typed) {
     CYCXString spelling(cursor);
 
     switch (CXCursorKind kind = clang_getCursorKind(cursor)) {
@@ -351,19 +343,19 @@ static void CYParseCursor(CXType type, CXCursor cursor, CYTypedIdentifier *typed
     }
 }
 
-static CYTypedParameter *CYParseSignature(CXType type, CYTypedIdentifier *typed) {
+static CYTypedParameter *CYParseSignature(CXType type, CYType *typed) {
     CYParseType(clang_getResultType(type), typed);
     CYList<CYTypedParameter> parameters;
     for (int i(0), e(clang_getNumArgTypes(type)); i != e; ++i)
-        parameters->*$ CYTypedParameter(CYDecodeType(clang_getArgType(type, i)));
+        parameters->*$ CYTypedParameter(CYDecodeType(clang_getArgType(type, i)), NULL);
     return parameters;
 }
 
-static void CYParseFunction(CXType type, CYTypedIdentifier *typed) {
+static void CYParseFunction(CXType type, CYType *typed) {
     typed = typed->Modify($ CYTypeFunctionWith(clang_isFunctionTypeVariadic(type), CYParseSignature(type, typed)));
 }
 
-static void CYParseType(CXType type, CYTypedIdentifier *typed) {
+static void CYParseType(CXType type, CYType *typed) {
     switch (CXTypeKind kind = type.kind) {
         case CXType_Unexposed: {
             CXType result(clang_getResultType(type));
@@ -481,8 +473,8 @@ static void CYParseType(CXType type, CYTypedIdentifier *typed) {
         typed = typed->Modify($ CYTypeConstant());
 }
 
-static CYTypedIdentifier *CYDecodeType(CXType type) {
-    CYTypedIdentifier *typed($ CYTypedIdentifier(NULL));
+static CYType *CYDecodeType(CXType type) {
+    CYType *typed($ CYType(NULL));
     CYParseType(type, typed);
     return typed;
 }
@@ -516,7 +508,7 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
 
             CYLocalPool pool;
 
-            CYTypedIdentifier typed(NULL);
+            CYType typed;
             CYParseEnumeration(cursor, &typed);
 
             CYOptions options;
@@ -595,7 +587,7 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
 
             CYLocalPool pool;
 
-            CYTypedIdentifier typed(NULL);
+            CYType typed;
             CYParseStructure(cursor, &typed);
 
             CYOptions options;
@@ -610,7 +602,7 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
         case CXCursor_TypedefDecl: {
             CYLocalPool local;
 
-            CYTypedIdentifier *typed(CYDecodeType(clang_getTypedefDeclUnderlyingType(cursor)));
+            CYType *typed(CYDecodeType(clang_getTypedefDeclUnderlyingType(cursor)));
             if (typed->specifier_ == NULL)
                 value << "(typedef " << CYCXString(clang_getTypeSpelling(clang_getTypedefDeclUnderlyingType(cursor))) << ")";
             else {

@@ -120,6 +120,7 @@ struct CYOutput {
 
 struct CYExpression;
 struct CYAssignment;
+struct CYIdentifier;
 
 struct CYPropertyName {
     virtual bool Computed() const {
@@ -128,6 +129,10 @@ struct CYPropertyName {
 
     virtual bool Constructor() const {
         return false;
+    }
+
+    virtual CYIdentifier *Identifier() {
+        return NULL;
     }
 
     virtual CYExpression *PropertyName(CYContext &context) = 0;
@@ -269,6 +274,10 @@ struct CYIdentifier :
         offset_(0),
         usage_(0)
     {
+    }
+
+    CYIdentifier *Identifier() override {
+        return this;
     }
 
     virtual const char *Word() const;
@@ -780,6 +789,7 @@ struct CYString :
         return value_;
     }
 
+    virtual CYIdentifier *Identifier() const;
     virtual const char *Word() const;
 
     virtual CYNumber *Number(CYContext &context);
@@ -2195,8 +2205,8 @@ struct CYTypeModifier :
     virtual CYTarget *Replace_(CYContext &context, CYTarget *type) = 0;
     CYTarget *Replace(CYContext &context, CYTarget *type);
 
-    virtual void Output(CYOutput &out, CYIdentifier *identifier) const = 0;
-    void Output(CYOutput &out, int precedence, CYIdentifier *identifier, bool space) const;
+    virtual void Output(CYOutput &out, CYPropertyName *name) const = 0;
+    void Output(CYOutput &out, int precedence, CYPropertyName *name, bool space) const;
 
     virtual CYTypeFunctionWith *Function() { return NULL; }
 };
@@ -2215,7 +2225,7 @@ struct CYTypeArrayOf :
     CYPrecedence(1)
 
     virtual CYTarget *Replace_(CYContext &context, CYTarget *type);
-    virtual void Output(CYOutput &out, CYIdentifier *identifier) const;
+    void Output(CYOutput &out, CYPropertyName *name) const override;
 };
 
 struct CYTypeConstant :
@@ -2229,7 +2239,7 @@ struct CYTypeConstant :
     CYPrecedence(0)
 
     virtual CYTarget *Replace_(CYContext &context, CYTarget *type);
-    virtual void Output(CYOutput &out, CYIdentifier *identifier) const;
+    void Output(CYOutput &out, CYPropertyName *name) const override;
 };
 
 struct CYTypePointerTo :
@@ -2243,7 +2253,7 @@ struct CYTypePointerTo :
     CYPrecedence(0)
 
     virtual CYTarget *Replace_(CYContext &context, CYTarget *type);
-    virtual void Output(CYOutput &out, CYIdentifier *identifier) const;
+    void Output(CYOutput &out, CYPropertyName *name) const override;
 };
 
 struct CYTypeVolatile :
@@ -2257,37 +2267,27 @@ struct CYTypeVolatile :
     CYPrecedence(0)
 
     virtual CYTarget *Replace_(CYContext &context, CYTarget *type);
-    virtual void Output(CYOutput &out, CYIdentifier *identifier) const;
+    void Output(CYOutput &out, CYPropertyName *name) const override;
 };
 
-struct CYTypedIdentifier :
-    CYNext<CYTypedIdentifier>,
+struct CYType :
     CYThing
 {
-    CYLocation location_;
-    CYIdentifier *identifier_;
     CYTypeSpecifier *specifier_;
     CYTypeModifier *modifier_;
 
-    CYTypedIdentifier(const CYLocation &location, CYIdentifier *identifier = NULL) :
-        location_(location),
-        identifier_(identifier),
-        specifier_(NULL),
-        modifier_(NULL)
-    {
-    }
-
-    CYTypedIdentifier(CYTypeSpecifier *specifier, CYTypeModifier *modifier = NULL) :
-        identifier_(NULL),
+    CYType(CYTypeSpecifier *specifier = NULL, CYTypeModifier *modifier = NULL) :
         specifier_(specifier),
         modifier_(modifier)
     {
     }
 
-    inline CYTypedIdentifier *Modify(CYTypeModifier *modifier) {
+    inline CYType *Modify(CYTypeModifier *modifier) {
         CYSetLast(modifier_) = modifier;
         return this;
     }
+
+    void Output(CYOutput &out, CYPropertyName *name) const;
 
     virtual CYTarget *Replace(CYContext &context);
     virtual void Output(CYOutput &out) const;
@@ -2295,12 +2295,35 @@ struct CYTypedIdentifier :
     CYTypeFunctionWith *Function();
 };
 
+struct CYTypedLocation :
+    CYType
+{
+    CYLocation location_;
+
+    CYTypedLocation(const CYLocation &location) :
+        location_(location)
+    {
+    }
+};
+
+struct CYTypedName :
+    CYTypedLocation
+{
+    CYPropertyName *name_;
+
+    CYTypedName(const CYLocation &location, CYPropertyName *name = NULL) :
+        CYTypedLocation(location),
+        name_(name)
+    {
+    }
+};
+
 struct CYEncodedType :
     CYTarget
 {
-    CYTypedIdentifier *typed_;
+    CYType *typed_;
 
-    CYEncodedType(CYTypedIdentifier *typed) :
+    CYEncodedType(CYType *typed) :
         typed_(typed)
     {
     }
@@ -2315,11 +2338,13 @@ struct CYTypedParameter :
     CYNext<CYTypedParameter>,
     CYThing
 {
-    CYTypedIdentifier *typed_;
+    CYType *type_;
+    CYIdentifier *name_;
 
-    CYTypedParameter(CYTypedIdentifier *typed, CYTypedParameter *next = NULL) :
+    CYTypedParameter(CYType *type, CYIdentifier *name, CYTypedParameter *next = NULL) :
         CYNext<CYTypedParameter>(next),
-        typed_(typed)
+        type_(type),
+        name_(name)
     {
     }
 
@@ -2344,11 +2369,11 @@ struct CYTypedFormal {
 struct CYLambda :
     CYTarget
 {
-    CYTypedIdentifier *typed_;
+    CYType *typed_;
     CYTypedParameter *parameters_;
     CYStatement *code_;
 
-    CYLambda(CYTypedIdentifier *typed, CYTypedParameter *parameters, CYStatement *code) :
+    CYLambda(CYType *typed, CYTypedParameter *parameters, CYStatement *code) :
         typed_(typed),
         parameters_(parameters),
         code_(code)
@@ -2430,11 +2455,13 @@ struct CYExternalExpression :
     CYTarget
 {
     CYString *abi_;
-    CYTypedIdentifier *typed_;
+    CYType *type_;
+    CYPropertyName *name_;
 
-    CYExternalExpression(CYString *abi, CYTypedIdentifier *typed) :
+    CYExternalExpression(CYString *abi, CYType *type, CYPropertyName *name) :
         abi_(abi),
-        typed_(typed)
+        type_(type),
+        name_(name)
     {
     }
 
@@ -2448,11 +2475,13 @@ struct CYExternalDefinition :
     CYStatement
 {
     CYString *abi_;
-    CYTypedIdentifier *typed_;
+    CYType *type_;
+    CYIdentifier *name_;
 
-    CYExternalDefinition(CYString *abi, CYTypedIdentifier *typed) :
+    CYExternalDefinition(CYString *abi, CYType *type, CYIdentifier *name) :
         abi_(abi),
-        typed_(typed)
+        type_(type),
+        name_(name)
     {
     }
 
@@ -2465,9 +2494,9 @@ struct CYExternalDefinition :
 struct CYTypeExpression :
     CYTarget
 {
-    CYTypedIdentifier *typed_;
+    CYType *typed_;
 
-    CYTypeExpression(CYTypedIdentifier *typed) :
+    CYTypeExpression(CYType *typed) :
         typed_(typed)
     {
     }
@@ -2481,10 +2510,12 @@ struct CYTypeExpression :
 struct CYTypeDefinition :
     CYStatement
 {
-    CYTypedIdentifier *typed_;
+    CYType *type_;
+    CYIdentifier *name_;
 
-    CYTypeDefinition(CYTypedIdentifier *typed) :
-        typed_(typed)
+    CYTypeDefinition(CYType *type, CYIdentifier *name) :
+        type_(type),
+        name_(name)
     {
     }
 
@@ -2508,7 +2539,7 @@ struct CYTypeBlockWith :
     CYPrecedence(0)
 
     virtual CYTarget *Replace_(CYContext &context, CYTarget *type);
-    virtual void Output(CYOutput &out, CYIdentifier *identifier) const;
+    void Output(CYOutput &out, CYPropertyName *name) const override;
 };
 
 struct CYTypeFunctionWith :
@@ -2527,7 +2558,7 @@ struct CYTypeFunctionWith :
     CYPrecedence(1)
 
     virtual CYTarget *Replace_(CYContext &context, CYTarget *type);
-    virtual void Output(CYOutput &out, CYIdentifier *identifier) const;
+    void Output(CYOutput &out, CYPropertyName *name) const override;
 
     virtual CYTypeFunctionWith *Function() { return this; }
 };
@@ -2535,11 +2566,13 @@ struct CYTypeFunctionWith :
 struct CYTypeStructField :
     CYNext<CYTypeStructField>
 {
-    CYTypedIdentifier *typed_;
+    CYType *type_;
+    CYPropertyName *name_;
 
-    CYTypeStructField(CYTypedIdentifier *typed, CYTypeStructField *next = NULL) :
+    CYTypeStructField(CYType *type, CYPropertyName *name, CYTypeStructField *next = NULL) :
         CYNext<CYTypeStructField>(next),
-        typed_(typed)
+        type_(type),
+        name_(name)
     {
     }
 };

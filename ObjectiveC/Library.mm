@@ -842,7 +842,7 @@ static bool CYBlockSignature(CYPool &pool, NSBlock *self, sig::Signature &signat
         return [super cy$toCYON:objective inSet:objects];
     _oassert(objects.insert(self).second);
 
-    CYTypedIdentifier *typed((new(pool) CYTypeExpression(CYDecodeType(pool, &type)))->typed_);
+    CYType *typed((new(pool) CYTypeExpression(CYDecodeType(pool, &type)))->typed_);
     CYTypeModifier *&modifier(CYGetLast(typed->modifier_));
     CYTypeBlockWith *with(dynamic_cast<CYTypeBlockWith *>(modifier));
     _assert(with != NULL);

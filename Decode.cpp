@@ -27,190 +27,187 @@
 namespace sig {
 
 template <>
-CYTypedIdentifier *Primitive<bool>::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeVariable("bool"));
+CYType *Primitive<bool>::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeVariable("bool"));
 }
 
 template <>
-CYTypedIdentifier *Primitive<char>::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeCharacter(CYTypeNeutral));
+CYType *Primitive<char>::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeCharacter(CYTypeNeutral));
 }
 
 template <>
-CYTypedIdentifier *Primitive<double>::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeVariable("double"));
+CYType *Primitive<double>::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeVariable("double"));
 }
 
 template <>
-CYTypedIdentifier *Primitive<float>::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeVariable("float"));
+CYType *Primitive<float>::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeVariable("float"));
 }
 
 template <>
-CYTypedIdentifier *Primitive<signed char>::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeCharacter(CYTypeSigned));
+CYType *Primitive<signed char>::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeCharacter(CYTypeSigned));
 }
 
 template <>
-CYTypedIdentifier *Primitive<signed int>::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeIntegral(CYTypeSigned, 1));
+CYType *Primitive<signed int>::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeIntegral(CYTypeSigned, 1));
 }
 
 #ifdef __SIZEOF_INT128__
 template <>
-CYTypedIdentifier *Primitive<signed __int128>::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeInt128(CYTypeSigned));
+CYType *Primitive<signed __int128>::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeInt128(CYTypeSigned));
 }
 #endif
 
 template <>
-CYTypedIdentifier *Primitive<signed long int>::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeIntegral(CYTypeSigned, 2));
+CYType *Primitive<signed long int>::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeIntegral(CYTypeSigned, 2));
 }
 
 template <>
-CYTypedIdentifier *Primitive<signed long long int>::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeIntegral(CYTypeSigned, 3));
+CYType *Primitive<signed long long int>::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeIntegral(CYTypeSigned, 3));
 }
 
 template <>
-CYTypedIdentifier *Primitive<signed short int>::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeIntegral(CYTypeSigned, 0));
+CYType *Primitive<signed short int>::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeIntegral(CYTypeSigned, 0));
 }
 
 template <>
-CYTypedIdentifier *Primitive<unsigned char>::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeCharacter(CYTypeUnsigned));
+CYType *Primitive<unsigned char>::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeCharacter(CYTypeUnsigned));
 }
 
 template <>
-CYTypedIdentifier *Primitive<unsigned int>::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeIntegral(CYTypeUnsigned, 1));
+CYType *Primitive<unsigned int>::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeIntegral(CYTypeUnsigned, 1));
 }
 
 #ifdef __SIZEOF_INT128__
 template <>
-CYTypedIdentifier *Primitive<unsigned __int128>::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeInt128(CYTypeUnsigned));
+CYType *Primitive<unsigned __int128>::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeInt128(CYTypeUnsigned));
 }
 #endif
 
 template <>
-CYTypedIdentifier *Primitive<unsigned long int>::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeIntegral(CYTypeUnsigned, 2));
+CYType *Primitive<unsigned long int>::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeIntegral(CYTypeUnsigned, 2));
 }
 
 template <>
-CYTypedIdentifier *Primitive<unsigned long long int>::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeIntegral(CYTypeUnsigned, 3));
+CYType *Primitive<unsigned long long int>::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeIntegral(CYTypeUnsigned, 3));
 }
 
 template <>
-CYTypedIdentifier *Primitive<unsigned short int>::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeIntegral(CYTypeUnsigned, 0));
+CYType *Primitive<unsigned short int>::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeIntegral(CYTypeUnsigned, 0));
 }
 
-CYTypedIdentifier *Void::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeVoid());
+CYType *Void::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeVoid());
 }
 
-CYTypedIdentifier *Unknown::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeError());
+CYType *Unknown::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeError());
 }
 
-CYTypedIdentifier *String::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeCharacter(CYTypeNeutral), $ CYTypePointerTo());
+CYType *String::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeCharacter(CYTypeNeutral), $ CYTypePointerTo());
 }
 
 #ifdef CY_OBJECTIVEC
-CYTypedIdentifier *Meta::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeVariable("Class"));
+CYType *Meta::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeVariable("Class"));
 }
 
-CYTypedIdentifier *Selector::Decode(CYPool &pool) const {
-    return $ CYTypedIdentifier($ CYTypeVariable("SEL"));
+CYType *Selector::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeVariable("SEL"));
 }
 #endif
 
-CYTypedIdentifier *Bits::Decode(CYPool &pool) const {
+CYType *Bits::Decode(CYPool &pool) const {
     _assert(false);
 }
 
-CYTypedIdentifier *Pointer::Decode(CYPool &pool) const {
+CYType *Pointer::Decode(CYPool &pool) const {
     return CYDecodeType(pool, &type)->Modify($ CYTypePointerTo());
 }
 
-CYTypedIdentifier *Array::Decode(CYPool &pool) const {
+CYType *Array::Decode(CYPool &pool) const {
     return CYDecodeType(pool, &type)->Modify($ CYTypeArrayOf($D(size)));
 }
 
 #ifdef CY_OBJECTIVEC
-CYTypedIdentifier *Object::Decode(CYPool &pool) const {
+CYType *Object::Decode(CYPool &pool) const {
     if (name == NULL)
-        return $ CYTypedIdentifier($ CYTypeVariable("id"));
+        return $ CYType($ CYTypeVariable("id"));
     else
-        return $ CYTypedIdentifier($ CYTypeVariable(name), $ CYTypePointerTo());
+        return $ CYType($ CYTypeVariable(name), $ CYTypePointerTo());
 }
 #endif
 
-CYTypedIdentifier *Enum::Decode(CYPool &pool) const {
+CYType *Enum::Decode(CYPool &pool) const {
     CYEnumConstant *values(NULL);
     for (size_t i(count); i != 0; --i)
         values = $ CYEnumConstant($I(pool.strdup(constants[i - 1].name)), $D(constants[i - 1].value), values);
     CYIdentifier *identifier(name == NULL ? NULL : $I(name));
-    CYTypedIdentifier *typed(type.Decode(pool));
+    CYType *typed(type.Decode(pool));
     _assert(typed->modifier_ == NULL);
-    return $ CYTypedIdentifier($ CYTypeEnum(identifier, typed->specifier_, values));
+    return $ CYType($ CYTypeEnum(identifier, typed->specifier_, values));
 }
 
-CYTypedIdentifier *Aggregate::Decode(CYPool &pool) const {
+CYType *Aggregate::Decode(CYPool &pool) const {
     _assert(!overlap);
 
     if (signature.count == _not(size_t)) {
         _assert(name != NULL);
-        return $ CYTypedIdentifier($ CYTypeReference(CYTypeReferenceStruct, $I($pool.strdup(name))));
+        return $ CYType($ CYTypeReference(CYTypeReferenceStruct, $I($pool.strdup(name))));
     }
 
     CYTypeStructField *fields(NULL);
     for (size_t i(signature.count); i != 0; --i) {
         sig::Element &element(signature.elements[i - 1]);
-        CYTypedIdentifier *typed(CYDecodeType(pool, element.type));
-        if (element.name != NULL)
-            typed->identifier_ = $I(element.name);
-        fields = $ CYTypeStructField(typed, fields);
+        fields = $ CYTypeStructField(CYDecodeType(pool, element.type), element.name == NULL ? NULL : $I(element.name), fields);
     }
     CYIdentifier *identifier(name == NULL ? NULL : $I(name));
-    return $ CYTypedIdentifier($ CYTypeStruct(identifier, $ CYStructTail(fields)));
+    return $ CYType($ CYTypeStruct(identifier, $ CYStructTail(fields)));
 }
 
-CYTypedIdentifier *Callable::Decode(CYPool &pool) const {
+CYType *Callable::Decode(CYPool &pool) const {
     _assert(signature.count != 0);
     CYTypedParameter *parameters(NULL);
     for (size_t i(signature.count - 1); i != 0; --i)
-        parameters = $ CYTypedParameter(CYDecodeType(pool, signature.elements[i].type), parameters);
+        parameters = $ CYTypedParameter(CYDecodeType(pool, signature.elements[i].type), NULL, parameters);
     return Modify(pool, CYDecodeType(pool, signature.elements[0].type), parameters);
 }
 
-CYTypedIdentifier *Function::Modify(CYPool &pool, CYTypedIdentifier *result, CYTypedParameter *parameters) const {
+CYType *Function::Modify(CYPool &pool, CYType *result, CYTypedParameter *parameters) const {
     return result->Modify($ CYTypeFunctionWith(variadic, parameters));
 }
 
 #ifdef CY_OBJECTIVEC
-CYTypedIdentifier *Block::Modify(CYPool &pool, CYTypedIdentifier *result, CYTypedParameter *parameters) const {
+CYType *Block::Modify(CYPool &pool, CYType *result, CYTypedParameter *parameters) const {
     return result->Modify($ CYTypeBlockWith(parameters));
 }
 
-CYTypedIdentifier *Block::Decode(CYPool &pool) const {
+CYType *Block::Decode(CYPool &pool) const {
     if (signature.count == 0)
-        return $ CYTypedIdentifier($ CYTypeVariable("NSBlock"), $ CYTypePointerTo());
+        return $ CYType($ CYTypeVariable("NSBlock"), $ CYTypePointerTo());
     return Callable::Decode(pool);
 }
 #endif
 
 }
 
-CYTypedIdentifier *CYDecodeType(CYPool &pool, struct sig::Type *type) {
-    CYTypedIdentifier *typed(type->Decode(pool));
+CYType *CYDecodeType(CYPool &pool, struct sig::Type *type) {
+    CYType *typed(type->Decode(pool));
     if ((type->flags & JOC_TYPE_CONST) != 0) {
         if (dynamic_cast<sig::String *>(type) != NULL)
             typed->modifier_ = $ CYTypeConstant(typed->modifier_);

@@ -36,7 +36,7 @@
 #include "Standard.hpp"
 
 class CYPool;
-struct CYTypedIdentifier;
+struct CYType;
 struct CYTypedParameter;
 
 namespace sig {
@@ -61,7 +61,7 @@ struct Type {
     virtual const char *GetName() const;
 
     virtual const char *Encode(CYPool &pool) const = 0;
-    virtual CYTypedIdentifier *Decode(CYPool &pool) const = 0;
+    virtual CYType *Decode(CYPool &pool) const = 0;
 
     virtual ffi_type *GetFFI(CYPool &pool) const = 0;
     virtual void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const = 0;
@@ -77,7 +77,7 @@ struct Primitive :
     }
 
     const char *Encode(CYPool &pool) const override;
-    CYTypedIdentifier *Decode(CYPool &pool) const override;
+    CYType *Decode(CYPool &pool) const override;
 
     ffi_type *GetFFI(CYPool &pool) const override;
     void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
@@ -101,7 +101,7 @@ struct Void :
     Void *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
-    CYTypedIdentifier *Decode(CYPool &pool) const override;
+    CYType *Decode(CYPool &pool) const override;
 
     ffi_type *GetFFI(CYPool &pool) const override;
     void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
@@ -114,7 +114,7 @@ struct Unknown :
     Unknown *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
-    CYTypedIdentifier *Decode(CYPool &pool) const override;
+    CYType *Decode(CYPool &pool) const override;
 
     ffi_type *GetFFI(CYPool &pool) const override;
     void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
@@ -127,7 +127,7 @@ struct String :
     String *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
-    CYTypedIdentifier *Decode(CYPool &pool) const override;
+    CYType *Decode(CYPool &pool) const override;
 
     ffi_type *GetFFI(CYPool &pool) const override;
     void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
@@ -141,7 +141,7 @@ struct Meta :
     Meta *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
-    CYTypedIdentifier *Decode(CYPool &pool) const override;
+    CYType *Decode(CYPool &pool) const override;
 
     ffi_type *GetFFI(CYPool &pool) const override;
     void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
@@ -154,7 +154,7 @@ struct Selector :
     Selector *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
-    CYTypedIdentifier *Decode(CYPool &pool) const override;
+    CYType *Decode(CYPool &pool) const override;
 
     ffi_type *GetFFI(CYPool &pool) const override;
     void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
@@ -175,7 +175,7 @@ struct Bits :
     Bits *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
-    CYTypedIdentifier *Decode(CYPool &pool) const override;
+    CYType *Decode(CYPool &pool) const override;
 
     ffi_type *GetFFI(CYPool &pool) const override;
     void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
@@ -195,7 +195,7 @@ struct Pointer :
     Pointer *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
-    CYTypedIdentifier *Decode(CYPool &pool) const override;
+    CYType *Decode(CYPool &pool) const override;
 
     ffi_type *GetFFI(CYPool &pool) const override;
     void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
@@ -217,7 +217,7 @@ struct Array :
     Array *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
-    CYTypedIdentifier *Decode(CYPool &pool) const override;
+    CYType *Decode(CYPool &pool) const override;
 
     ffi_type *GetFFI(CYPool &pool) const override;
     void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
@@ -238,7 +238,7 @@ struct Object :
     Object *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
-    CYTypedIdentifier *Decode(CYPool &pool) const override;
+    CYType *Decode(CYPool &pool) const override;
 
     ffi_type *GetFFI(CYPool &pool) const override;
     void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
@@ -272,7 +272,7 @@ struct Enum :
     const char *GetName() const override;
 
     const char *Encode(CYPool &pool) const override;
-    CYTypedIdentifier *Decode(CYPool &pool) const override;
+    CYType *Decode(CYPool &pool) const override;
 
     ffi_type *GetFFI(CYPool &pool) const override;
     void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
@@ -296,7 +296,7 @@ struct Aggregate :
     const char *GetName() const override;
 
     const char *Encode(CYPool &pool) const override;
-    CYTypedIdentifier *Decode(CYPool &pool) const override;
+    CYType *Decode(CYPool &pool) const override;
 
     ffi_type *GetFFI(CYPool &pool) const override;
     void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
@@ -308,8 +308,8 @@ struct Callable :
 {
     Signature signature;
 
-    CYTypedIdentifier *Decode(CYPool &pool) const override;
-    virtual CYTypedIdentifier *Modify(CYPool &pool, CYTypedIdentifier *result, CYTypedParameter *parameters) const = 0;
+    CYType *Decode(CYPool &pool) const override;
+    virtual CYType *Modify(CYPool &pool, CYType *result, CYTypedParameter *parameters) const = 0;
 };
 
 struct Function :
@@ -325,7 +325,7 @@ struct Function :
     Function *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
-    CYTypedIdentifier *Modify(CYPool &pool, CYTypedIdentifier *result, CYTypedParameter *parameters) const override;
+    CYType *Modify(CYPool &pool, CYType *result, CYTypedParameter *parameters) const override;
 
     ffi_type *GetFFI(CYPool &pool) const override;
     void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
@@ -339,8 +339,8 @@ struct Block :
     Block *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
-    CYTypedIdentifier *Decode(CYPool &pool) const override;
-    CYTypedIdentifier *Modify(CYPool &pool, CYTypedIdentifier *result, CYTypedParameter *parameters) const override;
+    CYType *Decode(CYPool &pool) const override;
+    CYType *Modify(CYPool &pool, CYType *result, CYTypedParameter *parameters) const override;
 
     ffi_type *GetFFI(CYPool &pool) const override;
     void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;

@@ -49,7 +49,7 @@ void CYImplementation::Output(CYOutput &out, CYFlags flags) const {
 }
 
 void CYImplementationField::Output(CYOutput &out) const {
-    out << *typed_;
+    type_->Output(out, name_);
     out.Terminate();
     out << '\n';
 }
@@ -65,8 +65,13 @@ void CYMessage::Output(CYOutput &out) const {
     CYForEach (parameter, parameters_)
         if (parameter->name_ != NULL) {
             out << ' ' << *parameter->name_;
-            if (parameter->type_ != NULL)
-                out << ':' << *parameter->type_->identifier_;
+            // XXX: this is off somehow
+            if (parameter->identifier_ != NULL) {
+                out << ':';
+                if (parameter->type_ != NULL)
+                    out << '(' << *parameter->type_ << ')';
+                out << *parameter->identifier_;
+            }
         }
 
     out << code_;
@@ -133,7 +138,7 @@ void CYObjCBlock::Output(CYOutput &out, CYFlags flags) const {
             out << ',' << ' ';
         else
             comma = true;
-        out << *parameter->typed_;
+        parameter->type_->Output(out, parameter->name_);
     }
 
     out << ')' << ' ' << '{' << '\n';

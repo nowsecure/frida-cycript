@@ -89,8 +89,10 @@
 %union { CYTypeModifier *modifier_; }
 %union { CYTypeSpecifier *specifier_; }
 %union { CYTypedFormal *typedFormal_; }
-%union { CYTypedIdentifier *typedIdentifier_; }
+%union { CYTypedLocation *typedLocation_; }
+%union { CYTypedName *typedName_; }
 %union { CYTypedParameter *typedParameter_; }
+%union { CYType *typedThing_; }
 @end
 
 @begin ObjectiveC
@@ -678,28 +680,28 @@ type; })
 %type <number_> IntegerNumber
 %type <integral_> IntegerType
 %type <integral_> IntegerTypeOpt
-%type <typedIdentifier_> PrefixedType
+%type <typedName_> PrefixedType
 %type <specifier_> PrimitiveReference
 %type <specifier_> PrimitiveType
 %type <structField_> StructFieldListOpt
-%type <typedIdentifier_> SuffixedType
-%type <typedIdentifier_> SuffixedTypeOpt
-%type <typedIdentifier_> TypeSignifier
-%type <typedIdentifier_> TypeSignifierNone
-%type <typedIdentifier_> TypeSignifierOpt
+%type <typedName_> SuffixedType
+%type <typedName_> SuffixedTypeOpt
+%type <typedName_> TypeSignifier
+%type <typedName_> TypeSignifierNone
+%type <typedName_> TypeSignifierOpt
 %type <signing_> TypeSigning
 %type <modifier_> ParameterTail
 %type <modifier_> TypeQualifierLeft
 %type <modifier_> TypeQualifierLeftOpt
-%type <typedIdentifier_> TypeQualifierRight
-%type <typedIdentifier_> TypeQualifierRightOpt
-%type <typedIdentifier_> TypedIdentifierDefinition
-%type <typedIdentifier_> TypedIdentifierEncoding
-%type <typedIdentifier_> TypedIdentifierField
-%type <typedIdentifier_> TypedIdentifierMaybe
-%type <typedIdentifier_> TypedIdentifierNo
-%type <typedIdentifier_> TypedIdentifierTagged
-%type <typedIdentifier_> TypedIdentifierYes
+%type <typedName_> TypeQualifierRight
+%type <typedName_> TypeQualifierRightOpt
+%type <typedName_> TypedIdentifierDefinition
+%type <typedThing_> TypedIdentifierEncoding
+%type <typedName_> TypedIdentifierField
+%type <typedName_> TypedIdentifierMaybe
+%type <typedLocation_> TypedIdentifierNo
+%type <typedName_> TypedIdentifierTagged
+%type <typedName_> TypedIdentifierYes
 %type <typedFormal_> TypedParameterList_
 %type <typedFormal_> TypedParameterList
 %type <typedFormal_> TypedParameterListOpt
@@ -735,7 +737,7 @@ type; })
 %type <selector_> SelectorExpressionOpt
 %type <argument_> SelectorList
 %type <word_> SelectorWordOpt
-%type <typedIdentifier_> TypeOpt
+%type <typedThing_> TypeOpt
 %type <argument_> VariadicCall
 @end
 
@@ -2027,12 +2029,13 @@ ExportSpecifier
 @begin C
 /* Cycript (C): Type Encoding {{{ */
 TypeSignifier
-    : IdentifierType[identifier] { $$ = CYNew CYTypedIdentifier(@identifier, $identifier); }
+    : IdentifierType[name] { $$ = CYNew CYTypedName(@name, $name); }
+    | StringLiteral[name] { $$ = CYNew CYTypedName(@name, $name); }
     | "(" "*" TypeQualifierRightOpt[typed] ")" { $$ = $typed; $$->modifier_ = CYNew CYTypePointerTo($$->modifier_); }
     ;
 
 TypeSignifierNone
-    : { $$ = CYNew CYTypedIdentifier(@$); }
+    : { $$ = CYNew CYTypedName(@$); }
     ;
 
 TypeSignifierOpt
@@ -2067,7 +2070,7 @@ SuffixedType
     : SuffixedTypeOpt[typed] "[" RestrictOpt NumericLiteral[size] "]" { $$ = $typed; $$->modifier_ = CYNew CYTypeArrayOf($size, $$->modifier_); }
     | "(" "^" TypeQualifierRightOpt[typed] ")" "(" TypedParameters[parameters] ")" { $$ = $typed; $$->modifier_ = CYNew CYTypeBlockWith($parameters, $$->modifier_); }
     | TypeSignifier[typed] "(" ParameterTail[modifier] { $$ = $typed; CYSetLast($modifier) = $$->modifier_; $$->modifier_ = $modifier; }
-    | "("[parenthesis] ParameterTail[modifier] { $$ = CYNew CYTypedIdentifier(@parenthesis); CYSetLast($modifier) = $$->modifier_; $$->modifier_ = $modifier; }
+    | "("[parenthesis] ParameterTail[modifier] { $$ = CYNew CYTypedName(@parenthesis); CYSetLast($modifier) = $$->modifier_; $$->modifier_ = $modifier; }
     ;
 
 SuffixedTypeOpt
@@ -2116,7 +2119,7 @@ IntegerTypeOpt
     ;
 
 StructFieldListOpt
-    : TypedIdentifierField[typed] ";" StructFieldListOpt[next] { $$ = CYNew CYTypeStructField($typed, $next); }
+    : TypedIdentifierField[typed] ";" StructFieldListOpt[next] { $$ = CYNew CYTypeStructField($typed, $typed->name_, $next); }
     | { $$ = NULL; }
     ;
 
@@ -2163,11 +2166,11 @@ TypedIdentifierMaybe
     ;
 
 TypedIdentifierYes
-    : TypedIdentifierMaybe[typed] { if ($typed->identifier_ == NULL) CYERR($typed->location_, "expected identifier"); $$ = $typed; }
+    : TypedIdentifierMaybe[typed] { if ($typed->name_ == NULL) CYERR($typed->location_, "expected identifier"); $$ = $typed; }
     ;
 
 TypedIdentifierNo
-    : TypedIdentifierMaybe[typed] { if ($typed->identifier_ != NULL) CYERR($typed->location_, "unexpected identifier"); $$ = $typed; }
+    : TypedIdentifierMaybe[typed] { if ($typed->name_ != NULL) CYERR($typed->location_, "unexpected identifier"); $$ = $typed; }
     ;
 
 TypedIdentifierTagged
@@ -2177,18 +2180,18 @@ TypedIdentifierTagged
 
 TypedIdentifierField
     : TypedIdentifierYes[pass] { $$ = $pass; }
-    | TypedIdentifierTagged[typed] { if ($typed->identifier_ == NULL) CYERR($typed->location_, "expected identifier"); $$ = $typed; }
+    | TypedIdentifierTagged[typed] { if ($typed->name_ == NULL) CYERR($typed->location_, "expected identifier"); $$ = $typed; }
     ;
 
 TypedIdentifierEncoding
     : TypedIdentifierNo[pass] { $$ = $pass; }
-    | TypedIdentifierTagged[typed] { if ($typed->identifier_ != NULL) CYERR($typed->location_, "unexpected identifier"); $$ = $typed; }
+    | TypedIdentifierTagged[typed] { if ($typed->name_ != NULL) CYERR($typed->location_, "unexpected identifier"); $$ = $typed; }
     | "void" TypeSignifierNone[typed] { $$ = $typed; $$->specifier_ = CYNew CYTypeVoid(); }
     ;
 
 TypedIdentifierDefinition
     : TypedIdentifierYes[pass] { $$ = $pass; }
-    | TypeQualifierLeftOpt[modifier] "struct" IdentifierTypeOpt[name] "{" StructFieldListOpt[fields] "}" TypeQualifierRightOpt[typed] { if ($typed->identifier_ == NULL) CYERR($typed->location_, "expected identifier"); $$ = $typed; $$->specifier_ = CYNew CYTypeStruct($name, CYNew CYStructTail($fields)); CYSetLast($modifier) = $$->modifier_; $$->modifier_ = $modifier; }
+    | TypeQualifierLeftOpt[modifier] "struct" IdentifierTypeOpt[name] "{" StructFieldListOpt[fields] "}" TypeQualifierRightOpt[typed] { if ($typed->name_ == NULL) CYERR($typed->location_, "expected identifier"); $$ = $typed; $$->specifier_ = CYNew CYTypeStruct($name, CYNew CYStructTail($fields)); CYSetLast($modifier) = $$->modifier_; $$->modifier_ = $modifier; }
     | "void" TypeSignifier[typed] { $$ = $typed; $$->specifier_ = CYNew CYTypeVoid(); }
     ;
 
@@ -2207,7 +2210,7 @@ ClassSuperOpt
     ;
 
 ImplementationFieldListOpt
-    : TypedIdentifierField[typed] ";" ImplementationFieldListOpt[next] { $$ = CYNew CYImplementationField($typed, $next); }
+    : TypedIdentifierField[typed] ";" ImplementationFieldListOpt[next] { $$ = CYNew CYImplementationField($typed, $typed->name_, $next); }
     | { $$ = NULL; }
     ;
 
@@ -2218,11 +2221,11 @@ MessageScope
 
 TypeOpt
     : "(" TypedIdentifierNo[type] ")" { $$ = $type; }
-    | { $$ = CYNew CYTypedIdentifier(CYNew CYTypeVariable("id")); }
+    | { $$ = CYNew CYType(CYNew CYTypeVariable("id")); }
     ;
 
 MessageParameter
-    : Word[tag] ":" TypeOpt[type] BindingIdentifier[identifier] { $type->identifier_ = $identifier; $$ = CYNew CYMessageParameter($tag, $type); }
+    : Word[tag] ":" TypeOpt[type] BindingIdentifier[identifier] { $$ = CYNew CYMessageParameter($tag, $type, $identifier); }
     ;
 
 MessageParameterList
@@ -2236,7 +2239,7 @@ MessageParameterListOpt
 
 MessageParameters
     : MessageParameterList[pass] { $$ = $pass; }
-    | Word[tag] { $$ = CYNew CYMessageParameter($tag, NULL); }
+    | Word[tag] { $$ = CYNew CYMessageParameter($tag); }
     ;
 
 ClassMessageDeclaration
@@ -2418,7 +2421,7 @@ TypedParameterList_
     ;
 
 TypedParameterList
-    : TypedIdentifierMaybe[typed] TypedParameterList_[formal] { $$ = $formal; $$->parameters_ = CYNew CYTypedParameter($typed, $$->parameters_); }
+    : TypedIdentifierMaybe[typed] TypedParameterList_[formal] { CYIdentifier *identifier; if ($typed->name_ == NULL) identifier = NULL; else { identifier = $typed->name_->Identifier(); if (identifier == NULL) CYERR($typed->location_, "invalid identifier"); } $$ = $formal; $$->parameters_ = CYNew CYTypedParameter($typed, identifier, $$->parameters_); }
     | "..." { $$ = CYNew CYTypedFormal(true); }
     ;
 
@@ -2456,7 +2459,7 @@ IdentifierNoOf
     ;
 
 TypeDefinition
-    : "typedef" NewLineNot TypedIdentifierDefinition[typed] TerminatorHard { $$ = CYNew CYTypeDefinition($typed); }
+    : "typedef" NewLineNot TypedIdentifierDefinition[typed] TerminatorHard { CYIdentifier *identifier; if ($typed->name_ == NULL) identifier = NULL; else { identifier = $typed->name_->Identifier(); if (identifier == NULL) CYERR($typed->location_, "invalid identifier"); } $$ = CYNew CYTypeDefinition($typed, identifier); }
     ;
 
 Statement__
@@ -2473,7 +2476,7 @@ IdentifierNoOf
     ;
 
 ExternCStatement
-    : TypedIdentifierField[typed] TerminatorHard { $$ = CYNew CYExternalDefinition(CYNew CYString("C"), $typed); }
+    : TypedIdentifierField[typed] TerminatorHard { CYIdentifier *identifier; if ($typed->name_ == NULL) identifier = NULL; else { identifier = $typed->name_->Identifier(); if (identifier == NULL) CYERR($typed->location_, "invalid identifier"); } $$ = CYNew CYExternalDefinition(CYNew CYString("C"), $typed, identifier); }
     | TypeDefinition[pass] { $$ = $pass; }
     ;
 
@@ -2496,7 +2499,7 @@ Statement__
     ;
 
 PrimaryExpression
-    : "(" LexOf "extern" NewLineOpt ABI[abi] TypedIdentifierField[typed] ")" { $$ = CYNew CYExternalExpression(CYNew CYString("C"), $typed); }
+    : "(" LexOf "extern" NewLineOpt ABI[abi] TypedIdentifierField[typed] ")" { $$ = CYNew CYExternalExpression(CYNew CYString("C"), $typed, $typed->name_); }
     ;
 /* }}} */
 @end

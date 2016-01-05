@@ -43,11 +43,11 @@ struct CYInstanceLiteral :
 struct CYObjCBlock :
     CYTarget
 {
-    CYTypedIdentifier *typed_;
+    CYType *typed_;
     CYTypedParameter *parameters_;
     CYStatement *code_;
 
-    CYObjCBlock(CYTypedIdentifier *typed, CYTypedParameter *parameters, CYStatement *code) :
+    CYObjCBlock(CYType *typed, CYTypedParameter *parameters, CYStatement *code) :
         typed_(typed),
         parameters_(parameters),
         code_(code)
@@ -159,11 +159,13 @@ struct CYSelector :
 struct CYImplementationField :
     CYNext<CYImplementationField>
 {
-    CYTypedIdentifier *typed_;
+    CYType *type_;
+    CYPropertyName *name_;
 
-    CYImplementationField(CYTypedIdentifier *typed, CYImplementationField *next = NULL) :
+    CYImplementationField(CYType *type, CYPropertyName *name, CYImplementationField *next = NULL) :
         CYNext<CYImplementationField>(next),
-        typed_(typed)
+        type_(type),
+        name_(name)
     {
     }
 
@@ -175,12 +177,14 @@ struct CYMessageParameter :
     CYNext<CYMessageParameter>
 {
     CYWord *name_;
-    CYTypedIdentifier *type_;
+    CYType *type_;
+    CYIdentifier *identifier_;
 
-    CYMessageParameter(CYWord *name, CYTypedIdentifier *type, CYMessageParameter *next = NULL) :
+    CYMessageParameter(CYWord *name, CYType *type = NULL, CYIdentifier *identifier = NULL, CYMessageParameter *next = NULL) :
         CYNext<CYMessageParameter>(next),
         name_(name),
-        type_(type)
+        type_(type),
+        identifier_(identifier)
     {
     }
 
@@ -194,11 +198,11 @@ struct CYMessage :
     CYNext<CYMessage>
 {
     bool instance_;
-    CYTypedIdentifier *type_;
+    CYType *type_;
     CYMessageParameter *parameters_;
     CYBlock code_;
 
-    CYMessage(bool instance, CYTypedIdentifier *type, CYMessageParameter *parameters, CYStatement *code) :
+    CYMessage(bool instance, CYType *type, CYMessageParameter *parameters, CYStatement *code) :
         instance_(instance),
         type_(type),
         parameters_(parameters),
