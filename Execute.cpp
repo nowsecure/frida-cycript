@@ -985,7 +985,9 @@ static JSValueRef CString_getProperty(JSContextRef context, JSObjectRef object, 
     CString *internal(reinterpret_cast<CString *>(JSObjectGetPrivate(object)));
 
     ssize_t offset;
-    if (!CYGetOffset(pool, context, property, offset))
+    if (JSStringIsEqualToUTF8CString(property, "$cyi"))
+        offset = 0;
+    else if (!CYGetOffset(pool, context, property, offset))
         return NULL;
 
     return CYCastJSValue(context, CYJSString(CYUTF8String(&internal->value_[offset], 1)));
@@ -996,7 +998,9 @@ static bool CString_setProperty(JSContextRef context, JSObjectRef object, JSStri
     CString *internal(reinterpret_cast<CString *>(JSObjectGetPrivate(object)));
 
     ssize_t offset;
-    if (!CYGetOffset(pool, context, property, offset))
+    if (JSStringIsEqualToUTF8CString(property, "$cyi"))
+        offset = 0;
+    else if (!CYGetOffset(pool, context, property, offset))
         return false;
 
     const char *data(CYPoolCString(pool, context, value));
