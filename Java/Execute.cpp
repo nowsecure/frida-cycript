@@ -77,8 +77,6 @@ _value; })
         return value; \
     }
 
-static JNIEnv *GetJNI(JSContextRef context);
-
 #define CYJavaForEachPrimitive \
     CYJavaForEachPrimitive_(Z, z, Boolean, Boolean, boolean) \
     CYJavaForEachPrimitive_(B, b, Byte, Byte, byte) \
@@ -636,10 +634,13 @@ struct CYJavaArray :
 struct CYJavaPackage :
     CYPrivate<CYJavaPackage>
 {
+    JNIEnv *jni_;
+
     typedef std::vector<std::string> Path;
     Path package_;
 
-    _finline CYJavaPackage(const Path &package) :
+    _finline CYJavaPackage(JNIEnv *jni, const Path &package) :
+        jni_(jni),
         package_(package)
     {
     }
@@ -1271,13 +1272,13 @@ static JSValueRef CYJavaPackage_getProperty(JSContextRef context, JSObjectRef ob
         name << package << '/';
     name << next;
 
-    JNIEnv *jni(GetJNI(context));
+    JNIEnv *jni(internal->jni_);
     if (auto _class = jni->FindClass(name.str().c_str()))
         return CYGetJavaClass(context, CYJavaLocal<jclass>(jni, _class));
     jni->ExceptionClear();
 
     package.push_back(next);
-    return CYJavaPackage::Make(context, package);
+    return CYJavaPackage::Make(context, jni, package);
 } CYCatch(NULL) }
 
 static void Cycript_delete(JNIEnv *env, jclass api, jlong jprotect) { CYJavaTry {
@@ -1309,26 +1310,17 @@ static _finline void dlset(Type_ &function, const char *name, void *handle) {
 
 jint CYJavaVersion(JNI_VERSION_1_4);
 
-static JNIEnv *CYGetCreatedJava(jint (*$JNI_GetCreatedJavaVMs)(JavaVM **, jsize, jsize *)) {
+static JavaVM *CYGetJavaVM(jint (*$JNI_GetCreatedJavaVMs)(JavaVM **, jsize, jsize *)) {
     jsize capacity(16);
     JavaVM *jvms[capacity];
     jsize size;
     _jnicall($JNI_GetCreatedJavaVMs(jvms, capacity, &size));
     if (size == 0)
         return NULL;
-    JavaVM *jvm(jvms[0]);
-    JNIEnv *jni;
-    _jnicall(jvm->GetEnv(reinterpret_cast<void **>(&jni), CYJavaVersion));
-    return jni;
+    return jvms[0];
 }
 
-static JNIEnv *GetJNI_(JSContextRef context) {
-    static JavaVM *jvm(NULL);
-    static JNIEnv *jni(NULL);
-
-    if (jni != NULL)
-        return jni;
-
+static JavaVM *CYGetJavaVM(JSContextRef context) {
     CYPool pool;
     void *handle(RTLD_DEFAULT);
     std::string library;
@@ -1337,8 +1329,8 @@ static JNIEnv *GetJNI_(JSContextRef context) {
     dlset($JNI_GetCreatedJavaVMs, "JNI_GetCreatedJavaVMs", handle);
 
     if ($JNI_GetCreatedJavaVMs != NULL) {
-        if (JNIEnv *jni = CYGetCreatedJava($JNI_GetCreatedJavaVMs))
-            return jni;
+        if (JavaVM *jvm = CYGetJavaVM($JNI_GetCreatedJavaVMs))
+            return jvm;
     } else {
         std::vector<const char *> guesses;
 
@@ -1347,6 +1339,9 @@ static JNIEnv *GetJNI_(JSContextRef context) {
         if (__system_property_get("persist.sys.dalvik.vm.lib", android) != 0)
             guesses.push_back(android);
 #endif
+
+        guesses.push_back("/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home/lib/jli/libjli.dylib");
+        //guesses.push_back("/System/Library/Frameworks/JavaVM.framework/JavaVM");
 
         guesses.push_back("libart.so");
         guesses.push_back("libdvm.so");
@@ -1360,11 +1355,12 @@ static JNIEnv *GetJNI_(JSContextRef context) {
             }
         }
 
-        _assert(library.size() != 0);
+        if (library.size() == 0)
+            return NULL;
 
         dlset($JNI_GetCreatedJavaVMs, "JNI_GetCreatedJavaVMs", handle);
-        if (JNIEnv *jni = CYGetCreatedJava($JNI_GetCreatedJavaVMs))
-            return jni;
+        if (JavaVM *jvm = CYGetJavaVM($JNI_GetCreatedJavaVMs))
+            return jvm;
     }
 
     std::vector<JavaVMOption> options;
@@ -1407,16 +1403,19 @@ static JNIEnv *GetJNI_(JSContextRef context) {
             JniInvocation$Init(invocation, NULL);
 
             dlset($JNI_GetCreatedJavaVMs, "JNI_GetCreatedJavaVMs", libnativehelper);
-            if (JNIEnv *jni = CYGetCreatedJava($JNI_GetCreatedJavaVMs))
-                return jni;
+            if (JavaVM *jvm = CYGetJavaVM($JNI_GetCreatedJavaVMs))
+                return jvm;
         }
     }
+
+    JavaVM *jvm;
+    JNIEnv *env;
 
     if (void *libandroid_runtime = dlopen("libandroid_runtime.so", RTLD_LAZY | RTLD_GLOBAL)) {
         class AndroidRuntime$;
         AndroidRuntime$ *(*AndroidRuntime$$init$)(AndroidRuntime$ *self, char *args, unsigned int size)(NULL);
-        int (*AndroidRuntime$startVm)(AndroidRuntime$ *self, JavaVM **jvm, JNIEnv **jni)(NULL);
-        int (*AndroidRuntime$startReg)(JNIEnv *jni)(NULL);
+        int (*AndroidRuntime$startVm)(AndroidRuntime$ *self, JavaVM **jvm, JNIEnv **env)(NULL);
+        int (*AndroidRuntime$startReg)(JNIEnv *env)(NULL);
         int (*AndroidRuntime$addOption)(AndroidRuntime$ *self, const char *option, void *extra)(NULL);
         int (*AndroidRuntime$addVmArguments)(AndroidRuntime$ *self, int, const char *const argv[])(NULL);
         AndroidRuntime$ *(*AndroidRuntime$finalize)(AndroidRuntime$ *self)(NULL);
@@ -1446,14 +1445,14 @@ static JNIEnv *GetJNI_(JSContextRef context) {
         int failure;
 
         _assert(AndroidRuntime$startVm != NULL);
-        failure = AndroidRuntime$startVm(runtime, &jvm, &jni);
+        failure = AndroidRuntime$startVm(runtime, &jvm, &env);
         _assert(failure == 0);
 
         _assert(AndroidRuntime$startReg != NULL);
-        failure = AndroidRuntime$startReg(jni);
+        failure = AndroidRuntime$startReg(env);
         _assert(failure == 0);
 
-        return jni;
+        return jvm;
     }
 
     jint (*$JNI_CreateJavaVM)(JavaVM **jvm, void **, void *);
@@ -1464,15 +1463,23 @@ static JNIEnv *GetJNI_(JSContextRef context) {
     args.version = CYJavaVersion;
     args.nOptions = options.size();
     args.options = options.data();
-    _jnicall($JNI_CreateJavaVM(&jvm, reinterpret_cast<void **>(&jni), &args));
-    return jni;
+    _jnicall($JNI_CreateJavaVM(&jvm, reinterpret_cast<void **>(&env), &args));
+    return jvm;
 }
 
 static JNIEnv *GetJNI(JSContextRef context) {
-    CYJavaEnv jni(GetJNI_(context));
+    auto jvm(CYGetJavaVM(context));
+    if (jvm == NULL)
+        return NULL;
+
+    JNIEnv *env;
+    _jnicall(jvm->GetEnv(reinterpret_cast<void **>(&env), CYJavaVersion));
+    CYJavaEnv jni(env);
+
     auto Cycript$(jni.FindClass("Cycript"));
     jni.RegisterNatives(Cycript$, Cycript_, sizeof(Cycript_) / sizeof(Cycript_[0]));
-    return jni;
+
+    return env;
 }
 
 static JSStaticValue JavaClass_staticValues[3] = {
@@ -1582,6 +1589,10 @@ CYJavaForEachPrimitive
 }
 
 void CYJava_SetupContext(JSContextRef context) {
+    JNIEnv *jni(GetJNI(context));
+    if (jni == NULL)
+        return;
+
     JSObjectRef global(CYGetGlobalObject(context));
     //JSObjectRef cy(CYCastJSObject(context, CYGetProperty(context, global, cy_s)));
     JSObjectRef cycript(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Cycript"))));
@@ -1591,7 +1602,7 @@ void CYJava_SetupContext(JSContextRef context) {
     JSObjectRef Java(JSObjectMake(context, NULL, NULL));
     CYSetProperty(context, cycript, CYJSString("Java"), Java);
 
-    JSObjectRef Packages(CYJavaPackage::Make(context, CYJavaPackage::Path()));
+    JSObjectRef Packages(CYJavaPackage::Make(context, jni, CYJavaPackage::Path()));
     CYSetProperty(context, all, CYJSString("Packages"), Packages);
 
     for (auto name : (const char *[]) {"java", "javax", "android", "com", "net", "org"}) {

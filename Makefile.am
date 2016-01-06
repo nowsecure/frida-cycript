@@ -116,7 +116,6 @@ endif
 if CY_JAVA
 filters += Java
 libcycript_la_SOURCES += Java/Execute.cpp
-libcycript_la_LIBADD += $(LTJAVA)
 dat_DATA += libcycript.jar
 
 CLEANFILES += Class
