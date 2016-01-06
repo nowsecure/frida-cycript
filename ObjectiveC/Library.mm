@@ -1676,12 +1676,13 @@ static bool Messages_setProperty(JSContextRef context, JSObjectRef object, JSStr
     objc_method *method(NULL);
     unsigned int size;
     objc_method **methods(class_copyMethodList(_class, &size));
+    pool.atexit(free, methods);
+
     for (size_t i(0); i != size; ++i)
         if (sel_isEqual(method_getName(methods[i]), sel)) {
             method = methods[i];
             break;
         }
-    free(methods);
 
     if (method != NULL)
         method_setImplementation(method, imp);
@@ -1693,10 +1694,13 @@ static bool Messages_setProperty(JSContextRef context, JSObjectRef object, JSStr
 
 static void Messages_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
     Messages *internal(reinterpret_cast<Messages *>(JSObjectGetPrivate(object)));
+    CYPool pool;
     Class _class(internal->value_);
 
     unsigned int size;
     objc_method **data(class_copyMethodList(_class, &size));
+    pool.atexit(free, data);
+
     for (size_t i(0); i != size; ++i)
         JSPropertyNameAccumulatorAddName(names, CYJSString(sel_getName(method_getName(data[i]))));
     free(data);
@@ -1893,18 +1897,20 @@ static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, 
     {
         unsigned int size;
         objc_property_t *data(class_copyPropertyList(_class, &size));
+        pool.atexit(free, data);
+
         for (size_t i(0); i != size; ++i)
             JSPropertyNameAccumulatorAddName(names, CYJSString(property_getName(data[i])));
-        free(data);
     }
 
     if (CYHasImplicitProperties(context, _class))
         for (Class current(_class); current != nil; current = class_getSuperclass(current)) {
             unsigned int size;
             objc_method **data(class_copyMethodList(current, &size));
+            pool.atexit(free, data);
+
             for (size_t i(0); i != size; ++i)
                 Instance_getPropertyNames_message(names, data[i]);
-            free(data);
         }
 
     CYPoolTry {
@@ -2018,12 +2024,14 @@ static bool Interior_hasProperty(JSContextRef context, JSObjectRef object, JSStr
     return false;
 }
 
-static void CYBitField(unsigned &length, unsigned &shift, id self, Ivar ivar, const char *encoding, unsigned offset) {
+static void CYBitField(CYPool &pool, unsigned &length, unsigned &shift, id self, Ivar ivar, const char *encoding, unsigned offset) {
     length = CYCastDouble(encoding + 1);
     shift = 0;
 
     unsigned int size;
     objc_ivar **ivars(class_copyIvarList(object_getClass(self), &size));
+    pool.atexit(free, ivars);
+
     for (size_t i(0); i != size; ++i)
         if (ivars[i] == ivar)
             break;
@@ -2033,7 +2041,6 @@ static void CYBitField(unsigned &length, unsigned &shift, id self, Ivar ivar, co
             _assert(encoding[0] == 'b');
             shift += CYCastDouble(encoding + 1);
         }
-    free(ivars);
 }
 
 static JSValueRef Interior_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
@@ -2052,7 +2059,7 @@ static JSValueRef Interior_getProperty(JSContextRef context, JSObjectRef object,
         _assert(encoding[0] != '\0');
         if (encoding[0] == 'b') {
             unsigned length, shift;
-            CYBitField(length, shift, self, ivar, encoding, offset);
+            CYBitField(pool, length, shift, self, ivar, encoding, offset);
             _assert(shift + length <= sizeof(uintptr_t) * 8);
             uintptr_t &field(*reinterpret_cast<uintptr_t *>(data));
             uintptr_t mask((1 << length) - 1);
@@ -2087,7 +2094,7 @@ static bool Interior_setProperty(JSContextRef context, JSObjectRef object, JSStr
         _assert(encoding != NULL);
         if (encoding[0] == 'b') {
             unsigned length, shift;
-            CYBitField(length, shift, self, ivar, encoding, offset);
+            CYBitField(pool, length, shift, self, ivar, encoding, offset);
             _assert(shift + length <= sizeof(uintptr_t) * 8);
             uintptr_t &field(*reinterpret_cast<uintptr_t *>(data));
             uintptr_t mask((1 << length) - 1);
@@ -2102,15 +2109,16 @@ static bool Interior_setProperty(JSContextRef context, JSObjectRef object, JSStr
     return false;
 } CYCatch(false) }
 
-static void Interior_getPropertyNames_(Class _class, JSPropertyNameAccumulatorRef names) {
+static void Interior_getPropertyNames_(CYPool &pool, Class _class, JSPropertyNameAccumulatorRef names) {
     if (Class super = class_getSuperclass(_class))
-        Interior_getPropertyNames_(super, names);
+        Interior_getPropertyNames_(pool, super, names);
 
     unsigned int size;
     objc_ivar **data(class_copyIvarList(_class, &size));
+    pool.atexit(free, data);
+
     for (size_t i(0); i != size; ++i)
         JSPropertyNameAccumulatorAddName(names, CYJSString(ivar_getName(data[i])));
-    free(data);
 }
 
 static void Interior_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
@@ -2120,7 +2128,7 @@ static void Interior_getPropertyNames(JSContextRef context, JSObjectRef object, 
     id self(internal->value_);
     Class _class(object_getClass(self));
 
-    Interior_getPropertyNames_(_class, names);
+    Interior_getPropertyNames_(pool, _class, names);
 }
 
 static JSValueRef Interior_callAsFunction_$cya(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -2164,11 +2172,13 @@ static Class *CYCopyClassList(size_t &size) {
 }
 
 static void ObjectiveC_Classes_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
+    CYPool pool;
+
     size_t size;
     if (Class *data = CYCopyClassList(size)) {
+        pool.atexit(free, data);
         for (size_t i(0); i != size; ++i)
             JSPropertyNameAccumulatorAddName(names, CYJSString(class_getName(data[i])));
-        free(data);
     }
 }
 
@@ -2178,30 +2188,33 @@ static JSValueRef ObjectiveC_Image_Classes_getProperty(JSContextRef context, JSO
 
     CYPool pool;
     const char *name(CYPoolCString(pool, context, property));
+
     unsigned int size;
     const char **data(objc_copyClassNamesForImage(internal, &size));
+    pool.atexit(free, data);
+
     JSValueRef value;
     for (size_t i(0); i != size; ++i)
         if (strcmp(name, data[i]) == 0) {
-            if (Class _class = objc_getClass(name)) {
-                value = CYMakeInstance(context, _class, Instance::Permanent);
-                goto free;
-            } else
-                break;
+            if (Class _class = objc_getClass(name))
+                return CYMakeInstance(context, _class, Instance::Permanent);
+            else
+                return NULL;
         }
-    value = NULL;
-  free:
-    free(data);
-    return value;
+
+    return NULL;
 } CYCatch(NULL) }
 
 static void ObjectiveC_Image_Classes_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
     const char *internal(reinterpret_cast<const char *>(JSObjectGetPrivate(object)));
+    CYPool pool;
+
     unsigned int size;
     const char **data(objc_copyClassNamesForImage(internal, &size));
+    pool.atexit(free, data);
+
     for (size_t i(0); i != size; ++i)
         JSPropertyNameAccumulatorAddName(names, CYJSString(data[i]));
-    free(data);
 }
 
 static JSValueRef ObjectiveC_Images_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
@@ -2223,11 +2236,14 @@ static JSValueRef ObjectiveC_Images_getProperty(JSContextRef context, JSObjectRe
 } CYCatch(NULL) }
 
 static void ObjectiveC_Images_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
+    CYPool pool;
+
     unsigned int size;
     const char **data(objc_copyImageNames(&size));
+    pool.atexit(free, data);
+
     for (size_t i(0); i != size; ++i)
         JSPropertyNameAccumulatorAddName(names, CYJSString(data[i]));
-    free(data);
 }
 #endif
 
@@ -2240,11 +2256,14 @@ static JSValueRef ObjectiveC_Protocols_getProperty(JSContextRef context, JSObjec
 } CYCatch(NULL) }
 
 static void ObjectiveC_Protocols_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
+    CYPool pool;
+
     unsigned int size;
     Protocol **data(objc_copyProtocolList(&size));
+    pool.atexit(free, data);
+
     for (size_t i(0); i != size; ++i)
         JSPropertyNameAccumulatorAddName(names, CYJSString(protocol_getName(data[i])));
-    free(data);
 }
 
 static JSValueRef ObjectiveC_Constants_getProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
@@ -2335,6 +2354,7 @@ static JSValueRef choose(JSContextRef context, JSObjectRef object, JSObjectRef _
     size_t number;
     Class *classes(CYCopyClassList(number));
     _assert(classes != NULL);
+    pool.atexit(free, classes);
 
     for (size_t i(0); i != number; ++i)
         for (Class current(classes[i]); current != Nil; current = class_getSuperclass(current))
@@ -2342,8 +2362,6 @@ static JSValueRef choose(JSContextRef context, JSObjectRef object, JSObjectRef _
                 choice.query_.insert(classes[i]);
                 break;
             }
-
-    free(classes);
 
     for (unsigned i(0); i != size; ++i) {
         const malloc_zone_t *zone(reinterpret_cast<const malloc_zone_t *>(zones[i]));

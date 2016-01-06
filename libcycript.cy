@@ -118,7 +118,6 @@ Java.emit = function(event) {
 };
 
 Java.on('setup', function() {
-    system.print("JVM\n");
     $cy_set(java.lang.Boolean.prototype, {
         toCYON: function() {
             return `new java.lang.Boolean(${this->value})`;
