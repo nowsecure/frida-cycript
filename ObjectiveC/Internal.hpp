@@ -38,11 +38,10 @@ struct Selector_privateData :
 struct Instance :
     CYValue<Instance, id>
 {
-    enum Flags {
-        None          = 0,
-        Permanent     = (1 << 0),
-        Uninitialized = (1 << 1),
-    };
+    typedef unsigned Flags;
+    static const Flags None = 0;
+    static const Flags Permanent = 1 << 0;
+    static const Flags Uninitialized = 1 << 1;
 
     Flags flags_;
 
@@ -52,6 +51,10 @@ struct Instance :
     JSValueRef GetPrototype(JSContextRef context) const;
 
     static JSClassRef GetClass(id value, Flags flags);
+
+    _finline bool IsPermanent() const {
+        return (flags_ & Permanent) != 0;
+    }
 
     _finline bool IsUninitialized() const {
         return (flags_ & Uninitialized) != 0;

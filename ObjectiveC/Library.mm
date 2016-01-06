@@ -353,12 +353,15 @@ Instance::Instance(id value, Flags flags) :
     CYValue(value),
     flags_(flags)
 {
-    if ((flags & Instance::Permanent) == 0)
+    if (IsPermanent());
+    /*else if ([value retainCount] == NSUInteger(-1))
+        flags_ |= Instance::Permanent;*/
+    else
         value_ = [value_ retain];
 }
 
 Instance::~Instance() {
-    if ((flags_ & Permanent) == 0)
+    if (!IsPermanent())
         [value_ release];
 }
 
@@ -1558,10 +1561,12 @@ JSValueRef Object::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool
     if (initialize) {
         Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(object)));
 
-        if ((internal->flags_ & Instance::Uninitialized) != 0) {
-            internal->flags_ = static_cast<Instance::Flags>(internal->flags_ & ~Instance::Uninitialized);
-            _assert(internal->value_ == nil);
-            internal->value_ = value;
+        if (internal->IsUninitialized()) {
+            internal->flags_ &= ~Instance::Uninitialized;
+            if (internal->value_ == nil)
+                internal->value_ = value;
+            else
+                _assert(internal->value_ == value);
         }
 
         [value release];
@@ -2449,7 +2454,7 @@ static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObje
         self = internal->value_;
         _class = nil;
         uninitialized = internal->IsUninitialized();
-        if (uninitialized)
+        if (uninitialized && [internal->value_ retainCount] != NSUInteger(-1))
             internal->value_ = nil;
     } else {
         self = CYCastNSObject(&pool, context, arguments[0]);
