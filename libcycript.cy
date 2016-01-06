@@ -83,7 +83,42 @@ $cy_set(RegExp.prototype, {
     },
 });
 
+// XXX: Java should just always be available
 if ("Java" in Cycript) {
+
+// XXX: this is a half-assed EventEmitter
+// XXX: this doesn't even have the same semantics
+
+Java.handlers_ = {};
+
+Java.on = function(event, handler) {
+    var handlers;
+    if (event in this.handlers_)
+        handlers = this.handlers_[event];
+    else {
+        handlers = [];
+        this.handlers_[event] = handlers;
+    }
+
+    if (this.handlers_ == null)
+        handler();
+    else
+        handlers.push(handler);
+};
+
+Java.emit = function(event) {
+    if (event in this.handlers_) {
+        var handlers = this.handlers_[event];
+        if (handlers != null)
+            for (var handler of handlers)
+                handler();
+    }
+
+    this.handlers_[event] = null;
+};
+
+Java.on('setup', function() {
+    system.print("JVM\n");
     $cy_set(java.lang.Boolean.prototype, {
         toCYON: function() {
             return `new java.lang.Boolean(${this->value})`;
@@ -150,6 +185,8 @@ if ("Java" in Cycript) {
                 this.put(key, value);
         },
     });
+});
+
 }
 
 if ("ObjectiveC" in Cycript) {

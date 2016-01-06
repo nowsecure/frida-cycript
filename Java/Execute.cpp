@@ -1247,6 +1247,8 @@ CYJavaForEachPrimitive
     return true;
 } CYCatch(false) }
 
+static JNIEnv *GetJNI(JSContextRef context, JNIEnv *&env);
+
 static JSValueRef JavaPackage_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     auto internal(CYJavaPackage::Get(context, _this));
     std::ostringstream name;
@@ -1272,7 +1274,10 @@ static JSValueRef CYJavaPackage_getProperty(JSContextRef context, JSObjectRef ob
         name << package << '/';
     name << next;
 
+    if (internal->jni_ == NULL)
+        GetJNI(context, internal->jni_);
     JNIEnv *jni(internal->jni_);
+
     if (auto _class = jni->FindClass(name.str().c_str()))
         return CYGetJavaClass(context, CYJavaLocal<jclass>(jni, _class));
     jni->ExceptionClear();
@@ -1468,17 +1473,21 @@ static JavaVM *CYGetJavaVM(JSContextRef context) {
     return jvm;
 }
 
-static JNIEnv *GetJNI(JSContextRef context) {
+static JNIEnv *GetJNI(JSContextRef context, JNIEnv *&env) {
     auto jvm(CYGetJavaVM(context));
-    if (jvm == NULL)
-        return NULL;
-
-    JNIEnv *env;
+    _assert(jvm != NULL);
     _jnicall(jvm->GetEnv(reinterpret_cast<void **>(&env), CYJavaVersion));
     CYJavaEnv jni(env);
 
+    // XXX: this happens once per stub :/
+
     auto Cycript$(jni.FindClass("Cycript"));
     jni.RegisterNatives(Cycript$, Cycript_, sizeof(Cycript_) / sizeof(Cycript_[0]));
+
+    JSObjectRef java(CYGetCachedObject(context, CYJSString("Java")));
+    JSValueRef arguments[1];
+    arguments[0] = CYCastJSValue(context, CYJSString("setup"));
+    CYCallAsFunction(context, CYCastJSObject(context, CYGetProperty(context, java, CYJSString("emit"))), java, 1, arguments);
 
     return env;
 }
@@ -1590,25 +1599,22 @@ CYJavaForEachPrimitive
 }
 
 void CYJava_SetupContext(JSContextRef context) {
-    JNIEnv *jni(GetJNI(context));
-    if (jni == NULL)
-        return;
-
     JSObjectRef global(CYGetGlobalObject(context));
-    //JSObjectRef cy(CYCastJSObject(context, CYGetProperty(context, global, cy_s)));
+    JSObjectRef cy(CYCastJSObject(context, CYGetProperty(context, global, cy_s)));
     JSObjectRef cycript(CYCastJSObject(context, CYGetProperty(context, global, CYJSString("Cycript"))));
     JSObjectRef all(CYCastJSObject(context, CYGetProperty(context, cycript, CYJSString("all"))));
     //JSObjectRef alls(CYCastJSObject(context, CYGetProperty(context, cycript, CYJSString("alls"))));
 
     JSObjectRef Java(JSObjectMake(context, NULL, NULL));
     CYSetProperty(context, cycript, CYJSString("Java"), Java);
+    CYSetProperty(context, cy, CYJSString("Java"), Java);
 
-    JSObjectRef Packages(CYJavaPackage::Make(context, jni, CYJavaPackage::Path()));
-    CYSetProperty(context, all, CYJSString("Packages"), Packages);
+    JSObjectRef Packages(CYJavaPackage::Make(context, nullptr, CYJavaPackage::Path()));
+    CYSetProperty(context, all, CYJSString("Packages"), Packages, kJSPropertyAttributeDontEnum);
 
     for (auto name : (const char *[]) {"java", "javax", "android", "com", "net", "org"}) {
         CYJSString js(name);
-        CYSetProperty(context, all, js, CYGetProperty(context, Packages, js));
+        CYSetProperty(context, all, js, CYJavaPackage::Make(context, nullptr, CYJavaPackage::Path(1, name)), kJSPropertyAttributeDontEnum);
     }
 }
 
