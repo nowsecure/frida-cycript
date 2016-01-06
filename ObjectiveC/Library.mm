@@ -1697,11 +1697,33 @@ static void Messages_getPropertyNames(JSContextRef context, JSObjectRef object, 
     free(data);
 }
 
-static bool CYHasImplicitProperties(Class _class) {
+static bool CYHasImplicitProperties(JSContextRef context, Class _class) {
+    if (!CYCastBool(context, CYGetCachedValue(context, CYJSString("cydget"))))
+        return false;
     // XXX: this is an evil hack to deal with NSProxy; fix elsewhere
     if (!CYImplements(_class, object_getClass(_class), @selector(cy$hasImplicitProperties)))
         return true;
     return [_class cy$hasImplicitProperties];
+}
+
+static objc_property_t CYFindProperty(CYPool &pool, Class _class, const char *name) {
+    if (_class == Nil)
+        return NULL;
+    if (objc_property_t property = class_getProperty(_class, name))
+        return property;
+    return NULL;
+
+    /* // XXX: I don't think any of this is required
+    unsigned int count;
+    Protocol **protocols(class_copyProtocolList(_class, &count));
+    // XXX: just implement a scope guard already :/
+    pool.atexit(free, protocols);
+
+    for (unsigned int i(0); i != count; ++i)
+        if (objc_property_t property = protocol_getProperty(protocols[i], name, true, true))
+            return property;
+
+    return CYFindProperty(pool, class_getSuperclass(_class), name); */
 }
 
 static bool Instance_hasProperty(JSContextRef context, JSObjectRef object, JSStringRef property) {
@@ -1729,10 +1751,10 @@ static bool Instance_hasProperty(JSContextRef context, JSObjectRef object, JSStr
 
     const char *string(CYPoolCString(pool, context, name));
 
-    if (class_getProperty(_class, string) != NULL)
+    if (CYFindProperty(pool, _class, string) != NULL)
         return true;
 
-    if (CYHasImplicitProperties(_class))
+    if (CYHasImplicitProperties(context, _class))
         if (SEL sel = sel_getUid(string))
             if (CYImplements(self, _class, sel, true))
                 return true;
@@ -1762,13 +1784,13 @@ static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object,
     const char *string(CYPoolCString(pool, context, name));
     Class _class(object_getClass(self));
 
-    if (objc_property_t property = class_getProperty(_class, string)) {
+    if (objc_property_t property = CYFindProperty(pool, _class, string)) {
         PropertyAttributes attributes(property);
         SEL sel(sel_registerName(attributes.Getter()));
         return CYSendMessage(pool, context, self, NULL, sel, 0, NULL, false);
     }
 
-    if (CYHasImplicitProperties(_class))
+    if (CYHasImplicitProperties(context, _class))
         if (SEL sel = sel_getUid(string))
             if (CYImplements(self, _class, sel, true))
                 return CYSendMessage(pool, context, self, NULL, sel, 0, NULL, false);
@@ -1793,7 +1815,7 @@ static bool Instance_setProperty(JSContextRef context, JSObjectRef object, JSStr
     const char *string(CYPoolCString(pool, context, name));
     Class _class(object_getClass(self));
 
-    if (objc_property_t property = class_getProperty(_class, string)) {
+    if (objc_property_t property = CYFindProperty(pool, _class, string)) {
         PropertyAttributes attributes(property);
         if (const char *setter = attributes.Setter()) {
             SEL sel(sel_registerName(setter));
@@ -1871,7 +1893,7 @@ static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, 
         free(data);
     }
 
-    if (CYHasImplicitProperties(_class))
+    if (CYHasImplicitProperties(context, _class))
         for (Class current(_class); current != nil; current = class_getSuperclass(current)) {
             unsigned int size;
             objc_method **data(class_copyMethodList(current, &size));
@@ -2960,6 +2982,8 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
     CYSetProperty(context, cache, CYJSString("id"), CYMakeType(context, sig::Object()), kJSPropertyAttributeDontEnum);
     CYSetProperty(context, cache, CYJSString("Class"), CYMakeType(context, sig::Meta()), kJSPropertyAttributeDontEnum);
     CYSetProperty(context, cache, CYJSString("SEL"), CYMakeType(context, sig::Selector()), kJSPropertyAttributeDontEnum);
+
+    CYSetProperty(context, cy, CYJSString("cydget"), CYCastJSValue(context, false));
 } CYPoolCatch() }
 
 static void *CYObjectiveC_CastSymbol(const char *name) {
@@ -2984,6 +3008,9 @@ CYRegisterHook CYObjectiveC(&CYObjectiveCHook);
 
 _extern void CydgetSetupContext(JSGlobalContextRef context) { CYObjectiveTry_ {
     CYSetupContext(context);
+    JSObjectRef global(CYGetGlobalObject(context));
+    JSObjectRef cy(CYCastJSObject(context, CYGetProperty(context, global, cy_s)));
+    CYSetProperty(context, cy, CYJSString("cydget"), CYCastJSValue(context, true));
 } CYObjectiveCatch }
 
 _extern void CydgetMemoryParse(const uint16_t **data, size_t *size) { try {
