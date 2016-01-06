@@ -97,6 +97,7 @@ $(deb): Cycript.lib/cycript-apl Cycript.lib/libcycript.dylib Cycript.lib/libcycr
 	$(lipo) -extract armv6 -extract arm64 -output package/usr/lib/libcycript.dylib Cycript.lib/libcycript.dylib
 	ln -s libcycript.dylib package/usr/lib/libcycript.0.dylib
 	cp -a libcycript.cy package/usr/lib/libcycript.cy
+	cp -a Cycript.lib/libcycript.jar package/usr/lib/libcycript.jar
 	cp -a Cycript.lib/libcycript.db package/usr/lib/libcycript.db
 	sqlite3 package/usr/lib/libcycript.db "delete from cache where system & $$(($$(cat build.ios-arm{v6,64}/Makefile | sed -e '/^CY_SYSTEM = \([0-9]*\)$$/{s//\1/;p;};d;' | tr $$'\n' '|') 0)) == 0; vacuum full;"
 	./dpkg-deb.sh -Zlzma -b package $@

@@ -25,7 +25,7 @@
 
 #include <dlfcn.h>
 
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(__arm__)
 #include <JavaVM/jni.h>
 #else
 #include <jni.h>
@@ -1342,6 +1342,7 @@ static JavaVM *CYGetJavaVM(JSContextRef context) {
 
         guesses.push_back("/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home/lib/jli/libjli.dylib");
         //guesses.push_back("/System/Library/Frameworks/JavaVM.framework/JavaVM");
+        guesses.push_back("libjvm.dylib");
 
         guesses.push_back("libart.so");
         guesses.push_back("libdvm.so");

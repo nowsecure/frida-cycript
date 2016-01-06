@@ -35,3 +35,7 @@ done
 
 mv sysroot.ios/usr/lib/_ncurses/* sysroot.ios/usr/lib
 rmdir sysroot.ios/usr/lib/_ncurses
+
+for h in jni.h jni_md.h; do
+    ln -s /System/Library/Frameworks/JavaVM.framework/Versions/A/Headers/"${h}" sysroot.ios/usr/include
+done
