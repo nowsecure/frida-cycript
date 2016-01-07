@@ -400,6 +400,9 @@ class History {
     } }
 
     void operator +=(std::string command) {
+        if (HIST_ENTRY *entry = history_get(where_history()))
+            if (command == entry->line)
+                return;
         add_history(command.c_str());
         ++histlines_;
     }
