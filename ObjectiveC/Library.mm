@@ -330,7 +330,7 @@ _finline JSValueRef CYGetClassPrototype(JSContextRef context, Class self) {
 
 JSValueRef Messages::GetPrototype(JSContextRef context) const {
     if (Class super = class_getSuperclass(value_))
-        return Messages::Make(context, super);
+        return CYPrivate<Messages>::Make(context, super);
     return NULL;
 }
 
@@ -1471,11 +1471,11 @@ JSValueRef CYCastJSValue(JSContextRef context, NSObject *value) {
 static JSValueRef CYCastJSValue(JSContextRef context, SEL sel) {
     if (sel == NULL)
         return CYJSNull(context);
-    return Selector_privateData::Make(context, sel);
+    return CYPrivate<Selector_privateData>::Make(context, sel);
 }
 
 static SEL CYCastSEL(JSContextRef context, JSValueRef value) {
-    if (JSValueIsObjectOfClass(context, value, Selector_privateData::Class_)) {
+    if (JSValueIsObjectOfClass(context, value, CYPrivate<Selector_privateData>::Class_)) {
         Selector_privateData *internal(reinterpret_cast<Selector_privateData *>(JSObjectGetPrivate((JSObjectRef) value)));
         return reinterpret_cast<SEL>(internal->value_);
     } else {
@@ -1776,7 +1776,7 @@ static JSValueRef Instance_getProperty(JSContextRef context, JSObjectRef object,
     id self(internal->value_);
 
     if (JSStringIsEqualToUTF8CString(property, "$cyi"))
-        return Interior::Make(context, self, context, object);
+        return CYPrivate<Interior>::Make(context, self, context, object);
 
     CYPool pool;
     NSString *name(CYCastNSString(&pool, context, property));
@@ -2462,7 +2462,7 @@ static JSValueRef $objc_msgSend(JSContextRef context, JSObjectRef object, JSObje
     SEL _cmd;
     Class _class;
 
-    if (JSValueIsObjectOfClass(context, arguments[0], cy::Super::Class_)) {
+    if (JSValueIsObjectOfClass(context, arguments[0], CYPrivate<cy::Super>::Class_)) {
         cy::Super *internal(reinterpret_cast<cy::Super *>(JSObjectGetPrivate((JSObjectRef) arguments[0])));
         self = internal->value_;
         _class = internal->class_;;
@@ -2520,7 +2520,7 @@ static JSObjectRef Super_new(JSContextRef context, JSObjectRef object, size_t co
     CYPool pool;
     id self(CYCastNSObject(&pool, context, arguments[0]));
     Class _class(CYCastClass(pool, context, arguments[1]));
-    return cy::Super::Make(context, self, _class);
+    return CYPrivate<cy::Super>::Make(context, self, _class);
 } CYCatch(NULL) }
 
 static JSObjectRef Selector_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -2528,7 +2528,7 @@ static JSObjectRef Selector_new(JSContextRef context, JSObjectRef object, size_t
         throw CYJSError(context, "incorrect number of arguments to Selector constructor");
     CYPool pool;
     const char *name(CYPoolCString(pool, context, arguments[0]));
-    return Selector_privateData::Make(context, sel_registerName(name));
+    return CYPrivate<Selector_privateData>::Make(context, sel_registerName(name));
 } CYCatch(NULL) }
 
 static JSObjectRef Instance_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -2576,7 +2576,7 @@ static JSValueRef Instance_getProperty_messages(JSContextRef context, JSObjectRe
     id self(internal->value_);
     if (!CYIsClass(self))
         return CYJSUndefined(context);
-    return Messages::Make(context, (Class) self);
+    return CYPrivate<Messages>::Make(context, (Class) self);
 } CYCatch(NULL) }
 
 static JSValueRef Instance_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -2830,7 +2830,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     definition.setProperty = &Interior_setProperty;
     definition.getPropertyNames = &Interior_getPropertyNames;
     definition.finalize = &CYFinalize;
-    Interior::Class_ = JSClassCreate(&definition);
+    CYPrivate<Interior>::Class_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "Message";
@@ -2847,7 +2847,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     definition.setProperty = &Messages_setProperty;
     definition.getPropertyNames = &Messages_getPropertyNames;
     definition.finalize = &CYFinalize;
-    Messages::Class_ = JSClassCreate(&definition);
+    CYPrivate<Messages>::Class_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "Selector";
@@ -2855,12 +2855,12 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     definition.staticFunctions = Selector_staticFunctions;
     definition.callAsFunction = &Selector_callAsFunction;
     definition.finalize = &CYFinalize;
-    Selector_privateData::Class_ = JSClassCreate(&definition);
+    CYPrivate<Selector_privateData>::Class_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "Super";
     definition.finalize = &CYFinalize;
-    cy::Super::Class_ = JSClassCreate(&definition);
+    CYPrivate<cy::Super>::Class_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "ObjectiveC::Classes";
@@ -2934,8 +2934,8 @@ void CYObjectiveC_SetupContext(JSContextRef context) { CYPoolTry {
 #endif
 
     JSObjectRef Message(JSObjectMakeConstructor(context, Message_privateData::Class_, NULL));
-    JSObjectRef Selector(JSObjectMakeConstructor(context, Selector_privateData::Class_, &Selector_new));
-    JSObjectRef Super(JSObjectMakeConstructor(context, cy::Super::Class_, &Super_new));
+    JSObjectRef Selector(JSObjectMakeConstructor(context, CYPrivate<Selector_privateData>::Class_, &Selector_new));
+    JSObjectRef Super(JSObjectMakeConstructor(context, CYPrivate<cy::Super>::Class_, &Super_new));
 
     JSObjectRef Instance(JSObjectMakeConstructor(context, Instance::Class_, &Instance_new));
     JSObjectRef Instance_prototype(CYCastJSObject(context, CYGetProperty(context, Instance, prototype_s)));

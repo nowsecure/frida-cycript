@@ -39,15 +39,19 @@ sig::Type *Structor_(CYPool &pool, sig::Aggregate *aggregate);
 
 extern JSClassRef Functor_;
 
-template <typename Internal_>
-struct CYPrivate :
+struct CYRoot :
     CYData
 {
-    static JSClassRef Class_;
-
     _finline JSValueRef GetPrototype(JSContextRef context) const {
         return NULL;
     }
+};
+
+template <typename Internal_, typename Base_ = CYRoot>
+struct CYPrivateOld :
+    Base_
+{
+    static JSClassRef Class_;
 
     template <typename... Args_>
     _finline static JSClassRef GetClass(Args_ &&... args) {
@@ -69,8 +73,33 @@ struct CYPrivate :
     }
 };
 
+template <typename Internal_, typename Base_>
+JSClassRef CYPrivateOld<Internal_, Base_>::Class_;
+
+template <typename Internal_>
+struct CYPrivate {
+    static JSClassRef Class_;
+
+    template <typename... Args_>
+    static JSObjectRef Make(JSContextRef context, Args_ &&... args) {
+        Internal_ *internal(new Internal_(cy::Forward<Args_>(args)...));
+        JSObjectRef object(JSObjectMake(context, Class_, internal));
+        if (JSValueRef prototype = internal->GetPrototype(context))
+            CYSetPrototype(context, object, prototype);
+        return object;
+    }
+
+    static Internal_ *Get(JSContextRef context, JSObjectRef object) {
+        _assert(JSValueIsObjectOfClass(context, object, Class_));
+        return static_cast<Internal_ *>(JSObjectGetPrivate(object));
+    }
+};
+
+template <typename Internal_>
+JSClassRef CYPrivate<Internal_>::Class_;
+
 struct Type_privateData :
-    CYPrivate<Type_privateData>
+    CYRoot
 {
     ffi_type *ffi_;
     sig::Type *type_;
@@ -117,9 +146,6 @@ struct Type_privateData :
     }
 };
 
-template <typename Internal_>
-JSClassRef CYPrivate<Internal_>::Class_;
-
 struct CYProtect {
   private:
     JSGlobalContextRef context_;
@@ -156,7 +182,7 @@ struct CYProtect {
 
 namespace cy {
 struct Functor :
-    CYPrivate<Functor>
+    CYRoot
 {
   private:
     void set() {

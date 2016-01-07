@@ -27,7 +27,7 @@
 #include "../Internal.hpp"
 
 struct Selector_privateData :
-    CYPrivate<Selector_privateData>
+    CYRoot
 {
     SEL value_;
 
@@ -38,7 +38,7 @@ struct Selector_privateData :
 };
 
 struct Instance :
-    CYPrivate<Instance>
+    CYPrivateOld<Instance>
 {
     typedef unsigned Flags;
     static const Flags None = 0;
@@ -66,7 +66,7 @@ struct Instance :
 
 namespace cy {
 struct Super :
-    CYPrivate<Super>
+    CYRoot
 {
     id value_;
     Class class_;
@@ -79,7 +79,7 @@ struct Super :
 }; }
 
 struct Messages :
-    CYPrivate<Messages>
+    CYRoot
 {
     Class value_;
 
@@ -92,7 +92,7 @@ struct Messages :
 };
 
 struct Interior :
-    CYPrivate<Interior>
+    CYRoot
 {
     id value_;
     CYProtect owner_;
