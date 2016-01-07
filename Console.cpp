@@ -829,6 +829,8 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
     const char *host(NULL);
     const char *port(NULL);
 
+    const char *argv0(argv[0]);
+
     optind = 1;
 
     for (;;) {
@@ -1007,14 +1009,17 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
     if (argc == 0)
         script = NULL;
     else {
-#ifdef CY_EXECUTE
-        // XXX: const_cast?! wtf gcc :(
-        CYSetArgs(argc - 1, const_cast<const char **>(argv + 1));
-#endif
         script = argv[0];
         if (strcmp(script, "-") == 0)
             script = NULL;
+        --argc;
+        ++argv;
     }
+
+#ifdef CY_EXECUTE
+    // XXX: const_cast?! wtf gcc :(
+    CYSetArgs(argv0, script, argc, const_cast<const char **>(argv));
+#endif
 
 #ifdef CY_ATTACH
     if (pid == _not(pid_t))

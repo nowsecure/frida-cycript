@@ -430,6 +430,22 @@ static JSValueRef System_print(JSContextRef context, JSObjectRef object, JSObjec
     return CYJSUndefined(context);
 } CYCatch(NULL) }
 
+static JSValueRef Global_print(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    FILE *file(stdout);
+    CYPool pool;
+
+    for (size_t i(0); i != count; ++i) {
+        if (i != 0)
+            fputc(' ', file);
+        CYUTF8String string(CYPoolUTF8String(pool, context, CYJSString(context, arguments[i])));
+        fwrite(string.data, string.size, 1, file);
+    }
+
+    fputc('\n', file);
+    fflush(file);
+    return CYJSUndefined(context);
+} CYCatch(NULL) }
+
 static void (*JSSynchronousGarbageCollectForDebugging$)(JSContextRef);
 
 _visible void CYGarbageCollect(JSContextRef context) {
@@ -1980,15 +1996,24 @@ static JSStaticFunction Type_staticFunctions[10] = {
     {NULL, NULL, 0}
 };
 
-_visible void CYSetArgs(int argc, const char *argv[]) {
+_visible void CYSetArgs(const char *argv0, const char *script, int argc, const char *argv[]) {
     JSContextRef context(CYGetJSContext());
-    JSValueRef args[argc];
+    JSValueRef args[argc + 2];
     for (int i(0); i != argc; ++i)
-        args[i] = CYCastJSValue(context, argv[i]);
+        args[i + 2] = CYCastJSValue(context, argv[i]);
 
-    JSObjectRef array(CYObjectMakeArray(context, argc, args));
-    JSObjectRef System(CYGetCachedObject(context, CYJSString("System")));
-    CYSetProperty(context, System, CYJSString("args"), array);
+    size_t offset;
+    if (script == NULL)
+        offset = 1;
+    else {
+        offset = 0;
+        args[1] = CYCastJSValue(context, CYJSString(script));
+    }
+
+    args[offset] = CYCastJSValue(context, CYJSString(argv0));
+
+    CYSetProperty(context, CYGetCachedObject(context, CYJSString("System")), CYJSString("args"), CYObjectMakeArray(context, argc, args + 2));
+    CYSetProperty(context, CYGetCachedObject(context, CYJSString("process")), CYJSString("argv"), CYObjectMakeArray(context, argc + 2 - offset, args + offset));
 }
 
 JSObjectRef CYGetGlobalObject(JSContextRef context) {
@@ -2473,17 +2498,6 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
         CYSetPrototype(context, last, cache);
     }
 
-    JSObjectRef System(JSObjectMake(context, NULL, NULL));
-    CYSetProperty(context, cy, CYJSString("System"), System);
-
-    CYSetProperty(context, global, CYJSString("require"), &require_callAsFunction, kJSPropertyAttributeDontEnum);
-
-    CYSetProperty(context, global, CYJSString("system"), System);
-    CYSetProperty(context, System, CYJSString("args"), CYJSNull(context));
-    CYSetProperty(context, System, CYJSString("print"), &System_print);
-
-    CYSetProperty(context, global, CYJSString("global"), global);
-
 #ifdef __APPLE__
     if (&JSWeakObjectMapCreate != NULL) {
         JSWeakObjectMapRef weak(JSWeakObjectMapCreate(context, NULL, &CYDestroyWeak));
@@ -2521,6 +2535,23 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
 
     CYSetProperty(context, cache, CYJSString("float"), CYMakeType(context, sig::Primitive<float>()), kJSPropertyAttributeDontEnum);
     CYSetProperty(context, cache, CYJSString("double"), CYMakeType(context, sig::Primitive<double>()), kJSPropertyAttributeDontEnum);
+
+    CYSetProperty(context, global, CYJSString("require"), &require_callAsFunction, kJSPropertyAttributeDontEnum);
+
+    JSObjectRef System(JSObjectMake(context, NULL, NULL));
+    CYSetProperty(context, all, CYJSString("system"), System);
+    System = CYCastJSObject(context, CYGetProperty(context, global, CYJSString("system")));
+    CYSetProperty(context, cy, CYJSString("System"), System);
+
+    JSObjectRef process(JSObjectMake(context, NULL, NULL));
+    CYSetProperty(context, global, CYJSString("process"), process);
+    CYSetProperty(context, cy, CYJSString("process"), process);
+
+    CYSetProperty(context, System, CYJSString("args"), CYJSNull(context));
+    CYSetProperty(context, System, CYJSString("print"), &System_print);
+
+    CYSetProperty(context, global, CYJSString("global"), global);
+    CYSetProperty(context, global, CYJSString("print"), &Global_print);
 
     for (CYHook *hook : GetHooks())
         if (hook->SetupContext != NULL)

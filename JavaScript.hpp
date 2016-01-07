@@ -69,7 +69,7 @@ const char *CYExecute(JSContextRef context, CYPool &pool, CYUTF8String code);
 void CYCancel();
 #endif
 
-void CYSetArgs(int argc, const char *argv[]);
+void CYSetArgs(const char *argv0, const char *script, int argc, const char *argv[]);
 
 bool CYCastBool(JSContextRef context, JSValueRef value);
 double CYCastDouble(JSContextRef context, JSValueRef value);

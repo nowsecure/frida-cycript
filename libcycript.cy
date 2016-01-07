@@ -19,10 +19,6 @@
 **/
 /* }}} */
 
-var process = {
-    env: {},
-};
-
 (function() {
 
 this.typeid = function(object) {
@@ -427,6 +423,8 @@ process.binding = function(name) {
     bindings[name] = binding;
     return binding;
 };
+
+process.env = {};
 
 let environ = *(typedef char ***)(dlsym(RTLD_DEFAULT, "environ"));
 for (let i = 0; environ[i] != null; ++i) {
