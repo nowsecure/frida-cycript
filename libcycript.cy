@@ -62,8 +62,12 @@ $cy_set(Error.prototype, {
                 stack = stack.slice(0, -1);
             for (let i = 0; i != stack.length; ++i)
                 stack[i] = '\n    ' + stack[i];
-            stack = stack.join('');
-            stack = ` /*${stack} */`;
+            if (stack.length == 0)
+                stack = '';
+            else {
+                stack = stack.join('');
+                stack = ` /*${stack} */`;
+            }
         }
         return `new ${this.constructor.name}(${this.message.toCYON()})${stack}`;
     },
