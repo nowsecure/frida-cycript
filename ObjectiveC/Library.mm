@@ -350,7 +350,7 @@ JSClassRef Instance::GetClass(id object, Flags flags) {
 }
 
 Instance::Instance(id value, Flags flags) :
-    CYValue(value),
+    value_(value),
     flags_(flags)
 {
     if (IsPermanent());

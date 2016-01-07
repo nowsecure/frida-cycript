@@ -238,14 +238,15 @@ struct Context :
 };
 
 struct CArray :
-    CYValue<CArray, void *>
+    CYPrivate<CArray>
 {
+    void *value_;
     CYProtect owner_;
     Type_privateData *type_;
     size_t length_;
 
     CArray(void *value, size_t length, const sig::Type &type, ffi_type *ffi, JSContextRef context, JSObjectRef owner) :
-        CYValue(value),
+        value_(value),
         owner_(context, owner),
         type_(new(*pool_) Type_privateData(type, ffi)),
         length_(length)
@@ -260,12 +261,13 @@ struct CArray :
 };
 
 struct CString :
-    CYValue<CString, char *>
+    CYPrivate<CString>
 {
+    char *value_;
     CYProtect owner_;
 
     CString(char *value, JSContextRef context, JSObjectRef owner) :
-        CYValue(value),
+        value_(value),
         owner_(context, owner)
     {
         if (owner == NULL)
@@ -274,20 +276,21 @@ struct CString :
 };
 
 struct Pointer :
-    CYValue<Pointer, void *>
+    CYPrivate<Pointer>
 {
+    void *value_;
     CYProtect owner_;
     Type_privateData *type_;
 
     Pointer(void *value, const sig::Type &type, JSContextRef context, JSObjectRef owner) :
-        CYValue(value),
+        value_(value),
         owner_(context, owner),
         type_(new(*pool_) Type_privateData(type))
     {
     }
 
     Pointer(void *value, const char *encoding, JSContextRef context, JSObjectRef owner) :
-        CYValue(value),
+        value_(value),
         owner_(context, owner),
         type_(new(*pool_) Type_privateData(encoding))
     {
@@ -295,13 +298,14 @@ struct Pointer :
 };
 
 struct Struct_privateData :
-    CYValue<Struct_privateData, void *>
+    CYPrivate<Struct_privateData>
 {
+    void *value_;
     CYProtect owner_;
     Type_privateData *type_;
 
     Struct_privateData(void *value, const sig::Type &type, ffi_type *ffi, JSContextRef context, JSObjectRef owner) :
-        CYValue(value),
+        value_(value),
         owner_(context, owner),
         type_(new(*pool_) Type_privateData(type, ffi))
     {

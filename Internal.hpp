@@ -117,26 +117,6 @@ struct Type_privateData :
     }
 };
 
-template <typename Internal_, typename Value_>
-struct CYValue :
-    CYPrivate<Internal_>
-{
-    Value_ value_;
-
-    CYValue() {
-    }
-
-    CYValue(const Value_ &value) :
-        value_(value)
-    {
-    }
-
-    CYValue(const CYValue &rhs) :
-        value_(rhs.value_)
-    {
-    }
-};
-
 template <typename Internal_>
 JSClassRef CYPrivate<Internal_>::Class_;
 
@@ -176,7 +156,7 @@ struct CYProtect {
 
 namespace cy {
 struct Functor :
-    CYValue<Functor, void (*)()>
+    CYPrivate<Functor>
 {
   private:
     void set() {
@@ -184,12 +164,13 @@ struct Functor :
     }
 
   public:
+    void (*value_)();
     bool variadic_;
     sig::Signature signature_;
     ffi_cif cif_;
 
     Functor(void (*value)(), bool variadic, const sig::Signature &signature) :
-        CYValue(value),
+        value_(value),
         variadic_(variadic)
     {
         sig::Copy(*pool_, signature_, signature);
@@ -197,7 +178,7 @@ struct Functor :
     }
 
     Functor(void (*value)(), const char *encoding) :
-        CYValue(value),
+        value_(value),
         variadic_(false)
     {
         sig::Parse(*pool_, &signature_, encoding, &Structor_);
