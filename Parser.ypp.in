@@ -2031,6 +2031,7 @@ ExportSpecifier
 TypeSignifier
     : IdentifierType[name] { $$ = CYNew CYTypedName(@name, $name); }
     | StringLiteral[name] { $$ = CYNew CYTypedName(@name, $name); }
+    | NumericLiteral[name] { $$ = CYNew CYTypedName(@name, $name); }
     | "(" "*" TypeQualifierRightOpt[typed] ")" { $$ = $typed; $$->modifier_ = CYNew CYTypePointerTo($$->modifier_); }
     ;
 

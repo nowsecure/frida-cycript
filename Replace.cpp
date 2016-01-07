@@ -394,7 +394,10 @@ CYStatement *CYExternalDefinition::Replace(CYContext &context) {
 }
 
 CYTarget *CYExternalExpression::Replace(CYContext &context) {
-    return $C1(type_->Replace(context), $C2($V("dlsym"), $V("RTLD_DEFAULT"), name_->PropertyName(context)));
+    CYExpression *expression(name_->Number(context));
+    if (expression == NULL)
+        expression = $C2($V("dlsym"), $V("RTLD_DEFAULT"), name_->PropertyName(context));
+    return $C1(type_->Replace(context), expression);
 }
 
 CYNumber *CYFalse::Number(CYContext &context) {

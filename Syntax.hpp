@@ -121,6 +121,7 @@ struct CYOutput {
 struct CYExpression;
 struct CYAssignment;
 struct CYIdentifier;
+struct CYNumber;
 
 struct CYPropertyName {
     virtual bool Computed() const {
@@ -132,6 +133,10 @@ struct CYPropertyName {
     }
 
     virtual CYIdentifier *Identifier() {
+        return NULL;
+    }
+
+    virtual CYNumber *Number(CYContext &context) {
         return NULL;
     }
 

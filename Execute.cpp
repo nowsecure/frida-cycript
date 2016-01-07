@@ -1761,29 +1761,28 @@ static JSValueRef Functor_callAsFunction_valueOf(JSContextRef context, JSObjectR
 static JSValueRef Functor_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     cy::Functor *internal(reinterpret_cast<cy::Functor *>(JSObjectGetPrivate(_this)));
     uint8_t *value(reinterpret_cast<uint8_t *>(internal->value_));
+    _assert(value != NULL);
 
     CYLocalPool pool;
 
     sig::Function function(internal->variadic_);
     sig::Copy(pool, function.signature, internal->signature_);
 
-    CYString *name;
+    CYPropertyName *name;
 
     auto typed(CYDecodeType(pool, &function)); {
         std::ostringstream str;
         Dl_info info;
-        if (internal->value_ == NULL)
-            str << "NULL";
-        else if (dladdr(value, &info) == 0)
-            str << internal->value_;
-        else {
+        if (dladdr(value, &info) == 0) {
+            str << (void *) value;
+            name = new(pool) CYNumber(reinterpret_cast<uintptr_t>(value));
+        } else {
             str << info.dli_sname;
             off_t offset(value - reinterpret_cast<uint8_t *>(info.dli_saddr));
             if (offset != 0)
                 str << "+0x" << std::hex << offset;
+            name = new(pool) CYString(pool.strdup(str.str().c_str()));
         }
-
-        name = new(pool) CYString(pool.strdup(str.str().c_str()));
     }
 
     std::ostringstream str;
