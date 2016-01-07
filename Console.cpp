@@ -674,13 +674,13 @@ static void Console(CYOptions &options) {
 
     CYOutputRun("");
 
-    struct sigaction action;
-    sigemptyset(&action.sa_mask);
-    action.sa_handler = &sigint;
-    action.sa_flags = 0;
-    sigaction(SIGINT, &action, NULL);
-
     for (;;) {
+        struct sigaction action;
+        sigemptyset(&action.sa_mask);
+        action.sa_handler = &sigint;
+        action.sa_flags = 0;
+        sigaction(SIGINT, &action, NULL);
+
         if (setjmp(ctrlc_) != 0) {
             mode_ = Working;
             *out_ << std::endl;
