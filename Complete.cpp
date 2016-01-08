@@ -19,6 +19,8 @@
 **/
 /* }}} */
 
+#include <typeinfo>
+
 #include "cycript.hpp"
 
 #include "Driver.hpp"
@@ -116,7 +118,8 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
         message = $ CYFalse();
 
     driver.script_ = $ CYScript($ CYExpress($C4(ParseExpression(pool,
-    "   function(object, prefix, word, message) {\n"
+    "   function(value, prefix, word, message) {\n"
+    "       var object = value;\n"
     "       var names = [];\n"
     "       var before = prefix.length;\n"
     "       prefix += word;\n"
@@ -126,10 +129,8 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
     "               if (name.substring(0, entire) == prefix)\n"
     "                   names.push(name);\n"
     "       } else do {\n"
-    "           if (object.hasOwnProperty(\"cy$complete\")) {\n"
-    "               names = names.concat(object.cy$complete(prefix, message));\n"
-    "               continue;\n"
-    "           }\n"
+    "           if (object.hasOwnProperty(\"cy$complete\"))\n"
+    "               names = names.concat(object.cy$complete.call(value, prefix, message));\n"
     "           try {\n"
     "               var local = Object.getOwnPropertyNames(object);\n"
     "           } catch (e) {\n"
@@ -173,8 +174,10 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
         _assert(value != NULL);
         element = value->next_;
 
+        _assert(value->value_ != NULL);
         CYString *string(dynamic_cast<CYString *>(value->value_));
-        _assert(string != NULL);
+        if (string == NULL)
+            CYThrow("string was actually %s", typeid(*value->value_).name());
 
         CYUTF8String completion;
         if (string->size_ != 0)

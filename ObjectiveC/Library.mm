@@ -46,6 +46,7 @@
 #include "Code.hpp"
 #include "Decode.hpp"
 #include "Error.hpp"
+#include "Functor.hpp"
 #include "JavaScript.hpp"
 #include "String.hpp"
 #include "Execute.hpp"
@@ -1897,16 +1898,22 @@ static bool Instance_deleteProperty(JSContextRef context, JSObjectRef object, JS
     } CYPoolCatch(false)
 } CYCatch(false) return /*XXX*/ false; }
 
-static void Instance_getPropertyNames_message(JSPropertyNameAccumulatorRef names, objc_method *method) {
-    const char *name(sel_getName(method_getName(method)));
-    if (strchr(name, ':') != NULL)
-        return;
+static void CYForEachProperty(CYPool &pool, Class _class, const Functor<void (objc_method *, const char *)> &code) {
+    for (; _class != Nil; _class = class_getSuperclass(_class)) {
+        unsigned int size;
+        objc_method **data(class_copyMethodList(_class, &size));
+        pool.atexit(free, data);
 
-    const char *type(method_getTypeEncoding(method));
-    if (type == NULL || *type == '\0' || *type == 'v')
-        return;
+        for (size_t i(0); i != size; ++i) {
+            objc_method *method(data[i]);
 
-    JSPropertyNameAccumulatorAddName(names, CYJSString(name));
+            const char *name(sel_getName(method_getName(method)));
+            if (strchr(name, ':') != NULL)
+                continue;
+
+            code(method, name);
+        }
+    }
 }
 
 static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, JSPropertyNameAccumulatorRef names) {
@@ -1916,9 +1923,9 @@ static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, 
     CYPool pool;
     Class _class(object_getClass(self));
 
-    {
+    for (Class current(_class); current != Nil; current = class_getSuperclass(current)) {
         unsigned int size;
-        objc_property_t *data(class_copyPropertyList(_class, &size));
+        objc_property_t *data(class_copyPropertyList(current, &size));
         pool.atexit(free, data);
 
         for (size_t i(0); i != size; ++i)
@@ -1926,14 +1933,9 @@ static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, 
     }
 
     if (CYHasImplicitProperties(context, _class))
-        for (Class current(_class); current != nil; current = class_getSuperclass(current)) {
-            unsigned int size;
-            objc_method **data(class_copyMethodList(current, &size));
-            pool.atexit(free, data);
-
-            for (size_t i(0); i != size; ++i)
-                Instance_getPropertyNames_message(names, data[i]);
-        }
+        CYForEachProperty(pool, _class, fun([&](objc_method *method, const char *name) {
+            JSPropertyNameAccumulatorAddName(names, CYJSString(name));
+        }));
 
     CYPoolTry {
         // XXX: this is an evil hack to deal with NSProxy; fix elsewhere
@@ -1941,6 +1943,35 @@ static void Instance_getPropertyNames(JSContextRef context, JSObjectRef object, 
             [self cy$getPropertyNames:names inContext:context];
     } CYPoolCatch()
 }
+
+static JSValueRef Instance_complete_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    if (!CYJSValueIsNSObject(context, _this))
+        return CYObjectMakeArray(context, 0, NULL);
+
+    Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
+    id self(internal->value_);
+
+    _assert(count == 1 || count == 2);
+    CYPool pool;
+    Class _class(object_getClass(self));
+
+    CYUTF8String prefix(CYPoolUTF8String(pool, context, CYJSString(context, arguments[0])));
+
+    JSObjectRef array(NULL); {
+        CYArrayBuilder<1024> values(context, array);
+
+        CYForEachProperty(pool, _class, fun([&](objc_method *method, const char *name) {
+            if (!CYStartsWith(name, prefix))
+                return;
+            const char *type(method_getTypeEncoding(method));
+            if (type == NULL || *type == '\0' || *type == 'v')
+                return;
+            if (class_getProperty(_class, name) != NULL)
+                return;
+            values(CYCastJSValue(context, CYJSString(pool.strcat(name, "()", NULL))));
+        }));
+    } return array;
+} CYCatch(NULL) }
 
 static JSObjectRef Constructor_callAsConstructor(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     auto internal(CYPrivate<Constructor>::Get(context, object));
@@ -2747,7 +2778,8 @@ static JSStaticValue FunctionInstance_staticValues[3] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction Instance_staticFunctions[6] = {
+static JSStaticFunction Instance_staticFunctions[7] = {
+    {"cy$complete", &Instance_complete_callAsFunction, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toCYON", &Instance_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toJSON", &Instance_callAsFunction_toJSON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"valueOf", &Instance_callAsFunction_valueOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
