@@ -56,13 +56,17 @@ void CYThrow(JSContextRef context, JSValueRef value);
 #define CYCatch_(value, name) \
     catch (const CYException &error) { \
         *exception = error.CastJSValue(context, name); \
+        _assert(*exception != NULL); \
         return value; \
     } catch (...) { \
         *exception = CYCastJSValue(context, "catch(...)"); \
+        _assert(*exception != NULL); \
         return value; \
     }
 #define CYCatch(value) \
     CYCatch_(value, "Error")
+#define CYCatchObject() \
+    CYCatch(JSObjectMake(context, NULL, NULL))
 
 #define _assert_(mode, test, code, format, ...) do \
     if (!(test)) \

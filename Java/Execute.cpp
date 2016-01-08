@@ -1015,7 +1015,7 @@ static JSObjectRef JavaClass_callAsConstructor(JSContextRef context, JSObjectRef
     }
 
     CYThrow("invalid constructor call");
-} CYCatch(NULL) }
+} CYCatchObject() }
 
 static bool JavaStaticInterior_hasProperty(JSContextRef context, JSObjectRef object, JSStringRef property) {
     auto internal(CYPrivate<CYJavaStaticInterior>::Get(context, object));

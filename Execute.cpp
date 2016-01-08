@@ -1477,15 +1477,15 @@ static void All_getPropertyNames(JSContextRef context, JSObjectRef object, JSPro
 
 static JSObjectRef CArray_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     _assert(false);
-} CYCatch(NULL) }
+} CYCatchObject() }
 
 static JSObjectRef CString_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     _assert(false);
-} CYCatch(NULL) }
+} CYCatchObject() }
 
 static JSObjectRef Pointer_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     _assert(false);
-} CYCatch(NULL) }
+} CYCatchObject() }
 
 static JSObjectRef Type_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CYPool pool;
@@ -1539,7 +1539,7 @@ static JSObjectRef Type_new(JSContextRef context, JSObjectRef object, size_t cou
     } else {
         throw CYJSError(context, "incorrect number of arguments to Type constructor");
     }
-} CYCatch(NULL) }
+} CYCatchObject() }
 
 static JSValueRef Type_callAsFunction_$With(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], sig::Callable &type, JSValueRef *exception) { CYTry {
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
@@ -1703,7 +1703,7 @@ static JSObjectRef Type_callAsConstructor(JSContextRef context, JSObjectRef obje
         type->PoolFFI(value->pool_, context, ffi, value->value_, arguments[0]);
 
     return pointer;
-} CYCatch(NULL) }
+} CYCatchObject() }
 
 // XXX: I don't even think the user should be allowed to do this
 static JSObjectRef Functor_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -1715,7 +1715,7 @@ static JSObjectRef Functor_new(JSContextRef context, JSObjectRef object, size_t 
     sig::Parse(pool, &signature, encoding, &Structor_);
     // XXX: this can try to return null, and I guess then it just fails
     return CYCastJSObject(context, CYMakeFunctor(context, arguments[0], false, signature));
-} CYCatch(NULL) }
+} CYCatchObject() }
 
 static JSValueRef CArray_callAsFunction_toPointer(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     CArray *internal(reinterpret_cast<CArray *>(JSObjectGetPrivate(_this)));

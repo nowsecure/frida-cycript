@@ -1973,13 +1973,13 @@ static JSValueRef Instance_complete_callAsFunction(JSContextRef context, JSObjec
             values(CYCastJSValue(context, CYJSString(pool.strcat(name, "()", NULL))));
         }));
     } return array;
-} CYCatch(NULL) }
+} CYCatchObject() }
 
 static JSObjectRef Constructor_callAsConstructor(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     auto internal(CYPrivate<Constructor>::Get(context, object));
     JSObjectRef value(CYMakeInstance(context, [internal->value_ alloc], Instance::Uninitialized));
     return value;
-} CYCatch(NULL) }
+} CYCatchObject() }
 
 static const char *CYBlockEncoding(NSBlock *self) {
     BlockLiteral *literal(reinterpret_cast<BlockLiteral *>(self));
@@ -2574,7 +2574,7 @@ static JSObjectRef Super_new(JSContextRef context, JSObjectRef object, size_t co
     id self(CYCastNSObject(&pool, context, arguments[0]));
     Class _class(CYCastClass(pool, context, arguments[1]));
     return CYPrivate<cy::Super>::Make(context, self, _class);
-} CYCatch(NULL) }
+} CYCatchObject() }
 
 static JSObjectRef Selector_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 1)
@@ -2582,13 +2582,13 @@ static JSObjectRef Selector_new(JSContextRef context, JSObjectRef object, size_t
     CYPool pool;
     const char *name(CYPoolCString(pool, context, arguments[0]));
     return CYPrivate<Selector_privateData>::Make(context, sel_registerName(name));
-} CYCatch(NULL) }
+} CYCatchObject() }
 
 static JSObjectRef Instance_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 1)
         throw CYJSError(context, "incorrect number of arguments to Instance constructor");
     return CYMakeInstance(context, CYCastPointer<id>(context, arguments[0]));
-} CYCatch(NULL) }
+} CYCatchObject() }
 
 static JSValueRef Selector_getProperty_$cyt(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
     return CYMakeType(context, sig::Selector());
