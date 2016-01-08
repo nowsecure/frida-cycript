@@ -483,7 +483,7 @@ const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSValueRef value, st
         case kJSTypeString: {
             std::ostringstream str;
             CYUTF8String string(CYPoolUTF8String(pool, context, CYJSString(context, value)));
-            CYStringify(str, string.data, string.size);
+            CYStringify(str, string.data, string.size, CYStringifyModeCycript);
             std::string value(str.str());
             return pool.strmemdup(value.c_str(), value.size());
         } break;
@@ -573,7 +573,7 @@ const char *CYPoolCCYON(CYPool &pool, JSContextRef context, JSObjectRef object, 
         if (CYIsKey(string))
             str << string.data;
         else
-            CYStringify(str, string.data, string.size);
+            CYStringify(str, string.data, string.size, CYStringifyModeLegacy);
 
         str << ':';
 
@@ -644,7 +644,7 @@ static JSValueRef String_callAsFunction_toCYON(JSContextRef context, JSObjectRef
     std::ostringstream str;
 
     CYUTF8String string(CYPoolUTF8String(pool, context, CYJSString(context, _this)));
-    CYStringify(str, string.data, string.size);
+    CYStringify(str, string.data, string.size, CYStringifyModeCycript);
 
     std::string value(str.str());
     return CYCastJSValue(context, CYJSString(CYUTF8String(value.c_str(), value.size())));
@@ -1851,7 +1851,7 @@ static JSValueRef CString_callAsFunction_toCYON(JSContextRef context, JSObjectRe
         str << "NULL";
     else {
         str << "&";
-        CYStringify(str, string, strlen(string), true);
+        CYStringify(str, string, strlen(string), CYStringifyModeNative);
     }
     std::string value(str.str());
     return CYCastJSValue(context, CYJSString(CYUTF8String(value.c_str(), value.size())));

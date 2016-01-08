@@ -1173,6 +1173,13 @@ CYTarget *CYTemplate::Replace(CYContext &context) {
     return $C2($M($M($M($V("String"), $S("prototype")), $S("concat")), $S("apply")), $S(""), $ CYArray($ CYElementValue(string_, spans_->Replace(context))));
 }
 
+CYString *CYTemplate::String(CYContext &context) {
+    // XXX: implement this over local concat
+    if (spans_ != NULL)
+        return NULL;
+    return string_;
+}
+
 CYTarget *CYThis::Replace(CYContext &context) {
     if (context.this_ != NULL)
         return $V(context.this_->Identifier(context));

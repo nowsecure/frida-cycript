@@ -51,8 +51,6 @@ CYPool &CYGetGlobalPool();
 
 char **CYComplete(const char *word, const std::string &line, CYUTF8String (*run)(CYPool &pool, const std::string &));
 
-void CYStringify(std::ostringstream &str, const char *data, size_t size, bool c);
-
 const char *CYPoolLibraryPath(CYPool &pool);
 
 #endif/*CYCRIPT_HPP*/

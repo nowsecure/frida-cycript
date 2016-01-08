@@ -292,7 +292,7 @@ static CYUTF8String Run(CYPool &pool, int client, const std::string &code) {
 
 static std::ostream *out_;
 
-static void Output(CYUTF8String json, std::ostream *out, bool expand = false, bool reparse = false) {
+static void Output(CYUTF8String json, std::ostream *out, bool reparse = false) {
     CYPool pool;
 
     if (reparse) do {
@@ -317,29 +317,7 @@ static void Output(CYUTF8String json, std::ostream *out, bool expand = false, bo
     if (data == NULL || out == NULL)
         return;
 
-    if (!expand ||
-        data[0] != '@' && data[0] != '"' && data[0] != '\'' ||
-        data[0] == '@' && data[1] != '"' && data[1] != '\''
-    )
-        CYLexerHighlight(data, size, *out);
-    else for (size_t i(0); i != size; ++i)
-        if (data[i] != '\\')
-            *out << data[i];
-        else switch(data[++i]) {
-            case '\0': goto done;
-            case '\\': *out << '\\'; break;
-            case '\'': *out << '\''; break;
-            case '"': *out << '"'; break;
-            case 'b': *out << '\b'; break;
-            case 'f': *out << '\f'; break;
-            case 'n': *out << '\n'; break;
-            case 'r': *out << '\r'; break;
-            case 't': *out << '\t'; break;
-            case 'v': *out << '\v'; break;
-            default: *out << '\\'; --i; break;
-        }
-
-  done:
+    CYLexerHighlight(data, size, *out);
     *out << std::endl;
 }
 
@@ -629,9 +607,9 @@ static void CYConsolePrepTerm(int meta) {
     CYConsoleRemapKeys(vi_movement_keymap);
 }
 
-static void CYOutputRun(const std::string &code, bool expand = false, bool reparse = false) {
+static void CYOutputRun(const std::string &code, bool reparse = false) {
     CYPool pool;
-    Output(Run(pool, client_, code), &std::cout, expand, reparse);
+    Output(Run(pool, client_, code), &std::cout, reparse);
 }
 
 static void Console(CYOptions &options) {
@@ -661,7 +639,6 @@ static void Console(CYOptions &options) {
 
     bool bypass(false);
     bool debug(false);
-    bool expand(false);
     bool lower(true);
     bool reparse(false);
 
@@ -729,9 +706,6 @@ static void Console(CYOptions &options) {
                 *out_ << "done." << std::endl;
             } else if (data == "exit") {
                 return;
-            } else if (data == "expand") {
-                expand = !expand;
-                *out_ << "expand == " << (expand ? "true" : "false") << std::endl;
             } else if (data == "lower") {
                 lower = !lower;
                 *out_ << "lower == " << (lower ? "true" : "false") << std::endl;
@@ -801,7 +775,7 @@ static void Console(CYOptions &options) {
             std::cout << std::endl;
         }
 
-        CYOutputRun(code, expand, reparse);
+        CYOutputRun(code, reparse);
     }
 }
 

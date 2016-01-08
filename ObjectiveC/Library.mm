@@ -1149,7 +1149,7 @@ static bool CYBlockSignature(CYPool &pool, NSBlock *self, sig::Signature &signat
     if (!objective)
         str << '@';
     CYUTF8String string(CYCastUTF8String(self));
-    CYStringify(str, string.data, string.size, true);
+    CYStringify(str, string.data, string.size, CYStringifyModeNative);
     std::string value(str.str());
     return CYCastNSString(NULL, CYUTF8String(value.c_str(), value.size()));
 }

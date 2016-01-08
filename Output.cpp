@@ -25,41 +25,106 @@
 
 #include "Syntax.hpp"
 
-void CYStringify(std::ostringstream &str, const char *data, size_t size, bool c) {
-    bool single;
-    if (c)
-        single = false;
-    else {
-        unsigned quot(0), apos(0);
-        for (const char *value(data), *end(data + size); value != end; ++value)
-            if (*value == '"')
-                ++quot;
-            else if (*value == '\'')
-                ++apos;
+enum CYStringType {
+    CYStringTypeSingle,
+    CYStringTypeDouble,
+    CYStringTypeTemplate,
+};
 
-        single = quot > apos;
+void CYStringify(std::ostringstream &str, const char *data, size_t size, CYStringifyMode mode) {
+    if (size == 0) {
+        str << "\"\"";
+        return;
     }
 
-    str << (single ? '\'' : '"');
+    unsigned quot(0), apos(0), tick(0), line(0);
+    for (const char *value(data), *end(data + size); value != end; ++value)
+        switch (*value) {
+            case '"': ++quot; break;
+            case '\'': ++apos; break;
+            case '`': ++tick; break;
+            case '$': ++tick; break;
+            case '\n': ++line; break;
+        }
+
+    bool split;
+    if (mode != CYStringifyModeCycript)
+        split = false;
+    else {
+        double ratio(double(line) / size);
+        split = size > 10 && line > 2 && ratio > 0.005 && ratio < 0.10;
+    }
+
+    CYStringType type;
+    if (mode == CYStringifyModeNative)
+        type = CYStringTypeDouble;
+    else if (split)
+        type = CYStringTypeTemplate;
+    else if (quot > apos)
+        type = CYStringTypeSingle;
+    else
+        type = CYStringTypeDouble;
+
+    bool parens(split && mode != CYStringifyModeNative && type != CYStringTypeTemplate);
+    if (parens)
+        str << '(';
+
+    char border;
+    switch (type) {
+        case CYStringTypeSingle: border = '\''; break;
+        case CYStringTypeDouble: border = '"'; break;
+        case CYStringTypeTemplate: border = '`'; break;
+    }
+
+    str << border;
+
+    bool space(false);
 
     for (const char *value(data), *end(data + size); value != end; ++value)
-        switch (uint8_t next = *value) {
+        if (*value == ' ') {
+            space = true;
+            str << ' ';
+        } else { switch (uint8_t next = *value) {
             case '\\': str << "\\\\"; break;
             case '\b': str << "\\b"; break;
             case '\f': str << "\\f"; break;
-            case '\n': str << "\\n"; break;
             case '\r': str << "\\r"; break;
             case '\t': str << "\\t"; break;
             case '\v': str << "\\v"; break;
 
+            case '\n':
+                if (!split)
+                    str << "\\n";
+                /*else if (mode == CYStringifyModeNative)
+                    str << border << "\\\n" << border;*/
+                else if (type != CYStringTypeTemplate)
+                    str << border << '+' << border;
+                else if (!space)
+                    str << '\n';
+                else
+                    str << "\\n\\\n";
+            break;
+
+            case '$':
+                if (type == CYStringTypeTemplate)
+                    str << "\\$";
+                else goto simple;
+            break;
+
+            case '`':
+                if (type == CYStringTypeTemplate)
+                    str << "\\`";
+                else goto simple;
+            break;
+
             case '"':
-                if (!single)
+                if (type == CYStringTypeDouble)
                     str << "\\\"";
                 else goto simple;
             break;
 
             case '\'':
-                if (single)
+                if (type == CYStringTypeSingle)
                     str << "\\'";
                 else goto simple;
             break;
@@ -93,9 +158,12 @@ void CYStringify(std::ostringstream &str, const char *data, size_t size, bool c)
                         str << "\\u" << std::setbase(16) << std::setw(4) << std::setfill('0') << (0xdc00 | point & 0x3ff);
                     }
                 }
-        }
+        } space = false; }
 
-    str << (single ? '\'' : '"');
+    str << border;
+
+    if (parens)
+        str << ')';
 }
 
 void CYNumerify(std::ostringstream &str, double value) {
@@ -948,7 +1016,7 @@ void CYStatement::Single(CYOutput &out, CYFlags flags, CYCompactType request) co
 
 void CYString::Output(CYOutput &out, CYFlags flags) const {
     std::ostringstream str;
-    CYStringify(str, value_, size_);
+    CYStringify(str, value_, size_, CYStringifyModeLegacy);
     out << str.str().c_str();
 }
 

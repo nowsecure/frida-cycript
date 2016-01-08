@@ -175,7 +175,7 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
         element = value->next_;
 
         _assert(value->value_ != NULL);
-        CYString *string(dynamic_cast<CYString *>(value->value_));
+        CYString *string(value->value_->String(context));
         if (string == NULL)
             CYThrow("string was actually %s", typeid(*value->value_).name());
 

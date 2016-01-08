@@ -606,8 +606,10 @@ XMLName {XMLNameStart}{XMLNamePart}*
     "$" R CYLexBufferUnit('$');
 
     {PlateCharacter}+ R CYLexBufferUnits(yytext, yyleng);
-    {PlateCharacter}*{LineTerminatorSequence} R E("invalid newline");
     {PlateCharacter}*{UnicodeScrap} R E("invalid character");
+
+    {PlateCharacter}*{LineTerminatorSequence} yylloc->end.Lines(); CYLexBufferUnits(yytext, yyleng);
+    \\{LineTerminatorSequence} yylloc->end.Lines();
 }
     /* }}} */
     /* Escapes {{{ */

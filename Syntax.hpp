@@ -40,7 +40,14 @@ double CYCastDouble(const char *value);
 double CYCastDouble(CYUTF8String value);
 
 void CYNumerify(std::ostringstream &str, double value);
-void CYStringify(std::ostringstream &str, const char *data, size_t size, bool c = false);
+
+enum CYStringifyMode {
+    CYStringifyModeLegacy,
+    CYStringifyModeCycript,
+    CYStringifyModeNative,
+};
+
+void CYStringify(std::ostringstream &str, const char *data, size_t size, CYStringifyMode mode);
 
 // XXX: this really should not be here ... :/
 void *CYPoolFile(CYPool &pool, const char *path, size_t *psize);
@@ -838,6 +845,8 @@ struct CYTemplate :
     }
 
     CYPrecedence(0)
+
+    virtual CYString *String(CYContext &context);
 
     virtual CYTarget *Replace(CYContext &context);
     virtual void Output(CYOutput &out, CYFlags flags) const;
