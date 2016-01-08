@@ -357,6 +357,8 @@ struct Message_privateData :
     {
     }
 
+    virtual CYPropertyName *GetName(CYPool &pool) const;
+
     static JSObjectRef Make(JSContextRef context, SEL sel, const char *type, IMP value);
 };
 
@@ -1592,7 +1594,9 @@ static JSValueRef MessageAdapter_(JSContextRef context, size_t count, JSValueRef
 
 JSObjectRef Message_privateData::Make(JSContextRef context, SEL sel, const char *type, IMP value) {
     Message_privateData *internal(new Message_privateData(sel, type, value));
-    return JSObjectMake(context, Message_privateData::Class_, internal);
+    JSObjectRef object(JSObjectMake(context, Message_privateData::Class_, internal));
+    CYSetPrototype(context, object, CYGetCachedValue(context, CYJSString("Functor_prototype")));
+    return object;
 }
 
 static IMP CYMakeMessage(JSContextRef context, JSValueRef value, const char *encoding) {
@@ -2567,6 +2571,10 @@ static JSValueRef Message_callAsFunction(JSContextRef context, JSObjectRef objec
     return CYCallFunction(pool, context, 2, setup, count, arguments, false, true, internal->signature_, &internal->cif_, internal->value_);
 } CYCatch(NULL) }
 
+CYPropertyName *Message_privateData::GetName(CYPool &pool) const {
+    return new(pool) CYString(pool.strcat(":", sel_getName(sel_), NULL));
+}
+
 static JSObjectRef Super_new(JSContextRef context, JSObjectRef object, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     if (count != 2)
         throw CYJSError(context, "incorrect number of arguments to objc_super constructor");
@@ -2921,8 +2929,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "Message";
-    definition.staticFunctions = cy::Functor::StaticFunctions;
-    definition.staticValues = cy::Functor::StaticValues;
+    definition.parentClass = cy::Functor::Class_;
     definition.callAsFunction = &Message_callAsFunction;
     definition.finalize = &CYFinalize;
     Message_privateData::Class_ = JSClassCreate(&definition);

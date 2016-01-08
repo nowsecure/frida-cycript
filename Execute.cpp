@@ -189,7 +189,7 @@ JSObjectRef CYObjectMakeArray(JSContextRef context, size_t length, const JSValue
 }
 
 static JSClassRef All_;
-JSClassRef Functor_;
+JSClassRef cy::Functor::Class_;
 static JSClassRef Global_;
 
 JSStringRef Array_s;
@@ -657,7 +657,7 @@ JSObjectRef CYMakePointer(JSContextRef context, void *pointer, const sig::Type &
 static JSValueRef CYMakeFunctor(JSContextRef context, void (*function)(), bool variadic, const sig::Signature &signature) {
     if (function == NULL)
         return CYJSNull(context);
-    return JSObjectMake(context, Functor_, new cy::Functor(function, variadic, signature));
+    return JSObjectMake(context, cy::Functor::Class_, new cy::Functor(function, variadic, signature));
 }
 
 // XXX: remove this, as it is really stupid
@@ -668,7 +668,7 @@ static JSObjectRef CYMakeFunctor(JSContextRef context, const char *symbol, const
 
     cy::Functor *internal(new cy::Functor(function, encoding));
     ++internal->count_;
-    return JSObjectMake(context, Functor_, internal);
+    return JSObjectMake(context, cy::Functor::Class_, internal);
 }
 
 bool CYGetOffset(CYPool &pool, JSContextRef context, JSStringRef value, ssize_t &index) {
@@ -976,7 +976,7 @@ Closure_privateData *CYMakeFunctor_(JSContextRef context, JSObjectRef function, 
 
 static JSObjectRef CYMakeFunctor(JSContextRef context, JSObjectRef function, const sig::Signature &signature) {
     Closure_privateData *internal(CYMakeFunctor_(context, function, signature, &FunctionAdapter_));
-    JSObjectRef object(JSObjectMake(context, Functor_, internal));
+    JSObjectRef object(JSObjectMake(context, cy::Functor::Class_, internal));
     // XXX: see above notes about needing to leak
     JSValueProtect(CYGetJSContext(context), object);
     return object;
@@ -1768,22 +1768,8 @@ static JSValueRef Functor_callAsFunction_toCYON(JSContextRef context, JSObjectRe
     sig::Function function(internal->variadic_);
     sig::Copy(pool, function.signature, internal->signature_);
 
-    CYPropertyName *name;
-
-    auto typed(CYDecodeType(pool, &function)); {
-        std::ostringstream str;
-        Dl_info info;
-        if (dladdr(value, &info) == 0) {
-            str << (void *) value;
-            name = new(pool) CYNumber(reinterpret_cast<uintptr_t>(value));
-        } else {
-            str << info.dli_sname;
-            off_t offset(value - reinterpret_cast<uint8_t *>(info.dli_saddr));
-            if (offset != 0)
-                str << "+0x" << std::hex << offset;
-            name = new(pool) CYString(pool.strdup(str.str().c_str()));
-        }
-    }
+    CYPropertyName *name(internal->GetName(pool));
+    auto typed(CYDecodeType(pool, &function));
 
     std::ostringstream str;
     CYOptions options;
@@ -1792,6 +1778,19 @@ static JSValueRef Functor_callAsFunction_toCYON(JSContextRef context, JSObjectRe
     (new(pool) CYExternalExpression(new(pool) CYString("C"), typed, name))->Output(output, CYNoFlags);
     return CYCastJSValue(context, CYJSString(str.str()));
 } CYCatch(NULL) }
+
+CYPropertyName *cy::Functor::GetName(CYPool &pool) const {
+    Dl_info info;
+    if (dladdr(reinterpret_cast<void *>(value_), &info) == 0 || strcmp(info.dli_sname, "<redacted>") == 0)
+        return new(pool) CYNumber(reinterpret_cast<uintptr_t>(value_));
+
+    std::ostringstream str;
+    str << info.dli_sname;
+    off_t offset(reinterpret_cast<uint8_t *>(value_) - reinterpret_cast<uint8_t *>(info.dli_saddr));
+    if (offset != 0)
+        str << "+0x" << std::hex << offset;
+    return new(pool) CYString(pool.strdup(str.str().c_str()));
+}
 
 static JSValueRef Pointer_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
     std::set<void *> *objects(CYCastObjects(context, _this, count, arguments));
@@ -1962,18 +1961,10 @@ static JSStaticFunction Functor_staticFunctions[4] = {
     {NULL, NULL, 0}
 };
 
-namespace cy {
-    JSStaticFunction const * const Functor::StaticFunctions = Functor_staticFunctions;
-}
-
 static JSStaticValue Functor_staticValues[2] = {
     {"$cyt", &Functor_getProperty_$cyt, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, NULL, 0}
 };
-
-namespace cy {
-    JSStaticValue const * const Functor::StaticValues = Functor_staticValues;
-}
 
 static JSStaticValue Type_staticValues[4] = {
     {"alignment", &Type_getProperty_alignment, NULL, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
@@ -2137,11 +2128,11 @@ void CYInitializeDynamic() {
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "Functor";
-    definition.staticFunctions = cy::Functor::StaticFunctions;
+    definition.staticFunctions = Functor_staticFunctions;
     definition.staticValues = Functor_staticValues;
     definition.callAsFunction = &Functor_callAsFunction;
     definition.finalize = &CYFinalize;
-    Functor_ = JSClassCreate(&definition);
+    cy::Functor::Class_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "Pointer";
@@ -2462,8 +2453,10 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     CYSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, CString, prototype_s)), String_prototype);
     CYSetProperty(context, cycript, CYJSString("CString"), CString);
 
-    JSObjectRef Functor(JSObjectMakeConstructor(context, Functor_, &Functor_new));
-    CYSetPrototype(context, CYCastJSObject(context, CYGetProperty(context, Functor, prototype_s)), Function_prototype);
+    JSObjectRef Functor(JSObjectMakeConstructor(context, cy::Functor::Class_, &Functor_new));
+    JSObjectRef Functor_prototype(CYCastJSObject(context, CYGetProperty(context, Functor, prototype_s)));
+    CYSetPrototype(context, Functor_prototype, Function_prototype);
+    CYSetProperty(context, cy, CYJSString("Functor_prototype"), Functor_prototype);
     CYSetProperty(context, cycript, CYJSString("Functor"), Functor);
 
     CYSetProperty(context, cycript, CYJSString("Pointer"), JSObjectMakeConstructor(context, CYPrivate<Pointer>::Class_, &Pointer_new));

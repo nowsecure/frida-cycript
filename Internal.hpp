@@ -34,10 +34,10 @@
 #include "Pooling.hpp"
 #include "Utility.hpp"
 
+struct CYPropertyName;
+
 JSGlobalContextRef CYGetJSContext(JSContextRef context);
 sig::Type *Structor_(CYPool &pool, sig::Aggregate *aggregate);
-
-extern JSClassRef Functor_;
 
 struct CYRoot :
     CYData
@@ -202,6 +202,9 @@ namespace cy {
 struct Functor :
     CYRoot
 {
+  public:
+    static JSClassRef Class_;
+
   private:
     void set() {
         sig::sig_ffi_cif(*pool_, variadic_ ? signature_.count : 0, signature_, &cif_);
@@ -229,8 +232,7 @@ struct Functor :
         set();
     }
 
-    static JSStaticFunction const * const StaticFunctions;
-    static JSStaticValue const * const StaticValues;
+    virtual CYPropertyName *GetName(CYPool &pool) const;
 }; }
 
 struct Closure_privateData :
