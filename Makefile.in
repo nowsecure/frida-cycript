@@ -634,6 +634,8 @@ filters = $(am__append_9) $(am__append_13) $(am__append_17) \
 @CY_ANDROID_TRUE@@CY_CONSOLE_TRUE@cycript_pie_SOURCES = pie.c
 @CY_ANDROID_TRUE@@CY_CONSOLE_TRUE@cycript_pie_LDFLAGS = -fno-PIE
 @CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@CY_LANGFLAGS = -DCY_JAVA=$(CY_JAVA) -DCY_PYTHON=$(CY_PYTHON) -DCY_OBJECTIVEC=$(CY_OBJECTIVEC)
+@CY_ANDROID_FALSE@@CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@CY_ANDFLAGS = 
+@CY_ANDROID_TRUE@@CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@CY_ANDFLAGS = -U__APPLE__ -D__ANDROID__
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
@@ -1429,7 +1431,7 @@ uninstall-am: uninstall-binPROGRAMS uninstall-datDATA \
 @CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@Analyze: Analyze.cpp Error.cpp Output.cpp Replace.cpp Syntax.cpp
 @CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@	$(CXX_FOR_BUILD) $(CXXFLAGS_FOR_BUILD) -std=c++11 $(LDFLAGS_FOR_BUILD) $(CY_LANGFLAGS) -I$(srcdir)/extra -o $@ $^ $(CY_LIBCLANG) -Wno-bitwise-op-parentheses -Wno-dangling-else -Wno-logical-op-parentheses
 @CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@Bridge.def: Analysis.cpp Analyze
-@CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@	./Analyze $< $(OBJCXX) $(CPPFLAGS) $(AM_OBJCXXFLAGS) $(OBJCXXFLAGS) $(CY_LANGFLAGS) >$@
+@CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@	./Analyze $< $(OBJCXX) $(CPPFLAGS) $(AM_OBJCXXFLAGS) $(OBJCXXFLAGS) $(CY_LANGFLAGS) $(CY_ANDFLAGS) >$@
 @CY_EXECUTE_TRUE@@CY_PRELINK_FALSE@Bridge.def: Bridge.def.in
 @CY_EXECUTE_TRUE@@CY_PRELINK_FALSE@	cat $< >$@
 @CY_JAVA_TRUE@Class/Cycript.class: Java/Cycript.java

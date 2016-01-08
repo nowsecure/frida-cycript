@@ -91,13 +91,19 @@ libcycript.db: Bridge.def libcycript.py
 if CY_PRELINK
 CY_LANGFLAGS = -DCY_JAVA=$(CY_JAVA) -DCY_PYTHON=$(CY_PYTHON) -DCY_OBJECTIVEC=$(CY_OBJECTIVEC)
 
+if CY_ANDROID
+CY_ANDFLAGS = -U__APPLE__ -D__ANDROID__
+else
+CY_ANDFLAGS = 
+endif
+
 CLEANFILES += Analyze
 Analyze: Analyze.cpp Error.cpp Output.cpp Replace.cpp Syntax.cpp
 	$(CXX_FOR_BUILD) $(CXXFLAGS_FOR_BUILD) -std=c++11 $(LDFLAGS_FOR_BUILD) $(CY_LANGFLAGS) -I$(srcdir)/extra -o $@ $^ $(CY_LIBCLANG) -Wno-bitwise-op-parentheses -Wno-dangling-else -Wno-logical-op-parentheses
 
 CLEANFILES += Bridge.def
 Bridge.def: Analysis.cpp Analyze
-	./Analyze $< $(OBJCXX) $(CPPFLAGS) $(AM_OBJCXXFLAGS) $(OBJCXXFLAGS) $(CY_LANGFLAGS) >$@
+	./Analyze $< $(OBJCXX) $(CPPFLAGS) $(AM_OBJCXXFLAGS) $(OBJCXXFLAGS) $(CY_LANGFLAGS) $(CY_ANDFLAGS) >$@
 else
 CLEANFILES += Bridge.def
 Bridge.def: Bridge.def.in

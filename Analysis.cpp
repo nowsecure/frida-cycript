@@ -37,7 +37,7 @@
 #include <sqlite3.h>
 
 #if CY_JAVA
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(__arm__)
 #include <JavaVM/jni.h>
 #else
 #include <jni.h>
@@ -66,6 +66,8 @@
 #include <CoreLocation/CoreLocation.h>
 #include <Security/Security.h>
 
+#include <dispatch/dispatch.h>
+
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
 #include <mach/vm_map.h>
@@ -79,4 +81,8 @@ extern "C" UIApplication *UIApp;
 #else
 #include <AppKit/AppKit.h>
 #endif
+#endif
+
+#ifdef __ANDROID__
+#include <android/log.h>
 #endif
