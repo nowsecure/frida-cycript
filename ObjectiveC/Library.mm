@@ -1535,7 +1535,8 @@ static NSBlock *CYCastNSBlock(CYPool &pool, JSContextRef context, JSValueRef val
 namespace sig {
 
 void Block::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
-    // XXX: this function might not handle the idea of a null pool
+    // XXX: this function actually needs to handle null pools as it is an autorelease
+    _assert(pool != NULL);
     *reinterpret_cast<id *>(data) = CYCastNSBlock(*pool, context, value, &signature);
 }
 
