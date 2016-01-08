@@ -89,6 +89,24 @@ struct CYPrivate {
         return object;
     }
 
+    template <typename Arg_>
+    static JSObjectRef Cache(JSContextRef context, Arg_ *arg) {
+        JSObjectRef global(CYGetGlobalObject(context));
+        JSObjectRef cy(CYCastJSObject(context, CYGetProperty(context, global, cy_s)));
+
+        char label[32];
+        sprintf(label, "%s%p", Internal_::Cache_, arg);
+        CYJSString name(label);
+
+        JSValueRef value(CYGetProperty(context, cy, name));
+        if (!JSValueIsUndefined(context, value))
+            return CYCastJSObject(context, value);
+
+        JSObjectRef object(Make(context, arg));
+        CYSetProperty(context, cy, name, object);
+        return object;
+    }
+
     static Internal_ *Get(JSContextRef context, JSObjectRef object) {
         _assert(JSValueIsObjectOfClass(context, object, Class_));
         return static_cast<Internal_ *>(JSObjectGetPrivate(object));

@@ -1416,7 +1416,7 @@ static JSValueRef All_getProperty(JSContextRef context, JSObjectRef object, JSSt
 } CYCatch(NULL) }
 
 static JSValueRef All_complete_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    _assert(count == 1);
+    _assert(count == 1 || count == 2);
     CYPool pool;
     CYUTF8String prefix(CYPoolUTF8String(pool, context, CYJSString(context, arguments[0])));
 

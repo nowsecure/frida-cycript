@@ -81,11 +81,42 @@ struct Super :
 struct Messages :
     CYRoot
 {
+    virtual Class GetClass() const = 0;
+};
+
+struct Prototype :
+    Messages
+{
+    static constexpr const char *const Cache_ = "p";
+
     Class value_;
 
-    _finline Messages(Class value) :
+    _finline Prototype(Class value) :
         value_(value)
     {
+    }
+
+    Class GetClass() const override {
+        return value_;
+    }
+
+    JSValueRef GetPrototype(JSContextRef context) const;
+};
+
+struct Constructor :
+    Messages
+{
+    static constexpr const char *const Cache_ = "m";
+
+    Class value_;
+
+    _finline Constructor(Class value) :
+        value_(value)
+    {
+    }
+
+    Class GetClass() const override {
+        return value_;
     }
 
     JSValueRef GetPrototype(JSContextRef context) const;

@@ -84,7 +84,7 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
 
         case CYDriver::AutoMessage: {
             CYDriver::Context &thing(driver.contexts_.back());
-            expression = $M($C1($V("object_getClass"), thing.context_), $S("messages"));
+            expression = $M($C1($V("object_getClass"), thing.context_), $S("prototype"));
             for (CYDriver::Context::Words::const_iterator part(thing.words_.begin()); part != thing.words_.end(); ++part)
                 prefix << (*part)->word_ << ':';
         } break;
@@ -109,8 +109,14 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
 
     std::string begin(prefix.str());
 
-    driver.script_ = $ CYScript($ CYExpress($C3(ParseExpression(pool,
-    "   function(object, prefix, word) {\n"
+    CYBoolean *message;
+    if (driver.mode_ == CYDriver::AutoMessage)
+        message = $ CYTrue();
+    else
+        message = $ CYFalse();
+
+    driver.script_ = $ CYScript($ CYExpress($C4(ParseExpression(pool,
+    "   function(object, prefix, word, message) {\n"
     "       var names = [];\n"
     "       var before = prefix.length;\n"
     "       prefix += word;\n"
@@ -121,7 +127,7 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
     "                   names.push(name);\n"
     "       } else do {\n"
     "           if (object.hasOwnProperty(\"cy$complete\")) {\n"
-    "               names = names.concat(object.cy$complete(prefix));\n"
+    "               names = names.concat(object.cy$complete(prefix, message));\n"
     "               continue;\n"
     "           }\n"
     "           try {\n"
@@ -135,7 +141,7 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
     "       } while (object = typeof object === 'object' ? Object.getPrototypeOf(object) : object.__proto__);\n"
     "       return names;\n"
     "   }\n"
-    ), expression, $S(begin.c_str()), $S(word))));
+    ), expression, $S(begin.c_str()), $S(word), message)));
 
     driver.script_->Replace(context);
 
