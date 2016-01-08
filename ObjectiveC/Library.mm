@@ -277,6 +277,7 @@ static Class NSArray_;
 static Class NSBlock_;
 static Class NSDictionary_;
 static Class NSNumber_;
+static Class NSObject_;
 static Class NSString_;
 static Class NSZombie_;
 static Class Object_;
@@ -1702,7 +1703,8 @@ static JSValueRef Messages_complete_callAsFunction(JSContextRef context, JSObjec
 
 static bool CYHasImplicitProperties(JSContextRef context, Class _class) {
     if (!CYCastBool(context, CYGetCachedValue(context, CYJSString("cydget"))))
-        return false;
+        if (class_getProperty(NSObject_, "description") != NULL)
+            return false;
     // XXX: this is an evil hack to deal with NSProxy; fix elsewhere
     if (!CYImplements(_class, object_getClass(_class), @selector(cy$hasImplicitProperties)))
         return true;
@@ -2832,6 +2834,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     NSBlock_ = objc_getClass("NSBlock");
     NSDictionary_ = objc_getClass("NSDictionary");
     NSNumber_ = objc_getClass("NSNumber");
+    NSObject_ = objc_getClass("NSObject");
     NSString_ = objc_getClass("NSString");
     Object_ = objc_getClass("Object");
 
