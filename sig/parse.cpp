@@ -118,10 +118,9 @@ Type *Parse_(CYPool &pool, const char **encoding, char eos, bool named, Callback
                     name = NULL;
                 else {
                     const char *quote = strchr(*encoding + 1, '"');
-                    if (quote == NULL) {
-                        printf("unterminated specific id type {%s}\n", *encoding - 10);
-                        _assert(false);
-                    } else if (!named || quote[1] == eos || quote[1] == '"') {
+                    if (quote == NULL)
+                        CYThrow("unterminated specific id type {%s}", *encoding - 10);
+                    else if (!named || quote[1] == eos || quote[1] == '"') {
                         name = pool.strmemdup(*encoding + 1, quote - *encoding - 1);
                         *encoding = quote + 1;
                     } else {
@@ -145,10 +144,8 @@ Type *Parse_(CYPool &pool, const char **encoding, char eos, bool named, Callback
         case '[': {
             size_t size(strtoul(*encoding, (char **) encoding, 10));
             type = new(pool) Array(*Parse_(pool, encoding, eos, false, callback), size);
-            if (**encoding != ']') {
-                printf("']' != \"%s\"\n", *encoding);
-                _assert(false);
-            }
+            if (**encoding != ']')
+                CYThrow("']' != \"%s\"", *encoding);
             ++*encoding;
         } break;
 
@@ -236,8 +233,7 @@ Type *Parse_(CYPool &pool, const char **encoding, char eos, bool named, Callback
         break;
 
         default:
-            printf("invalid type character: '%c' {%s}\n", next, *encoding - 10);
-            _assert(false);
+            CYThrow("invalid type character: '%c' {%s}", next, *encoding - 10);
     }
 
     type->flags = flags;
