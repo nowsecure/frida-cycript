@@ -771,17 +771,11 @@ void Bits::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data
     _assert(false);
 }
 
-static void CYArrayCopy(CYPool *pool, JSContextRef context, uint8_t *base, size_t length, const sig::Type &type, ffi_type *ffi, JSValueRef value, JSObjectRef object) {
+static void CYArrayCopy(CYPool *pool, JSContextRef context, uint8_t *base, size_t length, const sig::Type &type, ffi_type *ffi, JSObjectRef object) {
     for (size_t index(0); index != length; ++index) {
-        JSValueRef rhs;
-        if (object == NULL)
-            rhs = value;
-        else {
-            rhs = CYGetProperty(context, object, index);
-            if (JSValueIsUndefined(context, rhs))
-                throw CYJSError(context, "unable to extract array value");
-        }
-
+        JSValueRef rhs(CYGetProperty(context, object, index));
+        if (JSValueIsUndefined(context, rhs))
+            throw CYJSError(context, "unable to extract array value");
         type.PoolFFI(pool, context, ffi, base, rhs);
         base += ffi->size;
     }
@@ -798,7 +792,7 @@ void Pointer::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *d
         ffi_type *element(type.GetFFI(*pool));
         size_t size(element->size * length);
         uint8_t *base(pool->malloc<uint8_t>(size, element->alignment));
-        CYArrayCopy(pool, context, base, length, type, element, value, object);
+        CYArrayCopy(pool, context, base, length, type, element, object);
         *reinterpret_cast<void **>(data) = base;
     }
 }
@@ -807,8 +801,7 @@ void Array::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *dat
     if (size == 0)
         return;
     uint8_t *base(reinterpret_cast<uint8_t *>(data));
-    JSObjectRef object(JSValueIsObject(context, value) ? (JSObjectRef) value : NULL);
-    CYArrayCopy(pool, context, base, size, type, ffi->elements[0], value, object);
+    CYArrayCopy(pool, context, base, size, type, ffi->elements[0], CYCastJSObject(context, value));
 }
 
 void Enum::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
