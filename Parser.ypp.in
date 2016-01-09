@@ -443,8 +443,6 @@ type; })
 %token ___proto___ "__proto__"
 %token _prototype_ "prototype"
 %token _public_ "public"
-%token ___restrict_ "__restrict"
-%token _restrict_ "restrict"
 %token _set_ "set"
 %token _short_ "short"
 %token _static_ "static"
@@ -1032,8 +1030,6 @@ IdentifierNoOf
     | "int" { $$ = CYNew CYIdentifier("int"); }
     | "__int128" { $$ = CYNew CYIdentifier("__int128"); }
     | "long" { $$ = CYNew CYIdentifier("long"); }
-    | "__restrict" { $$ = CYNew CYIdentifier("__restrict"); }
-    | "restrict" { $$ = CYNew CYIdentifier("restrict"); }
     | "short" { $$ = CYNew CYIdentifier("short"); }
     | "static" { $$ = CYNew CYIdentifier("static"); }
     | "volatile" { $$ = CYNew CYIdentifier("volatile"); }
@@ -2044,31 +2040,12 @@ TypeSignifierOpt
     | TypeSignifierNone[pass] { $$ = $pass; }
     ;
 
-Restrict
-    : "__restrict"
-    | "restrict"
-    ;
-
-RestrictOpt
-    : Restrict
-    |
-    ;
-
-ParameterModifier
-    : "throw" "(" ")"
-    ;
-
-ParameterModifierOpt
-    : ParameterModifier
-    |
-    ;
-
 ParameterTail
-    : TypedParameterListOpt[formal] ")" ParameterModifierOpt { $$ = CYNew CYTypeFunctionWith($formal->variadic_, $formal->parameters_); }
+    : TypedParameterListOpt[formal] ")" { $$ = CYNew CYTypeFunctionWith($formal->variadic_, $formal->parameters_); }
     ;
 
 SuffixedType
-    : SuffixedTypeOpt[typed] "[" RestrictOpt NumericLiteral[size] "]" { $$ = $typed; $$->modifier_ = CYNew CYTypeArrayOf($size, $$->modifier_); }
+    : SuffixedTypeOpt[typed] "[" NumericLiteral[size] "]" { $$ = $typed; $$->modifier_ = CYNew CYTypeArrayOf($size, $$->modifier_); }
     | "(" "^" TypeQualifierRightOpt[typed] ")" "(" TypedParameters[parameters] ")" { $$ = $typed; $$->modifier_ = CYNew CYTypeBlockWith($parameters, $$->modifier_); }
     | TypeSignifier[typed] "(" ParameterTail[modifier] { $$ = $typed; CYSetLast($modifier) = $$->modifier_; $$->modifier_ = $modifier; }
     | "("[parenthesis] ParameterTail[modifier] { $$ = CYNew CYTypedName(@parenthesis); CYSetLast($modifier) = $$->modifier_; $$->modifier_ = $modifier; }
@@ -2098,7 +2075,6 @@ TypeQualifierRight
     | PrefixedType[pass] { $$ = $pass; }
     | "const" TypeQualifierRightOpt[typed] { $$ = $typed; $$->modifier_ = CYNew CYTypeConstant($$->modifier_); }
     | "volatile" TypeQualifierRightOpt[typed] { $$ = $typed; $$->modifier_ = CYNew CYTypeVolatile($$->modifier_); }
-    | Restrict TypeQualifierRightOpt[typed] { $$ = $typed; }
     ;
 
 TypeQualifierRightOpt
