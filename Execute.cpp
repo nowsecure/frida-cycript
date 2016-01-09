@@ -181,11 +181,12 @@ static JSObjectRef (*JSObjectMakeArray$)(JSContextRef, size_t, const JSValueRef[
 JSObjectRef CYObjectMakeArray(JSContextRef context, size_t length, const JSValueRef values[]) {
     if (JSObjectMakeArray$ != NULL)
         return _jsccall(*JSObjectMakeArray$, context, length, values);
-    else {
-        JSObjectRef Array(CYGetCachedObject(context, CYJSString("Array")));
-        JSValueRef value(CYCallAsFunction(context, Array, NULL, length, values));
-        return CYCastJSObject(context, value);
-    }
+    JSObjectRef Array(CYGetCachedObject(context, CYJSString("Array")));
+    bool wat(length == 1 && JSValueGetType(context, values[0]) == kJSTypeNumber);
+    JSValueRef value(CYCallAsFunction(context, Array, NULL, wat ? 0 : length, values));
+    JSObjectRef object(CYCastJSObject(context, value));
+    if (wat) CYArrayPush(context, object, 1, values);
+    return object;
 }
 
 static JSClassRef All_;
