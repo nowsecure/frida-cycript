@@ -332,6 +332,7 @@ JSValueRef CYCastJSValue(JSContextRef context, double value) {
         return JSValueMakeNumber(context, static_cast<double>(value)); \
     }
 
+CYCastJSValue_(long double)
 CYCastJSValue_(signed short int)
 CYCastJSValue_(unsigned short int)
 CYCastJSValue_(signed int)
@@ -716,13 +717,17 @@ void Primitive<Type_>::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi
     *reinterpret_cast<Type_ *>(data) = CYCastDouble(context, value); \
 }
 
-CYPoolFFI_(double)
+CYPoolFFI_(wchar_t)
 CYPoolFFI_(float)
+CYPoolFFI_(double)
+CYPoolFFI_(long double)
+
 CYPoolFFI_(signed char)
 CYPoolFFI_(signed int)
 CYPoolFFI_(signed long int)
 CYPoolFFI_(signed long long int)
 CYPoolFFI_(signed short int)
+
 CYPoolFFI_(unsigned char)
 CYPoolFFI_(unsigned int)
 CYPoolFFI_(unsigned long int)
@@ -852,13 +857,17 @@ JSValueRef Primitive<Type_>::FromFFI(JSContextRef context, ffi_type *ffi, void *
 }
 
 CYFromFFI_(bool)
-CYFromFFI_(double)
+CYFromFFI_(wchar_t)
 CYFromFFI_(float)
+CYFromFFI_(double)
+CYFromFFI_(long double)
+
 CYFromFFI_(signed char)
 CYFromFFI_(signed int)
 CYFromFFI_(signed long int)
 CYFromFFI_(signed long long int)
 CYFromFFI_(signed short int)
+
 CYFromFFI_(unsigned char)
 CYFromFFI_(unsigned int)
 CYFromFFI_(unsigned long int)
@@ -2563,6 +2572,7 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
 
     CYSetProperty(context, cache, CYJSString("float"), CYMakeType(context, sig::Primitive<float>()), kJSPropertyAttributeDontEnum);
     CYSetProperty(context, cache, CYJSString("double"), CYMakeType(context, sig::Primitive<double>()), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, cache, CYJSString("longdouble"), CYMakeType(context, sig::Primitive<long double>()), kJSPropertyAttributeDontEnum);
 
     CYSetProperty(context, global, CYJSString("require"), &require_callAsFunction, kJSPropertyAttributeDontEnum);
 

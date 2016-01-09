@@ -169,6 +169,7 @@ Type *Parse_(CYPool &pool, const char **encoding, char eos, bool named, Callback
         break;
 
         case 'c': type = new(pool) Primitive<signed char>(); break;
+        case 'D': type = new(pool) Primitive<long double>(); break;
         case 'd': type = new(pool) Primitive<double>(); break;
         case 'f': type = new(pool) Primitive<float>(); break;
         case 'i': type = new(pool) Primitive<signed int>(); break;
@@ -277,6 +278,11 @@ const char *Primitive<double>::Encode(CYPool &pool) const {
 template <>
 const char *Primitive<float>::Encode(CYPool &pool) const {
     return "f";
+}
+
+template <>
+const char *Primitive<long double>::Encode(CYPool &pool) const {
+    return "D";
 }
 
 template <>

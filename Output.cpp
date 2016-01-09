@@ -1185,6 +1185,15 @@ void CYTypeError::Output(CYOutput &out) const {
     out << "@error";
 }
 
+void CYTypeFloating::Output(CYOutput &out) const {
+    switch (length_) {
+        case 0: out << "float"; break;
+        case 1: out << "double"; break;
+        case 2: out << "long" << ' ' << "double"; break;
+        default: _assert(false);
+    }
+}
+
 void CYTypeInt128::Output(CYOutput &out) const {
     switch (signing_) {
         case CYTypeNeutral: break;

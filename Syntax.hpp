@@ -2154,6 +2154,20 @@ struct CYTypeIntegral :
     virtual void Output(CYOutput &out) const;
 };
 
+struct CYTypeFloating :
+    CYTypeSpecifier
+{
+    int length_;
+
+    CYTypeFloating(int length) :
+        length_(length)
+    {
+    }
+
+    virtual CYTarget *Replace(CYContext &context);
+    virtual void Output(CYOutput &out) const;
+};
+
 struct CYTypeVoid :
     CYTypeSpecifier
 {

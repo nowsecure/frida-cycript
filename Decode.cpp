@@ -38,12 +38,17 @@ CYType *Primitive<char>::Decode(CYPool &pool) const {
 
 template <>
 CYType *Primitive<double>::Decode(CYPool &pool) const {
-    return $ CYType($ CYTypeVariable("double"));
+    return $ CYType($ CYTypeFloating(1));
 }
 
 template <>
 CYType *Primitive<float>::Decode(CYPool &pool) const {
-    return $ CYType($ CYTypeVariable("float"));
+    return $ CYType($ CYTypeFloating(0));
+}
+
+template <>
+CYType *Primitive<long double>::Decode(CYPool &pool) const {
+    return $ CYType($ CYTypeFloating(2));
 }
 
 template <>

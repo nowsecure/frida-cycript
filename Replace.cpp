@@ -1269,6 +1269,15 @@ CYTarget *CYTypeExpression::Replace(CYContext &context) {
     return typed_->Replace(context);
 }
 
+CYTarget *CYTypeFloating::Replace(CYContext &context) {
+    switch (length_) {
+        case 0: return $V("float");
+        case 1: return $V("double");
+        case 2: return $V("longdouble");
+        default: _assert(false);
+    }
+}
+
 CYTarget *CYTypeInt128::Replace(CYContext &context) {
     return $V(signing_ == CYTypeUnsigned ? "uint128" : "int128");
 }

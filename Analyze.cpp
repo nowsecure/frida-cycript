@@ -367,8 +367,10 @@ static void CYParseType(CXType type, CYType *typed) {
         } break;
 
         case CXType_Bool: typed->specifier_ = $ CYTypeVariable("bool"); break;
-        case CXType_Float: typed->specifier_ = $ CYTypeVariable("float"); break;
-        case CXType_Double: typed->specifier_ = $ CYTypeVariable("double"); break;
+        case CXType_WChar: typed->specifier_ = $ CYTypeVariable("wchar_t"); break;
+        case CXType_Float: typed->specifier_ = $ CYTypeFloating(0); break;
+        case CXType_Double: typed->specifier_ = $ CYTypeFloating(1); break;
+        case CXType_LongDouble: typed->specifier_ = $ CYTypeFloating(2); break;
 
         case CXType_Char_U: typed->specifier_ = $ CYTypeCharacter(CYTypeNeutral); break;
         case CXType_Char_S: typed->specifier_ = $ CYTypeCharacter(CYTypeNeutral); break;
@@ -654,8 +656,13 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
                 goto skip;
 
             if (code == NULL) {
+                value << "*";
                 CXType type(clang_getCursorType(cursor));
-                value << "*(typedef " << CYCXString(clang_getTypeSpelling(type)) << ").pointerTo()(dlsym(RTLD_DEFAULT,'" << label.substr(1) << "'))";
+                CYType *typed(CYDecodeType(type));
+                CYOptions options;
+                CYOutput out(*value.rdbuf(), options);
+                CYTypeExpression(typed).Output(out, CYNoBFC);
+                value << ".pointerTo()(dlsym(RTLD_DEFAULT,'" << label.substr(1) << "'))";
             } else {
                 CYOptions options;
                 CYOutput out(*value.rdbuf(), options);

@@ -49,6 +49,11 @@ ffi_type *Primitive<float>::GetFFI(CYPool &pool) const {
 }
 
 template <>
+ffi_type *Primitive<long double>::GetFFI(CYPool &pool) const {
+    return &ffi_type_longdouble;
+}
+
+template <>
 ffi_type *Primitive<double>::GetFFI(CYPool &pool) const {
     return &ffi_type_double;
 }

@@ -981,11 +981,9 @@ IdentifierTypeNoOf
     | "boolean" { $$ = CYNew CYIdentifier("boolean"); }
     | "byte" { $$ = CYNew CYIdentifier("byte"); }
     | "constructor" { $$ = CYNew CYIdentifier("constructor"); }
-    | "double" { $$ = CYNew CYIdentifier("double"); }
     | "each" { $$ = CYNew CYIdentifier("each"); }
     | "eval" { $$ = CYNew CYIdentifier("eval"); }
     | "final" { $$ = CYNew CYIdentifier("final"); }
-    | "float" { $$ = CYNew CYIdentifier("float"); }
     | "from" { $$ = CYNew CYIdentifier("from"); }
     | "get" { $$ = CYNew CYIdentifier("get"); }
     | "goto" { $$ = CYNew CYIdentifier("goto"); }
@@ -1029,6 +1027,8 @@ IdentifierTypeOpt
 IdentifierNoOf
     : IdentifierTypeNoOf
     | "char" { $$ = CYNew CYIdentifier("char"); }
+    | "double" { $$ = CYNew CYIdentifier("double"); }
+    | "float" { $$ = CYNew CYIdentifier("float"); }
     | "int" { $$ = CYNew CYIdentifier("int"); }
     | "__int128" { $$ = CYNew CYIdentifier("__int128"); }
     | "long" { $$ = CYNew CYIdentifier("long"); }
@@ -2150,6 +2150,9 @@ PrimitiveType
     | IntegerType[pass] { $$ = $pass; }
     | TypeSigning[signing] "char" { $$ = CYNew CYTypeCharacter($signing); }
     | TypeSigning[signing] "__int128" { $$ = CYNew CYTypeInt128($signing); }
+    | "float" { $$ = CYNew CYTypeFloating(0); }
+    | "double" { $$ = CYNew CYTypeFloating(1); }
+    | "long" "double" { $$ = CYNew CYTypeFloating(2); }
     ;
 
 PrimitiveReference
