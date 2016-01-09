@@ -854,10 +854,12 @@ void Function::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *
 #define CYFromFFI_(Type_) \
 template <> \
 JSValueRef Primitive<Type_>::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const { \
-    return CYCastJSValue(context, *reinterpret_cast<Type_ *>(data)); \
+    JSValueRef value(CYCastJSValue(context, *reinterpret_cast<Type_ *>(data))); \
+    JSObjectRef typed(_jsccall(JSObjectCallAsConstructor, context, CYGetCachedObject(context, CYJSString("Number")), 1, &value)); \
+    CYSetProperty(context, typed, cyt_s, CYMakeType(context, *this), kJSPropertyAttributeDontEnum); \
+    return typed; \
 }
 
-CYFromFFI_(bool)
 CYFromFFI_(wchar_t)
 CYFromFFI_(float)
 CYFromFFI_(double)
@@ -879,6 +881,11 @@ CYFromFFI_(unsigned short int)
 CYFromFFI_(signed __int128)
 CYFromFFI_(unsigned __int128)
 #endif
+
+template <>
+JSValueRef Primitive<bool>::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
+    return CYCastJSValue(context, *reinterpret_cast<bool *>(data));
+}
 
 template <>
 JSValueRef Primitive<char>::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
@@ -1706,13 +1713,6 @@ static JSValueRef Type_callAsFunction(JSContextRef context, JSObjectRef object, 
 
     type->PoolFFI(buffer, context, ffi, data, arguments[0]);
     JSValueRef value(type->FromFFI(context, ffi, data, false, buffer));
-
-    if (JSValueGetType(context, value) == kJSTypeNumber) {
-        JSObjectRef typed(_jsccall(JSObjectCallAsConstructor, context, CYGetCachedObject(context, CYJSString("Number")), 1, &value));
-        CYSetProperty(context, typed, cyt_s, object, kJSPropertyAttributeDontEnum);
-        value = typed;
-    }
-
     return value;
 } CYCatch(NULL) }
 
