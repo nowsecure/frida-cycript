@@ -750,6 +750,7 @@ void Primitive<char>::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi,
         CYJSString script(context, value);
         auto string(CYCastUTF16String(script));
         _assert(string.size == 1);
+        _assert((string.data[0] & 0xff) == string.data[0]);
         *reinterpret_cast<char *>(data) = string.data[0];
     }
 }
