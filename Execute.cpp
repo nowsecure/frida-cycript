@@ -1666,7 +1666,14 @@ static JSValueRef Type_callAsFunction(JSContextRef context, JSObjectRef object, 
 
     sig::Type *type(internal->type_);
     ffi_type *ffi(internal->GetFFI());
-    void *data(buffer->malloc<void>(ffi->size, ffi->alignment));
+
+    void *data;
+    if (_this == NULL || CYIsStrictEqual(context, _this, CYGetGlobalObject(context)))
+        data = buffer->malloc<void>(ffi->size, ffi->alignment);
+    else {
+        CYSetProperty(context, buffer, CYJSString("$cyo"), _this, kJSPropertyAttributeDontEnum);
+        data = CYCastPointer<void *>(context, _this);
+    }
 
     type->PoolFFI(buffer, context, ffi, data, arguments[0]);
     JSValueRef value(type->FromFFI(context, ffi, data, false, buffer));
@@ -2460,7 +2467,12 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     CYSetProperty(context, cycript, CYJSString("Functor"), Functor);
 
     CYSetProperty(context, cycript, CYJSString("Pointer"), JSObjectMakeConstructor(context, CYPrivate<Pointer>::Class_, &Pointer_new));
-    CYSetProperty(context, cycript, CYJSString("Type"), JSObjectMakeConstructor(context, CYPrivate<Type_privateData>::Class_, &Type_new));
+
+    JSObjectRef Type(JSObjectMakeConstructor(context, CYPrivate<Type_privateData>::Class_, &Type_new));
+    JSObjectRef Type_prototype(CYCastJSObject(context, CYGetProperty(context, Type, prototype_s)));
+    CYSetPrototype(context, Type_prototype, Function_prototype);
+    CYSetProperty(context, cy, CYJSString("Type_prototype"), Type_prototype);
+    CYSetProperty(context, cycript, CYJSString("Type"), Type);
 
     JSObjectRef modules(JSObjectMake(context, NULL, NULL));
     CYSetProperty(context, cy, CYJSString("modules"), modules);
