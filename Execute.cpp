@@ -1005,7 +1005,8 @@ static JSValueRef CString_getProperty(JSContextRef context, JSObjectRef object, 
     else if (!CYGetOffset(pool, context, property, offset))
         return NULL;
 
-    return CYCastJSValue(context, CYJSString(CYUTF8String(&internal->value_[offset], 1)));
+    uint16_t value(uint8_t(internal->value_[offset]));
+    return CYCastJSValue(context, CYJSString(CYUTF16String(&value, 1)));
 } CYCatch(NULL) }
 
 static bool CString_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) { CYTry {
@@ -1018,8 +1019,9 @@ static bool CString_setProperty(JSContextRef context, JSObjectRef object, JSStri
     else if (!CYGetOffset(pool, context, property, offset))
         return false;
 
-    const char *data(CYPoolCString(pool, context, value));
-    internal->value_[offset] = *data;
+    auto data(CYCastUTF16String(CYJSString(context, value)));
+    _assert(data.size == 1);
+    internal->value_[offset] = data.data[0];
     return true;
 } CYCatch(false) }
 

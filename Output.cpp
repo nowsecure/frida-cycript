@@ -92,6 +92,12 @@ void CYStringify(std::ostringstream &str, const char *data, size_t size, CYStrin
             case '\t': str << "\\t"; break;
             case '\v': str << "\\v"; break;
 
+            case '\a':
+                if (mode == CYStringifyModeNative)
+                    str << "\\a";
+                else goto simple;
+            break;
+
             case '\n':
                 if (!split)
                     str << "\\n";
@@ -130,7 +136,7 @@ void CYStringify(std::ostringstream &str, const char *data, size_t size, CYStrin
             break;
 
             case '\0':
-                if (value[1] >= '0' && value[1] <= '9')
+                if (mode != CYStringifyModeNative && value[1] >= '0' && value[1] <= '9')
                     str << "\\x00";
                 else
                     str << "\\0";
@@ -139,6 +145,8 @@ void CYStringify(std::ostringstream &str, const char *data, size_t size, CYStrin
             default:
                 if (next >= 0x20 && next < 0x7f) simple:
                     str << *value;
+                else if (mode == CYStringifyModeNative)
+                    str << "\\x" << std::setbase(16) << std::setw(2) << std::setfill('0') << unsigned(*value & 0xff);
                 else {
                     unsigned levels(1);
                     if ((next & 0x80) != 0)
