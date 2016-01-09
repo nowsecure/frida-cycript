@@ -1678,7 +1678,7 @@ static JSValueRef Type_callAsFunction_pointerTo(JSContextRef context, JSObjectRe
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(_this)));
 
     if (dynamic_cast<sig::Primitive<char> *>(internal->type_) != NULL)
-        return CYMakeType(context, sig::String());
+        return CYMakeType(context, sig::String((internal->type_->flags & JOC_TYPE_CONST) != 0));
     else
         return CYMakeType(context, sig::Pointer(*internal->type_));
 } CYCatch(NULL) }
@@ -1860,7 +1860,7 @@ static JSValueRef CString_getProperty_length(JSContextRef context, JSObjectRef o
 } CYCatch(NULL) }
 
 static JSValueRef CString_getProperty_$cyt(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
-    return CYMakeType(context, sig::String());
+    return CYMakeType(context, sig::String(true));
 } CYCatch(NULL) }
 
 static JSValueRef CArray_getProperty_$cyt(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef *exception) { CYTry {
@@ -2545,7 +2545,7 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     }
 #endif
 
-    CYSetProperty(context, String_prototype, cyt_s, CYMakeType(context, sig::String()), kJSPropertyAttributeDontEnum);
+    CYSetProperty(context, String_prototype, cyt_s, CYMakeType(context, sig::String(true)), kJSPropertyAttributeDontEnum);
 
     CYSetProperty(context, cache, CYJSString("dlerror"), CYMakeFunctor(context, "dlerror", "*"), kJSPropertyAttributeDontEnum);
     CYSetProperty(context, cache, CYJSString("RTLD_DEFAULT"), CYCastJSValue(context, reinterpret_cast<intptr_t>(RTLD_DEFAULT)), kJSPropertyAttributeDontEnum);

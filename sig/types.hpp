@@ -130,6 +130,14 @@ struct Unknown :
 struct String :
     Type
 {
+    String() {
+    }
+
+    String(bool constant) {
+        if (constant)
+            flags |= JOC_TYPE_CONST;
+    }
+
     String *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;
