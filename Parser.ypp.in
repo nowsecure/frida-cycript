@@ -2045,7 +2045,7 @@ ParameterTail
     ;
 
 SuffixedType
-    : SuffixedTypeOpt[typed] "[" NumericLiteral[size] "]" { $$ = $typed; $$->modifier_ = CYNew CYTypeArrayOf($size, $$->modifier_); }
+    : SuffixedTypeOpt[typed] "[" AssignmentExpression[size] "]" { $$ = $typed; $$->modifier_ = CYNew CYTypeArrayOf($size, $$->modifier_); }
     | "(" "^" TypeQualifierRightOpt[typed] ")" "(" TypedParameters[parameters] ")" { $$ = $typed; $$->modifier_ = CYNew CYTypeBlockWith($parameters, $$->modifier_); }
     | TypeSignifier[typed] "(" ParameterTail[modifier] { $$ = $typed; CYSetLast($modifier) = $$->modifier_; $$->modifier_ = $modifier; }
     | "("[parenthesis] ParameterTail[modifier] { $$ = CYNew CYTypedName(@parenthesis); CYSetLast($modifier) = $$->modifier_; $$->modifier_ = $modifier; }
