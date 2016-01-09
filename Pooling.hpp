@@ -235,6 +235,7 @@ struct CYData {
     CYData() :
         count_(1)
     {
+        _assert(pool_ != NULL);
     }
 
     CYData(CYPool &pool) :

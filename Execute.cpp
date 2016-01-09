@@ -251,12 +251,6 @@ struct CArray :
         type_(new(*pool_) Type_privateData(type, ffi)),
         length_(length)
     {
-        if (owner == NULL) {
-            size_t size(ffi->size * length);
-            void *copy(pool_->malloc<void>(size, ffi->alignment));
-            memcpy(copy, value_, size);
-            value_ = copy;
-        }
     }
 };
 
@@ -270,8 +264,6 @@ struct CString :
         value_(value),
         owner_(context, owner)
     {
-        if (owner == NULL)
-            value_ = pool_->strdup(value_);
     }
 };
 
@@ -1272,7 +1264,8 @@ JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, voi
         element.type->PoolFFI(&pool, context, ffi, values[index], arguments[index - setups]);
     }
 
-    uint8_t *value(pool.malloc<uint8_t>(std::max<size_t>(cif->rtype->size, sizeof(ffi_arg)), std::max<size_t>(cif->rtype->alignment, alignof(ffi_arg))));
+    CYBuffer buffer(context);
+    uint8_t *value(buffer->malloc<uint8_t>(std::max<size_t>(cif->rtype->size, sizeof(ffi_arg)), std::max<size_t>(cif->rtype->alignment, alignof(ffi_arg))));
 
     void (*call)(CYPool &, JSContextRef, ffi_cif *, void (*)(), void *, void **) = &CYCallFunction;
     // XXX: this only supports one hook, but it is a bad idea anyway
@@ -1281,7 +1274,7 @@ JSValueRef CYCallFunction(CYPool &pool, JSContextRef context, size_t setups, voi
             call = hook->CallFunction;
 
     call(pool, context, cif, function, value, values);
-    return signature.elements[0].type->FromFFI(context, cif->rtype, value, initialize);
+    return signature.elements[0].type->FromFFI(context, cif->rtype, value, initialize, buffer);
 }
 
 static JSValueRef Functor_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
@@ -1667,14 +1660,14 @@ static JSValueRef Type_callAsFunction(JSContextRef context, JSObjectRef object, 
     if (sig::Function *function = dynamic_cast<sig::Function *>(internal->type_))
         return CYMakeFunctor(context, arguments[0], function->variadic, function->signature);
 
-    CYPool pool;
+    CYBuffer buffer(context);
 
     sig::Type *type(internal->type_);
     ffi_type *ffi(internal->GetFFI());
-    void *data(pool.malloc<void>(ffi->size, ffi->alignment));
+    void *data(buffer->malloc<void>(ffi->size, ffi->alignment));
 
-    type->PoolFFI(&pool, context, ffi, data, arguments[0]);
-    JSValueRef value(type->FromFFI(context, ffi, data));
+    type->PoolFFI(buffer, context, ffi, data, arguments[0]);
+    JSValueRef value(type->FromFFI(context, ffi, data, false, buffer));
 
     if (JSValueGetType(context, value) == kJSTypeNumber) {
         JSObjectRef typed(_jsccall(JSObjectCallAsConstructor, context, CYGetCachedObject(context, CYJSString("Number")), 1, &value));
@@ -2143,6 +2136,11 @@ void CYInitializeDynamic() {
     definition.setProperty = &Pointer_setProperty;
     definition.finalize = &CYFinalize;
     CYPrivate<Pointer>::Class_ = JSClassCreate(&definition);
+
+    definition = kJSClassDefinitionEmpty;
+    definition.className = "Root";
+    definition.finalize = &CYFinalize;
+    CYPrivate<CYRoot>::Class_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "Struct";

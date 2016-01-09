@@ -42,6 +42,12 @@ sig::Type *Structor_(CYPool &pool, sig::Aggregate *aggregate);
 struct CYRoot :
     CYData
 {
+    // XXX: without this, CYData is zero-initialized?!
+    CYRoot() :
+        CYData()
+    {
+    }
+
     _finline JSValueRef GetPrototype(JSContextRef context) const {
         return NULL;
     }
@@ -195,6 +201,33 @@ struct CYProtect {
 
     operator JSObjectRef() const {
         return object_;
+    }
+};
+
+class CYBuffer {
+  private:
+    JSObjectRef owner_;
+    CYPool *pool_;
+
+  public:
+    CYBuffer(JSContextRef context) :
+        owner_(CYPrivate<CYRoot>::Make(context)),
+        pool_(CYPrivate<CYRoot>::Get(context, owner_)->pool_)
+    {
+        auto internal(CYPrivate<CYRoot>::Get(context, owner_));
+        internal->pool_->malloc<int>(10);
+    }
+
+    operator JSObjectRef() const {
+        return owner_;
+    }
+
+    operator CYPool *() const {
+        return pool_;
+    }
+
+    CYPool *operator ->() const {
+        return pool_;
     }
 };
 
