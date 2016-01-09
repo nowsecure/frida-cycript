@@ -703,6 +703,8 @@ void *CYCastPointer_(JSContextRef context, JSValueRef value, bool *guess) {
     }
 }
 
+static JSValueRef FunctionAdapter_(JSContextRef context, size_t count, JSValueRef values[], JSObjectRef function);
+
 namespace sig {
 
 // XXX: this is somehow not quite a template :/
@@ -786,8 +788,15 @@ void Pointer::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *d
     *reinterpret_cast<void **>(data) = CYCastPointer<void *>(context, value, &guess);
     if (!guess || pool == NULL || !JSValueIsObject(context, value))
         return;
+
     JSObjectRef object(CYCastJSObject(context, value));
-    if (CYHasProperty(context, object, length_s)) {
+
+    if (sig::Function *function = dynamic_cast<sig::Function *>(&type)) {
+        _assert(!function->variadic);
+        auto internal(CYMakeFunctor_(context, object, function->signature, &FunctionAdapter_));
+        // XXX: see notes in Library.cpp about needing to leak
+        *reinterpret_cast<void (**)()>(data) = internal->value_;
+    } else if (CYHasProperty(context, object, length_s)) {
         size_t length(CYArrayLength(context, object));
         ffi_type *element(type.GetFFI(*pool));
         size_t size(element->size * length);
