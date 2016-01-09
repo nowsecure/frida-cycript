@@ -716,7 +716,6 @@ void Primitive<Type_>::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi
     *reinterpret_cast<Type_ *>(data) = CYCastDouble(context, value); \
 }
 
-CYPoolFFI_(char)
 CYPoolFFI_(double)
 CYPoolFFI_(float)
 CYPoolFFI_(signed char)
@@ -734,6 +733,18 @@ CYPoolFFI_(unsigned short int)
 CYPoolFFI_(signed __int128)
 CYPoolFFI_(unsigned __int128)
 #endif
+
+template <>
+void Primitive<char>::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
+    if (JSValueGetType(context, value) != kJSTypeString)
+        *reinterpret_cast<char *>(data) = CYCastDouble(context, value);
+    else {
+        CYJSString script(context, value);
+        auto string(CYCastUTF16String(script));
+        _assert(string.size == 1);
+        *reinterpret_cast<char *>(data) = string.data[0];
+    }
+}
 
 void Void::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
     _assert(false);
@@ -841,7 +852,6 @@ JSValueRef Primitive<Type_>::FromFFI(JSContextRef context, ffi_type *ffi, void *
 }
 
 CYFromFFI_(bool)
-CYFromFFI_(char)
 CYFromFFI_(double)
 CYFromFFI_(float)
 CYFromFFI_(signed char)
@@ -859,6 +869,16 @@ CYFromFFI_(unsigned short int)
 CYFromFFI_(signed __int128)
 CYFromFFI_(unsigned __int128)
 #endif
+
+template <>
+JSValueRef Primitive<char>::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
+    uint16_t string(uint8_t(*reinterpret_cast<char *>(data)));
+    JSValueRef value(CYCastJSValue(context, CYJSString(CYUTF16String(&string, 1))));
+    JSObjectRef typed(_jsccall(JSObjectCallAsConstructor, context, CYGetCachedObject(context, CYJSString("String")), 1, &value));
+    CYSetProperty(context, typed, cyt_s, CYMakeType(context, sig::Primitive<char>()), kJSPropertyAttributeDontEnum);
+    CYSetPrototype(context, typed, CYGetCachedValue(context, CYJSString("Character_prototype")));
+    return typed;
+}
 
 JSValueRef Void::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const {
     return CYJSUndefined(context);
@@ -1005,8 +1025,8 @@ static JSValueRef CString_getProperty(JSContextRef context, JSObjectRef object, 
     else if (!CYGetOffset(pool, context, property, offset))
         return NULL;
 
-    uint16_t value(uint8_t(internal->value_[offset]));
-    return CYCastJSValue(context, CYJSString(CYUTF16String(&value, 1)));
+    sig::Primitive<char> type;
+    return type.FromFFI(context, type.GetFFI(pool), internal->value_ + offset, false, NULL);
 } CYCatch(NULL) }
 
 static bool CString_setProperty(JSContextRef context, JSObjectRef object, JSStringRef property, JSValueRef value, JSValueRef *exception) { CYTry {
@@ -1019,9 +1039,8 @@ static bool CString_setProperty(JSContextRef context, JSObjectRef object, JSStri
     else if (!CYGetOffset(pool, context, property, offset))
         return false;
 
-    auto data(CYCastUTF16String(CYJSString(context, value)));
-    _assert(data.size == 1);
-    internal->value_[offset] = data.data[0];
+    sig::Primitive<char> type;
+    type.PoolFFI(NULL, context, type.GetFFI(pool), internal->value_ + offset, value);
     return true;
 } CYCatch(false) }
 
@@ -2473,6 +2492,11 @@ extern "C" void CYSetupContext(JSGlobalContextRef context) {
     CYSetPrototype(context, Type_prototype, Function_prototype);
     CYSetProperty(context, cy, CYJSString("Type_prototype"), Type_prototype);
     CYSetProperty(context, cycript, CYJSString("Type"), Type);
+
+    JSObjectRef Character_prototype(JSObjectMake(context, NULL, NULL));
+    CYSetPrototype(context, Character_prototype, String_prototype);
+    CYSetProperty(context, cy, CYJSString("Character_prototype"), Character_prototype);
+    CYSetProperty(context, Character_prototype, CYJSString("valueOf"), _jsccall(JSEvaluateScript, context, CYJSString("(function(){return this.charCodeAt(0);})"), NULL, NULL, 0));
 
     JSObjectRef modules(JSObjectMake(context, NULL, NULL));
     CYSetProperty(context, cy, CYJSString("modules"), modules);
