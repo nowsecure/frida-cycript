@@ -48,42 +48,42 @@ void Copy(CYPool &pool, Signature &lhs, const Signature &rhs) {
 }
 
 Void *Void::Copy(CYPool &pool, const char *rename) const {
-    return new(pool) Void();
+    return Flag(new(pool) Void());
 }
 
 Unknown *Unknown::Copy(CYPool &pool, const char *rename) const {
-    return new(pool) Unknown();
+    return Flag(new(pool) Unknown());
 }
 
 String *String::Copy(CYPool &pool, const char *rename) const {
-    return new(pool) String();
+    return Flag(new(pool) String());
 }
 
 #ifdef CY_OBJECTIVEC
 Meta *Meta::Copy(CYPool &pool, const char *rename) const {
-    return new(pool) Meta();
+    return Flag(new(pool) Meta());
 }
 
 Selector *Selector::Copy(CYPool &pool, const char *rename) const {
-    return new(pool) Selector();
+    return Flag(new(pool) Selector());
 }
 #endif
 
 Bits *Bits::Copy(CYPool &pool, const char *rename) const {
-    return new(pool) Bits(size);
+    return Flag(new(pool) Bits(size));
 }
 
 Pointer *Pointer::Copy(CYPool &pool, const char *rename) const {
-    return new(pool) Pointer(*type.Copy(pool));
+    return Flag(new(pool) Pointer(*type.Copy(pool)));
 }
 
 Array *Array::Copy(CYPool &pool, const char *rename) const {
-    return new(pool) Array(*type.Copy(pool), size);
+    return Flag(new(pool) Array(*type.Copy(pool), size));
 }
 
 #ifdef CY_OBJECTIVEC
 Object *Object::Copy(CYPool &pool, const char *rename) const {
-    return new(pool) Object(pool.strdup(name));
+    return Flag(new(pool) Object(pool.strdup(name)));
 }
 #endif
 
@@ -98,7 +98,7 @@ Enum *Enum::Copy(CYPool &pool, const char *rename) const {
         copy->constants[i].name = pool.strdup(constants[i].name);
         copy->constants[i].value = constants[i].value;
     }
-    return copy;
+    return Flag(copy);
 }
 
 Aggregate *Aggregate::Copy(CYPool &pool, const char *rename) const {
@@ -108,20 +108,20 @@ Aggregate *Aggregate::Copy(CYPool &pool, const char *rename) const {
         rename = NULL;
     Aggregate *copy(new(pool) Aggregate(overlap, rename));
     sig::Copy(pool, copy->signature, signature);
-    return copy;
+    return Flag(copy);
 }
 
 Function *Function::Copy(CYPool &pool, const char *rename) const {
     Function *copy(new(pool) Function(variadic));
     sig::Copy(pool, copy->signature, signature);
-    return copy;
+    return Flag(copy);
 }
 
 #ifdef CY_OBJECTIVEC
 Block *Block::Copy(CYPool &pool, const char *rename) const {
     Block *copy(new(pool) Block());
     sig::Copy(pool, copy->signature, signature);
-    return copy;
+    return Flag(copy);
 }
 #endif
 

@@ -57,6 +57,12 @@ struct Type {
     {
     }
 
+    template <typename Type_>
+    _finline Type_ *Flag(Type_ *type) const {
+        type->flags = flags;
+        return type;
+    }
+
     virtual Type *Copy(CYPool &pool, const char *rename = NULL) const = 0;
     virtual const char *GetName() const;
 
@@ -73,7 +79,7 @@ struct Primitive :
     Type
 {
     Primitive *Copy(CYPool &pool, const char *name) const {
-        return new(pool) Primitive();
+        return Flag(new(pool) Primitive());
     }
 
     const char *Encode(CYPool &pool) const override;
