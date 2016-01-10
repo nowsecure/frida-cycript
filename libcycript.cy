@@ -184,6 +184,26 @@ Java.on('setup', function() {
                 this.put(key, value);
         },
     });
+
+    $cy_set(java.lang.Throwable.prototype, {
+        toCYON: function() {
+            var message = this.getMessage();
+            if (message == null)
+                message = '';
+            else
+                message = message.toCYON();
+
+            let stack = this.getStackTrace();
+            if (stack.length == 0)
+                stack = '';
+            else {
+                stack = stack.join('\n    ');
+                stack = ` /*\n    ${stack} */`;
+            }
+
+            return `new ${this.constructor.class.getName()}(${message})${stack}`;
+        },
+    });
 });
 
 }
