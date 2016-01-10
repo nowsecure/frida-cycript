@@ -513,25 +513,22 @@ struct CYJavaSignature {
     {
     }
 
-    CYJavaSignature(unsigned count) :
-        shorty_(count)
-    {
-    }
-
+    // XXX: the shorty doesn't store enough information
     bool operator <(const CYJavaSignature &rhs) const {
-        return shorty_.size() < rhs.shorty_.size();
+        return shorty_ < rhs.shorty_;
     }
 };
 
-typedef std::multiset<CYJavaSignature> CYJavaOverload;
+typedef std::set<CYJavaSignature> CYJavaOverload;
+typedef std::map<unsigned, CYJavaOverload> CYJavaOverloads;
 
 struct CYJavaMethod :
     CYRoot
 {
-    CYJavaOverload overload_;
+    CYJavaOverloads overloads_;
 
-    CYJavaMethod(const CYJavaOverload &overload) :
-        overload_(overload)
+    CYJavaMethod(const CYJavaOverloads &overloads) :
+        overloads_(overloads)
     {
     }
 };
@@ -539,10 +536,10 @@ struct CYJavaMethod :
 struct CYJavaStaticMethod :
     CYRoot
 {
-    CYJavaOverload overload_;
+    CYJavaOverloads overloads_;
 
-    CYJavaStaticMethod(const CYJavaOverload &overload) :
-        overload_(overload)
+    CYJavaStaticMethod(const CYJavaOverloads &overloads) :
+        overloads_(overloads)
     {
     }
 };
@@ -555,7 +552,7 @@ struct CYJavaClass :
 
     CYJavaFieldMap static_;
     CYJavaFieldMap instance_;
-    CYJavaOverload overload_;
+    CYJavaOverloads overloads_;
 
     CYJavaClass(const CYJavaRef<jclass> &value, bool interface) :
         value_(value),
@@ -820,24 +817,41 @@ static JSObjectRef CYGetJavaClass(JSContextRef context, const CYJavaRef<jclass> 
         auto parameters(jni.CallObjectMethod<jobjectArray>(constructor, Constructor$getParameterTypes));
         CYJavaShorty shorty(CYJavaGetShorty(context, parameters, Class$getName));
         auto id(jni.FromReflectedMethod(constructor));
-        table->overload_.insert(CYJavaSignature(constructor, id, CYJavaPrimitiveObject, shorty));
+        table->overloads_[shorty.size()].insert(CYJavaSignature(constructor, id, CYJavaPrimitiveObject, shorty));
     }
 
-    auto methods(jni.CallObjectMethod<jobjectArray>(value, Class$getDeclaredMethods));
+    std::map<std::pair<bool, std::string>, CYJavaOverloads> entries;
 
-    std::map<std::pair<bool, std::string>, CYJavaOverload> entries;
+    bool base(false);
+    for (CYJavaLocal<jclass> prototype(value); prototype; prototype = jni.GetSuperclass(prototype)) {
+        auto methods(jni.CallObjectMethod<jobjectArray>(prototype, Class$getDeclaredMethods));
 
-    for (jsize i(0), e(jni.GetArrayLength(methods)); i != e; ++i) {
-        auto method(jni.GetObjectArrayElement<jobject>(methods, i));
-        auto modifiers(jni.CallIntMethod(method, Method$getModifiers));
-        auto instance(!jni.CallStaticBooleanMethod(Modifier$, Modifier$isStatic, modifiers));
-        CYJavaUTF8String name(jni.CallObjectMethod<jstring>(method, Method$getName));
-        auto parameters(jni.CallObjectMethod<jobjectArray>(method, Method$getParameterTypes));
-        CYJavaShorty shorty(CYJavaGetShorty(context, parameters, Class$getName));
-        auto type(jni.CallObjectMethod<jclass>(method, Method$getReturnType));
-        auto primitive(CYJavaGetPrimitive(context, type, Class$getName));
-        auto id(jni.FromReflectedMethod(method));
-        entries[std::make_pair(instance, std::string(name))].insert(CYJavaSignature(method, id, primitive, shorty));
+        for (jsize i(0), e(jni.GetArrayLength(methods)); i != e; ++i) {
+            auto method(jni.GetObjectArrayElement<jobject>(methods, i));
+            auto modifiers(jni.CallIntMethod(method, Method$getModifiers));
+            auto instance(!jni.CallStaticBooleanMethod(Modifier$, Modifier$isStatic, modifiers));
+            CYJavaUTF8String name(jni.CallObjectMethod<jstring>(method, Method$getName));
+
+            auto parameters(jni.CallObjectMethod<jobjectArray>(method, Method$getParameterTypes));
+            CYJavaShorty shorty(CYJavaGetShorty(context, parameters, Class$getName));
+
+            CYJavaOverload *overload;
+            if (!base)
+                overload = &entries[std::make_pair(instance, std::string(name))][shorty.size()];
+            else {
+                auto entry(entries.find(std::make_pair(instance, std::string(name))));
+                if (entry == entries.end())
+                    continue;
+                overload = &entry->second[shorty.size()];
+            }
+
+            auto type(jni.CallObjectMethod<jclass>(method, Method$getReturnType));
+            auto primitive(CYJavaGetPrimitive(context, type, Class$getName));
+            auto id(jni.FromReflectedMethod(method));
+            overload->insert(CYJavaSignature(method, id, primitive, shorty));
+        }
+
+        base = true;
     }
 
     for (const auto &entry : entries) {
@@ -937,22 +951,23 @@ static JSValueRef JavaMethod_callAsFunction(JSContextRef context, JSObjectRef ob
     _assert(self != NULL);
     CYJavaEnv jni(self->value_);
 
-    CYJavaSignature bound(count);
-    for (auto overload(internal->overload_.lower_bound(bound)), e(internal->overload_.upper_bound(bound)); overload != e; ++overload) {
+    auto overload(internal->overloads_.find(count));
+    if (overload != internal->overloads_.end())
+    for (auto signature(overload->second.begin()); signature != overload->second.end(); ++signature) {
         CYJavaFrame frame(jni, count + 16);
         jvalue array[count];
-        if (!CYCastJavaArguments(frame, overload->shorty_, context, arguments, array))
+        if (!CYCastJavaArguments(frame, signature->shorty_, context, arguments, array))
             continue;
         jvalue *values(array);
-        switch (overload->primitive_) {
+        switch (signature->primitive_) {
             case CYJavaPrimitiveObject:
-                return CYCastJSValue(context, jni.CallObjectMethodA<jobject>(self->value_, overload->method_, values));
+                return CYCastJSValue(context, jni.CallObjectMethodA<jobject>(self->value_, signature->method_, values));
             case CYJavaPrimitiveVoid:
-                jni.CallVoidMethodA(self->value_, overload->method_, values);
+                jni.CallVoidMethodA(self->value_, signature->method_, values);
                 return CYJSUndefined(context);
 #define CYJavaForEachPrimitive_(T, t, Typ, Type, type) \
             case CYJavaPrimitive ## Type: \
-                return CYJavaCastJSValue(context, jni.Call ## Typ ## MethodA(self->value_, overload->method_, values));
+                return CYJavaCastJSValue(context, jni.Call ## Typ ## MethodA(self->value_, signature->method_, values));
 CYJavaForEachPrimitive
 #undef CYJavaForEachPrimitive_
             default: _assert(false);
@@ -967,22 +982,23 @@ static JSValueRef JavaStaticMethod_callAsFunction(JSContextRef context, JSObject
     CYJavaClass *table(CYGetJavaTable(context, _this));
     CYJavaEnv jni(table->value_);
 
-    CYJavaSignature bound(count);
-    for (auto overload(internal->overload_.lower_bound(bound)), e(internal->overload_.upper_bound(bound)); overload != e; ++overload) {
+    auto overload(internal->overloads_.find(count));
+    if (overload != internal->overloads_.end())
+    for (auto signature(overload->second.begin()); signature != overload->second.end(); ++signature) {
         CYJavaFrame frame(jni, count + 16);
         jvalue array[count];
-        if (!CYCastJavaArguments(frame, overload->shorty_, context, arguments, array))
+        if (!CYCastJavaArguments(frame, signature->shorty_, context, arguments, array))
             continue;
         jvalue *values(array);
-        switch (overload->primitive_) {
+        switch (signature->primitive_) {
             case CYJavaPrimitiveObject:
-                return CYCastJSValue(context, jni.CallStaticObjectMethodA<jobject>(table->value_, overload->method_, values));
+                return CYCastJSValue(context, jni.CallStaticObjectMethodA<jobject>(table->value_, signature->method_, values));
             case CYJavaPrimitiveVoid:
-                jni.CallStaticVoidMethodA(table->value_, overload->method_, values);
+                jni.CallStaticVoidMethodA(table->value_, signature->method_, values);
                 return CYJSUndefined(context);
 #define CYJavaForEachPrimitive_(T, t, Typ, Type, type) \
             case CYJavaPrimitive ## Type: \
-                return CYJavaCastJSValue(context, jni.CallStatic ## Typ ## MethodA(table->value_, overload->method_, values));
+                return CYJavaCastJSValue(context, jni.CallStatic ## Typ ## MethodA(table->value_, signature->method_, values));
 CYJavaForEachPrimitive
 #undef CYJavaForEachPrimitive_
             default: _assert(false);
@@ -1003,14 +1019,15 @@ static JSObjectRef JavaClass_callAsConstructor(JSContextRef context, JSObjectRef
         return CYCastJSObject(context, jni.CallObjectMethod<jobject>(Cycript$, Cycript$Make, _class, CYCastJavaObject(jni, context, CYCastJSObject(context, arguments[0])).get()));
     }
 
-    CYJavaSignature bound(count);
-    for (auto overload(table->overload_.lower_bound(bound)), e(table->overload_.upper_bound(bound)); overload != e; ++overload) {
+    auto overload(table->overloads_.find(count));
+    if (overload != table->overloads_.end())
+    for (auto signature(overload->second.begin()); signature != overload->second.end(); ++signature) {
         CYJavaFrame frame(jni, count + 16);
         jvalue array[count];
-        if (!CYCastJavaArguments(frame, overload->shorty_, context, arguments, array))
+        if (!CYCastJavaArguments(frame, signature->shorty_, context, arguments, array))
             continue;
         jvalue *values(array);
-        auto object(jni.NewObjectA(_class, overload->method_, values));
+        auto object(jni.NewObjectA(_class, signature->method_, values));
         return CYCastJSObject(context, object);
     }
 
