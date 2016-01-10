@@ -2848,6 +2848,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     CYPrivate<Constructor>::Class_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
+    definition.attributes = kJSClassAttributeNoAutomaticPrototype;
     definition.className = "Interior";
     definition.staticFunctions = Interior_staticFunctions;
     definition.hasProperty = &Interior_hasProperty;
@@ -2880,11 +2881,13 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     CYPrivate<Selector_privateData>::Class_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
+    definition.attributes = kJSClassAttributeNoAutomaticPrototype;
     definition.className = "Super";
     definition.finalize = &CYFinalize;
     CYPrivate<cy::Super>::Class_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
+    definition.attributes = kJSClassAttributeNoAutomaticPrototype;
     definition.className = "ObjectiveC::Classes";
     definition.hasProperty = &ObjectiveC_Classes_hasProperty;
     definition.getProperty = &ObjectiveC_Classes_getProperty;
@@ -2892,6 +2895,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
     ObjectiveC_Classes_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
+    definition.attributes = kJSClassAttributeNoAutomaticPrototype;
     definition.className = "ObjectiveC::Constants";
     definition.getProperty = &ObjectiveC_Constants_getProperty;
     definition.getPropertyNames = &ObjectiveC_Constants_getPropertyNames;
@@ -2899,12 +2903,14 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
 
 #ifdef __APPLE__
     definition = kJSClassDefinitionEmpty;
+    definition.attributes = kJSClassAttributeNoAutomaticPrototype;
     definition.className = "ObjectiveC::Images";
     definition.getProperty = &ObjectiveC_Images_getProperty;
     definition.getPropertyNames = &ObjectiveC_Images_getPropertyNames;
     ObjectiveC_Images_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
+    definition.attributes = kJSClassAttributeNoAutomaticPrototype;
     definition.className = "ObjectiveC::Image::Classes";
     definition.getProperty = &ObjectiveC_Image_Classes_getProperty;
     definition.getPropertyNames = &ObjectiveC_Image_Classes_getPropertyNames;
@@ -2912,6 +2918,7 @@ void CYObjectiveC_Initialize() { /*XXX*/ JSContextRef context(NULL); CYPoolTry {
 #endif
 
     definition = kJSClassDefinitionEmpty;
+    definition.attributes = kJSClassAttributeNoAutomaticPrototype;
     definition.className = "ObjectiveC::Protocols";
     definition.getProperty = &ObjectiveC_Protocols_getProperty;
     definition.getPropertyNames = &ObjectiveC_Protocols_getPropertyNames;

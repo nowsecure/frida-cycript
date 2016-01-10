@@ -2132,6 +2132,7 @@ void CYInitializeDynamic() {
     JSClassDefinition definition;
 
     definition = kJSClassDefinitionEmpty;
+    definition.attributes = kJSClassAttributeNoAutomaticPrototype;
     definition.className = "All";
     definition.staticFunctions = All_staticFunctions;
     definition.hasProperty = &All_hasProperty;
@@ -2140,6 +2141,7 @@ void CYInitializeDynamic() {
     All_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
+    definition.attributes = kJSClassAttributeNoAutomaticPrototype;
     definition.className = "Context";
     definition.finalize = &CYFinalize;
     CYPrivate<Context>::Class_ = JSClassCreate(&definition);
