@@ -179,16 +179,13 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
         if (string == NULL)
             CYThrow("string was actually %s", typeid(*value->value_).name());
 
-        CYUTF8String completion;
-        if (string->size_ != 0)
-            completion = {string->value_, string->size_};
-        else if (driver.mode_ == CYDriver::AutoMessage)
-            completion = "]";
-        else
-            continue;
-
+        CYUTF8String completion(string->value_, string->size_);
+        _assert(completion.size >= begin.size());
         completion.data += begin.size();
         completion.size -= begin.size();
+
+        if (completion.size == 0 && driver.mode_ == CYDriver::AutoMessage)
+            completion = "]";
 
         if (CYStartsWith(completion, "$cy"))
             continue;
