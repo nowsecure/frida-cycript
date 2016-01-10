@@ -302,6 +302,14 @@ void CYAssignment::Output(CYOutput &out, CYFlags flags) const {
     rhs_->Output(out, Precedence(), CYRight(flags));
 }
 
+void CYAttemptMember::Output(CYOutput &out, CYFlags flags) const {
+    object_->Output(out, Precedence(), CYLeft(flags) | CYNoInteger);
+    if (const char *word = property_->Word())
+        out << "?." << word;
+    else
+        _assert(false);
+}
+
 void CYBlock::Output(CYOutput &out, CYFlags flags) const {
     out << '{' << '\n';
     ++out.indent_;

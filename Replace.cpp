@@ -125,6 +125,14 @@ CYExpression *CYAssignment::Replace(CYContext &context) {
     return this;
 }
 
+CYTarget *CYAttemptMember::Replace(CYContext &context) {
+    CYIdentifier *value(context.Unique());
+
+    return $C1($F(NULL, $P1($B(value)), $$
+        ->* $ CYReturn($ CYCondition($V(value), $M($V(value), property_), $V(value)))
+    ), object_);
+}
+
 CYStatement *CYBlock::Return() {
     CYImplicitReturn(code_);
     return this;
@@ -145,6 +153,15 @@ CYStatement *CYBreak::Replace(CYContext &context) {
 }
 
 CYTarget *CYCall::Replace(CYContext &context) {
+    // XXX: this also is a horrible hack but I'm still a month over schedule :(
+    if (CYAttemptMember *member = dynamic_cast<CYAttemptMember *>(function_)) {
+        CYIdentifier *value(context.Unique());
+
+        return $C1($F(NULL, $P1($B(value)), $$
+            ->* $ CYReturn($ CYCondition($V(value), $C($M($V(value), member->property_), arguments_), $V(value)))
+        ), member->object_);
+    }
+
     context.Replace(function_);
     arguments_->Replace(context);
     return this;

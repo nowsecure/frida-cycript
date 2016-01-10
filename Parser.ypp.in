@@ -305,6 +305,7 @@ type; })
 %token Plus "+"
 %token PlusEqual "+="
 %token PlusPlus "++"
+%token QuestionPeriod "?."
 %token Right ">"
 %token RightEqual ">="
 %token RightRight ">>"
@@ -2709,6 +2710,12 @@ ArgumentList
 /* JavaScript FTW: Subscript Access {{{ */
 MemberAccess
     : "." "[" AssignmentExpression[property] "]" { $$ = CYNew CYSubscriptMember(NULL, $property); }
+    ;
+/* }}} */
+/* JavaScript FTW: Undefined Monad {{{ */
+MemberAccess
+    : "?." IdentifierName[property] { $$ = CYNew CYAttemptMember(NULL, CYNew CYString($property)); }
+    | "?." AutoComplete { driver.mode_ = CYDriver::AutoDirect; YYACCEPT; }
     ;
 /* }}} */
 

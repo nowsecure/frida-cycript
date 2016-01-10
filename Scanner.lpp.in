@@ -370,6 +370,7 @@ XMLName {XMLNameStart}{XMLNamePart}*
 "%"    L F(tk::Percent, hi::Operator);
 "%="   L F(tk::PercentEqual, hi::Operator);
 "."    L F(tk::Period, hi::Operator);
+"?."   L F(tk::QuestionPeriod, hi::Operator);
 "|"    L F(tk::Pipe, hi::Operator);
 "|="   L F(tk::PipeEqual, hi::Operator);
 "||"   L F(tk::PipePipe, hi::Operator);
