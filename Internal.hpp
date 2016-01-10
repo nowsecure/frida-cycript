@@ -53,35 +53,6 @@ struct CYRoot :
     }
 };
 
-template <typename Internal_, typename Base_ = CYRoot>
-struct CYPrivateOld :
-    Base_
-{
-    static JSClassRef Class_;
-
-    template <typename... Args_>
-    _finline static JSClassRef GetClass(Args_ &&... args) {
-        return Class_;
-    }
-
-    template <typename... Args_>
-    static JSObjectRef Make(JSContextRef context, Args_ &&... args) {
-        Internal_ *internal(new Internal_(cy::Forward<Args_>(args)...));
-        JSObjectRef object(JSObjectMake(context, Internal_::GetClass(cy::Forward<Args_>(args)...), internal));
-        if (JSValueRef prototype = internal->GetPrototype(context))
-            CYSetPrototype(context, object, prototype);
-        return object;
-    }
-
-    static Internal_ *Get(JSContextRef context, JSObjectRef object) {
-        _assert(JSValueIsObjectOfClass(context, object, Class_));
-        return static_cast<Internal_ *>(JSObjectGetPrivate(object));
-    }
-};
-
-template <typename Internal_, typename Base_>
-JSClassRef CYPrivateOld<Internal_, Base_>::Class_;
-
 template <typename Internal_>
 struct CYPrivate {
     static JSClassRef Class_;

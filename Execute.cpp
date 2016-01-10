@@ -217,6 +217,8 @@ static JSStringRef Result_;
 
 void CYFinalize(JSObjectRef object) {
     CYData *internal(reinterpret_cast<CYData *>(JSObjectGetPrivate(object)));
+    if (internal == NULL)
+        return;
     _assert(internal->count_ != _not(unsigned));
     if (--internal->count_ == 0)
         delete internal;

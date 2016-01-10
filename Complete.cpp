@@ -118,8 +118,7 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
         message = $ CYFalse();
 
     driver.script_ = $ CYScript($ CYExpress($C4(ParseExpression(pool,
-    "   function(value, prefix, word, message) {\n"
-    "       var object = value;\n"
+    "   function(object, prefix, word, message) {\n"
     "       var names = [];\n"
     "       var before = prefix.length;\n"
     "       prefix += word;\n"
@@ -130,7 +129,7 @@ _visible char **CYComplete(const char *word, const std::string &line, CYUTF8Stri
     "                   names.push(name);\n"
     "       } else do {\n"
     "           if (object.hasOwnProperty(\"cy$complete\"))\n"
-    "               names = names.concat(object.cy$complete.call(value, prefix, message));\n"
+    "               names = names.concat(object.cy$complete(prefix, message));\n"
     "           try {\n"
     "               var local = Object.getOwnPropertyNames(object);\n"
     "           } catch (e) {\n"
