@@ -515,23 +515,28 @@ typedef std::map<unsigned, CYJavaOverload> CYJavaOverloads;
 struct CYJavaMethod :
     CYRoot
 {
+    CYUTF8String type_;
+    CYUTF8String name_;
     CYJavaOverloads overloads_;
 
-    CYJavaMethod(const CYJavaOverloads &overloads) :
+    CYJavaMethod(CYUTF8String type, CYUTF8String name, const CYJavaOverloads &overloads) :
+        type_(CYPoolUTF8String(*pool_, type)),
+        name_(CYPoolUTF8String(*pool_, name)),
         overloads_(overloads)
     {
     }
 };
 
-struct CYJavaStaticMethod :
-    CYRoot
+struct CYJavaInstanceMethod :
+    CYJavaMethod
 {
-    CYJavaOverloads overloads_;
+    using CYJavaMethod::CYJavaMethod;
+};
 
-    CYJavaStaticMethod(const CYJavaOverloads &overloads) :
-        overloads_(overloads)
-    {
-    }
+struct CYJavaStaticMethod :
+    CYJavaMethod
+{
+    using CYJavaMethod::CYJavaMethod;
 };
 
 struct CYJavaClass :
@@ -743,7 +748,10 @@ static JSObjectRef CYGetJavaClass(JSContextRef context, const CYJavaRef<jclass> 
     auto Class$(jni.FindClass("java/lang/Class"));
     auto Class$getName(jni.GetMethodID(Class$, "getName", "()Ljava/lang/String;"));
 
-    CYJSString name(jni.CallObjectMethod<jstring>(value, Class$getName));
+    auto string(jni.CallObjectMethod<jstring>(value, Class$getName));
+    CYJavaUTF8String utf8(string);
+    CYJSString name(utf8);
+
     JSValueRef cached(CYGetProperty(context, cy, name));
     if (!JSValueIsUndefined(context, cached))
         return CYCastJSObject(context, cached);
@@ -848,12 +856,12 @@ static JSObjectRef CYGetJavaClass(JSContextRef context, const CYJavaRef<jclass> 
 
     for (const auto &entry : entries) {
         bool instance(entry.first.first);
-        CYJSString name(entry.first.second);
+        CYJSString method(entry.first.second);
         auto &overload(entry.second);
         if (instance)
-            CYSetProperty(context, prototype, name, CYPrivate<CYJavaMethod>::Make(context, overload), kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete);
+            CYSetProperty(context, prototype, method, CYPrivate<CYJavaInstanceMethod>::Make(context, utf8, entry.first.second.c_str(), overload), kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete);
         else
-            CYSetProperty(context, constructor, name, CYPrivate<CYJavaStaticMethod>::Make(context, overload), kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete);
+            CYSetProperty(context, constructor, method, CYPrivate<CYJavaStaticMethod>::Make(context, utf8, entry.first.second.c_str(), overload), kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete);
     }
 
     }
@@ -937,8 +945,8 @@ static bool CYCastJavaArguments(const CYJavaFrame &frame, const CYJavaShorty &sh
     return true;
 }
 
-static JSValueRef JavaMethod_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    auto internal(CYPrivate<CYJavaMethod>::Get(context, object));
+static JSValueRef JavaInstanceMethod_callAsFunction(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    auto internal(CYPrivate<CYJavaInstanceMethod>::Get(context, object));
     CYJavaObject *self(CYGetJavaObject(context, _this));
     _assert(self != NULL);
     CYJavaEnv jni(self->value_);
@@ -1186,12 +1194,22 @@ static JSValueRef JavaClass_callAsFunction_toCYON(JSContextRef context, JSObject
 } CYCatch(NULL) }
 
 static JSValueRef JavaMethod_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
+    auto internal(CYPrivate<CYJavaMethod>::Get(context, _this));
     std::ostringstream cyon;
-    return CYCastJSValue(context, CYJSString(cyon.str()));
-} CYCatch(NULL) }
-
-static JSValueRef JavaStaticMethod_callAsFunction_toCYON(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
-    std::ostringstream cyon;
+    if (false)
+        cyon << internal->type_ << "." << internal->name_;
+    else {
+        bool comma(false);
+        for (auto overload(internal->overloads_.begin()); overload != internal->overloads_.end(); ++overload)
+            for (auto signature(overload->second.begin()); signature != overload->second.end(); ++signature) {
+                if (comma)
+                    cyon << std::endl;
+                else
+                    comma = true;
+                auto string(CYCastJavaString(signature->reflected_));
+                cyon << CYJavaUTF8String(string);
+            }
+    }
     return CYCastJSValue(context, CYJSString(cyon.str()));
 } CYCatch(NULL) }
 
@@ -1509,13 +1527,13 @@ static JSStaticValue JavaObject_staticValues[3] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction JavaMethod_staticFunctions[2] = {
+static JSStaticFunction JavaInstanceMethod_staticFunctions[2] = {
     {"toCYON", &JavaMethod_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
 
 static JSStaticFunction JavaStaticMethod_staticFunctions[2] = {
-    {"toCYON", &JavaStaticMethod_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"toCYON", &JavaMethod_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
 
@@ -1553,16 +1571,21 @@ CYJavaForEachPrimitive
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "JavaMethod";
-    definition.staticFunctions = JavaMethod_staticFunctions;
-    definition.callAsFunction = &JavaMethod_callAsFunction;
     definition.finalize = &CYFinalize;
     CYPrivate<CYJavaMethod>::Class_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
+    definition.className = "JavaInstanceMethod";
+    definition.parentClass = CYPrivate<CYJavaMethod>::Class_;
+    definition.staticFunctions = JavaInstanceMethod_staticFunctions;
+    definition.callAsFunction = &JavaInstanceMethod_callAsFunction;
+    CYPrivate<CYJavaInstanceMethod>::Class_ = JSClassCreate(&definition);
+
+    definition = kJSClassDefinitionEmpty;
     definition.className = "JavaStaticMethod";
+    definition.parentClass = CYPrivate<CYJavaMethod>::Class_;
     definition.staticFunctions = JavaStaticMethod_staticFunctions;
     definition.callAsFunction = &JavaStaticMethod_callAsFunction;
-    definition.finalize = &CYFinalize;
     CYPrivate<CYJavaStaticMethod>::Class_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;

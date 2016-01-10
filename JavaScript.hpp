@@ -39,6 +39,7 @@
 
 #include "Pooling.hpp"
 #include "String.hpp"
+#include "Utility.hpp"
 
 extern JSStringRef Array_s;
 extern JSStringRef constructor_s;
@@ -194,15 +195,9 @@ class CYJSString {
     {
     }
 
-    template <typename Arg0_>
-    CYJSString(Arg0_ arg0) :
-        string_(CYCopyJSString(arg0))
-    {
-    }
-
-    template <typename Arg0_, typename Arg1_>
-    CYJSString(Arg0_ arg0, Arg1_ arg1) :
-        string_(CYCopyJSString(arg0, arg1))
+    template <typename ...Args_>
+    CYJSString(Args_ &&... args) :
+        string_(CYCopyJSString(cy::Forward<Args_>(args)...))
     {
     }
 
