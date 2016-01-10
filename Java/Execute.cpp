@@ -243,11 +243,11 @@ class CYJavaUTF8String :
     public CYUTF8String
 {
   private:
-    const CYJavaRef<jstring> *value_;
+    const CYJavaRef<jstring> &value_;
 
   public:
     CYJavaUTF8String(const CYJavaRef<jstring> &value) :
-        value_(&value)
+        value_(value)
     {
         _assert(value);
         JNIEnv *jni(value.jni());
@@ -255,29 +255,18 @@ class CYJavaUTF8String :
         data = jni->GetStringUTFChars(value, NULL);
     }
 
-    CYJavaUTF8String(const CYJavaRef<jobject> &value) :
-        CYJavaUTF8String(CYCastJavaString(value))
-    {
-    }
+    CYJavaUTF8String(CYJavaRef<jstring> &&) = delete;
 
     ~CYJavaUTF8String() {
-        if (value_ != NULL) {
-            JNIEnv *jni(value_->jni());
-            jni->ReleaseStringUTFChars(*value_, data);
-        }
+        JNIEnv *jni(value_.jni());
+        jni->ReleaseStringUTFChars(value_, data);
     }
 
     CYJavaUTF8String(const CYJavaUTF8String &) = delete;
-
-    CYJavaUTF8String(CYJavaUTF8String &&rhs) :
-        value_(rhs.value_)
-    {
-        rhs.value_ = NULL;
-    }
 };
 
 CYJavaUTF8String CYCastUTF8String(const CYJavaRef<jstring> &value) {
-    return CYJavaUTF8String(value);
+    return {value};
 }
 
 JSStringRef CYCopyJSString(const CYJavaRef<jstring> &value) {
@@ -296,7 +285,8 @@ struct CYJavaError :
     }
 
     virtual const char *PoolCString(CYPool &pool) const {
-        return CYPoolCString(pool, CYJavaUTF8String(value_.cast<jobject>()));
+        auto string(CYCastJavaString(value_.cast<jobject>()));
+        return CYPoolCString(pool, CYJavaUTF8String(string));
     }
 
     virtual JSValueRef CastJSValue(JSContextRef context, const char *name) const;
@@ -798,7 +788,8 @@ static JSObjectRef CYGetJavaClass(JSContextRef context, const CYJavaRef<jclass> 
             auto modifiers(jni.CallIntMethod(field, Field$getModifiers));
             auto instance(!jni.CallStaticBooleanMethod(Modifier$, Modifier$isStatic, modifiers));
             auto &map(instance ? table->instance_ : table->static_);
-            CYJavaUTF8String name(jni.CallObjectMethod<jstring>(field, Field$getName));
+            auto string(jni.CallObjectMethod<jstring>(field, Field$getName));
+            CYJavaUTF8String name(string);
             auto id(jni.FromReflectedField(field));
             auto type(jni.CallObjectMethod<jclass>(field, Field$getType));
             map.insert(std::make_pair(std::string(name), CYJavaField{id, CYJavaGetPrimitive(context, type, Class$getName)}));
@@ -830,7 +821,8 @@ static JSObjectRef CYGetJavaClass(JSContextRef context, const CYJavaRef<jclass> 
             auto method(jni.GetObjectArrayElement<jobject>(methods, i));
             auto modifiers(jni.CallIntMethod(method, Method$getModifiers));
             auto instance(!jni.CallStaticBooleanMethod(Modifier$, Modifier$isStatic, modifiers));
-            CYJavaUTF8String name(jni.CallObjectMethod<jstring>(method, Method$getName));
+            auto string(jni.CallObjectMethod<jstring>(method, Method$getName));
+            CYJavaUTF8String name(string);
 
             auto parameters(jni.CallObjectMethod<jobjectArray>(method, Method$getParameterTypes));
             CYJavaShorty shorty(CYJavaGetShorty(context, parameters, Class$getName));
