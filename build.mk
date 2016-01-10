@@ -115,7 +115,7 @@ library := libffi libuv
 # http://osdir.com/ml/help-make-gnu/2012-04/msg00008.html
 
 define build_lar
-Cycript.lib/$(1).a: $(1).$(2)/.libs/$(1).a
+$(1).a: $(1).$(2)/.libs/$(1).a
 endef
 
 define build_any
@@ -199,12 +199,13 @@ endef
 
 $(foreach arch,armeabi,$(eval $(call build_and,$(arch))))
 
-clean: $(clean)
-	rm -rf cycript Cycript.lib libcycript*.o
-
-$(patsubst %,Cycript.lib/%.a,$(library)):
+clean += $(patsubst %,%.a,$(library))
+$(patsubst %,%.a,$(library)):
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
+
+clean: $(clean)
+	rm -rf cycript Cycript.lib libcycript*.o
 
 Cycript.lib/libcycript.dylib: build.osx-i386/.libs/libcycript.dylib build.osx-x86_64/.libs/libcycript.dylib build.ios-armv6/.libs/libcycript.dylib build.ios-arm64/.libs/libcycript.dylib
 	@mkdir -p $(dir $@)
@@ -254,7 +255,7 @@ Cycript.lib/libcycript-sim.dylib: build.sim-i386/.libs/libcycript.dylib build.si
 	$(lipo) -create -output $@ $^
 	codesign -s $(codesign) $@
 
-libcycript-%.o: build.%/.libs/libcycript.a $(patsubst %,Cycript.lib/%.a,$(library)) xcode.map
+libcycript-%.o: build.%/.libs/libcycript.a $(patsubst %,%.a,$(library)) xcode.map
 	@mkdir -p $(dir $@)
 	ld -r -arch $$($(lipo) -detailed_info $< | sed -e '/^Non-fat file: / ! d; s/.*: //') -o $@ -all_load -exported_symbols_list xcode.map -x $(filter %.a,$^)
 
