@@ -1989,9 +1989,10 @@ static JSStaticValue Struct_staticValues[2] = {
     {NULL, NULL, NULL, 0}
 };
 
-static JSStaticFunction Functor_staticFunctions[4] = {
+static JSStaticFunction Functor_staticFunctions[5] = {
     {"$cya", &Functor_callAsFunction_$cya, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"toCYON", &Functor_callAsFunction_toCYON, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
+    {"toPointer", &Functor_callAsFunction_$cya, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {"valueOf", &Functor_callAsFunction_valueOf, kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete},
     {NULL, NULL, 0}
 };
