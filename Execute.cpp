@@ -758,7 +758,7 @@ void Primitive<char>::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi,
 }
 
 void Void::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
-    _assert(false);
+    _assert(JSValueIsUndefined(context, value));
 }
 
 void Unknown::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const {
@@ -958,8 +958,7 @@ void CYExecuteClosure(ffi_cif *cif, void *result, void **arguments, void *arg) {
         values[index] = internal->signature_.elements[1 + index].type->FromFFI(context, internal->cif_.arg_types[index], arguments[index]);
 
     JSValueRef value(internal->adapter_(context, count, values, internal->function_));
-    if (internal->cif_.rtype != &ffi_type_void)
-        internal->signature_.elements[0].type->PoolFFI(NULL, context, internal->cif_.rtype, result, value);
+    internal->signature_.elements[0].type->PoolFFI(NULL, context, internal->cif_.rtype, result, value);
 }
 
 static JSValueRef FunctionAdapter_(JSContextRef context, size_t count, JSValueRef values[], JSObjectRef function) {
