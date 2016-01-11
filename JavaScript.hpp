@@ -115,6 +115,13 @@ JSObjectRef CYCastJSObject(JSContextRef context, JSValueRef value);
 JSValueRef CYJSUndefined(JSContextRef context);
 JSValueRef CYJSNull(JSContextRef context);
 
+void *CYCastPointerEx_(JSContextRef context, JSObjectRef value);
+
+template <typename Type_>
+_finline Type_ CYCastPointerEx(JSContextRef context, JSObjectRef value) {
+    return reinterpret_cast<Type_>(CYCastPointerEx_(context, value));
+}
+
 void *CYCastPointer_(JSContextRef context, JSValueRef value, bool *guess = NULL);
 
 template <typename Type_>

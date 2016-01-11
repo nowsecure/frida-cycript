@@ -671,6 +671,24 @@ bool CYGetOffset(CYPool &pool, JSContextRef context, JSStringRef value, ssize_t 
     return CYGetOffset(CYPoolCString(pool, context, value), index);
 }
 
+// XXX: this is a horrible back added for CFType
+void *CYCastPointerEx_(JSContextRef context, JSObjectRef value) {
+    JSObjectRef object((JSObjectRef) value);
+    if (JSValueIsObjectOfClass(context, value, CYPrivate<Pointer>::Class_)) {
+        Pointer *internal(reinterpret_cast<Pointer *>(JSObjectGetPrivate(object)));
+        return internal->value_;
+    }
+
+    JSValueRef toPointer(CYGetProperty(context, object, toPointer_s));
+    if (CYIsCallable(context, toPointer)) {
+        JSValueRef value(CYCallAsFunction(context, (JSObjectRef) toPointer, object, 0, NULL));
+        _assert(value != NULL);
+        return CYCastPointer_(context, value);
+    }
+
+    return NULL;
+}
+
 void *CYCastPointer_(JSContextRef context, JSValueRef value, bool *guess) {
     if (value == NULL)
         return NULL;

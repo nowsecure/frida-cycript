@@ -642,6 +642,9 @@ NSObject *CYCastNSObject(CYPool *pool, JSContextRef context, JSObjectRef object)
         return internal->value_;
     }
 
+    if (NSObject *pointer = CYCastPointerEx<NSObject *>(context, object))
+        return pointer;
+
     bool array(CYJSValueIsInstanceOfCachedConstructor(context, object, Array_s));
     id value(array ? [CYJSArray alloc] : [CYJSObject alloc]);
     return CYPoolRelease(pool, [value initWithJSObject:object inContext:context]);
