@@ -72,7 +72,8 @@ $cy_set(Error.prototype, {
 $cy_set(Number.prototype, {
     toCYON: function() {
         if ("$cyt" in this)
-            return `${this.$cyt.toCYON()}(${this.toString()})`;
+            //return `${this.$cyt.toCYON()}(${this.toString()})`;
+            return this.toString();
         return `new Number(${this.toString()})`;
     },
 });
