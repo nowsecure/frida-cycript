@@ -102,8 +102,9 @@ Analyze: Analyze.cpp Error.cpp Output.cpp Replace.cpp Syntax.cpp
 	$(CXX_FOR_BUILD) $(CXXFLAGS_FOR_BUILD) -std=c++11 $(LDFLAGS_FOR_BUILD) $(CY_LANGFLAGS) -I$(srcdir)/extra -o $@ $^ $(CY_LIBCLANG) -Wno-bitwise-op-parentheses -Wno-dangling-else -Wno-logical-op-parentheses
 
 CLEANFILES += Bridge.def
-Bridge.def: Analysis.cpp Analyze
+Bridge.def: Analysis.cpp Analyze Bridge.old
 	./Analyze $< $(OBJCXX) $(CPPFLAGS) $(AM_OBJCXXFLAGS) $(OBJCXXFLAGS) $(CY_LANGFLAGS) $(CY_ANDFLAGS) >$@
+	cat $(srcdir)/Bridge.old >>$@
 else
 CLEANFILES += Bridge.def
 Bridge.def: Bridge.def.in

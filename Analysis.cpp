@@ -64,6 +64,7 @@
 #include <AddressBook/AddressBook.h>
 #include <CoreData/CoreData.h>
 #include <CoreLocation/CoreLocation.h>
+#include <MapKit/MapKit.h>
 #include <Security/Security.h>
 
 #include <dispatch/dispatch.h>
@@ -74,6 +75,7 @@
 
 #include <mach-o/dyld.h>
 #include <mach-o/dyld_images.h>
+#include <mach-o/nlist.h>
 
 #if TARGET_OS_IPHONE
 #include <UIKit/UIKit.h>

@@ -502,6 +502,10 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
         } break;
 
         case CXCursor_EnumDecl: {
+            // the enum constants are implemented separately *also*
+            // XXX: maybe move output logic to function we can call
+            result = CXChildVisit_Recurse;
+
             if (spelling[0] == '\0')
                 goto skip;
             // XXX: this was blindly copied from StructDecl
@@ -520,10 +524,6 @@ static CXChildVisitResult CYChildVisit(CXCursor cursor, CXCursor parent, CXClien
             value << ".withName(\"" << name << "\")";
             name = "$cye" + name;
             flags = CYBridgeType;
-
-            // the enum constants are implemented separately *also*
-            // XXX: maybe move output logic to function we can call
-            result = CXChildVisit_Recurse;
         } break;
 
         case CXCursor_MacroDefinition: {
