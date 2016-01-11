@@ -190,6 +190,13 @@ struct CYJavaGlobal :
     {
         value.value_ = NULL;
     }
+
+    template <typename Other_>
+    CYJavaGlobal &operator =(const CYJavaRef<Other_> &other) {
+        this->~CYJavaGlobal();
+        new (this) CYJavaGlobal(other);
+        return *this;
+    }
 };
 
 template <typename Value_>
@@ -345,6 +352,12 @@ struct CYJavaEnv {
         return {jni, _envcall(jni, FindClass(name))};
     }
 
+    CYJavaLocal<jclass> FindClass$(const char *name) const {
+        jclass value(jni->FindClass(name));
+        jni->ExceptionClear();
+        return {jni, value};
+    }
+
     CYJavaLocal<jclass> GetObjectClass(jobject object) const {
         return {jni, _envcall(jni, GetObjectClass(object))};
     }
@@ -363,6 +376,10 @@ struct CYJavaEnv {
 
     CYJavaLocal<jobject> NewObjectA(jclass _class, jmethodID method, jvalue *args) const {
         return {jni, _envcall(jni, NewObjectA(_class, method, args))};
+    }
+
+    CYJavaLocal<jobjectArray> NewObjectArray(jsize length, jclass _class, jobject initial) const {
+        return {jni, _envcall(jni, NewObjectArray(length, _class, initial))};
     }
 
     CYJavaLocal<jstring> NewString(const jchar *data, jsize size) const {
@@ -439,6 +456,24 @@ static CYJavaLocal<jstring> CYCastJavaString(const CYJavaRef<jobject> &value) {
     return jni.CallObjectMethod<jstring>(value, Object$toString);
 }
 
+static CYJavaLocal<jstring> CYCastJavaString(const CYJavaEnv &jni, CYUTF16String value) {
+    return jni.NewString(value.data, value.size);
+}
+
+static CYJavaLocal<jstring> CYCastJavaString(const CYJavaEnv &jni, CYUTF8String value) {
+    // XXX: if there are no nulls then you can do this faster
+    CYPool pool;
+    return CYCastJavaString(jni, CYPoolUTF16String(pool, value));
+}
+
+static CYJavaLocal<jstring> CYCastJavaString(const CYJavaEnv &jni, const char *value) {
+    return CYCastJavaString(jni, CYUTF8String(value));
+}
+
+static CYJavaLocal<jstring> CYCastJavaString(const CYJavaEnv &jni, JSContextRef context, JSStringRef value) {
+    return CYCastJavaString(jni, CYCastUTF16String(value));
+}
+
 static JSValueRef CYCastJSValue(JSContextRef context, const CYJavaRef<jobject> &value);
 
 template <typename Other_>
@@ -458,6 +493,57 @@ static _finline JSValueRef CYJavaCastJSValue(JSContextRef context, jboolean valu
 JSValueRef CYJavaError::CastJSValue(JSContextRef context, const char *name) const {
     return CYCastJSValue(context, value_);
 }
+
+struct CYJava :
+    CYRoot
+{
+    CYJavaGlobal<jobject> loader_;
+    jmethodID ClassLoader$loadClass;
+
+    CYJava() {
+    }
+
+    bool Setup(JNIEnv *env) {
+        if (loader_)
+            return false;
+
+        CYJavaEnv jni(env);
+        CYPool pool;
+
+        auto ClassLoader$(jni.FindClass("java/lang/ClassLoader"));
+        ClassLoader$loadClass = jni.GetMethodID(ClassLoader$, "loadClass", "(Ljava/lang/String;)Ljava/lang/Class;");
+
+        auto ClassLoader$getSystemClassLoader(jni.GetStaticMethodID(ClassLoader$, "getSystemClassLoader", "()Ljava/lang/ClassLoader;"));
+        auto parent(jni.CallStaticObjectMethod<jobject>(ClassLoader$, ClassLoader$getSystemClassLoader));
+
+        auto path(CYCastJavaString(jni, pool.strcat("file://", CYPoolLibraryPath(pool), "/libcycript.jar", NULL)));
+
+        auto PathClassLoader$(jni.FindClass$("dalvik/system/PathClassLoader"));
+        if (PathClassLoader$) {
+            auto PathClassLoader$$init$(jni.GetMethodID(PathClassLoader$, "<init>", "(Ljava/lang/String;Ljava/lang/ClassLoader;)V"));
+            loader_ = jni.NewObject(PathClassLoader$, PathClassLoader$$init$, path.get(), parent.get());
+        } else {
+            auto URL$(jni.FindClass("java/net/URL"));
+            auto URL$$init$(jni.GetMethodID(URL$, "<init>", "(Ljava/lang/String;)V"));
+
+            auto URLClassLoader$(jni.FindClass("java/net/URLClassLoader"));
+            auto URLClassLoader$$init$(jni.GetMethodID(URLClassLoader$, "<init>", "([Ljava/net/URL;Ljava/lang/ClassLoader;)V"));
+
+            auto url(jni.NewObject(URL$, URL$$init$, path.get()));
+            auto urls(jni.NewObjectArray(1, URL$, url));
+            // XXX: .cast().get() <- this is required :/
+            loader_ = jni.NewObject(URLClassLoader$, URLClassLoader$$init$, urls.cast<jobject>().get(), parent.get());
+        }
+
+        return true;
+    }
+
+    CYJavaLocal<jclass> LoadClass(const char *name) {
+        _assert(loader_);
+        CYJavaEnv jni(loader_);
+        return jni.CallObjectMethod<jclass>(loader_, ClassLoader$loadClass, CYCastJavaString(jni, name).get());
+    }
+};
 
 static std::map<std::string, CYJavaPrimitive> Primitives_;
 
@@ -656,7 +742,9 @@ static JSValueRef CYCastJSValue(JSContextRef context, const CYJavaRef<jobject> &
         return CYPrivate<CYJavaArray>::Make(context, value.cast<jarray>(), CYJavaGetPrimitive(context, component, Class$getName));
     }
 
-    auto Wrapper$(jni.FindClass("Cycript$Wrapper"));
+    auto java(reinterpret_cast<CYJava *>(JSObjectGetPrivate(CYGetCachedObject(context, CYJSString("Java")))));
+    auto Wrapper$(java->LoadClass("Cycript$Wrapper"));
+
     if (jni.IsSameObject(_class, Wrapper$)) {
         auto Wrapper$getProtect(jni.GetMethodID(Wrapper$, "getProtect", "()J"));
         auto &protect(*reinterpret_cast<CYProtect *>(jni.CallLongMethod(value, Wrapper$getProtect)));
@@ -669,14 +757,6 @@ static JSValueRef CYCastJSValue(JSContextRef context, const CYJavaRef<jobject> &
 
 static _finline JSObjectRef CYCastJSObject(JSContextRef context, const CYJavaRef<jobject> &value) {
     return CYCastJSObject(context, CYCastJSValue(context, value));
-}
-
-static CYJavaLocal<jstring> CYCastJavaString(const CYJavaEnv &jni, JSContextRef context, CYUTF16String value) {
-    return jni.NewString(value.data, value.size);
-}
-
-static CYJavaLocal<jstring> CYCastJavaString(const CYJavaEnv &jni, JSContextRef context, JSStringRef value) {
-    return CYCastJavaString(jni, context, CYCastUTF16String(value));
 }
 
 #define CYCastJava$(T, Type, jtype, Cast) \
@@ -711,7 +791,9 @@ static CYJavaLocal<jobject> CYCastJavaObject(const CYJavaEnv &jni, JSContextRef 
     if (CYJavaObject *internal = CYGetJavaObject(context, value))
         return internal->value_;
 
-    auto Wrapper$(jni.FindClass("Cycript$Wrapper"));
+    auto java(reinterpret_cast<CYJava *>(JSObjectGetPrivate(CYGetCachedObject(context, CYJSString("Java")))));
+    auto Wrapper$(java->LoadClass("Cycript$Wrapper"));
+
     auto Wrapper$$init$(jni.GetMethodID(Wrapper$, "<init>", "(J)V"));
     CYProtect *protect(new CYProtect(context, value));
     return jni.NewObject(Wrapper$, Wrapper$$init$, reinterpret_cast<jlong>(protect));
@@ -1014,7 +1096,8 @@ static JSObjectRef JavaClass_callAsConstructor(JSContextRef context, JSObjectRef
     jclass _class(table->value_);
 
     if (table->interface_ && count == 1) {
-        auto Cycript$(jni.FindClass("Cycript"));
+        auto java(reinterpret_cast<CYJava *>(JSObjectGetPrivate(CYGetCachedObject(context, CYJSString("Java")))));
+        auto Cycript$(java->LoadClass("Cycript"));
         auto Cycript$Make(jni.GetStaticMethodID(Cycript$, "proxy", "(Ljava/lang/Class;LCycript$Wrapper;)Ljava/lang/Object;"));
         return CYCastJSObject(context, jni.CallObjectMethod<jobject>(Cycript$, Cycript$Make, _class, CYCastJavaObject(jni, context, CYCastJSObject(context, arguments[0])).get()));
     }
@@ -1389,14 +1472,8 @@ static JavaVM *CYGetJavaVM(JSContextRef context) {
 
     std::vector<JavaVMOption> options;
 
-    {
-        std::ostringstream option;
-        option << "-Djava.class.path=";
-        option << CYPoolLibraryPath(pool) << "/libcycript.jar";
-        if (const char *classpath = getenv("CLASSPATH"))
-            option << ':' << classpath;
-        options.push_back(JavaVMOption{pool.strdup(option.str().c_str()), NULL});
-    }
+    if (const char *classpath = getenv("CLASSPATH"))
+        options.push_back(JavaVMOption{pool.strcat("-Djava.class.path=", classpath, NULL), NULL});
 
     // To use libnativehelper to access JNI_GetCreatedJavaVMs, you need JniInvocation.
     // ...but there can only be one JniInvocation, and assuradely the other VM has it.
@@ -1494,18 +1571,33 @@ static JavaVM *CYGetJavaVM(JSContextRef context) {
 static JNIEnv *GetJNI(JSContextRef context, JNIEnv *&env) {
     auto jvm(CYGetJavaVM(context));
     _assert(jvm != NULL);
-    _jnicall(jvm->GetEnv(reinterpret_cast<void **>(&env), CYJavaVersion));
+
+    switch (jvm->GetEnv(reinterpret_cast<void **>(&env), CYJavaVersion)) {
+        case JNI_EDETACHED:
+            _jnicall(jvm->AttachCurrentThreadAsDaemon(
+#ifndef __ANDROID__
+                reinterpret_cast<void **>
+#endif
+            (&env), NULL));
+            break;
+        case JNI_OK:
+            break;
+        default:
+            _assert(false);
+    }
+
     CYJavaEnv jni(env);
 
-    // XXX: this happens once per stub :/
+    auto java(reinterpret_cast<CYJava *>(JSObjectGetPrivate(CYGetCachedObject(context, CYJSString("Java")))));
+    if (java->Setup(jni)) {
+        auto Cycript$(java->LoadClass("Cycript"));
+        jni.RegisterNatives(Cycript$, Cycript_, sizeof(Cycript_) / sizeof(Cycript_[0]));
 
-    auto Cycript$(jni.FindClass("Cycript"));
-    jni.RegisterNatives(Cycript$, Cycript_, sizeof(Cycript_) / sizeof(Cycript_[0]));
-
-    JSObjectRef java(CYGetCachedObject(context, CYJSString("Java")));
-    JSValueRef arguments[1];
-    arguments[0] = CYCastJSValue(context, CYJSString("setup"));
-    CYCallAsFunction(context, CYCastJSObject(context, CYGetProperty(context, java, CYJSString("emit"))), java, 1, arguments);
+        JSObjectRef java(CYGetCachedObject(context, CYJSString("Java")));
+        JSValueRef arguments[1];
+        arguments[0] = CYCastJSValue(context, CYJSString("setup"));
+        CYCallAsFunction(context, CYCastJSObject(context, CYGetProperty(context, java, CYJSString("emit"))), java, 1, arguments);
+    }
 
     return env;
 }
@@ -1550,6 +1642,12 @@ CYJavaForEachPrimitive
 #undef CYJavaForEachPrimitive_
 
     JSClassDefinition definition;
+
+    definition = kJSClassDefinitionEmpty;
+    definition.attributes = kJSClassAttributeNoAutomaticPrototype;
+    definition.className = "Java";
+    definition.finalize = &CYFinalize;
+    CYPrivate<CYJava>::Class_ = JSClassCreate(&definition);
 
     definition = kJSClassDefinitionEmpty;
     definition.className = "JavaClass";
@@ -1628,7 +1726,7 @@ void CYJava_SetupContext(JSContextRef context) {
     JSObjectRef all(CYCastJSObject(context, CYGetProperty(context, cycript, CYJSString("all"))));
     //JSObjectRef alls(CYCastJSObject(context, CYGetProperty(context, cycript, CYJSString("alls"))));
 
-    JSObjectRef Java(JSObjectMake(context, NULL, NULL));
+    JSObjectRef Java(CYPrivate<CYJava>::Make(context));
     CYSetProperty(context, cycript, CYJSString("Java"), Java);
     CYSetProperty(context, cy, CYJSString("Java"), Java);
 
