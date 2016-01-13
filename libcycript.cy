@@ -21,6 +21,13 @@
 
 (function() {
 
+Number.prototype.__defineGetter__('$cyt', function() {
+    if (this.$cyt_)
+        return this.$cyt_;
+    if ((this|0) == this)
+        return int;
+});
+
 this.typeid = function(object) {
     return object.$cyt;
 };

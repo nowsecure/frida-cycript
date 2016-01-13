@@ -198,6 +198,7 @@ JSStringRef constructor_s;
 JSStringRef cy_s;
 JSStringRef cyi_s;
 JSStringRef cyt_s;
+JSStringRef cyt__s;
 JSStringRef length_s;
 JSStringRef message_s;
 JSStringRef name_s;
@@ -874,13 +875,21 @@ void Function::PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *
     _assert(false);
 }
 
+// XXX: this code is getting worse, not better :/
+
 #define CYFromFFI_(Type_) \
 template <> \
 JSValueRef Primitive<Type_>::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const { \
     JSValueRef value(CYCastJSValue(context, *reinterpret_cast<Type_ *>(data))); \
     JSObjectRef typed(_jsccall(JSObjectCallAsConstructor, context, CYGetCachedObject(context, CYJSString("Number")), 1, &value)); \
-    CYSetProperty(context, typed, cyt_s, CYMakeType(context, *this), kJSPropertyAttributeDontEnum); \
+    CYSetProperty(context, typed, cyt__s, CYMakeType(context, *this), kJSPropertyAttributeDontEnum); \
     return typed; \
+}
+
+#define CYFromFFI_2(Type_) \
+template <> \
+JSValueRef Primitive<Type_>::FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const { \
+    return CYCastJSValue(context, *reinterpret_cast<Type_ *>(data)); \
 }
 
 CYFromFFI_(wchar_t)
@@ -888,17 +897,17 @@ CYFromFFI_(float)
 CYFromFFI_(double)
 CYFromFFI_(long double)
 
-CYFromFFI_(signed char)
-CYFromFFI_(signed int)
+CYFromFFI_2(signed char)
+CYFromFFI_2(signed int)
 CYFromFFI_(signed long int)
 CYFromFFI_(signed long long int)
-CYFromFFI_(signed short int)
+CYFromFFI_2(signed short int)
 
-CYFromFFI_(unsigned char)
-CYFromFFI_(unsigned int)
+CYFromFFI_2(unsigned char)
+CYFromFFI_2(unsigned int)
 CYFromFFI_(unsigned long int)
 CYFromFFI_(unsigned long long int)
-CYFromFFI_(unsigned short int)
+CYFromFFI_2(unsigned short int)
 
 #ifdef __SIZEOF_INT128__
 CYFromFFI_(signed __int128)
@@ -1273,7 +1282,10 @@ static sig::Type *CYGetType(CYPool &pool, JSContextRef context, JSValueRef value
     if (JSValueIsNull(context, value))
         return &PointerToVoid_;
     JSObjectRef object(CYCastJSObject(context, value));
-    JSObjectRef type(CYCastJSObject(context, CYGetProperty(context, object, cyt_s)));
+    JSValueRef check(CYGetProperty(context, object, cyt_s));
+    if (JSValueIsUndefined(context, check))
+        CYThrow("could not infer type of argument '%s'", CYPoolCString(pool, context, value));
+    JSObjectRef type(CYCastJSObject(context, check));
     _assert(JSValueIsObjectOfClass(context, type, CYPrivate<Type_privateData>::Class_));
     Type_privateData *internal(reinterpret_cast<Type_privateData *>(JSObjectGetPrivate(type)));
     return internal->type_;
@@ -2234,6 +2246,7 @@ void CYInitializeDynamic() {
     cy_s = JSStringCreateWithUTF8CString("$cy");
     cyi_s = JSStringCreateWithUTF8CString("$cyi");
     cyt_s = JSStringCreateWithUTF8CString("$cyt");
+    cyt__s = JSStringCreateWithUTF8CString("$cyt_");
     length_s = JSStringCreateWithUTF8CString("length");
     message_s = JSStringCreateWithUTF8CString("message");
     name_s = JSStringCreateWithUTF8CString("name");

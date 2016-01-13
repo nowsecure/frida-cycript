@@ -46,6 +46,7 @@ extern JSStringRef constructor_s;
 extern JSStringRef cy_s;
 extern JSStringRef cyi_s;
 extern JSStringRef cyt_s;
+extern JSStringRef cyt__s;
 extern JSStringRef length_s;
 extern JSStringRef message_s;
 extern JSStringRef name_s;
