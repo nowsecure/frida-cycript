@@ -27,12 +27,13 @@ this.typeid = function(object) {
 
 let $cy_set = function(object, properties) {
     for (const name in properties)
+        if ("defineProperty" in Object)
         Object.defineProperty(object, name, {
             configurable: true,
             enumerable: false,
             writable: true,
             value: properties[name],
-        });
+        }); else object[name] = properties[name];
 };
 
 $cy_set(Boolean.prototype, {
