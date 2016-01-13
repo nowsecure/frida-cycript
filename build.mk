@@ -54,6 +54,7 @@ framework := $(foreach os,ios osx,$(foreach file,$(framework),Cycript.$(os)/Cycr
 
 links := 
 links += Cycript.lib/cynject
+links += Cycript.lib/libcycript.cy
 links += Cycript.lib/libsubstrate.dylib
 links += Cycript.lib/cycript0.9
 
