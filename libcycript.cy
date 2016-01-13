@@ -310,7 +310,7 @@ require.resolve = function(name) {
         if (path != null)
             return path;
     } else {
-        let cwd = new (typedef char[1024]);
+        let cwd = *new (typedef char[1024]);
         cwd = getcwd(cwd, cwd.length).toString();
         cwd = cwd.split('/');
 
