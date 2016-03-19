@@ -1515,14 +1515,16 @@ static JavaVM *CYGetJavaVM(JSContextRef context) {
     if (void *libandroid_runtime = dlopen("libandroid_runtime.so", RTLD_LAZY | RTLD_GLOBAL)) {
         class AndroidRuntime$;
         AndroidRuntime$ *(*AndroidRuntime$$init$)(AndroidRuntime$ *self, char *args, unsigned int size)(NULL);
-        int (*AndroidRuntime$startVm)(AndroidRuntime$ *self, JavaVM **jvm, JNIEnv **env)(NULL);
+        int (*AndroidRuntime$startVm1)(AndroidRuntime$ *self, JavaVM **jvm, JNIEnv **env)(NULL);
+        int (*AndroidRuntime$startVm2)(AndroidRuntime$ *self, JavaVM **jvm, JNIEnv **env, bool)(NULL);
         int (*AndroidRuntime$startReg)(JNIEnv *env)(NULL);
         int (*AndroidRuntime$addOption)(AndroidRuntime$ *self, const char *option, void *extra)(NULL);
         int (*AndroidRuntime$addVmArguments)(AndroidRuntime$ *self, int, const char *const argv[])(NULL);
         AndroidRuntime$ *(*AndroidRuntime$finalize)(AndroidRuntime$ *self)(NULL);
 
         dlset(AndroidRuntime$$init$, "_ZN7android14AndroidRuntimeC1EPcj", libandroid_runtime);
-        dlset(AndroidRuntime$startVm, "_ZN7android14AndroidRuntime7startVmEPP7_JavaVMPP7_JNIEnv", libandroid_runtime);
+        dlset(AndroidRuntime$startVm1, "_ZN7android14AndroidRuntime7startVmEPP7_JavaVMPP7_JNIEnv", libandroid_runtime);
+        dlset(AndroidRuntime$startVm2, "_ZN7android14AndroidRuntime7startVmEPP7_JavaVMPP7_JNIEnvb", libandroid_runtime);
         dlset(AndroidRuntime$startReg, "_ZN7android14AndroidRuntime8startRegEP7_JNIEnv", libandroid_runtime);
         dlset(AndroidRuntime$addOption, "_ZN7android14AndroidRuntime9addOptionEPKcPv", libandroid_runtime);
         dlset(AndroidRuntime$addVmArguments, "_ZN7android14AndroidRuntime14addVmArgumentsEiPKPKc", libandroid_runtime);
@@ -1545,8 +1547,13 @@ static JavaVM *CYGetJavaVM(JSContextRef context) {
 
         int failure;
 
-        _assert(AndroidRuntime$startVm != NULL);
-        failure = AndroidRuntime$startVm(runtime, &jvm, &env);
+        if (false);
+        else if (AndroidRuntime$startVm1 != NULL)
+            failure = AndroidRuntime$startVm1(runtime, &jvm, &env);
+        else if (AndroidRuntime$startVm2 != NULL)
+            failure = AndroidRuntime$startVm2(runtime, &jvm, &env, false);
+        else _assert(false);
+
         _assert(failure == 0);
 
         _assert(AndroidRuntime$startReg != NULL);
