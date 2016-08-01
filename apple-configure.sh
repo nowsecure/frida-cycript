@@ -107,6 +107,9 @@ for arch in armv6 armv7 armv7s arm64; do
         ldf+=" -L../sysroot.ios/usr/lib"
     fi
 
+    ldf+=" -Wl,-dead_strip"
+    ldf+=" -Wl,-no_dead_strip_inits_and_terms"
+
     if [[ ${arch} == arm64 ]]; then
         min=7.0
     else
