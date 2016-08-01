@@ -21,12 +21,13 @@
 
 set -e
 
-lib=$1
-shift
 extra=("$@")
 
 archs=()
 function arch() {
+    local lib=$1
+    shift
+
     local arch=$1
     local host=$2
     local sdk=$3
@@ -34,15 +35,15 @@ function arch() {
     local min=$5
     shift 5
 
-    rm -rf "lib${lib}.${arch}"
+    rm -rvf "${lib}.${arch}"
     if ! isysroot=$(xcodebuild -sdk "${sdk}" -version Path); then
         return
     fi
 
     archs+=("${arch}")
-    mkdir "lib${lib}.${arch}"
+    mkdir "${lib}.${arch}"
 
-    flags=("${extra[@]}")
+    flags=()
     flags+=(-isysroot "${isysroot}")
     flags+=(-m${os}-version-min="${min}")
     flags+=(-O3 -g3)
@@ -51,16 +52,38 @@ function arch() {
         flags+=(-mthumb)
     fi
 
-    cd "lib${lib}.${arch}"
-    CC="clang -arch ${arch}" CXX="clang++ -arch ${arch}" CFLAGS="${flags[*]}" CPPFLAGS="${flags[*]} $*" ../lib"${lib}"/configure --host="${host}" --enable-static --disable-shared
+    cd "${lib}.${arch}"
+    CC="clang -arch ${arch}" CXX="clang++ -arch ${arch}" LDFLAGS="${flags[*]}" CPPFLAGS="${flags[*]} $*" ../"${lib}"/configure --host="${host}" --enable-static --disable-shared \
+        ac_cv_func_strcoll_works=yes bash_cv_func_sigsetjmp=present bash_cv_func_ctype_nonascii=no bash_cv_must_reinstall_sighandlers=no bash_cv_func_strcoll_broken=yes bash_cv_wcwidth_broken=no
     make -j5
     cd ..
 }
 
-arch armv6 arm-apple-darwin10 iphoneos iphoneos 2.0 -mllvm -arm-reserve-r9
-arch armv7 arm-apple-darwin10 iphoneos iphoneos 2.0
-arch armv7s arm-apple-darwin10 iphoneos iphoneos 2.0
-arch arm64 aarch64-apple-darwin11 iphoneos iphoneos 2.0
+function arch64() {
+    local lib=$1
+    shift
 
-arch i386 i386-apple-darwin10 iphonesimulator ios-simulator 4.0
-arch x86_64 x86_64-apple-darwin11 iphonesimulator ios-simulator 4.0
+    arch "${lib}" arm64 aarch64-apple-darwin11 iphoneos iphoneos 2.0 "$@"
+}
+
+function archs() {
+    local lib=$1
+    shift
+
+    arch "${lib}" armv6 arm-apple-darwin10 iphoneos iphoneos 2.0 "$@" -mllvm -arm-reserve-r9
+    arch "${lib}" armv7 arm-apple-darwin10 iphoneos iphoneos 2.0 "$@"
+    arch "${lib}" armv7s arm-apple-darwin10 iphoneos iphoneos 2.0 "$@"
+
+    arch64 "${lib}" "$@"
+
+    arch "${lib}" i386 i386-apple-darwin10 iphonesimulator ios-simulator 4.0 "$@"
+    arch "${lib}" x86_64 x86_64-apple-darwin11 iphonesimulator ios-simulator 4.0 "$@"
+}
+
+archs libffi -DPAGE_MAX_SIZE=16384 -DPAGE_MAX_SHIFT=14 -fno-stack-protector
+archs libuv
+arch64 readline -include sys/ioctl.h
+
+for arch in arm64; do
+    ln -sf . "readline.${arch}/readline"
+done

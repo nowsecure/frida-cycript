@@ -93,7 +93,11 @@ for arch in armv6 armv7 armv7s arm64; do
     ldf=""
 
     flg=()
-    if [[ ${arch} != armv6 ]]; then
+    if [[ ${arch} == arm64 ]]; then
+        cpf+=" -I../extra.${arch}"
+        cpf+=" -I../readline.${arch}"
+        ldf+=" -L../readline.${arch}"
+    elif [[ ${arch} != armv6 ]]; then
         flg+=(--disable-console)
     else
         flg+=(LTLIBGCC="-lgcc_s.1")

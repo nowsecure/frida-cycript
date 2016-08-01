@@ -94,7 +94,7 @@ $(deb): Cycript.lib/cycript-apl Cycript.lib/libcycript.dylib Cycript.lib/libcycr
 	sed -e 's/#/$(version)/' control.in >package/DEBIAN/control
 	mkdir -p package/usr/{bin,lib}
 	cp -a cycript0.9 package/usr/lib/cycript0.9
-	$(lipo) -extract armv6 -output package/usr/bin/cycript Cycript.lib/cycript-apl
+	$(lipo) -extract armv6 -extract arm64 -output package/usr/bin/cycript Cycript.lib/cycript-apl
 	$(lipo) -extract armv6 -extract arm64 -output package/usr/lib/libcycript.dylib Cycript.lib/libcycript.dylib
 	ln -s libcycript.dylib package/usr/lib/libcycript.0.dylib
 	cp -a libcycript.cy package/usr/lib/libcycript.cy
@@ -172,7 +172,7 @@ build.ios-$(1)/.libs/cycript: build-ios-$(1)
 	@
 endef
 
-$(foreach arch,armv6,$(eval $(call build_arm,$(arch))))
+$(foreach arch,armv6 arm64,$(eval $(call build_arm,$(arch))))
 
 define build_arm
 $(call build_lib,ios,$(1))
@@ -235,7 +235,7 @@ Cycript.lib/cycript-pie: build.and-armeabi/cycript-pie
 	install_name_tool -change /System/Library/{,Private}Frameworks/JavaScriptCore.framework/JavaScriptCore $@
 	codesign -s $(codesign) --entitlement cycript-$(word 2,$(subst ., ,$(subst -, ,$*))).xml $@
 
-Cycript.lib/cycript-apl: build.osx-i386/.libs/cycript_ build.osx-x86_64/.libs/cycript_ build.ios-armv6/.libs/cycript_
+Cycript.lib/cycript-apl: build.osx-i386/.libs/cycript_ build.osx-x86_64/.libs/cycript_ build.ios-armv6/.libs/cycript_ build.ios-arm64/.libs/cycript_
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
 
