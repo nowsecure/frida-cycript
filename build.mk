@@ -298,8 +298,10 @@ debug: $(local)
 	DYLD_LIBRARY_PATH=Cycript.lib lldb Cycript.lib/cycript-apl
 
 install: $(local)
-	sudo cp -af $(filter-out %.dylib,$^) /usr/bin
-	sudo cp -af $(filter %.dylib,$^) /usr/lib
+	sudo rm -vf /usr/bin/cycript /usr/lib/libcycript*
+	sudo cp -vfa Cycript.lib/cycript-apl /usr/bin/cycript
+	sudo cp -vfa $(filter %.dylib,$^) $(filter %.db,$^) $(filter %.jar,$^) /usr/lib
+	sudo cp -vfa libcycript.cy /usr/lib
 
 push: cycript $(android)
 	adb push cycript /data/local/tmp/cycript
