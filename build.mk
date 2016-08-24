@@ -309,6 +309,6 @@ push: cycript $(android)
 	for x in $(android); do adb push $$x /data/local/tmp/$$x; done
 
 cast: $(zip)
-	appcast.sh cycript/mac $(monotonic) $(version) $< "$(CYCRIPT_CHANGES)"
+	appcast.sh cycript/mac $(monotonic) $(version) $< application/zip "$(CYCRIPT_CHANGES)"
 
 .PHONY: all cast clean debug install zip
