@@ -60,6 +60,54 @@ void CYPerform(void *arg) {
     pthread_mutex_unlock(&execute->mutex_);
 }
 
+const char *CYHandleCommand(CYPool &pool, const std::string &code) {
+    bool dispatch;
+#ifdef __APPLE__
+    CFRunLoopRef loop(CFRunLoopGetMain());
+    if (CFStringRef mode = CFRunLoopCopyCurrentMode(loop)) {
+        dispatch = true;
+        CFRelease(mode);
+    } else
+#endif
+        dispatch = false;
+
+    CYExecute_ execute = {pool, code.c_str()};
+
+    pthread_mutex_init(&execute.mutex_, NULL);
+    pthread_cond_init(&execute.condition_, NULL);
+
+    if (!dispatch)
+        CYPerform(&execute);
+#ifdef __APPLE__
+    else {
+        CFRunLoopSourceContext context;
+        memset(&context, 0, sizeof(context));
+        context.version = 0;
+        context.info = &execute;
+        context.perform = &CYPerform;
+
+        CFRunLoopSourceRef source(CFRunLoopSourceCreate(kCFAllocatorDefault, 0, &context));
+
+        pthread_mutex_lock(&execute.mutex_);
+
+        CFRunLoopAddSource(loop, source, kCFRunLoopCommonModes);
+        CFRunLoopSourceSignal(source);
+
+        CFRunLoopWakeUp(loop);
+        pthread_cond_wait(&execute.condition_, &execute.mutex_);
+        pthread_mutex_unlock(&execute.mutex_);
+
+        CFRunLoopRemoveSource(loop, source, kCFRunLoopCommonModes);
+        CFRelease(source);
+    }
+#endif
+
+    pthread_cond_destroy(&execute.condition_);
+    pthread_mutex_destroy(&execute.mutex_);
+
+    return execute.data_;
+}
+
 struct CYClient :
     CYData
 {
@@ -76,16 +124,6 @@ struct CYClient :
     }
 
     void Handle() {
-        bool dispatch;
-#ifdef __APPLE__
-        CFRunLoopRef loop(CFRunLoopGetMain());
-        if (CFStringRef mode = CFRunLoopCopyCurrentMode(loop)) {
-            dispatch = true;
-            CFRelease(mode);
-        } else
-#endif
-            dispatch = false;
-
         for (;;) {
             uint32_t size;
             if (!CYRecvAll(socket_, &size, sizeof(size)))
@@ -98,41 +136,7 @@ struct CYClient :
             data[size] = '\0';
 
             std::string code(data, size);
-            CYExecute_ execute = {pool, code.c_str()};
-
-            pthread_mutex_init(&execute.mutex_, NULL);
-            pthread_cond_init(&execute.condition_, NULL);
-
-            if (!dispatch)
-                CYPerform(&execute);
-#ifdef __APPLE__
-            else {
-                CFRunLoopSourceContext context;
-                memset(&context, 0, sizeof(context));
-                context.version = 0;
-                context.info = &execute;
-                context.perform = &CYPerform;
-
-                CFRunLoopSourceRef source(CFRunLoopSourceCreate(kCFAllocatorDefault, 0, &context));
-
-                pthread_mutex_lock(&execute.mutex_);
-
-                CFRunLoopAddSource(loop, source, kCFRunLoopCommonModes);
-                CFRunLoopSourceSignal(source);
-
-                CFRunLoopWakeUp(loop);
-                pthread_cond_wait(&execute.condition_, &execute.mutex_);
-                pthread_mutex_unlock(&execute.mutex_);
-
-                CFRunLoopRemoveSource(loop, source, kCFRunLoopCommonModes);
-                CFRelease(source);
-            }
-#endif
-
-            pthread_cond_destroy(&execute.condition_);
-            pthread_mutex_destroy(&execute.mutex_);
-
-            const char *json(execute.data_);
+            const char *json(CYHandleCommand(pool, code));
             size = json == NULL ? _not(uint32_t) : strlen(json);
 
             if (!CYSendAll(socket_, &size, sizeof(size)))
@@ -182,8 +186,24 @@ _extern void CYHandleServer(pid_t pid) { try {
 } }
 
 _extern char *MSmain0(int argc, char *argv[]) { try {
-    _assert(argc == 2);
-    CYHandleSocket(argv[1]);
+    char *error(NULL);
+
+    switch (argc) {
+        case 2:
+            CYHandleSocket(argv[1]);
+        break;
+
+        case 3:
+            if (false);
+            else if (strcmp(argv[1], "-e") == 0) {
+                CYPool pool;
+                error = strdup(CYHandleCommand(pool, argv[2]) ?: "");
+            } else _assert(false);
+        break;
+
+        default:
+            _assert(false);
+    }
 
     static void *handle(NULL);
     if (handle == NULL) {
@@ -196,7 +216,7 @@ _extern char *MSmain0(int argc, char *argv[]) { try {
 #endif
     }
 
-    return NULL;
+    return error;
 } catch (const CYException &error) {
     CYPool pool;
     return strdup(error.PoolCString(pool));

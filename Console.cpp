@@ -249,11 +249,23 @@ void Setup(CYOutput &out, CYDriver &driver, CYOptions &options, bool lower) {
         driver.Replace(options);
 }
 
-static CYUTF8String Run(CYPool &pool, int client, CYUTF8String code) {
-    const char *json;
-    uint32_t size;
+class CYRemote {
+  public:
+    virtual CYUTF8String Run(CYPool &pool, CYUTF8String code) = 0;
 
-    if (client == -1) {
+    inline CYUTF8String Run(CYPool &pool, const std::string &code) {
+        return Run(pool, CYUTF8String(code.c_str(), code.size()));
+    }
+};
+
+class CYLocalRemote :
+    public CYRemote
+{
+  public:
+    virtual CYUTF8String Run(CYPool &pool, CYUTF8String code) {
+        const char *json;
+        uint32_t size;
+
         mode_ = Running;
 #ifdef CY_EXECUTE
         json = CYExecute(CYGetJSContext(), pool, code);
@@ -265,31 +277,95 @@ static CYUTF8String Run(CYPool &pool, int client, CYUTF8String code) {
             size = 0;
         else
             size = strlen(json);
-    } else {
+
+        return CYUTF8String(json, size);
+    }
+};
+
+class CYSocketRemote :
+    public CYRemote
+{
+  private:
+    int socket_;
+
+  public:
+    CYSocketRemote(const char *host, const char *port) {
+        struct addrinfo hints;
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_protocol = 0;
+        hints.ai_flags = 0;
+
+        struct addrinfo *infos;
+        _syscall(getaddrinfo(host, port, &hints, &infos));
+
+        _assert(infos != NULL); try {
+            for (struct addrinfo *info(infos); info != NULL; info = info->ai_next) {
+                socket_ = _syscall(socket(info->ai_family, info->ai_socktype, info->ai_protocol)); try {
+                    _syscall(connect(socket_, info->ai_addr, info->ai_addrlen));
+                    break;
+                } catch (...) {
+                    _syscall(close(socket_));
+                    throw;
+                }
+            }
+        } catch (...) {
+            freeaddrinfo(infos);
+            throw;
+        }
+    }
+
+    virtual CYUTF8String Run(CYPool &pool, CYUTF8String code) {
+        const char *json;
+        uint32_t size;
+
         mode_ = Sending;
         size = code.size;
-        _assert(CYSendAll(client, &size, sizeof(size)));
-        _assert(CYSendAll(client, code.data, code.size));
+        _assert(CYSendAll(socket_, &size, sizeof(size)));
+        _assert(CYSendAll(socket_, code.data, code.size));
         mode_ = Waiting;
-        _assert(CYRecvAll(client, &size, sizeof(size)));
+        _assert(CYRecvAll(socket_, &size, sizeof(size)));
         if (size == _not(uint32_t)) {
             size = 0;
             json = NULL;
         } else {
             char *temp(new(pool) char[size + 1]);
-            _assert(CYRecvAll(client, temp, size));
+            _assert(CYRecvAll(socket_, temp, size));
             temp[size] = '\0';
             json = temp;
         }
         mode_ = Working;
+
+        return CYUTF8String(json, size);
+    }
+};
+
+void InjectLibrary(pid_t, std::ostream &stream, int, const char *const []);
+
+class CYInjectRemote :
+    public CYRemote
+{
+  private:
+    int pid_;
+
+  public:
+    CYInjectRemote(int pid) :
+        pid_(pid)
+    {
+        // XXX: wait
     }
 
-    return CYUTF8String(json, size);
-}
-
-static CYUTF8String Run(CYPool &pool, int client, const std::string &code) {
-    return Run(pool, client, CYUTF8String(code.c_str(), code.size()));
-}
+    virtual CYUTF8String Run(CYPool &pool, CYUTF8String code) {
+        std::ostringstream stream;
+        const char *args[2] = {"-e", code.data};
+        InjectLibrary(pid_, stream, 2, args);
+        std::string json(stream.str());
+        if (!json.empty() && json[json.size() - 1] == '\n')
+            json.resize(json.size() - 1);
+        return CYUTF8String(strdup(json.c_str()), json.size());
+    }
+};
 
 static std::ostream *out_;
 
@@ -315,7 +391,7 @@ static void Output(CYUTF8String json, std::ostream *out, bool reparse = false) {
     const char *data(json.data);
     size_t size(json.size);
 
-    if (data == NULL || out == NULL)
+    if (size == 0 || out == NULL)
         return;
 
     CYLexerHighlight(data, size, *out);
@@ -326,10 +402,10 @@ int (*append_history$)(int, const char *);
 
 static std::string command_;
 
-static int client_;
+static CYRemote *remote_;
 
 static CYUTF8String Run(CYPool &pool, const std::string &code) {
-    return Run(pool, client_, code);
+    return remote_->Run(pool, code);
 }
 
 static char **Complete(const char *word, int start, int end) {
@@ -610,7 +686,7 @@ static void CYConsolePrepTerm(int meta) {
 
 static void CYOutputRun(const std::string &code, bool reparse = false) {
     CYPool pool;
-    Output(Run(pool, client_, code), &std::cout, reparse);
+    Output(Run(pool, code), &std::cout, reparse);
 }
 
 static void Console(CYOptions &options) {
@@ -779,8 +855,6 @@ static void Console(CYOptions &options) {
         CYOutputRun(code, reparse);
     }
 }
-
-void InjectLibrary(pid_t, int, const char *const []);
 
 static uint64_t CYGetTime() {
 #ifdef __APPLE__
@@ -1000,92 +1074,15 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
 #endif
 
 #ifdef CY_ATTACH
-    if (pid == _not(pid_t))
-        client_ = -1;
-    else {
-        struct Socket {
-            int fd_;
-
-            Socket(int fd) :
-                fd_(fd)
-            {
-            }
-
-            ~Socket() {
-                close(fd_);
-            }
-
-            operator int() {
-                return fd_;
-            }
-        } server(_syscall(socket(PF_UNIX, SOCK_STREAM, 0)));
-
-        struct sockaddr_un address;
-        memset(&address, 0, sizeof(address));
-        address.sun_family = AF_UNIX;
-
-        const char *tmp;
-#if defined(__APPLE__) && (defined(__arm__) || defined(__arm64__))
-        tmp = "/Library/Caches";
-#else
-        tmp = "/tmp";
+    if (remote_ == NULL && pid != _not(pid_t))
+        remote_ = new CYInjectRemote(pid);
 #endif
 
-        sprintf(address.sun_path, "%s/.s.cy.%u", tmp, getpid());
-        unlink(address.sun_path);
+    if (remote_ == NULL && host != NULL && port != NULL)
+        remote_ = new CYSocketRemote(host, port);
 
-        struct File {
-            const char *path_;
-
-            File(const char *path) :
-                path_(path)
-            {
-            }
-
-            ~File() {
-                unlink(path_);
-            }
-        } file(address.sun_path);
-
-        _syscall(bind(server, reinterpret_cast<sockaddr *>(&address), sizeof(address)));
-        _syscall(chmod(address.sun_path, 0777));
-
-        _syscall(listen(server, 1));
-        const char *const argv[] = {address.sun_path, NULL};
-        InjectLibrary(pid, 1, argv);
-        client_ = _syscall(accept(server, NULL, NULL));
-    }
-#else
-    client_ = -1;
-#endif
-
-    if (client_ == -1 && host != NULL && port != NULL) {
-        struct addrinfo hints;
-        memset(&hints, 0, sizeof(hints));
-        hints.ai_family = AF_UNSPEC;
-        hints.ai_socktype = SOCK_STREAM;
-        hints.ai_protocol = 0;
-        hints.ai_flags = 0;
-
-        struct addrinfo *infos;
-        _syscall(getaddrinfo(host, port, &hints, &infos));
-
-        _assert(infos != NULL); try {
-            for (struct addrinfo *info(infos); info != NULL; info = info->ai_next) {
-                int client(_syscall(socket(info->ai_family, info->ai_socktype, info->ai_protocol))); try {
-                    _syscall(connect(client, info->ai_addr, info->ai_addrlen));
-                    client_ = client;
-                    break;
-                } catch (...) {
-                    _syscall(close(client));
-                    throw;
-                }
-            }
-        } catch (...) {
-            freeaddrinfo(infos);
-            throw;
-        }
-    }
+    if (remote_ == NULL)
+        remote_ = new CYLocalRemote();
 
     if (script == NULL && tty)
         Console(options);
@@ -1156,7 +1153,7 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
             if (compile)
                 std::cout << code;
             else {
-                CYUTF8String json(Run(pool, client_, code));
+                CYUTF8String json(Run(pool, code));
                 if (CYStartsWith(json, "throw ")) {
                     CYLexerHighlight(json.data, json.size, std::cerr);
                     std::cerr << std::endl;

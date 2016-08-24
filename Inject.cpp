@@ -55,7 +55,7 @@ Type_ *shift(Type_ *data, size_t size) {
     return reinterpret_cast<Type_ *>(reinterpret_cast<uint8_t *>(data) + size);
 }
 
-void InjectLibrary(int pid, int argc, const char *const argv[]) {
+void InjectLibrary(int pid, std::ostream &stream, int argc, const char *const argv[]) {
     auto cynject(LibraryFor(reinterpret_cast<void *>(&main)));
     auto slash(cynject.rfind('/'));
     _assert(slash != std::string::npos);
@@ -113,8 +113,32 @@ void InjectLibrary(int pid, int argc, const char *const argv[]) {
 
     std::ostringstream inject;
     inject << cynject << " " << std::dec << pid << " " << library;
-    for (decltype(argc) i(0); i != argc; ++i)
-        inject << " " << argv[i];
+    for (decltype(argc) i(0); i != argc; ++i) {
+        inject << " '";
+        for (const char *arg(argv[i]); *arg != '\0'; ++arg)
+            if (*arg != '\'')
+                inject.put(*arg);
+            else
+                inject << "'\\''";
+        inject << "'";
+    }
 
-    _assert(system(inject.str().c_str()) == 0);
+    FILE *process(popen(inject.str().c_str(), "r"));
+    _assert(process != NULL);
+
+    for (;;) {
+        char data[1024];
+        auto writ(fread(data, 1, sizeof(data), process));
+        stream.write(data, writ);
+
+        if (writ == sizeof(data))
+            continue;
+        _assert(!ferror(process));
+        if (feof(process))
+            break;
+    }
+
+    auto status(pclose(process)); // XXX: _scope (sort of?)
+    _assert(status != -1);
+    _assert(status == 0);
 }
