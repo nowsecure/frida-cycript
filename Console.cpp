@@ -343,6 +343,7 @@ class CYSocketRemote :
 
 void InjectLibrary(pid_t, std::ostream &stream, int, const char *const []);
 
+#ifdef CY_ATTACH
 class CYInjectRemote :
     public CYRemote
 {
@@ -366,6 +367,7 @@ class CYInjectRemote :
         return CYUTF8String(strdup(json.c_str()), json.size());
     }
 };
+#endif
 
 static std::ostream *out_;
 
