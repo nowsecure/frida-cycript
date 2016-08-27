@@ -155,13 +155,10 @@ libcycript_la_SOURCES += ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC
 libcycript_la_LIBADD += $(LTOBJECTIVEC)
 endif
 
-if CY_ATTACH
 libcycript_la_SOURCES += Handler.cpp
 
 if CY_CONSOLE
 cycript_SOURCES += Inject.cpp
-AM_CPPFLAGS += -DCY_ATTACH
-endif
 endif
 
 CLEANFILES += Parser.ypp

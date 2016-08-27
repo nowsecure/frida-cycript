@@ -343,7 +343,6 @@ class CYSocketRemote :
 
 void InjectLibrary(pid_t, std::ostream &stream, int, const char *const []);
 
-#ifdef CY_ATTACH
 class CYInjectRemote :
     public CYRemote
 {
@@ -367,7 +366,6 @@ class CYInjectRemote :
         return CYUTF8String(strdup(json.c_str()), json.size());
     }
 };
-#endif
 
 static std::ostream *out_;
 
@@ -876,9 +874,7 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
 
     append_history$ = (int (*)(int, const char *)) (dlsym(RTLD_DEFAULT, "append_history"));
 
-#ifdef CY_ATTACH
     pid_t pid(_not(pid_t));
-#endif
 
     const char *host(NULL);
     const char *port(NULL);
@@ -892,18 +888,14 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
             "c"
             "g:"
             "n:"
-#ifdef CY_ATTACH
             "p:"
-#endif
             "r:"
             "s"
         , (const struct option[]) {
             {NULL, no_argument, NULL, 'c'},
             {NULL, required_argument, NULL, 'g'},
             {NULL, required_argument, NULL, 'n'},
-#ifdef CY_ATTACH
             {NULL, required_argument, NULL, 'p'},
-#endif
             {NULL, required_argument, NULL, 'r'},
             {NULL, no_argument, NULL, 's'},
         {0, 0, 0, 0}}, NULL));
@@ -916,9 +908,7 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
             case '?':
                 fprintf(stderr,
                     "usage: cycript [-c]"
-#ifdef CY_ATTACH
                     " [-p <pid|name>]"
-#endif
                     " [-r <host:port>]"
                     " [<script> [<arg>...]]\n"
                 );
@@ -928,11 +918,7 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
                 if (!target)
                     target = true;
                 else {
-                    fprintf(stderr, "only one of -[c"
-#ifdef CY_ATTACH
-                    "p"
-#endif
-                    "r] may be used at a time\n");
+                    fprintf(stderr, "only one of -[cpr] may be used at a time\n");
                     return 1;
                 }
             break;
@@ -965,7 +951,6 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
                 }
             break;
 
-#ifdef CY_ATTACH
             case 'p': {
                 size_t size(strlen(optarg));
                 char *end;
@@ -1015,7 +1000,6 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
                     }
                 }
             } goto target;
-#endif
 
             case 'r': {
                 //size_t size(strlen(optarg));
@@ -1053,12 +1037,10 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
 
     const char *script;
 
-#ifdef CY_ATTACH
     if (pid != _not(pid_t) && argc > 1) {
         fprintf(stderr, "-p cannot set argv\n");
         return 1;
     }
-#endif
 
     if (argc == 0)
         script = NULL;
@@ -1075,10 +1057,8 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
     CYSetArgs(argv0, script, argc, const_cast<const char **>(argv));
 #endif
 
-#ifdef CY_ATTACH
     if (remote_ == NULL && pid != _not(pid_t))
         remote_ = new CYInjectRemote(pid);
-#endif
 
     if (remote_ == NULL && host != NULL && port != NULL)
         remote_ = new CYSocketRemote(host, port);
