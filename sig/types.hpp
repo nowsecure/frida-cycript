@@ -104,6 +104,14 @@ struct Signature {
 struct Void :
     Type
 {
+    Void() {
+    }
+
+    Void(bool constant) {
+        if (constant)
+            flags |= JOC_TYPE_CONST;
+    }
+
     Void *Copy(CYPool &pool, const char *rename = NULL) const override;
 
     const char *Encode(CYPool &pool) const override;

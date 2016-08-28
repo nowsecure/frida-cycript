@@ -2650,9 +2650,7 @@ static JSValueRef Instance_callAsFunction_toPointer(JSContextRef context, JSObje
     if (!CYJSValueIsNSObject(context, _this))
         return NULL;
     Instance *internal(reinterpret_cast<Instance *>(JSObjectGetPrivate(_this)));
-    // XXX: return CYMakePointer(context, internal->value_, sig::Object(class_getName(object_getClass(internal->value_))), NULL, object);
-    // XXX: return CYMakePointer(context, internal->value_, sig::Meta(), NULL, object);
-    return CYCastJSValue(context, reinterpret_cast<uintptr_t>(internal->value_));
+    return CYMakePointer(context, internal->value_, sig::Void(true), NULL, object);
 } CYCatch(NULL) return /*XXX*/ NULL; }
 
 static JSValueRef Instance_callAsFunction_toString(JSContextRef context, JSObjectRef object, JSObjectRef _this, size_t count, const JSValueRef arguments[], JSValueRef *exception) { CYTry {
