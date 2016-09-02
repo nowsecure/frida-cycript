@@ -97,7 +97,7 @@ struct CYList {
     }
 
     CYList &operator ->*(Type_ *next) {
-        if (next != NULL)
+        if (next != NULL) {
             if (first_ == NULL) {
                 first_ = next;
                 last_ = next;
@@ -106,6 +106,7 @@ struct CYList {
                 last_->next_ = next;
                 last_ = next;
             }
+        }
         return *this;
     }
 

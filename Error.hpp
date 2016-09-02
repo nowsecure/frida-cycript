@@ -25,26 +25,6 @@
 #include "Exception.hpp"
 #include "Pooling.hpp"
 
-#ifdef CY_EXECUTE
-struct CYJSError :
-    CYException
-{
-    JSContextRef context_;
-    JSValueRef value_;
-
-    CYJSError(JSContextRef context, JSValueRef value) :
-        context_(context),
-        value_(value)
-    {
-    }
-
-    CYJSError(JSContextRef context, const char *format, ...);
-
-    virtual const char *PoolCString(CYPool &pool) const;
-    virtual JSValueRef CastJSValue(JSContextRef context, const char *name) const;
-};
-#endif
-
 struct _visible CYPoolError :
     CYException
 {
@@ -58,9 +38,6 @@ struct _visible CYPoolError :
     CYPoolError(const char *format, va_list args);
 
     virtual const char *PoolCString(CYPool &pool) const;
-#ifdef CY_EXECUTE
-    virtual JSValueRef CastJSValue(JSContextRef context, const char *name) const;
-#endif
 };
 
 #endif/*CYCRIPT_ERROR_HPP*/

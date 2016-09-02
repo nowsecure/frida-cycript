@@ -35,6 +35,12 @@
 #include "Pooling.hpp"
 #include "String.hpp"
 
+#ifdef __clang__
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Winconsistent-missing-override"
+# pragma clang diagnostic ignored "-Woverloaded-virtual"
+#endif
+
 double CYCastDouble(const char *value, size_t size);
 double CYCastDouble(const char *value);
 double CYCastDouble(CYUTF8String value);
@@ -2972,5 +2978,9 @@ CYAssignment_(">>>=", ShiftRightUnsigned)
 CYAssignment_("&=", BitwiseAnd)
 CYAssignment_("^=", BitwiseXOr)
 CYAssignment_("|=", BitwiseOr)
+
+#ifdef __clang__
+# pragma clang diagnostic pop
+#endif
 
 #endif/*CYCRIPT_PARSER_HPP*/

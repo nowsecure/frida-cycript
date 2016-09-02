@@ -59,14 +59,6 @@ function configure() {
     mkdir build."${dir}"
     cd build."${dir}"
 
-    if "${ffi}"; then
-        cpf+=" -I../libffi.${arch}/include"
-        ldf+=" -L../libffi.${arch}/.libs"
-    fi
-
-    cpf+=" -I../libuv/include"
-    ldf+=" -L../libuv.${arch}/.libs"
-
     ../configure --enable-maintainer-mode "${flags[@]}" --prefix="/usr" "$@" \
         --with-libclang="-rpath ${xct} ${xct}/libclang.dylib" \
         CC="${cc} ${flg}" CXX="${cxx} ${flg}" OBJCXX="${cxx} ${flg}" \

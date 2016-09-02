@@ -132,6 +132,7 @@ CY_TEST_FLAG([-Wno-overloaded-virtual])
 CY_TEST_FLAG([-Wno-parentheses])
 CY_TEST_FLAG([-Wno-tautological-undefined-compare])
 CY_TEST_FLAG([-Wno-unneeded-internal-declaration])
+CY_TEST_FLAG([-Wno-inconsistent-missing-override])
 
 AX_PTHREAD
 
@@ -144,154 +145,88 @@ AC_DEFUN([CY_LT_LIB], [
     AC_SUBST(]$1[)
 ])
 
-dnl --enable-javascript {{{
-AC_DEFUN([CY_CHECK_JAVASCRIPTCORE], [
-    CY_LT_LIB([LTJAVASCRIPTCORE], [AC_SEARCH_LIBS([JSEvaluateScript], [JavaScriptCore], [
-        AC_SUBST([CY_EXECUTE], [1])
-    ], [AC_CHECK_FRAMEWORK([JavaScriptCore], [
-        #include <JavaScriptCore/JSBase.h>
-    ], [
-        JSEvaluateScript(0, 0, 0, 0, 0, 0);
-    ], [
-        AC_SUBST([CY_EXECUTE], [1])
-    ], [
-        for cy_webkit_pkg in "javascriptcoregtk-4.0"; do
-            PKG_CHECK_MODULES([WEBKIT], [$cy_webkit_pkg], [
-                AC_SUBST([CY_EXECUTE], [1])
-                AC_LIB_APPENDTOVAR([CPPFLAGS], [`$PKG_CONFIG --cflags $cy_webkit_pkg`])
-                AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs $cy_webkit_pkg`])
-            ], [:]); if test "x$CY_EXECUTE" = x1; then break; fi
-        done
-    ])])])
-])
-
-AC_DEFUN([CY_CHECK_JAVASCRIPT], [
-    CY_CHECK_JAVASCRIPTCORE])
-
-AC_ARG_ENABLE([javascript], [AS_HELP_STRING(
-    [--enable-javascript@<:@=ENGINE@:>@],
-    [use a JavaScript runtime (currently the only available option for ENGINE is JavaScriptCore) @<:@default=yes@:>@]
-)], [
-    AS_CASE([$enableval],
-        [yes], [
-            CY_CHECK_JAVASCRIPT],
-        [no], [
-            AC_SUBST([CY_EXECUTE], [0])],
-        [JavaScriptCore], [
-            CY_CHECK_JAVASCRIPTCORE],
-        [AC_MSG_ERROR([Unknown JavaScript engine: $enableval])])
-], [CY_CHECK_JAVASCRIPT])
-dnl }}}
-
 AC_ARG_ENABLE([console], AS_HELP_STRING([--disable-console], [disable console]))
 AM_CONDITIONAL([CY_CONSOLE], [test "x$enable_console" != "xno"])
-
-AC_ARG_ENABLE([attach], AS_HELP_STRING([--disable-attach], [disable attach]))
-AM_CONDITIONAL([CY_ATTACH], [test "x$enable_attach" != "xno" -a "x$CY_EXECUTE" = x1])
-
-AC_DEFUN([CY_CHECK_PKG_CONFIG_LIBFFI], [
-    PKG_CHECK_MODULES([LIBFFI], [libffi], [
-        AC_LIB_APPENDTOVAR([CPPFLAGS], [`$PKG_CONFIG --cflags libffi`])
-        AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs libffi`])
-    ], [AC_MSG_ERROR([missing "libffi"])])])
-
-AM_CONDITIONAL([CY_EXECUTE], [test "x$CY_EXECUTE" = x1])
 
 if test "x$CY_SYSTEM" = x; then CY_SYSTEM=1; fi
 AC_SUBST([CY_SYSTEM])
 
-AS_CASE([$CY_EXECUTE], [1], [
-    CY_LT_LIB([LTLIBUV], [AC_CHECK_HEADERS([uv.h], [
-        AC_SEARCH_LIBS([uv_loop_init], [uv])
-    ])])
+CY_LT_LIB([LTLIBSQLITE3], [AC_CHECK_HEADERS([sqlite3.h], [
+    AC_SEARCH_LIBS([sqlite3_open_v2], [sqlite3 sqlite])
+])])
 
-    CY_LT_LIB([LTLIBSQLITE3], [AC_CHECK_HEADERS([sqlite3.h], [
-        AC_SEARCH_LIBS([sqlite3_open_v2], [sqlite3 sqlite])
-    ])])
+CY_LT_LIB([LTJAVA], [AC_CHECK_FRAMEWORK([JavaVM], [
+    #include <JavaVM/jni.h>
+], [JNI_GetCreatedJavaVMs(NULL, 0, NULL);], [
+    AC_SUBST([CY_JAVA], [1])
+], [AC_CHECK_HEADER([jni.h], [
+    AC_SUBST([CY_JAVA], [1])
+], [
+    AC_SUBST([CY_JAVA], [0])
+])])])
 
-    AC_CHECK_HEADERS([ffi.h ffi/ffi.h], [break])
-
-    CY_LT_LIB([LTLIBFFI], [AS_IF([test "x$ac_cv_header_ffi_h" = xno && test "x$ac_cv_header_ffi_ffi_h" = xno], [
-        CY_CHECK_PKG_CONFIG_LIBFFI
-    ], [
-        AC_SEARCH_LIBS([ffi_call], [ffi])
-        AS_CASE([$ac_cv_search_ffi_call], [no], [CY_CHECK_PKG_CONFIG_LIBFFI])
-        AC_CHECK_FUNCS([ffi_prep_cif_var])
-    ])])
-
-    CY_LT_LIB([LTJAVA], [AC_CHECK_FRAMEWORK([JavaVM], [
-        #include <JavaVM/jni.h>
-    ], [JNI_GetCreatedJavaVMs(NULL, 0, NULL);], [
-        AC_SUBST([CY_JAVA], [1])
-    ], [AC_CHECK_HEADER([jni.h], [
-        AC_SUBST([CY_JAVA], [1])
-    ], [
-        AC_SUBST([CY_JAVA], [0])
-    ])])])
-
-    CY_LT_LIB([LTRUBY], [PKG_CHECK_MODULES([LIBRUBY21], [ruby-2.1], [
-        AC_SUBST([CY_RUBY], [1])
-        AC_LIB_APPENDTOVAR([CPPFLAGS], [`$PKG_CONFIG --cflags ruby-2.1`])
-        AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs ruby-2.1`])
-    ], [AC_CHECK_FRAMEWORK([Ruby], [
-        #include <Ruby/ruby.h>
-    ], [ruby_init();], [
-        AC_SUBST([CY_RUBY], [1])
-    ], [AC_CHECK_HEADERS([ruby.h], [
-        AC_SUBST([CY_RUBY], [1])
-        AC_SEARCH_LIBS([ruby_init], [ruby], [
-        ])
-    ], [
-        AC_SUBST([CY_RUBY], [0])
-    ])])])])
-
-    AC_ARG_WITH([python], AS_HELP_STRING([--with-python], [support python (pass the path to python-config)]), [], [with_python=no])
-
-    AS_IF([test "x$with_python" != "xno"], [
-        AC_SUBST([CY_PYTHON], [1])
-        CY_LT_LIB([LTPYTHON], [
-            AC_LIB_APPENDTOVAR([CPPFLAGS], [`$with_python --includes`])
-            AC_LIB_APPENDTOVAR([LIBS], [`$with_python --ldflags`])
-        ])
-    ], [
-        AC_SUBST([CY_PYTHON], [0])
+CY_LT_LIB([LTRUBY], [PKG_CHECK_MODULES([LIBRUBY21], [ruby-2.1], [
+    AC_SUBST([CY_RUBY], [1])
+    AC_LIB_APPENDTOVAR([CPPFLAGS], [`$PKG_CONFIG --cflags ruby-2.1`])
+    AC_LIB_APPENDTOVAR([LIBS], [`$PKG_CONFIG --libs ruby-2.1`])
+], [AC_CHECK_FRAMEWORK([Ruby], [
+    #include <Ruby/ruby.h>
+], [ruby_init();], [
+    AC_SUBST([CY_RUBY], [1])
+], [AC_CHECK_HEADERS([ruby.h], [
+    AC_SUBST([CY_RUBY], [1])
+    AC_SEARCH_LIBS([ruby_init], [ruby], [
     ])
+], [
+    AC_SUBST([CY_RUBY], [0])
+])])])])
 
-    AM_CONDITIONAL([CY_PRELINK], [test "x$with_python" != "xno"])
+AC_ARG_WITH([python], AS_HELP_STRING([--with-python], [support python (pass the path to python-config)]), [], [with_python=no])
 
-    AC_LANG_PUSH([Objective C++])
-
-    AC_MSG_CHECKING([if we really have Objective C++])
-    AC_COMPILE_IFELSE([AC_LANG_SOURCE([])], [
-        CY_OBJECTIVEC=1
-        AC_MSG_RESULT([yes])
-    ], [AC_MSG_RESULT([no])])
-
-    AS_IF([test "x$CY_OBJECTIVEC" = x1], [
-        CY_LT_LIB([LTOBJECTIVEC], [AC_CHECK_FRAMEWORK([CoreFoundation], [
-            #include <CoreFoundation/CFBase.h>
-        ], [CFAllocatorGetDefault();], [
-            AC_SUBST([CY_OBJECTIVEC], [1])
-
-            AC_CHECK_FRAMEWORK([Foundation], [
-                #include <Foundation/NSObject.h>
-            ], [[[[NSObject alloc] init];]])
-        ], [
-            AC_ARG_VAR([GNUSTEP_CONFIG], [prints information about the current gnustep installation])
-            AC_CHECK_PROGS([GNUSTEP_CONFIG], [gnustep-config])
-
-            AS_IF([test "x$GNUSTEP_CONFIG" != x], [
-                AC_SUBST([CY_OBJECTIVEC], [1])
-                AC_LIB_APPENDTOVAR([OBJCXXFLAGS], [`$GNUSTEP_CONFIG --objc-flags`])
-                AC_LIB_APPENDTOVAR([LIBS], [`$GNUSTEP_CONFIG --base-libs`])
-            ], [AC_SUBST([CY_OBJECTIVEC], [0])])
-        ])])
-    ], [
-        AC_SUBST([CY_OBJECTIVEC], [0])
+AS_IF([test "x$with_python" != "xno"], [
+    AC_SUBST([CY_PYTHON], [1])
+    CY_LT_LIB([LTPYTHON], [
+        AC_LIB_APPENDTOVAR([CPPFLAGS], [`$with_python --includes`])
+        AC_LIB_APPENDTOVAR([LIBS], [`$with_python --ldflags`])
     ])
-
-    AC_LANG_POP([Objective C++])
+], [
+    AC_SUBST([CY_PYTHON], [0])
 ])
+
+AM_CONDITIONAL([CY_PRELINK], [test "x$with_python" != "xno"])
+
+AC_LANG_PUSH([Objective C++])
+
+AC_MSG_CHECKING([if we really have Objective C++])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([])], [
+    CY_OBJECTIVEC=1
+    AC_MSG_RESULT([yes])
+], [AC_MSG_RESULT([no])])
+
+AS_IF([test "x$CY_OBJECTIVEC" = x1], [
+    CY_LT_LIB([LTOBJECTIVEC], [AC_CHECK_FRAMEWORK([CoreFoundation], [
+        #include <CoreFoundation/CFBase.h>
+    ], [CFAllocatorGetDefault();], [
+        AC_SUBST([CY_OBJECTIVEC], [1])
+
+        AC_CHECK_FRAMEWORK([Foundation], [
+            #include <Foundation/NSObject.h>
+        ], [[[[NSObject alloc] init];]])
+    ], [
+        AC_ARG_VAR([GNUSTEP_CONFIG], [prints information about the current gnustep installation])
+        AC_CHECK_PROGS([GNUSTEP_CONFIG], [gnustep-config])
+
+        AS_IF([test "x$GNUSTEP_CONFIG" != x], [
+            AC_SUBST([CY_OBJECTIVEC], [1])
+            AC_LIB_APPENDTOVAR([OBJCXXFLAGS], [`$GNUSTEP_CONFIG --objc-flags`])
+            AC_LIB_APPENDTOVAR([LIBS], [`$GNUSTEP_CONFIG --base-libs`])
+        ], [AC_SUBST([CY_OBJECTIVEC], [0])])
+    ])])
+], [
+    AC_SUBST([CY_OBJECTIVEC], [0])
+])
+
+AC_LANG_POP([Objective C++])
 
 AM_CONDITIONAL([CY_JAVA], [test "x$CY_JAVA" = x1])
 AM_CONDITIONAL([CY_RUBY], [test "x$CY_RUBY" = x1])

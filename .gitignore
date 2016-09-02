@@ -1,4 +1,6 @@
 *.deb
+*.dSYM
+*.jar
 *.zip
 *.la
 *.lo
@@ -40,9 +42,12 @@ ncurses.*
 readline-6.2
 readline-6.2.tar.gz
 readline.*
+libcycript-runtime.js
 libcycript.db
-libffi.*
-libuv.*
+/build
+/Class
+/frida
+/prebuilds
 build.*
 Cycript.ios
 Cycript.osx

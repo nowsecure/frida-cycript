@@ -42,7 +42,6 @@ cycript += Cycript.lib/libcycript-sim.dylib
 cycript += Cycript.lib/libcycript.cy
 cycript += Cycript.lib/libcycript.db
 cycript += Cycript.lib/libcycript.jar
-cycript += Cycript.lib/libJavaScriptCore.so
 cycript += Cycript.lib/l/linux
 cycript += Cycript.lib/u/unknown
 
@@ -73,7 +72,6 @@ android := $(data)
 android += Cycript.lib/cycript-a32
 android += Cycript.lib/cycript-pie
 android += Cycript.lib/libcycript.so
-android += Cycript.lib/libJavaScriptCore.so
 android += Cycript.lib/l/linux
 android += Cycript.lib/u/unknown
 
@@ -110,7 +108,7 @@ clean :=
 
 db := 
 
-library := libffi libuv
+library := 
 
 # make stubbornly refuses to believe that these @'s are bugs
 # http://osdir.com/ml/help-make-gnu/2012-04/msg00008.html
@@ -211,14 +209,9 @@ clean: $(clean)
 Cycript.lib/libcycript.dylib: build.osx-i386/.libs/libcycript.dylib build.osx-x86_64/.libs/libcycript.dylib build.ios-armv6/.libs/libcycript.dylib build.ios-arm64/.libs/libcycript.dylib
 	@mkdir -p $(dir $@)
 	$(lipo) -create -output $@ $^
-	install_name_tool -change /System/Library/{,Private}Frameworks/JavaScriptCore.framework/JavaScriptCore $@
 	codesign -s $(codesign) $@
 
 Cycript.lib/libcycript.so: build.and-armeabi/.libs/libcycript.so
-	@mkdir -p $(dir $@)
-	cp -af $< $@
-
-Cycript.lib/libJavaScriptCore.so: android/armeabi/libJavaScriptCore.so
 	@mkdir -p $(dir $@)
 	cp -af $< $@
 
@@ -232,7 +225,6 @@ Cycript.lib/cycript-pie: build.and-armeabi/cycript-pie
 
 %_: %
 	@cp -af $< $@
-	install_name_tool -change /System/Library/{,Private}Frameworks/JavaScriptCore.framework/JavaScriptCore $@
 	codesign -s $(codesign) --entitlement cycript-$(word 2,$(subst ., ,$(subst -, ,$*))).xml $@
 
 Cycript.lib/cycript-apl: build.osx-i386/.libs/cycript_ build.osx-x86_64/.libs/cycript_ build.ios-armv6/.libs/cycript_ build.ios-arm64/.libs/cycript_

@@ -24,10 +24,6 @@
 
 #include <cstdlib>
 
-#ifdef CY_EXECUTE
-#include <JavaScriptCore/JSBase.h>
-#endif
-
 // XXX: does _assert really need this?
 #include <errno.h>
 
@@ -40,16 +36,9 @@ struct _visible CYException {
     }
 
     virtual const char *PoolCString(CYPool &pool) const = 0;
-#ifdef CY_EXECUTE
-    virtual JSValueRef CastJSValue(JSContextRef context, const char *name) const = 0;
-#endif
 };
 
 void CYThrow(const char *format, ...) _noreturn;
-
-#ifdef CY_EXECUTE
-void CYThrow(JSContextRef context, JSValueRef value);
-#endif
 
 #define CYTry \
     try
@@ -113,31 +102,5 @@ static _finline bool CYContains(int value, size_t many, const int *okay) {
     __typeof__(expr) _value = (expr); \
     _assert_("sqlcall", _value == 0 || _value >= 100 && _value < 200, #expr, " %u:%s", _value, sqlite3_errmsg(database_)); \
 _value; })
-
-#ifdef CY_EXECUTE
-struct CYJSException {
-    JSContextRef context_;
-    JSValueRef value_;
-
-    CYJSException(JSContextRef context) :
-        context_(context),
-        value_(NULL)
-    {
-    }
-
-    ~CYJSException() noexcept(false) {
-        CYThrow(context_, value_);
-    }
-
-    operator JSValueRef *() {
-        return &value_;
-    }
-};
-
-#define _jsccall(code, args...) ({ \
-    CYJSException _error(context); \
-    (code)(args, _error); \
-})
-#endif
 
 #endif/*CYCRIPT_ERROR_HPP*/

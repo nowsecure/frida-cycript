@@ -25,14 +25,6 @@
 #include <cstdlib>
 #include <stdint.h>
 
-#include <JavaScriptCore/JSBase.h>
-
-#ifdef HAVE_FFI_FFI_H
-#include <ffi/ffi.h>
-#else
-#include <ffi.h>
-#endif
-
 #include "Standard.hpp"
 
 class CYPool;
@@ -68,10 +60,6 @@ struct Type {
 
     virtual const char *Encode(CYPool &pool) const = 0;
     virtual CYType *Decode(CYPool &pool) const = 0;
-
-    virtual ffi_type *GetFFI(CYPool &pool) const = 0;
-    virtual void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const = 0;
-    virtual JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize = false, JSObjectRef owner = NULL) const = 0;
 };
 
 template <typename Type_>
@@ -84,10 +72,6 @@ struct Primitive :
 
     const char *Encode(CYPool &pool) const override;
     CYType *Decode(CYPool &pool) const override;
-
-    ffi_type *GetFFI(CYPool &pool) const override;
-    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
-    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
 };
 
 struct Element {
@@ -116,10 +100,6 @@ struct Void :
 
     const char *Encode(CYPool &pool) const override;
     CYType *Decode(CYPool &pool) const override;
-
-    ffi_type *GetFFI(CYPool &pool) const override;
-    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
-    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
 };
 
 struct Unknown :
@@ -129,10 +109,6 @@ struct Unknown :
 
     const char *Encode(CYPool &pool) const override;
     CYType *Decode(CYPool &pool) const override;
-
-    ffi_type *GetFFI(CYPool &pool) const override;
-    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
-    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
 };
 
 struct String :
@@ -150,10 +126,6 @@ struct String :
 
     const char *Encode(CYPool &pool) const override;
     CYType *Decode(CYPool &pool) const override;
-
-    ffi_type *GetFFI(CYPool &pool) const override;
-    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
-    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
 };
 
 #ifdef CY_OBJECTIVEC
@@ -164,10 +136,6 @@ struct Meta :
 
     const char *Encode(CYPool &pool) const override;
     CYType *Decode(CYPool &pool) const override;
-
-    ffi_type *GetFFI(CYPool &pool) const override;
-    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
-    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
 };
 
 struct Selector :
@@ -177,10 +145,6 @@ struct Selector :
 
     const char *Encode(CYPool &pool) const override;
     CYType *Decode(CYPool &pool) const override;
-
-    ffi_type *GetFFI(CYPool &pool) const override;
-    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
-    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
 };
 #endif
 
@@ -198,10 +162,6 @@ struct Bits :
 
     const char *Encode(CYPool &pool) const override;
     CYType *Decode(CYPool &pool) const override;
-
-    ffi_type *GetFFI(CYPool &pool) const override;
-    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
-    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
 };
 
 struct Pointer :
@@ -218,10 +178,6 @@ struct Pointer :
 
     const char *Encode(CYPool &pool) const override;
     CYType *Decode(CYPool &pool) const override;
-
-    ffi_type *GetFFI(CYPool &pool) const override;
-    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
-    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
 };
 
 struct Array :
@@ -240,10 +196,6 @@ struct Array :
 
     const char *Encode(CYPool &pool) const override;
     CYType *Decode(CYPool &pool) const override;
-
-    ffi_type *GetFFI(CYPool &pool) const override;
-    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
-    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
 };
 
 #ifdef CY_OBJECTIVEC
@@ -261,10 +213,6 @@ struct Object :
 
     const char *Encode(CYPool &pool) const override;
     CYType *Decode(CYPool &pool) const override;
-
-    ffi_type *GetFFI(CYPool &pool) const override;
-    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
-    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
 };
 #endif
 
@@ -295,10 +243,6 @@ struct Enum :
 
     const char *Encode(CYPool &pool) const override;
     CYType *Decode(CYPool &pool) const override;
-
-    ffi_type *GetFFI(CYPool &pool) const override;
-    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
-    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
 };
 
 struct Aggregate :
@@ -319,10 +263,6 @@ struct Aggregate :
 
     const char *Encode(CYPool &pool) const override;
     CYType *Decode(CYPool &pool) const override;
-
-    ffi_type *GetFFI(CYPool &pool) const override;
-    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
-    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
 };
 
 struct Callable :
@@ -348,10 +288,6 @@ struct Function :
 
     const char *Encode(CYPool &pool) const override;
     CYType *Modify(CYPool &pool, CYType *result, CYTypedParameter *parameters) const override;
-
-    ffi_type *GetFFI(CYPool &pool) const override;
-    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
-    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
 };
 
 #ifdef CY_OBJECTIVEC
@@ -363,10 +299,6 @@ struct Block :
     const char *Encode(CYPool &pool) const override;
     CYType *Decode(CYPool &pool) const override;
     CYType *Modify(CYPool &pool, CYType *result, CYTypedParameter *parameters) const override;
-
-    ffi_type *GetFFI(CYPool &pool) const override;
-    void PoolFFI(CYPool *pool, JSContextRef context, ffi_type *ffi, void *data, JSValueRef value) const override;
-    JSValueRef FromFFI(JSContextRef context, ffi_type *ffi, void *data, bool initialize, JSObjectRef owner) const override;
 };
 #endif
 

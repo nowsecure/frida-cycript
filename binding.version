@@ -1,0 +1,4 @@
+CYCRIPT_BINDING {
+  local:
+    *;
+};

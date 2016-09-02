@@ -125,29 +125,6 @@ Block *Block::Copy(CYPool &pool, const char *rename) const {
 }
 #endif
 
-void Copy(CYPool &pool, ffi_type &lhs, ffi_type &rhs) {
-    lhs.size = rhs.size;
-    lhs.alignment = rhs.alignment;
-    lhs.type = rhs.type;
-    if (rhs.elements == NULL)
-        lhs.elements = NULL;
-    else {
-        size_t count(0);
-        while (rhs.elements[count] != NULL)
-            ++count;
-
-        lhs.elements = new(pool) ffi_type *[count + 1];
-        lhs.elements[count] = NULL;
-
-        for (size_t index(0); index != count; ++index) {
-            // XXX: if these are libffi native then you can just take them
-            ffi_type *ffi(new(pool) ffi_type);
-            lhs.elements[index] = ffi;
-            sig::Copy(pool, *ffi, *rhs.elements[index]);
-        }
-    }
-}
-
 const char *Type::GetName() const {
     return NULL;
 }

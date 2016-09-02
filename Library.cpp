@@ -39,6 +39,10 @@
 #include "String.hpp"
 #include "Syntax.hpp"
 
+_visible CYUTF8String CYPoolUTF8String(CYPool &pool, const std::string &value) {
+    return {pool.strndup(value.data(), value.size()), value.size()};
+}
+
 /* C Strings {{{ */
 CYUTF8String CYPoolUTF8String(CYPool &pool, CYUTF16String utf16) {
     // XXX: this is wrong

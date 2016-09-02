@@ -114,15 +114,8 @@ host_triplet = @host@
 @CY_CONSOLE_TRUE@bin_PROGRAMS = cycript$(EXEEXT) $(am__EXEEXT_1)
 @CY_CONSOLE_TRUE@am__append_3 = Complete.cpp
 @CY_ANDROID_TRUE@@CY_CONSOLE_TRUE@am__append_4 = cycript-pie
-@CY_EXECUTE_TRUE@am__append_5 = sig/ffi_type.cpp sig/parse.cpp \
-@CY_EXECUTE_TRUE@	sig/copy.cpp Execute.cpp JavaScriptCore.cpp
-@CY_EXECUTE_TRUE@am__append_6 = $(LTJAVASCRIPTCORE)
-@CY_EXECUTE_TRUE@am__append_7 = libcycript.db
-@CY_EXECUTE_TRUE@am__append_8 = -DCY_EXECUTE
-@CY_EXECUTE_TRUE@am__append_9 = C
-@CY_EXECUTE_TRUE@am__append_10 = libcycript.db
-@CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@am__append_11 = Analyze Bridge.def
-@CY_EXECUTE_TRUE@@CY_PRELINK_FALSE@am__append_12 = Bridge.def
+@CY_PRELINK_TRUE@am__append_5 = Analyze Bridge.def
+@CY_PRELINK_FALSE@am__append_6 = Bridge.def
 
 #CLEANFILES += Hasher.gperf
 #Hasher.gperf: Hasher.def Hasher.sh
@@ -131,28 +124,34 @@ host_triplet = @host@
 #CLEANFILES += Hasher.hpp
 #Hasher.hpp: Hasher.gperf
 #	$(GPERF) $< >$@
-@CY_JAVA_TRUE@am__append_13 = Java
-@CY_JAVA_TRUE@am__append_14 = Java/Execute.cpp
-@CY_JAVA_TRUE@am__append_15 = libcycript.jar
-@CY_JAVA_TRUE@am__append_16 = Class libcycript.jar
-@CY_RUBY_TRUE@am__append_17 = Ruby
-@CY_RUBY_TRUE@am__append_18 = Ruby/Execute.cpp
-@CY_RUBY_TRUE@am__append_19 = $(LTRUBY)
-@CY_PYTHON_TRUE@am__append_20 = Python
-@CY_PYTHON_TRUE@am__append_21 = Python/Execute.cpp
-@CY_PYTHON_TRUE@am__append_22 = $(LTPYTHON)
-@CY_OBJECTIVEC_TRUE@am__append_23 = -DCY_OBJECTIVEC
-@CY_OBJECTIVEC_TRUE@am__append_24 = ObjectiveC
-@CY_OBJECTIVEC_TRUE@am__append_25 = ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm
-@CY_OBJECTIVEC_TRUE@am__append_26 = $(LTOBJECTIVEC)
+@CY_JAVA_TRUE@am__append_7 = Java
+@CY_JAVA_TRUE@am__append_8 = Java/Execute.cpp
+@CY_JAVA_TRUE@am__append_9 = libcycript.jar
+@CY_JAVA_TRUE@am__append_10 = Class libcycript.jar
+@CY_RUBY_TRUE@am__append_11 = Ruby
+@CY_RUBY_TRUE@am__append_12 = Ruby/Execute.cpp
+@CY_RUBY_TRUE@am__append_13 = $(LTRUBY)
+@CY_PYTHON_TRUE@am__append_14 = Python
+@CY_PYTHON_TRUE@am__append_15 = Python/Execute.cpp
+@CY_PYTHON_TRUE@am__append_16 = $(LTPYTHON)
+@CY_OBJECTIVEC_TRUE@am__append_17 = -DCY_OBJECTIVEC
+@CY_OBJECTIVEC_TRUE@am__append_18 = ObjectiveC
+@CY_OBJECTIVEC_TRUE@am__append_19 = ObjectiveC/Output.cpp ObjectiveC/Replace.cpp
+@CY_OBJECTIVEC_TRUE@am__append_20 = $(LTOBJECTIVEC)
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/ax_cxx_compile_stdcxx_11.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/ax_append_flag.m4 \
+	$(top_srcdir)/m4/ax_cflags_warn_all.m4 \
+	$(top_srcdir)/m4/ax_cxx_compile_stdcxx_11.m4 \
+	$(top_srcdir)/m4/ax_lib_readline.m4 \
+	$(top_srcdir)/m4/ax_prog_cc_for_build.m4 \
 	$(top_srcdir)/m4/ax_prog_cxx_for_build.m4 \
-	$(top_srcdir)/m4/ax_pthread.m4 $(top_srcdir)/m4/framework.m4 \
-	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
-	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
-	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/ax_pthread.m4 \
+	$(top_srcdir)/m4/ax_require_defined.m4 \
+	$(top_srcdir)/m4/framework.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
+	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(top_srcdir)/configure \
@@ -194,50 +193,46 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" \
 	"$(DESTDIR)$(datdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-@CY_EXECUTE_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-@CY_RUBY_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
-@CY_PYTHON_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
-@CY_OBJECTIVEC_TRUE@am__DEPENDENCIES_5 = $(am__DEPENDENCIES_1)
-libcycript_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4) \
-	$(am__DEPENDENCIES_5)
+@CY_RUBY_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
+@CY_PYTHON_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
+@CY_OBJECTIVEC_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
 am__libcycript_la_SOURCES_DIST = ConvertUTF.c Decode.cpp Driver.cpp \
-	Error.cpp Highlight.cpp Library.cpp Network.cpp Output.cpp \
-	Replace.cpp Syntax.cpp Parser.cpp Scanner.cpp Complete.cpp \
-	sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp Execute.cpp \
-	JavaScriptCore.cpp Java/Execute.cpp Ruby/Execute.cpp \
+	Error.cpp Highlight.cpp Library.cpp Output.cpp Replace.cpp \
+	Syntax.cpp Parser.cpp Scanner.cpp Complete.cpp sig/parse.cpp \
+	sig/copy.cpp Execute.cpp Java/Execute.cpp Ruby/Execute.cpp \
 	Python/Execute.cpp ObjectiveC/Output.cpp \
-	ObjectiveC/Replace.cpp ObjectiveC/Library.mm Handler.cpp
-@CY_CONSOLE_TRUE@am__objects_1 = Complete.lo
+	ObjectiveC/Replace.cpp
+@CY_CONSOLE_TRUE@am__objects_1 = libcycript_la-Complete.lo
 am__dirstamp = $(am__leading_dot)dirstamp
-@CY_EXECUTE_TRUE@am__objects_2 = sig/ffi_type.lo sig/parse.lo \
-@CY_EXECUTE_TRUE@	sig/copy.lo Execute.lo JavaScriptCore.lo
-@CY_JAVA_TRUE@am__objects_3 = Java/Execute.lo
-@CY_RUBY_TRUE@am__objects_4 = Ruby/Execute.lo
-@CY_PYTHON_TRUE@am__objects_5 = Python/Execute.lo
-@CY_OBJECTIVEC_TRUE@am__objects_6 = ObjectiveC/Output.lo \
-@CY_OBJECTIVEC_TRUE@	ObjectiveC/Replace.lo \
-@CY_OBJECTIVEC_TRUE@	ObjectiveC/Library.lo
-am_libcycript_la_OBJECTS = ConvertUTF.lo Decode.lo Driver.lo Error.lo \
-	Highlight.lo Library.lo Network.lo Output.lo Replace.lo \
-	Syntax.lo Parser.lo Scanner.lo $(am__objects_1) \
+@CY_JAVA_TRUE@am__objects_2 = Java/libcycript_la-Execute.lo
+@CY_RUBY_TRUE@am__objects_3 = Ruby/libcycript_la-Execute.lo
+@CY_PYTHON_TRUE@am__objects_4 = Python/libcycript_la-Execute.lo
+@CY_OBJECTIVEC_TRUE@am__objects_5 =  \
+@CY_OBJECTIVEC_TRUE@	ObjectiveC/libcycript_la-Output.lo \
+@CY_OBJECTIVEC_TRUE@	ObjectiveC/libcycript_la-Replace.lo
+am_libcycript_la_OBJECTS = libcycript_la-ConvertUTF.lo \
+	libcycript_la-Decode.lo libcycript_la-Driver.lo \
+	libcycript_la-Error.lo libcycript_la-Highlight.lo \
+	libcycript_la-Library.lo libcycript_la-Output.lo \
+	libcycript_la-Replace.lo libcycript_la-Syntax.lo \
+	libcycript_la-Parser.lo libcycript_la-Scanner.lo \
+	$(am__objects_1) sig/libcycript_la-parse.lo \
+	sig/libcycript_la-copy.lo libcycript_la-Execute.lo \
 	$(am__objects_2) $(am__objects_3) $(am__objects_4) \
-	$(am__objects_5) $(am__objects_6) Handler.lo
+	$(am__objects_5)
 libcycript_la_OBJECTS = $(am_libcycript_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-libcycript_la_LINK = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(OBJCXXLD) $(AM_OBJCXXFLAGS) \
-	$(OBJCXXFLAGS) $(libcycript_la_LDFLAGS) $(LDFLAGS) -o $@
+libcycript_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link \
+	$(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(libcycript_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
 @CY_ANDROID_TRUE@@CY_CONSOLE_TRUE@am__EXEEXT_1 = cycript-pie$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
-am__cycript_SOURCES_DIST = Console.cpp Inject.cpp
-@CY_CONSOLE_TRUE@am_cycript_OBJECTS = Console.$(OBJEXT) \
-@CY_CONSOLE_TRUE@	Inject.$(OBJEXT)
+am__cycript_SOURCES_DIST = Console.cpp
+@CY_CONSOLE_TRUE@am_cycript_OBJECTS = Console.$(OBJEXT)
 cycript_OBJECTS = $(am_cycript_OBJECTS)
 @CY_CONSOLE_TRUE@cycript_DEPENDENCIES = libcycript.la \
 @CY_CONSOLE_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
@@ -302,24 +297,6 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-OBJCXXCOMPILE = $(OBJCXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
-	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_OBJCXXFLAGS) $(OBJCXXFLAGS)
-LTOBJCXXCOMPILE = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=compile $(OBJCXX) $(DEFS) \
-	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
-	$(AM_OBJCXXFLAGS) $(OBJCXXFLAGS)
-AM_V_OBJCXX = $(am__v_OBJCXX_@AM_V@)
-am__v_OBJCXX_ = $(am__v_OBJCXX_@AM_DEFAULT_V@)
-am__v_OBJCXX_0 = @echo "  OBJCXX  " $@;
-am__v_OBJCXX_1 = 
-OBJCXXLD = $(OBJCXX)
-OBJCXXLINK = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
-	--mode=link $(OBJCXXLD) $(AM_OBJCXXFLAGS) $(OBJCXXFLAGS) \
-	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-AM_V_OBJCXXLD = $(am__v_OBJCXXLD_@AM_V@)
-am__v_OBJCXXLD_ = $(am__v_OBJCXXLD_@AM_DEFAULT_V@)
-am__v_OBJCXXLD_0 = @echo "  OBJCXXLD" $@;
-am__v_OBJCXXLD_1 = 
 SOURCES = $(libcycript_la_SOURCES) $(cycript_SOURCES) \
 	$(cycript_pie_SOURCES)
 DIST_SOURCES = $(am__libcycript_la_SOURCES_DIST) \
@@ -443,7 +420,6 @@ CXXFLAGS_FOR_BUILD = @CXXFLAGS_FOR_BUILD@
 CXX_FOR_BUILD = @CXX_FOR_BUILD@
 CYGPATH_W = @CYGPATH_W@
 CY_ANDROID = @CY_ANDROID@
-CY_EXECUTE = @CY_EXECUTE@
 CY_JAVA = @CY_JAVA@
 CY_LIBCLANG = @CY_LIBCLANG@
 CY_OBJECTIVEC = @CY_OBJECTIVEC@
@@ -477,8 +453,6 @@ LD = @LD@
 LDFLAGS = @LDFLAGS@
 LDFLAGS_FOR_BUILD = @LDFLAGS_FOR_BUILD@
 LFLAGS = @LFLAGS@
-LIBFFI_CFLAGS = @LIBFFI_CFLAGS@
-LIBFFI_LIBS = @LIBFFI_LIBS@
 LIBOBJS = @LIBOBJS@
 LIBRUBY21_CFLAGS = @LIBRUBY21_CFLAGS@
 LIBRUBY21_LIBS = @LIBRUBY21_LIBS@
@@ -488,14 +462,11 @@ LIPO = @LIPO@
 LN_S = @LN_S@
 LTFLAGS = @LTFLAGS@
 LTJAVA = @LTJAVA@
-LTJAVASCRIPTCORE = @LTJAVASCRIPTCORE@
-LTLIBFFI = @LTLIBFFI@
 LTLIBGCC = @LTLIBGCC@
 LTLIBOBJS = @LTLIBOBJS@
 LTLIBREADLINE = @LTLIBREADLINE@
 LTLIBSQLITE3 = @LTLIBSQLITE3@
 LTLIBTERMCAP = @LTLIBTERMCAP@
-LTLIBUV = @LTLIBUV@
 LTOBJECTIVEC = @LTOBJECTIVEC@
 LTPYTHON = @LTPYTHON@
 LTRUBY = @LTRUBY@
@@ -535,8 +506,6 @@ SO = @SO@
 STRIP = @STRIP@
 TIME = @TIME@
 VERSION = @VERSION@
-WEBKIT_CFLAGS = @WEBKIT_CFLAGS@
-WEBKIT_LIBS = @WEBKIT_LIBS@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -595,47 +564,52 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = subdir-objects
-CLEANFILES = $(am__append_10) $(am__append_11) $(am__append_12) \
-	$(am__append_16) Parser.ypp Scanner.lpp Scanner.cpp \
+CLEANFILES = libcycript.db $(am__append_5) $(am__append_6) \
+	$(am__append_10) Parser.ypp Scanner.lpp Scanner.cpp \
 	Scanner.output lex.backup Parser.cpp Parser.hpp stack.hh \
 	Parser.output
 SUBDIRS = 
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -DYYDEBUG=1 -DCY_SYSTEM="\"$(CY_SYSTEM)\"" -include \
-	config.h -include $(srcdir)/unconfig.h $(am__append_8) \
-	$(am__append_23)
+	config.h -include $(srcdir)/unconfig.h -I$(srcdir)/frida \
+	$(am__append_17)
 CY_FLAGS = -fvisibility=hidden $(am__append_1)
 AM_CFLAGS = $(CY_FLAGS)
 AM_CXXFLAGS = $(CY_FLAGS)
 AM_OBJCXXFLAGS = $(CY_FLAGS) -fobjc-exceptions
 AM_LDFLAGS = $(CY_FLAGS) $(am__append_2)
-CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
+CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic \
+	-L$(srcdir)/frida
 datdir = $(libdir)
-dat_DATA = $(am__append_7) $(am__append_15)
+dat_DATA = libcycript.db $(am__append_9)
 lib_LTLIBRARIES = libcycript.la
-libcycript_la_LDFLAGS = $(CY_LDFLAGS)
-libcycript_la_LIBADD = $(LTLIBUV) $(LTLIBFFI) $(LTLIBSQLITE3) \
-	$(LTLIBGCC) -ldl $(am__append_6) $(am__append_19) \
-	$(am__append_22) $(am__append_26)
+libcycript_la_LDFLAGS = $(CY_LDFLAGS) \
+	-Wl,-framework,Foundation,-framework,AppKit
+libcycript_la_LIBADD = $(LTLIBSQLITE3) $(LTLIBGCC) -ldl \
+	$(LTJAVASCRIPTCORE) -lfrida-core -lresolv $(am__append_13) \
+	$(am__append_16) $(am__append_20)
 libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp Error.cpp \
-	Highlight.cpp Library.cpp Network.cpp Output.cpp Replace.cpp \
-	Syntax.cpp Parser.cpp Scanner.cpp $(am__append_3) \
-	$(am__append_5) $(am__append_14) $(am__append_18) \
-	$(am__append_21) $(am__append_25) Handler.cpp
-filters = $(am__append_9) $(am__append_13) $(am__append_17) \
-	$(am__append_20) $(am__append_24)
-@CY_CONSOLE_TRUE@cycript_SOURCES = Console.cpp Inject.cpp
+	Highlight.cpp Library.cpp Output.cpp Replace.cpp Syntax.cpp \
+	Parser.cpp Scanner.cpp $(am__append_3) sig/parse.cpp \
+	sig/copy.cpp Execute.cpp $(am__append_8) $(am__append_12) \
+	$(am__append_15) $(am__append_19)
+filters = C $(am__append_7) $(am__append_11) $(am__append_14) \
+	$(am__append_18)
+@CY_CONSOLE_TRUE@cycript_SOURCES = Console.cpp
 @CY_CONSOLE_TRUE@cycript_LDADD = libcycript.la $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) $(PTHREAD_CFLAGS) -ldl
 @CY_ANDROID_TRUE@@CY_CONSOLE_TRUE@cycript_pie_SOURCES = pie.c
 @CY_ANDROID_TRUE@@CY_CONSOLE_TRUE@cycript_pie_LDFLAGS = -fno-PIE
-@CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@CY_LANGFLAGS = -DCY_JAVA=$(CY_JAVA) -DCY_PYTHON=$(CY_PYTHON) -DCY_OBJECTIVEC=$(CY_OBJECTIVEC)
-@CY_ANDROID_FALSE@@CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@CY_ANDFLAGS = 
-@CY_ANDROID_TRUE@@CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@CY_ANDFLAGS = -U__APPLE__ -D__ANDROID__
+libcycript_la_DEPENDENCIES = frida/libfrida-core.a
+@CY_PRELINK_TRUE@CY_LANGFLAGS = -DCY_JAVA=$(CY_JAVA) -DCY_PYTHON=$(CY_PYTHON) -DCY_OBJECTIVEC=$(CY_OBJECTIVEC)
+@CY_ANDROID_FALSE@@CY_PRELINK_TRUE@CY_ANDFLAGS = 
+@CY_ANDROID_TRUE@@CY_PRELINK_TRUE@CY_ANDFLAGS = -U__APPLE__ -D__ANDROID__
+libcycript_la_LIBTOOLFLAGS = --tag=CXX
+frida_version = 7.3.4
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
 .SUFFIXES:
-.SUFFIXES: .c .cpp .lo .mm .o .obj
+.SUFFIXES: .c .cpp .lo .o .obj
 am--refresh: Makefile
 	@:
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
@@ -725,30 +699,33 @@ sig/$(am__dirstamp):
 sig/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) sig/$(DEPDIR)
 	@: > sig/$(DEPDIR)/$(am__dirstamp)
-sig/ffi_type.lo: sig/$(am__dirstamp) sig/$(DEPDIR)/$(am__dirstamp)
-sig/parse.lo: sig/$(am__dirstamp) sig/$(DEPDIR)/$(am__dirstamp)
-sig/copy.lo: sig/$(am__dirstamp) sig/$(DEPDIR)/$(am__dirstamp)
+sig/libcycript_la-parse.lo: sig/$(am__dirstamp) \
+	sig/$(DEPDIR)/$(am__dirstamp)
+sig/libcycript_la-copy.lo: sig/$(am__dirstamp) \
+	sig/$(DEPDIR)/$(am__dirstamp)
 Java/$(am__dirstamp):
 	@$(MKDIR_P) Java
 	@: > Java/$(am__dirstamp)
 Java/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) Java/$(DEPDIR)
 	@: > Java/$(DEPDIR)/$(am__dirstamp)
-Java/Execute.lo: Java/$(am__dirstamp) Java/$(DEPDIR)/$(am__dirstamp)
+Java/libcycript_la-Execute.lo: Java/$(am__dirstamp) \
+	Java/$(DEPDIR)/$(am__dirstamp)
 Ruby/$(am__dirstamp):
 	@$(MKDIR_P) Ruby
 	@: > Ruby/$(am__dirstamp)
 Ruby/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) Ruby/$(DEPDIR)
 	@: > Ruby/$(DEPDIR)/$(am__dirstamp)
-Ruby/Execute.lo: Ruby/$(am__dirstamp) Ruby/$(DEPDIR)/$(am__dirstamp)
+Ruby/libcycript_la-Execute.lo: Ruby/$(am__dirstamp) \
+	Ruby/$(DEPDIR)/$(am__dirstamp)
 Python/$(am__dirstamp):
 	@$(MKDIR_P) Python
 	@: > Python/$(am__dirstamp)
 Python/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) Python/$(DEPDIR)
 	@: > Python/$(DEPDIR)/$(am__dirstamp)
-Python/Execute.lo: Python/$(am__dirstamp) \
+Python/libcycript_la-Execute.lo: Python/$(am__dirstamp) \
 	Python/$(DEPDIR)/$(am__dirstamp)
 ObjectiveC/$(am__dirstamp):
 	@$(MKDIR_P) ObjectiveC
@@ -756,15 +733,13 @@ ObjectiveC/$(am__dirstamp):
 ObjectiveC/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) ObjectiveC/$(DEPDIR)
 	@: > ObjectiveC/$(DEPDIR)/$(am__dirstamp)
-ObjectiveC/Output.lo: ObjectiveC/$(am__dirstamp) \
+ObjectiveC/libcycript_la-Output.lo: ObjectiveC/$(am__dirstamp) \
 	ObjectiveC/$(DEPDIR)/$(am__dirstamp)
-ObjectiveC/Replace.lo: ObjectiveC/$(am__dirstamp) \
-	ObjectiveC/$(DEPDIR)/$(am__dirstamp)
-ObjectiveC/Library.lo: ObjectiveC/$(am__dirstamp) \
+ObjectiveC/libcycript_la-Replace.lo: ObjectiveC/$(am__dirstamp) \
 	ObjectiveC/$(DEPDIR)/$(am__dirstamp)
 
 libcycript.la: $(libcycript_la_OBJECTS) $(libcycript_la_DEPENDENCIES) $(EXTRA_libcycript_la_DEPENDENCIES) 
-	$(AM_V_OBJCXXLD)$(libcycript_la_LINK) -rpath $(libdir) $(libcycript_la_OBJECTS) $(libcycript_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(libcycript_la_LINK) -rpath $(libdir) $(libcycript_la_OBJECTS) $(libcycript_la_LIBADD) $(LIBS)
 install-binPROGRAMS: $(bin_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
@@ -839,34 +814,28 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Complete.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Console.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ConvertUTF.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Decode.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Driver.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Error.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Execute.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Handler.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Highlight.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Inject.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/JavaScriptCore.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Library.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Network.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Output.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Parser.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Replace.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Scanner.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Syntax.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcycript_la-Complete.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcycript_la-ConvertUTF.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcycript_la-Decode.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcycript_la-Driver.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcycript_la-Error.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcycript_la-Execute.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcycript_la-Highlight.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcycript_la-Library.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcycript_la-Output.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcycript_la-Parser.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcycript_la-Replace.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcycript_la-Scanner.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcycript_la-Syntax.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pie.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@Java/$(DEPDIR)/Execute.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/Library.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/Output.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/Replace.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@Python/$(DEPDIR)/Execute.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@Ruby/$(DEPDIR)/Execute.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sig/$(DEPDIR)/copy.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sig/$(DEPDIR)/ffi_type.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sig/$(DEPDIR)/parse.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@Java/$(DEPDIR)/libcycript_la-Execute.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/libcycript_la-Output.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ObjectiveC/$(DEPDIR)/libcycript_la-Replace.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@Python/$(DEPDIR)/libcycript_la-Execute.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@Ruby/$(DEPDIR)/libcycript_la-Execute.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sig/$(DEPDIR)/libcycript_la-copy.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sig/$(DEPDIR)/libcycript_la-parse.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -892,6 +861,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
+libcycript_la-ConvertUTF.lo: ConvertUTF.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libcycript_la-ConvertUTF.lo -MD -MP -MF $(DEPDIR)/libcycript_la-ConvertUTF.Tpo -c -o libcycript_la-ConvertUTF.lo `test -f 'ConvertUTF.c' || echo '$(srcdir)/'`ConvertUTF.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcycript_la-ConvertUTF.Tpo $(DEPDIR)/libcycript_la-ConvertUTF.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ConvertUTF.c' object='libcycript_la-ConvertUTF.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libcycript_la-ConvertUTF.lo `test -f 'ConvertUTF.c' || echo '$(srcdir)/'`ConvertUTF.c
+
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
@@ -916,29 +892,138 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
 
-.mm.o:
-@am__fastdepOBJCXX_TRUE@	$(AM_V_OBJCXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
-@am__fastdepOBJCXX_TRUE@	$(OBJCXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-@am__fastdepOBJCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
-@AMDEP_TRUE@@am__fastdepOBJCXX_FALSE@	$(AM_V_OBJCXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepOBJCXX_FALSE@	DEPDIR=$(DEPDIR) $(OBJCXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepOBJCXX_FALSE@	$(AM_V_OBJCXX@am__nodep@)$(OBJCXXCOMPILE) -c -o $@ $<
+libcycript_la-Decode.lo: Decode.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libcycript_la-Decode.lo -MD -MP -MF $(DEPDIR)/libcycript_la-Decode.Tpo -c -o libcycript_la-Decode.lo `test -f 'Decode.cpp' || echo '$(srcdir)/'`Decode.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcycript_la-Decode.Tpo $(DEPDIR)/libcycript_la-Decode.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Decode.cpp' object='libcycript_la-Decode.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libcycript_la-Decode.lo `test -f 'Decode.cpp' || echo '$(srcdir)/'`Decode.cpp
 
-.mm.obj:
-@am__fastdepOBJCXX_TRUE@	$(AM_V_OBJCXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
-@am__fastdepOBJCXX_TRUE@	$(OBJCXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
-@am__fastdepOBJCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
-@AMDEP_TRUE@@am__fastdepOBJCXX_FALSE@	$(AM_V_OBJCXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepOBJCXX_FALSE@	DEPDIR=$(DEPDIR) $(OBJCXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepOBJCXX_FALSE@	$(AM_V_OBJCXX@am__nodep@)$(OBJCXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+libcycript_la-Driver.lo: Driver.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libcycript_la-Driver.lo -MD -MP -MF $(DEPDIR)/libcycript_la-Driver.Tpo -c -o libcycript_la-Driver.lo `test -f 'Driver.cpp' || echo '$(srcdir)/'`Driver.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcycript_la-Driver.Tpo $(DEPDIR)/libcycript_la-Driver.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Driver.cpp' object='libcycript_la-Driver.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libcycript_la-Driver.lo `test -f 'Driver.cpp' || echo '$(srcdir)/'`Driver.cpp
 
-.mm.lo:
-@am__fastdepOBJCXX_TRUE@	$(AM_V_OBJCXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
-@am__fastdepOBJCXX_TRUE@	$(LTOBJCXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-@am__fastdepOBJCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
-@AMDEP_TRUE@@am__fastdepOBJCXX_FALSE@	$(AM_V_OBJCXX)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepOBJCXX_FALSE@	DEPDIR=$(DEPDIR) $(OBJCXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepOBJCXX_FALSE@	$(AM_V_OBJCXX@am__nodep@)$(LTOBJCXXCOMPILE) -c -o $@ $<
+libcycript_la-Error.lo: Error.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libcycript_la-Error.lo -MD -MP -MF $(DEPDIR)/libcycript_la-Error.Tpo -c -o libcycript_la-Error.lo `test -f 'Error.cpp' || echo '$(srcdir)/'`Error.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcycript_la-Error.Tpo $(DEPDIR)/libcycript_la-Error.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Error.cpp' object='libcycript_la-Error.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libcycript_la-Error.lo `test -f 'Error.cpp' || echo '$(srcdir)/'`Error.cpp
+
+libcycript_la-Highlight.lo: Highlight.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libcycript_la-Highlight.lo -MD -MP -MF $(DEPDIR)/libcycript_la-Highlight.Tpo -c -o libcycript_la-Highlight.lo `test -f 'Highlight.cpp' || echo '$(srcdir)/'`Highlight.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcycript_la-Highlight.Tpo $(DEPDIR)/libcycript_la-Highlight.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Highlight.cpp' object='libcycript_la-Highlight.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libcycript_la-Highlight.lo `test -f 'Highlight.cpp' || echo '$(srcdir)/'`Highlight.cpp
+
+libcycript_la-Library.lo: Library.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libcycript_la-Library.lo -MD -MP -MF $(DEPDIR)/libcycript_la-Library.Tpo -c -o libcycript_la-Library.lo `test -f 'Library.cpp' || echo '$(srcdir)/'`Library.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcycript_la-Library.Tpo $(DEPDIR)/libcycript_la-Library.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Library.cpp' object='libcycript_la-Library.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libcycript_la-Library.lo `test -f 'Library.cpp' || echo '$(srcdir)/'`Library.cpp
+
+libcycript_la-Output.lo: Output.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libcycript_la-Output.lo -MD -MP -MF $(DEPDIR)/libcycript_la-Output.Tpo -c -o libcycript_la-Output.lo `test -f 'Output.cpp' || echo '$(srcdir)/'`Output.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcycript_la-Output.Tpo $(DEPDIR)/libcycript_la-Output.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Output.cpp' object='libcycript_la-Output.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libcycript_la-Output.lo `test -f 'Output.cpp' || echo '$(srcdir)/'`Output.cpp
+
+libcycript_la-Replace.lo: Replace.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libcycript_la-Replace.lo -MD -MP -MF $(DEPDIR)/libcycript_la-Replace.Tpo -c -o libcycript_la-Replace.lo `test -f 'Replace.cpp' || echo '$(srcdir)/'`Replace.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcycript_la-Replace.Tpo $(DEPDIR)/libcycript_la-Replace.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Replace.cpp' object='libcycript_la-Replace.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libcycript_la-Replace.lo `test -f 'Replace.cpp' || echo '$(srcdir)/'`Replace.cpp
+
+libcycript_la-Syntax.lo: Syntax.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libcycript_la-Syntax.lo -MD -MP -MF $(DEPDIR)/libcycript_la-Syntax.Tpo -c -o libcycript_la-Syntax.lo `test -f 'Syntax.cpp' || echo '$(srcdir)/'`Syntax.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcycript_la-Syntax.Tpo $(DEPDIR)/libcycript_la-Syntax.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Syntax.cpp' object='libcycript_la-Syntax.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libcycript_la-Syntax.lo `test -f 'Syntax.cpp' || echo '$(srcdir)/'`Syntax.cpp
+
+libcycript_la-Parser.lo: Parser.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libcycript_la-Parser.lo -MD -MP -MF $(DEPDIR)/libcycript_la-Parser.Tpo -c -o libcycript_la-Parser.lo `test -f 'Parser.cpp' || echo '$(srcdir)/'`Parser.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcycript_la-Parser.Tpo $(DEPDIR)/libcycript_la-Parser.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Parser.cpp' object='libcycript_la-Parser.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libcycript_la-Parser.lo `test -f 'Parser.cpp' || echo '$(srcdir)/'`Parser.cpp
+
+libcycript_la-Scanner.lo: Scanner.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libcycript_la-Scanner.lo -MD -MP -MF $(DEPDIR)/libcycript_la-Scanner.Tpo -c -o libcycript_la-Scanner.lo `test -f 'Scanner.cpp' || echo '$(srcdir)/'`Scanner.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcycript_la-Scanner.Tpo $(DEPDIR)/libcycript_la-Scanner.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Scanner.cpp' object='libcycript_la-Scanner.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libcycript_la-Scanner.lo `test -f 'Scanner.cpp' || echo '$(srcdir)/'`Scanner.cpp
+
+libcycript_la-Complete.lo: Complete.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libcycript_la-Complete.lo -MD -MP -MF $(DEPDIR)/libcycript_la-Complete.Tpo -c -o libcycript_la-Complete.lo `test -f 'Complete.cpp' || echo '$(srcdir)/'`Complete.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcycript_la-Complete.Tpo $(DEPDIR)/libcycript_la-Complete.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Complete.cpp' object='libcycript_la-Complete.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libcycript_la-Complete.lo `test -f 'Complete.cpp' || echo '$(srcdir)/'`Complete.cpp
+
+sig/libcycript_la-parse.lo: sig/parse.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT sig/libcycript_la-parse.lo -MD -MP -MF sig/$(DEPDIR)/libcycript_la-parse.Tpo -c -o sig/libcycript_la-parse.lo `test -f 'sig/parse.cpp' || echo '$(srcdir)/'`sig/parse.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) sig/$(DEPDIR)/libcycript_la-parse.Tpo sig/$(DEPDIR)/libcycript_la-parse.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sig/parse.cpp' object='sig/libcycript_la-parse.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o sig/libcycript_la-parse.lo `test -f 'sig/parse.cpp' || echo '$(srcdir)/'`sig/parse.cpp
+
+sig/libcycript_la-copy.lo: sig/copy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT sig/libcycript_la-copy.lo -MD -MP -MF sig/$(DEPDIR)/libcycript_la-copy.Tpo -c -o sig/libcycript_la-copy.lo `test -f 'sig/copy.cpp' || echo '$(srcdir)/'`sig/copy.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) sig/$(DEPDIR)/libcycript_la-copy.Tpo sig/$(DEPDIR)/libcycript_la-copy.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sig/copy.cpp' object='sig/libcycript_la-copy.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o sig/libcycript_la-copy.lo `test -f 'sig/copy.cpp' || echo '$(srcdir)/'`sig/copy.cpp
+
+libcycript_la-Execute.lo: Execute.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libcycript_la-Execute.lo -MD -MP -MF $(DEPDIR)/libcycript_la-Execute.Tpo -c -o libcycript_la-Execute.lo `test -f 'Execute.cpp' || echo '$(srcdir)/'`Execute.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libcycript_la-Execute.Tpo $(DEPDIR)/libcycript_la-Execute.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Execute.cpp' object='libcycript_la-Execute.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libcycript_la-Execute.lo `test -f 'Execute.cpp' || echo '$(srcdir)/'`Execute.cpp
+
+Java/libcycript_la-Execute.lo: Java/Execute.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT Java/libcycript_la-Execute.lo -MD -MP -MF Java/$(DEPDIR)/libcycript_la-Execute.Tpo -c -o Java/libcycript_la-Execute.lo `test -f 'Java/Execute.cpp' || echo '$(srcdir)/'`Java/Execute.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) Java/$(DEPDIR)/libcycript_la-Execute.Tpo Java/$(DEPDIR)/libcycript_la-Execute.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Java/Execute.cpp' object='Java/libcycript_la-Execute.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o Java/libcycript_la-Execute.lo `test -f 'Java/Execute.cpp' || echo '$(srcdir)/'`Java/Execute.cpp
+
+Ruby/libcycript_la-Execute.lo: Ruby/Execute.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT Ruby/libcycript_la-Execute.lo -MD -MP -MF Ruby/$(DEPDIR)/libcycript_la-Execute.Tpo -c -o Ruby/libcycript_la-Execute.lo `test -f 'Ruby/Execute.cpp' || echo '$(srcdir)/'`Ruby/Execute.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) Ruby/$(DEPDIR)/libcycript_la-Execute.Tpo Ruby/$(DEPDIR)/libcycript_la-Execute.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Ruby/Execute.cpp' object='Ruby/libcycript_la-Execute.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o Ruby/libcycript_la-Execute.lo `test -f 'Ruby/Execute.cpp' || echo '$(srcdir)/'`Ruby/Execute.cpp
+
+Python/libcycript_la-Execute.lo: Python/Execute.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT Python/libcycript_la-Execute.lo -MD -MP -MF Python/$(DEPDIR)/libcycript_la-Execute.Tpo -c -o Python/libcycript_la-Execute.lo `test -f 'Python/Execute.cpp' || echo '$(srcdir)/'`Python/Execute.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) Python/$(DEPDIR)/libcycript_la-Execute.Tpo Python/$(DEPDIR)/libcycript_la-Execute.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Python/Execute.cpp' object='Python/libcycript_la-Execute.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o Python/libcycript_la-Execute.lo `test -f 'Python/Execute.cpp' || echo '$(srcdir)/'`Python/Execute.cpp
+
+ObjectiveC/libcycript_la-Output.lo: ObjectiveC/Output.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT ObjectiveC/libcycript_la-Output.lo -MD -MP -MF ObjectiveC/$(DEPDIR)/libcycript_la-Output.Tpo -c -o ObjectiveC/libcycript_la-Output.lo `test -f 'ObjectiveC/Output.cpp' || echo '$(srcdir)/'`ObjectiveC/Output.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ObjectiveC/$(DEPDIR)/libcycript_la-Output.Tpo ObjectiveC/$(DEPDIR)/libcycript_la-Output.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='ObjectiveC/Output.cpp' object='ObjectiveC/libcycript_la-Output.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o ObjectiveC/libcycript_la-Output.lo `test -f 'ObjectiveC/Output.cpp' || echo '$(srcdir)/'`ObjectiveC/Output.cpp
+
+ObjectiveC/libcycript_la-Replace.lo: ObjectiveC/Replace.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT ObjectiveC/libcycript_la-Replace.lo -MD -MP -MF ObjectiveC/$(DEPDIR)/libcycript_la-Replace.Tpo -c -o ObjectiveC/libcycript_la-Replace.lo `test -f 'ObjectiveC/Replace.cpp' || echo '$(srcdir)/'`ObjectiveC/Replace.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ObjectiveC/$(DEPDIR)/libcycript_la-Replace.Tpo ObjectiveC/$(DEPDIR)/libcycript_la-Replace.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='ObjectiveC/Replace.cpp' object='ObjectiveC/libcycript_la-Replace.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(libcycript_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o ObjectiveC/libcycript_la-Replace.lo `test -f 'ObjectiveC/Replace.cpp' || echo '$(srcdir)/'`ObjectiveC/Replace.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -1421,15 +1506,15 @@ uninstall-am: uninstall-binPROGRAMS uninstall-datDATA \
 
 
 .DELETE_ON_ERROR:
-@CY_EXECUTE_TRUE@libcycript.db: Bridge.def libcycript.py
-@CY_EXECUTE_TRUE@	$(srcdir)/libcycript.py $(CY_SYSTEM) $@ $(srcdir) <$<
-@CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@Analyze: Analyze.cpp Error.cpp Output.cpp Replace.cpp Syntax.cpp
-@CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@	$(CXX_FOR_BUILD) $(CXXFLAGS_FOR_BUILD) -std=c++11 $(LDFLAGS_FOR_BUILD) $(CY_LANGFLAGS) -I$(srcdir)/extra -o $@ $^ $(CY_LIBCLANG) -Wno-bitwise-op-parentheses -Wno-dangling-else -Wno-logical-op-parentheses
-@CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@Bridge.def: Analysis.cpp Analyze Bridge.old
-@CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@	./Analyze $< $(OBJCXX) $(CPPFLAGS) $(AM_OBJCXXFLAGS) $(OBJCXXFLAGS) $(CY_LANGFLAGS) $(CY_ANDFLAGS) >$@
-@CY_EXECUTE_TRUE@@CY_PRELINK_TRUE@	cat $(srcdir)/Bridge.old >>$@
-@CY_EXECUTE_TRUE@@CY_PRELINK_FALSE@Bridge.def: Bridge.def.in
-@CY_EXECUTE_TRUE@@CY_PRELINK_FALSE@	cat $< >$@
+libcycript.db: Bridge.def libcycript.py
+	$(srcdir)/libcycript.py $(CY_SYSTEM) $@ $(srcdir) <$<
+@CY_PRELINK_TRUE@Analyze: Analyze.cpp Error.cpp Output.cpp Replace.cpp Syntax.cpp
+@CY_PRELINK_TRUE@	$(CXX_FOR_BUILD) $(CXXFLAGS_FOR_BUILD) -std=c++11 $(LDFLAGS_FOR_BUILD) $(CY_LANGFLAGS) -I$(srcdir)/extra -o $@ $^ $(CY_LIBCLANG) -Wno-bitwise-op-parentheses -Wno-dangling-else -Wno-logical-op-parentheses
+@CY_PRELINK_TRUE@Bridge.def: Analysis.cpp Analyze Bridge.old
+@CY_PRELINK_TRUE@	./Analyze $< $(OBJCXX) $(CPPFLAGS) $(AM_OBJCXXFLAGS) $(OBJCXXFLAGS) $(CY_LANGFLAGS) $(CY_ANDFLAGS) >$@
+@CY_PRELINK_TRUE@	cat $(srcdir)/Bridge.old >>$@
+@CY_PRELINK_FALSE@Bridge.def: Bridge.def.in
+@CY_PRELINK_FALSE@	cat $< >$@
 @CY_JAVA_TRUE@Class/Cycript.class: Java/Cycript.java
 @CY_JAVA_TRUE@	rm -rf Class; mkdir Class; javac -g -Xlint:unchecked -source 1.5 -target 1.5 -d Class -sourcepath $(srcdir)/Java $<
 @CY_JAVA_TRUE@Class/classes.dex: Class/Cycript.class
@@ -1456,6 +1541,12 @@ Parser.hpp: Parser.ypp
 	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output -B 2 | grep 'shift, and go to state [0-9]*$$'
 	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output -B 2 | grep -v '$$default' | grep 'reduce using rule [0-9]* ([^)]*)$$'
 	perl -pi -e 's/yytranslate_ \(yylex \(/(yylex_ (/g' Parser.cpp
+
+frida/libfrida-core.a:
+	mkdir -p $(@D)/_
+	curl -Ls https://github.com/frida/frida/releases/download/$(frida_version)/frida-core-devkit-$(frida_version)-mac-x86_64.tar.xz | tar -C $(@D)/_ -xzf -
+	mv $(@D)/_/* $(@D)
+	rmdir $(@D)/_
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

@@ -794,6 +794,11 @@ void CYTypeVolatile::Output(CYOutput &out, CYPropertyName *name) const {
     next_->Output(out, Precedence(), name, true);
 }
 
+#ifdef __clang__
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wtautological-undefined-compare"
+#endif
+
 void CYTypeModifier::Output(CYOutput &out, int precedence, CYPropertyName *name, bool space) const {
     if (this == NULL && name == NULL)
         return;
@@ -813,6 +818,10 @@ void CYTypeModifier::Output(CYOutput &out, int precedence, CYPropertyName *name,
     if (protect)
         out << ')';
 }
+
+#ifdef __clang__
+# pragma clang diagnostic pop
+#endif
 
 void CYType::Output(CYOutput &out, CYPropertyName *name) const {
     out << *specifier_;
@@ -1008,6 +1017,11 @@ void CYStatement::Multiple(CYOutput &out, CYFlags flags) const {
     }
 }
 
+#ifdef __clang__
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wtautological-undefined-compare"
+#endif
+
 void CYStatement::Single(CYOutput &out, CYFlags flags, CYCompactType request) const {
     if (this == NULL)
         return out.Terminate();
@@ -1029,6 +1043,10 @@ void CYStatement::Single(CYOutput &out, CYFlags flags, CYCompactType request) co
     if (compact < request)
         --out.indent_;
 }
+
+#ifdef __clang__
+# pragma clang diagnostic pop
+#endif
 
 void CYString::Output(CYOutput &out, CYFlags flags) const {
     std::ostringstream str;

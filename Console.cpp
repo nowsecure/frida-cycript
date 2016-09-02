@@ -21,9 +21,7 @@
 
 #include "cycript.hpp"
 
-#ifdef CY_EXECUTE
 #include "JavaScript.hpp"
-#endif
 
 #include <cstdio>
 #include <complex>
@@ -220,9 +218,7 @@ static void sigint(int) {
         case Parsing:
             longjmp(ctrlc_, 1);
         case Running:
-#ifndef __ANDROID__
             CYCancel();
-#endif
             return;
         case Sending:
             return;
@@ -249,123 +245,24 @@ void Setup(CYOutput &out, CYDriver &driver, CYOptions &options, bool lower) {
         driver.Replace(options);
 }
 
-class CYRemote {
-  public:
-    virtual CYUTF8String Run(CYPool &pool, CYUTF8String code) = 0;
+static CYUTF8String Run(CYPool &pool, CYUTF8String code) {
+    const char *json;
+    uint32_t size;
 
-    inline CYUTF8String Run(CYPool &pool, const std::string &code) {
-        return Run(pool, CYUTF8String(code.c_str(), code.size()));
-    }
-};
+    mode_ = Running;
+    json = CYExecute(pool, code);
+    mode_ = Working;
+    if (json == NULL)
+        size = 0;
+    else
+        size = strlen(json);
 
-class CYLocalRemote :
-    public CYRemote
-{
-  public:
-    virtual CYUTF8String Run(CYPool &pool, CYUTF8String code) {
-        const char *json;
-        uint32_t size;
+    return CYUTF8String(json, size);
+}
 
-        mode_ = Running;
-#ifdef CY_EXECUTE
-        json = CYExecute(CYGetJSContext(), pool, code);
-#else
-        json = NULL;
-#endif
-        mode_ = Working;
-        if (json == NULL)
-            size = 0;
-        else
-            size = strlen(json);
-
-        return CYUTF8String(json, size);
-    }
-};
-
-class CYSocketRemote :
-    public CYRemote
-{
-  private:
-    int socket_;
-
-  public:
-    CYSocketRemote(const char *host, const char *port) {
-        struct addrinfo hints;
-        memset(&hints, 0, sizeof(hints));
-        hints.ai_family = AF_UNSPEC;
-        hints.ai_socktype = SOCK_STREAM;
-        hints.ai_protocol = 0;
-        hints.ai_flags = 0;
-
-        struct addrinfo *infos;
-        _syscall(getaddrinfo(host, port, &hints, &infos));
-
-        _assert(infos != NULL); try {
-            for (struct addrinfo *info(infos); info != NULL; info = info->ai_next) {
-                socket_ = _syscall(socket(info->ai_family, info->ai_socktype, info->ai_protocol)); try {
-                    _syscall(connect(socket_, info->ai_addr, info->ai_addrlen));
-                    break;
-                } catch (...) {
-                    _syscall(close(socket_));
-                    throw;
-                }
-            }
-        } catch (...) {
-            freeaddrinfo(infos);
-            throw;
-        }
-    }
-
-    virtual CYUTF8String Run(CYPool &pool, CYUTF8String code) {
-        const char *json;
-        uint32_t size;
-
-        mode_ = Sending;
-        size = code.size;
-        _assert(CYSendAll(socket_, &size, sizeof(size)));
-        _assert(CYSendAll(socket_, code.data, code.size));
-        mode_ = Waiting;
-        _assert(CYRecvAll(socket_, &size, sizeof(size)));
-        if (size == _not(uint32_t)) {
-            size = 0;
-            json = NULL;
-        } else {
-            char *temp(new(pool) char[size + 1]);
-            _assert(CYRecvAll(socket_, temp, size));
-            temp[size] = '\0';
-            json = temp;
-        }
-        mode_ = Working;
-
-        return CYUTF8String(json, size);
-    }
-};
-
-void InjectLibrary(pid_t, std::ostream &stream, int, const char *const []);
-
-class CYInjectRemote :
-    public CYRemote
-{
-  private:
-    int pid_;
-
-  public:
-    CYInjectRemote(int pid) :
-        pid_(pid)
-    {
-        // XXX: wait
-    }
-
-    virtual CYUTF8String Run(CYPool &pool, CYUTF8String code) {
-        std::ostringstream stream;
-        const char *args[2] = {"-e", code.data};
-        InjectLibrary(pid_, stream, 2, args);
-        std::string json(stream.str());
-        if (!json.empty() && json[json.size() - 1] == '\n')
-            json.resize(json.size() - 1);
-        return CYUTF8String(strdup(json.c_str()), json.size());
-    }
-};
+static CYUTF8String Run(CYPool &pool, const std::string &code) {
+    return Run(pool, CYUTF8String(code.c_str(), code.size()));
+}
 
 static std::ostream *out_;
 
@@ -401,12 +298,6 @@ static void Output(CYUTF8String json, std::ostream *out, bool reparse = false) {
 int (*append_history$)(int, const char *);
 
 static std::string command_;
-
-static CYRemote *remote_;
-
-static CYUTF8String Run(CYPool &pool, const std::string &code) {
-    return remote_->Run(pool, code);
-}
 
 static char **Complete(const char *word, int start, int end) {
     rl_attempted_completion_over = ~0;
@@ -779,7 +670,7 @@ static void Console(CYOptions &options) {
                 CYDestroyContext();
             } else if (data == "gc") {
                 *out_ << "collecting... " << std::flush;
-                CYGarbageCollect(CYGetJSContext());
+                CYGarbageCollect();
                 *out_ << "done." << std::endl;
             } else if (data == "exit") {
                 return;
@@ -874,10 +765,9 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
 
     append_history$ = (int (*)(int, const char *)) (dlsym(RTLD_DEFAULT, "append_history"));
 
-    pid_t pid(_not(pid_t));
-
+    const char *device_id(NULL);
     const char *host(NULL);
-    const char *port(NULL);
+    const char *process(NULL);
 
     const char *argv0(argv[0]);
 
@@ -888,6 +778,7 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
             "c"
             "g:"
             "n:"
+            "d:"
             "p:"
             "r:"
             "s"
@@ -895,6 +786,7 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
             {NULL, no_argument, NULL, 'c'},
             {NULL, required_argument, NULL, 'g'},
             {NULL, required_argument, NULL, 'n'},
+            {NULL, required_argument, NULL, 'd'},
             {NULL, required_argument, NULL, 'p'},
             {NULL, required_argument, NULL, 'r'},
             {NULL, no_argument, NULL, 's'},
@@ -908,8 +800,9 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
             case '?':
                 fprintf(stderr,
                     "usage: cycript [-c]"
-                    " [-p <pid|name>]"
+                    " [-d <device-id>]"
                     " [-r <host:port>]"
+                    " [-p <pid|name>]"
                     " [<script> [<arg>...]]\n"
                 );
                 return 1;
@@ -918,7 +811,7 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
                 if (!target)
                     target = true;
                 else {
-                    fprintf(stderr, "only one of -[cpr] may be used at a time\n");
+                    fprintf(stderr, "only one of -[cp] may be used at a time\n");
                     return 1;
                 }
             break;
@@ -951,76 +844,17 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
                 }
             break;
 
-            case 'p': {
-                size_t size(strlen(optarg));
-                char *end;
+            case 'd':
+                device_id = optarg;
+            break;
 
-                pid = strtoul(optarg, &end, 0);
-                if (optarg + size != end) {
-                    // XXX: arg needs to be escaped in some horrendous way of doom
-                    // XXX: this is a memory leak now because I just don't care enough
-                    char *command;
-                    int writ(asprintf(&command, "ps axc|sed -e '/^ *[0-9]/{s/^ *\\([0-9]*\\)\\( *[^ ]*\\)\\{3\\} *-*\\([^ ]*\\)/\\3 \\1/;/^%s /{s/^[^ ]* //;q;};};d'", optarg));
-                    _assert(writ != -1);
-
-                    if (FILE *pids = popen(command, "r")) {
-                        char value[32];
-                        size = 0;
-
-                        for (;;) {
-                            size_t read(fread(value + size, 1, sizeof(value) - size, pids));
-                            if (read == 0)
-                                break;
-                            else {
-                                size += read;
-                                if (size == sizeof(value))
-                                    goto fail;
-                            }
-                        }
-
-                      size:
-                        if (size == 0)
-                            goto fail;
-                        if (value[size - 1] == '\n') {
-                            --size;
-                            goto size;
-                        }
-
-                        value[size] = '\0';
-                        size = strlen(value);
-                        pid = strtoul(value, &end, 0);
-                        if (value + size != end) fail:
-                            pid = _not(pid_t);
-                        _syscall(pclose(pids));
-                    }
-
-                    if (pid == _not(pid_t)) {
-                        fprintf(stderr, "unable to find process `%s' using ps\n", optarg);
-                        return 1;
-                    }
-                }
-            } goto target;
-
-            case 'r': {
-                //size_t size(strlen(optarg));
-
-                char *colon(strrchr(optarg, ':'));
-                if (colon == NULL) {
-                    fprintf(stderr, "missing colon in hostspec\n");
-                    return 1;
-                }
-
-                /*char *end;
-                port = strtoul(colon + 1, &end, 10);
-                if (end != optarg + size) {
-                    fprintf(stderr, "invalid port in hostspec\n");
-                    return 1;
-                }*/
-
+            case 'r':
                 host = optarg;
-                *colon = '\0';
-                port = colon + 1;
-            } goto target;
+            break;
+
+            case 'p':
+                process = optarg;
+            goto target;
 
             case 's':
                 strict_ = true;
@@ -1037,7 +871,7 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
 
     const char *script;
 
-    if (pid != _not(pid_t) && argc > 1) {
+    if (process != NULL && argc > 1) {
         fprintf(stderr, "-p cannot set argv\n");
         return 1;
     }
@@ -1052,19 +886,10 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
         ++argv;
     }
 
-#ifdef CY_EXECUTE
+    CYAttach(device_id, host, process);
+
     // XXX: const_cast?! wtf gcc :(
     CYSetArgs(argv0, script, argc, const_cast<const char **>(argv));
-#endif
-
-    if (remote_ == NULL && pid != _not(pid_t))
-        remote_ = new CYInjectRemote(pid);
-
-    if (remote_ == NULL && host != NULL && port != NULL)
-        remote_ = new CYSocketRemote(host, port);
-
-    if (remote_ == NULL)
-        remote_ = new CYLocalRemote();
 
     if (script == NULL && tty)
         Console(options);
@@ -1145,6 +970,8 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
         }
     }
 
+    CYDetach();
+
     return 0;
 }
 
@@ -1154,6 +981,7 @@ _visible int main(int argc, char * const argv[], char const * const envp[]) {
     } catch (const CYException &error) {
         CYPool pool;
         fprintf(stderr, "%s\n", error.PoolCString(pool));
+        CYDetach();
         return 1;
     }
 }

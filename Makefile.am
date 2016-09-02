@@ -27,6 +27,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 AM_CPPFLAGS = -DYYDEBUG=1 -DCY_SYSTEM="\"$(CY_SYSTEM)\""
 AM_CPPFLAGS += -include config.h -include $(srcdir)/unconfig.h
+AM_CPPFLAGS += -I$(srcdir)/frida
 
 CY_FLAGS = 
 CY_FLAGS += -fvisibility=hidden
@@ -47,6 +48,7 @@ endif
 AM_OBJCXXFLAGS += -fobjc-exceptions
 
 CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
+CY_LDFLAGS += -L$(srcdir)/frida
 
 datdir = $(libdir)
 dat_DATA = 
@@ -55,9 +57,9 @@ lib_LTLIBRARIES =
 
 lib_LTLIBRARIES += libcycript.la
 libcycript_la_LDFLAGS = $(CY_LDFLAGS)
-libcycript_la_LIBADD = $(LTLIBUV) $(LTLIBFFI) $(LTLIBSQLITE3) $(LTLIBGCC) -ldl
+libcycript_la_LIBADD = $(LTLIBSQLITE3) $(LTLIBGCC) -ldl
 
-libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp Error.cpp Highlight.cpp Library.cpp Network.cpp Output.cpp Replace.cpp Syntax.cpp
+libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp Error.cpp Highlight.cpp Library.cpp Output.cpp Replace.cpp Syntax.cpp
 libcycript_la_SOURCES += Parser.cpp Scanner.cpp
 
 filters = 
@@ -75,13 +77,14 @@ cycript_pie_LDFLAGS = -fno-PIE
 endif
 endif
 
-if CY_EXECUTE
-libcycript_la_SOURCES += sig/ffi_type.cpp sig/parse.cpp sig/copy.cpp
-libcycript_la_SOURCES += Execute.cpp JavaScriptCore.cpp
+libcycript_la_SOURCES += sig/parse.cpp sig/copy.cpp
+libcycript_la_SOURCES += Execute.cpp
 libcycript_la_LIBADD += $(LTJAVASCRIPTCORE)
+libcycript_la_LIBADD += -lfrida-core -lresolv
+libcycript_la_LDFLAGS += -Wl,-framework,Foundation,-framework,AppKit
+libcycript_la_DEPENDENCIES = frida/libfrida-core.a
 dat_DATA += libcycript.db
 
-AM_CPPFLAGS += -DCY_EXECUTE
 filters += C
 
 CLEANFILES += libcycript.db
@@ -118,7 +121,6 @@ endif
 #CLEANFILES += Hasher.hpp
 #Hasher.hpp: Hasher.gperf
 #	$(GPERF) $< >$@
-endif
 
 if CY_JAVA
 filters += Java
@@ -151,15 +153,11 @@ endif
 if CY_OBJECTIVEC
 AM_CPPFLAGS += -DCY_OBJECTIVEC
 filters += ObjectiveC
-libcycript_la_SOURCES += ObjectiveC/Output.cpp ObjectiveC/Replace.cpp ObjectiveC/Library.mm
+libcycript_la_SOURCES += ObjectiveC/Output.cpp ObjectiveC/Replace.cpp
 libcycript_la_LIBADD += $(LTOBJECTIVEC)
 endif
 
-libcycript_la_SOURCES += Handler.cpp
-
-if CY_CONSOLE
-cycript_SOURCES += Inject.cpp
-endif
+libcycript_la_LIBTOOLFLAGS = --tag=CXX
 
 CLEANFILES += Parser.ypp
 Parser.ypp: Parser.ypp.in
@@ -188,3 +186,11 @@ Parser.hpp: Parser.ypp
 	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output -B 2 | grep 'shift, and go to state [0-9]*$$'
 	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output -B 2 | grep -v '$$default' | grep 'reduce using rule [0-9]* ([^)]*)$$'
 	perl -pi -e 's/yytranslate_ \(yylex \(/(yylex_ (/g' Parser.cpp
+
+frida_version = 7.3.4
+
+frida/libfrida-core.a:
+	mkdir -p $(@D)/_
+	curl -Ls https://github.com/frida/frida/releases/download/$(frida_version)/frida-core-devkit-$(frida_version)-mac-x86_64.tar.xz | tar -C $(@D)/_ -xzf -
+	mv $(@D)/_/* $(@D)
+	rmdir $(@D)/_

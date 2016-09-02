@@ -6,15 +6,6 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
-/* Define to 1 if you have the <ffi/ffi.h> header file. */
-#undef HAVE_FFI_FFI_H
-
-/* Define to 1 if you have the <ffi.h> header file. */
-#undef HAVE_FFI_H
-
-/* Define to 1 if you have the `ffi_prep_cif_var' function. */
-#undef HAVE_FFI_PREP_CIF_VAR
-
 /* Define to 1 if you have the `Foundation' framework (-framework Foundation).
    */
 #undef HAVE_FRAMEWORK_FOUNDATION
@@ -75,9 +66,6 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
-
-/* Define to 1 if you have the <uv.h> header file. */
-#undef HAVE_UV_H
 
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR

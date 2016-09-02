@@ -1,0 +1,60 @@
+{
+  "targets": [
+    {
+      "target_name": "cycript_binding",
+      "sources": [
+        "NodeBinding.cpp",
+      ],
+      "target_conditions": [
+        ["OS=='win'", {
+          "include_dirs": [
+            "<!(node -e \"require(\'nan\')\")",
+          ],
+        }, {
+          "cflags!": [
+            "-fno-exceptions",
+          ],
+          "cflags_cc!": [
+            "-fno-exceptions",
+          ],
+          "include_dirs": [
+            "<!(node -e \"require(\'nan\')\")",
+          ],
+          "library_dirs": [
+            "../.libs",
+          ],
+          "libraries": [
+            "-lcycript",
+          ],
+        }],
+        ["OS=='mac'", {
+          "xcode_settings": {
+            'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
+            "OTHER_CFLAGS": [
+              "-std=c++11",
+              "-stdlib=libc++",
+              "-mmacosx-version-min=10.7",
+            ],
+            "OTHER_LDFLAGS": [
+              "-Wl,-macosx_version_min,10.7",
+              "-Wl,-dead_strip",
+              "-Wl,-exported_symbols_list,binding.symbols",
+            ],
+          },
+        }],
+        ["OS=='linux'", {
+          "cflags": [
+            "-std=c++11",
+            "-ffunction-sections",
+            "-fdata-sections",
+          ],
+          "ldflags": [
+            "-Wl,--gc-sections",
+            "-Wl,--version-script",
+            "-Wl,../binding.version",
+          ],
+        }],
+      ],
+    },
+  ],
+}

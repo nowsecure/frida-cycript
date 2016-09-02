@@ -1,74 +1,50 @@
 /* Cydia Substrate - Powerful Code Insertion Platform
  * Copyright (C) 2008-2015  Jay Freeman (saurik)
+ * Copyright (C)      2016  NowSecure <oleavr@nowsecure.com>
 */
 
 (function(exports) {
 
-var libcycript = dlopen("/usr/lib/libcycript.dylib", RTLD_NOLOAD);
-if (libcycript == null) {
-    exports.error = dlerror();
-    return;
-}
-
-var CYHandleServer = dlsym(libcycript, "CYHandleServer");
-if (CYHandleServer == null) {
-    exports.error = dlerror();
-    return;
-}
-
-var info = new Dl_info;
-if (dladdr(CYHandleServer, info) == 0) {
-    exports.error = dlerror();
-    return;
-}
-
-var path = info->dli_fname;
-var slash = path.lastIndexOf('/');
-if (slash == -1)
-    return;
-
-var libsubstrate = dlopen(path.substr(0, slash) + "/libsubstrate.dylib", RTLD_GLOBAL | RTLD_LAZY);
-if (libsubstrate == null) {
-    exports.error = dlerror();
-    return;
-}
-
-extern "C" void *MSGetImageByName(const char *);
-extern "C" void *MSFindSymbol(void *, const char *);
-extern "C" void MSHookFunction(void *, void *, void **);
-extern "C" void MSHookMessageEx(Class, SEL, void *, void **);
-
+var images = {};
 var slice = Array.prototype.slice;
 
-exports.getImageByName = MSGetImageByName;
-exports.findSymbol = MSFindSymbol;
+exports.getImageByName = function(name) {
+    var image = (typedef void *)(Module.findBaseAddress(name));
+    if (image === null)
+        return null;
+    images[image] = name;
+    return image;
+};
+
+exports.findSymbol = function(image, name) {
+    var imageName = images[image];
+    if (imageName === undefined)
+        return null;
+    if (name[0] === '_')
+        name = name.substr(1);
+    return (typedef void *)(Module.findExportByName(imageName, name));
+};
 
 exports.hookFunction = function(func, hook, old) {
     var type = typeid(func);
 
-    var pointer;
-    if (old == null || typeof old === "undefined")
-        pointer = null;
-    else {
-        pointer = new (typedef void **);
-        *old = function() { return type(*pointer).apply(null, arguments); };
+    if (!(old == null || typeof old === "undefined")) {
+        *old = function() { return func.apply(null, arguments); };
     }
 
-    MSHookFunction(func.valueOf(), type(hook), pointer);
+    Interceptor.replace(func.valueOf(), type(hook));
 };
 
 exports.hookMessage = function(isa, sel, imp, old) {
+    var method = sel.method(isa);
     var type = sel.type(isa);
 
-    var pointer;
-    if (old == null || typeof old === "undefined")
-        pointer = null;
-    else {
-        pointer = new (typedef void **);
-        *old = function() { return type(*pointer).apply(null, [this, sel].concat(slice.call(arguments))); };
+    if (!(old == null || typeof old === "undefined")) {
+        var oldImpl = type(method.implementation);
+        *old = function() { return oldImpl.apply(null, [this, sel].concat(slice.call(arguments))); };
     }
 
-    MSHookMessageEx(isa, sel, type(function(self, sel) { return imp.apply(self, slice.call(arguments, 2)); }), pointer);
+    method.implementation = type(function(self, sel) { return imp.apply(self, slice.call(arguments, 2)); });
 };
 
 })(exports);
