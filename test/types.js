@@ -108,6 +108,23 @@ describe('Types', function () {
     cycript.execute('arr').should.equal('@[1,2,3]');
   });
 
+  it('should support NSString objects seamlessly', function () {
+    cycript.execute('s = @"Hey"').should.equal('@"Hey"');
+    cycript.execute('s instanceof String').should.equal('true');
+    cycript.execute('"length" in s').should.equal('true');
+    cycript.execute('s.length').should.equal('3');
+    cycript.execute('"-1" in s').should.equal('false');
+    cycript.execute('"0" in s').should.equal('true');
+    cycript.execute('"1" in s').should.equal('true');
+    cycript.execute('"2" in s').should.equal('true');
+    cycript.execute('"3" in s').should.equal('false');
+    cycript.execute('s[-1] === undefined').should.equal('true');
+    cycript.execute('s[0]').should.equal('@"H"');
+    cycript.execute('s[1]').should.equal('@"e"');
+    cycript.execute('s[2]').should.equal('@"y"');
+    cycript.execute('s[3] === undefined').should.equal('true');
+  });
+
   it('should support NSArray objects seamlessly', function () {
     cycript.execute('arr = @["foo","bar"]').should.equal('@["foo","bar"]');
     cycript.execute('arr instanceof Array').should.equal('true');
