@@ -20,6 +20,7 @@
 .DELETE_ON_ERROR:
 
 AUTOMAKE_OPTIONS = subdir-objects
+BUILT_SOURCES = frida/libfrida-core.a
 CLEANFILES = 
 SUBDIRS = 
 

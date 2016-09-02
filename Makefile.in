@@ -564,6 +564,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = subdir-objects
+BUILT_SOURCES = frida/libfrida-core.a
 CLEANFILES = libcycript.db $(am__append_5) $(am__append_6) \
 	$(am__append_10) Parser.ypp Scanner.lpp Scanner.cpp \
 	Scanner.output lex.backup Parser.cpp Parser.hpp stack.hh \
@@ -605,7 +606,7 @@ libcycript_la_DEPENDENCIES = frida/libfrida-core.a
 @CY_ANDROID_TRUE@@CY_PRELINK_TRUE@CY_ANDFLAGS = -U__APPLE__ -D__ANDROID__
 libcycript_la_LIBTOOLFLAGS = --tag=CXX
 frida_version = 7.3.4
-all: config.h
+all: $(BUILT_SOURCES) config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
 .SUFFIXES:
@@ -1355,7 +1356,8 @@ distcleancheck: distclean
 	       $(distcleancheck_listfiles) ; \
 	       exit 1; } >&2
 check-am: all-am
-check: check-recursive
+check: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) check-recursive
 all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(DATA) config.h
 install-binPROGRAMS: install-libLTLIBRARIES
 
@@ -1364,7 +1366,8 @@ installdirs-am:
 	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(datdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
-install: install-recursive
+install: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) install-recursive
 install-exec: install-exec-recursive
 install-data: install-data-recursive
 uninstall: uninstall-recursive
@@ -1405,6 +1408,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-recursive
 
 clean-am: clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
@@ -1480,7 +1484,8 @@ ps-am:
 uninstall-am: uninstall-binPROGRAMS uninstall-datDATA \
 	uninstall-libLTLIBRARIES
 
-.MAKE: $(am__recursive_targets) all install-am install-strip
+.MAKE: $(am__recursive_targets) all check install install-am \
+	install-strip
 
 .PHONY: $(am__recursive_targets) CTAGS GTAGS TAGS all all-am \
 	am--refresh check check-am clean clean-binPROGRAMS \
