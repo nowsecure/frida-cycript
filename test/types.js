@@ -103,6 +103,43 @@ describe('Types', function () {
     cycript.execute('@{"name":"Joe","age":42}').should.equal('@{"name":"Joe","age":42}');
   });
 
+  it('should keep Objective-C objects alive until GCed', function () {
+    cycript.execute('arr = @[1,2,3]').should.equal('@[1,2,3]');
+    cycript.execute('arr').should.equal('@[1,2,3]');
+  });
+
+  it('should support NSArray objects seamlessly', function () {
+    cycript.execute('arr = @["foo","bar"]').should.equal('@["foo","bar"]');
+    cycript.execute('arr instanceof Array').should.equal('true');
+    cycript.execute('"-1" in arr').should.equal('false');
+    cycript.execute('"0" in arr').should.equal('true');
+    cycript.execute('"1" in arr').should.equal('true');
+    cycript.execute('"2" in arr').should.equal('false');
+    cycript.execute('arr[-1] === undefined').should.equal('true');
+    cycript.execute('arr[0]').should.equal('@"foo"');
+    cycript.execute('arr[1]').should.equal('@"bar"');
+    cycript.execute('arr[2] === undefined').should.equal('true');
+  });
+
+  it('should support NSDictionary objects seamlessly', function () {
+    cycript.execute('dict = @{"name":"Joe","age":42}').should.equal('@{"name":"Joe","age":42}');
+    cycript.execute('dict instanceof Object').should.equal('true');
+    cycript.execute('dict instanceof Array').should.equal('false');
+    cycript.execute('"badger" in dict').should.equal('false');
+    cycript.execute('"name" in dict').should.equal('true');
+    cycript.execute('"age" in dict').should.equal('true');
+    cycript.execute('dict["badger"] === undefined').should.equal('true');
+    cycript.execute('dict["name"]').should.equal('@"Joe"');
+    cycript.execute('dict["age"]').should.equal('@42');
+    cycript.execute('dict.hasOwnProperty("cy$complete")').should.equal('true');
+    cycript.execute('dict.cy$complete("name")').should.equal('["name"]');
+  });
+
+  it('should support calling a selector', function () {
+    cycript.execute('capitalize = @selector(capitalizedString)');
+    cycript.execute('capitalize.call(@"hello")').should.equal('@"Hello"');
+  });
+
   it('should support Objective-C completion', function () {
     cycript.execute('global.cy$complete("NSArray")').should.containEql('NSArray');
     cycript.execute('global.cy$complete("NSCopy")').should.containEql('NSCopying');
