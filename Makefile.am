@@ -188,7 +188,7 @@ Parser.hpp: Parser.ypp
 	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output -B 2 | grep -v '$$default' | grep 'reduce using rule [0-9]* ([^)]*)$$'
 	perl -pi -e 's/yytranslate_ \(yylex \(/(yylex_ (/g' Parser.cpp
 
-frida_version = 7.3.4
+frida_version = 7.3.5
 
 frida/libfrida-core.a:
 	mkdir -p $(@D)/_

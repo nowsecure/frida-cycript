@@ -605,7 +605,7 @@ libcycript_la_DEPENDENCIES = frida/libfrida-core.a
 @CY_ANDROID_FALSE@@CY_PRELINK_TRUE@CY_ANDFLAGS = 
 @CY_ANDROID_TRUE@@CY_PRELINK_TRUE@CY_ANDFLAGS = -U__APPLE__ -D__ANDROID__
 libcycript_la_LIBTOOLFLAGS = --tag=CXX
-frida_version = 7.3.4
+frida_version = 7.3.5
 all: $(BUILT_SOURCES) config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
