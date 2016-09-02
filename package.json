@@ -29,7 +29,7 @@
   "devDependencies": {
     "bindings": "^1.2.1",
     "frida-compile": "^1.1.1",
-    "mjolner": "^1.0.3",
+    "mjolner": "^1.0.4",
     "mocha": "^3.0.2",
     "nan": "^2.4.0",
     "prebuild": "^4.2.2",
