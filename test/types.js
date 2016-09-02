@@ -111,6 +111,8 @@ describe('Types', function () {
   it('should support NSArray objects seamlessly', function () {
     cycript.execute('arr = @["foo","bar"]').should.equal('@["foo","bar"]');
     cycript.execute('arr instanceof Array').should.equal('true');
+    cycript.execute('"length" in arr').should.equal('true');
+    cycript.execute('arr.length').should.equal('2');
     cycript.execute('"-1" in arr').should.equal('false');
     cycript.execute('"0" in arr').should.equal('true');
     cycript.execute('"1" in arr').should.equal('true');
