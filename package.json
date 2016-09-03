@@ -18,14 +18,25 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/oleavr/cycript.git"
+    "url": "git+https://github.com/nowsecure/cycript.git"
   },
-  "author": "",
+  "author": {
+    "name": "Ole André Vadla Ravnås",
+    "email": "oleavr@nowsecure.com",
+    "url": "https://twitter.com/oleavr"
+  },
+  "maintainers": [
+    {
+      "name": "Ole André Vadla Ravnås",
+      "email": "oleavr@nowsecure.com",
+      "url": "https://twitter.com/oleavr"
+    }
+  ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/oleavr/cycript/issues"
+    "url": "https://github.com/nowsecure/cycript/issues"
   },
-  "homepage": "https://github.com/oleavr/cycript#readme",
+  "homepage": "https://github.com/nowsecure/cycript#readme",
   "devDependencies": {
     "bindings": "^1.2.1",
     "frida-compile": "^1.1.1",
