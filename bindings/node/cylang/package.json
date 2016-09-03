@@ -1,0 +1,43 @@
+{
+  "name": "cylang",
+  "version": "1.0.0",
+  "description": "Cycript compiler",
+  "main": "index.js",
+  "scripts": {
+    "install": "prebuild --install",
+    "prebuild": "prebuild --verbose --strip"
+  },
+  "binary": {
+    "module_name": "cylang_binding",
+    "remote_path": "node/v{version}",
+    "host": "https://build.frida.re"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nowsecure/cycript.git"
+  },
+  "author": {
+    "name": "Ole André Vadla Ravnås",
+    "email": "oleavr@nowsecure.com",
+    "url": "https://twitter.com/oleavr"
+  },
+  "maintainers": [
+    {
+      "name": "Ole André Vadla Ravnås",
+      "email": "oleavr@nowsecure.com",
+      "url": "https://twitter.com/oleavr"
+    }
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nowsecure/cycript/issues"
+  },
+  "homepage": "https://github.com/nowsecure/cycript#readme",
+  "devDependencies": {
+    "bindings": "^1.2.1",
+    "mocha": "^3.0.2",
+    "nan": "^2.4.0",
+    "prebuild": "^4.2.2",
+    "should": "^11.1.0"
+  }
+}

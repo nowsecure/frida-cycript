@@ -45,6 +45,7 @@ readline.*
 libcycript-runtime.js
 libcycript.db
 /build
+/bindings/node/cylang/build
 /Class
 /frida
 /prebuilds
@@ -55,3 +56,4 @@ Cycript.lib
 DerivedCoreProperties.txt
 PropList.txt
 node_modules
+npm-debug.log
