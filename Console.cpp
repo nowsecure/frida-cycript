@@ -525,7 +525,8 @@ static int CYConsoleKeyBack(int count, int key) {
         for (int i(start); i != rl_point; ++i)
             if (rl_line_buffer[i] != ' ')
                 goto rubout;
-        _lblcall(&rl_rubout, (rl_point - start) % 4 ?: 4, key);
+        auto offset((rl_point - start) % 4);
+        _lblcall(&rl_rubout, offset ? offset : 4, key);
     }
 
     return 0;

@@ -25,14 +25,32 @@
 #define _not(type) \
     ((type) ~ (type) 0)
 
+#define _label__(x) _label ## x
+#define _label_(y) _label__(y)
+#define _label _label_(__LINE__)
+
+#ifdef _MSC_VER
+
+#define _finline __forceinline
+
+#define _noreturn
+
+#define _visible
+
+#define _sentinel
+
+#ifdef _WIN64
+typedef __int64 ssize_t;
+#else
+typedef long ssize_t;
+#endif
+
+#else
+
 #define _finline \
     inline __attribute__((__always_inline__))
 #define _disused \
     __attribute__((__unused__))
-
-#define _label__(x) _label ## x
-#define _label_(y) _label__(y)
-#define _label _label_(__LINE__)
 
 #define _packed \
     __attribute__((__packed__))
@@ -41,7 +59,14 @@
 
 #define _visible \
     __attribute__((__visibility__("default")))
+
+#define _sentinel __attribute__((__sentinel__))
+
+#endif
+
 #define _extern \
     extern "C" _visible
+
+#define CY_VA_ARGS(...) , ##__VA_ARGS__
 
 #endif/*CYCRIPT_STANDARD_HPP*/

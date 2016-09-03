@@ -214,7 +214,7 @@ CYTarget *CYClassExpression::Replace(CYContext &context) {
         ->* builder.statements_
         ->* CYDefineProperty($V(constructor), $S("prototype"), false, false, $ CYPropertyValue($S("value"), $V(prototype)))
         ->* $ CYReturn($V(constructor))
-    ), tail_->extends_ ?: $V($I("Object")));
+    ), tail_->extends_ ? tail_->extends_ : $V($I("Object")));
 }
 
 CYStatement *CYClassStatement::Replace(CYContext &context) {
@@ -1377,7 +1377,7 @@ CYArgument *CYTypedParameter::Argument(CYContext &context) { $T(NULL)
 }
 
 CYFunctionParameter *CYTypedParameter::Parameters(CYContext &context) { $T(NULL)
-    return $ CYFunctionParameter($ CYBinding(name_ ?: context.Unique()), next_->Parameters(context));
+    return $ CYFunctionParameter($ CYBinding(name_ ? name_ : context.Unique()), next_->Parameters(context));
 }
 
 CYExpression *CYTypedParameter::TypeSignature(CYContext &context, CYExpression *prefix) { $T(prefix)
