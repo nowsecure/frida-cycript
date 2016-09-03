@@ -34,6 +34,59 @@ upstream.
 
 Please see [our test-suite] [6] to get an overview of what we currently support.
 
+## Building
+
+### Mac
+
+These instructions are a bit clunky for the time being.
+
+First, enter the Frida build environment:
+
+    git clone https://github.com/frida/frida.git
+    cd frida
+    git submodule init
+    git submodule update
+    make build/frida-env-mac-x86_64.rc
+    . build/frida-env-mac-x86_64.rc
+
+Install *bison* and *readline*:
+
+    brew install bison readline
+
+Mix them into your build environment:
+
+    export CPPFLAGS="$CPPFLAGS -I/usr/local/opt/readline/include"
+    export LDFLAGS="$LDFLAGS -L/usr/local/opt/readline/lib"
+    export BISON=/usr/local/opt/bison/bin/bison
+    export YACC=/usr/local/opt/bison/bin/yacc
+
+Clone this repo:
+
+    git clone https://github.com/nowsecure/cycript.git
+    cd cycript
+    git submodule init
+    git submodule update
+
+Run configure:
+
+    ./configure --with-libclang="-rpath /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/libclang.dylib" --with-python=/usr/bin/python-config
+
+Build the UI and compiler:
+
+    make -j8
+
+Build the JavaScript runtime:
+
+    npm install
+
+Run Cycript:
+
+    ./cycript
+
+Run the test-suite:
+
+    make && make -C build && DYLD_LIBRARY_PATH=$(pwd)/.libs node node_modules/mocha/bin/_mocha
+
 ## FAQ
 
 ### How is your fork better?
