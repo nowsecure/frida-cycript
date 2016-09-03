@@ -46,6 +46,8 @@ typedef cy::parser::token tk;
 #include "IdentifierStart.h"
 #include "IdentifierContinue.h"
 
+#include <iterator>
+
 #define YY_EXTRA_TYPE CYDriver *
 
 #define F(value, highlight) do { \
