@@ -41,7 +41,7 @@ class CYLocal {
         _assert(::TlsSetValue(key_, value));
     }
 
-    static void *Key_() {
+    static CYLocalKey Key_() {
         return ::TlsAlloc();
     }
 
