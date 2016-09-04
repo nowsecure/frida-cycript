@@ -69,7 +69,7 @@ Clone this repo:
 
 Run configure:
 
-    ./configure --with-libclang="-rpath /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/libclang.dylib" --with-python=/usr/bin/python-config
+    ./configure --enable-static --with-libclang="-rpath /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/libclang.dylib" --with-python=/usr/bin/python-config
 
 Build the UI and compiler:
 
