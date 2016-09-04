@@ -33,11 +33,13 @@
     "url": "https://github.com/nowsecure/cycript/issues"
   },
   "homepage": "https://github.com/nowsecure/cycript#readme",
-  "devDependencies": {
+  "dependencies": {
     "bindings": "^1.2.1",
-    "mocha": "^3.0.2",
     "nan": "^2.4.0",
-    "prebuild": "^4.2.2",
+    "prebuild": "^4.2.2"
+  },
+  "devDependencies": {
+    "mocha": "^3.0.2",
     "should": "^11.1.0"
   }
 }
