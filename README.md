@@ -1,4 +1,11 @@
-# Cycript
+# frida-cycript
+
+This is a fork of [Cycript] [1] in which we replaced its runtime with a brand
+new runtime called [Mjølner] [3] powered by [Frida] [4]. This enables
+frida-cycript to run on all the platforms and architectures maintained by
+[frida-core] [9].
+
+# Motivation
 
 <img src="https://github.com/nowsecure/cycript/raw/master/demo.gif" width="583" />
 
@@ -13,10 +20,7 @@ and essentially consists of four parts:
    injecting itself into remote processes;
 4. A couple of "user-space" modules written in cylang.
 
-This is our fork where we took Cycript and replaced its runtime with a [brand
-new runtime] [3] powered by [Frida] [4], allowing Cycript to run on all the
-platforms and architectures supported by Frida. We didn't touch any other
-aspects of Cycript or did so with minimal changes.
+We didn't touch any other aspects of Cycript or did so with minimal changes.
 
 We went out of our way to avoid touching the compiler, and also left the user
 interface mostly untouched, only adding extra CLI switches for things like
@@ -24,11 +28,39 @@ device selection. We did, however, mostly rewrite the Cydia Substrate module
 so existing scripts relying on this will get the portability and [performance
 boost] [5] offered by Frida's instrumentation core.
 
-Our hope is that [@saurik] [2] might eventually merge our changes upstream, so
-we can all work together on building a portable and open platform for dynamic
-instrumentation. If this doesn't actually happen, we will be maintaining our fork
-and intend to stay in sync with user interface and language improvements made
-upstream.
+We will be maintaining this fork and intend to stay in sync with user interface
+and language improvements made upstream.
+
+## FAQ
+
+### What are some advantages of this fork?
+
+WE believe the main advantage is portability, but also think you should consider:
+
+- Ability to attach to sandboxed apps on Mac, without touching /usr or modifying
+  the system in any way;
+- Instead of crashing the process if you make a mistake and access a bad
+  pointer, you will get a JavaScript exception;
+- Frida's function hooking is able to hook many functions not supported by
+  Cydia Substrate.
+
+### What are some disadvantages?
+
+Our runtime doesn't yet support all the features that upstream's runtime does,
+but we are working hard to close this gap. Please file issues if something you
+rely on isn't working as expected.
+
+### Is Windows support planned?
+
+Yes. You should already be able to do this by running frida-server on Windows
+and connecting to it with Cycript on your UNIX system. (We didn't try this yet
+so please tell us if and how it works for you.)
+
+### How will this benefit existing Frida-users building their own tools?
+
+We plan on improving [frida-compile] [7] to support cylang by integrating
+the Cycript compiler with [Babel] [8]. This will allow you to mix in [our
+runtime] [3] into your existing scripts.
 
 ## Status
 
@@ -87,38 +119,6 @@ Run the test-suite:
 
     make && make -C build && DYLD_LIBRARY_PATH=$(pwd)/.libs node node_modules/mocha/bin/_mocha
 
-## FAQ
-
-### How is your fork better?
-
-The main advantage is portability, but we also offer a few other improvements:
-
-- Ability to attach to sandboxed apps on Mac, without touching /usr or modifying
-  the system in any way;
-- Instead of crashing the process if you make a mistake and access a bad
-  pointer, you will get a JavaScript exception;
-- Frida's function hooking is able to hook many functions not supported by
-  Cydia Substrate.
-
-### How is your fork worse?
-
-Our runtime doesn't yet support all the features that upstream's runtime does,
-but we are working hard to close this gap. Please file issues if something you
-rely on isn't working as expected.
-
-### Is Windows support planned?
-
-Yes. You should already be able to do this by running frida-server on Windows
-and connecting to it with Cycript on your UNIX system. (We didn't try this yet
-so please tell us if and how it works for you.)
-
-### Will this benefit existing Frida-users building their own tools?
-
-Yes, we plan on improving [frida-compile] [7] to support cylang by integrating
-the Cycript compiler with [Babel] [8]. This will allow you to mix in [our
-runtime] [3] into your existing scripts.
-
-
   [1]: http://www.cycript.org/
   [2]: https://twitter.com/saurik
   [3]: https://github.com/nowsecure/mjolner
@@ -127,3 +127,4 @@ runtime] [3] into your existing scripts.
   [6]: https://github.com/nowsecure/cycript/blob/master/test/types.js
   [7]: https://github.com/frida/frida-compile
   [8]: https://babeljs.io/
+  [9]: https://github.com/frida/frida-core/tree/master/src
