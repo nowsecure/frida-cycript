@@ -9,7 +9,7 @@
   },
   "binary": {
     "module_name": "cylang_binding",
-    "remote_path": "node/v{version}",
+    "remote_path": "cylang/v{version}",
     "host": "https://build.frida.re"
   },
   "repository": {
