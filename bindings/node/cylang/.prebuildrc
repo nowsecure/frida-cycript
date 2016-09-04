@@ -1,0 +1,8 @@
+# abi 46
+prebuild[] = 4.0.0
+
+# abi 47
+prebuild[] = 5.0.0
+
+# abi 48
+prebuild[] = 6.0.0

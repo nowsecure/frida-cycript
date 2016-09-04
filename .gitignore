@@ -48,6 +48,7 @@ libcycript-runtime.js
 libcycript.db
 /build
 /bindings/node/cylang/build
+/bindings/node/cylang/prebuilds
 /Class
 /frida
 /prebuilds
