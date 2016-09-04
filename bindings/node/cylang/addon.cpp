@@ -61,35 +61,31 @@ static void Compile(const Nan::FunctionCallbackInfo<Value> &info) {
     if (!GetBoolArg(pool, info[2], pretty))
       return;
 
-    try {
-        std::stringbuf stream(code);
-        CYDriver driver(pool, stream);
-        driver.strict_ = strict;
+    std::stringbuf stream(code);
+    CYDriver driver(pool, stream);
+    driver.strict_ = strict;
 
-        if (driver.Parse() || !driver.errors_.empty()) {
-            for (CYDriver::Errors::const_iterator error(driver.errors_.begin()); error != driver.errors_.end(); ++error) {
-                auto message(error->message_);
-                Nan::ThrowError(message.c_str());
-                return;
-            }
-
+    if (driver.Parse() || !driver.errors_.empty()) {
+        for (CYDriver::Errors::const_iterator error(driver.errors_.begin()); error != driver.errors_.end(); ++error) {
+            auto message(error->message_);
+            Nan::ThrowError(message.c_str());
             return;
         }
 
-        if (driver.script_ == NULL)
-            return;
-
-        std::stringbuf str;
-        CYOptions options;
-        CYOutput out(str, options);
-        out.pretty_ = pretty;
-        driver.Replace(options);
-        out << *driver.script_;
-
-        info.GetReturnValue().Set(Nan::New(str.str()).ToLocalChecked());
-    } catch (const CYException &error) {
-        Nan::ThrowError(error.PoolCString(pool));
+        return;
     }
+
+    if (driver.script_ == NULL)
+        return;
+
+    std::stringbuf str;
+    CYOptions options;
+    CYOutput out(str, options);
+    out.pretty_ = pretty;
+    driver.Replace(options);
+    out << *driver.script_;
+
+    info.GetReturnValue().Set(Nan::New(str.str()).ToLocalChecked());
 }
 
 static bool GetStringArg(CYPool &pool, Handle<Value> value, const char *&result) {
