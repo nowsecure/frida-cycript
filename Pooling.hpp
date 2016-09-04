@@ -335,7 +335,4 @@ class CYLocalPool :
 #define $pool \
     (*CYLocal<CYPool>::Get())
 
-template <>
-CYLocalKey CYLocal<CYPool>::key_;
-
 #endif/*CYCRIPT_POOLING_HPP*/
