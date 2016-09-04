@@ -109,7 +109,7 @@ struct CYOutput {
     _finline void operator ()(const char *data, std::streamsize size) {
         _assert(out_.sputn(data, size) == size);
         recent_ = indent_;
-        position_.Columns(size);
+        position_.Columns(static_cast<unsigned>(size));
     }
 
     _finline void operator ()(const char *data) {
