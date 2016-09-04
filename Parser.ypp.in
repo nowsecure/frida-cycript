@@ -2780,7 +2780,7 @@ bool CYDriver::Parse(CYMark mark) {
     mark_ = mark;
     CYLocal<CYPool> local(&pool_);
     cy::parser parser(*this);
-#ifdef YYDEBUG
+#if YYDEBUG
     parser.set_debug_level(debug_);
 #endif
     return parser.parse() != 0;
