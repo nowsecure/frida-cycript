@@ -68,7 +68,7 @@ while (false)
     _assert_("assert", (test), #test, "")
 
 #define _require(expr) ({ \
-    __typeof__(expr) _value = (expr); \
+    auto _value = (expr); \
     _assert_("require", _value != NULL, #expr, ""); \
 _value; })
 
@@ -99,7 +99,7 @@ static _finline bool CYContains(int value, size_t many, const int *okay) {
     _syscall_(expr, 0)
 
 #define _sqlcall(expr) ({ \
-    __typeof__(expr) _value = (expr); \
+    auto _value = (expr); \
     _assert_("sqlcall", _value == 0 || _value >= 100 && _value < 200, #expr, " %u:%s", _value, sqlite3_errmsg(database_)); \
 _value; })
 

@@ -40,7 +40,7 @@ static const size_t CYAlignment(sizeof(void *));
 
 template <typename Type_>
 static void CYAlign(Type_ &data, size_t size) {
-    data = reinterpret_cast<Type_>((reinterpret_cast<uintptr_t>(data) + (size - 1)) & ~static_cast<uintptr_t>(size - 1));
+    data = (Type_)((((uintptr_t)data) + (size - 1)) & ~static_cast<uintptr_t>(size - 1));
 }
 
 class CYPool;
@@ -147,7 +147,7 @@ class CYPool {
     }
 
     // XXX: this could be made much more efficient
-    __attribute__((__sentinel__))
+    _sentinel
     char *strcat(const char *data, ...) {
         size_t size(strlen(data)); {
             va_list args;
@@ -184,7 +184,9 @@ class CYPool {
         return sprintf(16, "%ld", value);
     }
 
+#ifndef _MSC_VER
     __attribute__((__format__(__printf__, 3, 4)))
+#endif
     char *sprintf(size_t size, const char *format, ...) {
         va_list args;
         va_start(args, format);
@@ -196,7 +198,7 @@ class CYPool {
     char *vsprintf(size_t size, const char *format, va_list args) {
         va_list copy;
         va_copy(copy, args);
-        char buffer[size];
+        char *buffer = static_cast<char*>(alloca(size));
         int writ(vsnprintf(buffer, size, format, copy));
         va_end(copy);
         _assert(writ >= 0);
@@ -334,6 +336,6 @@ class CYLocalPool :
     (*CYLocal<CYPool>::Get())
 
 template <>
-::pthread_key_t CYLocal<CYPool>::key_;
+CYLocalKey CYLocal<CYPool>::key_;
 
 #endif/*CYCRIPT_POOLING_HPP*/

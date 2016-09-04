@@ -20,6 +20,7 @@
 /* }}} */
 
 %top{
+#ifndef _MSC_VER
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-register"
@@ -30,6 +31,7 @@
 #pragma GCC diagnostic ignored "-Wsign-compare"
 #pragma GCC diagnostic ignored "-Wunused-function"
 #pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
 #endif
 }
 
@@ -43,6 +45,8 @@ typedef cy::parser::token tk;
 
 #include "IdentifierStart.h"
 #include "IdentifierContinue.h"
+
+#include <iterator>
 
 #define YY_EXTRA_TYPE CYDriver *
 
@@ -185,7 +189,8 @@ static unsigned U(char *&local, const char *text, yy_size_t &i) {
 } while (false)
 
 #define YY_INPUT(data, value, size) do { \
-    value = yyextra->data_.sgetn(data, size) ?: YY_NULL; \
+    auto v(yyextra->data_.sgetn(data, size)); \
+    value = v ? v : YY_NULL; \
 } while (false)
 
 %}
@@ -723,9 +728,11 @@ bool CYLexerHighlight(hi::Value &highlight, CYLocation &location, void *scanner)
     return true;
 }
 
+#ifndef _MSC_VER
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #else
 // must not pop -Wunused-function
 //#pragma GCC diagnostic pop
+#endif
 #endif

@@ -41,14 +41,17 @@ double CYCastDouble(CYUTF8String value) {
     return CYCastDouble(value.data, value.size);
 }
 
-template <>
-::pthread_key_t CYLocal<CYPool>::key_ = Key_();
-
 CYRange DigitRange_    (0x3ff000000000000LLU, 0x000000000000000LLU); // 0-9
 CYRange WordStartRange_(0x000001000000000LLU, 0x7fffffe87fffffeLLU); // A-Za-z_$
 CYRange WordEndRange_  (0x3ff001000000000LLU, 0x7fffffe87fffffeLLU); // A-Za-z_$0-9
 
+#ifdef _WIN32
 
+void *CYPoolFile(CYPool &pool, const char *path, size_t *psize) {
+    return nullptr;
+}
+
+#else
 
 // XXX: this really should not be here ... :/
 
@@ -99,6 +102,8 @@ void *CYPoolFile(CYPool &pool, const char *path, size_t *psize) {
     _syscall(close(fd));
     return base;
 }
+
+#endif
 
 CYUTF8String CYPoolFileUTF8String(CYPool &pool, const char *path) {
     CYUTF8String data;

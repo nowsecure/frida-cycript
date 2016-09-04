@@ -421,7 +421,7 @@ const char *Unparse(CYPool &pool, const struct Type *type) {
         (struct iovec) {const_cast<char *>(base), size}
 
     size_t size(strlen(base));
-    char buffer[7 + size];
+    char *buffer = static_cast<char*>(alloca(7 + size));
     size_t offset(0);
 
     if ((type->flags & JOC_TYPE_INOUT) != 0)

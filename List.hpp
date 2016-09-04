@@ -122,6 +122,6 @@ struct CYList {
 };
 
 #define CYForEach(value, list) \
-    for (__typeof__(*list) *value(list); value != NULL; value = value->next_)
+    for (auto value(list); value != NULL; value = value->next_)
 
 #endif/*CYCRIPT_LIST_HPP*/

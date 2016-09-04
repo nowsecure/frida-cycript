@@ -22,12 +22,54 @@
 #ifndef CYCRIPT_LOCAL_HPP
 #define CYCRIPT_LOCAL_HPP
 
-#include <pthread.h>
+#ifdef _WIN32
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+typedef DWORD CYLocalKey;
 
 template <typename Type_>
 class CYLocal {
   private:
-    static ::pthread_key_t key_;
+    static CYLocalKey key_;
+
+    Type_ *last_;
+
+  protected:
+    static _finline void Set(Type_ *value) {
+        _assert(::TlsSetValue(key_, value));
+    }
+
+    static void *Key_() {
+        return ::TlsAlloc();
+    }
+
+  public:
+    CYLocal(Type_ *next) {
+        last_ = Get();
+        Set(next);
+    }
+
+    _finline ~CYLocal() {
+        Set(last_);
+    }
+
+    static _finline Type_ *Get() {
+        return static_cast<Type_ *>(::TlsGetValue(key_));
+    }
+};
+
+#else
+
+#include <pthread.h>
+
+typedef ::pthread_key_t CYLocalKey;
+
+template <typename Type_>
+class CYLocal {
+  private:
+    static CYLocalKey key_;
 
     Type_ *last_;
 
@@ -36,8 +78,8 @@ class CYLocal {
         _assert(::pthread_setspecific(key_, value) == 0);
     }
 
-    static ::pthread_key_t Key_() {
-        ::pthread_key_t key;
+    static CYLocalKey Key_() {
+        CYLocalKey key;
         ::pthread_key_create(&key, NULL);
         return key;
     }
@@ -56,5 +98,7 @@ class CYLocal {
         return reinterpret_cast<Type_ *>(::pthread_getspecific(key_));
     }
 };
+
+#endif
 
 #endif/*CYCRIPT_LOCAL_HPP*/

@@ -109,7 +109,7 @@ struct CYOutput {
     _finline void operator ()(const char *data, std::streamsize size) {
         _assert(out_.sputn(data, size) == size);
         recent_ = indent_;
-        position_.Columns(size);
+        position_.Columns(static_cast<unsigned>(size));
     }
 
     _finline void operator ()(const char *data) {
@@ -2868,10 +2868,10 @@ struct CYIndirect :
 #define CYReplace \
     virtual CYExpression *Replace(CYContext &context);
 
-#define CYPostfix_(op, name, args...) \
+#define CYPostfix_(op, name, ...) \
     struct CY ## name : \
         CYPostfix \
-    { args \
+    { __VA_ARGS__ \
         CY ## name(CYExpression *lhs) : \
             CYPostfix(lhs) \
         { \
@@ -2882,10 +2882,10 @@ struct CYIndirect :
         } \
     };
 
-#define CYPrefix_(alphabetic, op, name, args...) \
+#define CYPrefix_(alphabetic, op, name, ...) \
     struct CY ## name : \
         CYPrefix \
-    { args \
+    { __VA_ARGS__ \
         CY ## name(CYExpression *rhs) : \
             CYPrefix(rhs) \
         { \
@@ -2898,10 +2898,10 @@ struct CYIndirect :
         } \
     };
 
-#define CYInfix_(alphabetic, precedence, op, name, args...) \
+#define CYInfix_(alphabetic, precedence, op, name, ...) \
     struct CY ## name : \
         CYInfix \
-    { args \
+    { __VA_ARGS__ \
         CY ## name(CYExpression *lhs, CYExpression *rhs) : \
             CYInfix(lhs, rhs) \
         { \
@@ -2915,10 +2915,10 @@ struct CYIndirect :
         } \
     };
 
-#define CYAssignment_(op, name, args...) \
+#define CYAssignment_(op, name, ...) \
     struct CY ## name ## Assign : \
         CYAssignment \
-    { args \
+    { __VA_ARGS__ \
         CY ## name ## Assign(CYTarget *lhs, CYExpression *rhs) : \
             CYAssignment(lhs, rhs) \
         { \

@@ -1,0 +1,130 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\sig">
+      <UniqueIdentifier>{083aa3cd-dc87-48df-9bd3-9c9aaf098e26}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\sig">
+      <UniqueIdentifier>{7dd67d77-84b9-419c-8f67-84197a9c2cec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ObjectiveC">
+      <UniqueIdentifier>{ee8f1811-145c-4dfb-a397-36fa29ac9580}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ObjectiveC">
+      <UniqueIdentifier>{0fa1563f-62b8-486a-941a-e8f18fdc72f2}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Driver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Error.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(IntDir)Scanner.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(IntDir)Parser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Output.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Replace.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Syntax.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sig\copy.cpp">
+      <Filter>Source Files\sig</Filter>
+    </ClCompile>
+    <ClCompile Include="sig\parse.cpp">
+      <Filter>Source Files\sig</Filter>
+    </ClCompile>
+    <ClCompile Include="ObjectiveC\Output.cpp">
+      <Filter>Source Files\ObjectiveC</Filter>
+    </ClCompile>
+    <ClCompile Include="ObjectiveC\Replace.cpp">
+      <Filter>Source Files\ObjectiveC</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Driver.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Error.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Exception.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Pooling.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Location.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Options.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Standard.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Local.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(IntDir)Parser.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Stack.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="List.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Replace.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Syntax.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sig\parse.hpp">
+      <Filter>Header Files\sig</Filter>
+    </ClInclude>
+    <ClInclude Include="sig\types.hpp">
+      <Filter>Header Files\sig</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjectiveC\Internal.hpp">
+      <Filter>Header Files\ObjectiveC</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjectiveC\Syntax.hpp">
+      <Filter>Header Files\ObjectiveC</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="config-win32.h">
+      <Filter>Header Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Scanner.lpp.in">
+      <Filter>Resource Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Parser.ypp.in">
+      <Filter>Resource Files</Filter>
+    </CustomBuild>
+  </ItemGroup>
+</Project>

@@ -5,6 +5,8 @@
 *.la
 *.lo
 *.o
+*.suo
+*.VC.*
 libtool
 .deps
 .dirstamp
