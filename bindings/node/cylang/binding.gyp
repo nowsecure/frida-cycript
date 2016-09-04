@@ -1,4 +1,7 @@
 {
+  "variables": {
+    "frida_host_msvs": "unix",
+  },
   "targets": [
     {
       "variables": {
@@ -28,12 +31,19 @@
             "-lcycript.lib",
           ],
         }, {
+          "cflags!": [
+            "-fno-exceptions",
+          ],
+          "cflags_cc!": [
+            "-fno-exceptions",
+          ],
           "libraries": [
             "../../../../.libs/libcycript.a",
           ],
         }],
         ["OS=='mac'", {
           "xcode_settings": {
+            'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
             "OTHER_CFLAGS": [
               "-std=c++11",
               "-stdlib=libc++",
