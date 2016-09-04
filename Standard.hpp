@@ -39,11 +39,7 @@
 
 #define _sentinel
 
-#ifdef _WIN64
-typedef __int64 ssize_t;
-#else
-typedef long ssize_t;
-#endif
+typedef intptr_t ssize_t;
 
 #else
 
