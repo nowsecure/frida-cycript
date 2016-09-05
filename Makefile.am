@@ -20,7 +20,7 @@
 .DELETE_ON_ERROR:
 
 AUTOMAKE_OPTIONS = subdir-objects
-BUILT_SOURCES = frida/libfrida-core.a
+BUILT_SOURCES = $(builddir)/frida/libfrida-core.a
 CLEANFILES = 
 SUBDIRS = 
 
@@ -49,7 +49,7 @@ endif
 AM_OBJCXXFLAGS += -fobjc-exceptions
 
 CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
-CY_LDFLAGS += -L$(srcdir)/frida
+CY_LDFLAGS += -L$(builddir)/frida
 
 datdir = $(libdir)
 dat_DATA = 
@@ -81,8 +81,8 @@ endif
 libcycript_la_SOURCES += sig/parse.cpp sig/copy.cpp
 libcycript_la_SOURCES += Execute.cpp
 libcycript_la_LIBADD += $(LTJAVASCRIPTCORE)
-libcycript_la_LIBADD += -lfrida-core -lresolv
-libcycript_la_LDFLAGS += -Wl,-framework,Foundation,-framework,AppKit
+libcycript_la_LIBADD += @FRIDA_LIBS@
+libcycript_la_LDFLAGS += @FRIDA_LDFLAGS@
 libcycript_la_DEPENDENCIES = frida/libfrida-core.a
 dat_DATA += libcycript.db
 
@@ -123,8 +123,8 @@ endif
 #Hasher.hpp: Hasher.gperf
 #	$(GPERF) $< >$@
 
-if CY_JAVA
 filters += Java
+if CY_JAVA
 libcycript_la_SOURCES += Java/Execute.cpp
 dat_DATA += libcycript.jar
 
@@ -139,22 +139,22 @@ libcycript.jar: Class/classes.dex Class/Cycript.class
 	cd Class; jar cf ../$@ *
 endif
 
-if CY_RUBY
 filters += Ruby
+if CY_RUBY
 libcycript_la_SOURCES += Ruby/Execute.cpp
 libcycript_la_LIBADD += $(LTRUBY)
 endif
 
-if CY_PYTHON
 filters += Python
+if CY_PYTHON
 libcycript_la_SOURCES += Python/Execute.cpp
 libcycript_la_LIBADD += $(LTPYTHON)
 endif
 
-if CY_OBJECTIVEC
-AM_CPPFLAGS += -DCY_OBJECTIVEC
 filters += ObjectiveC
+AM_CPPFLAGS += -DCY_OBJECTIVEC
 libcycript_la_SOURCES += ObjectiveC/Output.cpp ObjectiveC/Replace.cpp
+if CY_OBJECTIVEC
 libcycript_la_LIBADD += $(LTOBJECTIVEC)
 endif
 
@@ -190,8 +190,8 @@ Parser.hpp: Parser.ypp
 
 frida_version = 7.3.5
 
-frida/libfrida-core.a:
+$(builddir)/frida/libfrida-core.a:
 	mkdir -p $(@D)/_
-	curl -Ls https://github.com/frida/frida/releases/download/$(frida_version)/frida-core-devkit-$(frida_version)-mac-x86_64.tar.xz | tar -C $(@D)/_ -xzf -
+	curl -Ls https://github.com/frida/frida/releases/download/$(frida_version)/frida-core-devkit-$(frida_version)-@FRIDA_OS_ARCH@.tar.xz | xz -d | tar -C $(@D)/_ -xf -
 	mv $(@D)/_/* $(@D)
 	rmdir $(@D)/_

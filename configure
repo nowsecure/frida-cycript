@@ -686,6 +686,9 @@ GIT
 PKG_CONFIG_LIBDIR
 PKG_CONFIG_PATH
 PKG_CONFIG
+FRIDA_LDFLAGS
+FRIDA_LIBS
+FRIDA_OS_ARCH
 HAVE_CXX11
 LT_SYS_LIBRARY_PATH
 OTOOL64
@@ -18236,6 +18239,67 @@ $as_echo "#define HAVE_CXX11 1" >>confdefs.h
 
 OBJCXXFLAGS="${OBJCXXFLAGS} ${CXXFLAGS##*' '}"
 
+case $host_os in
+    linux*)
+        frida_os=linux
+        FRIDA_LIBS="-lfrida-core -lrt -lresolv"
+    ;;
+    darwin*)
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <TargetConditionals.h>
+int
+main ()
+{
+
+#if !TARGET_OS_IOS
+# error Not iOS
+#endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_cpp "$LINENO"; then :
+
+                frida_os=ios
+
+else
+
+                frida_os=mac
+                FRIDA_LIBS="-lfrida-core -lresolv"
+                FRIDA_LDFLAGS="-Wl,-framework,Foundation,-framework,AppKit"
+
+
+fi
+rm -f conftest.err conftest.i conftest.$ac_ext
+    ;;
+    *)
+    ;;
+esac
+case $host_cpu in
+    i?86)
+        frida_arch=i386
+    ;;
+    x86_64)
+        frida_arch=x86_64
+    ;;
+    arm|armv7|armhf)
+        frida_arch=arm
+    ;;
+    aarch64)
+        frida_arch=arm64
+    ;;
+    mips|mipsel)
+        frida_arch=mips
+    ;;
+esac
+FRIDA_OS_ARCH="${frida_os}-${frida_arch}"
+
+
+
+
 
 
 
@@ -21909,7 +21973,6 @@ fi
 
 
 if test "x$CY_SYSTEM" = x; then CY_SYSTEM=1; fi
-
 
 
 

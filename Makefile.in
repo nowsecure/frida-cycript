@@ -116,28 +116,14 @@ host_triplet = @host@
 @CY_ANDROID_TRUE@@CY_CONSOLE_TRUE@am__append_4 = cycript-pie
 @CY_PRELINK_TRUE@am__append_5 = Analyze Bridge.def
 @CY_PRELINK_FALSE@am__append_6 = Bridge.def
-
-#CLEANFILES += Hasher.gperf
-#Hasher.gperf: Hasher.def Hasher.sh
-#	$(srcdir)/Hasher.sh <$< >$@
-
-#CLEANFILES += Hasher.hpp
-#Hasher.hpp: Hasher.gperf
-#	$(GPERF) $< >$@
-@CY_JAVA_TRUE@am__append_7 = Java
-@CY_JAVA_TRUE@am__append_8 = Java/Execute.cpp
-@CY_JAVA_TRUE@am__append_9 = libcycript.jar
-@CY_JAVA_TRUE@am__append_10 = Class libcycript.jar
-@CY_RUBY_TRUE@am__append_11 = Ruby
-@CY_RUBY_TRUE@am__append_12 = Ruby/Execute.cpp
-@CY_RUBY_TRUE@am__append_13 = $(LTRUBY)
-@CY_PYTHON_TRUE@am__append_14 = Python
-@CY_PYTHON_TRUE@am__append_15 = Python/Execute.cpp
-@CY_PYTHON_TRUE@am__append_16 = $(LTPYTHON)
-@CY_OBJECTIVEC_TRUE@am__append_17 = -DCY_OBJECTIVEC
-@CY_OBJECTIVEC_TRUE@am__append_18 = ObjectiveC
-@CY_OBJECTIVEC_TRUE@am__append_19 = ObjectiveC/Output.cpp ObjectiveC/Replace.cpp
-@CY_OBJECTIVEC_TRUE@am__append_20 = $(LTOBJECTIVEC)
+@CY_JAVA_TRUE@am__append_7 = Java/Execute.cpp
+@CY_JAVA_TRUE@am__append_8 = libcycript.jar
+@CY_JAVA_TRUE@am__append_9 = Class libcycript.jar
+@CY_RUBY_TRUE@am__append_10 = Ruby/Execute.cpp
+@CY_RUBY_TRUE@am__append_11 = $(LTRUBY)
+@CY_PYTHON_TRUE@am__append_12 = Python/Execute.cpp
+@CY_PYTHON_TRUE@am__append_13 = $(LTPYTHON)
+@CY_OBJECTIVEC_TRUE@am__append_14 = $(LTOBJECTIVEC)
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_append_flag.m4 \
@@ -207,9 +193,6 @@ am__dirstamp = $(am__leading_dot)dirstamp
 @CY_JAVA_TRUE@am__objects_2 = Java/libcycript_la-Execute.lo
 @CY_RUBY_TRUE@am__objects_3 = Ruby/libcycript_la-Execute.lo
 @CY_PYTHON_TRUE@am__objects_4 = Python/libcycript_la-Execute.lo
-@CY_OBJECTIVEC_TRUE@am__objects_5 =  \
-@CY_OBJECTIVEC_TRUE@	ObjectiveC/libcycript_la-Output.lo \
-@CY_OBJECTIVEC_TRUE@	ObjectiveC/libcycript_la-Replace.lo
 am_libcycript_la_OBJECTS = libcycript_la-ConvertUTF.lo \
 	libcycript_la-Decode.lo libcycript_la-Driver.lo \
 	libcycript_la-Error.lo libcycript_la-Highlight.lo \
@@ -219,7 +202,8 @@ am_libcycript_la_OBJECTS = libcycript_la-ConvertUTF.lo \
 	$(am__objects_1) sig/libcycript_la-parse.lo \
 	sig/libcycript_la-copy.lo libcycript_la-Execute.lo \
 	$(am__objects_2) $(am__objects_3) $(am__objects_4) \
-	$(am__objects_5)
+	ObjectiveC/libcycript_la-Output.lo \
+	ObjectiveC/libcycript_la-Replace.lo
 libcycript_la_OBJECTS = $(am_libcycript_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -438,6 +422,9 @@ EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
 FLEX = @FLEX@
+FRIDA_LDFLAGS = @FRIDA_LDFLAGS@
+FRIDA_LIBS = @FRIDA_LIBS@
+FRIDA_OS_ARCH = @FRIDA_OS_ARCH@
 GIT = @GIT@
 GNUSTEP_CONFIG = @GNUSTEP_CONFIG@
 GNUTAR = @GNUTAR@
@@ -564,38 +551,44 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = subdir-objects
-BUILT_SOURCES = frida/libfrida-core.a
+BUILT_SOURCES = $(builddir)/frida/libfrida-core.a
 CLEANFILES = libcycript.db $(am__append_5) $(am__append_6) \
-	$(am__append_10) Parser.ypp Scanner.lpp Scanner.cpp \
+	$(am__append_9) Parser.ypp Scanner.lpp Scanner.cpp \
 	Scanner.output lex.backup Parser.cpp Parser.hpp stack.hh \
 	Parser.output
 SUBDIRS = 
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -DYYDEBUG=1 -DCY_SYSTEM="\"$(CY_SYSTEM)\"" -include \
 	config.h -include $(srcdir)/unconfig.h -I$(srcdir)/frida \
-	$(am__append_17)
+	-DCY_OBJECTIVEC
 CY_FLAGS = -fvisibility=hidden $(am__append_1)
 AM_CFLAGS = $(CY_FLAGS)
 AM_CXXFLAGS = $(CY_FLAGS)
 AM_OBJCXXFLAGS = $(CY_FLAGS) -fobjc-exceptions
 AM_LDFLAGS = $(CY_FLAGS) $(am__append_2)
 CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic \
-	-L$(srcdir)/frida
+	-L$(builddir)/frida
 datdir = $(libdir)
-dat_DATA = libcycript.db $(am__append_9)
+dat_DATA = libcycript.db $(am__append_8)
 lib_LTLIBRARIES = libcycript.la
-libcycript_la_LDFLAGS = $(CY_LDFLAGS) \
-	-Wl,-framework,Foundation,-framework,AppKit
+libcycript_la_LDFLAGS = $(CY_LDFLAGS) @FRIDA_LDFLAGS@
 libcycript_la_LIBADD = $(LTLIBSQLITE3) $(LTLIBGCC) -ldl \
-	$(LTJAVASCRIPTCORE) -lfrida-core -lresolv $(am__append_13) \
-	$(am__append_16) $(am__append_20)
+	$(LTJAVASCRIPTCORE) @FRIDA_LIBS@ $(am__append_11) \
+	$(am__append_13) $(am__append_14)
 libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp Error.cpp \
 	Highlight.cpp Library.cpp Output.cpp Replace.cpp Syntax.cpp \
 	Parser.cpp Scanner.cpp $(am__append_3) sig/parse.cpp \
-	sig/copy.cpp Execute.cpp $(am__append_8) $(am__append_12) \
-	$(am__append_15) $(am__append_19)
-filters = C $(am__append_7) $(am__append_11) $(am__append_14) \
-	$(am__append_18)
+	sig/copy.cpp Execute.cpp $(am__append_7) $(am__append_10) \
+	$(am__append_12) ObjectiveC/Output.cpp ObjectiveC/Replace.cpp
+
+#CLEANFILES += Hasher.gperf
+#Hasher.gperf: Hasher.def Hasher.sh
+#	$(srcdir)/Hasher.sh <$< >$@
+
+#CLEANFILES += Hasher.hpp
+#Hasher.hpp: Hasher.gperf
+#	$(GPERF) $< >$@
+filters = C Java Ruby Python ObjectiveC
 @CY_CONSOLE_TRUE@cycript_SOURCES = Console.cpp
 @CY_CONSOLE_TRUE@cycript_LDADD = libcycript.la $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) $(PTHREAD_CFLAGS) -ldl
 @CY_ANDROID_TRUE@@CY_CONSOLE_TRUE@cycript_pie_SOURCES = pie.c
@@ -1547,9 +1540,9 @@ Parser.hpp: Parser.ypp
 	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output -B 2 | grep -v '$$default' | grep 'reduce using rule [0-9]* ([^)]*)$$'
 	perl -pi -e 's/yytranslate_ \(yylex \(/(yylex_ (/g' Parser.cpp
 
-frida/libfrida-core.a:
+$(builddir)/frida/libfrida-core.a:
 	mkdir -p $(@D)/_
-	curl -Ls https://github.com/frida/frida/releases/download/$(frida_version)/frida-core-devkit-$(frida_version)-mac-x86_64.tar.xz | tar -C $(@D)/_ -xzf -
+	curl -Ls https://github.com/frida/frida/releases/download/$(frida_version)/frida-core-devkit-$(frida_version)-@FRIDA_OS_ARCH@.tar.xz | xz -d | tar -C $(@D)/_ -xf -
 	mv $(@D)/_/* $(@D)
 	rmdir $(@D)/_
 

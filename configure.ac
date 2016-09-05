@@ -45,6 +45,54 @@ AC_LANG([C++])
 AX_CXX_COMPILE_STDCXX_11([ext], [mandatory])
 OBJCXXFLAGS="${OBJCXXFLAGS} ${CXXFLAGS##*' '}"
 
+case $host_os in
+    linux*)
+        frida_os=linux
+        FRIDA_LIBS="-lfrida-core -lrt -lresolv"
+    ;;
+    darwin*)
+        AC_PREPROC_IFELSE(
+            [AC_LANG_PROGRAM([[#include <TargetConditionals.h>]],
+                             [[
+#if !TARGET_OS_IOS
+# error Not iOS
+#endif
+            ]])],
+            [
+                frida_os=ios
+            ],
+            [
+                frida_os=mac
+                FRIDA_LIBS="-lfrida-core -lresolv"
+                FRIDA_LDFLAGS="-Wl,-framework,Foundation,-framework,AppKit"
+            ]
+        )
+    ;;
+    *)
+    ;;
+esac
+case $host_cpu in
+    i?86)
+        frida_arch=i386
+    ;;
+    x86_64)
+        frida_arch=x86_64
+    ;;
+    arm|armv7|armhf)
+        frida_arch=arm
+    ;;
+    aarch64)
+        frida_arch=arm64
+    ;;
+    mips|mipsel)
+        frida_arch=mips
+    ;;
+esac
+FRIDA_OS_ARCH="${frida_os}-${frida_arch}"
+AC_SUBST(FRIDA_OS_ARCH)
+AC_SUBST(FRIDA_LIBS)
+AC_SUBST(FRIDA_LDFLAGS)
+
 PKG_PROG_PKG_CONFIG([0.22])
 
 AC_PATH_PROG([GIT], [git])
