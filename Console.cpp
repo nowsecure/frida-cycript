@@ -23,6 +23,7 @@
 
 #include "JavaScript.hpp"
 
+#include <cstddef>
 #include <cstdio>
 #include <complex>
 #include <fstream>
