@@ -18,7 +18,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nowsecure/cycript.git"
+    "url": "git+https://github.com/nowsecure/frida-cycript.git"
   },
   "author": {
     "name": "Ole André Vadla Ravnås",
@@ -34,9 +34,9 @@
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/nowsecure/cycript/issues"
+    "url": "https://github.com/nowsecure/frida-cycript/issues"
   },
-  "homepage": "https://github.com/nowsecure/cycript#readme",
+  "homepage": "https://github.com/nowsecure/frida-cycript#readme",
   "devDependencies": {
     "bindings": "^1.2.1",
     "frida-compile": "^1.1.1",
