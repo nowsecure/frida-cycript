@@ -63,6 +63,4 @@ typedef intptr_t ssize_t;
 #define _extern \
     extern "C" _visible
 
-#define CY_VA_ARGS(...) , ##__VA_ARGS__
-
 #endif/*CYCRIPT_STANDARD_HPP*/
