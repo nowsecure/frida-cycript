@@ -289,14 +289,13 @@ static void OnLookupRequest(const char *property) {
     _sqlcall(sqlite3_bind_text(statement, 1, property, -1, SQLITE_STATIC));
 
     bool success;
-    const char *code;
-    unsigned flags;
     CYUTF8String parsed;
+    unsigned flags(0);
     if (_sqlcall(sqlite3_step(statement)) == SQLITE_DONE)
         success = false;
     else {
         success = true;
-        code = sqlite3_column_pooled(pool, statement, 0);
+        auto code = sqlite3_column_pooled(pool, statement, 0);
         flags = sqlite3_column_int(statement, 1);
 
         try {
