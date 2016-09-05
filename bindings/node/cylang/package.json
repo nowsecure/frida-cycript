@@ -28,7 +28,7 @@
       "url": "https://twitter.com/oleavr"
     }
   ],
-  "license": "GPL-3.0",
+  "license": "AGPL-3.0",
   "bugs": {
     "url": "https://github.com/nowsecure/frida-cycript/issues"
   },
