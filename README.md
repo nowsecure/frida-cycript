@@ -3,7 +3,7 @@
 This is a fork of [Cycript] [1] in which we replaced its runtime with a brand
 new runtime called [Mjølner] [3] powered by [Frida] [4]. This enables
 frida-cycript to run on all the platforms and architectures maintained by
-[frida-core] [9].
+[frida-core] [8].
 
 # Motivation
 
@@ -56,11 +56,12 @@ Yes. You should already be able to do this by running frida-server on Windows
 and connecting to it with Cycript on your UNIX system. (We didn't try this yet
 so please tell us if and how it works for you.)
 
-### How will this benefit existing Frida-users building their own tools?
+### How does this benefit existing Frida-users building their own tools?
 
-We plan on improving [frida-compile] [7] to support cylang by integrating
-the Cycript compiler with [Babel] [8]. This will allow you to mix in [our
-runtime] [3] into your existing scripts.
+We have improved [frida-compile] [7] to support cylang by integrating the
+Cycript compiler. Sources with a .cy extension get compiled transparently, and
+this "just works" as long as [our runtime] [3] is also included in the compiled
+agent.
 
 ## Status
 
@@ -126,5 +127,4 @@ Run the test-suite:
   [5]: https://gist.github.com/oleavr/bfd9b65865e9f17914f2
   [6]: https://github.com/nowsecure/cycript/blob/master/test/types.js
   [7]: https://github.com/frida/frida-compile
-  [8]: https://babeljs.io/
-  [9]: https://github.com/frida/frida-core/tree/master/src
+  [8]: https://github.com/frida/frida-core/tree/master/src
