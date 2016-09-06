@@ -12,6 +12,7 @@
 .libs
 /aclocal.m4
 /autom4te.cache/
+/bindings/node/cylang/build/
 /build/
 /config.h
 /config.h.in

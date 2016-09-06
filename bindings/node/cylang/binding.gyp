@@ -19,7 +19,7 @@
         "addon.cpp",
       ],
       "include_dirs": [
-        "../../..",
+        "../../../src",
         "<!(node -e \"require(\'nan\')\")",
       ],
       "target_conditions": [
@@ -38,7 +38,7 @@
             "-fno-exceptions",
           ],
           "libraries": [
-            "../../../../.libs/libcycript.a",
+            "../../../../src/.libs/libcycript.a",
           ],
         }],
         ["OS=='mac'", {
