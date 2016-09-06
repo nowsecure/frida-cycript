@@ -159,4 +159,4 @@ static void DisposeAll(void *data) {
 
 }
 
-NODE_MODULE_CONTEXT_AWARE(cycript_binding, cynode::InitAll)
+NODE_MODULE_CONTEXT_AWARE(cytest_binding, cynode::InitAll)

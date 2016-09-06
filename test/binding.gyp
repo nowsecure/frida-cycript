@@ -1,9 +1,12 @@
 {
   "targets": [
     {
-      "target_name": "cycript_binding",
+      "target_name": "cytest_binding",
       "sources": [
-        "NodeBinding.cpp",
+        "addon.cpp",
+      ],
+      "include_dirs": [
+        "../src",
       ],
       "target_conditions": [
         ["OS=='win'", {
@@ -21,7 +24,7 @@
             "<!(node -e \"require(\'nan\')\")",
           ],
           "library_dirs": [
-            "../.libs",
+            "../../src/.libs",
           ],
           "libraries": [
             "-lcycript",

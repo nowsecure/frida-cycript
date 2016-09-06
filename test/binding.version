@@ -1,4 +1,4 @@
-CYCRIPT_BINDING {
+CYTEST_BINDING {
   local:
     *;
 };

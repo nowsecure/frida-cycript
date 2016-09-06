@@ -1,6 +1,6 @@
 'use strict';
 
-const cycript = require('bindings')('cycript_binding');
+const cycript = require('bindings')('cytest_binding');
 const should = require('should');
 
 describe('Types', function () {

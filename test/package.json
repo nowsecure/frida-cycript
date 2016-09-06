@@ -1,49 +1,17 @@
 {
-  "name": "cycript-agent",
+  "name": "cycript-test",
   "version": "1.0.0",
-  "description": "Frida agent used internally by Cycript",
-  "main": "Agent/index.js",
+  "description": "Test harness used internally by Cycript",
+  "private": true,
+  "main": "types.js",
   "scripts": {
-    "install": "prebuild --install",
-    "prebuild": "prebuild --verbose --strip",
-    "prepublish": "npm run build",
-    "build": "frida-compile Agent -o libcycript-runtime.js",
-    "watch": "frida-compile Agent -o libcycript-runtime.js -w",
-    "test": "npm run prebuild && DYLD_LIBRARY_PATH=$(pwd)/.libs node node_modules/mocha/bin/_mocha"
+    "test": "DYLD_LIBRARY_PATH=$(pwd)/../src/.libs node node_modules/mocha/bin/_mocha"
   },
-  "binary": {
-    "module_name": "cycript_binding",
-    "remote_path": "node/v{version}",
-    "host": "https://build.frida.re"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/nowsecure/frida-cycript.git"
-  },
-  "author": {
-    "name": "Ole André Vadla Ravnås",
-    "email": "oleavr@nowsecure.com",
-    "url": "https://twitter.com/oleavr"
-  },
-  "maintainers": [
-    {
-      "name": "Ole André Vadla Ravnås",
-      "email": "oleavr@nowsecure.com",
-      "url": "https://twitter.com/oleavr"
-    }
-  ],
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/nowsecure/frida-cycript/issues"
-  },
-  "homepage": "https://github.com/nowsecure/frida-cycript#readme",
   "devDependencies": {
     "bindings": "^1.2.1",
-    "frida-compile": "^1.1.1",
-    "mjolner": "^1.0.4",
     "mocha": "^3.0.2",
     "nan": "^2.4.0",
-    "prebuild": "^4.2.2",
     "should": "^11.1.0"
   }
 }

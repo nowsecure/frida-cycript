@@ -36,6 +36,7 @@
 /src/libcycript.db
 /src/stack.hh
 /stamp-h1
+/test/build/
 Makefile
 Makefile.in
 node_modules
