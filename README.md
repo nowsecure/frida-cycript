@@ -108,17 +108,13 @@ Build the UI and compiler:
 
     make -j8
 
-Build the JavaScript runtime:
-
-    npm install
-
 Run Cycript:
 
-    ./cycript
+    ./src/cycript
 
 Run the test-suite:
 
-    make && make -C build && DYLD_LIBRARY_PATH=$(pwd)/.libs node node_modules/mocha/bin/_mocha
+    cd test && npm install && npm run test
 
   [1]: http://www.cycript.org/
   [2]: https://twitter.com/saurik
