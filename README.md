@@ -7,7 +7,7 @@ frida-cycript to run on all the platforms and architectures maintained by
 
 # Motivation
 
-<img src="https://github.com/nowsecure/cycript/raw/master/demo.gif" width="583" />
+<img src="https://github.com/nowsecure/cycript/raw/master/docs/demo.gif" width="583" />
 
 [Cycript] [1] is an awesome interactive console for exploring and modifying
 running applications on iOS, Mac, and Android. It was created by [@saurik] [2]
