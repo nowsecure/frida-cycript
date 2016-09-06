@@ -71,34 +71,25 @@ Please see [our test-suite] [6] to get an overview of what we currently support.
 
 ### Mac
 
-These instructions are a bit clunky for the time being.
+Install *readline*:
 
-First, enter the Frida build environment:
+    brew install readline
 
-    git clone https://github.com/frida/frida.git
-    cd frida
-    git submodule init
-    git submodule update
-    make build/frida-env-mac-x86_64.rc
-    . build/frida-env-mac-x86_64.rc
-
-Install *bison* and *readline*:
-
-    brew install bison readline
-
-Mix them into your build environment:
+Mix it into your build environment:
 
     export CPPFLAGS="$CPPFLAGS -I/usr/local/opt/readline/include"
     export LDFLAGS="$LDFLAGS -L/usr/local/opt/readline/lib"
-    export BISON=/usr/local/opt/bison/bin/bison
-    export YACC=/usr/local/opt/bison/bin/yacc
 
 Clone this repo:
 
-    git clone https://github.com/nowsecure/cycript.git
+    git clone https://github.com/nowsecure/frida-cycript.git
     cd cycript
     git submodule init
     git submodule update
+
+Generate the build system:
+
+    ./autogen.sh
 
 Run configure:
 
