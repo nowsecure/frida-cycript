@@ -154,9 +154,6 @@ Scanner.lpp: Scanner.lpp.in UnicodeIDStart.l UnicodeIDContinue.l
 CLEANFILES += Scanner.cpp Scanner.output lex.backup
 Scanner.cpp: Scanner.lpp
 	$(FLEX) $(LFLAGS) -o $@ -T $< 2>Scanner.output || (grep -F '$<:' Scanner.output; false)
-	@#grep -E '^(No backing up\.|Compressed tables always back up\.)$$' lex.backup >/dev/null
-	! grep -n '^ jam-transitions: ' lex.backup | grep -v ': EOF \[\(\]\| \\2\)'
-	! grep -F ': warning, ' Scanner.output || true
 
 Scanner.lo: Parser.hpp IdentifierStart.h IdentifierContinue.h
 Parser.lo: Parser.hpp
@@ -165,10 +162,6 @@ Parser.cpp: Parser.hpp
 CLEANFILES += Parser.cpp Parser.hpp stack.hh Parser.output
 Parser.hpp: Parser.ypp
 	@BISON_PKGDATADIR_OVERRIDE@ $(BISON) -v --report=state -Werror -o Parser.cpp $<
-	! grep -n '^State [0-9]* conflicts:' Parser.output
-	! grep -n '^ *.* *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output | grep -v '$$default'
-	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output -B 2 | grep 'shift, and go to state [0-9]*$$'
-	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output -B 2 | grep -v '$$default' | grep 'reduce using rule [0-9]* ([^)]*)$$'
 	perl -pi -e 's/yytranslate_ \(yylex \(/(yylex_ (/g' Parser.cpp
 
 frida_version = 7.3.5
