@@ -21,7 +21,9 @@
 
 #include "cycript.hpp"
 
+#ifdef CY_EXECUTE
 #include "JavaScript.hpp"
+#endif
 
 #include <cstddef>
 #include <cstdio>
@@ -219,7 +221,9 @@ static void sigint(int) {
         case Parsing:
             longjmp(ctrlc_, 1);
         case Running:
+#ifdef CY_EXECUTE
             CYCancel();
+#endif
             return;
         case Sending:
             return;
@@ -251,7 +255,11 @@ static CYUTF8String Run(CYPool &pool, CYUTF8String code) {
     uint32_t size;
 
     mode_ = Running;
+#ifdef CY_EXECUTE
     json = CYExecute(pool, code);
+#else
+    json = NULL;
+#endif
     mode_ = Working;
     if (json == NULL)
         size = 0;
@@ -668,12 +676,14 @@ static void Console(CYOptions &options) {
             } else if (data == "debug") {
                 debug = !debug;
                 *out_ << "debug == " << (debug ? "true" : "false") << std::endl;
+#ifdef CY_EXECUTE
             } else if (data == "destroy") {
                 CYDestroyContext();
             } else if (data == "gc") {
                 *out_ << "collecting... " << std::flush;
                 CYGarbageCollect();
                 *out_ << "done." << std::endl;
+#endif
             } else if (data == "exit") {
                 return;
             } else if (data == "lower") {
@@ -771,7 +781,9 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
     const char *host(NULL);
     const char *process(NULL);
 
+#ifdef CY_EXECUTE
     const char *argv0(argv[0]);
+#endif
 
     optind = 1;
 
@@ -888,10 +900,12 @@ int Main(int argc, char * const argv[], char const * const envp[]) {
         ++argv;
     }
 
+#ifdef CY_EXECUTE
     CYAttach(device_id, host, process);
 
     // XXX: const_cast?! wtf gcc :(
     CYSetArgs(argv0, script, argc, const_cast<const char **>(argv));
+#endif
 
     if (script == NULL && tty)
         Console(options);

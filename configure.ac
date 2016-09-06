@@ -203,6 +203,12 @@ AC_DEFUN([CY_LT_LIB], [
 AC_ARG_ENABLE([console], AS_HELP_STRING([--disable-console], [disable console]))
 AM_CONDITIONAL([CY_CONSOLE], [test "x$enable_console" != "xno"])
 
+AC_ARG_ENABLE([engine], AS_HELP_STRING([--disable-engine], [disable engine]))
+if [[ "x$enable_engine" != "xno" ]]; then
+    AC_DEFINE(CY_EXECUTE, 1, [Define to 1 if engine is available.])
+fi
+AM_CONDITIONAL([CY_EXECUTE], [test "x$enable_engine" != "xno"])
+
 if test "x$CY_SYSTEM" = x; then CY_SYSTEM=1; fi
 AC_SUBST([CY_SYSTEM])
 

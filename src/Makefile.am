@@ -20,7 +20,6 @@
 .DELETE_ON_ERROR:
 
 AUTOMAKE_OPTIONS = subdir-objects
-BUILT_SOURCES = $(builddir)/frida/libfrida-core.a
 CLEANFILES = 
 SUBDIRS = 
 
@@ -28,7 +27,6 @@ ACLOCAL_AMFLAGS = -I m4
 
 AM_CPPFLAGS = -DYYDEBUG=1 -DCY_SYSTEM="\"$(CY_SYSTEM)\""
 AM_CPPFLAGS += -include config.h
-AM_CPPFLAGS += -I$(srcdir)/frida
 
 CY_FLAGS = 
 CY_FLAGS += -fvisibility=hidden
@@ -49,7 +47,6 @@ endif
 AM_OBJCXXFLAGS += -fobjc-exceptions
 
 CY_LDFLAGS = -no-undefined -avoid-version -export-dynamic
-CY_LDFLAGS += -L$(builddir)/frida
 
 datdir = $(libdir)
 dat_DATA = 
@@ -62,8 +59,9 @@ libcycript_la_LIBADD = $(LTLIBSQLITE3) $(LTLIBGCC) -ldl
 
 libcycript_la_SOURCES = ConvertUTF.c Decode.cpp Driver.cpp Error.cpp Highlight.cpp Library.cpp Output.cpp Replace.cpp Syntax.cpp
 libcycript_la_SOURCES += Parser.cpp Scanner.cpp
+libcycript_la_SOURCES += sig/parse.cpp sig/copy.cpp
 
-filters = 
+filters = C Java Ruby Python ObjectiveC
 
 if CY_CONSOLE
 bin_PROGRAMS = cycript
@@ -72,15 +70,18 @@ cycript_LDADD = libcycript.la $(LTLIBREADLINE) $(LTLIBTERMCAP) $(LTLIBGCC) $(PTH
 libcycript_la_SOURCES += Complete.cpp
 endif
 
-libcycript_la_SOURCES += sig/parse.cpp sig/copy.cpp
+if CY_EXECUTE
+BUILT_SOURCES = $(builddir)/frida/libfrida-core.a
+
+AM_CPPFLAGS += -I$(srcdir)/frida
+CY_LDFLAGS += -L$(builddir)/frida
+
 libcycript_la_SOURCES += Execute.cpp
-libcycript_la_LIBADD += $(LTJAVASCRIPTCORE)
 libcycript_la_LIBADD += @FRIDA_LIBS@
 libcycript_la_LDFLAGS += @FRIDA_LDFLAGS@
 libcycript_la_DEPENDENCIES = frida/libfrida-core.a libcycript-runtime.js
+endif
 dat_DATA += libcycript.db
-
-filters += C
 
 CLEANFILES += libcycript.db
 libcycript.db: Bridge.def libcycript.py
@@ -109,7 +110,6 @@ Bridge.def: Bridge.def.in
 	cat $< >$@
 endif
 
-filters += Java
 if CY_JAVA
 libcycript_la_SOURCES += Java/Execute.cpp
 dat_DATA += libcycript.jar
@@ -125,19 +125,16 @@ libcycript.jar: Class/classes.dex Class/Cycript.class
 	cd Class; jar cf ../$@ *
 endif
 
-filters += Ruby
 if CY_RUBY
 libcycript_la_SOURCES += Ruby/Execute.cpp
 libcycript_la_LIBADD += $(LTRUBY)
 endif
 
-filters += Python
 if CY_PYTHON
 libcycript_la_SOURCES += Python/Execute.cpp
 libcycript_la_LIBADD += $(LTPYTHON)
 endif
 
-filters += ObjectiveC
 AM_CPPFLAGS += -DCY_OBJECTIVEC
 libcycript_la_SOURCES += ObjectiveC/Output.cpp ObjectiveC/Replace.cpp
 if CY_OBJECTIVEC
