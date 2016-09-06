@@ -77,7 +77,7 @@ libcycript_la_SOURCES += Execute.cpp
 libcycript_la_LIBADD += $(LTJAVASCRIPTCORE)
 libcycript_la_LIBADD += @FRIDA_LIBS@
 libcycript_la_LDFLAGS += @FRIDA_LDFLAGS@
-libcycript_la_DEPENDENCIES = frida/libfrida-core.a
+libcycript_la_DEPENDENCIES = frida/libfrida-core.a libcycript-runtime.js
 dat_DATA += libcycript.db
 
 filters += C
@@ -181,3 +181,9 @@ $(builddir)/frida/libfrida-core.a:
 	curl -Ls https://github.com/frida/frida/releases/download/$(frida_version)/frida-core-devkit-$(frida_version)-@FRIDA_OS_ARCH@.tar.xz | xz -d | tar -C $(@D)/_ -xf -
 	mv $(@D)/_/* $(@D)
 	rmdir $(@D)/_
+
+libcycript-runtime.js: Agent/index.js node_modules
+	node_modules/.bin/frida-compile Agent -o libcycript-runtime.js
+
+node_modules:
+	npm install

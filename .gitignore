@@ -32,6 +32,8 @@
 /src/cycript
 /src/frida/
 /src/lex.backup
+/src/libcycript-runtime.js
+/src/libcycript.db
 /src/stack.hh
 /stamp-h1
 Makefile
