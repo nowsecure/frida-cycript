@@ -123,6 +123,12 @@ AC_DEFUN([CY_CHECK_PROGS_VERSION], [
     ]))
 ]) dnl }}}
 
+if [[ -z "$BISON" ]]; then
+    toolprefix="\$(top_srcdir)/ext/toolchain/usr"
+    BISON="$toolprefix/bin/bison-${frida_os}"
+    BISON_PKGDATADIR_OVERRIDE="BISON_PKGDATADIR=$toolprefix/share/bison"
+    AC_SUBST(BISON_PKGDATADIR_OVERRIDE)
+fi
 CY_CHECK_PROGS_VERSION([BISON], [bison], [GNU Project parser generator (yacc replacement)],
     [-V | $SED -e '1 s/^bison (GNU Bison) \(.*\)$/\1/p;d'], [3.0])
 CY_CHECK_PROGS_VERSION([FLEX], [flex], [the fast lexical analyser generator],

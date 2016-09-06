@@ -167,7 +167,7 @@ Parser.cpp: Parser.hpp
 
 CLEANFILES += Parser.cpp Parser.hpp stack.hh Parser.output
 Parser.hpp: Parser.ypp
-	$(BISON) -v --report=state -Werror -o Parser.cpp $<
+	@BISON_PKGDATADIR_OVERRIDE@ $(BISON) -v --report=state -Werror -o Parser.cpp $<
 	! grep -n '^State [0-9]* conflicts:' Parser.output
 	! grep -n '^ *.* *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output | grep -v '$$default'
 	! grep -n '^ *$$default *reduce using rule [0-9]* (Lex[A-Z][^)]*)$$' Parser.output -B 2 | grep 'shift, and go to state [0-9]*$$'
