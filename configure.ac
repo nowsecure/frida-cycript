@@ -129,7 +129,7 @@ AC_DEFUN([CY_CHECK_PROGS_VERSION], [
 
 if [[ -z "$BISON" ]]; then
     toolprefix="\$(top_srcdir)/ext/toolchain/usr"
-    BISON="$toolprefix/bin/bison-${frida_os}"
+    BISON="$toolprefix/bin/bison-${frida_os}-${frida_arch}"
     BISON_PKGDATADIR_OVERRIDE="BISON_PKGDATADIR=$toolprefix/share/bison"
     AC_SUBST(BISON_PKGDATADIR_OVERRIDE)
 fi
