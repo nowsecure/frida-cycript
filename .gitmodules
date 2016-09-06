@@ -1,7 +1,3 @@
-[submodule "readline"]
-	path = readline
-	url = git://git.savannah.gnu.org/readline.git
-	ignore = dirty
 [submodule "node"]
-	path = node
+	path = ext/node
 	url = https://github.com/joyent/node.git

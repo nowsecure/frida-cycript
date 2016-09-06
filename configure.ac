@@ -18,11 +18,12 @@ dnl along with this program.  If not, see <http://www.gnu.org/licenses/>.
 dnl }}}
 
 AC_PREREQ([2.65])
-AC_INIT([Cycript], [0.9], [saurik@saurik.com], [cycript], [http://www.cycript.org/])
-AC_COPYRIGHT([Copyright (C) 2009-2016  Jay Freeman (saurik)])
+AC_INIT([Frida Cycript], [1.0], [oleavr@nowsecure.com], [frida-cycript], [https://github.com/nowsecure/frida-cycript])
+AC_COPYRIGHT([Copyright (C) 2009-2016  Jay Freeman (saurik)
+Copyright (C)      2016 NowSecure])
 
-AC_CONFIG_SRCDIR([Console.cpp])
-AC_CONFIG_AUX_DIR([.])
+AC_CONFIG_SRCDIR([src/Console.cpp])
+AC_CONFIG_AUX_DIR([build])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
 
@@ -309,5 +310,8 @@ AC_SUBST([LTLIBGCC])
 AC_SUBST([LTFLAGS])
 AC_SUBST([SO], [$acl_shlibext])
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([
+    Makefile
+    src/Makefile
+])
 AC_OUTPUT

@@ -205,19 +205,19 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">UnicodeIDStart.l;UnicodeIDContinue.l;%(AdditionalInputs)</AdditionalInputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd "$(IntDir)"
 "$(ProjectDir)Filter.py" "$(ProjectDir)Scanner.lpp.in" C Java Ruby Python ObjectiveC &gt; Scanner.lpp || exit 1
-"$(ProjectDir)windeps\usr\bin\flex.exe" -o Scanner.cpp -T Scanner.lpp 2&gt;Scanner.output || exit 1
+"$(SolutionDir)ext\windeps\usr\bin\flex.exe" -o Scanner.cpp -T Scanner.lpp 2&gt;Scanner.output || exit 1
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd "$(IntDir)"
 "$(ProjectDir)Filter.py" "$(ProjectDir)Scanner.lpp.in" C Java Ruby Python ObjectiveC &gt; Scanner.lpp || exit 1
-"$(ProjectDir)windeps\usr\bin\flex.exe" -o Scanner.cpp -T Scanner.lpp 2&gt;Scanner.output || exit 1
+"$(SolutionDir)ext\windeps\usr\bin\flex.exe" -o Scanner.cpp -T Scanner.lpp 2&gt;Scanner.output || exit 1
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cd "$(IntDir)"
 "$(ProjectDir)Filter.py" "$(ProjectDir)Scanner.lpp.in" C Java Ruby Python ObjectiveC &gt; Scanner.lpp || exit 1
-"$(ProjectDir)windeps\usr\bin\flex.exe" -o Scanner.cpp -T Scanner.lpp 2&gt;Scanner.output || exit 1
+"$(SolutionDir)ext\windeps\usr\bin\flex.exe" -o Scanner.cpp -T Scanner.lpp 2&gt;Scanner.output || exit 1
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd "$(IntDir)"
 "$(ProjectDir)Filter.py" "$(ProjectDir)Scanner.lpp.in" C Java Ruby Python ObjectiveC &gt; Scanner.lpp || exit 1
-"$(ProjectDir)windeps\usr\bin\flex.exe" -o Scanner.cpp -T Scanner.lpp 2&gt;Scanner.output || exit 1
+"$(SolutionDir)ext\windeps\usr\bin\flex.exe" -o Scanner.cpp -T Scanner.lpp 2&gt;Scanner.output || exit 1
 </Command>
     </CustomBuild>
     <CustomBuild Include="Parser.ypp.in">
@@ -232,22 +232,22 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)Parser.hpp</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd "$(IntDir)"
 "$(ProjectDir)Filter.py" "$(ProjectDir)Parser.ypp.in" C Java Ruby Python ObjectiveC &gt; Parser.ypp || exit 1
-"$(ProjectDir)windeps\usr\bin\bison.exe" -v --report=state -Werror -o Parser.cpp Parser.ypp || exit 1
+"$(SolutionDir)ext\windeps\usr\bin\bison.exe" -v --report=state -Werror -o Parser.cpp Parser.ypp || exit 1
 "$(ProjectDir)FixupParser.py" Parser.cpp || exit 1
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd "$(IntDir)"
 "$(ProjectDir)Filter.py" "$(ProjectDir)Parser.ypp.in" C Java Ruby Python ObjectiveC &gt; Parser.ypp || exit 1
-"$(ProjectDir)windeps\usr\bin\bison.exe" -v --report=state -Werror -o Parser.cpp Parser.ypp || exit 1
+"$(SolutionDir)ext\windeps\usr\bin\bison.exe" -v --report=state -Werror -o Parser.cpp Parser.ypp || exit 1
 "$(ProjectDir)FixupParser.py" Parser.cpp || exit 1
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cd "$(IntDir)"
 "$(ProjectDir)Filter.py" "$(ProjectDir)Parser.ypp.in" C Java Ruby Python ObjectiveC &gt; Parser.ypp || exit 1
-"$(ProjectDir)windeps\usr\bin\bison.exe" -v --report=state -Werror -o Parser.cpp Parser.ypp || exit 1
+"$(SolutionDir)ext\windeps\usr\bin\bison.exe" -v --report=state -Werror -o Parser.cpp Parser.ypp || exit 1
 "$(ProjectDir)FixupParser.py" Parser.cpp || exit 1
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd "$(IntDir)"
 "$(ProjectDir)Filter.py" "$(ProjectDir)Parser.ypp.in" C Java Ruby Python ObjectiveC &gt; Parser.ypp || exit 1
-"$(ProjectDir)windeps\usr\bin\bison.exe" -v --report=state -Werror -o Parser.cpp Parser.ypp || exit 1
+"$(SolutionDir)ext\windeps\usr\bin\bison.exe" -v --report=state -Werror -o Parser.cpp Parser.ypp || exit 1
 "$(ProjectDir)FixupParser.py" Parser.cpp || exit 1
 </Command>
     </CustomBuild>
