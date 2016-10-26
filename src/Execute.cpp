@@ -131,7 +131,7 @@ static const char *TryResolveDirectory(CYPool &pool, const char *name);
 static const char *TryResolveEither(CYPool &pool, const char *name);
 static CYUTF8String CompileModule(CYPool &pool, CYUTF8String code);
 static void OnDetached(FridaSession *session, gpointer user_data);
-static void OnMessage(FridaScript *script, const gchar *message, const gchar *data, gint data_size, gpointer user_data);
+static void OnMessage(FridaScript *script, const gchar *message, GBytes *data, gpointer user_data);
 static void OnStanza(JsonArray *stanza);
 static void OnError(JsonObject *error);
 static void OnLog(JsonObject *item);
@@ -233,7 +233,7 @@ _visible const char *CYExecute(CYPool &pool, CYUTF8String code) {
     json_node_unref(root);
 
     GError *error(NULL);
-    frida_script_post_message_sync(script_, message, &error);
+    frida_script_post_sync(script_, message, NULL, &error);
     g_free(message);
     CheckGError(error);
 
@@ -328,7 +328,7 @@ static void OnLookupRequest(const char *property) {
     auto message(json_to_string(root, FALSE));
     json_node_unref(root);
 
-    frida_script_post_message(script_, message, NULL, NULL);
+    frida_script_post(script_, message, NULL, NULL, NULL);
     g_free(message);
 }
 
@@ -381,7 +381,7 @@ static void OnCompleteRequest(const char *prefix) {
     auto message(json_to_string(root, FALSE));
     json_node_unref(root);
 
-    frida_script_post_message(script_, message, NULL, NULL);
+    frida_script_post(script_, message, NULL, NULL, NULL);
     g_free(message);
 }
 
@@ -468,7 +468,7 @@ static void OnRequireResolveRequest(JsonObject *request) {
     auto message(json_to_string(root, FALSE));
     json_node_unref(root);
 
-    frida_script_post_message(script_, message, NULL, NULL);
+    frida_script_post(script_, message, NULL, NULL, NULL);
     g_free(message);
 }
 
@@ -518,7 +518,7 @@ static void OnRequireReadRequest(const char *path) {
     auto message(json_to_string(root, FALSE));
     json_node_unref(root);
 
-    frida_script_post_message(script_, message, NULL, NULL);
+    frida_script_post(script_, message, NULL, NULL, NULL);
     g_free(message);
 
     g_free(filename);
@@ -630,7 +630,7 @@ static void OnDetached(FridaSession *session, gpointer user_data) {
     g_mutex_unlock(&lock_);
 }
 
-static void OnMessage(FridaScript *script, const gchar *message, const gchar *data, gint data_size, gpointer user_data) {
+static void OnMessage(FridaScript *script, const gchar *message, GBytes *data, gpointer user_data) {
     FridaRefPtr<JsonParser> parser(json_parser_new());
     json_parser_load_from_data(parser, message, -1, NULL);
 
