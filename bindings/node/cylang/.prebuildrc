@@ -6,3 +6,6 @@ prebuild[] = 5.0.0
 
 # abi 48
 prebuild[] = 6.0.0
+
+# abi 51
+prebuild[] = 7.0.0
