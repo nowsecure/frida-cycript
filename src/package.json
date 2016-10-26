@@ -11,7 +11,7 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "frida-compile": "^1.1.1",
-    "mjolner": "^1.0.4"
+    "frida-compile": "^2.0.6",
+    "mjolner": "^1.0.5"
   }
 }
