@@ -164,7 +164,7 @@ Parser.hpp: Parser.ypp
 	@BISON_PKGDATADIR_OVERRIDE@ $(BISON) -v --report=state -Werror -o Parser.cpp $<
 	perl -pi -e 's/yytranslate_ \(yylex \(/(yylex_ (/g' Parser.cpp
 
-frida_version = 8.1.7
+frida_version = 10.0.8
 
 $(builddir)/frida/libfrida-core.a:
 	mkdir -p $(@D)/_

@@ -20,7 +20,7 @@ dnl }}}
 AC_PREREQ([2.65])
 AC_INIT([Frida Cycript], [1.0], [oleavr@nowsecure.com], [frida-cycript], [https://github.com/nowsecure/frida-cycript])
 AC_COPYRIGHT([Copyright (C) 2009-2016  Jay Freeman (saurik)
-Copyright (C)      2016 NowSecure])
+Copyright (C)      2016-2017 NowSecure])
 
 AC_CONFIG_SRCDIR([src/Console.cpp])
 AC_CONFIG_AUX_DIR([build])
@@ -67,8 +67,8 @@ case $host_os in
                 frida_os=ios
             ],
             [
-                frida_os=mac
-                FRIDA_LIBS="-lfrida-core -lresolv"
+                frida_os=macos
+                FRIDA_LIBS="-lfrida-core -lresolv -lbsm"
                 FRIDA_LDFLAGS="-Wl,-framework,Foundation,-framework,AppKit"
             ]
         )
@@ -78,7 +78,7 @@ case $host_os in
 esac
 case $host_cpu in
     i?86)
-        frida_arch=i386
+        frida_arch=x86
     ;;
     x86_64)
         frida_arch=x86_64
