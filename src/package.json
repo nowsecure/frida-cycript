@@ -25,9 +25,8 @@
     ]
   },
   "scripts": {
-    "prepublish": "npm run build",
-    "build": "frida-compile Agent -o libcycript-runtime.js",
-    "watch": "frida-compile Agent -o libcycript-runtime.js -w"
+    "build": "frida-compile Agent -o libcycript.js",
+    "watch": "frida-compile Agent -o libcycript.js -w"
   },
   "license": "MIT",
   "devDependencies": {

@@ -1,3 +1,6 @@
 [submodule "ext/node"]
 	path = ext/node
 	url = https://github.com/joyent/node.git
+[submodule "subprojects/readline"]
+	path = subprojects/readline
+	url = git://github.com/oleavr/readline.git

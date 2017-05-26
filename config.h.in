@@ -1,0 +1,19 @@
+/* config.h.  Generated from config.h.in by Meson.  */
+
+/* Define to the system type. */
+#mesondefine CY_SYSTEM
+
+/* Define to 1 if engine is available. */
+#mesondefine CY_EXECUTE
+
+/* Define to 1 if Java support is available. */
+#mesondefine CY_JAVA
+
+/* Define to 1 if Ruby support is available. */
+#mesondefine CY_RUBY
+
+/* Define to 1 if Python support is available. */
+#mesondefine CY_PYTHON
+
+/* Define to 1 if Objective-C support is available. */
+#mesondefine CY_OBJECTIVEC

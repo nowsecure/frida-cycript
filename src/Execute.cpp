@@ -174,9 +174,9 @@ _visible void CYAttach(const char *device_id, const char *host, const char *targ
     CheckGError(error);
 
     auto name("libcycript-runtime");
-    CYUTF8String source(CYPoolFileUTF8String(pool, pool.strcat(library_path, "/libcycript-runtime.js", NULL)));
+    CYUTF8String source(CYPoolFileUTF8String(pool, pool.strcat(library_path, "/libcycript.js", NULL)));
     if (source.data == NULL)
-        CYThrow("libcycript-runtime.js not found");
+        CYThrow("libcycript.js not found");
     FridaRefPtr<FridaScript> script(frida_session_create_script_sync(session, name, source.data, &error));
     CheckGError(error);
     g_signal_connect(script, "message", G_CALLBACK(OnMessage), NULL);
@@ -776,13 +776,6 @@ const char *CYPoolLibraryPath(CYPool &pool) {
     if (slash == NULL)
         return ".";
     *slash = '\0';
-
-    slash = strrchr(lib, '/');
-    if (slash != NULL) {
-        if (strcmp(slash, "/.libs") == 0)
-            *slash = '\0';
-    } else if (strcmp(lib, ".libs") == 0)
-        return ".";
 
     return lib;
 }

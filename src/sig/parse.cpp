@@ -92,7 +92,7 @@ Type *Parse_(CYPool &pool, const char **encoding, char eos, bool named, Callback
     switch (next) {
         case '?': type = new(pool) Unknown(); break;
 
-#ifdef CY_OBJECTIVEC
+#if CY_OBJECTIVEC
         case '#': type = new(pool) Meta(); break;
 #endif
 
@@ -103,7 +103,7 @@ Type *Parse_(CYPool &pool, const char **encoding, char eos, bool named, Callback
 
         case '*': type = new(pool) String(); break;
 
-#ifdef CY_OBJECTIVEC
+#if CY_OBJECTIVEC
         case ':': type = new(pool) Selector(); break;
 
         case '@': {
@@ -154,7 +154,7 @@ Type *Parse_(CYPool &pool, const char **encoding, char eos, bool named, Callback
                 _assert(false); // XXX: why is this here?!?
             else {
                 type = Parse_(pool, encoding, eos, named, callback);
-#ifdef CY_OBJECTIVEC
+#if CY_OBJECTIVEC
                 Aggregate *aggregate(dynamic_cast<Aggregate *>(type));
                 if (aggregate != NULL && strcmp(aggregate->name, "_objc_class") == 0)
                     type = new(pool) Meta();
@@ -361,7 +361,7 @@ const char *String::Encode(CYPool &pool) const {
     return "*";
 }
 
-#ifdef CY_OBJECTIVEC
+#if CY_OBJECTIVEC
 const char *Meta::Encode(CYPool &pool) const {
     return "#";
 }
@@ -383,7 +383,7 @@ const char *Array::Encode(CYPool &pool) const {
     return pool.strcat("[", pool.itoa(size), type.Encode(pool), "]", NULL);
 }
 
-#ifdef CY_OBJECTIVEC
+#if CY_OBJECTIVEC
 const char *Object::Encode(CYPool &pool) const {
     return name == NULL ? "@" : pool.strcat("@\"", name, "\"", NULL);
 }
@@ -406,7 +406,7 @@ const char *Function::Encode(CYPool &pool) const {
     return "?";
 }
 
-#ifdef CY_OBJECTIVEC
+#if CY_OBJECTIVEC
 const char *Block::Encode(CYPool &pool) const {
     return "@?";
 }

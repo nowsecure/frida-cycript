@@ -701,10 +701,7 @@ int main(int argc, const char *argv[]) {
 
     const char *file(argv[1]);
 
-    unsigned offset(3);
-#if CY_OBJECTIVEC
-    argv[--offset] = "-ObjC++";
-#endif
+    unsigned offset(2);
 
     CXTranslationUnit unit(clang_parseTranslationUnit(index, file, argv + offset, argc - offset, NULL, 0, CXTranslationUnit_DetailedPreprocessingRecord));
 

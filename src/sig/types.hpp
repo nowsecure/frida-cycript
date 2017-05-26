@@ -128,7 +128,7 @@ struct String :
     CYType *Decode(CYPool &pool) const override;
 };
 
-#ifdef CY_OBJECTIVEC
+#if CY_OBJECTIVEC
 struct Meta :
     Type
 {
@@ -198,7 +198,7 @@ struct Array :
     CYType *Decode(CYPool &pool) const override;
 };
 
-#ifdef CY_OBJECTIVEC
+#if CY_OBJECTIVEC
 struct Object :
     Type
 {
@@ -290,7 +290,7 @@ struct Function :
     CYType *Modify(CYPool &pool, CYType *result, CYTypedParameter *parameters) const override;
 };
 
-#ifdef CY_OBJECTIVEC
+#if CY_OBJECTIVEC
 struct Block :
     Callable
 {

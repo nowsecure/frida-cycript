@@ -71,37 +71,29 @@ Please see [our test-suite] [6] to get an overview of what we currently support.
 
 ### Mac
 
-Install *readline*:
+Install Meson and Ninja:
 
-    brew install readline
-
-Mix it into your build environment:
-
-    export CPPFLAGS="$CPPFLAGS -I/usr/local/opt/readline/include"
-    export LDFLAGS="$LDFLAGS -L/usr/local/opt/readline/lib"
+    pip3 install meson
+    brew install ninja
 
 Clone this repo:
 
     git clone https://github.com/nowsecure/frida-cycript.git
-    cd cycript
+    cd frida-cycript
     git submodule init
     git submodule update
 
 Generate the build system:
 
-    ./autogen.sh
-
-Run configure:
-
-    ./configure --enable-static --with-libclang="-rpath /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/libclang.dylib" --with-python=/usr/bin/python-config
+    meson build
 
 Build:
 
-    make -j8
+    ninja -C build
 
 Run Cycript:
 
-    ./src/cycript
+    ./build/src/cycript
 
 Run the test-suite:
 

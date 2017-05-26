@@ -127,7 +127,7 @@ CYType *String::Decode(CYPool &pool) const {
     return $ CYType($ CYTypeCharacter(CYTypeNeutral), $ CYTypePointerTo());
 }
 
-#ifdef CY_OBJECTIVEC
+#if CY_OBJECTIVEC
 CYType *Meta::Decode(CYPool &pool) const {
     return $ CYType($ CYTypeVariable("Class"));
 }
@@ -149,7 +149,7 @@ CYType *Array::Decode(CYPool &pool) const {
     return CYDecodeType(pool, &type)->Modify($ CYTypeArrayOf($D(size)));
 }
 
-#ifdef CY_OBJECTIVEC
+#if CY_OBJECTIVEC
 CYType *Object::Decode(CYPool &pool) const {
     if (name == NULL)
         return $ CYType($ CYTypeVariable("id"));
@@ -197,7 +197,7 @@ CYType *Function::Modify(CYPool &pool, CYType *result, CYTypedParameter *paramet
     return result->Modify($ CYTypeFunctionWith(variadic, parameters));
 }
 
-#ifdef CY_OBJECTIVEC
+#if CY_OBJECTIVEC
 CYType *Block::Modify(CYPool &pool, CYType *result, CYTypedParameter *parameters) const {
     return result->Modify($ CYTypeBlockWith(parameters));
 }

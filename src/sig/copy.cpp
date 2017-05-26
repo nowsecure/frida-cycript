@@ -59,7 +59,7 @@ String *String::Copy(CYPool &pool, const char *rename) const {
     return Flag(new(pool) String());
 }
 
-#ifdef CY_OBJECTIVEC
+#if CY_OBJECTIVEC
 Meta *Meta::Copy(CYPool &pool, const char *rename) const {
     return Flag(new(pool) Meta());
 }
@@ -81,7 +81,7 @@ Array *Array::Copy(CYPool &pool, const char *rename) const {
     return Flag(new(pool) Array(*type.Copy(pool), size));
 }
 
-#ifdef CY_OBJECTIVEC
+#if CY_OBJECTIVEC
 Object *Object::Copy(CYPool &pool, const char *rename) const {
     return Flag(new(pool) Object(pool.strdup(name)));
 }
@@ -117,7 +117,7 @@ Function *Function::Copy(CYPool &pool, const char *rename) const {
     return Flag(copy);
 }
 
-#ifdef CY_OBJECTIVEC
+#if CY_OBJECTIVEC
 Block *Block::Copy(CYPool &pool, const char *rename) const {
     Block *copy(new(pool) Block());
     sig::Copy(pool, copy->signature, signature);
