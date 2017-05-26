@@ -101,4 +101,7 @@ class CYLocal {
 
 #endif
 
+template <typename Type_>
+CYLocalKey CYLocal<Type_>::key_ = Key_();
+
 #endif/*CYCRIPT_LOCAL_HPP*/

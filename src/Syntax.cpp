@@ -41,9 +41,6 @@ double CYCastDouble(CYUTF8String value) {
     return CYCastDouble(value.data, value.size);
 }
 
-template <>
-CYLocalKey CYLocal<CYPool>::key_ = Key_();
-
 CYRange DigitRange_    (0x3ff000000000000LLU, 0x000000000000000LLU); // 0-9
 CYRange WordStartRange_(0x000001000000000LLU, 0x7fffffe87fffffeLLU); // A-Za-z_$
 CYRange WordEndRange_  (0x3ff001000000000LLU, 0x7fffffe87fffffeLLU); // A-Za-z_$0-9
