@@ -35,6 +35,6 @@
     "babel-preset-es2015": "^6.24.0",
     "babel-runtime": "^6.22.0",
     "frida-compile": "^5.1.0",
-    "mjolner": "^1.0.5"
+    "mjolner": "^2.0.0"
   }
 }
