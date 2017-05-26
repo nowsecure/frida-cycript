@@ -457,6 +457,10 @@ static void CYParseType(CXType type, CYType *typed) {
             typed->specifier_ = $ CYTypeVariable($pool.strdup(CYCXString(clang_getTypeDeclaration(type))));
         break;
 
+        case CXType_Elaborated:
+            CYParseType(clang_Type_getNamedType(type), typed);
+        break;
+
         case CXType_Vector:
             _assert(false);
         break;
