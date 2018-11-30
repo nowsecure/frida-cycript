@@ -193,8 +193,13 @@ else
 endif
 
 if get_option('enable_console')
+  console_link_args = []
+  if host_os_family == 'darwin'
+    console_link_args += '-Wl,-exported_symbols_list,' + join_paths(meson.current_source_dir(), 'cycript.symbols')
+  endif
+
   executable('cycript', 'Console.cpp',
-    link_args: termcap_libs,
+    link_args: console_link_args + termcap_libs,
     dependencies: [cycript_dep, readline_dep],
   )
 endif
