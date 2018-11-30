@@ -71,7 +71,7 @@ if get_option('enable_engine')
     output: ['frida-core.h'],
     command: [
       files('fetch-frida-devkit.py'),
-      '11.0.6',
+      '12.2.26',
       host_os,
       host_arch,
       '@OUTDIR@',
