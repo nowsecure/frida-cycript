@@ -13,6 +13,24 @@ if host_os_family == 'darwin'
   add_languages('objc', 'objcpp')
 endif
 
+optimization_compile_args = []
+optimization_link_args = []
+buildtype = get_option('buildtype')
+if buildtype == 'release' or buildtype == 'minsize'
+  if host_os_family == 'darwin'
+    optimization_link_args += '-Wl,-dead_strip'
+  endif
+  if host_os_family == 'linux'
+    optimization_compile_args += [
+      '-ffunction-sections',
+      '-fdata-sections',
+    ]
+    optimization_link_args += '-Wl,--gc-sections'
+  endif
+endif
+add_global_arguments(optimization_compile_args, language: languages)
+add_global_link_arguments(optimization_link_args, language: languages)
+
 cc = meson.get_compiler('c')
 
 target_conditionals_prefix = '#include <TargetConditionals.h>'
