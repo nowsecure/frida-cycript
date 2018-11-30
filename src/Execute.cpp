@@ -170,8 +170,8 @@ _visible void CYAttach(const char *device_id, const char *host, const char *targ
 
     GError *error(NULL);
     FridaRefPtr<FridaSession> session(frida_device_attach_sync(device, pid, &error));
-    g_signal_connect(session, "detached", G_CALLBACK(OnDetached), NULL);
     CheckGError(error);
+    g_signal_connect(session, "detached", G_CALLBACK(OnDetached), NULL);
 
     auto name("libcycript-runtime");
     CYUTF8String source(CYPoolFileUTF8String(pool, pool.strcat(library_path, "/libcycript.js", NULL)));
