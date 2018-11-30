@@ -168,24 +168,33 @@ if get_option('enable_engine')
   )
 endif
 
-extra_link_args = []
+cycript_shlib_link_args = []
 if host_os_family == 'darwin'
-  extra_link_args += ['-Wl,-exported_symbols_list,' + join_paths(meson.current_source_dir(), 'libcycript-core.symbols')]
+  cycript_shlib_link_args += '-Wl,-exported_symbols_list,' + join_paths(meson.current_source_dir(), 'libcycript-core.symbols')
   if get_option('enable_engine')
-    extra_link_args += ['-Wl,-exported_symbols_list,' + join_paths(meson.current_source_dir(), 'libcycript-engine.symbols')]
+    cycript_shlib_link_args += '-Wl,-exported_symbols_list,' + join_paths(meson.current_source_dir(), 'libcycript-engine.symbols')
   endif
 endif
 
 cycript = library('cycript', cycript_sources,
   cpp_args: ['-DYYDEBUG=1'],
-  link_args: cycript_link_args + dep_libs + extra_link_args,
+  link_args: cycript_link_args + dep_libs + cycript_shlib_link_args,
   install: true,
 )
+if get_option('default_library') == 'static'
+  cycript_dep = declare_dependency(
+    link_with: cycript,
+    link_args: cycript_link_args + dep_libs,
+  )
+else
+  cycript_dep = declare_dependency(
+    link_with: cycript,
+  )
+endif
 
 if get_option('enable_console')
   executable('cycript', 'Console.cpp',
     link_args: termcap_libs,
-    link_with: cycript,
-    dependencies: [readline_dep],
+    dependencies: [cycript_dep, readline_dep],
   )
 endif
