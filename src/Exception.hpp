@@ -32,8 +32,7 @@
 class CYPool;
 
 struct _visible CYException {
-    virtual ~CYException() {
-    }
+    virtual ~CYException();
 
     virtual const char *PoolCString(CYPool &pool) const = 0;
 };

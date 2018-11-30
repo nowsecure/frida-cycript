@@ -24,3 +24,5 @@ __ZN8CYDriverC2ER6CYPoolRNSt3__115basic_streambufIcNS2_11char_traitsIcEEEERKNS2_
 __ZN8CYDriverD1Ev
 __ZN8CYDriverD2Ev
 __ZNK11CYPoolError11PoolCStringER6CYPool
+__ZTI11CYException
+__ZTI11CYPoolError

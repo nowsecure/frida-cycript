@@ -90,7 +90,6 @@ if get_option('enable_engine')
       '-lbsm',
       '-lresolv',
       '-Wl,-framework,Foundation,-framework,AppKit',
-      '-Wl,-no_compact_unwind',
     ]
   endif
 

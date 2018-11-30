@@ -21,6 +21,9 @@
 
 #include "Error.hpp"
 
+CYException::~CYException() {
+}
+
 const char *CYPoolError::PoolCString(CYPool &pool) const {
     return pool.strdup(message_);
 }
