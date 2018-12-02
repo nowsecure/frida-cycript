@@ -11,19 +11,26 @@
       "include_dirs": [
         "../../../src",
       ],
-      "library_dirs": [
-        "../../../../build/src",
-      ],
-      "libraries": [
-        "-lcycript",
-      ],
       "target_conditions": [
-        ["OS!='win'", {
+        ["OS=='win'", {
+          "library_dirs": [
+            "../../../build/src",
+          ],
+          "libraries": [
+            "-llibcycript.a",
+          ],
+        }, {
           "cflags!": [
             "-fno-exceptions",
           ],
           "cflags_cc!": [
             "-fno-exceptions",
+          ],
+          "library_dirs": [
+            "../../../../build/src",
+          ],
+          "libraries": [
+            "-lcycript",
           ],
         }],
         ["OS=='mac'", {
