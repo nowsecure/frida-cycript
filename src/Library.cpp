@@ -26,10 +26,6 @@
 #include <map>
 #include <sstream>
 
-#include <dlfcn.h>
-
-#include <sys/mman.h>
-
 #include "Code.hpp"
 #include "ConvertUTF.h"
 #include "Driver.hpp"
