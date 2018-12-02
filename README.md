@@ -106,6 +106,21 @@ To build the Node.js bindings:
     cd bindings/node/cylang/
     npm install
 
+### Windows
+
+Install Meson and Ninja, and clone this repo, similar to above.
+
+To build the Node.js bindings from a MSVS Native Tools Command Prompt for VS 2017:
+
+    meson build --buildtype minsize --strip --default-library static -D enable_engine=false -D enable_console=false -D b_vscrt=mt
+    ninja -C build
+    cd bindings\node\cylang
+    npm install
+
+Then to run the test-suite:
+
+    npm run test
+
   [1]: http://www.cycript.org/
   [2]: https://twitter.com/saurik
   [3]: https://github.com/nowsecure/mjolner
