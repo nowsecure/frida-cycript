@@ -1,6 +1,6 @@
 /* Cycript - The Truly Universal Scripting Language
  * Copyright (C) 2009-2016  Jay Freeman (saurik)
- * Copyright (C)      2016  NowSecure <oleavr@nowsecure.com>
+ * Copyright (C) 2016-2018  NowSecure <oleavr@nowsecure.com>
 */
 
 /* GNU Affero General Public License, Version 3 {{{ */
@@ -25,101 +25,101 @@
 
 #include <sstream>
 
-#include <nan.h>
-#include <node.h>
-
-using v8::Boolean;
-using v8::Context;
-using v8::FunctionTemplate;
-using v8::Handle;
-using v8::Object;
-using v8::String;
-using v8::Value;
+#include <node_api.h>
 
 namespace cylang {
 
-static bool GetStringArg(CYPool &pool, Handle<Value> value, const char *&result);
-static bool GetBoolArg(CYPool &pool, Handle<Value> value, bool &result);
-
-static void Compile(const Nan::FunctionCallbackInfo<Value> &info) {
-    if (info.Length() < 3) {
-        Nan::ThrowTypeError("Bad argument count");
-        return;
-    }
-
-    CYPool pool;
-
-    const char *code;
-    if (!GetStringArg(pool, info[0], code))
-        return;
-
-    bool strict;
-    if (!GetBoolArg(pool, info[1], strict))
-      return;
-
-    bool pretty;
-    if (!GetBoolArg(pool, info[2], pretty))
-      return;
-
-    std::stringbuf stream(code);
-    CYDriver driver(pool, stream);
-    driver.strict_ = strict;
-
-    if (driver.Parse() || !driver.errors_.empty()) {
-        for (CYDriver::Errors::const_iterator error(driver.errors_.begin()); error != driver.errors_.end(); ++error) {
-            auto message(error->message_);
-            Nan::ThrowError(message.c_str());
-            return;
+class Binding {
+  public:
+    static napi_value Compile(napi_env env, napi_callback_info info) {
+        napi_value argv[3];
+        size_t argc = 3;
+        napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
+        if (argc < 1) {
+            napi_throw_error(env, "EINVAL", "Too few arguments");
+            return NULL;
         }
 
-        return;
+        CYPool pool;
+
+        std::string code;
+        if (!GetStringValue(env, argv[0], code))
+            return NULL;
+
+        bool strict;
+        if (!GetBoolValue(env, argv[1], strict))
+            return NULL;
+
+        bool pretty;
+        if (!GetBoolValue(env, argv[2], pretty))
+            return NULL;
+
+        std::stringbuf stream(code);
+        CYDriver driver(pool, stream);
+        driver.strict_ = strict;
+
+        if (driver.Parse() || !driver.errors_.empty()) {
+            for (CYDriver::Errors::const_iterator error(driver.errors_.begin()); error != driver.errors_.end(); ++error) {
+                auto message(error->message_);
+                napi_throw_error(env, "EINVAL", message.c_str());
+                return NULL;
+            }
+
+            napi_throw_error(env, "EINVAL", "Invalid code");
+            return NULL;
+        }
+
+        if (driver.script_ == NULL) {
+            napi_throw_error(env, "EINVAL", "Invalid code");
+            return NULL;
+        }
+
+        std::stringbuf str;
+        CYOptions options;
+        CYOutput out(str, options);
+        out.pretty_ = pretty;
+        driver.Replace(options);
+        out << *driver.script_;
+
+        std::string result(str.str());
+        napi_value result_value;
+        napi_create_string_utf8(env, result.c_str(), NAPI_AUTO_LENGTH, &result_value);
+        return result_value;
     }
 
-    if (driver.script_ == NULL)
-        return;
+  private:
+    static bool GetStringValue(napi_env env, napi_value value, std::string &result) {
+        size_t size;
+        if (napi_get_value_string_utf8(env, value, NULL, 0, &size) != napi_ok) {
+            napi_throw_type_error(env, "EINVAL", "Expected a string");
+            return false;
+        }
+        result.resize(size, '\0');
 
-    std::stringbuf str;
-    CYOptions options;
-    CYOutput out(str, options);
-    out.pretty_ = pretty;
-    driver.Replace(options);
-    out << *driver.script_;
+        napi_get_value_string_utf8(env, value, &result[0], size + 1, &size);
 
-    info.GetReturnValue().Set(Nan::New(str.str()).ToLocalChecked());
-}
-
-static bool GetStringArg(CYPool &pool, Handle<Value> value, const char *&result) {
-    if (!value->IsString()) {
-        Nan::ThrowTypeError("Expected a string");
-        return false;
+        return true;
     }
 
-    String::Utf8Value v(value.As<String>());
-    result = pool.strdup(*v);
-    return true;
-}
+    static bool GetBoolValue(napi_env env, napi_value value, bool &result) {
+        if (napi_get_value_bool(env, value, &result) != napi_ok) {
+            napi_throw_type_error(env, "EINVAL", "Expected a boolean");
+            return false;
+        }
 
-static bool GetBoolArg(CYPool &pool, Handle<Value> value, bool &result) {
-    if (!value->IsBoolean()) {
-        Nan::ThrowTypeError("Expected a boolean");
-        return false;
+        return true;
     }
+};
 
-    result = value.As<Boolean>()->Value();
-    return true;
-}
+NAPI_MODULE_INIT() {
+    napi_property_descriptor desc[] = {
+        {"compile", NULL, Binding::Compile, NULL, NULL, NULL, napi_default, NULL},
+    };
 
-static void DisposeAll(void *data);
+    if (napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc) != napi_ok)
+        return NULL;
 
-static void InitAll(Handle<Object> exports, Handle<Value> module, Handle<Context> context) {
-    exports->Set(Nan::New("compile").ToLocalChecked(), Nan::New<FunctionTemplate>(Compile)->GetFunction());
-
-    node::AtExit(DisposeAll, nullptr);
-}
-
-static void DisposeAll(void *data) {
+    return exports;
 }
 
 }
-
-NODE_MODULE_CONTEXT_AWARE(cylang_binding, cylang::InitAll)

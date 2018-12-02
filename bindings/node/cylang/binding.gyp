@@ -1,44 +1,29 @@
 {
-  "variables": {
-    "frida_host_msvs": "unix",
-  },
   "targets": [
     {
-      "variables": {
-        "conditions": [
-          ["OS=='win' and target_arch=='ia32'", {
-            "frida_host_msvs": "Win32-<(CONFIGURATION_NAME)",
-          }],
-          ["OS=='win' and target_arch=='x64'", {
-            "frida_host_msvs": "x64-<(CONFIGURATION_NAME)",
-          }],
-        ],
-      },
       "target_name": "cylang_binding",
       "sources": [
         "addon.cpp",
       ],
+      "defines": [
+        "NAPI_VERSION=3",
+      ],
       "include_dirs": [
         "../../../src",
-        "<!(node -e \"require(\'nan\')\")",
+      ],
+      "library_dirs": [
+        "../../../../build/src",
+      ],
+      "libraries": [
+        "-lcycript",
       ],
       "target_conditions": [
-        ["OS=='win'", {
-          "library_dirs": [
-            "../../../build/<(frida_host_msvs)/lib",
-          ],
-          "libraries": [
-            "-lcycript.lib",
-          ],
-        }, {
+        ["OS!='win'", {
           "cflags!": [
             "-fno-exceptions",
           ],
           "cflags_cc!": [
             "-fno-exceptions",
-          ],
-          "libraries": [
-            "../../../../src/.libs/libcycript.a",
           ],
         }],
         ["OS=='mac'", {

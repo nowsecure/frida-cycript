@@ -99,6 +99,13 @@ Run the test-suite:
 
     cd test && npm install && npm run test
 
+To build the Node.js bindings:
+
+    meson build --buildtype minsize --strip --default-library static -D enable_console=false -D enable_engine=false
+    ninja -C build
+    cd bindings/node/cylang/
+    npm install
+
   [1]: http://www.cycript.org/
   [2]: https://twitter.com/saurik
   [3]: https://github.com/nowsecure/mjolner

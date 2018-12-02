@@ -4,13 +4,15 @@
   "description": "Cycript compiler",
   "main": "index.js",
   "scripts": {
-    "install": "prebuild --install",
-    "prebuild": "prebuild --verbose --strip"
+    "install": "prebuild-install || node-gyp rebuild",
+    "prebuild": "prebuild -t 3 -r napi --verbose --strip"
   },
   "binary": {
-    "module_name": "cylang_binding",
-    "remote_path": "cylang/v{version}",
-    "host": "https://build.frida.re"
+    "host": "https://github.com",
+    "remote_path": "nowsecure/frida-cycript/releases/download/{version}",
+    "napi_versions": [
+      3
+    ]
   },
   "repository": {
     "type": "git",
@@ -34,12 +36,12 @@
   },
   "homepage": "https://github.com/nowsecure/frida-cycript#readme",
   "dependencies": {
-    "bindings": "^1.2.1",
-    "nan": "^2.4.0",
-    "prebuild": "^4.2.2"
+    "bindings": "^1.3.1",
+    "prebuild-install": "^5.2.2"
   },
   "devDependencies": {
-    "mocha": "^3.0.2",
-    "should": "^11.1.0"
+    "mocha": "^5.2.0",
+    "prebuild": "^8.1.2",
+    "should": "^13.2.3"
   }
 }
