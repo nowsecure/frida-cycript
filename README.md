@@ -69,7 +69,7 @@ Please see [our test-suite] [6] to get an overview of what we currently support.
 
 ## Building
 
-### Mac
+### macOS
 
 Install Meson and Ninja:
 
@@ -101,7 +101,7 @@ Run the test-suite:
 
 To build the Node.js bindings:
 
-    meson build --buildtype minsize --strip --default-library static -D enable_console=false -D enable_engine=false
+    meson build --buildtype minsize --strip --default-library static -D enable_engine=false -D enable_console=false
     ninja -C build
     cd bindings/node/cylang/
     npm install
