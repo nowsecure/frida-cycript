@@ -139,6 +139,7 @@ CYType *Selector::Decode(CYPool &pool) const {
 
 CYType *Bits::Decode(CYPool &pool) const {
     _assert(false);
+    return NULL;
 }
 
 CYType *Pointer::Decode(CYPool &pool) const {
