@@ -57,14 +57,28 @@ if cc.has_header('android/api-level.h')
   host_os = 'android'
 endif
 
-flex = find_program('flex')
+python3 = import('python').find_installation()
+
+if build_machine.system() == 'windows'
+  flex = find_program(files('ext/toolchain/usr/bin/flex.exe'))
+else
+  flex = find_program('flex')
+endif
 bison = find_program(files('ext/toolchain/usr/bin/bison.py'))
-npm = find_program('npm')
 
 cdata = configuration_data()
 
 host_os_id = '1'
 cdata.set_quoted('CY_SYSTEM', host_os_id)
+
+enable_objc = true
+cdata.set10('CY_OBJECTIVEC', enable_objc)
+
+enable_java = true
+cdata.set10('CY_JAVA', enable_java)
+
+enable_ruby = true
+cdata.set10('CY_RUBY', enable_ruby)
 
 if get_option('enable_engine')
   cdata.set('CY_EXECUTE', 1)
@@ -73,10 +87,42 @@ endif
 dep_includes = []
 dep_libs = []
 
-if not cc.has_header('sqlite3.h')
-  error('sqlite3 is required')
+if get_option('enable_engine')
+  npm = find_program('npm')
+
+  if not cc.has_header('sqlite3.h')
+    error('sqlite3 is required when engine is enabled')
+  endif
+  dep_libs += ['-lsqlite3']
+
+  python = get_option('with-python')
+  if python != 'no'
+    enable_python = true
+
+    result = run_command(python, '-c',
+      'from distutils import sysconfig; import sys; sys.stdout.write(sysconfig.get_python_inc())')
+    if result.returncode() != 0
+      error('Unable to detect Python include directory: ' + result.stdout() + result.stderr())
+    endif
+    python_incdir = result.stdout()
+
+    dep_includes += '-I' + python_incdir
+  else
+    enable_python = false
+  endif
+
+  if build_machine.system() == 'darwin'
+    result = run_command('scripts/detect-xcode-clang-libdir')
+    clang_libdir = result.stdout().strip()
+    clang_dep = cc.find_library('clang', dirs: clang_libdir)
+  else
+    clang_libdir = ''
+    clang_dep = cc.find_library('clang')
+  endif
+else
+  enable_python = false
 endif
-dep_libs += ['-lsqlite3']
+cdata.set10('CY_PYTHON', enable_python)
 
 if get_option('enable_console')
   readline = subproject('readline')
@@ -91,48 +137,26 @@ if get_option('enable_console')
   endif
 endif
 
-enable_java = true
-cdata.set10('CY_JAVA', enable_java)
-
-enable_ruby = true
-cdata.set10('CY_RUBY', enable_ruby)
-
-python = get_option('with-python')
-if python != 'no'
-  enable_python = true
-
-  result = run_command(python, '-c',
-    'from distutils import sysconfig; import sys; sys.stdout.write(sysconfig.get_python_inc())')
-  if result.returncode() != 0
-    error('Unable to detect Python include directory: ' + result.stdout() + result.stderr())
-  endif
-  python_incdir = result.stdout()
-
-  dep_includes += '-I' + python_incdir
-else
-  enable_python = false
-endif
-cdata.set10('CY_PYTHON', enable_python)
-
-enable_objc = true
-cdata.set10('CY_OBJECTIVEC', enable_objc)
-
-if build_machine.system() == 'darwin'
-  result = run_command('scripts/detect-xcode-clang-libdir')
-  clang_libdir = result.stdout().strip()
-  clang_dep = cc.find_library('clang', dirs: clang_libdir)
-else
-  clang_libdir = ''
-  clang_dep = cc.find_library('clang')
-endif
-
-configure_file(input: 'config.h.in',
-  output: 'config.h',
+configure_file(output: 'config.h',
   configuration: cdata)
 
-add_project_arguments('-include', 'config.h', language: languages)
+compiler_id = cc.get_id()
 
-if cc.get_id() == 'gcc' or cc.get_id() == 'clang'
+if compiler_id == 'msvc'
+  add_project_arguments('/FI', join_paths(meson.current_build_dir(), 'config.h'), language: languages)
+else
+  add_project_arguments('-include', 'config.h', language: languages)
+endif
+
+if compiler_id == 'msvc'
+  warning_suppression_flags = [
+    '/wd4005',
+    '/wd4244',
+    '/wd4291',
+    '/wd4715',
+  ]
+  add_project_arguments(warning_suppression_flags, language: languages)
+elif compiler_id == 'gcc' or compiler_id == 'clang'
   add_project_arguments('-fvisibility=hidden', language: languages)
 
   candidate_flags = [
@@ -148,16 +172,14 @@ if cc.get_id() == 'gcc' or cc.get_id() == 'clang'
     '-Wno-unneeded-internal-declaration',
     '-Wno-inconsistent-missing-override',
   ]
-else
-  candidate_flags = []
-endif
 
-extra_args = []
-foreach flag : candidate_flags
-  if cc.has_argument(flag)
-    extra_args += [flag]
-  endif
-endforeach
-add_project_arguments(extra_args, language: languages)
+  extra_args = []
+  foreach flag : candidate_flags
+    if cc.has_argument(flag)
+      extra_args += [flag]
+    endif
+  endforeach
+  add_project_arguments(extra_args, language: languages)
+endif
 
 subdir('src')

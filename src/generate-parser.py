@@ -18,14 +18,18 @@ output_source = sys.argv[4]
 
 output_dir = os.path.dirname(output_source)
 
+if bison.endswith(".py"):
+    bison_tool = [ sys.executable, bison ]
+else:
+    bison_tool = [ bison ]
+
 bison_args = [
-    bison,
     "-v",
     "--report=state",
     "-Werror",
     "-o", os.path.basename(output_source),
     os.path.relpath(grammar, output_dir)
 ]
-subprocess.check_call(bison_args, cwd=output_dir)
+subprocess.check_call(bison_tool + bison_args, cwd=output_dir)
 
 fixup(output_source)

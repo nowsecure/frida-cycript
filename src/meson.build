@@ -23,6 +23,7 @@ cycript_scanner_grammar = custom_target('cycript-scanner-grammar',
   input: 'Scanner.lpp.in',
   output: 'Scanner.lpp',
   command: [
+    python3,
     filter,
     '@INPUT@',
     '@OUTPUT@',
@@ -45,6 +46,7 @@ cycript_parser_grammar = custom_target('cycript-parser-grammar',
   input: 'Parser.ypp.in',
   output: 'Parser.ypp',
   command: [
+    python3,
     filter,
     '@INPUT@',
     '@OUTPUT@',
@@ -54,8 +56,9 @@ cycript_parser = custom_target('cycript-parser',
   input: cycript_parser_grammar,
   output: ['Parser.hpp', 'Parser.cpp'],
   command: [
+    python3,
     files('generate-parser.py'),
-    bison,
+    bison.path(),
     '@INPUT@',
     '@OUTPUT@',
   ],
@@ -70,6 +73,7 @@ if get_option('enable_engine')
   frida_core = custom_target('frida-core',
     output: ['frida-core.h'],
     command: [
+      python3,
       files('fetch-frida-devkit.py'),
       '12.2.26',
       host_os,
@@ -115,6 +119,7 @@ if get_option('enable_engine')
     ],
     output: 'Bridge.def',
     command: [
+      python3,
       files('generate-bridge-definitions.py'),
       host_os,
       host_arch,
@@ -130,6 +135,7 @@ if get_option('enable_engine')
     input: cycript_bridge_definitions,
     output: 'libcycript.db',
     command: [
+      python3,
       files('generate-database.py'),
       host_os_id,
       '@OUTPUT@',
@@ -144,6 +150,7 @@ if get_option('enable_engine')
     input: 'package.json',
     output: 'node_modules',
     command: [
+      python3,
       files('fetch-node-modules.py'),
       npm,
       '@INPUT@',
@@ -158,6 +165,7 @@ if get_option('enable_engine')
     ],
     output: 'libcycript.js',
     command: [
+      python3,
       files('generate-runtime.py'),
       '@INPUT@',
       '@OUTPUT@',
