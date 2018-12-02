@@ -92,7 +92,7 @@ _visible void CYLexerHighlight(const char *data, size_t size, std::ostream &outp
         if (color.code_ != 0) {
             if (ignore)
                 output << CYIgnoreStart;
-            output << "\e[" << (color.bold_ ? '1' : '0') << ";" << color.code_ << "m";
+            output << "\033[" << (color.bold_ ? '1' : '0') << ";" << color.code_ << "m";
             if (ignore)
                 output << CYIgnoreEnd;
         }
@@ -102,7 +102,7 @@ _visible void CYLexerHighlight(const char *data, size_t size, std::ostream &outp
         if (color.code_ != 0) {
             if (ignore)
                 output << CYIgnoreStart;
-            output << "\e[0m";
+            output << "\033[0m";
             if (ignore)
                 output << CYIgnoreEnd;
         }
