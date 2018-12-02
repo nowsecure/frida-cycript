@@ -29,6 +29,7 @@
 
 #include <algorithm>
 
+#include <malloc.h>
 #include <stdint.h>
 
 #include "Exception.hpp"
