@@ -85,7 +85,7 @@ Clone this repo:
 
 Generate the build system:
 
-    meson build --buildtype minsize --strip --default-library static
+    meson build --buildtype minsize --strip
 
 Build:
 
