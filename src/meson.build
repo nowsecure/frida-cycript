@@ -147,7 +147,7 @@ if get_option('enable_engine')
   )
 
   node_modules = custom_target('node-modules',
-    input: 'package.json',
+    input: ['package.json', '.babelrc'],
     output: 'node_modules',
     command: [
       python3,
