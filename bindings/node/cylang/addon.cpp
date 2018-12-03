@@ -35,23 +35,23 @@ class Binding {
         napi_value argv[3];
         size_t argc = 3;
         napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
-        if (argc < 1) {
-            napi_throw_error(env, "EINVAL", "Too few arguments");
+        if (argc != 3) {
+            napi_throw_error(env, "EINVAL", "Missing one or more arguments");
             return NULL;
         }
 
         CYPool pool;
 
         std::string code;
-        if (!GetStringValue(env, argv[0], code))
+        if (!GetStringArg(env, argv[0], code))
             return NULL;
 
         bool strict;
-        if (!GetBoolValue(env, argv[1], strict))
+        if (!GetBoolArg(env, argv[1], strict))
             return NULL;
 
         bool pretty;
-        if (!GetBoolValue(env, argv[2], pretty))
+        if (!GetBoolArg(env, argv[2], pretty))
             return NULL;
 
         std::stringbuf stream(code);
@@ -88,7 +88,7 @@ class Binding {
     }
 
   private:
-    static bool GetStringValue(napi_env env, napi_value value, std::string &result) {
+    static bool GetStringArg(napi_env env, napi_value value, std::string &result) {
         size_t size;
         if (napi_get_value_string_utf8(env, value, NULL, 0, &size) != napi_ok) {
             napi_throw_type_error(env, "EINVAL", "Expected a string");
@@ -101,7 +101,7 @@ class Binding {
         return true;
     }
 
-    static bool GetBoolValue(napi_env env, napi_value value, bool &result) {
+    static bool GetBoolArg(napi_env env, napi_value value, bool &result) {
         if (napi_get_value_bool(env, value, &result) != napi_ok) {
             napi_throw_type_error(env, "EINVAL", "Expected a boolean");
             return false;
