@@ -14,7 +14,7 @@
   },
   "binary": {
     "host": "https://github.com",
-    "remote_path": "nowsecure/frida-cycript/releases/download/{version}",
+    "remote_path": "nowsecure/frida-cycript/releases/download/v{version}",
     "napi_versions": [
       3
     ]
