@@ -29,7 +29,9 @@
 
 #include <algorithm>
 
+#ifdef _MSC_VER
 #include <malloc.h>
+#endif
 #include <stdint.h>
 
 #include "Exception.hpp"
