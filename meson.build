@@ -45,6 +45,13 @@ if host_os == 'macos'
 
   add_global_arguments('-stdlib=libc++', language: ['cpp', 'objcpp'])
 endif
+if host_os_family == 'linux'
+  add_global_arguments('-static-libgcc', language: languages)
+  add_global_link_arguments('-static-libgcc', language: languages)
+
+  add_global_arguments('-static-libstdc++', language: 'cpp')
+  add_global_link_arguments('-static-libstdc++', language: 'cpp')
+endif
 
 optimization_compile_args = []
 optimization_link_args = []
