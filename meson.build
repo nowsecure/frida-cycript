@@ -7,13 +7,18 @@ host_os_family = host_machine.system()
 host_os = host_os_family
 host_arch = host_machine.cpu_family()
 
-languages = ['c', 'cpp']
+c_languages = ['c']
+cpp_languages = ['cpp']
 if host_os_family == 'darwin'
-  languages += ['objc', 'objcpp']
+  c_languages += 'objc'
+  cpp_languages += 'objcpp'
+
   add_languages('objc', 'objcpp')
 endif
+languages = c_languages + cpp_languages
 
 cc = meson.get_compiler('c')
+cpp = meson.get_compiler('cpp')
 
 target_conditionals_prefix = '#include <TargetConditionals.h>'
 
@@ -173,7 +178,7 @@ if compiler_id == 'msvc'
 elif compiler_id == 'gcc' or compiler_id == 'clang'
   add_project_arguments('-fvisibility=hidden', language: languages)
 
-  candidate_flags = [
+  candidate_c_flags = [
     '-Werror',
     '-Wno-non-virtual-dtor',
     ## XXX: this one is used to support GNU Objective-C struct objc_method
@@ -186,14 +191,25 @@ elif compiler_id == 'gcc' or compiler_id == 'clang'
     '-Wno-unneeded-internal-declaration',
     '-Wno-inconsistent-missing-override',
   ]
-
-  extra_args = []
-  foreach flag : candidate_flags
+  extra_c_args = []
+  foreach flag : candidate_c_flags
     if cc.has_argument(flag)
-      extra_args += [flag]
+      extra_c_args += [flag]
     endif
   endforeach
-  add_project_arguments(extra_args, language: languages)
+  add_project_arguments(extra_c_args, language: languages)
+
+  candidate_cpp_flags = [
+    '-Wno-non-virtual-dtor',
+    '-Wno-overloaded-virtual',
+  ]
+  extra_cpp_args = []
+  foreach flag : candidate_cpp_flags
+    if cpp.has_argument(flag)
+      extra_cpp_args += [flag]
+    endif
+  endforeach
+  add_project_arguments(extra_cpp_args, language: cpp_languages)
 endif
 
 subdir('src')
