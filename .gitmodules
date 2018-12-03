@@ -3,4 +3,4 @@
 	url = https://github.com/joyent/node.git
 [submodule "subprojects/readline"]
 	path = subprojects/readline
-	url = git://github.com/oleavr/readline.git
+	url = https://github.com/oleavr/readline.git
