@@ -180,12 +180,10 @@ elif compiler_id == 'gcc' or compiler_id == 'clang'
 
   candidate_c_flags = [
     '-Werror',
-    '-Wno-non-virtual-dtor',
     ## XXX: this one is used to support GNU Objective-C struct objc_method
     '-Wno-deprecated-declarations',
     '-Wno-dangling-else',
     '-Wno-empty-body',
-    '-Wno-overloaded-virtual',
     '-Wno-parentheses',
     '-Wno-tautological-undefined-compare',
     '-Wno-unneeded-internal-declaration',
