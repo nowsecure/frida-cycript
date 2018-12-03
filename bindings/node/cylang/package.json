@@ -7,7 +7,7 @@
     "index.js"
   ],
   "scripts": {
-    "install": "prebuild-install",
+    "install": "prebuild-install -r napi",
     "rebuild": "node-gyp rebuild",
     "prebuild": "prebuild -t 3 -r napi --verbose --strip",
     "test": "mocha"
