@@ -7,7 +7,9 @@ import shutil
 
 agent_entrypoint = sys.argv[1]
 node_modules = sys.argv[2]
-output_js = sys.argv[3]
+standard_library = sys.argv[3]
+output_js = sys.argv[4]
+output_standard_library = sys.argv[5]
 
 agent_dir = os.path.dirname(agent_entrypoint)
 output_dir = os.path.dirname(output_js)
@@ -24,4 +26,9 @@ compile_args = [
     "-c",
 ]
 exit_code = subprocess.check_call(compile_args, cwd=output_dir)
-sys.exit(exit_code)
+if exit_code != 0:
+    sys.exit(exit_code)
+
+if os.path.exists(output_standard_library):
+    shutil.rmtree(output_standard_library)
+shutil.copytree(standard_library, output_standard_library)

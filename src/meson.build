@@ -162,8 +162,16 @@ if get_option('enable_engine')
     input: [
       'Agent/index.js',
       node_modules,
+      'cycript0.9',
     ],
-    output: 'libcycript.js',
+    output: [
+      'libcycript.js',
+      'cycript0.9',
+    ],
+    depend_files: [
+      'cycript0.9/org/cycript/NSLog.cy',
+      'cycript0.9/com/saurik/substrate/MS.cy',
+    ],
     command: [
       python3,
       files('generate-runtime.py'),
