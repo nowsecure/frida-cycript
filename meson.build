@@ -1,5 +1,5 @@
 project('frida-cycript', 'c', 'cpp',
-  version: '2.0.1',
+  version: '2.0.2',
   default_options: ['cpp_std=c++11'],
 )
 
