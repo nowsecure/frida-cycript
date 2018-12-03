@@ -128,7 +128,7 @@ if get_option('enable_engine')
       '-DCY_JAVA=' + enable_java.to_string('1', '0'),
       '-DCY_PYTHON=' + enable_python.to_string('1', '0'),
       '-DCY_OBJECTIVEC=' + enable_objc.to_string('1', '0'),
-    ] + dep_includes,
+    ] + analyze_extra_includes,
   )
 
   cycript_database = custom_target('cycript-database',
@@ -185,13 +185,13 @@ endif
 
 cycript = library('cycript', cycript_sources,
   cpp_args: ['-DYYDEBUG=1'],
-  link_args: cycript_link_args + dep_libs + cycript_shlib_link_args,
+  link_args: cycript_link_args + cycript_shlib_link_args + extra_libs,
   install: true,
 )
 if get_option('default_library') == 'static'
   cycript_dep = declare_dependency(
     link_with: cycript,
-    link_args: cycript_link_args + dep_libs,
+    link_args: cycript_link_args + extra_libs,
   )
 else
   cycript_dep = declare_dependency(

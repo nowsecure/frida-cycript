@@ -104,8 +104,8 @@ if get_option('enable_engine')
   cdata.set('CY_EXECUTE', 1)
 endif
 
-dep_includes = []
-dep_libs = []
+extra_libs = []
+analyze_extra_includes = []
 
 if get_option('enable_engine')
   npm = find_program('npm')
@@ -113,7 +113,7 @@ if get_option('enable_engine')
   if not cc.has_header('sqlite3.h')
     error('sqlite3 is required when engine is enabled')
   endif
-  dep_libs += ['-lsqlite3']
+  extra_libs += ['-lsqlite3']
 
   python = get_option('with-python')
   if python != 'no'
@@ -126,7 +126,7 @@ if get_option('enable_engine')
     endif
     python_incdir = result.stdout()
 
-    dep_includes += '-I' + python_incdir
+    analyze_extra_includes += '-I' + python_incdir
   else
     enable_python = false
   endif
