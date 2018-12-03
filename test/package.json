@@ -5,13 +5,17 @@
   "private": true,
   "main": "types.js",
   "scripts": {
-    "test": "DYLD_LIBRARY_PATH=$(pwd)/../src/.libs node node_modules/mocha/bin/_mocha ."
+    "test": "DYLD_LIBRARY_PATH=$(pwd)/../build/src node node_modules/mocha/bin/_mocha ."
+  },
+  "binary": {
+    "napi_versions": [
+      3
+    ]
   },
   "license": "MIT",
   "devDependencies": {
-    "bindings": "^1.2.1",
-    "mocha": "^3.0.2",
-    "nan": "^2.4.0",
-    "should": "^11.1.0"
+    "bindings": "^1.3.1",
+    "mocha": "^5.2.0",
+    "should": "^13.2.3"
   }
 }
