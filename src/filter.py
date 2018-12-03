@@ -26,8 +26,9 @@ def include(source, output_file, filters):
             if not handled:
                 match = begin_pattern.match(line)
                 if match is not None:
-                    requirement = match.group(1)
-                    condition.append(lambda: requirement in filters)
+                    requirements = match.group(1).split(" ")
+                    satisfied = any([req.strip() in filters for req in requirements])
+                    condition.append(satisfied)
                     handled = True
 
             if not handled:
@@ -36,7 +37,7 @@ def include(source, output_file, filters):
                     condition.pop()
                     handled = True
 
-        if not handled and (len(condition) == 0 or condition[-1]()):
+        if not handled and (len(condition) == 0 or condition[-1]):
             output_file.write(line)
             output_file.write('\n')
 
