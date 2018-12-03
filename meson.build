@@ -45,8 +45,8 @@ if cc.has_header('android/api-level.h')
 endif
 
 if host_os == 'macos'
-  add_global_arguments('-mmacosx-version-min=10.7', language: languages)
-  add_global_link_arguments('-mmacosx-version-min=10.7', language: languages)
+  add_global_arguments('-mmacosx-version-min=10.9', language: languages)
+  add_global_link_arguments('-mmacosx-version-min=10.9', language: languages)
 
   add_global_arguments('-stdlib=libc++', language: cpp_languages)
   add_global_link_arguments('-stdlib=libc++', language: cpp_languages)

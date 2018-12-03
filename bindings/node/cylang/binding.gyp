@@ -39,10 +39,10 @@
             "OTHER_CFLAGS": [
               "-std=c++11",
               "-stdlib=libc++",
-              "-mmacosx-version-min=10.7",
+              "-mmacosx-version-min=10.9",
             ],
             "OTHER_LDFLAGS": [
-              "-Wl,-macosx_version_min,10.7",
+              "-Wl,-macosx_version_min,10.9",
               "-Wl,-dead_strip",
               "-Wl,-exported_symbols_list,binding.symbols",
             ],
