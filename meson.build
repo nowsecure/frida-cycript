@@ -46,16 +46,17 @@ endif
 
 if host_os == 'macos'
   add_global_arguments('-mmacosx-version-min=10.7', language: languages)
-  add_global_link_arguments('-Wl,-macosx_version_min,10.7', language: languages)
+  add_global_link_arguments('-mmacosx-version-min=10.7', language: languages)
 
-  add_global_arguments('-stdlib=libc++', language: ['cpp', 'objcpp'])
+  add_global_arguments('-stdlib=libc++', language: cpp_languages)
+  add_global_link_arguments('-stdlib=libc++', language: cpp_languages)
 endif
 if host_os_family == 'linux'
   add_global_arguments('-static-libgcc', language: languages)
   add_global_link_arguments('-static-libgcc', language: languages)
 
-  add_global_arguments('-static-libstdc++', language: 'cpp')
-  add_global_link_arguments('-static-libstdc++', language: 'cpp')
+  add_global_arguments('-static-libstdc++', language: cpp_languages)
+  add_global_link_arguments('-static-libstdc++', language: cpp_languages)
 endif
 
 optimization_compile_args = []
