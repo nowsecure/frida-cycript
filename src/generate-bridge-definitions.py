@@ -45,6 +45,27 @@ elif host_os == 'ios':
         "-std=gnu++11",
         "-stdlib=libc++",
     ]
+elif host_os == 'linux':
+    config_data = subprocess.check_output("echo | clang -v -E -x c - 2>&1", shell=True).decode('utf-8')
+
+    system_includes = []
+    found_includes = False
+    for line in config_data.split("\n"):
+        if not found_includes:
+            if line == "#include <...> search starts here:":
+                found_includes = True
+        elif line == "End of search list.":
+            found_includes = False
+        else:
+            system_includes += ["-isystem", line.strip()]
+
+    host_flags = [
+        "-x", "c++",
+        "-std=gnu++11",
+        "-nostdinc",
+        "-nostdinc++",
+        "-D__extern_inline=extern inline",
+    ] + system_includes
 
 analyze_args = [
     analyze,

@@ -39,8 +39,6 @@
 #if CY_JAVA
 #if defined(__APPLE__) && !defined(__arm__)
 #include <JavaVM/jni.h>
-#else
-#include <jni.h>
 #endif
 #endif
 
@@ -56,7 +54,7 @@
 #include <Python.h>
 #endif
 
-#if CY_OBJECTIVEC
+#if CY_OBJECTIVEC && defined(__APPLE__)
 #include <objc/runtime.h>
 #endif
 
