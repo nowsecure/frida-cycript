@@ -47,16 +47,20 @@ endif
 if host_os == 'macos'
   add_global_arguments('-mmacosx-version-min=10.9', language: languages)
   add_global_link_arguments('-mmacosx-version-min=10.9', language: languages)
-
-  add_global_arguments('-stdlib=libc++', language: cpp_languages)
-  add_global_link_arguments('-stdlib=libc++', language: cpp_languages)
 endif
-if host_os_family == 'linux'
+
+compiler_id = cc.get_id()
+
+if compiler_id == 'gcc'
   add_global_arguments('-static-libgcc', language: languages)
   add_global_link_arguments('-static-libgcc', language: languages)
 
   add_global_arguments('-static-libstdc++', language: cpp_languages)
   add_global_link_arguments('-static-libstdc++', language: cpp_languages)
+endif
+if compiler_id == 'clang'
+  add_global_arguments('-stdlib=libc++', language: cpp_languages)
+  add_global_link_arguments('-stdlib=libc++', language: cpp_languages)
 endif
 
 optimization_compile_args = []
@@ -103,6 +107,8 @@ cdata.set10('CY_RUBY', enable_ruby)
 if get_option('enable_engine')
   cdata.set('CY_EXECUTE', 1)
 endif
+
+thread_dep = dependency('threads')
 
 extra_libs = []
 analyze_extra_includes = []
@@ -160,8 +166,6 @@ endif
 configure_file(output: 'config.h',
   configuration: cdata)
 
-compiler_id = cc.get_id()
-
 if compiler_id == 'msvc'
   add_project_arguments('/FI', join_paths(meson.current_build_dir(), 'config.h'), language: languages)
 else
@@ -180,7 +184,6 @@ elif compiler_id == 'gcc' or compiler_id == 'clang'
   add_project_arguments('-fvisibility=hidden', language: languages)
 
   candidate_c_flags = [
-    '-Werror',
     ## XXX: this one is used to support GNU Objective-C struct objc_method
     '-Wno-deprecated-declarations',
     '-Wno-dangling-else',

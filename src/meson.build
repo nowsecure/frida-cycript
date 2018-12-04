@@ -96,6 +96,13 @@ if get_option('enable_engine')
       '-Wl,-framework,Foundation,-framework,AppKit',
     ]
   endif
+  if host_os == 'linux'
+    cycript_link_args += [
+      '-lrt',
+      '-ldl',
+      '-lresolv',
+    ]
+  endif
 
   analyze_sources = [
     'Analyze.cpp',
@@ -106,9 +113,9 @@ if get_option('enable_engine')
   ]
   analyze = executable('Analyze', analyze_sources,
     include_directories: include_directories('extra'),
-    dependencies: clang_dep,
     build_rpath: clang_libdir,
     install_rpath: clang_libdir,
+    dependencies: [clang_dep, thread_dep],
   )
 
   cycript_bridge_definitions = custom_target('cycript-bridge-definitions',
@@ -195,6 +202,7 @@ cycript = library('cycript', cycript_sources,
   cpp_args: ['-DYYDEBUG=1'],
   link_args: cycript_link_args + cycript_shlib_link_args + extra_libs,
   install: true,
+  dependencies: [thread_dep],
 )
 if get_option('default_library') == 'static'
   cycript_dep = declare_dependency(
@@ -212,9 +220,15 @@ if get_option('enable_console')
   if host_os_family == 'darwin'
     console_link_args += '-Wl,-exported_symbols_list,' + join_paths(meson.current_source_dir(), 'cycript.symbols')
   endif
+  if host_os_family == 'linux'
+    console_link_args += [
+      '-lrt',
+      '-ldl',
+    ]
+  endif
 
   executable('cycript', 'Console.cpp',
     link_args: console_link_args + termcap_libs,
-    dependencies: [cycript_dep, readline_dep],
+    dependencies: [cycript_dep, readline_dep, thread_dep],
   )
 endif
