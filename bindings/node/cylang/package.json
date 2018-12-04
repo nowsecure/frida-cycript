@@ -1,6 +1,6 @@
 {
   "name": "cylang",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "Cycript compiler",
   "main": "index.js",
   "files": [
