@@ -1,5 +1,3 @@
-'use strict';
-
 const cylang = require('..');
 const should = require('should');
 

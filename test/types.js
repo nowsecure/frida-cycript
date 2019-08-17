@@ -1,5 +1,3 @@
-'use strict';
-
 const cycript = require('bindings')('cytest_binding');
 const should = require('should');
 

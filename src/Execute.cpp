@@ -130,7 +130,7 @@ static const char *TryResolveFile(CYPool &pool, bool exact, const char *name);
 static const char *TryResolveDirectory(CYPool &pool, const char *name);
 static const char *TryResolveEither(CYPool &pool, const char *name);
 static CYUTF8String CompileModule(CYPool &pool, CYUTF8String code);
-static void OnDetached(FridaSession *session, gpointer user_data);
+static void OnDetached(FridaSession *session, FridaSessionDetachReason reason, FridaCrash *crash, gpointer user_data);
 static void OnMessage(FridaScript *script, const gchar *message, GBytes *data, gpointer user_data);
 static void OnStanza(JsonArray *stanza);
 static void OnError(JsonObject *error);
@@ -173,11 +173,14 @@ _visible void CYAttach(const char *device_id, const char *host, const char *targ
     CheckGError(error);
     g_signal_connect(session, "detached", G_CALLBACK(OnDetached), NULL);
 
-    auto name("libcycript-runtime");
     CYUTF8String source(CYPoolFileUTF8String(pool, pool.strcat(library_path, "/libcycript.js", NULL)));
     if (source.data == NULL)
         CYThrow("libcycript.js not found");
-    FridaRefPtr<FridaScript> script(frida_session_create_script_sync(session, name, source.data, &error));
+
+    FridaRefPtr<FridaScriptOptions> options(frida_script_options_new());
+    frida_script_options_set_name(options, "libcycript-runtime");
+
+    FridaRefPtr<FridaScript> script(frida_session_create_script_sync(session, source.data, options, &error));
     CheckGError(error);
     g_signal_connect(script, "message", G_CALLBACK(OnMessage), NULL);
 
@@ -623,7 +626,7 @@ static const char *TryResolveEither(CYPool &pool, const char *name) {
     return path;
 }
 
-static void OnDetached(FridaSession *session, gpointer user_data) {
+static void OnDetached(FridaSession *session, FridaSessionDetachReason reason, FridaCrash *crash, gpointer user_data) {
     g_mutex_lock(&lock_);
     detached_ = true;
     g_cond_signal(&cond_);

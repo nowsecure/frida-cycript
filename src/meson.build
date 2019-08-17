@@ -75,7 +75,7 @@ if get_option('enable_engine')
     command: [
       python3,
       files('fetch-frida-devkit.py'),
-      '12.2.26',
+      '12.6.16',
       host_os,
       host_arch,
       '@OUTDIR@',
@@ -154,7 +154,7 @@ if get_option('enable_engine')
   )
 
   node_modules = custom_target('node-modules',
-    input: ['package.json', '.babelrc'],
+    input: ['package.json', 'package-lock.json'],
     output: 'node_modules',
     command: [
       python3,

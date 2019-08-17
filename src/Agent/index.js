@@ -1,12 +1,10 @@
 // MIT - Copyright NowSecure 2016 - oleavr@nowsecure.com
-'use strict';
-
 const mjolner = require('mjolner');
 
 const RTLD_GLOBAL = 0x8;
 const RTLD_LAZY = 0x1;
 
-const _dlopen = new NativeFunction(Module.findExportByName(null, 'dlopen'), 'pointer', ['pointer', 'int']);
+const _dlopen = new NativeFunction(Module.getExportByName(null, 'dlopen'), 'pointer', ['pointer', 'int']);
 
 let handlerInstalled = false;
 const modules = {};

@@ -1,5 +1,3 @@
-'use strict';
-
 const binding = require('bindings')('cylang_binding');
 
 module.exports = {
