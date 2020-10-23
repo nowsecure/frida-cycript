@@ -44,9 +44,6 @@ function ensureHandlerInstalled() {
   handlerInstalled = true;
 
   Script.setGlobalAccessHandler({
-    enumerate() {
-      return [];
-    },
     get(property) {
       let result = mjolner.lookup(property);
       if (result !== null)

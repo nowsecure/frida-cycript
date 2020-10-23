@@ -50,8 +50,8 @@ if os.path.exists(dbfile):
 with sqlite3.connect(dbfile) as sql:
     c = sql.cursor()
 
-    c.execute("CREATE TABLE CACHE (name TEXT NOT NULL, system INT NOT NULL, flags INT NOT NULL, code TEXT NOT NULL, PRIMARY KEY (name, system))")
-    c.execute("CREATE TABLE MODULE (name TEXT NOT NULL, flags INT NOT NULL, code BLOB NOT NULL, PRIMARY KEY (name))")
+    c.execute("CREATE TABLE cache (name TEXT NOT NULL, system INT NOT NULL, flags INT NOT NULL, code TEXT NOT NULL, PRIMARY KEY (name, system))")
+    c.execute("CREATE TABLE module (name TEXT NOT NULL, flags INT NOT NULL, code BLOB NOT NULL, PRIMARY KEY (name))")
 
     for name in [js[0:-3] for js in os.listdir(nodejs) if js.endswith('.js')]:
         with open(os.path.join(nodejs, name + '.js'), 'r') as file:

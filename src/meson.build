@@ -75,7 +75,7 @@ if get_option('enable_engine')
     command: [
       python3,
       files('fetch-frida-devkit.py'),
-      '12.6.16',
+      '14.0.1',
       host_os,
       host_arch,
       '@OUTDIR@',
@@ -172,7 +172,7 @@ if get_option('enable_engine')
       'cycript0.9',
     ],
     output: [
-      'libcycript.js',
+      'libcycript.qjs',
       'cycript0.9',
     ],
     depend_files: [

@@ -36,12 +36,6 @@
 
 #include <sqlite3.h>
 
-#if CY_JAVA
-#if defined(__APPLE__) && !defined(__arm__)
-#include <JavaVM/jni.h>
-#endif
-#endif
-
 #if CY_RUBY
 #ifdef __APPLE__
 #include <Ruby/ruby.h>

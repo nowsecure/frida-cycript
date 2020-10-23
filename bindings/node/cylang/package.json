@@ -42,11 +42,11 @@
   "homepage": "https://github.com/nowsecure/frida-cycript#readme",
   "dependencies": {
     "bindings": "^1.5.0",
-    "prebuild-install": "^5.3.0"
+    "prebuild-install": "^5.3.6"
   },
   "devDependencies": {
-    "mocha": "^6.2.0",
-    "prebuild": "^9.0.1",
+    "mocha": "^8.2.0",
+    "prebuild": "^10.0.1",
     "should": "^13.2.3"
   }
 }
