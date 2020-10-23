@@ -332,7 +332,10 @@ static void CYParseCursor(CXType type, CXCursor cursor, CYType *typed) {
                 CYParseStructure(cursor, typed);
         } break;
 
-        case CXCursor_UnionDecl: {
+        case CXCursor_UnionDecl:
+        case CXCursor_NoDeclFound:
+        case CXCursor_ClassTemplate:
+        case CXCursor_ClassTemplatePartialSpecialization: {
             _assert(false);
         } break;
 
@@ -439,6 +442,11 @@ static void CYParseType(CXType type, CYType *typed) {
                 _assert(false);
         } break;
 
+        case CXType_ObjCObject: {
+            CXType base_type = clang_Type_getObjCObjectBaseType(type);
+            CYParseType(base_type, typed);
+        } break;
+
         case CXType_ObjCSel:
             typed->specifier_ = $ CYTypeVariable("SEL");
         break;
@@ -462,6 +470,9 @@ static void CYParseType(CXType type, CYType *typed) {
         break;
 
         case CXType_Vector:
+        case CXType_LValueReference:
+        case CXType_RValueReference:
+        case CXType_DependentSizedArray:
             _assert(false);
         break;
 
