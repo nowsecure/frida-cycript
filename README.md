@@ -78,10 +78,7 @@ Install Meson and Ninja:
 
 Clone this repo:
 
-    git clone https://github.com/nowsecure/frida-cycript.git
-    cd frida-cycript
-    git submodule init
-    git submodule update
+    git clone --recurse-submodules https://github.com/nowsecure/frida-cycript.git
 
 Generate the build system:
 
