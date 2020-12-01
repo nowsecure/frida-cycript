@@ -172,7 +172,7 @@ if get_option('enable_engine')
       'cycript0.9',
     ],
     output: [
-      'libcycript.qjs',
+      'libcycript.js',
       'cycript0.9',
     ],
     depend_files: [

@@ -174,19 +174,17 @@ _visible void CYAttach(const char *device_id, const char *host, const char *targ
     CheckGError(error);
     g_signal_connect(session, "detached", G_CALLBACK(OnDetached), NULL);
 
-    gchar *code_buf;
-    gsize code_size;
-    if (!g_file_get_contents(pool.strcat(library_path, "/libcycript.qjs", NULL), &code_buf, &code_size, NULL)) {
-        CYThrow("libcycript.qjs not found");
+    gchar *code;
+    if (!g_file_get_contents(pool.strcat(library_path, "/libcycript.js", NULL), &code, NULL, NULL)) {
+        CYThrow("libcycript.js not found");
     }
-    auto code = g_bytes_new_take(code_buf, code_size);
 
     FridaRefPtr<FridaScriptOptions> options(frida_script_options_new());
     frida_script_options_set_name(options, "libcycript-runtime");
     frida_script_options_set_runtime(options, FRIDA_SCRIPT_RUNTIME_QJS);
 
-    FridaRefPtr<FridaScript> script(frida_session_create_script_from_bytes_sync(session, code, options, cancellable_, &error));
-    g_bytes_unref(code);
+    FridaRefPtr<FridaScript> script(frida_session_create_script_sync(session, code, options, cancellable_, &error));
+    g_free(code);
     CheckGError(error);
     g_signal_connect(script, "message", G_CALLBACK(OnMessage), NULL);
 

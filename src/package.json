@@ -5,12 +5,11 @@
   "private": true,
   "main": "Agent/index.js",
   "scripts": {
-    "build": "frida-compile Agent -o libcycript.qjs -bc",
-    "watch": "frida-compile Agent -o libcycript.qjs -bw"
+    "build": "frida-compile Agent -o libcycript.js -c",
+    "watch": "frida-compile Agent -o libcycript.js -w"
   },
   "license": "MIT",
   "devDependencies": {
-    "frida": "^14.0.5",
     "frida-compile": "^10.0.0",
     "mjolner": "^4.0.2"
   }
