@@ -118,6 +118,18 @@ Then to run the test-suite:
 
     npm run test
 
+
+### Contributing
+
+Clone and link [mojlner](https://github.com/nowsecure/mjolner) repository:
+
+    # build first (@see: above)
+    git clone git@github.com:nowsecure/mjolner.git ~/dev/mjolner
+    npm link ~/dev/mjolner/
+    npm run watch
+    ...
+
+
   [1]: http://www.cycript.org/
   [2]: https://twitter.com/saurik
   [3]: https://github.com/nowsecure/mjolner
