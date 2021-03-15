@@ -21,7 +21,6 @@ describe('Types', function () {
   });
 
   it('should support pretty-printing function pointers', function () {
-
     cycript.execute('dlopen').should.equal('(extern "C" void *dlopen(char const*, int))');
     cycript.execute('typeid(dlopen)').should.equal('(typedef void *(char const*, int))');
     cycript.execute('dlsym').should.equal('(extern "C" void *dlsym(void *, char *))');
