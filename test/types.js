@@ -21,6 +21,7 @@ describe('Types', function () {
   });
 
   it('should support pretty-printing function pointers', function () {
+
     cycript.execute('dlopen').should.equal('(extern "C" void *dlopen(char const*, int))');
     cycript.execute('typeid(dlopen)').should.equal('(typedef void *(char const*, int))');
     cycript.execute('dlsym').should.equal('(extern "C" void *dlsym(void *, char *))');
@@ -161,7 +162,8 @@ describe('Types', function () {
     cycript.execute('global.cy$complete("NSArray")').should.containEql('NSArray');
     cycript.execute('global.cy$complete("NSCopy")').should.containEql('NSCopying');
     cycript.execute('Object.getOwnPropertyNames(object_getClass(NSString).prototype)').should.equal('["cy$complete"]');
-    cycript.execute('object_getClass(NSString).prototype.cy$complete("uses")').should.equal('["usesScreenFonts","usesFontLeading"]');
+    cycript.execute('object_getClass(NSString).prototype.cy$complete("uses")').should.containEql('usesScreenFonts');
+    cycript.execute('object_getClass(NSString).prototype.cy$complete("uses")').should.containEql('usesFontLeading');
   });
 
   it('should support symbol lookups', function () {
