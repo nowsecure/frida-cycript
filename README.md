@@ -124,6 +124,7 @@ Then to run the test-suite:
 Clone and link [mojlner](https://github.com/nowsecure/mjolner) repository:
 
     # build first (@see: above)
+    cd src
     git clone git@github.com:nowsecure/mjolner.git ~/dev/mjolner
     npm link ~/dev/mjolner/
     npm run watch
