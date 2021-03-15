@@ -161,7 +161,8 @@ describe('Types', function () {
     cycript.execute('global.cy$complete("NSArray")').should.containEql('NSArray');
     cycript.execute('global.cy$complete("NSCopy")').should.containEql('NSCopying');
     cycript.execute('Object.getOwnPropertyNames(object_getClass(NSString).prototype)').should.equal('["cy$complete"]');
-    cycript.execute('object_getClass(NSString).prototype.cy$complete("uses")').should.equal('["usesScreenFonts","usesFontLeading"]');
+    cycript.execute('object_getClass(NSString).prototype.cy$complete("uses")').should.containEql('usesScreenFonts');
+    cycript.execute('object_getClass(NSString).prototype.cy$complete("uses")').should.containEql('usesFontLeading');
   });
 
   it('should support symbol lookups', function () {
