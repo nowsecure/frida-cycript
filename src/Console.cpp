@@ -654,7 +654,7 @@ static void Console(CYOptions &options) {
         }
 
         mode_ = Parsing;
-        char *line(readline("cy# "));
+        char *line(readline("fcy# "));
         mode_ = Working;
 
         if (line == NULL) {
