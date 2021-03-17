@@ -159,3 +159,18 @@ function dlopen(library, mode) {
   const path = Memory.allocUtf8String(library);
   return _dlopen(path, mode);
 }
+
+global.choose = function(className) {
+  const objects = [];
+  var classToFind = eval('ObjC.classes.' + className);
+  ObjC.choose(classToFind, {
+    onMatch: function(cls) {
+      objects.push(a.toString());
+    },
+    onComplete: function() {
+
+    }
+  });
+
+  return objects;
+}

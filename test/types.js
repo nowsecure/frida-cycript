@@ -205,4 +205,12 @@ describe('Types', function () {
       [new NSObject init];
     `).should.match(/#"<NSObject: 0x[0-9a-f]+> \(of doom\)"/);
   });
+
+  it('should match cycript registrants', function() {
+    cycript.execute(`
+        var cls = [[NSColor alloc] init];
+
+        choose("NSColor");
+      `).should.containEql('<NSColor:');
+  });
 });
