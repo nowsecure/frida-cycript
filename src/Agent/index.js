@@ -1,6 +1,8 @@
 // MIT - Copyright NowSecure 2016 - oleavr@nowsecure.com
 const mjolner = require('mjolner');
 
+require('./internals/funcs.js');
+
 const RTLD_GLOBAL = 0x8;
 const RTLD_LAZY = 0x1;
 
@@ -158,19 +160,4 @@ function request(type, param) {
 function dlopen(library, mode) {
   const path = Memory.allocUtf8String(library);
   return _dlopen(path, mode);
-}
-
-global.choose = function(className) {
-  const objects = [];
-  var classToFind = eval('ObjC.classes.' + className);
-  ObjC.choose(classToFind, {
-    onMatch: function(cls) {
-      objects.push(a.toString());
-    },
-    onComplete: function() {
-
-    }
-  });
-
-  return objects;
 }
