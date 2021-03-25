@@ -7,9 +7,9 @@ import sys
 import shutil
 
 def append_to_agent(agent, script):
-	with open(agent, "a+") as out:
-		with open(script, "r") as sc:
-			out.write(sc.read())
+    with open(agent, "a+") as out:
+        with open(script, "r") as sc:
+            out.write(sc.read())
 
 agent_entrypoint = sys.argv[1]
 node_modules = sys.argv[2]
@@ -19,7 +19,7 @@ output_js = sys.argv[5]
 output_standard_library = sys.argv[6]
 
 for script_file in glob.glob(external_scripts + "*.js"):
-	append_to_agent(agent_entrypoint, script_file)
+    append_to_agent(agent_entrypoint, script_file)
 
 agent_dir = os.path.dirname(agent_entrypoint)
 output_dir = os.path.dirname(output_js)

@@ -1,4 +1,4 @@
 global.choose = function(className) {
   const classToFind = ObjC.classes[className];
-  return ObjC.chooseSync(ObjC.classes[className]).map(instance => instance.toString());
+  return ObjC.chooseSync(classToFind).map(instance => instance.toString());
 };
