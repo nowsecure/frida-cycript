@@ -205,10 +205,10 @@ describe('Types', function () {
     `).should.match(/#"<NSObject: 0x[0-9a-f]+> \(of doom\)"/);
   });
 
-  it('should support "choose()"', function() {
+  it('should support "choose()"', function () {
     cycript.execute(`
-      var a = [[NSColor alloc] init];
-      var b = [[NSColor alloc] init];
+      const a = [[NSColor alloc] init];
+      const b = [[NSColor alloc] init];
 
       choose("NSColor");
     `).should.match(/\["<NSColor:\s0x[a-f0-9]+.+?","<NSColor:\s0x[a-f0-9]+.+"]/);
