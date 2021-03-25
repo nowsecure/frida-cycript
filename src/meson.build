@@ -170,7 +170,6 @@ if get_option('enable_engine')
       'Agent/index.js',
       node_modules,
       'cycript0.9',
-      './external/',
     ],
     output: [
       'libcycript.js',
