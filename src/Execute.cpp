@@ -170,7 +170,7 @@ _visible void CYAttach(const char *device_id, const char *host, const char *targ
     auto pid = ResolveProcess(target, device);
 
     GError *error(NULL);
-    FridaRefPtr<FridaSession> session(frida_device_attach_sync(device, pid, cancellable_, &error));
+    FridaRefPtr<FridaSession> session(frida_device_attach_sync(device, pid, FRIDA_REALM_NATIVE, cancellable_, &error));
     CheckGError(error);
     g_signal_connect(session, "detached", G_CALLBACK(OnDetached), NULL);
 

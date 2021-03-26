@@ -75,7 +75,7 @@ if get_option('enable_engine')
     command: [
       python3,
       files('fetch-frida-devkit.py'),
-      '14.1.2',
+      '14.2.14',
       host_os,
       host_arch,
       '@OUTDIR@',
