@@ -6,6 +6,9 @@ project('frida-cycript', 'c', 'cpp',
 host_os_family = host_machine.system()
 host_os = host_os_family
 host_arch = host_machine.cpu_family()
+if host_arch == 'aarch64'
+  host_arch = 'arm64'
+endif
 
 c_languages = ['c']
 cpp_languages = ['cpp']
