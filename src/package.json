@@ -11,6 +11,6 @@
   "license": "MIT",
   "devDependencies": {
     "frida-compile": "^10.0.0",
-    "mjolner": "^4.1.0"
+    "mjolner": "^5.0.0"
   }
 }

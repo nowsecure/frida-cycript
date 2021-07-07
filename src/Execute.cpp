@@ -170,7 +170,7 @@ _visible void CYAttach(const char *device_id, const char *host, const char *targ
     auto pid = ResolveProcess(target, device);
 
     GError *error(NULL);
-    FridaRefPtr<FridaSession> session(frida_device_attach_sync(device, pid, FRIDA_REALM_NATIVE, cancellable_, &error));
+    FridaRefPtr<FridaSession> session(frida_device_attach_sync(device, pid, NULL, cancellable_, &error));
     CheckGError(error);
     g_signal_connect(session, "detached", G_CALLBACK(OnDetached), NULL);
 
@@ -239,10 +239,8 @@ _visible const char *CYExecute(CYPool &pool, CYUTF8String code) {
     auto message(json_to_string(root, FALSE));
     json_node_unref(root);
 
-    GError *error(NULL);
-    frida_script_post_sync(script_, message, NULL, cancellable_, &error);
+    frida_script_post(script_, message, NULL);
     g_free(message);
-    CheckGError(error);
 
     bool detached(false);
     char *reply(NULL);
@@ -335,7 +333,7 @@ static void OnLookupRequest(const char *property) {
     auto message(json_to_string(root, FALSE));
     json_node_unref(root);
 
-    frida_script_post(script_, message, NULL, cancellable_, NULL, NULL);
+    frida_script_post(script_, message, NULL);
     g_free(message);
 }
 
@@ -388,7 +386,7 @@ static void OnCompleteRequest(const char *prefix) {
     auto message(json_to_string(root, FALSE));
     json_node_unref(root);
 
-    frida_script_post(script_, message, NULL, cancellable_, NULL, NULL);
+    frida_script_post(script_, message, NULL);
     g_free(message);
 }
 
@@ -475,7 +473,7 @@ static void OnRequireResolveRequest(JsonObject *request) {
     auto message(json_to_string(root, FALSE));
     json_node_unref(root);
 
-    frida_script_post(script_, message, NULL, cancellable_, NULL, NULL);
+    frida_script_post(script_, message, NULL);
     g_free(message);
 }
 
@@ -525,7 +523,7 @@ static void OnRequireReadRequest(const char *path) {
     auto message(json_to_string(root, FALSE));
     json_node_unref(root);
 
-    frida_script_post(script_, message, NULL, cancellable_, NULL, NULL);
+    frida_script_post(script_, message, NULL);
     g_free(message);
 
     g_free(filename);
@@ -681,7 +679,7 @@ static FridaRefPtr<FridaDevice> ResolveDevice(const char *device_id, const char 
 
     GError *error(NULL);
     if (host != NULL) {
-        device = frida_device_manager_add_remote_device_sync(manager, host, cancellable_, &error);
+        device = frida_device_manager_add_remote_device_sync(manager, host, NULL, cancellable_, &error);
         CheckGError(error);
     } else {
         FridaRefPtr<FridaDeviceList> devices(frida_device_manager_enumerate_devices_sync(manager, cancellable_, &error));
@@ -719,7 +717,7 @@ static guint ResolveProcess(const char *target, FridaRefPtr<FridaDevice> device)
         FridaRefPtr<FridaProcess> process;
 
         GError *error(NULL);
-        FridaRefPtr<FridaProcessList> processes(frida_device_enumerate_processes_sync(device, cancellable_, &error));
+        FridaRefPtr<FridaProcessList> processes(frida_device_enumerate_processes_sync(device, NULL, cancellable_, &error));
         CheckGError(error);
 
         auto size(frida_process_list_size(processes));
