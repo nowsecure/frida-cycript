@@ -182,7 +182,7 @@ if get_option('enable_engine')
       python3,
       files('generate-runtime.py'),
       '@INPUT@',
-      'cycript0.9'
+      '../src/cycript0.9',
       '@OUTPUT@',
     ],
     install: true,
