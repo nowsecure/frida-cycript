@@ -182,7 +182,7 @@ if get_option('enable_engine')
       python3,
       files('generate-runtime.py'),
       '@INPUT@',
-      '../src/cycript0.9',
+      join_paths(meson.current_source_dir(), 'cycript0.9'),
       '@OUTPUT@',
     ],
     install: true,
