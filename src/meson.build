@@ -169,7 +169,6 @@ if get_option('enable_engine')
     input: [
       'Agent/index.js',
       node_modules,
-      'cycript0.9',
     ],
     output: [
       'libcycript.js',
@@ -183,6 +182,7 @@ if get_option('enable_engine')
       python3,
       files('generate-runtime.py'),
       '@INPUT@',
+      join_paths(meson.current_source_dir(), 'cycript0.9'),
       '@OUTPUT@',
     ],
     install: true,
